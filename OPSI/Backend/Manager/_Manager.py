@@ -16,278 +16,110 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-BackendManager.
+Backend Extender.
 
-If you want to work with an opsi backend in i.e. a script a
-BackendManager instance should be your first choice.
-A BackendManager instance does the heavy lifting for you so you don't
-need to set up you backends, ACL, multiplexing etc. yourself.
+Reads the backend extensions and allows for them to be used like normal
+methods in a backend context.
 
 :copyright: uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
 from __future__ import absolute_import
 
+import inspect
 import os
-import re
+import types
+from functools import lru_cache
 
-from OPSI.Backend.Base import Backend, ExtendedBackend, ExtendedConfigDataBackend
-from OPSI.Backend.Depotserver import DepotserverBackend
-from OPSI.Backend.HostControl import HostControlBackend
-from OPSI.Backend.HostControlSafe import HostControlSafeBackend
+from OPSI.Backend.Base import ExtendedBackend
+from OPSI.Backend.Manager.AccessControl import BackendAccessControl
 from OPSI.Exceptions import BackendConfigurationError
+from OPSI.Exceptions import *  # this is needed for dynamic extension loading  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Logger import Logger
-from OPSI.Types import forceBool
+from OPSI.Object import *  # this is needed for dynamic extension loading  # pylint: disable=wildcard-import,unused-wildcard-import
+from OPSI.Types import *  # this is needed for dynamic extension loading  # pylint: disable=wildcard-import,unused-wildcard-import
+from OPSI.Util import objectToBeautifiedText, getfqdn  # used in extensions  # pylint: disable=unused-import
 
-from .AccessControl import BackendAccessControl
-from .Config import loadBackendConfig
 from .Dispatcher import BackendDispatcher
-from .Extender import BackendExtender
 
-__all__ = ('BackendManager', 'backendManagerFactory')
-
-_BACKEND_CONFIG_NAME_REGEX = re.compile(r'^[a-zA-Z0-9-_]+$')
+__all__ = ('BackendExtender', )
 
 logger = Logger()
 
 
-class BackendManager(ExtendedBackend):
-	"""
-	The BackendManager manages the backend and glues together various parts.
+class BackendExtender(ExtendedBackend):
+	def __init__(self, backend, **kwargs):
+		if (
+			not isinstance(backend, ExtendedBackend) and
+			not isinstance(backend, BackendDispatcher) and
+			not isinstance(backend, BackendAccessControl)
+		):
+			raise TypeError(
+				"BackendExtender needs instance of ExtendedBackend, BackendDispatcher or BackendAccessControl"
+				f" as backend, got {backend.__class__.__name__}"
+			)
 
-	This includes extending the backends, dispatching calls to backends,
-	limiting the access through ACL.
-	"""
+		ExtendedBackend.__init__(self, backend, **kwargs)
 
-	def __init__(self, **kwargs):  # pylint: disable=super-init-not-called,too-many-locals,too-many-branches,too-many-statements
-		"""
-		Creating a BackendManager.
+		self._extensionConfigDir = None
+		self._extensionClass = None
 
-		If no configuration is given a default config for accessing the
-		local backend as configured through the files in
-		/etc/opsi/backendManager/ will be used.
-
-		The constructor takes several parameters and these are all optional.
-
-		:param username: A username for authentication.
-		:type username: str
-		:param password: The corresponding password.
-		:type password: str
-		:param backend: A backend to use.
-		:param dispatchconfig: A pre-definded dispatch config to use.
-		:param dispatchconfigfile: The configuration file for dispatching.
-		:type dispatchconfigfile: str
-		:param backendconfigdir: The location of backend configurations.
-		:type backendconfigdir: str
-		:param depotbackend: Allow depot actions?
-		:type depotbackend: bool
-		:param hostcontrolbackend: Allow controlling hosts?
-		:type hostcontrolbackend: bool
-		:param hostcontrolsafebackend: Allow controlling hosts (safe variant)?
-		:type hostcontrolsafebackend: bool
-		:param extensionconfigdir: The directory where backend extensions can be found.
-		:type extensionconfigdir: str
-		:param extend: Extend the backends?
-		:type extend: bool
-		:param acl: An access control list (ACL) configuration to use.
-		:type acl: [[str, ]]
-		:param aclfile: Load the ACL from this file.
-		:type aclfile: str
-		"""
-		self._backend = None
-		self._backendConfigDir = None
-		self._overwrite = True
-		self._context = self
-		self.backendAccessControl = None
-
-		Backend.__init__(self, **kwargs)  # pylint: disable=non-parent-init-called
-
-		dispatch = False
-		extend = False
-		extensionConfigDir = None
-		extensionClass = None
-		accessControl = False
-		accessControlClass = BackendAccessControl
-		depotBackend = False
-		hostControlBackend = False
-		hostControlSafeBackend = False
-		loadBackend = None
-
-		if not kwargs:
-			kwargs = {
-				"dispatchConfigFile": '/etc/opsi/backendManager/dispatch.conf',
-				"backendConfigDir": '/etc/opsi/backends',
-				"extensionConfigDir": '/etc/opsi/backendManager/extend.d',
-				"depotBackend": True,
-				"hostControlBackend": True,
-				"hostControlSafeBackend": True,
-			}
-			logger.debug("No config given, using %s", kwargs)
-
-		argumentToDelete = set()
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if option == 'backend':
-				if isinstance(value, str):
-					loadBackend = value
-				else:
-					self._backend = value
-				argumentToDelete.add(option)
-			elif option == 'backendconfigdir':
-				self._backendConfigDir = value
-			elif option in ('dispatchconfig', 'dispatchconfigfile') and value:
-				dispatch = True
-			elif option == 'depotbackend':
-				depotBackend = forceBool(value)
-			elif option == 'hostcontrolbackend':
-				hostControlBackend = forceBool(value)
-			elif option == 'hostcontrolsafebackend':
-				hostControlSafeBackend = forceBool(value)
-			elif option == 'extensionconfigdir' and value:
-				extensionConfigDir = value
-				extend = True
+			if option == 'extensionconfigdir':
+				self._extensionConfigDir = value
 			elif option == 'extensionclass':
-				extensionClass = value
-				extend = True
-			elif option == 'extend':
-				extend = forceBool(value)
-			elif option in ('acl', 'aclfile') and value:
-				accessControl = True
-			elif option == 'accesscontrolclass':
-				accessControlClass = value
+				self._extensionClass = value
 
-		for argument in argumentToDelete:
-			del kwargs[argument]
+		self.__createExtensions()
 
-		if loadBackend:
-			logger.info("* BackendManager is loading backend '%s'", loadBackend)
-			self._backend = self.__loadBackend(loadBackend)
-			# self._backend is now a ConfigDataBackend
+	def __createExtensions(self):
+		if self._extensionClass:
+			for methodName, functionRef in inspect.getmembers(self._extensionClass, inspect.isfunction):
+				if getattr(functionRef, "no_export", False):
+					continue
+				if methodName.startswith('_'):
+					continue
+				logger.trace("Extending %s with instancemethod: %s", self._backend.__class__.__name__, methodName)
+				new_function = types.FunctionType(functionRef.__code__, functionRef.__globals__, functionRef.__name__)
+				new_method = types.MethodType(new_function, self)
+				setattr(self, methodName, new_method)
 
-		if not dispatch and not self._backend:
-			raise BackendConfigurationError("Neither backend nor dispatch config given")
-
-		if dispatch:
-			logger.info("* BackendManager is creating BackendDispatcher")
-			self._backend = BackendDispatcher(context=self, **kwargs)
-			# self._backend is now a BackendDispatcher which is a ConfigDataBackend
-
-		if extend or depotBackend:
-			logger.info("* BackendManager is creating ExtendedConfigDataBackend")
-			# DepotserverBackend/BackendExtender need ExtendedConfigDataBackend backend
-			self._backend = ExtendedConfigDataBackend(self._backend, **kwargs)
-			# self._backend is now an ExtendedConfigDataBackend
-
-		if depotBackend:
-			logger.info("* BackendManager is creating DepotserverBackend")
-			self._backend = DepotserverBackend(self._backend, **kwargs)
-
-		if hostControlBackend:
-			logger.info("* BackendManager is creating HostControlBackend")
-			hostControlBackendConfig = dict(kwargs)
+		if self._extensionConfigDir:
 			try:
-				hostControlBackendConfig.update(self.__loadBackendConfig('hostcontrol')['config'])
-			except Exception as err:  # pylint: disable=broad-except
-				logger.error(
-					"Failed to load configuration for HostControlBackend: %s",
-					err
-				)
-			self._backend = HostControlBackend(self._backend, **hostControlBackendConfig)
+				for confFile in _getExtensionFiles(self._extensionConfigDir):
+					try:
+						logger.info("Reading config file '%s'", confFile)
+						exec(_readExtension(confFile))  # pylint: disable=exec-used
+					except Exception as err:
+						logger.error(err, exc_info=True)
+						raise RuntimeError("Error reading file {confFile}: {err}") from err
 
-		if hostControlSafeBackend:
-			logger.info("* BackendManager is creating HostControlSafeBackend")
-			hostControlSafeBackendConfig = dict(kwargs)
-			try:
-				hostControlSafeBackendConfig.update(self.__loadBackendConfig('hostcontrol')['config'])
-			except Exception as err:  # pylint: disable=broad-except
-				logger.error(
-					"Failed to load configuration for HostControlSafeBackend: %s",
-					err
-				)
-			self._backend = HostControlSafeBackend(self._backend, **hostControlSafeBackendConfig)
-
-		if accessControl:
-			logger.info("* BackendManager is creating %s", accessControlClass.__name__)
-			self._backend = self.backendAccessControl = accessControlClass(backend=self._backend, **kwargs)
-
-		if extensionConfigDir or extensionClass:
-			logger.info("* BackendManager is creating BackendExtender")
-			self._backend = BackendExtender(self._backend, **kwargs)
-
-		self._createInstanceMethods()
-
-	def __loadBackendConfig(self, name):
-		if not self._backendConfigDir:
-			raise BackendConfigurationError("Backend config dir not given")
-		if not os.path.exists(self._backendConfigDir):
-			raise BackendConfigurationError("Backend config dir '%s' not found" % self._backendConfigDir)
-		if not _BACKEND_CONFIG_NAME_REGEX.search(name):
-			raise ValueError("Bad backend config name '%s'" % name)
-		name = name.lower()
-		backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % name)
-		return loadBackendConfig(backendConfigFile)
-
-	def __loadBackend(self, name):
-		config = self.__loadBackendConfig(name)
-		if not config['module']:
-			raise BackendConfigurationError("No module defined in backend config file for '%s'" % name)
-		if not isinstance(config['config'], dict):
-			raise BackendConfigurationError("Bad type for 'config' var in backend config file for '%s': has to be dict" % name)
-		config['config']['name'] = name
-		moduleName = config['module']
-		backendClassName = '%sBackend' % config['module']
-		exec(f'from OPSI.Backend.{moduleName} import {backendClassName}')  # pylint: disable=exec-used
-		return eval(f'{backendClassName}(**config["config"])')  # pylint: disable=eval-used
+					for key, val in locals().copy().items():
+						if isinstance(val, types.FunctionType):  # TODO: find a better way
+							logger.trace("Extending %s with instancemethod: '%s'", self._backend.__class__.__name__, key)
+							setattr(self, key, types.MethodType(val, self))
+			except Exception as err:
+				raise BackendConfigurationError(
+					f"Failed to read extensions from '{self._extensionConfigDir}': {err}"
+				) from err
 
 
-def backendManagerFactory(
-	user, password, dispatchConfigFile, backendConfigDir,
-	extensionConfigDir, aclFile, depotId, postpath, context, **kwargs
-):  # pylint: disable=too-many-arguments
-	backendManager = None
-	if len(postpath) == 2 and postpath[0] == 'backend':
-		backendManager = BackendManager(
-			backend=postpath[1],
-			accessControlContext=context,
-			backendConfigDir=backendConfigDir,
-			aclFile=aclFile,
-			username=user,
-			password=password,
-			**kwargs
-		)
-	elif len(postpath) == 2 and postpath[0] == 'extend':
-		extendPath = postpath[1]
-		if not re.search(r'^[a-zA-Z0-9_-]+$', extendPath):
-			raise ValueError("Extension config path '%s' refused" % extendPath)
-		backendManager = BackendManager(
-			dispatchConfigFile=dispatchConfigFile,
-			backendConfigDir=backendConfigDir,
-			extensionConfigDir=os.path.join(extensionConfigDir, extendPath),
-			aclFile=aclFile,
-			accessControlContext=context,
-			depotBackend=bool(depotId),
-			hostControlBackend=True,
-			hostControlSafeBackend=True,
-			username=user,
-			password=password,
-			**kwargs
-		)
-	else:
-		backendManager = BackendManager(
-			dispatchConfigFile=dispatchConfigFile,
-			backendConfigDir=backendConfigDir,
-			extensionConfigDir=extensionConfigDir,
-			aclFile=aclFile,
-			accessControlContext=context,
-			depotBackend=bool(depotId),
-			hostControlBackend=True,
-			hostControlSafeBackend=True,
-			username=user,
-			password=password,
-			**kwargs
-		)
+@lru_cache(maxsize=None)
+def _getExtensionFiles(directory) -> list:
+	if not os.path.exists(directory):
+		raise OSError(f"No extensions loaded: extension directory {directory} does not exist")
 
-	return backendManager
+	return [
+		os.path.join(directory, filename)
+		for filename in sorted(os.listdir(directory))
+		if filename.endswith('.conf')
+	]
+
+
+@lru_cache(maxsize=None)
+def _readExtension(filepath):
+	logger.debug("Reading extension file %s}", filepath)
+	with open(filepath) as confFileHandle:
+		return confFileHandle.read()
