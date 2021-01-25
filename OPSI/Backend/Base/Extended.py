@@ -23,11 +23,10 @@ Extended backends.
 They provide extended functionality.
 
 :copyright: uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Erol Ueluekmen <e.ueluekmen@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
+
+# pylint: disable=too-many-lines
 
 from __future__ import absolute_import
 
@@ -38,9 +37,9 @@ import copy
 from types import MethodType
 
 from OPSI.Logger import Logger
-from OPSI.Exceptions import *  # this is needed for dynamic loading
-from OPSI.Types import *  # this is needed for dynamic loading
-from OPSI.Object import *  # this is needed for dynamic loading
+from OPSI.Exceptions import *  # this is needed for dynamic loading  # pylint: disable=wildcard-import,unused-wildcard-import
+from OPSI.Types import *  # this is needed for dynamic loading  # pylint: disable=wildcard-import,unused-wildcard-import
+from OPSI.Object import *  # this is needed for dynamic loading  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Util import timestamp
 import OPSI.SharedAlgorithm
 
@@ -64,32 +63,32 @@ def getArgAndCallString(method):
 	argString = []
 	callString = []
 	spec = inspect.getfullargspec(method)
-	args = spec.args
+	_args = spec.args
 	argDefaults = spec.defaults
 
-	for element in args:
+	for element in _args:
 		if element == 'self':
 			continue
 
-		callString.append(u'='.join((element, element)))
-		if isinstance(argDefaults, tuple) and (len(argDefaults) + args.index(element) >= len(args)):
-			default = argDefaults[len(argDefaults) - len(args) + args.index(element)]
+		callString.append('='.join((element, element)))
+		if isinstance(argDefaults, tuple) and (len(argDefaults) + _args.index(element) >= len(_args)):
+			default = argDefaults[len(argDefaults) - len(_args) + _args.index(element)]
 			if isinstance(default, str):
-				default = u"'{0}'".format(default)
+				default = "'{0}'".format(default)
 			elif isinstance(default, bytes):
-				default = u"b'{0}'".format(default)
+				default = "b'{0}'".format(default)
 
-			argString.append(u'='.join((element, str(default))))
+			argString.append('='.join((element, str(default))))
 		else:
 			argString.append(element)
 
 	for (index, element) in enumerate((spec.varargs, spec.varkw), start=1):
 		if element:
-			toAdd = '{0}{1}'.format(index * u'*', element)
+			toAdd = f"{index * '*'}{element}"
 			argString.append(toAdd)
 			callString.append(toAdd)
 
-	return (u', '.join(argString), u', '.join(callString))
+	return (', '.join(argString), ', '.join(callString))
 
 
 class ExtendedBackend(Backend):
@@ -106,13 +105,13 @@ class ExtendedBackend(Backend):
 		Backend.__init__(self, **kwargs)
 		self._backend = backend
 		if self._context is self:
-			logger.info(u"Setting context to backend %s", self._context)
+			logger.info("Setting context to backend %s", self._context)
 			self._context = self._backend
 		self._overwrite = forceBool(overwrite)
 		self._createInstanceMethods()
 
 	def _createInstanceMethods(self):
-		logger.debug(u"%s is creating instance methods", self.__class__.__name__)
+		logger.debug("%s is creating instance methods", self.__class__.__name__)
 		for _, functionRef in inspect.getmembers(self._backend, inspect.ismethod):
 			methodName = functionRef.__name__
 			if getattr(functionRef, "no_export", False):
@@ -120,22 +119,21 @@ class ExtendedBackend(Backend):
 			if methodName.startswith('_'):
 				# Not a public method
 				continue
-			
-			logger.debug2(u"Found public %s method %s", self._backend.__class__.__name__, methodName)
+
+			logger.trace("Found public %s method %s", self._backend.__class__.__name__, methodName)
 			if hasattr(self, methodName):
 				if self._overwrite:
-					logger.debug(u"%s: overwriting method %s of backend instance %s", self.__class__.__name__, methodName, self._backend)
+					logger.debug("%s: overwriting method %s of backend instance %s", self.__class__.__name__, methodName, self._backend)
 					continue
-				else:
-					logger.debug(u"%s: not overwriting method %s of backend instance %s", self.__class__.__name__, methodName, self._backend)
+				logger.debug("%s: not overwriting method %s of backend instance %s", self.__class__.__name__, methodName, self._backend)
 
 			argString, callString = getArgAndCallString(functionRef)
 
-			exec(u'def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))
-			setattr(self, methodName, MethodType(eval(methodName), self))
+			exec('def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))  # pylint: disable=exec-used
+			setattr(self, methodName, MethodType(eval(methodName), self))  # pylint: disable=eval-used
 
 	def _executeMethod(self, methodName, **kwargs):
-		logger.debug(u"ExtendedBackend %s: executing %s on backend %s", self, methodName, self._backend)
+		logger.debug("ExtendedBackend %s: executing %s on backend %s", self, methodName, self._backend)
 		meth = getattr(self._backend, methodName)
 		return meth(**kwargs)
 
@@ -167,11 +165,11 @@ class ExtendedBackend(Backend):
 
 	def backend_exit(self):
 		if self._backend:
-			logger.debug(u"Calling backend_exit() on backend %s", self._backend)
+			logger.debug("Calling backend_exit() on backend %s", self._backend)
 			self._backend.backend_exit()
 
 
-class ExtendedConfigDataBackend(ExtendedBackend):
+class ExtendedConfigDataBackend(ExtendedBackend):  # pylint: disable=too-many-public-methods
 	option_defaults = {
 		**Backend.option_defaults,
 		**{
@@ -184,7 +182,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			'processProductOnClientSequence': False
 		}
 	}
-	
+
 	def __init__(self, configDataBackend, overwrite=True, **kwargs):
 		ExtendedBackend.__init__(self, configDataBackend, overwrite=overwrite, **kwargs)
 		self._auditHardwareConfig = {}
@@ -203,50 +201,50 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 					}
 
 	def __repr__(self):
-		return u"<{0}(configDataBackend={1!r})>".format(self.__class__.__name__, self._backend)
+		return "<{0}(configDataBackend={1!r})>".format(self.__class__.__name__, self._backend)
 
-	def host_getIdents(self, returnType='unicode', **filter):
-		return [host.getIdent(returnType) for host in self.host_getObjects(attributes=['id'], **filter)]
+	def host_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
+		return [host.getIdent(returnType) for host in self.host_getObjects(attributes=['id'], **filter)]  # pylint: disable=no-member
 
-	def config_getIdents(self, returnType='unicode', **filter):
-		return [config.getIdent(returnType) for config in self.config_getObjects(attributes=['id'], **filter)]
+	def config_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
+		return [config.getIdent(returnType) for config in self.config_getObjects(attributes=['id'], **filter)]  # pylint: disable=no-member
 
-	def configState_getIdents(self, returnType='unicode', **filter):
+	def configState_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [configState.getIdent(returnType) for configState in self.configState_getObjects(attributes=['configId', 'objectId'], **filter)]
 
-	def product_getIdents(self, returnType='unicode', **filter):
-		return [product.getIdent(returnType) for product in self.product_getObjects(attributes=['id'], **filter)]
+	def product_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
+		return [product.getIdent(returnType) for product in self.product_getObjects(attributes=['id'], **filter)]  # pylint: disable=no-member
 
-	def productProperty_getIdents(self, returnType='unicode', **filter):
+	def productProperty_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [
 			productProperty.getIdent(returnType) for productProperty
-			in self.productProperty_getObjects(
+			in self.productProperty_getObjects(  # pylint: disable=no-member
 				attributes=['productId', 'productVersion', 'packageVersion', 'propertyId'],
 				**filter
 			)
 		]
 
-	def productDependency_getIdents(self, returnType='unicode', **filter):
+	def productDependency_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [
 			productDependency.getIdent(returnType)
 			for productDependency
-			in self.productDependency_getObjects(
+			in self.productDependency_getObjects(  # pylint: disable=no-member
 				attributes=['productId', 'productVersion', 'packageVersion', 'productAction', 'requiredProductId'],
 				**filter
 			)
 		]
 
-	def productOnDepot_getIdents(self, returnType='unicode', **filter):
+	def productOnDepot_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [
 			productOnDepot.getIdent(returnType)
 			for productOnDepot
-			in self.productOnDepot_getObjects(
+			in self.productOnDepot_getObjects(  # pylint: disable=no-member
 				attributes=['productId', 'productType', 'depotId'],
 				**filter
 			)
 		]
 
-	def productOnClient_getIdents(self, returnType='unicode', **filter):
+	def productOnClient_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [
 			productOnClient.getIdent(returnType)
 			for productOnClient
@@ -256,7 +254,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			)
 		]
 
-	def productPropertyState_getIdents(self, returnType='unicode', **filter):
+	def productPropertyState_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [
 			productPropertyState.getIdent(returnType)
 			for productPropertyState
@@ -266,109 +264,109 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			)
 		]
 
-	def group_getIdents(self, returnType='unicode', **filter):
+	def group_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [
 			group.getIdent(returnType)
 			for group
-			in self.group_getObjects(attributes=['id'], **filter)
+			in self.group_getObjects(attributes=['id'], **filter)  # pylint: disable=no-member
 		]
 
-	def objectToGroup_getIdents(self, returnType='unicode', **filter):
+	def objectToGroup_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [
 			objectToGroup.getIdent(returnType)
 			for objectToGroup
-			in self.objectToGroup_getObjects(
+			in self.objectToGroup_getObjects(  # pylint: disable=no-member
 				attributes=['groupType', 'groupId', 'objectId'],
 				**filter
 			)
 		]
 
-	def licenseContract_getIdents(self, returnType='unicode', **filter):
+	def licenseContract_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [
 			licenseContract.getIdent(returnType)
 			for licenseContract
-			in self.licenseContract_getObjects(attributes=['id'], **filter)
+			in self.licenseContract_getObjects(attributes=['id'], **filter)  # pylint: disable=no-member
 		]
 
-	def softwareLicense_getIdents(self, returnType='unicode', **filter):
+	def softwareLicense_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [
 			softwareLicense.getIdent(returnType)
 			for softwareLicense
-			in self.softwareLicense_getObjects(
+			in self.softwareLicense_getObjects(  # pylint: disable=no-member
 				attributes=['id', 'licenseContractId'],
 				**filter
 			)
 		]
 
-	def licensePool_getIdents(self, returnType='unicode', **filter):
+	def licensePool_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [
 			licensePool.getIdent(returnType)
 			for licensePool in
-			self.licensePool_getObjects(attributes=['id'], **filter)
+			self.licensePool_getObjects(attributes=['id'], **filter)  # pylint: disable=no-member
 		]
 
-	def softwareLicenseToLicensePool_getIdents(self, returnType='unicode', **filter):
+	def softwareLicenseToLicensePool_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [
 			softwareLicenseToLicensePool.getIdent(returnType)
 			for softwareLicenseToLicensePool
-			in self.softwareLicenseToLicensePool_getObjects(
+			in self.softwareLicenseToLicensePool_getObjects(  # pylint: disable=no-member
 				attributes=['softwareLicenseId', 'licensePoolId'],
 				**filter
 			)
 		]
 
-	def licenseOnClient_getIdents(self, returnType='unicode', **filter):
+	def licenseOnClient_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [
 				licenseOnClient.getIdent(returnType)
 				for licenseOnClient
-				in self.licenseOnClient_getObjects(
+				in self.licenseOnClient_getObjects(  # pylint: disable=no-member
 					attributes=['softwareLicenseId', 'licensePoolId', 'clientId'],
 					**filter
 				)
 		]
 
-	def auditSoftware_getIdents(self, returnType='unicode', **filter):
+	def auditSoftware_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [
 			auditSoftware.getIdent(returnType)
 			for auditSoftware
-			in self.auditSoftware_getObjects(
+			in self.auditSoftware_getObjects(  # pylint: disable=no-member
 				attributes=['name', 'version', 'subVersion', 'language', 'architecture'],
 				**filter
 			)
 		]
 
-	def auditSoftwareToLicensePool_getIdents(self, returnType='unicode', **filter):
+	def auditSoftwareToLicensePool_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [
 			auditSoftwareToLicensePool.getIdent(returnType)
 			for auditSoftwareToLicensePool
-			in self.auditSoftwareToLicensePool_getObjects(
+			in self.auditSoftwareToLicensePool_getObjects(  # pylint: disable=no-member
 				attributes=['name', 'version', 'subVersion', 'language', 'architecture', 'licensePoolId'],
 				**filter
 			)
 		]
 
-	def auditSoftwareOnClient_getIdents(self, returnType='unicode', **filter):
+	def auditSoftwareOnClient_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [
 			auditSoftwareOnClient.getIdent(returnType)
 			for auditSoftwareOnClient in
-			self.auditSoftwareOnClient_getObjects(
+			self.auditSoftwareOnClient_getObjects(  # pylint: disable=no-member
 				attributes=['name', 'version', 'subVersion', 'language', 'architecture', 'clientId'],
 				**filter
 			)
 		]
 
-	def auditHardware_getIdents(self, returnType='unicode', **filter):
+	def auditHardware_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [
 			auditHardware.getIdent(returnType)
 			for auditHardware
-			in self.auditHardware_getObjects(**filter)
+			in self.auditHardware_getObjects(**filter)  # pylint: disable=no-member
 		]
 
-	def auditHardwareOnHost_getIdents(self, returnType='unicode', **filter):
+	def auditHardwareOnHost_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [
 			auditHardwareOnHost.getIdent(returnType)
 			for auditHardwareOnHost
-			in self.auditHardwareOnHost_getObjects(**filter)
+			in self.auditHardwareOnHost_getObjects(**filter)  # pylint: disable=no-member
 		]
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -377,21 +375,20 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def host_createObjects(self, hosts):
 		forcedHosts = forceObjectClassList(hosts, Host)
 		for host in forcedHosts:
-			logger.info(u"Creating host '%s'", host)
+			logger.info("Creating host '%s'", host)
 			self._backend.host_insertObject(host)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
 			return self._backend.host_getObjects(id=[host.id for host in forcedHosts])
-		else:
-			return []
+		return []
 
 	def host_updateObjects(self, hosts):
 		def updateOrInsert(host):
-			logger.info(u"Updating host '%s'", host)
+			logger.info("Updating host '%s'", host)
 			if self.host_getIdents(id=host.id):
 				self._backend.host_updateObject(host)
 			else:
-				logger.info(u"Host %s does not exist, creating", host)
+				logger.info("Host %s does not exist, creating", host)
 				self._backend.host_insertObject(host)
 
 		hostList = forceObjectClassList(hosts, Host)
@@ -400,23 +397,22 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
 			return self._backend.host_getObjects(id=[host.id for host in hostList])
-		else:
-			return []
+		return []
 
-	def host_renameOpsiClient(self, id, newId):
-		id = forceHostId(id)
+	def host_renameOpsiClient(self, id, newId):  # pylint: disable=redefined-builtin,invalid-name,too-many-locals,too-many-branches,too-many-statements
+		id = forceHostId(id)  # pylint: disable=invalid-name
 		newId = forceHostId(newId)
 
-		logger.info(u"Renaming client %s to %s...", id, newId)
+		logger.info("Renaming client %s to %s...", id, newId)
 
 		clients = self._backend.host_getObjects(type='OpsiClient', id=id)
 		try:
 			client = clients[0]
-		except IndexError:
-			raise BackendMissingDataError(u"Cannot rename: client '%s' not found" % id)
+		except IndexError as err:
+			raise BackendMissingDataError(f"Cannot rename: client '{id}' not found") from err
 
 		if self._backend.host_getObjects(id=newId):
-			raise BackendError(u"Cannot rename: host '%s' already exists" % newId)
+			raise BackendError(f"Cannot rename: host '{newId}' already exists")
 
 		logger.info("Processing group mappings...")
 		objectToGroups = []
@@ -466,15 +462,15 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			softwareLicense.setBoundToHost(newId)
 			softwareLicenses.append(softwareLicense)
 
-		logger.debug(u"Deleting client %s", client)
+		logger.debug("Deleting client %s", client)
 		self._backend.host_deleteObjects([client])
 
-		logger.info(u"Updating client %s...", client.id)
+		logger.info("Updating client %s...", client.id)
 		client.setId(newId)
 		self.host_createObjects([client])
 
 		if objectToGroups:
-			logger.info(u"Updating group mappings...")
+			logger.info("Updating group mappings...")
 			self.objectToGroup_createObjects(objectToGroups)
 		if productOnClients:
 			logger.info("Updating products on client...")
@@ -498,7 +494,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			logger.info("Updating software licenses...")
 			self.softwareLicense_createObjects(softwareLicenses)
 
-	def host_renameOpsiDepotserver(self, oldId, newId):
+	def host_renameOpsiDepotserver(self, oldId, newId):  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 		"""
 		Rename OpsiDepotserver with id `oldId` to `newId`.
 
@@ -519,11 +515,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		depots = self._backend.host_getObjects(type='OpsiDepotserver', id=oldId)
 		try:
 			depot = depots[0]
-		except IndexError:
-			raise BackendMissingDataError(u"Cannot rename: depot '%s' not found" % oldId)
+		except IndexError as err:
+			raise BackendMissingDataError(f"Cannot rename: depot '{oldId}' not found") from err
 
 		if self._backend.host_getObjects(id=newId):
-			raise BackendError(u"Cannot rename: host '%s' already exists" % newId)
+			raise BackendError(f"Cannot rename: host '{newId}' already exists")
 
 		logger.info("Renaming depot %s to %s", oldId, newId)
 
@@ -620,7 +616,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			logger.info("Updating ConfigStates...")
 			self.configState_createObjects(configStates)
 
-		logger.info(u"Deleting old depot %s", old_depot)
+		logger.info("Deleting old depot %s", old_depot)
 		self._backend.host_deleteObjects([old_depot])
 
 		def replaceOldAddress(values):
@@ -677,36 +673,41 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			logger.info("Updating depots...")
 			self.host_updateObjects(modifiedDepots)
 
-	def host_createOpsiClient(self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None, ipAddress=None, inventoryNumber=None, oneTimePassword=None, created=None, lastSeen=None):
-		hash = locals()
-		del hash['self']
-		return self.host_createObjects(OpsiClient.fromHash(hash))
+	def host_createOpsiClient(  # pylint: disable=too-many-arguments,invalid-name
+		self, id, opsiHostKey=None, description=None, notes=None, hardwareAddress=None,  # pylint: disable=redefined-builtin,unused-argument
+		ipAddress=None, inventoryNumber=None, oneTimePassword=None, created=None, lastSeen=None  # pylint: disable=unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.host_createObjects(OpsiClient.fromHash(_hash))
 
-	def host_createOpsiDepotserver(
-			self, id,
-			opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None,
-			depotWebdavUrl=None, repositoryLocalUrl=None,
-			repositoryRemoteUrl=None, description=None, notes=None,
-			hardwareAddress=None, ipAddress=None, inventoryNumber=None,
-			networkAddress=None, maxBandwidth=None, isMasterDepot=None,
-			masterDepotId=None, workbenchLocalUrl=None, workbenchRemoteUrl=None):
-		hash = locals()
-		del hash['self']
-		return self.host_createObjects(OpsiDepotserver.fromHash(hash))
+	def host_createOpsiDepotserver(  # pylint: disable=too-many-arguments,invalid-name,too-many-locals
+		self, id,  # pylint: disable=redefined-builtin,unused-argument
+		opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None,  # pylint: disable=unused-argument
+		depotWebdavUrl=None, repositoryLocalUrl=None,  # pylint: disable=unused-argument
+		repositoryRemoteUrl=None, description=None, notes=None,  # pylint: disable=unused-argument
+		hardwareAddress=None, ipAddress=None, inventoryNumber=None,  # pylint: disable=unused-argument
+		networkAddress=None, maxBandwidth=None, isMasterDepot=None,  # pylint: disable=unused-argument
+		masterDepotId=None, workbenchLocalUrl=None, workbenchRemoteUrl=None  # pylint: disable=unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.host_createObjects(OpsiDepotserver.fromHash(_hash))
 
-	def host_createOpsiConfigserver(
-			self, id,
-			opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None,
-			depotWebdavUrl=None, repositoryLocalUrl=None,
-			repositoryRemoteUrl=None, description=None, notes=None,
-			hardwareAddress=None, ipAddress=None, inventoryNumber=None,
-			networkAddress=None, maxBandwidth=None, isMasterDepot=None,
-			masterDepotId=None, workbenchLocalUrl=None, workbenchRemoteUrl=None):
-		hash = locals()
-		del hash['self']
-		return self.host_createObjects(OpsiConfigserver.fromHash(hash))
+	def host_createOpsiConfigserver(  # pylint: disable=too-many-arguments,invalid-name,too-many-locals
+		self, id,  # pylint: disable=redefined-builtin,unused-argument
+		opsiHostKey=None, depotLocalUrl=None, depotRemoteUrl=None,  # pylint: disable=unused-argument
+		depotWebdavUrl=None, repositoryLocalUrl=None,  # pylint: disable=unused-argument
+		repositoryRemoteUrl=None, description=None, notes=None,  # pylint: disable=unused-argument
+		hardwareAddress=None, ipAddress=None, inventoryNumber=None,  # pylint: disable=unused-argument
+		networkAddress=None, maxBandwidth=None, isMasterDepot=None,  # pylint: disable=unused-argument
+		masterDepotId=None, workbenchLocalUrl=None, workbenchRemoteUrl=None  # pylint: disable=unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.host_createObjects(OpsiConfigserver.fromHash(_hash))
 
-	def host_delete(self, id):
+	def host_delete(self, id):  # pylint: disable=redefined-builtin,invalid-name
 		if id is None:
 			id = []
 		return self._backend.host_deleteObjects(self._backend.host_getObjects(id=id))
@@ -717,53 +718,57 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def config_createObjects(self, configs):
 		forcedConfigs = forceObjectClassList(configs, Config)
 		for config in forcedConfigs:
-			logger.info(u"Creating config '%s'", config)
+			logger.info("Creating config '%s'", config)
 			self._backend.config_insertObject(config)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
 			return self._backend.config_getObjects(id=[config.id for config in forcedConfigs])
-		else:
-			return []
+		return []
 
 	def config_updateObjects(self, configs):
 		forcedConfigs = forceObjectClassList(configs, Config)
 		for config in forcedConfigs:
-			logger.info(u"Updating config %s", config)
+			logger.info("Updating config %s", config)
 			if self.config_getIdents(id=config.id):
 				self._backend.config_updateObject(config)
 			else:
-				logger.info(u"Config %s does not exist, creating", config)
+				logger.info("Config %s does not exist, creating", config)
 				self._backend.config_insertObject(config)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
 			return self._backend.config_getObjects(id=[config.id for config in forcedConfigs])
-		else:
-			return []
+		return []
 
-	def config_create(self, id, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
-		hash = locals()
-		del hash['self']
-		return self.config_createObjects(Config.fromHash(hash))
+	def config_create(  # pylint: disable=too-many-arguments,invalid-name
+		self, id, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None  # pylint: disable=redefined-builtin,unused-argument,too-many-arguments
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.config_createObjects(Config.fromHash(_hash))
 
-	def config_createUnicode(self, id, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
-		hash = locals()
-		del hash['self']
-		return self.config_createObjects(UnicodeConfig.fromHash(hash))
+	def config_createUnicode(  # pylint: disable=too-many-arguments,invalid-name
+		self, id, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None  # pylint: disable=redefined-builtin,unused-argument,too-many-arguments
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.config_createObjects(UnicodeConfig.fromHash(_hash))
 
-	def config_createBool(self, id, description=None, defaultValues=None):
-		hash = locals()
-		del hash['self']
-		return self.config_createObjects(BoolConfig.fromHash(hash))
+	def config_createBool(  # pylint: disable=invalid-name
+		self, id, description=None, defaultValues=None  # pylint: disable=redefined-builtin,unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.config_createObjects(BoolConfig.fromHash(_hash))
 
-	def config_delete(self, id):
+	def config_delete(self, id):  # pylint: disable=redefined-builtin,invalid-name
 		if id is None:
 			id = []
-		return self._backend.config_deleteObjects(self.config_getObjects(id=id))
+		return self._backend.config_deleteObjects(self.config_getObjects(id=id))  # pylint: disable=no-member
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates                                                                              -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def configState_getObjects(self, attributes=[], **filter):
+	def configState_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
 		'''
 		Add default objects to result for objects which do not exist in backend
 		'''
@@ -778,10 +783,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		# Create data structure for config states to find missing ones
 		css = {}
 		for cs in self._backend.configState_getObjects(
-						attributes=['objectId', 'configId'],
-						objectId=filter.get('objectId', []),
-						configId=filter.get('configId', [])):
-
+			attributes=['objectId', 'configId'],
+			objectId=filter.get('objectId', []),
+			configId=filter.get('configId', [])
+		):
 			try:
 				css[cs.objectId].append(cs.configId)
 			except KeyError:
@@ -790,7 +795,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		clientIds = self.host_getIdents(id=filter.get('objectId'), returnType='unicode')
 		# Create missing config states
 		for config in self._backend.config_getObjects(id=filter.get('configId')):
-			logger.debug(u"Default values for %s: %s", config.id, config.defaultValues)
+			logger.debug("Default values for %s: %s", config.id, config.defaultValues)
 			for clientId in clientIds:
 				if config.id not in css.get(clientId, []):
 					# Config state does not exist for client => create default
@@ -809,8 +814,8 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 		configs = self._backend.config_getObjects(attributes=['defaultValues'], id=configState.configId)
 		if configs and not configs[0].defaultValues and (len(configs[0].defaultValues) == len(configState.values)):
 			isDefault = True
-			for v in configState.values:
-				if v not in configs[0].defaultValues:
+			for val in configState.values:
+				if val not in configs[0].defaultValues:
 					isDefault = False
 					break
 		return isDefault
@@ -818,15 +823,15 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def _configState_checkValid(self, configState):
 		if configState.configId == 'clientconfig.depot.id':
 			if not configState.values or not configState.values[0]:
-				raise ValueError(u"No valid depot id given")
+				raise ValueError("No valid depot id given")
 			depotId = forceHostId(configState.values[0])
 			if not self.host_getIdents(type='OpsiDepotserver', id=depotId, isMasterDepot=True):
-				raise ValueError(u"Depot '%s' does not exist or is not a master depot" % depotId)
+				raise ValueError(f"Depot '{depotId}' does not exist or is not a master depot")
 
 	def configState_insertObject(self, configState):
 		if self._options['deleteConfigStateIfDefault'] and self._configStateMatchesDefault(configState):
 			# Do not insert configStates which match the default
-			logger.debug(u"Not inserting configState %s, because it does not differ from defaults", configState)
+			logger.debug("Not inserting configState %s, because it does not differ from defaults", configState)
 			return
 
 		configState = forceObjectClass(configState, ConfigState)
@@ -836,19 +841,19 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 	def configState_updateObject(self, configState):
 		if self._options['deleteConfigStateIfDefault'] and self._configStateMatchesDefault(configState):
 			# Do not update configStates which match the default
-			logger.debug(u"Deleting configState %s, because it does not differ from defaults", configState)
+			logger.debug("Deleting configState %s, because it does not differ from defaults", configState)
 			return self._backend.configState_deleteObjects(configState)
 
 		configState = forceObjectClass(configState, ConfigState)
 		self._configState_checkValid(configState)
-		self._backend.configState_updateObject(configState)
+		return self._backend.configState_updateObject(configState)
 
 	def configState_createObjects(self, configStates):
 		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
 
 		result = []
 		for configState in forceObjectClassList(configStates, ConfigState):
-			logger.info(u"Creating configState '%s'" % configState)
+			logger.info("Creating configState '%s'", configState)
 			self.configState_insertObject(configState)
 			if returnObjects:
 				result.extend(
@@ -865,13 +870,13 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 		result = []
 		for configState in forceObjectClassList(configStates, ConfigState):
-			logger.info(u"Updating configState %s", configState)
+			logger.info("Updating configState %s", configState)
 			if self.configState_getIdents(
 					configId=configState.configId,
 					objectId=configState.objectId):
 				self.configState_updateObject(configState)
 			else:
-				logger.info(u"ConfigState %s does not exist, creating", configState)
+				logger.info("ConfigState %s does not exist, creating", configState)
 				self.configState_insertObject(configState)
 
 			if returnObjects:
@@ -884,10 +889,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 
 		return result
 
-	def configState_create(self, configId, objectId, values=None):
-		hash = locals()
-		del hash['self']
-		return self.configState_createObjects(ConfigState.fromHash(hash))
+	def configState_create(self, configId, objectId, values=None):  # pylint: disable=unused-argument
+		_hash = locals()
+		del _hash['self']
+		return self.configState_createObjects(ConfigState.fromHash(_hash))
 
 	def configState_delete(self, configId, objectId):
 		if configId is None:
@@ -902,7 +907,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):
 			)
 		)
 
-	def configState_getClientToDepotserver(self, depotIds=[], clientIds=[], masterOnly=True, productIds=[]):
+	def configState_getClientToDepotserver(self, depotIds=[], clientIds=[], masterOnly=True, productIds=[]):  # pylint: disable=dangerous-default-value,too-many-locals,too-many-branches
 		"""
 		Get a mapping of client and depots.
 
@@ -941,15 +946,15 @@ into the IDs of these depots are to be found in the list behind \
 		result = []
 		addConfigStateDefaults = self.backend_getOptions().get('addConfigStateDefaults', False)
 		try:
-			logger.debug(u"Calling backend_setOptions on %s", self)
+			logger.debug("Calling backend_setOptions on %s", self)
 			self.backend_setOptions({'addConfigStateDefaults': True})
-			for configState in self.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientIds):
+			for configState in self.configState_getObjects(configId='clientconfig.depot.id', objectId=clientIds):
 				try:
 					depotId = configState.values[0]
 					if not depotId:
 						raise IndexError("Missing value")
 				except IndexError:
-					logger.error(u"No depot server configured for client %s", configState.objectId)
+					logger.error("No depot server configured for client %s", configState.objectId)
 					continue
 
 				if depotId not in depotIds:
@@ -969,25 +974,25 @@ into the IDs of these depots are to be found in the list behind \
 		if forceBool(masterOnly):
 			return result
 
-		productOnDepotsByDepotIdAndProductId = {}
-		for pod in self.productOnDepot_getObjects(productId=productIds):
+		poDepotsByDepotIdAndProductId = {}
+		for pod in self.productOnDepot_getObjects(productId=productIds):  # pylint: disable=no-member
 			try:
-				productOnDepotsByDepotIdAndProductId[pod.depotId][pod.productId] = pod
+				poDepotsByDepotIdAndProductId[pod.depotId][pod.productId] = pod
 			except KeyError:
-				productOnDepotsByDepotIdAndProductId[pod.depotId] = {pod.productId: pod}
+				poDepotsByDepotIdAndProductId[pod.depotId] = {pod.productId: pod}
 
 		pHash = {}
-		for (depotId, productOnDepotsByProductId) in productOnDepotsByDepotIdAndProductId.items():
-			productString = [u'|{0};{1};{2}'.format(
+		for (depotId, productOnDepotsByProductId) in poDepotsByDepotIdAndProductId.items():
+			productString = ['|{0};{1};{2}'.format(
 				productId,
 				productOnDepotsByProductId[productId].productVersion,
 				productOnDepotsByProductId[productId].packageVersion)
 				for productId in sorted(productOnDepotsByProductId.keys())]
 
-			pHash[depotId] = u''.join(productString)
+			pHash[depotId] = ''.join(productString)
 
 		for usedDepotId in usedDepotIds:
-			pString = pHash.get(usedDepotId, u'')
+			pString = pHash.get(usedDepotId, '')
 			alternativeDepotIds = [depotId for (depotId, ps) in pHash.items() if depotId != usedDepotId and pString == ps]
 
 			for i, element in enumerate(result):
@@ -1004,7 +1009,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for product in forceObjectClassList(products, Product):
-			logger.info(u"Creating product %s", product)
+			logger.info("Creating product %s", product)
 			self._backend.product_insertObject(product)
 			if returnObjects:
 				result.extend(
@@ -1022,14 +1027,14 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for product in forceObjectClassList(products, Product):
-			logger.info(u"Updating product %s", product)
+			logger.info("Updating product %s", product)
 			if self.product_getIdents(
 					id=product.id,
 					productVersion=product.productVersion,
 					packageVersion=product.packageVersion):
 				self._backend.product_updateObject(product)
 			else:
-				logger.info(u"Product %s does not exist, creating", product)
+				logger.info("Product %s does not exist, creating", product)
 				self._backend.product_insertObject(product)
 
 			if returnObjects:
@@ -1043,28 +1048,30 @@ into the IDs of these depots are to be found in the list behind \
 
 		return result
 
-	def product_createLocalboot(
-			self, id, productVersion, packageVersion, name=None,
-			licenseRequired=None, setupScript=None, uninstallScript=None,
-			updateScript=None, alwaysScript=None, onceScript=None,
-			priority=None, description=None, advice=None, changelog=None,
-			productClassIds=None, windowsSoftwareIds=None):
+	def product_createLocalboot(  # pylint: disable=too-many-arguments,invalid-name,too-many-locals
+			self, id, productVersion, packageVersion, name=None,  # pylint: disable=unused-argument,redefined-builtin
+			licenseRequired=None, setupScript=None, uninstallScript=None,  # pylint: disable=unused-argument
+			updateScript=None, alwaysScript=None, onceScript=None,  # pylint: disable=unused-argument
+			priority=None, description=None, advice=None, changelog=None,  # pylint: disable=unused-argument
+			productClassIds=None, windowsSoftwareIds=None  # pylint: disable=unused-argument
+		):
 
-		hash = locals()
-		del hash['self']
-		return self.product_createObjects(LocalbootProduct.fromHash(hash))
+		_hash = locals()
+		del _hash['self']
+		return self.product_createObjects(LocalbootProduct.fromHash(_hash))
 
-	def product_createNetboot(
-			self, id, productVersion, packageVersion, name=None,
-			licenseRequired=None, setupScript=None, uninstallScript=None,
-			updateScript=None, alwaysScript=None, onceScript=None,
-			priority=None, description=None, advice=None, changelog=None,
-			productClassIds=None, windowsSoftwareIds=None,
-			pxeConfigTemplate=None):
+	def product_createNetboot(  # pylint: disable=too-many-arguments,invalid-name,too-many-locals
+			self, id, productVersion, packageVersion, name=None,  # pylint: disable=unused-argument,redefined-builtin
+			licenseRequired=None, setupScript=None, uninstallScript=None,  # pylint: disable=unused-argument
+			updateScript=None, alwaysScript=None, onceScript=None,  # pylint: disable=unused-argument
+			priority=None, description=None, advice=None, changelog=None,  # pylint: disable=unused-argument
+			productClassIds=None, windowsSoftwareIds=None,  # pylint: disable=unused-argument
+			pxeConfigTemplate=None  # pylint: disable=unused-argument
+		):
 
-		hash = locals()
-		del hash['self']
-		return self.product_createObjects(NetbootProduct.fromHash(hash))
+		_hash = locals()
+		del _hash['self']
+		return self.product_createObjects(NetbootProduct.fromHash(_hash))
 
 	def product_delete(self, productId, productVersion, packageVersion):
 		if productId is None:
@@ -1085,7 +1092,7 @@ into the IDs of these depots are to be found in the list behind \
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties                                                                         -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def _adjustProductPropertyStates(self, productProperty):
+	def _adjustProductPropertyStates(self, productProperty):  # pylint: disable=too-many-branches
 		'''
 		A productProperty was created or updated
 		check if the current productPropertyStates are valid
@@ -1096,7 +1103,7 @@ into the IDs of these depots are to be found in the list behind \
 		# Check if productPropertyStates are possible
 		depotIds = {
 			productOnDepot.depotId
-			for productOnDepot in self.productOnDepot_getObjects(
+			for productOnDepot in self.productOnDepot_getObjects(  # pylint: disable=no-member
 				productId=productProperty.productId,
 				productVersion=productProperty.productVersion,
 				packageVersion=productProperty.packageVersion
@@ -1125,20 +1132,20 @@ into the IDs of these depots are to be found in the list behind \
 
 			changed = False
 			newValues = []
-			for v in productPropertyState.values:
-				if v in productProperty.possibleValues:
-					newValues.append(v)
+			for val in productPropertyState.values:
+				if val in productProperty.possibleValues:
+					newValues.append(val)
 					continue
 
-				if productProperty.getType() == 'BoolProductProperty' and forceBool(v) in productProperty.possibleValues:
-					newValues.append(forceBool(v))
+				if productProperty.getType() == 'BoolProductProperty' and forceBool(val) in productProperty.possibleValues:
+					newValues.append(forceBool(val))
 					changed = True
 					continue
 
 				if productProperty.getType() == 'UnicodeProductProperty':
 					newValue = None
 					for pv in productProperty.possibleValues:
-						if forceUnicodeLower(pv) == forceUnicodeLower(v):
+						if forceUnicodeLower(pv) == forceUnicodeLower(val):
 							newValue = pv
 							break
 
@@ -1151,15 +1158,15 @@ into the IDs of these depots are to be found in the list behind \
 
 			if changed:
 				if not newValues:
-					logger.debug(u"Properties changed: marking productPropertyState %s for deletion", productPropertyState)
+					logger.debug("Properties changed: marking productPropertyState %s for deletion", productPropertyState)
 					deleteProductPropertyStates.append(productPropertyState)
 				else:
 					productPropertyState.setValues(newValues)
-					logger.debug(u"Properties changed: marking productPropertyState %s for update", productPropertyState)
+					logger.debug("Properties changed: marking productPropertyState %s for update", productPropertyState)
 					updateProductPropertyStates.append(productPropertyState)
 
 		if deleteProductPropertyStates:
-			self.productPropertyState_deleteObjects(deleteProductPropertyStates)
+			self.productPropertyState_deleteObjects(deleteProductPropertyStates)  # pylint: disable=no-member
 		if updateProductPropertyStates:
 			self.productPropertyState_updateObjects(updateProductPropertyStates)
 
@@ -1168,7 +1175,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
-			logger.info(u"Creating productProperty %s", productProperty)
+			logger.info("Creating productProperty %s", productProperty)
 			self._backend.productProperty_insertObject(productProperty)
 
 			if returnObjects:
@@ -1188,7 +1195,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
-			logger.info(u"Creating productProperty %s", productProperty)
+			logger.info("Creating productProperty %s", productProperty)
 			if self.productProperty_getIdents(
 					productId=productProperty.productId,
 					productVersion=productProperty.productVersion,
@@ -1196,7 +1203,7 @@ into the IDs of these depots are to be found in the list behind \
 					propertyId=productProperty.propertyId):
 				self._backend.productProperty_updateObject(productProperty)
 			else:
-				logger.info(u"ProductProperty %s does not exist, creating", productProperty)
+				logger.info("ProductProperty %s does not exist, creating", productProperty)
 				self._backend.productProperty_insertObject(productProperty)
 
 			if returnObjects:
@@ -1211,20 +1218,31 @@ into the IDs of these depots are to be found in the list behind \
 
 		return result
 
-	def productProperty_create(self, productId, productVersion, packageVersion, propertyId, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
-		hash = locals()
-		del hash['self']
-		return self.productProperty_createObjects(ProductProperty.fromHash(hash))
+	def productProperty_create(  # pylint: disable=too-many-arguments
+		self, productId, productVersion, packageVersion, propertyId,  # pylint: disable=unused-argument
+		description=None, possibleValues=None, defaultValues=None,  # pylint: disable=unused-argument
+		editable=None, multiValue=None  # pylint: disable=unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.productProperty_createObjects(ProductProperty.fromHash(_hash))
 
-	def productProperty_createUnicode(self, productId, productVersion, packageVersion, propertyId, description=None, possibleValues=None, defaultValues=None, editable=None, multiValue=None):
-		hash = locals()
-		del hash['self']
-		return self.productProperty_createObjects(UnicodeProductProperty.fromHash(hash))
+	def productProperty_createUnicode(  # pylint: disable=too-many-arguments
+		self, productId, productVersion, packageVersion, propertyId,  # pylint: disable=unused-argument
+		description=None, possibleValues=None, defaultValues=None,  # pylint: disable=unused-argument
+		editable=None, multiValue=None  # pylint: disable=unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.productProperty_createObjects(UnicodeProductProperty.fromHash(_hash))
 
-	def productProperty_createBool(self, productId, productVersion, packageVersion, propertyId, description=None, defaultValues=None):
-		hash = locals()
-		del hash['self']
-		return self.productProperty_createObjects(BoolProductProperty.fromHash(hash))
+	def productProperty_createBool(  # pylint: disable=too-many-arguments
+		self, productId, productVersion, packageVersion, propertyId,  # pylint: disable=unused-argument
+		description=None, defaultValues=None  # pylint: disable=unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.productProperty_createObjects(BoolProductProperty.fromHash(_hash))
 
 	def productProperty_delete(self, productId, productVersion, packageVersion, propertyId):
 		if productId is None:
@@ -1253,7 +1271,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
-			logger.info(u"Creating productDependency %s", productDependency)
+			logger.info("Creating productDependency %s", productDependency)
 			self._backend.productDependency_insertObject(productDependency)
 
 			if returnObjects:
@@ -1274,7 +1292,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
-			logger.info(u"Updating productDependency %s", productDependency)
+			logger.info("Updating productDependency %s", productDependency)
 			if self.productDependency_getIdents(
 					productId=productDependency.productId,
 					productVersion=productDependency.productVersion,
@@ -1284,7 +1302,7 @@ into the IDs of these depots are to be found in the list behind \
 
 				self._backend.productDependency_updateObject(productDependency)
 			else:
-				logger.info(u"ProductDependency %s does not exist, creating", productDependency)
+				logger.info("ProductDependency %s does not exist, creating", productDependency)
 				self._backend.productDependency_insertObject(productDependency)
 
 			if returnObjects:
@@ -1300,12 +1318,18 @@ into the IDs of these depots are to be found in the list behind \
 
 		return result
 
-	def productDependency_create(self, productId, productVersion, packageVersion, productAction, requiredProductId, requiredProductVersion=None, requiredPackageVersion=None, requiredAction=None, requiredInstallationStatus=None, requirementType=None):
-		hash = locals()
-		del hash['self']
-		return self.productDependency_createObjects(ProductDependency.fromHash(hash))
+	def productDependency_create(  # pylint: disable=too-many-arguments
+			self, productId, productVersion, packageVersion, productAction, requiredProductId,  # pylint: disable=unused-argument
+			requiredProductVersion=None, requiredPackageVersion=None, requiredAction=None,  # pylint: disable=unused-argument
+			requiredInstallationStatus=None, requirementType=None  # pylint: disable=unused-argument
+		):
+		_hash = locals()
+		del _hash['self']
+		return self.productDependency_createObjects(ProductDependency.fromHash(_hash))
 
-	def productDependency_delete(self, productId, productVersion, packageVersion, productAction, requiredProductId):
+	def productDependency_delete(  # pylint: disable=too-many-arguments
+		self, productId, productVersion, packageVersion, productAction, requiredProductId
+	):
 		if productId is None:
 			productId = []
 		if productVersion is None:
@@ -1343,7 +1367,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		if currentProductOnDepots:
 			currentProductOnDepot = currentProductOnDepots[0]
-			logger.info(u"Updating productOnDepot %s instead of creating a new one", currentProductOnDepot)
+			logger.info("Updating productOnDepot %s instead of creating a new one", currentProductOnDepot)
 			currentProductOnDepot.update(productOnDepot)
 			self._backend.productOnDepot_insertObject(currentProductOnDepot)
 		else:
@@ -1354,7 +1378,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
-			logger.info(u"Creating productOnDepot %s", productOnDepot.toHash())
+			logger.info("Creating productOnDepot %s", productOnDepot.toHash())
 			self.productOnDepot_insertObject(productOnDepot)
 
 			if returnObjects:
@@ -1373,7 +1397,7 @@ into the IDs of these depots are to be found in the list behind \
 		result = []
 		productOnDepots = forceObjectClassList(productOnDepots, ProductOnDepot)
 		for productOnDepot in productOnDepots:
-			logger.info(u"Updating productOnDepot '%s'", productOnDepot)
+			logger.info("Updating productOnDepot '%s'", productOnDepot)
 			if self.productOnDepot_getIdents(
 					productId=productOnDepot.productId,
 					productType=productOnDepot.productType,
@@ -1382,7 +1406,7 @@ into the IDs of these depots are to be found in the list behind \
 					depotId=productOnDepot.depotId):
 				self._backend.productOnDepot_updateObject(productOnDepot)
 			else:
-				logger.info(u"ProductOnDepot %s does not exist, creating", productOnDepot)
+				logger.info("ProductOnDepot %s does not exist, creating", productOnDepot)
 				self.productOnDepot_insertObject(productOnDepot)
 
 			if returnObjects:
@@ -1395,10 +1419,12 @@ into the IDs of these depots are to be found in the list behind \
 
 		return result
 
-	def productOnDepot_create(self, productId, productType, productVersion, packageVersion, depotId, locked=None):
-		hash = locals()
-		del hash['self']
-		return self.productOnDepot_createObjects(ProductOnDepot.fromHash(hash))
+	def productOnDepot_create(  # pylint: disable=too-many-arguments
+		self, productId, productType, productVersion, packageVersion, depotId, locked=None  # pylint: disable=unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.productOnDepot_createObjects(ProductOnDepot.fromHash(_hash))
 
 	def productOnDepot_deleteObjects(self, productOnDepots):
 		productOnDepots = forceObjectClassList(productOnDepots, ProductOnDepot)
@@ -1433,7 +1459,9 @@ into the IDs of these depots are to be found in the list behind \
 
 		return ret
 
-	def productOnDepot_delete(self, productId, depotId, productVersion=None, packageVersion=None):
+	def productOnDepot_delete(
+		self, productId, depotId, productVersion=None, packageVersion=None
+	):
 		if productId is None:
 			productId = []
 		if productVersion is None:
@@ -1454,7 +1482,7 @@ into the IDs of these depots are to be found in the list behind \
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def _productOnClient_processWithFunction(self, productOnClients, function):
+	def _productOnClient_processWithFunction(self, productOnClients, function):  # pylint: disable=too-many-locals,too-many-branches
 		productOnClientsByClient = {}
 		productIds = set()
 		for poc in productOnClients:
@@ -1477,18 +1505,20 @@ into the IDs of these depots are to be found in the list behind \
 			productByProductIdAndVersion[product.id][product.productVersion][product.packageVersion] = product
 
 		additionalProductIds = []
-		productDependenciesByProductIdAndVersion = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(list)))
+		pDepsByProductIdAndVersion = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(list)))
 
-		def collectDependencies(additionalProductIds, productDependency, productDependenciesByProductIdAndVersion):
-			productDependenciesByProductIdAndVersion[productDependency.productId][productDependency.productVersion][productDependency.packageVersion].append(productDependency)
+		def collectDependencies(additionalProductIds, productDependency, pDepsByProductIdAndVersion):
+			pDepsByProductIdAndVersion[productDependency.productId][productDependency.productVersion][productDependency.packageVersion].append(
+				productDependency
+			)
 
 			if productDependency.requiredProductId not in productIds and productDependency.requiredProductId not in additionalProductIds:
 				additionalProductIds.append(productDependency.requiredProductId)
-				for productDependency in self._backend.productDependency_getObjects(productId=productDependency.requiredProductId):
-					collectDependencies(additionalProductIds, productDependency, productDependenciesByProductIdAndVersion)
+				for productDependency2 in self._backend.productDependency_getObjects(productId=productDependency.requiredProductId):
+					collectDependencies(additionalProductIds, productDependency2, pDepsByProductIdAndVersion)
 
 		for productDependency in self._backend.productDependency_getObjects(productId=productIds):
-			collectDependencies(additionalProductIds, productDependency, productDependenciesByProductIdAndVersion)
+			collectDependencies(additionalProductIds, productDependency, pDepsByProductIdAndVersion)
 
 		if additionalProductIds:
 			for product in self._backend.product_getObjects(id=additionalProductIds):
@@ -1504,12 +1534,15 @@ into the IDs of these depots are to be found in the list behind \
 			for productOnDepot in self._backend.productOnDepot_getObjects(depotId=depotId, productId=productIds):
 				product = productByProductIdAndVersion[productOnDepot.productId][productOnDepot.productVersion][productOnDepot.packageVersion]
 				if product is None:
-					raise BackendMissingDataError(u"Product '%s', productVersion '%s', packageVersion '%s' not found"
-						% (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion))
+					raise BackendMissingDataError(
+						f"Product '{productOnDepot.productId}', "
+						f"productVersion '{productOnDepot.productVersion}', "
+						f"packageVersion '{productOnDepot.packageVersion}' not found"
+					)
 				products.add(product)
 
-				def addDependencies(product, products, productDependencies, productByProductIdAndVersion, productDependenciesByProductIdAndVersion):
-					dependencies = productDependenciesByProductIdAndVersion[product.id][product.productVersion][product.packageVersion]
+				def addDependencies(product, products, productDependencies, productByProductIdAndVersion, pDepsByProductIdAndVersion):
+					dependencies = pDepsByProductIdAndVersion[product.id][product.productVersion][product.packageVersion]
 					for dep in dependencies:
 						product = productByProductIdAndVersion[dep.productId][dep.productVersion][dep.packageVersion]
 						if product:
@@ -1517,9 +1550,9 @@ into the IDs of these depots are to be found in the list behind \
 
 							if dep not in productDependencies:
 								productDependencies.add(dep)
-								addDependencies(product, products, productDependencies, productByProductIdAndVersion, productDependenciesByProductIdAndVersion)
+								addDependencies(product, products, productDependencies, productByProductIdAndVersion, pDepsByProductIdAndVersion)
 
-				addDependencies(product, products, productDependencies, productByProductIdAndVersion, productDependenciesByProductIdAndVersion)
+				addDependencies(product, products, productDependencies, productByProductIdAndVersion, pDepsByProductIdAndVersion)
 
 			for clientId in clientIds:
 				try:
@@ -1546,17 +1579,17 @@ into the IDs of these depots are to be found in the list behind \
 
 		if "algorithm2" in defaults:
 			logger.info("Generating productOnClient sequence with algorithm 2")
-			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm2
+			genProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm2
 		else:
 			logger.info("Generating productOnClient sequence with algorithm 1")
-			generateProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm1
+			genProductOnClientSequence = OPSI.SharedAlgorithm.generateProductOnClientSequence_algorithm1
 
-		return self._productOnClient_processWithFunction(productOnClients, generateProductOnClientSequence)
+		return self._productOnClient_processWithFunction(productOnClients, genProductOnClientSequence)
 
 	def productOnClient_addDependencies(self, productOnClients):
 		return self._productOnClient_processWithFunction(productOnClients, OPSI.SharedAlgorithm.addDependentProductOnClients)
 
-	def productOnClient_getObjects(self, attributes=[], **filter):
+	def productOnClient_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value,too-many-locals,too-many-branches
 		'''
 		possible attributes/filter-keys of ProductOnClient are:
 			productId
@@ -1573,8 +1606,8 @@ into the IDs of these depots are to be found in the list behind \
 			modificationTime
 
 		missing ProductOnClients will be created with the following defaults:
-			installationStatus = u'not_installed'
-			actionRequest      = u'none'
+			installationStatus = 'not_installed'
+			actionRequest      = 'none'
 			productVersion     = None
 			packageVersion     = None
 			modificationTime   = None
@@ -1626,19 +1659,19 @@ into the IDs of these depots are to be found in the list behind \
 
 		# Get product states from backend
 		productOnClients = self._backend.productOnClient_getObjects(pocAttributes, **pocFilter)
-		logger.debug(u"Got productOnClients")
+		logger.debug("Got productOnClients")
 
 		if not (self._options['addProductOnClientDefaults'] and defaultMatchesFilter) and not self._options['processProductOnClientSequence']:
 			# No adjustment needed => done!
 			return productOnClients
 
-		logger.debug(u"Need to adjust productOnClients")
+		logger.debug("Need to adjust productOnClients")
 
 		# Create missing product states if addProductOnClientDefaults is set
 		if self._options['addProductOnClientDefaults']:
 			# Get all client ids which match the filter
 			clientIds = self.host_getIdents(id=pocFilter.get('clientId'), returnType='unicode')
-			logger.debug(u"   * got clientIds")
+			logger.debug("   * got clientIds")
 
 			# Get depot to client assignment
 			depotToClients = {}
@@ -1646,7 +1679,7 @@ into the IDs of these depots are to be found in the list behind \
 				if clientToDepot['depotId'] not in depotToClients:
 					depotToClients[clientToDepot['depotId']] = []
 				depotToClients[clientToDepot['depotId']].append(clientToDepot['clientId'])
-			logger.debug(u"   * got depotToClients")
+			logger.debug("   * got depotToClients")
 
 			productOnDepots = {}
 			# Get product on depots which match the filter
@@ -1659,7 +1692,7 @@ into the IDs of these depots are to be found in the list behind \
 					packageVersion=pocFilter.get('packageVersion')
 				)
 
-			logger.debug(u"   * got productOnDepots")
+			logger.debug("   * got productOnDepots")
 
 			# Create data structure for product states to find missing ones
 			pocByClientIdAndProductId = {}
@@ -1668,36 +1701,36 @@ into the IDs of these depots are to be found in the list behind \
 			for poc in productOnClients:
 				pocByClientIdAndProductId[poc.clientId][poc.productId] = poc
 
-			logger.debug(u"   * created pocByClientIdAndProductId")
+			logger.debug("   * created pocByClientIdAndProductId")
 			# for (clientId, pocs) in pocByClientIdAndProductId.items():
 			#   for (productId, poc) in pocs.items():
-			#       logger.debug2(u"      [%s] %s: %s", clientId, productId, poc.toHash())
+			#       logger.trace("      [%s] %s: %s", clientId, productId, poc.toHash())
 
 			for (depotId, depotClientIds) in depotToClients.items():
 				for clientId in depotClientIds:
 					for pod in productOnDepots[depotId]:
 						if pod.productId not in pocByClientIdAndProductId[clientId]:
-							logger.debug(u"      - creating default productOnClient for clientId '%s', productId '%s'", clientId, pod.productId)
+							logger.debug("      - creating default productOnClient for clientId '%s', productId '%s'", clientId, pod.productId)
 							poc = ProductOnClient(
 									productId=pod.productId,
 									productType=pod.productType,
 									clientId=clientId,
-									installationStatus=u'not_installed',
-									actionRequest=u'none',
+									installationStatus='not_installed',
+									actionRequest='none',
 							)
 							poc.setGeneratedDefault(True)
 							productOnClients.append(poc)
 
-			logger.debug(u"   * created productOnClient defaults")
+			logger.debug("   * created productOnClient defaults")
 			# for (clientId, pocs) in pocByClientIdAndProductId.items():
 			#   for (productId, poc) in pocs.items():
-			#       logger.debug2(u"      [%s] %s: %s", clientId, productId, poc.toHash())
+			#       logger.trace("      [%s] %s: %s", clientId, productId, poc.toHash())
 
 		if not self._options['addProductOnClientDefaults'] and not self._options['processProductOnClientSequence']:
 			return productOnClients
 
 		if self._options['processProductOnClientSequence']:
-			logger.debug(u"   * generating productOnClient sequence")
+			logger.debug("   * generating productOnClient sequence")
 			productOnClients = self.productOnClient_generateSequence(productOnClients)
 
 		return [
@@ -1721,7 +1754,7 @@ into the IDs of these depots are to be found in the list behind \
 			if update:
 				nextProductOnClient.update(productOnClient, updateWithNoneValues=False)
 			else:
-				logger.info(u"Updating productOnClient %s instead of creating a new one", nextProductOnClient)
+				logger.info("Updating productOnClient %s instead of creating a new one", nextProductOnClient)
 				nextProductOnClient.update(productOnClient, updateWithNoneValues=True)
 		else:
 			nextProductOnClient = productOnClient.clone()
@@ -1733,8 +1766,8 @@ into the IDs of these depots are to be found in the list behind \
 					clientToDepots = self.configState_getClientToDepotserver(clientIds=[nextProductOnClient.clientId])
 					if not clientToDepots:
 						raise BackendError(
-							u"Cannot set productInstallationStatus 'installed' for product '%s' on client '%s': product/package version not set and depot for client not found"
-							% (nextProductOnClient.productId, nextProductOnClient.clientId)
+							f"Cannot set productInstallationStatus 'installed' for product '{nextProductOnClient.productId}'"
+							f" on client '{nextProductOnClient.clientId}': product/package version not set and depot for client not found"
 						)
 
 					productOnDepots = self._backend.productOnDepot_getObjects(
@@ -1743,8 +1776,9 @@ into the IDs of these depots are to be found in the list behind \
 					)
 					if not productOnDepots:
 						raise BackendError(
-							u"Cannot set productInstallationStatus 'installed' for product '%s' on client '%s': product/package version not set and product not found on depot '%s'"
-							% (nextProductOnClient.productId, nextProductOnClient.clientId, clientToDepots[0]['depotId'])
+							f"Cannot set productInstallationStatus 'installed' for product '{nextProductOnClient.productId}' "
+							f"on client '{nextProductOnClient.clientId}': "
+							f"product/package version not set and product not found on depot '{clientToDepots[0]['depotId']}'"
 						)
 					nextProductOnClient.setProductVersion(productOnDepots[0].productVersion)
 					nextProductOnClient.setPackageVersion(productOnDepots[0].packageVersion)
@@ -1773,7 +1807,7 @@ into the IDs of these depots are to be found in the list behind \
 			productOnClients = self.productOnClient_addDependencies(productOnClients)
 
 		for productOnClient in productOnClients:
-			logger.info(u"Creating productOnClient %s", productOnClient)
+			logger.info("Creating productOnClient %s", productOnClient)
 			self.productOnClient_insertObject(productOnClient)
 
 			if returnObjects:
@@ -1795,15 +1829,15 @@ into the IDs of these depots are to be found in the list behind \
 			productOnClients = self.productOnClient_addDependencies(productOnClients)
 
 		for productOnClient in productOnClients:
-			logger.info(u"Updating productOnClient %s", productOnClient)
+			logger.info("Updating productOnClient %s", productOnClient)
 			if self.productOnClient_getIdents(
 					productId=productOnClient.productId,
 					productType=productOnClient.productType,
 					clientId=productOnClient.clientId):
-				logger.info(u"ProductOnClient %s exists, updating", productOnClient)
+				logger.info("ProductOnClient %s exists, updating", productOnClient)
 				self.productOnClient_updateObject(productOnClient)
 			else:
-				logger.info(u"ProductOnClient %s does not exist, creating", productOnClient)
+				logger.info("ProductOnClient %s does not exist, creating", productOnClient)
 				self.productOnClient_insertObject(productOnClient)
 
 			if returnObjects:
@@ -1816,10 +1850,14 @@ into the IDs of these depots are to be found in the list behind \
 
 		return result
 
-	def productOnClient_create(self, productId, productType, clientId, installationStatus=None, actionRequest=None, lastAction=None, actionProgress=None, actionResult=None, productVersion=None, packageVersion=None, modificationTime=None):
-		hash = locals()
-		del hash['self']
-		return self.productOnClient_createObjects(ProductOnClient.fromHash(hash))
+	def productOnClient_create(  # pylint: disable=too-many-arguments
+		self, productId, productType, clientId, installationStatus=None, actionRequest=None,  # pylint: disable=unused-argument
+		lastAction=None, actionProgress=None, actionResult=None, productVersion=None, packageVersion=None,  # pylint: disable=unused-argument
+		modificationTime=None  # pylint: disable=unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.productOnClient_createObjects(ProductOnClient.fromHash(_hash))
 
 	def productOnClient_delete(self, productId, clientId):
 		if productId is None:
@@ -1837,7 +1875,7 @@ into the IDs of these depots are to be found in the list behind \
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductPropertyStates                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def productPropertyState_getObjects(self, attributes=[], **filter):
+	def productPropertyState_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
 		'''
 		Add default objects to result for objects which do not exist in backend
 		'''
@@ -1885,7 +1923,7 @@ into the IDs of these depots are to be found in the list behind \
 		returnObjects = self._options['returnObjectsOnUpdateAndCreate']
 		result = []
 		for productPropertyState in forceObjectClassList(productPropertyStates, ProductPropertyState):
-			logger.info(u"Updating productPropertyState %s", productPropertyState)
+			logger.info("Updating productPropertyState %s", productPropertyState)
 			self._backend.productPropertyState_insertObject(productPropertyState)
 
 			if returnObjects:
@@ -1904,7 +1942,7 @@ into the IDs of these depots are to be found in the list behind \
 		result = []
 		productPropertyStates = forceObjectClassList(productPropertyStates, ProductPropertyState)
 		for productPropertyState in productPropertyStates:
-			logger.info(u"Updating productPropertyState '%s'", productPropertyState)
+			logger.info("Updating productPropertyState '%s'", productPropertyState)
 			if self.productPropertyState_getIdents(
 						productId=productPropertyState.productId,
 						objectId=productPropertyState.objectId,
@@ -1912,7 +1950,7 @@ into the IDs of these depots are to be found in the list behind \
 
 				self._backend.productPropertyState_updateObject(productPropertyState)
 			else:
-				logger.info(u"ProductPropertyState %s does not exist, creating", productPropertyState)
+				logger.info("ProductPropertyState %s does not exist, creating", productPropertyState)
 				self._backend.productPropertyState_insertObject(productPropertyState)
 
 			if returnObjects:
@@ -1926,10 +1964,10 @@ into the IDs of these depots are to be found in the list behind \
 
 		return result
 
-	def productPropertyState_create(self, productId, propertyId, objectId, values=None):
-		hash = locals()
-		del hash['self']
-		return self.productPropertyState_createObjects(ProductPropertyState.fromHash(hash))
+	def productPropertyState_create(self, productId, propertyId, objectId, values=None):  # pylint: disable=unused-argument
+		_hash = locals()
+		del _hash['self']
+		return self.productPropertyState_createObjects(ProductPropertyState.fromHash(_hash))
 
 	def productPropertyState_delete(self, productId, propertyId, objectId):
 		if productId is None:
@@ -1953,40 +1991,42 @@ into the IDs of these depots are to be found in the list behind \
 	def group_createObjects(self, groups):
 		groups = forceObjectClassList(groups, Group)
 		for group in groups:
-			logger.info(u"Creating group '%s'", group)
+			logger.info("Creating group '%s'", group)
 			self._backend.group_insertObject(group)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
 			return self._backend.group_getObjects(id=[group.id for group in groups])
-		else:
-			return []
+		return []
 
 	def group_updateObjects(self, groups):
 		groups = forceObjectClassList(groups, Group)
 		for group in groups:
-			logger.info(u"Updating group '%s'", group)
+			logger.info("Updating group '%s'", group)
 			if self.group_getIdents(id=group.id):
 				self._backend.group_updateObject(group)
 			else:
-				logger.info(u"Group %s does not exist, creating", group)
+				logger.info("Group '%s' does not exist, creating", group)
 				self._backend.group_insertObject(group)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
 			return self._backend.group_getObjects(id=[group.id for group in groups])
-		else:
-			return []
+		return []
 
-	def group_createHostGroup(self, id, description=None, notes=None, parentGroupId=None):
-		hash = locals()
-		del hash['self']
-		return self.group_createObjects(HostGroup.fromHash(hash))
+	def group_createHostGroup(  # pylint: disable=invalid-name
+		self, id, description=None, notes=None, parentGroupId=None  # pylint: disable=redefined-builtin,unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.group_createObjects(HostGroup.fromHash(_hash))
 
-	def group_createProductGroup(self, id, description=None, notes=None, parentGroupId=None):
-		hash = locals()
-		del hash['self']
-		return self.group_createObjects(ProductGroup.fromHash(hash))
+	def group_createProductGroup(  # pylint: disable=invalid-name
+		self, id, description=None, notes=None, parentGroupId=None  # pylint: disable=redefined-builtin,unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.group_createObjects(ProductGroup.fromHash(_hash))
 
-	def group_delete(self, id):
+	def group_delete(self, id):  # pylint: disable=redefined-builtin,invalid-name
 		if id is None:
 			id = []
 
@@ -2002,7 +2042,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
-			logger.info(u"Creating objectToGroup %s", objectToGroup)
+			logger.info("Creating objectToGroup %s", objectToGroup)
 			self._backend.objectToGroup_insertObject(objectToGroup)
 
 			if returnObjects:
@@ -2020,14 +2060,14 @@ into the IDs of these depots are to be found in the list behind \
 		result = []
 		objectToGroups = forceObjectClassList(objectToGroups, ObjectToGroup)
 		for objectToGroup in objectToGroups:
-			logger.info(u"Updating objectToGroup %s", objectToGroup)
+			logger.info("Updating objectToGroup %s", objectToGroup)
 			if self.objectToGroup_getIdents(
 					groupType=objectToGroup.groupType,
 					groupId=objectToGroup.groupId,
 					objectId=objectToGroup.objectId):
 				self._backend.objectToGroup_updateObject(objectToGroup)
 			else:
-				logger.info(u"ObjectToGroup %s does not exist, creating", objectToGroup)
+				logger.info("ObjectToGroup %s does not exist, creating", objectToGroup)
 				self._backend.objectToGroup_insertObject(objectToGroup)
 
 			if returnObjects:
@@ -2041,10 +2081,10 @@ into the IDs of these depots are to be found in the list behind \
 
 		return result
 
-	def objectToGroup_create(self, groupType, groupId, objectId):
-		hash = locals()
-		del hash['self']
-		return self.objectToGroup_createObjects(ObjectToGroup.fromHash(hash))
+	def objectToGroup_create(self, groupType, groupId, objectId):  # pylint: disable=unused-argument
+		_hash = locals()
+		del _hash['self']
+		return self.objectToGroup_createObjects(ObjectToGroup.fromHash(_hash))
 
 	def objectToGroup_delete(self, groupType, groupId, objectId):
 		if not groupType:
@@ -2068,35 +2108,35 @@ into the IDs of these depots are to be found in the list behind \
 	def licenseContract_createObjects(self, licenseContracts):
 		licenseContracts = forceObjectClassList(licenseContracts, LicenseContract)
 		for licenseContract in licenseContracts:
-			logger.info(u"Creating licenseContract %s", licenseContract)
+			logger.info("Creating licenseContract %s", licenseContract)
 			self._backend.licenseContract_insertObject(licenseContract)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
 			return self._backend.licenseContract_getObjects(id=[licenseContract.id for licenseContract in licenseContracts])
-		else:
-			return []
+		return []
 
 	def licenseContract_updateObjects(self, licenseContracts):
 		licenseContracts = forceObjectClassList(licenseContracts, LicenseContract)
 		for licenseContract in licenseContracts:
-			logger.info(u"Updating licenseContract '%s'", licenseContract)
+			logger.info("Updating licenseContract '%s'", licenseContract)
 			if self.licenseContract_getIdents(id=licenseContract.id):
 				self._backend.licenseContract_updateObject(licenseContract)
 			else:
-				logger.info(u"LicenseContract %s does not exist, creating", licenseContract)
+				logger.info("LicenseContract %s does not exist, creating", licenseContract)
 				self._backend.licenseContract_insertObject(licenseContract)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
 			return self._backend.licenseContract_getObjects(id=[licenseContract.id for licenseContract in licenseContracts])
-		else:
-			return []
+		return []
 
-	def licenseContract_create(self, id, description=None, notes=None, partner=None, conclusionDate=None, notificationDate=None, expirationDate=None):
-		hash = locals()
-		del hash['self']
-		return self.licenseContract_createObjects(LicenseContract.fromHash(hash))
+	def licenseContract_create(  # pylint: disable=too-many-arguments,invalid-name
+		self, id, description=None, notes=None, partner=None, conclusionDate=None, notificationDate=None, expirationDate=None  # pylint: disable=redefined-builtin,unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.licenseContract_createObjects(LicenseContract.fromHash(_hash))
 
-	def licenseContract_delete(self, id):
+	def licenseContract_delete(self, id):  # pylint: disable=redefined-builtin,invalid-name
 		if id is None:
 			id = []
 
@@ -2110,50 +2150,56 @@ into the IDs of these depots are to be found in the list behind \
 	def softwareLicense_createObjects(self, softwareLicenses):
 		softwareLicenses = forceObjectClassList(softwareLicenses, SoftwareLicense)
 		for softwareLicense in softwareLicenses:
-			logger.info(u"Creating softwareLicense '%s'", softwareLicense)
+			logger.info("Creating softwareLicense '%s'", softwareLicense)
 			self._backend.softwareLicense_insertObject(softwareLicense)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
 			return self._backend.softwareLicense_getObjects(id=[softwareLicense.id for softwareLicense in softwareLicenses])
-		else:
-			return []
+		return []
 
 	def softwareLicense_updateObjects(self, softwareLicenses):
 		softwareLicenses = forceObjectClassList(softwareLicenses, SoftwareLicense)
 		for softwareLicense in softwareLicenses:
-			logger.info(u"Updating softwareLicense '%s'", softwareLicense)
+			logger.info("Updating softwareLicense '%s'", softwareLicense)
 			if self.softwareLicense_getIdents(id=softwareLicense.id):
 				self._backend.softwareLicense_updateObject(softwareLicense)
 			else:
-				logger.info(u"ProducSoftwareLicenset %s does not exist, creating", softwareLicense)
+				logger.info("ProducSoftwareLicenset %s does not exist, creating", softwareLicense)
 				self._backend.softwareLicense_insertObject(softwareLicense)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
 			return self._backend.softwareLicense_getObjects(id=[softwareLicense.id for softwareLicense in softwareLicenses])
-		else:
-			return []
+		return []
 
-	def softwareLicense_createRetail(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
-		hash = locals()
-		del hash['self']
-		return self.softwareLicense_createObjects(RetailSoftwareLicense.fromHash(hash))
+	def softwareLicense_createRetail(  # pylint: disable=too-many-arguments,invalid-name
+		self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None  # pylint: disable=redefined-builtin,unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.softwareLicense_createObjects(RetailSoftwareLicense.fromHash(_hash))
 
-	def softwareLicense_createOEM(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
-		hash = locals()
-		del hash['self']
-		return self.softwareLicense_createObjects(OEMSoftwareLicense.fromHash(hash))
+	def softwareLicense_createOEM(  # pylint: disable=too-many-arguments,invalid-name
+		self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None  # pylint: disable=redefined-builtin,unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.softwareLicense_createObjects(OEMSoftwareLicense.fromHash(_hash))
 
-	def softwareLicense_createVolume(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
-		hash = locals()
-		del hash['self']
-		return self.softwareLicense_createObjects(VolumeSoftwareLicense.fromHash(hash))
+	def softwareLicense_createVolume(  # pylint: disable=too-many-arguments,invalid-name
+		self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None  # pylint: disable=redefined-builtin,unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.softwareLicense_createObjects(VolumeSoftwareLicense.fromHash(_hash))
 
-	def softwareLicense_createConcurrent(self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None):
-		hash = locals()
-		del hash['self']
-		return self.softwareLicense_createObjects(ConcurrentSoftwareLicense.fromHash(hash))
+	def softwareLicense_createConcurrent(  # pylint: disable=too-many-arguments,invalid-name
+		self, id, licenseContractId, maxInstallations=None, boundToHost=None, expirationDate=None  # pylint: disable=redefined-builtin,unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.softwareLicense_createObjects(ConcurrentSoftwareLicense.fromHash(_hash))
 
-	def softwareLicense_delete(self, id):
+	def softwareLicense_delete(self, id):  # pylint: disable=redefined-builtin,invalid-name
 		if id is None:
 			id = []
 
@@ -2167,35 +2213,33 @@ into the IDs of these depots are to be found in the list behind \
 	def licensePool_createObjects(self, licensePools):
 		licensePools = forceObjectClassList(licensePools, LicensePool)
 		for licensePool in licensePools:
-			logger.info(u"Creating licensePool '%s'", licensePool)
+			logger.info("Creating licensePool '%s'", licensePool)
 			self._backend.licensePool_insertObject(licensePool)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
 			return self._backend.licensePool_getObjects(id=[licensePool.id for licensePool in licensePools])
-		else:
-			return []
+		return []
 
 	def licensePool_updateObjects(self, licensePools):
 		licensePools = forceObjectClassList(licensePools, LicensePool)
 		for licensePool in licensePools:
-			logger.info(u"Updating licensePool '%s'", licensePool)
+			logger.info("Updating licensePool '%s'", licensePool)
 			if self.licensePool_getIdents(id=licensePool.id):
 				self._backend.licensePool_updateObject(licensePool)
 			else:
-				logger.info(u"LicensePool %s does not exist, creating", licensePool)
+				logger.info("LicensePool %s does not exist, creating", licensePool)
 				self._backend.licensePool_insertObject(licensePool)
 
 		if self._options['returnObjectsOnUpdateAndCreate']:
 			return self._backend.licensePool_getObjects(id=[licensePool.id for licensePool in licensePools])
-		else:
-			return []
+		return []
 
-	def licensePool_create(self, id, description=None, productIds=None):
-		hash = locals()
-		del hash['self']
-		return self.licensePool_createObjects(LicensePool.fromHash(hash))
+	def licensePool_create(self, id, description=None, productIds=None):  # pylint: disable=redefined-builtin,unused-argument,invalid-name
+		_hash = locals()
+		del _hash['self']
+		return self.licensePool_createObjects(LicensePool.fromHash(_hash))
 
-	def licensePool_delete(self, id):
+	def licensePool_delete(self, id):  # pylint: disable=redefined-builtin,invalid-name
 		if id is None:
 			id = []
 
@@ -2211,7 +2255,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
-			logger.info(u"Creating softwareLicenseToLicensePool %s", softwareLicenseToLicensePool)
+			logger.info("Creating softwareLicenseToLicensePool %s", softwareLicenseToLicensePool)
 			self._backend.softwareLicenseToLicensePool_insertObject(softwareLicenseToLicensePool)
 
 			if returnObjects:
@@ -2230,13 +2274,13 @@ into the IDs of these depots are to be found in the list behind \
 		result = []
 		softwareLicenseToLicensePools = forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool)
 		for softwareLicenseToLicensePool in softwareLicenseToLicensePools:
-			logger.info(u"Updating %s", softwareLicenseToLicensePool)
+			logger.info("Updating %s", softwareLicenseToLicensePool)
 			if self.softwareLicenseToLicensePool_getIdents(
 					softwareLicenseId=softwareLicenseToLicensePool.softwareLicenseId,
 					licensePoolId=softwareLicenseToLicensePool.licensePoolId):
 				self._backend.softwareLicenseToLicensePool_updateObject(softwareLicenseToLicensePool)
 			else:
-				logger.info(u"SoftwareLicenseToLicensePool %s does not exist, creating", softwareLicenseToLicensePool)
+				logger.info("SoftwareLicenseToLicensePool %s does not exist, creating", softwareLicenseToLicensePool)
 				self._backend.softwareLicenseToLicensePool_insertObject(softwareLicenseToLicensePool)
 
 			if returnObjects:
@@ -2249,10 +2293,10 @@ into the IDs of these depots are to be found in the list behind \
 
 		return result
 
-	def softwareLicenseToLicensePool_create(self, softwareLicenseId, licensePoolId, licenseKey=None):
-		hash = locals()
-		del hash['self']
-		return self.softwareLicenseToLicensePool_createObjects(SoftwareLicenseToLicensePool.fromHash(hash))
+	def softwareLicenseToLicensePool_create(self, softwareLicenseId, licensePoolId, licenseKey=None):  # pylint: disable=unused-argument
+		_hash = locals()
+		del _hash['self']
+		return self.softwareLicenseToLicensePool_createObjects(SoftwareLicenseToLicensePool.fromHash(_hash))
 
 	def softwareLicenseToLicensePool_delete(self, softwareLicenseId, licensePoolId):
 		if not softwareLicenseId:
@@ -2275,7 +2319,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for licenseOnClient in forceObjectClassList(licenseOnClients, LicenseOnClient):
-			logger.info(u"Creating licenseOnClient %s", licenseOnClient)
+			logger.info("Creating licenseOnClient %s", licenseOnClient)
 			self._backend.licenseOnClient_insertObject(licenseOnClient)
 
 			if returnObjects:
@@ -2295,14 +2339,14 @@ into the IDs of these depots are to be found in the list behind \
 		result = []
 		licenseOnClients = forceObjectClassList(licenseOnClients, LicenseOnClient)
 		for licenseOnClient in licenseOnClients:
-			logger.info(u"Updating licenseOnClient %s", licenseOnClient)
+			logger.info("Updating licenseOnClient %s", licenseOnClient)
 			if self.licenseOnClient_getIdents(
 					softwareLicenseId=licenseOnClient.softwareLicenseId,
 					licensePoolId=licenseOnClient.licensePoolId,
 					clientId=licenseOnClient.clientId):
 				self._backend.licenseOnClient_updateObject(licenseOnClient)
 			else:
-				logger.info(u"LicenseOnClient %s does not exist, creating", licenseOnClient)
+				logger.info("LicenseOnClient %s does not exist, creating", licenseOnClient)
 				self._backend.licenseOnClient_insertObject(licenseOnClient)
 
 			if returnObjects:
@@ -2316,10 +2360,12 @@ into the IDs of these depots are to be found in the list behind \
 
 		return result
 
-	def licenseOnClient_create(self, softwareLicenseId, licensePoolId, clientId, licenseKey=None, notes=None):
-		hash = locals()
-		del hash['self']
-		return self.licenseOnClient_createObjects(LicenseOnClient.fromHash(hash))
+	def licenseOnClient_create(  # pylint: disable=too-many-arguments
+		self, softwareLicenseId, licensePoolId, clientId, licenseKey=None, notes=None  # pylint: disable=unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.licenseOnClient_createObjects(LicenseOnClient.fromHash(_hash))
 
 	def licenseOnClient_delete(self, softwareLicenseId, licensePoolId, clientId):
 		if softwareLicenseId is None:
@@ -2337,11 +2383,14 @@ into the IDs of these depots are to be found in the list behind \
 			)
 		)
 
-	def licenseOnClient_getOrCreateObject(self, clientId, licensePoolId=None, productId=None, windowsSoftwareId=None):
+	def licenseOnClient_getOrCreateObject(  # pylint: disable=too-many-branches
+		self, clientId, licensePoolId=None, productId=None, windowsSoftwareId=None
+	):
 		clientId = forceHostId(clientId)
 		if licensePoolId:
 			licensePoolId = forceLicensePoolId(licensePoolId)
 		elif productId or windowsSoftwareId:
+			licensePoolIds = []
 			if productId:
 				productId = forceProductId(productId)
 				licensePoolIds = self.licensePool_getIdents(productIds=productId, returnType='unicode')
@@ -2349,9 +2398,9 @@ into the IDs of these depots are to be found in the list behind \
 				licensePoolIds = []
 				windowsSoftwareId = forceUnicode(windowsSoftwareId)
 
-				auditSoftwares = self.auditSoftware_getObjects(windowsSoftwareId=windowsSoftwareId)
+				auditSoftwares = self.auditSoftware_getObjects(windowsSoftwareId=windowsSoftwareId)  # pylint: disable=no-member
 				for auditSoftware in auditSoftwares:
-					auditSoftwareToLicensePools = self.auditSoftwareToLicensePool_getObjects(
+					auditSoftwareToLicensePools = self.auditSoftwareToLicensePool_getObjects(  # pylint: disable=no-member
 						name=auditSoftware.name,
 						version=auditSoftware.version,
 						subVersion=auditSoftware.subVersion,
@@ -2362,35 +2411,36 @@ into the IDs of these depots are to be found in the list behind \
 						licensePoolIds.append(auditSoftwareToLicensePools[0].licensePoolId)
 
 			if len(licensePoolIds) < 1:
-				raise LicenseConfigurationError(u"No license pool for product id '%s', windowsSoftwareId '%s' found" % (productId, windowsSoftwareId))
-			elif len(licensePoolIds) > 1:
 				raise LicenseConfigurationError(
-					u"Multiple license pools for product id '%s', windowsSoftwareId '%s' found: %s"
-					% (productId, windowsSoftwareId, licensePoolIds)
+					f"No license pool for product id '{productId}', windowsSoftwareId '{windowsSoftwareId}' found"
+				)
+			if len(licensePoolIds) > 1:
+				raise LicenseConfigurationError(
+					f"Multiple license pools for product id '{productId}', windowsSoftwareId '{windowsSoftwareId}' found: {licensePoolIds}"
 				)
 			licensePoolId = licensePoolIds[0]
 		else:
-			raise ValueError(u"You have to specify one of: licensePoolId, productId, windowsSoftwareId")
+			raise ValueError("You have to specify one of: licensePoolId, productId, windowsSoftwareId")
 
 		if not self.licensePool_getIdents(id=licensePoolId):
-			raise LicenseConfigurationError(u"License pool '%s' not found" % licensePoolId)
+			raise LicenseConfigurationError(f"License pool '{licensePoolId}' not found")
 
 		# Test if a license is already used by the host
 		licenseOnClient = None
 		licenseOnClients = self._backend.licenseOnClient_getObjects(licensePoolId=licensePoolId, clientId=clientId)
 		if licenseOnClients:
 			logger.info(
-				u"Using already assigned license '%s' for client '%s', license pool '%s'",
+				"Using already assigned license '%s' for client '%s', license pool '%s'",
 				licenseOnClients[0].getSoftwareLicenseId(), clientId, licensePoolId
 			)
 			licenseOnClient = licenseOnClients[0]
 		else:
 			(softwareLicenseId, licenseKey) = self._getUsableSoftwareLicense(clientId, licensePoolId)
 			if not licenseKey:
-				logger.info(u"License available but no license key found")
+				logger.info("License available but no license key found")
 
 			logger.info(
-				u"Using software license id '%s', license key '%s' for host '%s' and license pool '%s'",
+				"Using software license id '%s', license key '%s' for host '%s' and license pool '%s'",
 				softwareLicenseId, licenseKey, clientId, licensePoolId
 			)
 
@@ -2404,9 +2454,9 @@ into the IDs of these depots are to be found in the list behind \
 			self.licenseOnClient_createObjects(licenseOnClient)
 		return licenseOnClient
 
-	def _getUsableSoftwareLicense(self, clientId, licensePoolId):
-		softwareLicenseId = u''
-		licenseKey = u''
+	def _getUsableSoftwareLicense(self, clientId, licensePoolId):  # pylint: disable=too-many-branches
+		softwareLicenseId = ''
+		licenseKey = ''
 
 		licenseOnClients = self._backend.licenseOnClient_getObjects(licensePoolId=licensePoolId, clientId=clientId)
 		if licenseOnClients:
@@ -2415,7 +2465,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		softwareLicenseToLicensePools = self._backend.softwareLicenseToLicensePool_getObjects(licensePoolId=licensePoolId)
 		if not softwareLicenseToLicensePools:
-			raise LicenseMissingError(u"No licenses in pool '%s'" % licensePoolId)
+			raise LicenseMissingError(f"No licenses in pool '{licensePoolId}'")
 
 		softwareLicenseIds = [
 			softwareLicenseToLicensePool.softwareLicenseId
@@ -2425,13 +2475,13 @@ into the IDs of these depots are to be found in the list behind \
 
 		softwareLicensesBoundToHost = self._backend.softwareLicense_getObjects(id=softwareLicenseIds, boundToHost=clientId)
 		if softwareLicensesBoundToHost:
-			logger.info(u"Using license bound to host: %s", softwareLicensesBoundToHost[0])
+			logger.info("Using license bound to host: %s", softwareLicensesBoundToHost[0])
 			softwareLicenseId = softwareLicensesBoundToHost[0].getId()
 		else:
 			# Search an available license
 			for softwareLicense in self._backend.softwareLicense_getObjects(id=softwareLicenseIds, boundToHost=[None, '']):
 				logger.debug(
-					u"Checking license '%s', maxInstallations %d",
+					"Checking license '%s', maxInstallations %d",
 					softwareLicense.getId(), softwareLicense.getMaxInstallations()
 				)
 				if softwareLicense.getMaxInstallations() == 0:
@@ -2439,16 +2489,21 @@ into the IDs of these depots are to be found in the list behind \
 					softwareLicenseId = softwareLicense.getId()
 					break
 				installations = len(self.licenseOnClient_getIdents(softwareLicenseId=softwareLicense.getId()))
-				logger.debug(u"Installations registered: %d", installations)
+				logger.debug("Installations registered: %d", installations)
 				if installations < softwareLicense.getMaxInstallations():
 					softwareLicenseId = softwareLicense.getId()
 					break
 
 			if softwareLicenseId:
-				logger.info(u"Found available license for pool '%s' and client '%s': %s", licensePoolId, clientId, softwareLicenseId)
+				logger.info(
+					"Found available license for pool '%s' and client '%s': %s",
+					licensePoolId, clientId, softwareLicenseId
+				)
 
 		if not softwareLicenseId:
-			raise LicenseMissingError(u"No license available for pool '%s' and client '%s'" % (licensePoolId, clientId))
+			raise LicenseMissingError(
+				f"No license available for pool '{licensePoolId}' and client '{clientId}'"
+			)
 
 		licenseKeys = []
 		for softwareLicenseToLicensePool in softwareLicenseToLicensePools:
@@ -2456,14 +2511,14 @@ into the IDs of these depots are to be found in the list behind \
 				if softwareLicenseToLicensePool.getSoftwareLicenseId() == softwareLicenseId:
 					licenseKey = softwareLicenseToLicensePool.getLicenseKey()
 					break
-				logger.debug(u"Found license key: %s", licenseKey)
+				logger.debug("Found license key: %s", licenseKey)
 				licenseKeys.append(softwareLicenseToLicensePool.getLicenseKey())
 
 		if not licenseKey and licenseKeys:
 			licenseKey = random.choice(licenseKeys)
-			logger.info(u"Randomly choosing license key")
+			logger.info("Randomly choosing license key")
 
-		logger.debug(u"Using license '%s', license key: %s", softwareLicenseId, licenseKey)
+		logger.debug("Using license '%s', license key: %s", softwareLicenseId, licenseKey)
 		return (softwareLicenseId, licenseKey)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2474,7 +2529,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for auditSoftware in forceObjectClassList(auditSoftwares, AuditSoftware):
-			logger.info(u"Creating auditSoftware %s", auditSoftware)
+			logger.info("Creating auditSoftware %s", auditSoftware)
 			self._backend.auditSoftware_insertObject(auditSoftware)
 
 			if returnObjects:
@@ -2496,7 +2551,7 @@ into the IDs of these depots are to be found in the list behind \
 		result = []
 		auditSoftwares = forceObjectClassList(auditSoftwares, AuditSoftware)
 		for auditSoftware in auditSoftwares:
-			logger.info(u"Updating %s", auditSoftware)
+			logger.info("Updating %s", auditSoftware)
 			if self.auditSoftware_getIdents(
 					name=auditSoftware.name,
 					version=auditSoftware.version,
@@ -2506,7 +2561,7 @@ into the IDs of these depots are to be found in the list behind \
 
 				self._backend.auditSoftware_updateObject(auditSoftware)
 			else:
-				logger.info(u"AuditSoftware %s does not exist, creating", auditSoftware)
+				logger.info("AuditSoftware %s does not exist, creating", auditSoftware)
 				self._backend.auditSoftware_insertObject(auditSoftware)
 
 			if returnObjects:
@@ -2522,12 +2577,18 @@ into the IDs of these depots are to be found in the list behind \
 
 		return result
 
-	def auditSoftware_create(self, name, version, subVersion, language, architecture, windowsSoftwareId=None, windowsDisplayName=None, windowsDisplayVersion=None, installSize=None):
-		hash = locals()
-		del hash['self']
-		return self.auditSoftware_createObjects(AuditSoftware.fromHash(hash))
+	def auditSoftware_create(  # pylint: disable=too-many-arguments
+			self, name, version, subVersion, language, architecture,  # pylint: disable=unused-argument
+			windowsSoftwareId=None, windowsDisplayName=None,  # pylint: disable=unused-argument
+			windowsDisplayVersion=None, installSize=None  # pylint: disable=unused-argument
+		):
+		_hash = locals()
+		del _hash['self']
+		return self.auditSoftware_createObjects(AuditSoftware.fromHash(_hash))
 
-	def auditSoftware_delete(self, name, version, subVersion, language, architecture):
+	def auditSoftware_delete(  # pylint: disable=too-many-arguments
+		self, name, version, subVersion, language, architecture
+	):
 		if name is None:
 			name = []
 		if version is None:
@@ -2557,7 +2618,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for auditSoftwareToLicensePool in forceObjectClassList(auditSoftwareToLicensePools, AuditSoftwareToLicensePool):
-			logger.info(u"Creating %s", auditSoftwareToLicensePool)
+			logger.info("Creating %s", auditSoftwareToLicensePool)
 			self._backend.auditSoftwareToLicensePool_insertObject(auditSoftwareToLicensePool)
 
 			if returnObjects:
@@ -2579,7 +2640,7 @@ into the IDs of these depots are to be found in the list behind \
 		result = []
 		auditSoftwareToLicensePools = forceObjectClassList(auditSoftwareToLicensePools, AuditSoftwareToLicensePool)
 		for auditSoftwareToLicensePool in auditSoftwareToLicensePools:
-			logger.info(u"Creating %s", auditSoftwareToLicensePool)
+			logger.info("Creating %s", auditSoftwareToLicensePool)
 			if self.auditSoftwareToLicensePool_getIdents(
 					name=auditSoftwareToLicensePool.name,
 					version=auditSoftwareToLicensePool.version,
@@ -2589,7 +2650,7 @@ into the IDs of these depots are to be found in the list behind \
 
 				self._backend.auditSoftwareToLicensePool_updateObject(auditSoftwareToLicensePool)
 			else:
-				logger.info(u"AuditSoftwareToLicensePool %s does not exist, creating", auditSoftwareToLicensePool)
+				logger.info("AuditSoftwareToLicensePool %s does not exist, creating", auditSoftwareToLicensePool)
 				self._backend.auditSoftwareToLicensePool_insertObject(auditSoftwareToLicensePool)
 
 			if returnObjects:
@@ -2605,12 +2666,16 @@ into the IDs of these depots are to be found in the list behind \
 
 		return result
 
-	def auditSoftwareToLicensePool_create(self, name, version, subVersion, language, architecture, licensePoolId):
-		hash = locals()
-		del hash['self']
-		return self.auditSoftwareToLicensePool_createObjects(AuditSoftwareToLicensePool.fromHash(hash))
+	def auditSoftwareToLicensePool_create(  # pylint: disable=too-many-arguments
+		self, name, version, subVersion, language, architecture, licensePoolId  # pylint: disable=unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.auditSoftwareToLicensePool_createObjects(AuditSoftwareToLicensePool.fromHash(_hash))
 
-	def auditSoftwareToLicensePool_delete(self, name, version, subVersion, language, architecture, licensePoolId):
+	def auditSoftwareToLicensePool_delete(  # pylint: disable=too-many-arguments
+		self, name, version, subVersion, language, architecture, licensePoolId
+	):
 		if name is None:
 			name = []
 		if version is None:
@@ -2643,7 +2708,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		result = []
 		for auditSoftwareOnClient in forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient):
-			logger.info(u"Creating auditSoftwareOnClient %s", auditSoftwareOnClient)
+			logger.info("Creating auditSoftwareOnClient %s", auditSoftwareOnClient)
 			self._backend.auditSoftwareOnClient_insertObject(auditSoftwareOnClient)
 
 			if returnObjects:
@@ -2666,7 +2731,7 @@ into the IDs of these depots are to be found in the list behind \
 		result = []
 		auditSoftwareOnClients = forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient)
 		for auditSoftwareOnClient in auditSoftwareOnClients:
-			logger.info(u"Updating auditSoftwareOnClient %s", auditSoftwareOnClient)
+			logger.info("Updating auditSoftwareOnClient %s", auditSoftwareOnClient)
 			if self.auditSoftwareOnClient_getIdents(
 					name=auditSoftwareOnClient.name,
 					version=auditSoftwareOnClient.version,
@@ -2676,7 +2741,7 @@ into the IDs of these depots are to be found in the list behind \
 					clientId=auditSoftwareOnClient.clientId):
 				self._backend.auditSoftwareOnClient_updateObject(auditSoftwareOnClient)
 			else:
-				logger.info(u"AuditSoftwareOnClient %s does not exist, creating", auditSoftwareOnClient)
+				logger.info("AuditSoftwareOnClient %s does not exist, creating", auditSoftwareOnClient)
 				self._backend.auditSoftwareOnClient_insertObject(auditSoftwareOnClient)
 
 			if returnObjects:
@@ -2693,12 +2758,18 @@ into the IDs of these depots are to be found in the list behind \
 
 		return result
 
-	def auditSoftwareOnClient_create(self, name, version, subVersion, language, architecture, clientId, uninstallString=None, binaryName=None, firstseen=None, lastseen=None, state=None, usageFrequency=None, lastUsed=None, licenseKey=None):
-		hash = locals()
-		del hash['self']
-		return self.auditSoftwareOnClient_createObjects(AuditSoftwareOnClient.fromHash(hash))
+	def auditSoftwareOnClient_create(  # pylint: disable=too-many-arguments,too-many-locals
+		self, name, version, subVersion, language, architecture, clientId,  # pylint: disable=unused-argument
+		uninstallString=None, binaryName=None, firstseen=None, lastseen=None,  # pylint: disable=unused-argument
+		state=None, usageFrequency=None, lastUsed=None, licenseKey=None  # pylint: disable=unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.auditSoftwareOnClient_createObjects(AuditSoftwareOnClient.fromHash(_hash))
 
-	def auditSoftwareOnClient_delete(self, name, version, subVersion, language, architecture, clientId):
+	def auditSoftwareOnClient_delete(  # pylint: disable=too-many-arguments
+		self, name, version, subVersion, language, architecture, clientId
+	):
 		if name is None:
 			name = []
 		if version is None:
@@ -2736,21 +2807,21 @@ into the IDs of these depots are to be found in the list behind \
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def auditHardware_createObjects(self, auditHardwares):
 		for auditHardware in forceObjectClassList(auditHardwares, AuditHardware):
-			logger.info(u"Creating auditHardware %s", auditHardware)
-			self.auditHardware_insertObject(auditHardware)
+			logger.info("Creating auditHardware %s", auditHardware)
+			self.auditHardware_insertObject(auditHardware)  # pylint: disable=no-member
 		return []
 
 	def auditHardware_updateObjects(self, auditHardwares):
 		for auditHardware in forceObjectClassList(auditHardwares, AuditHardware):
-			logger.info(u"Updating auditHardware %s", auditHardware)
+			logger.info("Updating auditHardware %s", auditHardware)
 			# You can't update auditHardwares, because the ident contains all attributes
-			self.auditHardware_insertObject(auditHardware)
+			self.auditHardware_insertObject(auditHardware)  # pylint: disable=no-member
 		return []
 
-	def auditHardware_create(self, hardwareClass, **kwargs):
-		hash = locals()
-		del hash['self']
-		return self.auditHardware_createObjects(AuditHardware.fromHash(hash))
+	def auditHardware_create(self, hardwareClass, **kwargs):  # pylint: disable=unused-argument
+		_hash = locals()
+		del _hash['self']
+		return self.auditHardware_createObjects(AuditHardware.fromHash(_hash))
 
 	def auditHardware_delete(self, hardwareClass, **kwargs):
 		if hardwareClass is None:
@@ -2782,7 +2853,7 @@ into the IDs of these depots are to be found in the list behind \
 
 	def auditHardwareOnHost_createObjects(self, auditHardwareOnHosts):
 		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
-			logger.info(u"Creating auditHardwareOnHost %s", auditHardwareOnHost)
+			logger.info("Creating auditHardwareOnHost %s", auditHardwareOnHost)
 			self._backend.auditHardwareOnHost_insertObject(auditHardwareOnHost)
 
 		return []
@@ -2791,31 +2862,34 @@ into the IDs of these depots are to be found in the list behind \
 		def getNoneAsListOrValue(value):
 			if value is None:
 				return [None]
-			else:
-				return value
+			return value
 
 		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
-			filter = {
+			_filter = {
 				attribute: getNoneAsListOrValue(value)
 				for (attribute, value) in auditHardwareOnHost.toHash().items()
 				if attribute not in ('firstseen', 'lastseen', 'state')
 			}
 
-			if self.auditHardwareOnHost_getObjects(attributes=['hostId'], **filter):
-				logger.debug2(u"Updating existing AuditHardwareOnHost %s", auditHardwareOnHost)
+			if self.auditHardwareOnHost_getObjects(attributes=['hostId'], **_filter):  # pylint: disable=no-member
+				logger.trace("Updating existing AuditHardwareOnHost %s", auditHardwareOnHost)
 				self.auditHardwareOnHost_updateObject(auditHardwareOnHost)
 			else:
-				logger.info(u"AuditHardwareOnHost %s does not exist, creating", auditHardwareOnHost)
+				logger.info("AuditHardwareOnHost %s does not exist, creating", auditHardwareOnHost)
 				self._backend.auditHardwareOnHost_insertObject(auditHardwareOnHost)
 
 		return []
 
-	def auditHardwareOnHost_create(self, hostId, hardwareClass, firstseen=None, lastseen=None, state=None, **kwargs):
-		hash = locals()
-		del hash['self']
-		return self.auditHardwareOnHost_createObjects(AuditHardwareOnHost.fromHash(hash))
+	def auditHardwareOnHost_create(  # pylint: disable=too-many-arguments
+		self, hostId, hardwareClass, firstseen=None, lastseen=None, state=None, **kwargs  # pylint: disable=unused-argument
+	):
+		_hash = locals()
+		del _hash['self']
+		return self.auditHardwareOnHost_createObjects(AuditHardwareOnHost.fromHash(_hash))
 
-	def auditHardwareOnHost_delete(self, hostId, hardwareClass, firstseen=None, lastseen=None, state=None, **kwargs):
+	def auditHardwareOnHost_delete(  # pylint: disable=too-many-arguments
+		self, hostId, hardwareClass, firstseen=None, lastseen=None, state=None, **kwargs
+	):
 		if hostId is None:
 			hostId = []
 		if hardwareClass is None:
@@ -2847,6 +2921,6 @@ into the IDs of these depots are to be found in the list behind \
 			hostId = []
 
 		hostId = forceHostIdList(hostId)
-		for ahoh in self.auditHardwareOnHost_getObjects(hostId=hostId, state=1):
+		for ahoh in self.auditHardwareOnHost_getObjects(hostId=hostId, state=1):  # pylint: disable=no-member
 			ahoh.setState(0)
 			self._backend.auditHardwareOnHost_updateObject(ahoh)
