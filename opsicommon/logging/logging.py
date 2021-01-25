@@ -9,17 +9,17 @@ This file is part of opsi - https://www.opsi.org
 import traceback
 import sys
 import logging
-import colorlog
 import warnings
 import contextvars
 from contextlib import contextmanager
 from typing import Dict, Any
+import colorlog
 
-from ..utils import Singleton
 from .constants import (
 	DEFAULT_COLORED_FORMAT, DEFAULT_FORMAT, DATETIME_FORMAT,
 	LOG_COLORS, SECRET_REPLACEMENT_STRING
 )
+from ..utils import Singleton
 
 logger = logging.getLogger()
 context = contextvars.ContextVar('context', default={})
@@ -36,7 +36,7 @@ def secret(self, msg:str, *args, **kwargs):
 	:param **kwargs: Additional keyword-arguments.
 	"""
 	if self.isEnabledFor(logging.SECRET):
-		self._log(logging.SECRET, msg, args, **kwargs)
+		self._log(logging.SECRET, msg, args, **kwargs) # pylint: disable=protected-access
 
 logging.Logger.secret = secret
 logging.Logger.confidential = secret
@@ -53,7 +53,7 @@ def trace(self, msg, *args, **kwargs):
 	:param **kwargs: Additional keyword-arguments.
 	"""
 	if self.isEnabledFor(logging.TRACE):
-		self._log(logging.TRACE, msg, args, **kwargs)
+		self._log(logging.TRACE, msg, args, **kwargs) # pylint: disable=protected-access
 
 logging.Logger.trace = trace
 logging.Logger.debug2 = trace
@@ -70,7 +70,7 @@ def notice(self, msg, *args, **kwargs):
 	:param **kwargs: Additional keyword-arguments.
 	"""
 	if self.isEnabledFor(logging.NOTICE):
-		self._log(logging.NOTICE, msg, args, **kwargs)
+		self._log(logging.NOTICE, msg, args, **kwargs) # pylint: disable=protected-access
 
 logging.Logger.notice = notice
 
@@ -86,13 +86,13 @@ def essential(self, msg, *args, **kwargs):
 	:param **kwargs: Additional keyword-arguments.
 	"""
 	if self.isEnabledFor(logging.ESSENTIAL):
-		self._log(logging.ESSENTIAL, msg, args, **kwargs)
+		self._log(logging.ESSENTIAL, msg, args, **kwargs) # pylint: disable=protected-access
 
 logging.Logger.essential = essential
 logging.Logger.comment = essential
 logging.Logger.devel = essential
 
-def logrecord_init(self, name, level, pathname, lineno, msg, args, exc_info, func=None, sinfo=None, **kwargs):
+def logrecord_init(self, name, level, pathname, lineno, msg, args, exc_info, func=None, sinfo=None, **kwargs):  # pylint: disable=too-many-arguments
 	"""
 	New Constructor for LogRecord.
 
@@ -111,7 +111,7 @@ def logrecord_init(self, name, level, pathname, lineno, msg, args, exc_info, fun
 	:param **kwargs: Additional keyword-arguments.
 	"""
 	self.__init_orig__(name, level, pathname, lineno, msg, args, exc_info, func=func, sinfo=sinfo, **kwargs)
-	self.opsilevel = logging._levelToOpsiLevel.get(level, level)
+	self.opsilevel = logging.level_to_opsi_level.get(level, level)
 
 logging.LogRecord.__init_orig__ = logging.LogRecord.__init__
 logging.LogRecord.__init__ = logrecord_init
@@ -138,7 +138,7 @@ def handle_log_exception(exc: Exception, record: logging.LogRecord = None, log: 
 		if record:
 			logger.error(record.__dict__)
 			#logger.error(f"{record.msg} - {record.args}")
-	except:
+	except Exception: # pylint: disable=broad-except
 		pass
 
 class ContextFilter(logging.Filter, metaclass=Singleton):
@@ -163,7 +163,7 @@ class ContextFilter(logging.Filter, metaclass=Singleton):
 		self.filter_dict = {}
 		self.set_filter(filter_dict)
 
-	def get_context(self) -> Dict:
+	def get_context(self) -> Dict:  # pylint: disable=no-self-use
 		"""
 		Returns context of current thread/task.
 
@@ -233,7 +233,7 @@ class ContextSecretFormatter(logging.Formatter):
 	2. It can replace secret strings specified to a SecretFilter by a
 		replacement string, thus censor passwords etc.
 	"""
-	def __init__(self, orig_formatter: logging.Formatter):
+	def __init__(self, orig_formatter: logging.Formatter): # pylint: disable=super-init-not-called
 		"""
 		ContextSecretFormatter constructor
 
@@ -246,7 +246,7 @@ class ContextSecretFormatter(logging.Formatter):
 		if orig_formatter is None:
 			orig_formatter = logging.Formatter()
 		self.orig_formatter = orig_formatter
-	
+
 	def format(self, record: logging.LogRecord) -> str:
 		"""
 		Formats a LogRecord.
@@ -274,8 +274,8 @@ class ContextSecretFormatter(logging.Formatter):
 		#record.contextstring = 	f"{record.contextstring:{CONTEXT_STRING_MIN_LENGTH}}"
 		msg = self.orig_formatter.format(record)
 		if record.levelno != logging.SECRET:
-			for secret in secret_filter.secrets:
-				msg = msg.replace(secret, SECRET_REPLACEMENT_STRING)
+			for _secret in secret_filter.secrets:
+				msg = msg.replace(_secret, SECRET_REPLACEMENT_STRING)
 		return msg
 
 	def __getattr__(self, attr) -> Any:
@@ -313,7 +313,7 @@ class SecretFilter(metaclass=Singleton):
 		self._min_length = min_length
 		self.secrets = []
 
-	def _initialize_handlers(self):
+	def _initialize_handlers(self):  # pylint: disable=no-self-use
 		"""
 		Assign ContextSecretFormatter to Handlers.
 
@@ -355,9 +355,9 @@ class SecretFilter(metaclass=Singleton):
 		:type *secrets: str
 		"""
 		self._initialize_handlers()
-		for secret in secrets:
-			if secret and len(secret) >= self._min_length and not secret in self.secrets:
-				self.secrets.append(secret)
+		for _secret in secrets:
+			if _secret and len(_secret) >= self._min_length and not _secret in self.secrets:
+				self.secrets.append(_secret)
 
 	def remove_secrets(self, *secrets: str):
 		"""
@@ -368,15 +368,15 @@ class SecretFilter(metaclass=Singleton):
 		:param *secrets: Any number of strings (as individual arguments) to remove.
 		:type *secrets: str
 		"""
-		for secret in secrets:
-			if secret in self.secrets:
-				self.secrets.remove(secret)
+		for _secret in secrets:
+			if _secret in self.secrets:
+				self.secrets.remove(_secret)
 
 class ObservableHandler(logging.StreamHandler, metaclass=Singleton):
 	def __init__(self):
 		logging.StreamHandler.__init__(self)
 		self._observers = []
-	
+
 	def attach_observer(self, observer):
 		if observer not in self._observers:
 			self._observers.append(observer)
@@ -390,15 +390,15 @@ class ObservableHandler(logging.StreamHandler, metaclass=Singleton):
 	def emit(self, record):
 		if self._observers:
 			message = self.format(record)
-			for o in self._observers:
+			for observer in self._observers:
 				try:
-					o.messageChanged(self, message)
-				except Exception as e:
-					handle_log_exception(e)
+					observer.messageChanged(self, message)
+				except Exception as err: # pylint: disable=broad-except
+					handle_log_exception(err)
 
-last_stderr_format = None
-last_file_format = None
-def logging_config(
+last_stderr_format = None # pylint: disable=invalid-name
+last_file_format = None # pylint: disable=invalid-name
+def logging_config( # pylint: disable=too-many-arguments,too-many-branches
 	stderr_level: int = None,
 	stderr_format: str = None,
 	log_file: str = None,
@@ -423,23 +423,23 @@ def logging_config(
 	:type file_format: str
 	"""
 	add_context_filter_to_loggers()
-	
-	global last_stderr_format
+
+	global last_stderr_format # pylint: disable=global-statement,invalid-name
 	if stderr_format is None:
 		stderr_format = last_stderr_format or DEFAULT_FORMAT
 	else:
 		last_stderr_format = stderr_format
 
-	global last_file_format
+	global last_file_format # pylint: disable=global-statement,invalid-name
 	if file_format is None:
 		file_format = last_file_format or DEFAULT_FORMAT
 	else:
 		last_file_format = file_format
 
 	if stderr_level is not None and stderr_level < 10:
-		stderr_level = logging._opsiLevelToLevel[stderr_level]
+		stderr_level = logging.opsi_level_to_level[stderr_level]
 	if file_level is not None and file_level < 10:
-		file_level = logging._opsiLevelToLevel[file_level]
+		file_level = logging.opsi_level_to_level[file_level]
 
 	if log_file:
 		if remove_handlers:
@@ -472,7 +472,7 @@ def logging_config(
 		if handler.level != 0 and handler.level < min_value:
 			min_value = handler.level
 	logging.root.setLevel(min_value)
-	
+
 	if stderr_format and stderr_format.find("(log_color)") != -1 and not sys.stderr.isatty():
 		stderr_format = stderr_format.replace('%(log_color)s', '').replace('%(reset)s', '')
 	set_format(file_format, stderr_format)
@@ -490,7 +490,7 @@ def set_format(
 	file_format: str = DEFAULT_FORMAT,
 	stderr_format: str = DEFAULT_COLORED_FORMAT,
 	datefmt: str = DATETIME_FORMAT,
-	log_colors: Dict = LOG_COLORS
+	log_colors: Dict = None
 ):
 	"""
 	Assigns ContextSecretFormatter to all Handlers.
@@ -514,7 +514,7 @@ def set_format(
 			fmt = stderr_format if handler_type is logging.StreamHandler else file_format
 			formatter = None
 			if fmt.find("(log_color)") >= 0:
-				formatter = colorlog.ColoredFormatter(fmt, datefmt=datefmt, log_colors=log_colors)
+				formatter = colorlog.ColoredFormatter(fmt, datefmt=datefmt, log_colors=log_colors or LOG_COLORS)
 			else:
 				formatter = logging.Formatter(fmt, datefmt=datefmt)
 			csformatter = ContextSecretFormatter(formatter)
@@ -552,6 +552,7 @@ def set_context(new_context: Dict) -> contextvars.Token:
 	"""
 	if isinstance(new_context, dict):
 		return context.set(new_context)
+	return None
 
 def add_context_filter_to_loggers():
 	for _logger in get_all_loggers():
@@ -585,7 +586,7 @@ def set_filter_from_string(filter_string: str):
 		*	One entry consists of exactly two strings separated by '='.
 		*	The first one is interpreted as key, the second as value(s).
 		*	Values of the same key are separated by ','.
-	
+
 	:param filter_string: String to parse for a filter statement.
 	:type filter_string: str
 	"""
@@ -635,7 +636,7 @@ def get_all_handlers(handler_type: type = None, handler_name: str = None):
 		if not isinstance(_logger, logging.PlaceHolder):
 			for _handler in _logger.handlers:
 				if (
-					(not handler_type or type(_handler) is handler_type) and
+					(not handler_type or isinstance(_handler, handler_type)) and
 					(not handler_name or _handler.name == handler_name)
 				):
 					handlers.append(_handler)
@@ -655,7 +656,7 @@ def remove_all_handlers(handler_type: type = None, handler_name: str = None):
 		if not isinstance(_logger, logging.PlaceHolder):
 			for _handler in _logger.handlers:
 				if (
-					(not handler_type or type(_handler) is handler_type) and
+					(not handler_type or isinstance(_handler, handler_type)) and
 					(not handler_name or _handler.name == handler_name)
 				):
 					_logger.removeHandler(_handler)
@@ -679,7 +680,7 @@ def print_logger_info():
 				print(f"  - Handler: {name} ", file=sys.stderr)
 				print(f"    - Formatter: {_handler.formatter}", file=sys.stderr)
 
-def _log_warning(message, category, filename, lineno, line=None, file=None):
+def _log_warning(message, category, filename, lineno, line=None, file=None): # pylint: disable=unused-argument,too-many-arguments
 	logger.warning(message)
 warnings.showwarning = _log_warning
 
@@ -687,5 +688,3 @@ observable_handler = ObservableHandler()
 secret_filter = SecretFilter()
 context_filter = ContextFilter()
 logging_config(stderr_level=logging.WARNING)
-#logging_config(stderr_level=logging.NOTSET)
-

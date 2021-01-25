@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+:copyright: uib GmbH <info@uib.de>
+This file is part of opsi - https://www.opsi.org
+
+:license: GNU Affero General Public License version 3
+"""
+
 from .logging import (
 	logger, context, secret_filter, context_filter, observable_handler,
 	handle_log_exception, logging_config, init_logging, set_format, log_context,

@@ -1,6 +1,14 @@
+# -*- coding: utf-8 -*-
+"""
+:copyright: uib GmbH <info@uib.de>
+This file is part of opsi - https://www.opsi.org
+
+:license: GNU Affero General Public License version 3
+"""
+
 import logging
 
-DEFAULT_COLORED_FORMAT = "%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(contextstring)-15s] %(message)s   (%(filename)s:%(lineno)d)"
+DEFAULT_COLORED_FORMAT = "%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(contextstring)-15s] %(message)s   (%(filename)s:%(lineno)d)"  # pylint: disable=line-too-long
 DEFAULT_FORMAT = "[%(opsilevel)d] [%(asctime)s.%(msecs)03d] [%(contextstring)-15s] %(message)s   (%(filename)s:%(lineno)d)"
 DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -33,7 +41,7 @@ logging.ESSENTIAL = 90
 logging.COMMENT = logging.ESSENTIAL
 logging.NONE = 100
 
-logging._levelToName = {
+logging.level_to_name = {
 	logging.SECRET: 'SECRET',
 	logging.TRACE: 'TRACE',
 	logging.DEBUG: 'DEBUG',
@@ -45,8 +53,9 @@ logging._levelToName = {
 	logging.ESSENTIAL: 'ESSENTIAL',
 	logging.NONE: 'NONE'
 }
+logging._levelToName = logging.level_to_name  # pylint: disable=protected-access
 
-logging._nameToLevel = {
+logging.name_to_level = {
 	'SECRET': logging.SECRET,
 	'TRACE': logging.TRACE,
 	'DEBUG': logging.DEBUG,
@@ -58,8 +67,9 @@ logging._nameToLevel = {
 	'ESSENTIAL': logging.ESSENTIAL,
 	'NONE': logging.NONE
 }
+logging._nameToLevel = logging.name_to_level  # pylint: disable=protected-access
 
-logging._levelToOpsiLevel = {
+logging.level_to_opsi_level = {
 	logging.SECRET: 9,
 	logging.TRACE: 8,
 	logging.DEBUG: 7,
@@ -71,8 +81,9 @@ logging._levelToOpsiLevel = {
 	logging.ESSENTIAL: 1,
 	logging.NONE: 0
 }
+logging._levelToOpsiLevel = logging.level_to_opsi_level  # pylint: disable=protected-access
 
-logging._opsiLevelToLevel = {
+logging.opsi_level_to_level = {
 	9: logging.SECRET,
 	8: logging.TRACE,
 	7: logging.DEBUG,
@@ -84,6 +95,7 @@ logging._opsiLevelToLevel = {
 	1: logging.ESSENTIAL,
 	0: logging.NONE
 }
+logging._opsiLevelToLevel = logging.opsi_level_to_level  # pylint: disable=protected-access
 
 LOG_SECRET = 9
 LOG_CONFIDENTIAL = 9
@@ -100,4 +112,3 @@ LOG_ESSENTIAL = 1
 LOG_COMMENT = 1
 LOG_NONE = 0
 LOG_NOTSET = 0
-
