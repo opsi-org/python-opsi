@@ -31,7 +31,7 @@ import threading
 from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 from OPSI.Exceptions import BackendBadValueError
 from OPSI.Logger import Logger
-from OPSI.Types import forceBool, forceFilename, forceUnicode
+from OPSI.Types import forceBool, forceFilename
 
 __all__ = ('SQLite', 'SQLiteBackend', 'SQLiteObjectBackendModificationTracker')
 
@@ -47,6 +47,8 @@ class SQLite(SQL):
 	_WRITE_LOCK = threading.Lock()
 
 	def __init__(self, **kwargs):
+		super().__init__(**kwargs)
+
 		self._database = ":memory:"
 		self._synchronous = True
 		self._databaseCharset = 'utf8'
@@ -67,14 +69,14 @@ class SQLite(SQL):
 		if self._connection:
 			try:
 				self._connection.close()
-			except Exception as e:
-				logger.warning(e)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.warning(err)
 		self._connection = None
 		self._cursor = None
 		if os.path.exists(self._database):
 			os.remove(self._database)
 
-	def connect(self):
+	def connect(self, cursorType=None):
 		with self._WRITE_LOCK:
 			for trynum in (1, 2):
 				try:
@@ -85,10 +87,10 @@ class SQLite(SQL):
 						self._connection = sqlite3.connect(self._database, check_same_thread=False)
 					if not self._cursor:
 						def dict_factory(cursor, row):
-							d = {}
+							_dict = {}
 							for idx, col in enumerate(cursor.description):
-								d[col[0]] = row[idx]
-							return d
+								_dict[col[0]] = row[idx]
+							return _dict
 						self._connection.row_factory = dict_factory
 						self._cursor = self._connection.cursor()
 						if not self._synchronous:
@@ -104,8 +106,8 @@ class SQLite(SQL):
 						raise
 					logger.warning("Recreating defective sqlite database '%s'", self._database)
 					self.delete_db()
-				except Exception as otherError:
-					logger.warning("Problem connecting to SQLite database: %s", otherError)
+				except Exception as err:  # pylint: disable=broad-except
+					logger.warning("Problem connecting to SQLite database: %s", err)
 					if trynum > 1:
 						raise
 
@@ -113,61 +115,61 @@ class SQLite(SQL):
 		pass
 
 	def getSet(self, query):
-		logger.debug2(u"getSet: %s", query)
+		logger.trace("getSet: %s", query)
 		(conn, cursor) = self.connect()
 		valueSet = []
 		try:
 			self.execute(query, conn, cursor)
 			valueSet = cursor.fetchall()
 			if not valueSet:
-				logger.debug(u"No result for query '%s'", query)
+				logger.debug("No result for query '%s'", query)
 				valueSet = []
 		finally:
 			self.close(conn, cursor)
 		return valueSet
 
-	def getRow(self, query):
-		logger.debug2(u"getRow: %s", query)
+	def getRow(self, query, conn=None, cursor=None):  # pylint: disable=unused-argument
+		logger.trace("getRow: %s", query)
 		(conn, cursor) = self.connect()
 		row = {}
 		try:
 			self.execute(query, conn, cursor)
 			try:
 				row = cursor.fetchone()
-			except Exception as retrieveError:
-				logger.debug2("Failed to fetch data: %s", retrieveError)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.trace("Failed to fetch data: %s", err)
 
 			if not row:
-				logger.debug(u"No result for query '%s'", query)
+				logger.debug("No result for query '%s'", query)
 				row = {}
 			else:
-				logger.debug2(u"Result: '%s'", row)
+				logger.trace("Result: '%s'", row)
 		finally:
 			self.close(conn, cursor)
 		return row
 
-	def insert(self, table, valueHash):
+	def insert(self, table, valueHash, conn=None, cursor=None):  # pylint: disable=unused-argument
 		(conn, cursor) = self.connect()
 		result = -1
 		try:
 			colNames = []
 			values = []
 			for (key, value) in valueHash.items():
-				colNames.append(u"`{0}`".format(key))
+				colNames.append(f"`{key}`")
 				if value is None:
-					values.append(u"NULL")
+					values.append("NULL")
 				elif isinstance(value, bool):
 					if value:
-						values.append(u"1")
+						values.append("1")
 					else:
-						values.append(u"0")
+						values.append("0")
 				elif isinstance(value, (float, int)):
-					values.append(u"{0}".format(value))
+					values.append(f"{value}")
 				else:
-					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value))))
+					values.append(f"'{self.escapeApostrophe(self.escapeBackslash(value))}'")
 
-			query = u'INSERT INTO `{table}` ({columns}) VALUES ({values});'.format(columns=', '.join(colNames), values=', '.join(values), table=table)
-			logger.debug2(u"insert: %s", query)
+			query = f"INSERT INTO `{table}` ({', '.join(colNames)}) VALUES ({', '.join(values)});"
+			logger.trace("insert: %s", query)
 
 			with self._WRITE_LOCK:
 				self.execute(query, conn, cursor)
@@ -183,7 +185,7 @@ class SQLite(SQL):
 		result = 0
 		try:
 			if not valueHash:
-				raise BackendBadValueError(u"No values given")
+				raise BackendBadValueError("No values given")
 
 			values = []
 			for (key, value) in valueHash.items():
@@ -191,19 +193,19 @@ class SQLite(SQL):
 					continue
 
 				if value is None:
-					values.append(u"`{0}` = NULL".format(key))
+					values.append(f"`{key}` = NULL")
 				elif isinstance(value, bool):
 					if value:
-						values.append(u"`{0}` = 1".format(key))
+						values.append(f"`{key}` = 1")
 					else:
-						values.append(u"`{0}` = 0".format(key))
+						values.append(f"`{key}` = 0")
 				elif isinstance(value, (float, int)):
-					values.append(u"`{0}` = {1}".format(key, value))
+					values.append(f"`{key}` = {value}")
 				else:
-					values.append(u"`{0}` = \'{1}\'".format(key, self.escapeApostrophe(self.escapeBackslash(value))))
+					values.append(f"`{key}` = '{self.escapeApostrophe(self.escapeBackslash(value))}'")
 
-			query = u"UPDATE `{table}` SET {values} WHERE {condition};".format(table=table, values=', '.join(values), condition=where)
-			logger.debug2(u"update: %s", query)
+			query = f"UPDATE `{table}` SET {', '.join(values)} WHERE {where};"
+			logger.trace("update: %s", query)
 			with self._WRITE_LOCK:
 				result = self.execute(query, conn, cursor).rowcount
 				conn.commit()
@@ -211,12 +213,12 @@ class SQLite(SQL):
 			self.close(conn, cursor)
 		return result
 
-	def delete(self, table, where):
+	def delete(self, table, where, conn=None, cursor=None):  # pylint: disable=unused-argument
 		(conn, cursor) = self.connect()
 		result = 0
 		try:
-			query = u"DELETE FROM `%s` WHERE %s;" % (table, where)
-			logger.debug2(u"delete: %s", query)
+			query = "DELETE FROM `%s` WHERE %s;" % (table, where)
+			logger.trace("delete: %s", query)
 			with self._WRITE_LOCK:
 				result = self.execute(query, conn, cursor).rowcount
 				conn.commit()
@@ -232,7 +234,7 @@ class SQLite(SQL):
 			needClose = True
 
 		try:
-			logger.debug2(u"SQL query: %s", query)
+			logger.trace("SQL query: %s", query)
 			res = cursor.execute(query)
 		finally:
 			if needClose:
@@ -250,18 +252,18 @@ class SQLite(SQL):
 		:rtype: dict
 		"""
 		tables = {}
-		logger.debug2(u"Current tables:")
+		logger.trace("Current tables:")
 		for i in self.getSet('SELECT name FROM sqlite_master WHERE type = "table";'):
 			tableName = tuple(i.values())[0].upper()
-			logger.debug2(u" [ %s ]", tableName)
+			logger.trace(" [ %s ]", tableName)
 			fields = [j['name'] for j in self.getSet('PRAGMA table_info(`%s`);' % tableName)]
 			tables[tableName] = fields
-			logger.debug2("Fields in %s: %s", tableName, fields)
+			logger.trace("Fields in %s: %s", tableName, fields)
 
 		return tables
 
 	def getTableCreationOptions(self, table):
-		return u''
+		return ''
 
 
 class SQLiteBackend(SQLBackend):
@@ -276,7 +278,7 @@ class SQLiteBackend(SQLBackend):
 		self._licenseManagementEnabled = True
 		self._licenseManagementModule = True
 		self._sqlBackendModule = True
-		logger.debug(u'SQLiteBackend created: %s', self)
+		logger.debug('SQLiteBackend created: %s', self)
 
 	def backend_createBase(self):
 		try:
@@ -287,7 +289,7 @@ class SQLiteBackend(SQLBackend):
 			self._sql.connect()
 			return SQLBackend.backend_createBase(self)
 
-	def _createAuditHardwareTables(self):
+	def _createAuditHardwareTables(self):  # pylint: disable=too-many-statements
 		"""
 		Creating tables for hardware audit data.
 
@@ -299,90 +301,69 @@ class SQLiteBackend(SQLBackend):
 		existingTables = set(tables.keys())
 
 		def removeTrailingComma(query):
-			if query.endswith(u','):
+			if query.endswith(','):
 				return query[:-1]
 
 			return query
 
 		def finishSQLQuery(tableExists, tableName):
 			if tableExists:
-				return u' ;\n'
-			else:
-				return u'\n) %s;\n' % self._sql.getTableCreationOptions(tableName)
+				return ' ;\n'
+			return '\n) %s;\n' % self._sql.getTableCreationOptions(tableName)
 
-		def getSQLStatements():
-			for (hwClass, values) in self._auditHardwareConfig.items():
-				logger.debug(u"Processing hardware class '%s'", hwClass)
-				hardwareDeviceTableName = u'HARDWARE_DEVICE_{0}'.format(hwClass)
-				hardwareConfigTableName = u'HARDWARE_CONFIG_{0}'.format(hwClass)
+		def getSQLStatements():  # pylint: disable=too-many-branches,too-many-statements
+			for (hwClass, values) in self._auditHardwareConfig.items():  # pylint: disable=too-many-nested-blocks
+				logger.debug("Processing hardware class '%s'", hwClass)
+				hardwareDeviceTableName = f"HARDWARE_DEVICE_{hwClass}"
+				hardwareConfigTableName = f"HARDWARE_CONFIG_{hwClass}"
 
 				hardwareDeviceTableExists = hardwareDeviceTableName in existingTables
 				hardwareConfigTableExists = hardwareConfigTableName in existingTables
 
 				if hardwareDeviceTableExists:
-					hardwareDeviceTable = u'ALTER TABLE `{name}`\n'.format(
-						name=hardwareDeviceTableName
-					)
+					hardwareDeviceTable = f"ALTER TABLE `{hardwareDeviceTableName}`\n"
 				else:
 					hardwareDeviceTable = (
-						u'CREATE TABLE `{name}` (\n'
-						u'`hardware_id` INTEGER NOT NULL {autoincrement},\n'.format(
-							name=hardwareDeviceTableName,
-							autoincrement=self._sql.AUTOINCREMENT
-						)
+						f"CREATE TABLE `{hardwareDeviceTableName}` (\n"
+						f"`hardware_id` INTEGER NOT NULL {self._sql.AUTOINCREMENT},\n"
 					)
 
-				avoidProcessingFurtherHardwareDevice = False
+				avoid_process_further_hw_dev = False
 				hardwareDeviceValuesProcessed = 0
 				for (value, valueInfo) in values.items():
-					logger.debug(u"  Processing value '%s'", value)
+					logger.debug("  Processing value '%s'", value)
 					if valueInfo['Scope'] == 'g':
 						if hardwareDeviceTableExists:
 							if value in tables[hardwareDeviceTableName]:
 								# Column exists => change
 								if not self._sql.ALTER_TABLE_CHANGE_SUPPORTED:
 									continue
-
-								hardwareDeviceTable += u'CHANGE `{column}` `{column}` {type} NULL,\n'.format(
-									column=value,
-									type=valueInfo['Type']
-								)
+								hardwareDeviceTable += f"CHANGE `{value}` `{value}` {valueInfo['Type']} NULL,\n"
 							else:
 								# Column does not exist => add
-								yield hardwareDeviceTable + u'ADD COLUMN `{column}` {type} NULL;'.format(
-									column=value,
-									type=valueInfo["Type"]
-								)
-								avoidProcessingFurtherHardwareDevice = True
+								yield f"{hardwareDeviceTable} ADD COLUMN `{value}` {valueInfo['Type']} NULL;"
+								avoid_process_further_hw_dev = True
 						else:
-							hardwareDeviceTable += u'`{column}` {type} NULL,\n'.format(
-								column=value,
-								type=valueInfo["Type"]
-							)
+							hardwareDeviceTable += f"`{value}` {valueInfo['Type']} NULL,\n"
 						hardwareDeviceValuesProcessed += 1
 
 				if hardwareConfigTableExists:
-					hardwareConfigTable = u'ALTER TABLE `{name}`\n'.format(
-						name=hardwareConfigTableName
-					)
+					hardwareConfigTable = f"ALTER TABLE `{hardwareConfigTableName}`\n"
 				else:
 					hardwareConfigTable = (
-						u'CREATE TABLE `{name}` (\n'
-						u'`config_id` INTEGER NOT NULL {autoincrement},\n'
-						u'`hostId` varchar(255) NOT NULL,\n'
-						u'`hardware_id` INTEGER NOT NULL,\n'
-						u"`firstseen` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01',\n"
-						u"`lastseen` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01',\n"
-						u'`state` TINYINT NOT NULL,\n'.format(
-							name=hardwareConfigTableName,
-							autoincrement=self._sql.AUTOINCREMENT
-						)
+						f"CREATE TABLE `{hardwareConfigTableName}` (\n"
+						f"`config_id` INTEGER NOT NULL {self._sql.AUTOINCREMENT},\n"
+						"`hostId` varchar(255) NOT NULL,\n"
+						"`hardware_id` INTEGER NOT NULL,\n"
+						"`firstseen` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01',\n"
+						"`lastseen` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01',\n"
+						"`state` TINYINT NOT NULL,\n"
 					)
 
-				avoidProcessingFurtherHardwareConfig = False
+				avoid_process_further_hw_cnf = False
 				hardwareConfigValuesProcessed = 0
 				for (value, valueInfo) in values.items():
-					logger.debug(u"  Processing value '%s'", value)
+					logger.debug("  Processing value '%s'", value)
 					if valueInfo['Scope'] == 'i':
 						if hardwareConfigTableExists:
 							if value in tables[hardwareConfigTableName]:
@@ -390,28 +371,22 @@ class SQLiteBackend(SQLBackend):
 								if not self._sql.ALTER_TABLE_CHANGE_SUPPORTED:
 									continue
 
-								hardwareConfigTable += u'CHANGE `{column}` `{column}` {type} NULL,\n'.format(
-									column=value,
-									type=valueInfo['Type']
-								)
+								hardwareConfigTable += f"CHANGE `{value}` `{value}` {valueInfo['Type']} NULL,\n"
 							else:
 								# Column does not exist => add
-								yield hardwareConfigTable + u' ADD COLUMN `{column}` {type} NULL;'.format(
-									column=value,
-									type=valueInfo['Type']
-								)
-								avoidProcessingFurtherHardwareConfig = True
+								yield f"{hardwareConfigTable} ADD COLUMN `{value}` {valueInfo['Type']} NULL;"
+								avoid_process_further_hw_cnf = True
 						else:
-							hardwareConfigTable += u'`%s` %s NULL,\n' % (value, valueInfo['Type'])
+							hardwareConfigTable += f"`{value}` {valueInfo['Type']} NULL,\n"
 						hardwareConfigValuesProcessed += 1
 
-				if avoidProcessingFurtherHardwareConfig or avoidProcessingFurtherHardwareDevice:
+				if avoid_process_further_hw_cnf or avoid_process_further_hw_dev:
 					continue
 
 				if not hardwareDeviceTableExists:
-					hardwareDeviceTable += u'PRIMARY KEY (`hardware_id`)\n'
+					hardwareDeviceTable += 'PRIMARY KEY (`hardware_id`)\n'
 				if not hardwareConfigTableExists:
-					hardwareConfigTable += u'PRIMARY KEY (`config_id`)\n'
+					hardwareConfigTable += 'PRIMARY KEY (`config_id`)\n'
 
 				# Remove leading and trailing whitespace
 				hardwareDeviceTable = hardwareDeviceTable.strip()
@@ -430,9 +405,9 @@ class SQLiteBackend(SQLBackend):
 					yield hardwareConfigTable
 
 		for statement in getSQLStatements():
-			logger.debug2("Processing statement %s", statement)
+			logger.trace("Processing statement %s", statement)
 			self._sql.execute(statement)
-			logger.debug2("Done with statement.")
+			logger.trace("Done with statement.")
 
 
 class SQLiteObjectBackendModificationTracker(SQLBackendObjectModificationTracker):
