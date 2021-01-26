@@ -21,9 +21,6 @@
 Backend that tracks modifications.
 
 :copyright: uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Erol Ueluekmen <e.ueluekmen@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
@@ -59,15 +56,13 @@ class ModificationTrackingBackend(ExtendedBackend):
 			try:
 				meth = getattr(bcl, event)
 				meth(self, *args)
-			except Exception as e:
-				logger.error(e)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error(err)
 
 	def _executeMethod(self, methodName, **kwargs):
 		logger.debug(
-			u"ModificationTrackingBackend %s: executing %s on backend %s",
-			self,
-			methodName,
-			self._backend
+			"ModificationTrackingBackend %s: executing %s on backend %s",
+			self, methodName, self._backend
 		)
 		meth = getattr(self._backend, methodName)
 		result = meth(**kwargs)
