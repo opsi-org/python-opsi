@@ -73,6 +73,7 @@ LOG_TYPES = {  # key = logtype, value = requires objectId for read
 	'winpe': True,
 }
 _PASSWD_LINE_REGEX = re.compile(r'^\s*([^:]+)\s*:\s*(\S+)\s*$')
+OPSI_HARDWARE_CLASSES = []
 
 logger = Logger()
 
@@ -1112,7 +1113,6 @@ depot where the method is.
 
 		classes = []
 		try:  # pylint: disable=too-many-nested-blocks
-			OPSI_HARDWARE_CLASSES = []
 			with open(self._auditHardwareConfigFile) as hwcFile:
 				exec(hwcFile.read())  # pylint: disable=exec-used
 
