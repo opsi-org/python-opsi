@@ -23,7 +23,6 @@ Depotserver backend.
 """
 
 import os
-import grp
 from contextlib import contextmanager
 
 from OPSI.Backend.Base import ExtendedBackend
@@ -45,6 +44,9 @@ from OPSI.Util.File import ZsyncFile
 from OPSI.Config import FILE_ADMIN_GROUP
 
 import opsicommon.logging
+
+if os.name == "posix":
+	import grp
 
 __all__ = ('DepotserverBackend', 'DepotserverPackageManager')
 
@@ -144,8 +146,9 @@ class DepotserverBackend(ExtendedBackend):
 		md5 = md5sum(filename)
 		with open(md5sumFilename, 'w') as md5file:
 			md5file.write(md5)
-		os.chown(md5sumFilename, -1, grp.getgrnam(FILE_ADMIN_GROUP)[2])
-		os.chmod(md5file, 0o660)
+		if os.name == "posix":
+			os.chown(md5sumFilename, -1, grp.getgrnam(FILE_ADMIN_GROUP)[2])
+			os.chmod(md5file, 0o660)
 
 	def depot_createZsyncFile(self, filename, zsyncFilename):  # pylint: disable=no-self-use
 		if not os.path.exists(filename):
@@ -153,8 +156,9 @@ class DepotserverBackend(ExtendedBackend):
 		logger.info("Creating zsync file '%s'", zsyncFilename)
 		zsyncFile = ZsyncFile(zsyncFilename)
 		zsyncFile.generate(filename)
-		os.chown(zsyncFilename, -1, grp.getgrnam(FILE_ADMIN_GROUP)[2])
-		os.chmod(zsyncFilename, 0o660)
+		if os.name == "posix":
+			os.chown(zsyncFilename, -1, grp.getgrnam(FILE_ADMIN_GROUP)[2])
+			os.chmod(zsyncFilename, 0o660)
 
 
 class DepotserverPackageManager:
