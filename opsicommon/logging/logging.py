@@ -636,7 +636,7 @@ def get_all_handlers(handler_type: type = None, handler_name: str = None):
 		if not isinstance(_logger, logging.PlaceHolder):
 			for _handler in _logger.handlers:
 				if (
-					(not handler_type or isinstance(_handler, handler_type)) and
+					(not handler_type or type(_handler) == handler_type) and  # exact type needed, not subclass pylint: disable=unidiomatic-typecheck
 					(not handler_name or _handler.name == handler_name)
 				):
 					handlers.append(_handler)
@@ -656,7 +656,7 @@ def remove_all_handlers(handler_type: type = None, handler_name: str = None):
 		if not isinstance(_logger, logging.PlaceHolder):
 			for _handler in _logger.handlers:
 				if (
-					(not handler_type or isinstance(_handler, handler_type)) and
+					(not handler_type or type(_handler) == handler_type) and  # exact type needed, not subclass pylint: disable=unidiomatic-typecheck
 					(not handler_name or _handler.name == handler_name)
 				):
 					_logger.removeHandler(_handler)
