@@ -24,8 +24,6 @@ that are already running an operating system that has not been
 installed via opsi.
 
 :copyright: uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
@@ -37,16 +35,20 @@ from OPSI.Backend.BackendManager import BackendManager
 from OPSI.System import which
 from OPSI.Types import forceUnicode, forceUnicodeLower
 
+from ..logging import logger, LOG_WARNING, LOG_DEBUG, logging_config
+from .common import SKIP_MARKER
 from .posix import LinuxDeployThread, paramiko, WARNING_POLICY
 from .windows import WindowsDeployThread
-from .common import logger, SKIP_MARKER, LOG_WARNING, LOG_DEBUG, logging_config
 
-def deploy_client_agent(hosts, deployLinux, logLevel=LOG_WARNING, debugFile=None, hostFile=None,
-						password=None, maxThreads=1, useIPAddress=False, useNetbios=False,
-						useFQDN=False, mountWithSmbclient=True, depot=None, group=None,
-						username=None, shutdown=False, reboot=False, startService=True,
-						stopOnPingFailure=False, skipExistingClient=False,
-						keepClientOnFailure=True, sshHostkeyPolicy=None):
+
+def deploy_client_agent(  # pylint: disable=too-many-arguments,too-many-locals,too-many-statements,too-many-branches
+	hosts, deployLinux, logLevel=LOG_WARNING, debugFile=None, hostFile=None,
+	password=None, maxThreads=1, useIPAddress=False, useNetbios=False,
+	useFQDN=False, mountWithSmbclient=True, depot=None, group=None,
+	username=None, shutdown=False, reboot=False, startService=True,
+	stopOnPingFailure=False, skipExistingClient=False,
+	keepClientOnFailure=True, sshHostkeyPolicy=None
+):
 
 	if deployLinux and username is None:
 		username = "root"
@@ -56,9 +58,9 @@ def deploy_client_agent(hosts, deployLinux, logLevel=LOG_WARNING, debugFile=None
 
 	if deployLinux and paramiko is None:
 		message = (
-			u"Could not import 'paramiko'. "
-			u"Deploying to Linux not possible. "
-			u"Please install paramiko through your package manager or pip."
+			"Could not import 'paramiko'. "
+			"Deploying to Linux not possible. "
+			"Please install paramiko through your package manager or pip."
 		)
 		logger.critical(message)
 		raise Exception(message)
@@ -91,11 +93,11 @@ def deploy_client_agent(hosts, deployLinux, logLevel=LOG_WARNING, debugFile=None
 		if not password:
 			raise Exception("No password given.")
 
-	for character in (u'$', u'§'):
+	for character in ('$', '§'):
 		if character in password:
 			logger.warning(
-				u"Please be aware that special characters in passwords may result"
-				u"in incorrect behaviour."
+				"Please be aware that special characters in passwords may result "
+				"in incorrect behaviour."
 			)
 			break
 	logger.addConfidentialString(password)
@@ -119,14 +121,10 @@ def deploy_client_agent(hosts, deployLinux, logLevel=LOG_WARNING, debugFile=None
 			logger.debug('Explicit check for smbclient.')
 			try:
 				which('smbclient')
-			except Exception as error:
-				raise Exception(
-					"Please make sure that 'smbclient' is installed: "
-					"{0}".format(error)
-				)
-		else:
-			if os.getuid() != 0:
-				raise Exception("You have to be root to use mount.")
+			except Exception as err:
+				raise Exception(f"Please make sure that 'smbclient' is installed: {err}") from err
+		elif os.getuid() != 0:
+			raise Exception("You have to be root to use mount.")
 	else:
 		logger.info("Deploying to Linux.")
 		deploymentClass = LinuxDeployThread
@@ -134,19 +132,19 @@ def deploy_client_agent(hosts, deployLinux, logLevel=LOG_WARNING, debugFile=None
 
 	# Create BackendManager
 	backend = BackendManager(
-		dispatchConfigFile=u'/etc/opsi/backendManager/dispatch.conf',
-		backendConfigDir=u'/etc/opsi/backends',
+		dispatchConfigFile='/etc/opsi/backendManager/dispatch.conf',
+		backendConfigDir='/etc/opsi/backends',
 		extend=True,
 		depotbackend=False,
 		hostControlBackend=False
 	)
 
 	if depot:
-		assert backend.config_getObjects(id='clientconfig.depot.id')
-		if not backend.host_getObjects(type=['OpsiConfigserver', 'OpsiDepotserver'], id=depot):
-			raise ValueError("No depot with id {0!r} found!".format(depot))
-	if group and not backend.group_getObjects(id=group):
-		raise ValueError(u"Group {0} does not exist.".format(group))
+		assert backend.config_getObjects(id='clientconfig.depot.id')  # pylint: disable=no-member
+		if not backend.host_getObjects(type=['OpsiConfigserver', 'OpsiDepotserver'], id=depot):  # pylint: disable=no-member
+			raise ValueError(f"No depot with id {depot} found")
+	if group and not backend.group_getObjects(id=group):  # pylint: disable=no-member
+		raise ValueError(f"Group {group} does not exist")
 
 	total = 0
 	fails = 0
@@ -201,7 +199,7 @@ def deploy_client_agent(hosts, deployLinux, logLevel=LOG_WARNING, debugFile=None
 					fails += 1
 		runningThreads = newRunningThreads
 		time.sleep(1)
-	
+
 	success = total - fails - skips
 
 	logger.notice("%s/%s deployments successfully", success, total)
@@ -212,5 +210,4 @@ def deploy_client_agent(hosts, deployLinux, logLevel=LOG_WARNING, debugFile=None
 
 	if fails:
 		return 1
-	else:
-		return 0
+	return 0

@@ -1,3 +1,26 @@
+# -*- coding: utf-8 -*-
+
+# This tool is part of the desktop management solution opsi
+# (open pc server integration) http://www.opsi.org
+# Copyright (C) 2007-2019 uib GmbH <info@uib.de>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+:copyright: uib GmbH <info@uib.de>
+:license: GNU Affero General Public License version 3
+"""
+
 import time
 import threading
 import socket
@@ -6,19 +29,21 @@ import re
 from OPSI.System import execute, getFQDN
 from OPSI.Object import OpsiClient, ProductOnClient
 from OPSI.Types import forceHostId, forceIPAddress, forceUnicodeLower, forceInt
-from opsicommon.logging import logger, logging_config, LOG_DEBUG, LOG_WARNING
+from opsicommon.logging import logger
 
 SKIP_MARKER = 'clientskipped'
 
 class SkipClientException(Exception):
 	pass
 
-class DeployThread(threading.Thread):
-	def __init__(self, host, backend, username, password, shutdown, reboot, startService,
-				deploymentMethod="auto", stopOnPingFailure=True,
-				skipExistingClient=False, mountWithSmbclient=True,
-				keepClientOnFailure=False, additionalClientSettings=None,
-				depot=None, group=None):
+class DeployThread(threading.Thread):  # pylint: disable=too-many-instance-attributes
+	def __init__(  # pylint: disable=too-many-arguments,too-many-locals
+		self, host, backend, username, password, shutdown, reboot, startService,
+		deploymentMethod="auto", stopOnPingFailure=True,
+		skipExistingClient=False, mountWithSmbclient=True,
+		keepClientOnFailure=False, additionalClientSettings=None,
+		depot=None, group=None
+	):
 
 		threading.Thread.__init__(self)
 
@@ -134,8 +159,8 @@ class DeployThread(threading.Thread):
 		logger.info("Getting host %s by name", hostId)
 		try:
 			ipAddress = socket.gethostbyname(hostId)
-		except Exception as error:
-			logger.warning("Failed to get ip address for host %s by syscall: %s", hostId, error)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.warning("Failed to get ip address for host %s by syscall: %s", hostId, err)
 
 		if ipAddress:
 			logger.notice("Got ip address %s from syscall", ipAddress)
@@ -161,8 +186,8 @@ class DeployThread(threading.Thread):
 				match = re.search(r"\s+(\d+)%\s+packet\s+loss", line)
 				if match and (forceInt(match.group(1)) < 100):
 					alive = True
-		except Exception as error:
-			logger.error(error)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.error(err)
 
 		if alive:
 			logger.notice("Host %s is up", ipAddress)
@@ -209,8 +234,8 @@ class DeployThread(threading.Thread):
 		try:
 			self.backend.objectToGroup_createObjects([mapping])
 			logger.notice("Added %s to group %s", clientId, groupId)
-		except Exception as creationError:
-			logger.warning("Adding %s to group %s failed: %s", clientId, groupId, creationError)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.warning("Adding %s to group %s failed: %s", clientId, groupId, err)
 
 	def _assignClientToDepot(self, clientId):
 		depot = self.depot
@@ -226,8 +251,8 @@ class DeployThread(threading.Thread):
 		try:
 			self.backend.configState_createObjects([depotAssignment])
 			logger.notice("Assigned %s to depot %s", clientId, depot)
-		except Exception as assignmentError:
-			logger.warning("Assgining %s to depot %s failed: %s", clientId, depot, assignmentError)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.warning("Assgining %s to depot %s failed: %s", clientId, depot, err)
 
 	@staticmethod
 	def _getMacAddress(ipAddress):
@@ -276,7 +301,7 @@ class DeployThread(threading.Thread):
 
 	def _removeHostFromBackend(self, host):
 		try:
-			logger.notice('Deleting client %s from backend.', host)
+			logger.notice("Deleting client %s from backend", host)
 			self.backend.host_deleteObjects([host])
-		except Exception as error:
-			logger.error(error)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.error(err)

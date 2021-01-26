@@ -1,15 +1,40 @@
+# -*- coding: utf-8 -*-
+
+# This tool is part of the desktop management solution opsi
+# (open pc server integration) http://www.opsi.org
+# Copyright (C) 2007-2019 uib GmbH <info@uib.de>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+:copyright: uib GmbH <info@uib.de>
+:license: GNU Affero General Public License version 3
+"""
+
 import sys
 import os
+import re
+import socket
 from contextlib import closing, contextmanager
 
 from OPSI.Util.File import IniFile
 from OPSI.Util import randomString
-from OPSI.Types import forceUnicode, forceUnicodeLower
+from OPSI.Types import forceUnicodeLower
 from OPSI.System import copy
 from OPSI.Object import ProductOnClient
 
-from opsicommon.deployment.common import logger, DeployThread, SkipClientException, SKIP_MARKER
-from opsicommon.deployment.common import socket, re
+from ..logging import logger
+from .common import DeployThread, SkipClientException, SKIP_MARKER
 
 try:
 	import paramiko	# type: ignore
@@ -26,11 +51,13 @@ class SSHRemoteExecutionException(Exception):
 	pass
 
 class LinuxDeployThread(DeployThread):
-	def __init__(self, host, backend, username, password, shutdown, reboot, startService,
+	def __init__(  # pylint: disable=too-many-arguments,too-many-locals
+		self, host, backend, username, password, shutdown, reboot, startService,
 		deploymentMethod="hostname", stopOnPingFailure=True,
 		skipExistingClient=False, mountWithSmbclient=True,
 		keepClientOnFailure=False, additionalClientSettings=None,
-		depot=None, group=None, sshPolicy=WARNING_POLICY):
+		depot=None, group=None, sshPolicy=WARNING_POLICY
+	):
 
 		DeployThread.__init__(self, host, backend, username, password, shutdown,
 		reboot, startService, deploymentMethod, stopOnPingFailure,
@@ -43,7 +70,7 @@ class LinuxDeployThread(DeployThread):
 	def run(self):
 		self._installWithSSH()
 
-	def _installWithSSH(self):
+	def _installWithSSH(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		logger.debug('Installing with files copied to client via scp.')
 		host = forceUnicodeLower(self.host)
 		hostId = ''
@@ -94,7 +121,10 @@ class LinuxDeployThread(DeployThread):
 				logger.debug("Will use: %s", opsiscript)
 				self._executeViaSSH(f"chmod +x {opsiscript}")
 
-				installCommand = f"{opsiscript} -batch -silent /tmp/opsi-linux-client-agent/files/opsi/setup.opsiscript /var/log/opsi-client-agent/opsi-script/opsi-client-agent.log -PARAMETER REMOTEDEPLOY"
+				installCommand = (
+					f"{opsiscript} -batch -silent /tmp/opsi-linux-client-agent/files/opsi/setup.opsiscript"
+					" /var/log/opsi-client-agent/opsi-script/opsi-client-agent.log -PARAMETER REMOTEDEPLOY"
+				)
 				nonrootExecution = self.username != 'root'
 				credentialsfile=None
 				if nonrootExecution:
@@ -138,11 +168,11 @@ class LinuxDeployThread(DeployThread):
 			logger.notice("Skipping host %s", hostId)
 			self.success = SKIP_MARKER
 			return
-		except (Exception, paramiko.SSHException) as error:
-			logger.error("Deployment to %s failed: %s", self.host, error)
+		except (Exception, paramiko.SSHException) as err:  # pylint: disable=broad-except
+			logger.error("Deployment to %s failed: %s", self.host, err)
 			self.success = False
-			if 'Incompatible ssh peer (no acceptable kex algorithm)' in forceUnicode(error):
-				logger.error('Please install paramiko v1.15.1 or newer.')
+			if 'Incompatible ssh peer (no acceptable kex algorithm)' in str(err):
+				logger.error("Please install paramiko v1.15.1 or newer")
 
 			if self._clientCreatedByScript and hostObj and not self.keepClientOnFailure:
 				self._removeHostFromBackend(hostObj)
@@ -150,25 +180,25 @@ class LinuxDeployThread(DeployThread):
 			if self._sshConnection is not None:
 				try:
 					self._sshConnection.close()
-				except Exception as error:
-					logger.debug2("Closing SSH connection failed: %s", error)
+				except Exception as err:  # pylint: disable=broad-except
+					logger.trace("Closing SSH connection failed: %s", err)
 		finally:
 			try:
 				self._executeViaSSH(f"rm -rf {remoteFolder}")
-			except (Exception, paramiko.SSHException) as error:
-				logger.error(error)
+			except (Exception, paramiko.SSHException) as err:  # pylint: disable=broad-except
+				logger.error(err)
 
 	def _getHostId(self, host):
 		hostId = None
 		try:
 			hostId = super()._getHostId(host)
-		except socket.herror as error:
+		except socket.herror:
 			logger.warning("Resolving hostName failed, attempting to resolve fqdn via ssh connection to ip")
 			if re.match(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', host):
 				ssh = paramiko.SSHClient()
 				ssh.set_missing_host_key_policy(self._sshPolicy())
 				ssh.connect(host, "22", self.username, self.password)
-				stdin, stdout, stderr = ssh.exec_command("hostname -f")
+				_stdin, stdout, _stderr = ssh.exec_command("hostname -f")
 				hostId = stdout.readlines()[0].encode('ascii','ignore').strip()
 				logger.info("resolved FQDN: %s (type %s)", hostId, type(hostId))
 		if hostId:
@@ -210,8 +240,7 @@ class LinuxDeployThread(DeployThread):
 		output = self._executeViaSSH('uname -m')
 		if "64" not in output:
 			return "32"
-		else:
-			return "64"
+		return "64"
 
 	def _connectViaSSH(self):
 		if self._sshConnection is not None:
@@ -245,8 +274,8 @@ class LinuxDeployThread(DeployThread):
 		def createFolderIfMissing(path):
 			try:
 				ftpConnection.mkdir(path)
-			except Exception as error:
-				logger.debug("Can't create %s on remote: %s", path, error)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.debug("Can't create %s on remote: %s", path, err)
 
 		self._connectViaSSH()
 
@@ -267,7 +296,7 @@ class LinuxDeployThread(DeployThread):
 						local = os.path.join(dirpath, filename)
 						remote = os.path.join(remotePath, dirpath, filename)
 
-						logger.debug2("Copying %s -> %s", local, remote)
+						logger.trace("Copying %s -> %s", local, remote)
 						ftpConnection.put(local, remote)
 
 	def _finaliseInstallation(self, credentialsfile=None):
@@ -276,15 +305,15 @@ class LinuxDeployThread(DeployThread):
 			command = "shutdown -r 1 & disown"
 			try:
 				self._executeViaSSH(command)
-			except Exception as error:
-				logger.error("Failed to reboot computer: %s", error)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error("Failed to reboot computer: %s", err)
 		elif self.shutdown:
 			logger.notice("Shutting down machine %s", self.networkAddress)
 			command = "shutdown -h 1 & disown"
 			try:
 				self._executeViaSSH(command)
-			except Exception as error:
-				logger.error("Failed to shutdown computer: %s", error)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error("Failed to shutdown computer: %s", err)
 		elif self.startService:
 			logger.notice("Restarting opsiclientd service on computer: %s", self.networkAddress)
 			command = "service opsiclientd restart"
@@ -292,7 +321,7 @@ class LinuxDeployThread(DeployThread):
 				command = f"sudo --stdin -- {command} < {credentialsfile}"
 			try:
 				self._executeViaSSH(command)
-			except Exception as error:
+			except Exception as err:  # pylint: disable=broad-except
 				logger.error("Failed to restart service opsiclientd on computer: %s", self.networkAddress)
 
 	def _setOpsiClientAgentToInstalled(self, hostId):
