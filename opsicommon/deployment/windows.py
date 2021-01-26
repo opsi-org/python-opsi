@@ -1,3 +1,26 @@
+# -*- coding: utf-8 -*-
+
+# This tool is part of the desktop management solution opsi
+# (open pc server integration) http://www.opsi.org
+# Copyright (C) 2007-2019 uib GmbH <info@uib.de>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+:copyright: uib GmbH <info@uib.de>
+:license: GNU Affero General Public License version 3
+"""
+
 import time
 import socket
 import shutil
@@ -9,7 +32,9 @@ from OPSI.Util import randomString
 from OPSI.Types import forceHostId, forceIPAddress, forceUnicode, forceUnicodeLower
 from OPSI.System import copy, execute, getFQDN, umount, which
 
-from opsicommon.deployment.common import logger, LOG_DEBUG, DeployThread, SkipClientException, SKIP_MARKER
+from ..logging import logger, LOG_DEBUG
+from .common import DeployThread, SkipClientException, SKIP_MARKER
+
 
 def winexe(cmd, host, username, password):
 	cmd = forceUnicode(cmd)
@@ -23,17 +48,17 @@ def winexe(cmd, host, username, password):
 
 	try:
 		executable = which('winexe')
-	except Exception:
+	except Exception as err:  # pylint: disable=broad-except
 		logger.critical(
 			"Unable to find 'winexe'. Please install 'opsi-windows-support' "
 			"through your operating systems package manager!"
 		)
-		raise RuntimeError("Missing 'winexe'")
+		raise RuntimeError("Missing 'winexe'") from err
 
 	try:
 		logger.info('Winexe Version: %s', ''.join(execute(f'{executable} -V')))
-	except Exception as versionError:
-		logger.warning("Failed to get version: %s", versionError)
+	except Exception as err:  # pylint: disable=broad-except
+		logger.warning("Failed to get version: %s", err)
 
 	credentials=username + '%' + password.replace("'", "'\"'\"'")
 	if logger.isEnabledFor(LOG_DEBUG):
@@ -41,16 +66,19 @@ def winexe(cmd, host, username, password):
 	return execute(f"{executable} -U '{credentials}' //{host} '{cmd}'")
 
 class WindowsDeployThread(DeployThread):
-	def __init__(self, host, backend, username, password, shutdown, reboot, startService,
-			deploymentMethod="hostname", stopOnPingFailure=True,
-			skipExistingClient=False, mountWithSmbclient=True,
-			keepClientOnFailure=False, additionalClientSettings=None,
-			depot=None, group=None):
-
-		DeployThread.__init__(self, host, backend, username, password, shutdown,
+	def __init__(  # pylint: disable=too-many-arguments,too-many-locals
+		self, host, backend, username, password, shutdown, reboot, startService,
+		deploymentMethod="hostname", stopOnPingFailure=True,
+		skipExistingClient=False, mountWithSmbclient=True,
+		keepClientOnFailure=False, additionalClientSettings=None,
+		depot=None, group=None
+	):
+		DeployThread.__init__(
+			self, host, backend, username, password, shutdown,
 			reboot, startService, deploymentMethod, stopOnPingFailure,
 			skipExistingClient, mountWithSmbclient, keepClientOnFailure,
-			additionalClientSettings, depot, group)
+			additionalClientSettings, depot, group
+		)
 
 	def run(self):
 		if self.mountWithSmbclient:
@@ -58,7 +86,7 @@ class WindowsDeployThread(DeployThread):
 		else:
 			self._installWithServersideMount()
 
-	def _installWithSmbclient(self):
+	def _installWithSmbclient(self):  # pylint: disable=too-many-branches,too-many-statements
 		logger.debug('Installing using client-side mount.')
 		host = forceUnicodeLower(self.host)
 		hostId = ''
@@ -87,31 +115,41 @@ class WindowsDeployThread(DeployThread):
 			try:
 				logger.notice("Copying installation files")
 				credentials=self.username + '%' + self.password.replace("'", "'\"'\"'")
-				if logger.isEnabledFor(LOG_DEBUG):
-					cmd = f"{which('smbclient')} -m SMB3 -d 9 //{self.networkAddress}/c$ -U '{credentials}' -c 'prompt; recurse; md tmp; cd tmp; md opsi-client-agent_inst; cd opsi-client-agent_inst; mput files; mput utils; cd files\\opsi\\cfg; lcd /tmp; put {configIniName} config.ini; exit;'"
-				else:
-					cmd = f"{which('smbclient')} -m SMB3 //{self.networkAddress}/c$ -U '{credentials}' -c 'prompt; recurse; md tmp; cd tmp; md opsi-client-agent_inst; cd opsi-client-agent_inst; mput files; mput utils; cd files\\opsi\\cfg; lcd /tmp; put {configIniName} config.ini; exit;'"
+				debug_param = " -d 9" if logger.isEnabledFor(LOG_DEBUG) else ""
+				cmd = (
+					f"{which('smbclient')} -m SMB3{debug_param} //{self.networkAddress}/c$ -U '{credentials}'"
+					" -c 'prompt; recurse; md tmp; cd tmp; md opsi-client-agent_inst;"
+					" cd opsi-client-agent_inst; mput files; mput utils; cd files\\opsi\\cfg;"
+					f" lcd /tmp; put {configIniName} config.ini; exit;'"
+				)
 				execute(cmd)
 
 				logger.notice("Installing opsi-client-agent")
-				cmd = r'c:\\tmp\\opsi-client-agent_inst\\files\\opsi\\opsi-winst\\winst32.exe /batch c:\\tmp\\opsi-client-agent_inst\\files\\opsi\\setup.opsiscript c:\\tmp\\opsi-client-agent.log /PARAMETER REMOTEDEPLOY'
+				cmd = (
+					r"c:\\tmp\\opsi-client-agent_inst\\files\\opsi\\opsi-winst\\winst32.exe"
+					r" /batch c:\\tmp\\opsi-client-agent_inst\\files\\opsi\\setup.opsiscript"
+					r" c:\\tmp\\opsi-client-agent.log /PARAMETER REMOTEDEPLOY"
+				)
 				for trynum in (1, 2):
 					try:
 						winexe(cmd, self.networkAddress, self.username, self.password)
 						break
-					except Exception as error:
+					except Exception as err:  # pylint: disable=broad-except
 						if trynum == 2:
-							raise Exception(f"Failed to install opsi-client-agent: {error}")
-						logger.info("Winexe failure %s, retrying", error)
+							raise Exception(f"Failed to install opsi-client-agent: {err}") from err
+						logger.info("Winexe failure %s, retrying", err)
 						time.sleep(2)
 			finally:
 				os.remove(f'/tmp/{configIniName}')
 
 				try:
-					cmd = r'cmd.exe /C "del /s /q c:\\tmp\\opsi-client-agent_inst && rmdir /s /q c:\\tmp\\opsi-client-agent_inst"'
+					cmd = (
+						r'cmd.exe /C "del /s /q c:\\tmp\\opsi-client-agent_inst'
+						r' && rmdir /s /q c:\\tmp\\opsi-client-agent_inst"'
+					)
 					winexe(cmd, self.networkAddress, self.username, self.password)
-				except Exception as error:
-					logger.error(error)
+				except Exception as err:  # pylint: disable=broad-except
+					logger.error(err)
 
 			logger.notice("opsi-client-agent successfully installed on %s", hostId)
 			self.success = True
@@ -121,13 +159,13 @@ class WindowsDeployThread(DeployThread):
 			logger.notice("Skipping host %s", hostId)
 			self.success = SKIP_MARKER
 			return
-		except Exception as error:
-			logger.error("Deployment to %s failed: %s", self.host, error)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.error("Deployment to %s failed: %s", self.host, err)
 			self.success = False
 			if self._clientCreatedByScript and hostObj and not self.keepClientOnFailure:
 				self._removeHostFromBackend(hostObj)
 
-	def _getHostId(self, host):
+	def _getHostId(self, host):  # pylint: disable=too-many-branches
 		ip = None
 		if self.deploymentMethod == 'ip':
 			ip = forceIPAddress(host)
@@ -146,9 +184,9 @@ class WindowsDeployThread(DeployThread):
 
 							host = line.strip()
 							break
-				except Exception as error:
-					logger.debug("Name lookup via winexe failed: %s", error)
-					raise Exception("Can't find name for IP {ip}: {error}")
+				except Exception as err:
+					logger.debug("Name lookup via winexe failed: %s", err)
+					raise Exception(f"Can't find name for IP {ip}: {err}") from err
 
 			logger.debug("Lookup of IP returned hostname %s", host)
 
@@ -186,18 +224,18 @@ class WindowsDeployThread(DeployThread):
 			try:
 				winexe(cmd, self.networkAddress, self.username, self.password)
 				break
-			except Exception as error:
-				if 'NT_STATUS_LOGON_FAILURE' in forceUnicode(error):
+			except Exception as err:  # pylint: disable=broad-except
+				if 'NT_STATUS_LOGON_FAILURE' in str(err):
 					logger.warning("Can't connect to %s: check your credentials", self.networkAddress)
-				elif 'NT_STATUS_IO_TIMEOUT' in forceUnicode(error):
+				elif 'NT_STATUS_IO_TIMEOUT' in str(err):
 					logger.warning("Can't connect to %s: firewall on client seems active", self.networkAddress)
 
 				if trynum == 2:
-					raise Exception(f"Failed to execute command on host {self.networkAddress}: winexe error: {error}")
-				logger.info("Winexe failure %s, retrying", error)
+					raise Exception(f"Failed to execute command on host {self.networkAddress}: winexe error: {err}") from err
+				logger.info("Winexe failure %s, retrying", err)
 				time.sleep(2)
 
-	def _finaliseInstallation(self):
+	def _finaliseInstallation(self):  # pylint: disable=too-many-branches
 		if self.reboot or self.shutdown:
 			if self.reboot:
 				logger.notice("Rebooting machine %s", self.networkAddress)
@@ -211,8 +249,8 @@ class WindowsDeployThread(DeployThread):
 				for const in ('%ProgramFiles(x86)%', '%ProgramFiles%'):
 					try:
 						lines = winexe(f'cmd.exe /C "echo {const}"', self.networkAddress, self.username, self.password)
-					except Exception as error:
-						logger.warning(error)
+					except Exception as err:  # pylint: disable=broad-except
+						logger.warning(err)
 						continue
 
 					for line in lines:
@@ -231,18 +269,18 @@ class WindowsDeployThread(DeployThread):
 
 				logger.info("Program files path is %s", pf)
 				winexe(cmd.replace('%ProgramFiles%', pf), self.networkAddress, self.username, self.password)
-			except Exception as error:
+			except Exception as err:  # pylint: disable=broad-except
 				if self.reboot:
-					logger.error("Failed to reboot computer: %s", error)
+					logger.error("Failed to reboot computer: %s", err)
 				else:
-					logger.error("Failed to shutdown computer: %s", error)
+					logger.error("Failed to shutdown computer: %s", err)
 		elif self.startService:
 			try:
 				winexe('net start opsiclientd', self.networkAddress, self.username, self.password)
-			except Exception as error:
-				logger.error("Failed to start opsiclientd on %s: %s", self.networkAddress, error=error)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error("Failed to start opsiclientd on %s: %s", self.networkAddress, err)
 
-	def _installWithServersideMount(self):
+	def _installWithServersideMount(self):  # pylint: disable=too-many-branches,too-many-statements
 		logger.debug('Installing using server-side mount.')
 		host = forceUnicodeLower(self.host)
 		hostId = ''
@@ -262,18 +300,21 @@ class WindowsDeployThread(DeployThread):
 
 			logger.notice("Mounting c$ share")
 			try:
-				password = self.password.replace("'", "'\"'\"'"),
+				password = self.password.replace("'", "'\"'\"'")
 				try:
 					execute(f"{which('mount')} -t cifs -o'username={self.username},password={password}' //{self.networkAddress}/c$ {mountDir}",
 						timeout=15
 					)
-				except Exception as error:
-					logger.info("Failed to mount clients c$ share: %s, retrying with port 139", error)
+				except Exception as err:  # pylint: disable=broad-except
+					logger.info("Failed to mount clients c$ share: %s, retrying with port 139", err)
 					execute(f"{which('mount')} -t cifs -o'port=139,username={self.username},password={password}' //{self.networkAddress}/c$ {mountDir}",
 						timeout=15
 					)
-			except Exception as error:
-				raise Exception(f"Failed to mount c$ share: {error}\nPerhaps you have to disable the firewall or simple file sharing on the windows machine (folder options)?")
+			except Exception as err:  # pylint: disable=broad-except
+				raise Exception(
+					f"Failed to mount c$ share: {err}\n"
+					"Perhaps you have to disable the firewall or simple file sharing on the windows machine (folder options)?"
+				) from err
 
 			logger.notice("Copying installation files")
 			instDirName = f'opsi_{randomString(10)}'
@@ -297,15 +338,19 @@ class WindowsDeployThread(DeployThread):
 			logger.notice("Installing opsi-client-agent")
 			if not os.path.exists(os.path.join(mountDir, 'tmp')):
 				os.makedirs(os.path.join(mountDir, 'tmp'))
-			cmd = f'c:\\{instDirName}\\files\\opsi\\opsi-winst\\winst32.exe /batch c:\\{instDirName}\\files\\opsi\\setup.opsiscript c:\\tmp\\opsi-client-agent.log /PARAMETER REMOTEDEPLOY'
+			cmd = (
+				f"c:\\{instDirName}\\files\\opsi\\opsi-winst\\winst32.exe"
+				f" /batch c:\\{instDirName}\\files\\opsi\\setup.opsiscript"
+				" c:\\tmp\\opsi-client-agent.log /PARAMETER REMOTEDEPLOY"
+			)
 			for trynum in (1, 2):
 				try:
 					winexe(cmd, self.networkAddress, self.username, self.password)
 					break
-				except Exception as error:
+				except Exception as err:  # pylint: disable=broad-except
 					if trynum == 2:
-						raise Exception(f"Failed to install opsi-client-agent: {error}")
-					logger.info("Winexe failure %s, retrying", error)
+						raise Exception(f"Failed to install opsi-client-agent: {err}") from err
+					logger.info("Winexe failure %s, retrying", err)
 					time.sleep(2)
 
 			logger.notice("opsi-client-agent successfully installed on %s", hostId)
@@ -316,9 +361,9 @@ class WindowsDeployThread(DeployThread):
 			logger.notice("Skipping host %s", hostId)
 			self.success = SKIP_MARKER
 			return
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			self.success = False
-			logger.error("Deployment to %s failed: %s", self.host, error)
+			logger.error("Deployment to %s failed: %s", self.host, err)
 			if self._clientCreatedByScript and hostObj and not self.keepClientOnFailure:
 				self._removeHostFromBackend(hostObj)
 		finally:
@@ -334,7 +379,7 @@ class WindowsDeployThread(DeployThread):
 			if mountDir:
 				try:
 					umount(mountDir)
-				except Exception as err:
+				except Exception as err:  # pylint: disable=broad-except
 					logger.warning('Unmounting %s failed: %s', mountDir, err)
 
 				try:
