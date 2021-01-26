@@ -28,8 +28,6 @@ Information about the JSON-RPC standard can be found at
 http://www.jsonrpc.org/specification
 
 :copyright: uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
@@ -38,7 +36,7 @@ import time
 import traceback
 
 from OPSI.Exceptions import OpsiBadRpcError, OpsiRpcError
-from OPSI.Logger import Logger, LOG_INFO
+from OPSI.Logger import Logger
 from OPSI.Types import forceUnicode
 from OPSI.Util import deserialize
 
@@ -46,7 +44,7 @@ from OPSI.Util import deserialize
 logger = Logger()
 
 
-class JsonRpc(object):
+class JsonRpc:  # pylint: disable=too-many-instance-attributes
 	def __init__(self, instance, interface, rpc):
 		self._instance = instance
 		self._interface = interface
@@ -63,10 +61,10 @@ class JsonRpc(object):
 		self.traceback = None
 
 		if not self.tid:
-			raise OpsiBadRpcError(u"No transaction id ((t)id) found in rpc")
+			raise OpsiBadRpcError("No transaction id ((t)id) found in rpc")
 
 		if not self.method:
-			raise OpsiBadRpcError(u"No method found in rpc")
+			raise OpsiBadRpcError("No method found in rpc")
 
 	def isStarted(self):
 		return bool(self.started)
@@ -76,7 +74,7 @@ class JsonRpc(object):
 
 	def getMethodName(self):
 		if self.action:
-			return u'%s_%s' % (self.action, self.method)
+			return '%s_%s' % (self.action, self.method)
 
 		return self.method
 
@@ -86,9 +84,9 @@ class JsonRpc(object):
 
 		return round(self.ended - self.started, 3)
 
-	def execute(self, result=None):
+	def execute(self, result=None):  # pylint: disable=unused-argument,too-many-locals,too-many-branches,too-many-statements
 		self.result = None
-		params = [param for param in self.params]
+		params = list(self.params)
 		self.started = time.time()
 
 		try:
@@ -101,7 +99,7 @@ class JsonRpc(object):
 				methodInterface = None
 
 			if not methodInterface:
-				raise OpsiRpcError(u"Method '%s' is not valid" % methodName)
+				raise OpsiRpcError("Method '%s' is not valid" % methodName)
 
 			keywords = {}
 			if methodInterface['keywords']:
@@ -114,7 +112,7 @@ class JsonRpc(object):
 				if len(params) >= parameterCount:
 					kwargs = params.pop(-1)
 					if not isinstance(kwargs, dict):
-						raise TypeError(u"kwargs param is not a dict: %s" % params[-1])
+						raise TypeError("kwargs param is not a dict: %s" % params[-1])
 
 					for (key, value) in kwargs.items():
 						keywords[str(key)] = deserialize(value)
@@ -125,12 +123,12 @@ class JsonRpc(object):
 
 			pString = forceUnicode(params)[1:-1]
 			if keywords:
-				pString = u'{0}, {1}'.format(pString, forceUnicode(keywords))
+				pString = f'{pString}, {keywords}'
 
 			if len(pString) > 200:
-				pString = u'{0}...'.format(pString[:200])
+				pString = f'{pString[:200]}...'
 
-			logger.notice(u"-----> Executing: %s(%s)" % (methodName, pString))
+			logger.notice("-----> Executing: %s(%s)", methodName, pString)
 
 			method = getattr(self._instance, methodName)
 			if keywords:
@@ -139,17 +137,17 @@ class JsonRpc(object):
 				self.result = method(*params)
 
 			logger.info("Got result for %s", methodName)
-			logger.debug2("RPC ID %s: %s", self.tid, self.result)
-		except Exception as error:
-			logger.logException(error, LOG_INFO)
-			logger.error(u'Execution error: %s' % forceUnicode(error))
-			self.exception = error
+			logger.trace("RPC ID %s: %s", self.tid, self.result)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.info(err, exc_info=True)
+			logger.error('Execution error: %s', err)
+			self.exception = err
 			self.traceback = []
 			try:
 				for tbInfo in traceback.format_tb(sys.exc_info()[2]):
 					self.traceback.append(tbInfo)
-			except AttributeError as attre:
-				message = u"Failed to collect traceback: {0}".format(attre)
+			except AttributeError as err:
+				message = f"Failed to collect traceback: {err}"
 				logger.warning(message)
 				self.traceback.append(message)
 		finally:
@@ -180,7 +178,7 @@ class JsonRpc(object):
 				if self.rpcVersion == '2.0':
 					try:
 						code = int(getattr(self.exception, 'errno'))
-					except Exception:
+					except Exception:  # pylint: disable=broad-except
 						code = 0
 
 					response['error'] = {
@@ -194,7 +192,7 @@ class JsonRpc(object):
 						'message': forceUnicode(self.exception)
 					}
 
-				if self.rpcVersion != '2.0':  # TODO: das macht keinen Sinn!
+				if self.rpcVersion != '2.0':
 					response['result'] = None
 			else:
 				if self.rpcVersion != '2.0':
