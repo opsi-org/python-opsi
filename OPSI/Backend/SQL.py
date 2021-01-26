@@ -432,7 +432,7 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 			except KeyError:
 				pass  # not there - can be
 
-		for objectAttribute in _hash:
+		for objectAttribute in list(_hash):
 			dbAttribute = self._objectAttributeToDatabaseAttribute(object.__class__, objectAttribute)
 			if objectAttribute != dbAttribute:
 				_hash[dbAttribute] = _hash[objectAttribute]
