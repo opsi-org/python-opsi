@@ -13,7 +13,7 @@ stages:
   pip3 install --trusted-host pypi.uib.gmbh --index-url http://pypi.uib.gmbh:8080/simple opsi-dev-tools
   pip3 install poetry
 
-test:pytests:
+test:pylint-pytest:
   #when: manual
   image: ubuntu:focal
   services:
@@ -44,6 +44,7 @@ test:pytests:
     poetry install
     # Deactivate mysql strict mode
     mysql --host=mysql --user=root --password=${MYSQL_ROOT_PASSWORD} -e "SET GLOBAL sql_mode = 'NO_ENGINE_SUBSTITUTION';"
+    poetry run pylint --disable=R,C opsicommon
     poetry run ./run_tests.sh
     #poetry run ./run_qa.sh
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+)%/'
