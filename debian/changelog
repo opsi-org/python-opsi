@@ -1,5 +1,12 @@
+python-opsi (4.1.1.98-1) testing; urgency=medium
+
+  * Posix.py: not using -D option in updated sfdisk anymore 
+
+ -- Mathias Radtke <m.radtke@uib.de>  Wed, 27 Jan 2021 16:11:55 +0100
+
 python-opsi (4.1.1.97-1) testing; urgency=medium
 
+  * Validation of filters and attributes in backend getObject methods to prevent SQL injection attacks
   * OPSI.System.Posix: removed sfdisk downgrade functions
 
  -- Mathias Radtke <m.radtke@uib.de>  Mon, 14 Dec 2020 12:22:19 +0100
