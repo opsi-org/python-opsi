@@ -68,7 +68,8 @@ def testCacheDataCollectionWithPxeConfigTemplate(backendManager, client, depot):
             id=u'opsi-linux-bootimage.append',
             possibleValues=[
                 u'acpi=off', u'irqpoll', u'noapic', u'pci=nomsi',
-                u'vga=normal', u'reboot=b'
+                u'vga=normal', u'reboot=b', u'mem=2G', u'nomodeset',
+				u'ramdisk_size=2097152'
             ],
             defaultValues=[u''],
         ),
@@ -131,7 +132,8 @@ def testCacheDataCollectionWithChangingPxeConfigTemplate(backendManager, client,
             id=u'opsi-linux-bootimage.append',
             possibleValues=[
                 u'acpi=off', u'irqpoll', u'noapic', u'pci=nomsi',
-                u'vga=normal', u'reboot=b'
+                u'vga=normal', u'reboot=b', u'mem=2G', u'nomodeset',
+				u'ramdisk_size=2097152'
             ],
             defaultValues=[u''],
         ),
@@ -214,7 +216,8 @@ def testCacheDataCollectionWithMultiplePxeConfigTemplates(backendManager, client
             id=u'opsi-linux-bootimage.append',
             possibleValues=[
                 u'acpi=off', u'irqpoll', u'noapic', u'pci=nomsi',
-                u'vga=normal', u'reboot=b'
+                u'vga=normal', u'reboot=b', u'mem=2G', u'nomodeset',
+				u'ramdisk_size=2097152'
             ],
             defaultValues=[u''],
         ),
