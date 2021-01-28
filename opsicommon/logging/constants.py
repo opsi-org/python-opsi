@@ -41,7 +41,7 @@ logging.ESSENTIAL = 90
 logging.COMMENT = logging.ESSENTIAL
 logging.NONE = 100
 
-logging.level_to_name = {
+LEVEL_TO_NAME = {
 	logging.SECRET: 'SECRET',
 	logging.TRACE: 'TRACE',
 	logging.DEBUG: 'DEBUG',
@@ -53,9 +53,10 @@ logging.level_to_name = {
 	logging.ESSENTIAL: 'ESSENTIAL',
 	logging.NONE: 'NONE'
 }
-logging._levelToName = logging.level_to_name  # pylint: disable=protected-access
+logging.level_to_name = LEVEL_TO_NAME
+logging._levelToName = LEVEL_TO_NAME  # pylint: disable=protected-access
 
-logging.name_to_level = {
+NAME_TO_LEVEL = {
 	'SECRET': logging.SECRET,
 	'TRACE': logging.TRACE,
 	'DEBUG': logging.DEBUG,
@@ -67,9 +68,10 @@ logging.name_to_level = {
 	'ESSENTIAL': logging.ESSENTIAL,
 	'NONE': logging.NONE
 }
-logging._nameToLevel = logging.name_to_level  # pylint: disable=protected-access
+logging.name_to_level = NAME_TO_LEVEL
+logging._nameToLevel = NAME_TO_LEVEL  # pylint: disable=protected-access
 
-logging.level_to_opsi_level = {
+LEVEL_TO_OPSI_LEVEL = {
 	logging.SECRET: 9,
 	logging.TRACE: 8,
 	logging.DEBUG: 7,
@@ -81,9 +83,10 @@ logging.level_to_opsi_level = {
 	logging.ESSENTIAL: 1,
 	logging.NONE: 0
 }
-logging._levelToOpsiLevel = logging.level_to_opsi_level  # pylint: disable=protected-access
+logging.level_to_opsi_level = LEVEL_TO_OPSI_LEVEL
+logging._levelToOpsiLevel = LEVEL_TO_OPSI_LEVEL  # pylint: disable=protected-access
 
-logging.opsi_level_to_level = {
+OPSI_LEVEL_TO_LEVEL = {
 	9: logging.SECRET,
 	8: logging.TRACE,
 	7: logging.DEBUG,
@@ -95,7 +98,8 @@ logging.opsi_level_to_level = {
 	1: logging.ESSENTIAL,
 	0: logging.NONE
 }
-logging._opsiLevelToLevel = logging.opsi_level_to_level  # pylint: disable=protected-access
+logging.opsi_level_to_level = OPSI_LEVEL_TO_LEVEL
+logging._opsiLevelToLevel = OPSI_LEVEL_TO_LEVEL  # pylint: disable=protected-access
 
 LOG_SECRET = 9
 LOG_CONFIDENTIAL = 9
