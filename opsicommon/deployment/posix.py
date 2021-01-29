@@ -50,10 +50,10 @@ except ImportError:
 class SSHRemoteExecutionException(Exception):
 	pass
 
-class LinuxDeployThread(DeployThread):
+class PosixDeployThread(DeployThread):
 	def __init__(  # pylint: disable=too-many-arguments,too-many-locals
 		self, host, backend, username, password, shutdown, reboot, startService,
-		deploymentMethod="hostname", stopOnPingFailure=True,
+		target_os, deploymentMethod="hostname", stopOnPingFailure=True,
 		skipExistingClient=False, mountWithSmbclient=True,
 		keepClientOnFailure=False, additionalClientSettings=None,
 		depot=None, group=None, sshPolicy=WARNING_POLICY
@@ -64,6 +64,7 @@ class LinuxDeployThread(DeployThread):
 		skipExistingClient, mountWithSmbclient, keepClientOnFailure,
 		additionalClientSettings, depot, group)
 
+		self.target_os = target_os
 		self._sshConnection = None
 		self._sshPolicy = sshPolicy
 
@@ -75,7 +76,7 @@ class LinuxDeployThread(DeployThread):
 		host = forceUnicodeLower(self.host)
 		hostId = ''
 		hostObj = None
-		remoteFolder = os.path.join('/tmp', 'opsi-linux-client-agent')
+		remoteFolder = os.path.join('/tmp', 'opsi-client-agent')
 		try:
 			hostId = self._getHostId(host)
 			self._checkIfClientShouldBeSkipped(hostId)
@@ -112,17 +113,24 @@ class LinuxDeployThread(DeployThread):
 				logger.debug("Copying config for client...")
 				self._copyFileOverSSH(configIniPath, os.path.join(remoteFolder, 'files', 'opsi', 'cfg', 'config.ini'))
 
-				logger.debug("Checking architecture of client...")
-				remoteArch = self._getTargetArchitecture()
-				if not remoteArch:
-					raise RuntimeError("Could not get architecture of client.")
+				if self.target_os == "linux":
+					logger.debug("Checking architecture of client...")
+					remoteArch = self._getTargetArchitecture()
+					if not remoteArch:
+						raise RuntimeError("Could not get architecture of client.")
+					opsiscript = f"/tmp/opsi-client-agent/files/opsi/opsi-script/{remoteArch}/opsi-script"
+				elif self.target_os == "macos":
+					opsiscript = "/tmp/opsi-client-agent/files/opsi/opsi-script/opsi-script"
+					if not os.path.exists("/tmp/opsi-client-agent/files/opsi/opsi-script"):
+						opsiscript = "/tmp/opsi-client-agent/files/opsi/opsi-script-nogui/opsi-script"
+				else:
+					raise ValueError(f"invalid target os {self.target_os}")
 
-				opsiscript = f"/tmp/opsi-linux-client-agent/files/opsi/opsi-script/{remoteArch}/opsi-script"
 				logger.debug("Will use: %s", opsiscript)
 				self._executeViaSSH(f"chmod +x {opsiscript}")
 
 				installCommand = (
-					f"{opsiscript} -batch -silent /tmp/opsi-linux-client-agent/files/opsi/setup.opsiscript"
+					f"{opsiscript} -batch -silent /tmp/opsi-client-agent/files/opsi/setup.opsiscript"
 					" /var/log/opsi-client-agent/opsi-script/opsi-client-agent.log -PARAMETER REMOTEDEPLOY"
 				)
 				nonrootExecution = self.username != 'root'
@@ -153,14 +161,19 @@ class LinuxDeployThread(DeployThread):
 				self._executeViaSSH(checkCommand)
 
 				logger.debug("Testing if executable was found...")
-				self._executeViaSSH("test -e /usr/bin/opsiclientd -o -e /usr/bin/opsi-script-nogui")
+				if self.target_os == "linux":
+					self._executeViaSSH("test -e /usr/bin/opsiclientd -o -e /usr/bin/opsi-script-nogui")
+				elif self.target_os == "macos":
+					self._executeViaSSH("test -e /usr/local/bin/opsiclientd -o -e /usr/local/bin/opsi-script-nogui")
+				else:
+					raise ValueError(f"invalid target os {self.target_os}")
 			finally:
 				try:
 					os.remove(configIniPath)
 				except OSError as error:
 					logger.debug("Removing %s failed: %s", configIniPath, error)
 
-			logger.notice("opsi-linux-client-agent successfully installed on %s", hostId)
+			logger.notice("opsi-client-agent successfully installed on %s", hostId)
 			self.success = True
 			self._setOpsiClientAgentToInstalled(hostId)
 			self._finaliseInstallation(credentialsfile=credentialsfile)
@@ -316,7 +329,13 @@ class LinuxDeployThread(DeployThread):
 				logger.error("Failed to shutdown computer: %s", err)
 		elif self.startService:
 			logger.notice("Restarting opsiclientd service on computer: %s", self.networkAddress)
-			command = "service opsiclientd restart"
+			if self.target_os == "linux":
+				command = "service opsiclientd restart"
+			elif self.target_os == "macos":
+				command = "launchctl kickstart -k system/org.opsi.opsiclientd"
+			else:
+				raise ValueError(f"invalid target os {self.target_os}")
+
 			if credentialsfile:
 				command = f"sudo --stdin -- {command} < {credentialsfile}"
 			try:
@@ -325,10 +344,17 @@ class LinuxDeployThread(DeployThread):
 				logger.error("Failed to restart service opsiclientd on computer: %s", self.networkAddress)
 
 	def _setOpsiClientAgentToInstalled(self, hostId):
+		if self.target_os == "linux":
+			prod_id = "opsi-linux-client-agent"
+		elif self.target_os == "macos":
+			prod_id = "opsi-mac-client-agent"
+		else:
+			raise ValueError(f"invalid target os {self.target_os}")
+
 		poc = ProductOnClient(
 			productType='LocalbootProduct',
 			clientId=hostId,
-			productId='opsi-linux-client-agent',
+			productId=prod_id,
 			installationStatus='installed',
 			actionResult='successful'
 		)
