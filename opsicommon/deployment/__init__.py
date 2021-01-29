@@ -37,12 +37,12 @@ from OPSI.Types import forceUnicode, forceUnicodeLower
 
 from ..logging import logger, LOG_WARNING, LOG_DEBUG, logging_config
 from .common import SKIP_MARKER
-from .posix import LinuxDeployThread, paramiko, WARNING_POLICY
+from .posix import PosixDeployThread, paramiko, WARNING_POLICY
 from .windows import WindowsDeployThread
 
 
 def deploy_client_agent(  # pylint: disable=too-many-arguments,too-many-locals,too-many-statements,too-many-branches
-	hosts, deployLinux, logLevel=LOG_WARNING, debugFile=None, hostFile=None,
+	hosts, target_os, logLevel=LOG_WARNING, debugFile=None, hostFile=None,
 	password=None, maxThreads=1, useIPAddress=False, useNetbios=False,
 	useFQDN=False, mountWithSmbclient=True, depot=None, group=None,
 	username=None, shutdown=False, reboot=False, startService=True,
@@ -50,16 +50,16 @@ def deploy_client_agent(  # pylint: disable=too-many-arguments,too-many-locals,t
 	keepClientOnFailure=True, sshHostkeyPolicy=None
 ):
 
-	if deployLinux and username is None:
+	if target_os in ("linux", "macos") and username is None:
 		username = "root"
-	if not deployLinux and username is None:
+	if not target_os in ("linux", "macos") and username is None:
 		username = "Administrator"
 	logging_config(stderr_level=logLevel, log_file=debugFile, file_level=LOG_DEBUG)
 
-	if deployLinux and paramiko is None:
+	if target_os in ("linux", "macos") and paramiko is None:
 		message = (
 			"Could not import 'paramiko'. "
-			"Deploying to Linux not possible. "
+			"Deploying to Linux/Macos not possible. "
 			"Please install paramiko through your package manager or pip."
 		)
 		logger.critical(message)
@@ -113,7 +113,7 @@ def deploy_client_agent(  # pylint: disable=too-many-arguments,too-many-locals,t
 	else:
 		deploymentMethod = "auto"
 
-	if not deployLinux:
+	if target_os == "windows":
 		logger.info("Deploying to Windows.")
 		deploymentClass = WindowsDeployThread
 
@@ -126,9 +126,13 @@ def deploy_client_agent(  # pylint: disable=too-many-arguments,too-many-locals,t
 		elif os.getuid() != 0:
 			raise Exception("You have to be root to use mount.")
 	else:
-		logger.info("Deploying to Linux.")
-		deploymentClass = LinuxDeployThread
+		deploymentClass = PosixDeployThread
 		mountWithSmbclient = False
+
+	if target_os == "linux":
+		logger.info("Deploying to Linux.")
+	elif target_os == "macos":
+		logger.info("Deploying to MacOS.")
 
 	# Create BackendManager
 	backend = BackendManager(
@@ -178,8 +182,9 @@ def deploy_client_agent(  # pylint: disable=too-many-arguments,too-many-locals,t
 			except KeyError:
 				pass
 
-			if deployLinux:
+			if target_os in ("linux", "macos"):
 				clientConfig["sshPolicy"] = sshHostkeyPolicy or WARNING_POLICY
+				clientConfig["target_os"] = target_os
 
 			thread = deploymentClass(**clientConfig)
 			total += 1
