@@ -10,7 +10,7 @@ from .logging import (
 	logger, context, secret_filter, context_filter, observable_handler,
 	handle_log_exception, logging_config, init_logging, set_format, log_context,
 	get_all_handlers, get_all_loggers, print_logger_info,
-	set_context, set_filter, set_filter_from_string,
+	set_context, set_filter, set_filter_from_string, add_context_filter_to_loggers,
 	ContextFilter, ContextSecretFormatter, SecretFilter, ObservableHandler
 )
 
