@@ -308,13 +308,19 @@ class BackendAccessControl:
 
 				# Authentication did not throw exception => authentication successful
 				self.user_store.authenticated = True
+
 				if forceGroups:
 					self.user_store.userGroups = forceUnicodeList(forceGroups)
 					logger.info("Forced groups for user %s: %s", self.user_store.username, ', '.join(self.user_store.userGroups))
 				else:
 					self.user_store.userGroups = auth_module.get_groupnames(self.user_store.username)
+
 				self.user_store.isAdmin = auth_module.user_is_admin(self.user_store.username)
 				self.user_store.isReadOnly = auth_module.user_is_read_only(self.user_store.username, set(forceGroups) if forceGroups else None)
+
+				if not forceGroups and not self.user_store.isAdmin and OPSI_ADMIN_GROUP in self.user_store.userGroups:
+					# Remove admin group from groups because acl.conf currently does not support isAdmin
+					self.user_store.userGroups.remove(OPSI_ADMIN_GROUP)
 
 				logger.info(
 					"Authentication successful for user '%s', groups '%s'",
