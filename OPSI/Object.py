@@ -748,7 +748,14 @@ class OpsiDepotserver(Host):  # pylint: disable=too-many-instance-attributes,too
 		return self.networkAddress
 
 	def setNetworkAddress(self, networkAddress):
-		self.networkAddress = forceNetworkAddress(networkAddress)
+		try:
+			self.networkAddress = forceNetworkAddress(networkAddress)
+		except ValueError as err:
+			logger.error(
+				"Failed to set network address '%s' for depot %s: %s",
+				networkAddress, self.id, err
+			)
+			self.networkAddress = None
 
 	def getMaxBandwidth(self):
 		return self.maxBandwidth
