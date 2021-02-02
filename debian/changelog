@@ -1,3 +1,9 @@
+python-opsi (4.1.1.99-1) testing; urgency=medium
+
+  * adding more opsi-bootimage.append parameters
+
+ -- Mathias Radtke <m.radtke@uib.de>  Wed, 27 Jan 2021 17:08:46 +0100
+
 python-opsi (4.1.1.98-1) testing; urgency=medium
 
   * Posix.py: not using -D option in updated sfdisk anymore 
