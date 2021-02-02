@@ -20,7 +20,6 @@
 :license: GNU Affero General Public License version 3
 """
 
-import os
 import pwd
 import grp
 import subprocess
@@ -78,21 +77,21 @@ def setup_users_and_groups():
 	logger.info("Setup users and groups")
 	groups = get_groups()
 	users = get_users()
-	
+
 	if OPSI_ADMIN_GROUP not in groups:
 		create_group(
 			groupname=OPSI_ADMIN_GROUP,
 			system=False
 		)
 		groups = get_groups()
-	
+
 	if FILE_ADMIN_GROUP not in groups:
 		create_group(
 			groupname=FILE_ADMIN_GROUP,
 			system=True
 		)
 		groups = get_groups()
-	
+
 	if DEFAULT_DEPOT_USER not in users:
 		create_user(
 			username=DEFAULT_DEPOT_USER,
@@ -105,10 +104,6 @@ def setup_users_and_groups():
 
 def setup_file_permissions(path: str = '/'):
 	setRights(path)
-	groups = get_groups()
-	if "shadow" in groups:
-		os.chown(path="/etc/shadow", uid=0, gid=groups["shadow"].gr_gid)
-		os.chmod(path="/etc/shadow", mode=0o640)
 
 def setup():
 	logger.notice("Running setup")
