@@ -18,14 +18,17 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+Linux specific system functions
+"""
 
 import os
 import re
 import socket
 import subprocess
-import psutil
 import codecs
 import tempfile
+import psutil
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceUnicode, forceFilename
@@ -35,7 +38,7 @@ from OPSI.System.Posix import (
 	Distribution, Harddisk, NetworkPerformanceCounter, SysInfo,
 	SystemSpecificHook, addSystemHook, auditHardware,
 	configureInterface, daemonize, execute, get_subprocess_environment, getActiveConsoleSessionId,
-	getActiveSessionId, getActiveSessionInformation, getSessionInformation, getBlockDeviceBusType,
+	getActiveSessionId, getActiveSessionInformation, getBlockDeviceBusType,
 	getBlockDeviceContollerInfo, getDHCPDRestartCommand, getDHCPResult,
 	getDHCPServiceName, getDefaultNetworkInterfaceName, getDiskSpaceUsage,
 	getEthernetDevices, getFQDN, getHarddisks, getHostname,
@@ -69,7 +72,7 @@ __all__ = (
 	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
 )
 
-def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):
+def getActiveSessionIds(protocol = None, states = None):  # pylint: disable=unused-argument
 	"""
 	Getting the IDs of the currently active sessions.
 
@@ -80,20 +83,22 @@ def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):
 	:type data: [str, ]
 	:rtype: [int, ]
 	"""
+	if states is None:
+		states = ["active", "disconnected"]
 	sessions = []
 	for proc in psutil.process_iter():
 		try:
 			env = proc.environ()
 			# Filter out gdm/1024
 			if (
+				env.get("USER") and
 				env.get("DISPLAY") and
 				env["DISPLAY"] != ':1024' and
-				env.get("USERNAME") and
 				env["DISPLAY"] not in sessions
 			):
 				sessions.append(env["DISPLAY"])
-		except psutil.AccessDenied as e:
-			logger.debug(e)
+		except psutil.AccessDenied as err:
+			logger.debug(err)
 	sessions = sorted(sessions, key=lambda s: int(re.sub(r"\D", "", s)))
 	return sessions
 Posix.getActiveSessionIds = getActiveSessionIds
@@ -107,12 +112,12 @@ def getSessionInformation(sessionId):
 	for proc in psutil.process_iter():
 		try:
 			env = proc.environ()
-			if env.get("DISPLAY") == sessionId and env.get("USERNAME"):
+			if env.get("DISPLAY") == sessionId and env.get("USER"):
 				info["DomainName"] = env.get("HOST", info["DomainName"])
-				info["UserName"] = env.get("USERNAME", info["UserName"])
+				info["UserName"] = env.get("USER", info["UserName"])
 				break
-		except psutil.AccessDenied as e:
-			logger.debug(e)
+		except psutil.AccessDenied as err:
+			logger.debug(err)
 	if not info["DomainName"]:
 		info["DomainName"] = socket.gethostname().upper()
 	return info
@@ -148,7 +153,8 @@ def grant_session_access(username: str, session_id: str):
 		xhost_cmd,
 		stdout=subprocess.PIPE,
 		stderr=subprocess.STDOUT,
-		env=sp_env
+		env=sp_env,
+		check=False
 	)
 	out = process.stdout.decode("utf-8", "replace") if process.stdout else ""
 	logger.debug("xhost output: %s", out)
@@ -157,15 +163,15 @@ def grant_session_access(username: str, session_id: str):
 Posix.grant_session_access = grant_session_access
 
 def is_mounted(devOrMountpoint):
-	with codecs.open("/proc/mounts", "r", "utf-8") as f:
-		for line in f.readlines():
+	with codecs.open("/proc/mounts", "r", "utf-8") as file:
+		for line in file.readlines():
 			(dev, mountpoint) = line.split(" ", 2)[:2]
 			if devOrMountpoint in (dev, mountpoint):
 				return True
 	return False
 Posix.is_mounted = is_mounted
 
-def mount(dev, mountpoint, **options):
+def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 	dev = forceUnicode(dev)
 	mountpoint = forceFilename(mountpoint)
 	if not os.path.isdir(mountpoint):
@@ -268,14 +274,14 @@ def mount(dev, mountpoint, **options):
 				proc_env["LC_ALL"] = "C"
 				execute("%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint), env=proc_env, stdin_data=stdin_data)
 				break
-			except Exception as e:
-				if fs == "-t cifs" and "vers=2.0" not in mountOptions and "error(95)" in str(e):
-					logger.warning("Failed to mount '%s': %s, retrying with option vers=2.0", dev, e)
+			except Exception as err:  # pylint: disable=broad-except
+				if fs == "-t cifs" and "vers=2.0" not in mountOptions and "error(95)" in str(err):
+					logger.warning("Failed to mount '%s': %s, retrying with option vers=2.0", dev, err)
 					mountOptions.append("vers=2.0")
 				else:
-					logger.error("Failed to mount '%s': %s", dev, e)
-					raise RuntimeError("Failed to mount '%s': %s" % (dev, e))
+					logger.error("Failed to mount '%s': %s", dev, err)
+					raise RuntimeError("Failed to mount '%s': %s" % (dev, err)) from err
 	finally:
-		for f in tmpFiles:
-			os.remove(f)
+		for file in tmpFiles:
+			os.remove(file)
 Posix.mount = mount
