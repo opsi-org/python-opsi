@@ -916,6 +916,8 @@ def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):
 	:returns: List of active sessions
 	:rtype: list
 	"""
+	if states is None:
+		states = ["active", "disconnected"]
 	if states:
 		for i in range(len(states)):
 			if states[i] not in WTS_STATES:
