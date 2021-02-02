@@ -123,6 +123,7 @@ class LDAPAuthentication(AuthenticationModule):
 						group_dns.extend(entry.memberOf)
 					if "sAMAccountName" in entry.entry_attributes:
 						ldap_type = "ad"
+						groupnames.add("domain users")
 				if user_dn:
 					break
 			except ldap3.core.exceptions.LDAPObjectClassError as err:
