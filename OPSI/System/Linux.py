@@ -133,19 +133,22 @@ def grant_session_access(username: str, session_id: str):
 			if session_env is None or env.get("XAUTHORITY"):
 				session_username = proc.username()
 				session_env = env
-				if "PATH" in session_env:
-					# Keep current PATH
-					del session_env["PATH"]
+			if session_env.get("XAUTHORITY"):
+				break
 	if not session_env:
 		raise ValueError(f"Session {session_id} not found")
 	if not session_env.get("XAUTHORITY"):
 		session_env["XAUTHORITY"] = os.path.join(session_env.get("HOME"), ".Xauthority")
 
+	if "LD_PRELOAD" in session_env:
+		del session_env["LD_PRELOAD"]
+	if "PATH" in session_env:
+		# Keep current PATH
+		del session_env["PATH"]
+
 	sp_env = os.environ.copy()
 	sp_env.update(session_env)
 	sp_env = get_subprocess_environment(sp_env)
-	if "LD_PRELOAD" in sp_env:
-		del sp_env["LD_PRELOAD"]
 	logger.debug("Using process env: %s", sp_env)
 
 	# Allow user to connect to X
