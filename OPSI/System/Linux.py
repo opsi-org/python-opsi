@@ -144,6 +144,8 @@ def grant_session_access(username: str, session_id: str):
 	sp_env = os.environ.copy()
 	sp_env.update(session_env)
 	sp_env = get_subprocess_environment(sp_env)
+	if "LD_PRELOAD" in sp_env:
+		del sp_env["LD_PRELOAD"]
 	logger.debug("Using process env: %s", sp_env)
 
 	# Allow user to connect to X
