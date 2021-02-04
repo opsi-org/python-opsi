@@ -128,8 +128,7 @@ def get_tree_value(mydict : Dict, key_string : str) -> Any:
 		sub = subdict.get(key)
 		if sub is None:
 			return None
-		else:
-			subdict = sub
+		subdict = sub
 	return subdict
 
 def parse_profiler_output(lines: List) -> Dict:
@@ -241,7 +240,7 @@ def hardwareInventory(config, progressSubject=None):
 	:rtype: Dict
 	"""
 	if not config:
-		logger.error(u"hardwareInventory: no config given")
+		logger.error("hardwareInventory: no config given")
 		return {}
 	opsiValues = {}
 
@@ -262,7 +261,7 @@ def hardwareInventory(config, progressSubject=None):
 			break
 		hardwareList.append(forceUnicode(line))
 	profiler = parse_profiler_output(hardwareList)
-	logger.debug(u"Parsed system_profiler info:")
+	logger.debug("Parsed system_profiler info:")
 	logger.debug(objectToBeautifiedText(profiler))
 
 	hardwareList = []
@@ -278,7 +277,7 @@ def hardwareInventory(config, progressSubject=None):
 			break
 		hardwareList.append(forceUnicode(line))
 	systcl = parse_sysctl_output(hardwareList)
-	logger.debug(u"Parsed sysctl info:")
+	logger.debug("Parsed sysctl info:")
 	logger.debug(objectToBeautifiedText(systcl))
 
 	hardwareList = []
@@ -294,7 +293,7 @@ def hardwareInventory(config, progressSubject=None):
 			break
 		hardwareList.append(forceUnicode(line))
 	ioreg = parse_ioreg_output(hardwareList)
-	logger.debug(u"Parsed ioreg info:")
+	logger.debug("Parsed ioreg info:")
 	logger.debug(objectToBeautifiedText(ioreg))
 
 	# Build hw info structure
@@ -307,7 +306,7 @@ def hardwareInventory(config, progressSubject=None):
 		if osxClass is None or opsiClass is None:
 			continue
 
-		logger.info(u"Processing class '%s' : '%s'", opsiClass, osxClass)
+		logger.info("Processing class '%s' : '%s'", opsiClass, osxClass)
 		opsiValues[opsiClass] = []
 
 		command, section = osxClass.split(']', 1)
@@ -319,6 +318,7 @@ def hardwareInventory(config, progressSubject=None):
 				if '.' in filter_string:
 					(filterAttr, filterExp) = filter_string.split('.', 1)
 
+			singleclassdata = None
 			if command == "profiler":
 				# produce dictionary from key singleclass - traversed for all devices
 				singleclassdata = get_tree_value(profiler, singleclass)
@@ -328,8 +328,8 @@ def hardwareInventory(config, progressSubject=None):
 			elif command == "ioreg":
 				# produce dictionary with only contents from key singleclass
 				singleclassdata = get_tree_value(ioreg, singleclass)
-			else:
-				break
+			if not singleclassdata:
+				continue
 			for key, dev in singleclassdata.items():
 				if not isinstance(dev, dict):
 					continue
@@ -349,11 +349,11 @@ def hardwareInventory(config, progressSubject=None):
 
 						if method:
 							try:
-								logger.debug(u"Eval: %s.%s" % (value, method))
+								logger.debug("Eval: %s.%s", value, method)
 								device[attribute['Opsi']] = eval("value.%s" % method)
 							except Exception as e:
 								device[attribute['Opsi']] = u''
-								logger.warning(u"Class %s: Failed to excecute '%s.%s': %s" % (opsiClass, value, method, e))
+								logger.warning("Class %s: Failed to excecute '%s.%s': %s", opsiClass, value, method, e)
 						else:
 							device[attribute['Opsi']] = value
 						if device[attribute['Opsi']]:
@@ -373,7 +373,8 @@ def hardwareInventory(config, progressSubject=None):
 					opsiValues[hwClass['Class']['Opsi']].append(device)
 
 	opsiValues['SCANPROPERTIES'] = [{"scantime": time.strftime("%Y-%m-%d %H:%M:%S")}]
-	logger.debug(u"Result of hardware inventory:\n" + objectToBeautifiedText(opsiValues))
+	logger.debug("Result of hardware inventory:")
+	logger.debug(objectToBeautifiedText(opsiValues))
 	return opsiValues
 Posix.hardwareInventory = hardwareInventory
 
