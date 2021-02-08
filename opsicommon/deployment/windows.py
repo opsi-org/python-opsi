@@ -26,13 +26,14 @@ import socket
 import shutil
 import re
 import os
+import logging
 
 from OPSI.Util.File import IniFile
 from OPSI.Util import randomString
 from OPSI.Types import forceHostId, forceIPAddress, forceUnicode, forceUnicodeLower
 from OPSI.System import copy, execute, getFQDN, umount, which
 
-from ..logging import logger, LOG_DEBUG
+from ..logging import logger
 from .common import DeployThread, SkipClientException, SKIP_MARKER
 
 
@@ -61,7 +62,7 @@ def winexe(cmd, host, username, password):
 		logger.warning("Failed to get version: %s", err)
 
 	credentials=username + '%' + password.replace("'", "'\"'\"'")
-	if logger.isEnabledFor(LOG_DEBUG):
+	if logger.isEnabledFor(logging.DEBUG):
 		return execute(f"{executable} -d 9 -U '{credentials}' //{host} '{cmd}'")
 	return execute(f"{executable} -U '{credentials}' //{host} '{cmd}'")
 
@@ -115,7 +116,7 @@ class WindowsDeployThread(DeployThread):
 			try:
 				logger.notice("Copying installation files")
 				credentials=self.username + '%' + self.password.replace("'", "'\"'\"'")
-				debug_param = " -d 9" if logger.isEnabledFor(LOG_DEBUG) else ""
+				debug_param = " -d 9" if logger.isEnabledFor(logging.DEBUG) else ""
 				cmd = (
 					f"{which('smbclient')} -m SMB3{debug_param} //{self.networkAddress}/c$ -U '{credentials}'"
 					" -c 'prompt; recurse; md tmp; cd tmp; md opsi-client-agent_inst;"
