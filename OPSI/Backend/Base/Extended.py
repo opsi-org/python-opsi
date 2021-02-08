@@ -665,7 +665,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):  # pylint: disable=too-many-pu
 		logger.info("Processing depots...")
 		modifiedDepots = []
 		for depot in self._backend.host_getObjects(type='OpsiDepotserver'):
-			if depot.masterDepotId and (depot.masterDepotId == oldId):
+			if depot.masterDepotId and depot.masterDepotId == oldId:
 				depot.masterDepotId = newId
 				modifiedDepots.append(depot)
 
