@@ -273,7 +273,7 @@ class ContextSecretFormatter(logging.Formatter):
 			record.contextstring = ""
 		#record.contextstring = 	f"{record.contextstring:{CONTEXT_STRING_MIN_LENGTH}}"
 		msg = self.orig_formatter.format(record)
-		if record.levelno != logging.SECRET:
+		if not logger.isEnabledFor(logging.SECRET) and record.levelno != logging.SECRET:
 			for _secret in secret_filter.secrets:
 				msg = msg.replace(_secret, SECRET_REPLACEMENT_STRING)
 		return msg

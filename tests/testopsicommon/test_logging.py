@@ -7,7 +7,6 @@ This file is part of opsi - https://www.opsi.org
 """
 
 import io
-import pytest
 import logging
 import re
 import time
@@ -15,6 +14,7 @@ import threading
 import asyncio
 import random
 from contextlib import contextmanager
+import pytest
 
 from opsicommon.logging import (
 	logger, handle_log_exception, secret_filter, observable_handler,
@@ -53,7 +53,7 @@ def test_levels(log_stream):
 			msg = f"logline {level}"
 			func(msg)
 			expected += f"{msg}\n"
-	
+
 		stream.seek(0)
 		assert stream.read().find(expected) >= 0		# not == as other instances might also log
 
@@ -69,11 +69,10 @@ def test_secret_formatter_attr():
 
 def test_secret_filter(log_stream):
 	with log_stream as stream:
-		#handler.setLevel(logging.SECRET)
-		logger.setLevel(logging.SECRET)
+		logger.setLevel(logging.TRACE)
 		set_format(stderr_format="[%(asctime)s.%(msecs)03d] %(message)s")
 
-		secret_filter.set_min_length(7)	
+		secret_filter.set_min_length(7)
 		secret_filter.add_secrets("PASSWORD", "2SHORT", "SECRETSTRING")
 		logger.info("line 1")
 		logger.info("line 2 PASSWORD")
@@ -84,14 +83,25 @@ def test_secret_filter(log_stream):
 		assert "line 1\n" in log
 		assert "line 2 PASSWORD\n" not in log
 		assert "line 3 2SHORT\n" in log
-		assert "line 4 SECRETSTRING\n" in log
+		assert "line 4 SECRETSTRING\n" not in log
 
-		secret_filter.clear_secrets()
+		logger.setLevel(logging.SECRET)
 		logger.info("line 5 PASSWORD")
+		logger.secret("line 6 SECRETSTRING")
 		stream.seek(0)
 		log = stream.read()
 		assert "line 5 PASSWORD\n" in log
+		assert "line 6 SECRETSTRING\n" in log
 
+
+		secret_filter.clear_secrets()
+		logger.info("line 7 PASSWORD")
+		stream.seek(0)
+		log = stream.read()
+		assert "line 7 PASSWORD\n" in log
+
+
+		logger.setLevel(logging.INFO)
 		stream.seek(0)
 		stream.truncate()
 		secret_filter.add_secrets("SECRETSTRING1", "SECRETSTRING2", "SECRETSTRING3")
@@ -139,7 +149,7 @@ def test_legacy_logger_calls(log_stream):
 		logging_config(stderr_level=logging.SECRET)
 		legacy_logger = LegacyLogger()
 		assert legacy_logger == logger
-		
+
 		#print_logger_info()
 		legacy_logger.getStderr()
 		legacy_logger.getStdout()
@@ -241,28 +251,28 @@ def test_context_threads(log_stream):
 		def run(self):
 			AsyncMain().start()
 			for _ in range(5):		#perform 5 iterations
-				ts = []
+				threads = []
 				for i in range(2):
-					t = MyModule(client=f"Client-{i}")
-					ts.append(t)
-					t.start()
-				for t in ts:
-					t.join()
+					_thread = MyModule(client=f"Client-{i}")
+					threads.append(_thread)
+					_thread.start()
+				for _thread in threads:
+					_thread.join()
 				time.sleep(1)
 
 	class AsyncMain(threading.Thread):
 		def __init__(self):
 			super().__init__()
 			self._should_stop = False
-		
+
 		def stop(self):
 			self._should_stop = True
-		
+
 		def run(self):
 			loop = asyncio.new_event_loop()
 			loop.run_until_complete(self.arun())
 			loop.close()
-		
+
 		async def handle_client(self, client: str):
 			with log_context({'whoami' : "handler for " + str(client)}):
 				logger.essential("handling client %s", client)
@@ -293,15 +303,15 @@ def test_context_threads(log_stream):
 	set_format(stderr_format="%(contextstring)s %(message)s")
 	with log_context({'whoami' : "MAIN"}):
 		with log_stream as stream:
-			m = Main()
+			main = Main()
 			try:
-				m.run()
+				main.run()
 			except KeyboardInterrupt:
 				pass
-			for t in threading.enumerate():
-				if hasattr(t, "stop"):
-					t.stop()
-					t.join()
+			for _thread in threading.enumerate():
+				if hasattr(_thread, "stop"):
+					_thread.stop()
+					_thread.join()
 			stream.seek(0)
 
 			log = stream.read()
@@ -314,10 +324,10 @@ def test_observable_handler():
 	class LogObserver():
 		def __init__(self):
 			self.messages = []
-		
+
 		def messageChanged(self, handler, message):
 			self.messages.append(message)
-	
+
 	logger.setLevel(logging.SECRET)
 	lo = LogObserver()
 	observable_handler.attach_observer(lo)
