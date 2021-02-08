@@ -92,7 +92,7 @@ def getFileInfosFromDavXML(davxmldata, encoding='utf-8'):
 		info = {'size': 0, 'type': 'file', 'path': '', 'name': ''}
 		if child.tag != "{DAV:}response":
 			raise RepositoryError(u"No valid davxml given")
-		
+
 		if child[0].tag == "{DAV:}href":
 			info['path'] = urllib.parse.unquote(child[0].text)
 			info['name'] = info['path'].rstrip('/').split('/')[-1]
@@ -148,7 +148,7 @@ class RepositoryObserver:
 
 class Repository:
 	DEFAULT_BUFFER_SIZE = 32 * 1024
-	
+
 	def __init__(self, url, **kwargs):
 		'''
 		maxBandwidth must be in byte/s
@@ -1133,7 +1133,7 @@ class WebDAVRepository(HTTPRepository):
 		self._processResponseHeaders(response)
 		if response.status != ResponseCode.MULTI_STATUS:
 			raise RepositoryError(u"Failed to list dir '%s': %s" % (source, response.status))
-		
+
 		encoding = 'utf-8'
 		contentType = response.getheader('content-type', '').lower()
 		for part in contentType.split(';'):
@@ -1142,7 +1142,12 @@ class WebDAVRepository(HTTPRepository):
 
 		davxmldata = response.data
 		logger.trace("davxmldata: %s", davxmldata)
-		content = getFileInfosFromDavXML(davxmldata=davxmldata, encoding=encoding)
+		content = []
+		for entry in getFileInfosFromDavXML(davxmldata=davxmldata, encoding=encoding):
+			if entry["path"].startswith("/"):
+				# Absolut path to realtive path
+				entry["path"] = os.path.relpath(entry["path"], start=source)
+			content.append(entry)
 		logger.debug("fileinfo: %s", content)
 
 		if recursive:
@@ -1322,7 +1327,7 @@ class DepotToLocalDirectorySychronizer:
 			if os.path.exists(destination):
 				os.remove(destination)
 			os.mkdir(destination)
-		
+
 		# Local directory cleanup
 		for item in os.listdir(destination):
 			relSource = (source + u'/' + item).split(u'/', 1)[1]
@@ -1373,7 +1378,7 @@ class DepotToLocalDirectorySychronizer:
 
 				partialEndFile = f"{destinationPath}.opsi_sync_endpart"
 				partialStartFile = f"{destinationPath}.opsi_sync_startpart"
-				
+
 				composed = False
 				if exists and (localSize < size):
 					try:
@@ -1410,17 +1415,17 @@ class DepotToLocalDirectorySychronizer:
 						composed = True
 					except Exception as partError:
 						logger.warning("Error completing a partially downloaded file '%s': %s", item['name'], partError, exc_info=True)
-				
+
 				for fn in (partialEndFile, partialStartFile):
 					if os.path.exists(fn):
 						os.remove(fn)
-				
+
 				if not composed:
 					if os.path.exists(destinationPath):
 						os.remove(destinationPath)
 					logger.info("Downloading file '%s'", item['name'])
 					self._sourceDepot.download(sourcePath, destinationPath, progressSubject=progressSubject)
-				
+
 				md5s = md5sum(destinationPath)
 				if md5s != self._fileInfo[relSource]['md5sum']:
 					error = "Failed to download '%s': MD5sum mismatch (local:%s != remote:%s)" % (item['name'], md5s, self._fileInfo[relSource]['md5sum'])
