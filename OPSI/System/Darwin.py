@@ -360,17 +360,7 @@ def hardwareInventory(config, progressSubject=None):
 							break
 				device["state"] = "1"
 				device["type"] = "AuditHardwareOnHost"
-				if len(opsiValues[hwClass['Class']['Opsi']]) == 0:
-					opsiValues[hwClass['Class']['Opsi']].append(device)
-					continue	#catch this case first, as it shortens computation
-				previous = opsiValues[hwClass['Class']['Opsi']][-1]
-				shared_items = {key: "" for key in previous if key in device and previous[key] == device[key]}
-				if len(shared_items) == len(previous) and len(shared_items) == len(device):
-					# Do not add two devices with the same characteristics (e.g. 127 empty RAM slots...)
-					# TODO: better solution?
-					logger.debug("skipping device")
-				else:
-					opsiValues[hwClass['Class']['Opsi']].append(device)
+				opsiValues[hwClass['Class']['Opsi']].append(device)
 
 	opsiValues['SCANPROPERTIES'] = [{"scantime": time.strftime("%Y-%m-%d %H:%M:%S")}]
 	logger.debug("Result of hardware inventory:")
