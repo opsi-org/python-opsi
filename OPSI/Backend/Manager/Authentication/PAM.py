@@ -88,12 +88,11 @@ class PAMAuthentication(AuthenticationModule):
 		:returns: Group the user is a member of.
 		:rtype: set()
 		"""
-		logger.debug("Reading groups of user %s...", username)
-		primary_group = forceUnicode(grp.getgrgid(pwd.getpwnam(username)[3])[0])
-		logger.debug("Primary group of user %s is %s", username, primary_group)
-
-		groups = set(forceUnicode(group[0]) for group in grp.getgrall() if group[0] and username in group[3])
-		if primary_group:
-			groups.add(primary_group)
+		logger.debug("Getting groups of user %s", username)
+		primary_gid = pwd.getpwnam(username).pw_gid
+		logger.debug("Primary group id of user %s is %s", username, primary_gid)
+		groups = set()
+		for gid in os.getgrouplist(username, primary_gid):
+			groups.add(grp.getgrgid(gid).gr_name)
 		logger.debug("User %s is member of groups: %s", username, groups)
 		return groups
