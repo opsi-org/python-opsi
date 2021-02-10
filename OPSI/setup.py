@@ -24,10 +24,10 @@ import pwd
 import grp
 import subprocess
 
-from OPSI.Config import OPSI_ADMIN_GROUP, FILE_ADMIN_GROUP, DEFAULT_DEPOT_USER
+from OPSI.Config import OPSI_ADMIN_GROUP, FILE_ADMIN_GROUP, DEFAULT_DEPOT_USER, DEFAULT_DEPOT_USER_HOME
 from OPSI.Logger import Logger
 from OPSI.System import get_subprocess_environment
-from OPSI.Util.Task.Rights import setRights
+from OPSI.Util.Task.Rights import set_rights
 
 logger = Logger()
 
@@ -96,14 +96,14 @@ def setup_users_and_groups():
 		create_user(
 			username=DEFAULT_DEPOT_USER,
 			primary_groupname=FILE_ADMIN_GROUP,
-			home="/var/lib/opsi",
+			home=DEFAULT_DEPOT_USER_HOME,
 			shell="/bin/bash",
 			system=True
 		)
 		users = get_users()
 
 def setup_file_permissions(path: str = '/'):
-	setRights(path)
+	set_rights(path)
 
 def setup():
 	logger.notice("Running setup")

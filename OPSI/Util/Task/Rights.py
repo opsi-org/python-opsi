@@ -81,20 +81,20 @@ class FilePermission:
 		return self.groupname_to_gid(self.groupname)
 
 	def chmod(self, path, stat_res=None):
-		stat_res = stat_res or os.stat(path)
+		stat_res = stat_res or os.stat(path, follow_symlinks=False)
 		cur_mode = stat_res.st_mode & 0o7777
 		if cur_mode != self.file_permissions:
 			logger.trace("%s: %o != %o", path, cur_mode, self.file_permissions)
-			os.chmod(path, self.file_permissions)
+			os.chmod(path, self.file_permissions, follow_symlinks=not stat.S_ISLNK(stat_res.st_mode))
 
 	def chown(self, path, stat_res=None):
-		stat_res = stat_res or os.stat(path)
+		stat_res = stat_res or os.stat(path, follow_symlinks=False)
 		if self.uid not in (-1, stat_res.st_uid) or self.gid not in (-1, stat_res.st_gid):
 			logger.trace("%s: %d:%d != %d:%d", path, stat_res.st_uid, stat_res.st_gid, self.uid, self.gid)
-			os.chown(path, self.uid, self.gid)
+			os.chown(path, self.uid, self.gid, follow_symlinks=not stat.S_ISLNK(stat_res.st_mode))
 
 	def apply(self, path):
-		stat_res = os.stat(path)
+		stat_res = os.stat(path, follow_symlinks=False)
 		self.chmod(path, stat_res)
 		self.chown(path, stat_res)
 
@@ -107,7 +107,7 @@ class DirPermission(FilePermission):
 	modify_file_exe: bool = True
 
 	def chmod(self, path, stat_res=None):
-		stat_res = stat_res or os.stat(path)
+		stat_res = stat_res or os.stat(path, follow_symlinks=False)
 		if stat.S_ISLNK(stat_res.st_mode) and not self.correct_links:
 			return
 
@@ -129,7 +129,13 @@ class DirPermission(FilePermission):
 
 		if cur_mode != new_mode:
 			logger.trace("%s: %o != %o", path, cur_mode, new_mode)
-			os.chmod(path, new_mode)
+			os.chmod(path, new_mode, follow_symlinks=not stat.S_ISLNK(stat_res.st_mode))
+
+	def chown(self, path, stat_res=None):
+		stat_res = stat_res or os.stat(path, follow_symlinks=False)
+		if stat.S_ISLNK(stat_res.st_mode) and not self.correct_links:
+			return
+		return super().chown(path, stat_res)
 
 def _get_default_depot_user_ssh_dir():
 	return os.path.join(DEFAULT_DEPOT_USER_HOME, ".ssh")
@@ -166,12 +172,15 @@ class PermissionRegistry(metaclass=Singleton):
 			DirPermission("/var/lib/opsi", OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o770),
 			#FilePermission(OPSI_PASSWD_FILE, OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o660),
 		)
-
+		self.register_permission(
+			DirPermission("/etc/opsi/ssl", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o600, 0o750),
+			FilePermission("/etc/opsi/ssl/opsi-ca-cert.pem", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o644)
+		)
 		depot_dirs = getDepotDirectories()
 		self.register_permission(
 			DirPermission(depot_dirs["depot"], OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o2770, modify_file_exe=False),
 			DirPermission(depot_dirs["repository"], OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o2770),
-			DirPermission(depot_dirs["workbench"], None, FILE_ADMIN_GROUP, 0o664, 0o2770)
+			DirPermission(depot_dirs["workbench"], OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o2770, modify_file_exe=False)
 		)
 
 		pxe_dir = getPxeDirectory()
@@ -229,29 +238,39 @@ def set_rights(start_path='/'):
 				parent = permissions[path]
 
 	if not permissions_to_process and parent:
+		logger.notice("Setting rights on '%s'", start_path)
 		parent.apply(start_path)
 
 	for permission in permissions_to_process:
+		recursive = os.path.isdir(permission.path) and getattr(permission, "recursive", True)
+
+		logger.notice("Setting rights %son '%s'", "recursively " if recursive else "", permission.path)
 		permission.apply(permission.path)
 
-		if not os.path.isdir(permission.path) or not getattr(permission, "recursive", True):
+		if not recursive:
 			continue
 
-		for root, dirs, files in os.walk(permission.path):
-			if root != permission.path and root in permissions:
-				continue
-
+		for root, dirs, files in os.walk(permission.path, topdown=True):
+			#logger.debug("Processing '%s'", root)
 			for name in files:
 				abspath = os.path.join(root, name)
 				if abspath in permissions:
 					continue
+				if not permission.modify_file_exe and os.path.islink(abspath):
+					continue
 				permission.apply(abspath)
 
+			remove_dirs = []
 			for name in dirs:
 				abspath = os.path.join(root, name)
 				if abspath in permissions:
+					remove_dirs.append(name)
 					continue
 				permission.apply(abspath)
+
+			if remove_dirs:
+				for name in remove_dirs:
+					dirs.remove(name)
 
 def setRights(path="/"):
 	# Deprecated
