@@ -48,7 +48,7 @@ OPSI_GLOBAL_CONF = "/etc/opsi/global.conf"
 try:
 	from OPSI.Util.File.Opsi import OpsiConfFile
 	FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
-except Exception:
+except Exception:  # pylint: disable=broad-except
 	# Use "pcpatch" if group exists otherwise use the new default "opsifileadmins"
 	try:
 		import grp
@@ -59,7 +59,8 @@ except Exception:
 
 # User that is running opsiconfd.
 try:
-	from opsiconfd.config import config
+	# pyright: reportMissingImports=false
+	from opsiconfd.config import config  # pylint: disable=import-error
 	OPSICONFD_USER = config.run_as_user
-except Exception:
+except Exception:  # pylint: disable=broad-except
 	OPSICONFD_USER = "opsiconfd"
