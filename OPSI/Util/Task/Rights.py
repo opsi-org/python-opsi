@@ -31,7 +31,6 @@ provides helpers for this task.
 import grp
 import os
 import pwd
-import re
 import stat
 from dataclasses import dataclass
 from functools import lru_cache
@@ -134,7 +133,7 @@ class DirPermission(FilePermission):
 	def chown(self, path, stat_res=None):
 		stat_res = stat_res or os.stat(path, follow_symlinks=False)
 		if stat.S_ISLNK(stat_res.st_mode) and not self.correct_links:
-			return
+			return None
 		return super().chown(path, stat_res)
 
 def _get_default_depot_user_ssh_dir():
@@ -225,7 +224,7 @@ def setRightsOnSSHDirectory(userId=None, groupId=None, path=_get_default_depot_u
 	)
 	set_rights()
 
-def set_rights(start_path='/'):
+def set_rights(start_path='/'):  # pylint: disable=too-many-branches
 	logger.debug("Setting rights on %s", start_path)
 	permissions = PermissionRegistry().permissions
 	permissions_to_process = []
@@ -288,7 +287,7 @@ def setPasswdRights():
 
 CACHED_DEPOT_DIRS = {}
 def getDepotDirectories():
-	global CACHED_DEPOT_DIRS
+	global CACHED_DEPOT_DIRS  # pylint: disable=global-statement
 	if not CACHED_DEPOT_DIRS:
 		CACHED_DEPOT_DIRS = {
 			"depot": "/var/lib/opsi/depot",
@@ -296,7 +295,7 @@ def getDepotDirectories():
 			"workbench": "/var/lib/opsi/workbench"
 		}
 		try:
-			from OPSI.Backend.BackendManager import BackendManager
+			from OPSI.Backend.BackendManager import BackendManager  # pylint: disable=import-outside-toplevel
 			with BackendManager() as backend:
 				depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFqdn())[0]
 				for name, url in (
@@ -308,7 +307,7 @@ def getDepotDirectories():
 						CACHED_DEPOT_DIRS[name] = url[7:]
 		except IndexError:
 			logger.warning("Failed to get directories from depot: No depots found")
-		except Exception as err:
+		except Exception as err:  # pylint: disable=broad-except
 			logger.warning("Failed to get directories from depot: %s", err)
 	return CACHED_DEPOT_DIRS
 
