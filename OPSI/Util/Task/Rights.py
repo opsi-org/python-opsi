@@ -168,6 +168,7 @@ class PermissionRegistry(metaclass=Singleton):
 	def register_default_permissions(self):
 		self.register_permission(
 			DirPermission("/etc/opsi", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o660, 0o770),
+			#FilePermission("/etc/opsi/modules", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o660),
 			DirPermission("/var/log/opsi", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o660, 0o770),
 			DirPermission("/var/lib/opsi", OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o770),
 			#FilePermission(OPSI_PASSWD_FILE, OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o660),
@@ -242,6 +243,9 @@ def set_rights(start_path='/'):
 		parent.apply(start_path)
 
 	for permission in permissions_to_process:
+		if not os.path.lexists(permission.path):
+			continue
+
 		recursive = os.path.isdir(permission.path) and getattr(permission, "recursive", True)
 
 		logger.notice("Setting rights %son '%s'", "recursively " if recursive else "", permission.path)
