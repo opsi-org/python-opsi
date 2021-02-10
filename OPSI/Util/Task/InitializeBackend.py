@@ -37,7 +37,8 @@ from OPSI.Object import OpsiConfigserver
 from OPSI.System.Posix import getLocalFqdn, getNetworkConfiguration, isUCS
 from OPSI.Types import forceList
 from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
-from OPSI.Util.Task.Rights import setPasswdRights
+from OPSI.Util.Task.Rights import set_rights
+from OPSI.Backend.Base.ConfigData import OPSI_PASSWD_FILE
 
 __all__ = ('initializeBackends', )
 
@@ -122,11 +123,9 @@ def _setupPasswdFile():
 	"""
 	Set up the opsi passwd file and set the correct rights.
 	"""
-	if not os.path.exists(u'/etc/opsi/passwd'):
-		with codecs.open(u'/etc/opsi/passwd', 'w', 'utf-8'):
-			pass
-
-		setPasswdRights()
+	if not os.path.exists(OPSI_PASSWD_FILE):
+		open(OPSI_PASSWD_FILE, "w").close()
+		set_rights(OPSI_PASSWD_FILE)
 
 
 def _getServerConfig(fqdn, networkConfig):
