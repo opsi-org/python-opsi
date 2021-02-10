@@ -24,33 +24,7 @@ Opsi needs different access rights and ownerships for files and folders
 during its use. To ease the setting of these permissions this modules
 provides helpers for this task.
 
-
-.. versionadded:: 4.0.6.1
-
-
-.. versionchanged:: 4.0.6.3
-
-	Added function :py:func:`chown`.
-
-
-.. versionchanged:: 4.0.6.4
-
-	Improved :py:func:`removeDuplicatesFromDirectories`.
-
-
-.. versionchanged:: 4.0.6.24
-
-	Disabled :py:func:`removeDuplicatesFromDirectories` to avoid
-	problems with wrong rights set on /var/lib/opsi/depot
-
-
-.. versionchanged:: 4.0.7.9
-
-	Many internal refactorings to make adding new directories easier.
-
-
 :copyright:  uib GmbH <info@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
@@ -59,158 +33,235 @@ import os
 import pwd
 import re
 import stat
-from collections import namedtuple
+from dataclasses import dataclass
+from functools import lru_cache
 
 from OPSI.Config import (
-	FILE_ADMIN_GROUP as _FILE_ADMIN_GROUP,
-	OPSI_ADMIN_GROUP as _ADMIN_GROUP,
-	DEFAULT_DEPOT_USER as _CLIENT_USER,
-	OPSICONFD_USER as _OPSICONFD_USER)
+	FILE_ADMIN_GROUP, OPSI_ADMIN_GROUP, DEFAULT_DEPOT_USER, DEFAULT_DEPOT_USER_HOME, OPSICONFD_USER
+)
 from OPSI.Logger import Logger
-from OPSI.Util import findFilesGenerator
 from OPSI.System.Posix import (
-	getLocalFqdn as getLocalFQDN, isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES, isUbuntu,
-	isUCS)
+	getLocalFqdn, isCentOS, isOpenSUSE, isRHEL, isSLES, isUCS
+)
+from OPSI.Backend.Base.ConfigData import OPSI_PASSWD_FILE
 
-__all__ = ('setRights', 'setPasswdRights')
+from opsicommon.utils import Singleton
 
 logger = Logger()
 
 _HAS_ROOT_RIGHTS = os.geteuid() == 0
-KNOWN_EXECUTABLES = frozenset((
-	'create_driver_links.py', 'opsi-deploy-client-agent',
-	'service_setup.sh', 'setup.py', 'show_drivers.py', 'winexe',
-	'windows-image-detector.py',
-))
 
-Rights = namedtuple("Rights", ["uid", "gid", "files", "directories", "correctLinks"])
+@dataclass
+class FilePermission:
+	path: str
+	username: str
+	groupname: str
+	file_permissions: int
 
+	@staticmethod
+	@lru_cache(maxsize=None)
+	def username_to_uid(username: str) -> int:
+		return pwd.getpwnam(username)[2]
+
+	@staticmethod
+	@lru_cache(maxsize=None)
+	def groupname_to_gid(groupname: str) -> int:
+		return grp.getgrnam(groupname)[2]
+
+	@property
+	def uid(self) -> int:
+		if not self.username:
+			return -1
+		return self.username_to_uid(self.username)
+
+	@property
+	def gid(self) -> int:
+		if not self.groupname:
+			return -1
+		return self.groupname_to_gid(self.groupname)
+
+	def chmod(self, path, stat_res=None):
+		stat_res = stat_res or os.stat(path)
+		cur_mode = stat_res.st_mode & 0o7777
+		if cur_mode != self.file_permissions:
+			logger.trace("%s: %o != %o", path, cur_mode, self.file_permissions)
+			os.chmod(path, self.file_permissions)
+
+	def chown(self, path, stat_res=None):
+		stat_res = stat_res or os.stat(path)
+		if self.uid not in (-1, stat_res.st_uid) or self.gid not in (-1, stat_res.st_gid):
+			logger.trace("%s: %d:%d != %d:%d", path, stat_res.st_uid, stat_res.st_gid, self.uid, self.gid)
+			os.chown(path, self.uid, self.gid)
+
+	def apply(self, path):
+		stat_res = os.stat(path)
+		self.chmod(path, stat_res)
+		self.chown(path, stat_res)
+
+
+@dataclass
+class DirPermission(FilePermission):
+	dir_permissions: int
+	recursive: bool = True
+	correct_links: bool = False
+	modify_file_exe: bool = True
+
+	def chmod(self, path, stat_res=None):
+		stat_res = stat_res or os.stat(path)
+		if stat.S_ISLNK(stat_res.st_mode) and not self.correct_links:
+			return
+
+		cur_mode = stat_res.st_mode & 0o7777
+		new_mode = self.file_permissions
+		if stat.S_ISDIR(stat_res.st_mode):
+			new_mode = self.dir_permissions
+		elif stat.S_ISREG(stat_res.st_mode) and not self.modify_file_exe:
+			# Do not modify executable flag
+			if cur_mode & 0o100 and new_mode & 0o400:
+				# User: executable bit currently set and new mode readable
+				new_mode |= 0o100
+			if cur_mode & 0o010 and new_mode & 0o040:
+				# Group: executable bit currently set and new mode readable
+				new_mode |= 0o010
+			if cur_mode & 0o001 and new_mode & 0o004:
+				# Other: executable bit currently set and new mode readable
+				new_mode |= 0o001
+
+		if cur_mode != new_mode:
+			logger.trace("%s: %o != %o", path, cur_mode, new_mode)
+			os.chmod(path, new_mode)
+
+def _get_default_depot_user_ssh_dir():
+	return os.path.join(DEFAULT_DEPOT_USER_HOME, ".ssh")
+
+class PermissionRegistry(metaclass=Singleton):
+	def __init__(self):
+		self._permissions = {}
+		self.reinit()
+
+	def reinit(self):
+		self._permissions = {}
+		self.register_default_permissions()
+
+	def register_permission(self, *permission: DirPermission):
+		for perm in permission:
+			self._permissions[perm.path] = perm
+
+	def remove_permissions(self):
+		self._permissions = {}
+
+	@property
+	def permissions(self):
+		return self._permissions
+
+	#def get_permissions(self, start_path="/"):
+	#	for path in sorted(self._permissions):
+	#		if path.startswith(start_path):
+	#			yield self._permissions[path]
+
+	def register_default_permissions(self):
+		self.register_permission(
+			DirPermission("/etc/opsi", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o660, 0o770),
+			DirPermission("/var/log/opsi", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o660, 0o770),
+			DirPermission("/var/lib/opsi", OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o770),
+			#FilePermission(OPSI_PASSWD_FILE, OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o660),
+		)
+
+		depot_dirs = getDepotDirectories()
+		self.register_permission(
+			DirPermission(depot_dirs["depot"], OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o2770, modify_file_exe=False),
+			DirPermission(depot_dirs["repository"], OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o2770),
+			DirPermission(depot_dirs["workbench"], None, FILE_ADMIN_GROUP, 0o664, 0o2770)
+		)
+
+		pxe_dir = getPxeDirectory()
+		if pxe_dir:
+			self.register_permission(
+				DirPermission(pxe_dir, OPSICONFD_USER, FILE_ADMIN_GROUP, 0o664, 0o775)
+			)
+
+		webserver_dir = getWebserverRepositoryPath()
+		if webserver_dir:
+			username, groupname = getWebserverUsernameAndGroupname()
+			self.register_permission(
+				DirPermission(webserver_dir, username, groupname, 0o664, 0o775)
+			)
+
+		ssh_dir = _get_default_depot_user_ssh_dir()
+		self.register_permission(
+			DirPermission(ssh_dir, DEFAULT_DEPOT_USER, FILE_ADMIN_GROUP, 0o640, 0o750, recursive=False),
+			FilePermission(os.path.join(ssh_dir, 'id_rsa'), DEFAULT_DEPOT_USER, FILE_ADMIN_GROUP, 0o640),
+			FilePermission(os.path.join(ssh_dir, 'id_rsa.pub'), DEFAULT_DEPOT_USER, FILE_ADMIN_GROUP, 0o644),
+			FilePermission(os.path.join(ssh_dir, 'authorized_keys'), DEFAULT_DEPOT_USER, FILE_ADMIN_GROUP, 0o600)
+		)
+
+def setRightsOnSSHDirectory(userId=None, groupId=None, path=_get_default_depot_user_ssh_dir()):
+	if not os.path.exists(path):
+		raise FileNotFoundError(f"Path '{path}' not found")
+
+	username = DEFAULT_DEPOT_USER
+	groupname = FILE_ADMIN_GROUP
+
+	if userId is not None:
+		username = pwd.getpwuid(userId).pw_name
+	if groupId is not None:
+		groupname = grp.getgrgid(groupId).gr_name
+
+	PermissionRegistry().register_permission(
+		DirPermission(path, username, groupname, 0o640, 0o750, recursive=False),
+		FilePermission(os.path.join(path, 'id_rsa'), username, groupname, 0o640),
+		FilePermission(os.path.join(path, 'id_rsa.pub'), username, groupname, 0o644),
+		FilePermission(os.path.join(path, 'authorized_keys'), username, groupname, 0o600)
+	)
+	set_rights()
+
+def set_rights(start_path='/'):
+	logger.debug("Setting rights on %s", start_path)
+	permissions = PermissionRegistry().permissions
+	permissions_to_process = []
+	parent = None
+	for path in sorted(list(permissions)):
+		if not os.path.relpath(path, start_path).startswith(".."):
+			# Sub path of start_path
+			permissions_to_process.append(permissions[path])
+		elif not os.path.relpath(start_path, path).startswith(".."):
+			if not parent or len(parent.path) < len(path):
+				parent = permissions[path]
+
+	if not permissions_to_process and parent:
+		parent.apply(start_path)
+
+	for permission in permissions_to_process:
+		permission.apply(permission.path)
+
+		if not os.path.isdir(permission.path) or not getattr(permission, "recursive", True):
+			continue
+
+		for root, dirs, files in os.walk(permission.path):
+			if root != permission.path and root in permissions:
+				continue
+
+			for name in files:
+				abspath = os.path.join(root, name)
+				if abspath in permissions:
+					continue
+				permission.apply(abspath)
+
+			for name in dirs:
+				abspath = os.path.join(root, name)
+				if abspath in permissions:
+					continue
+				permission.apply(abspath)
+
+def setRights(path="/"):
+	# Deprecated
+	return set_rights(path)
 
 def setPasswdRights():
 	"""
 	Setting correct permissions on ``/etc/opsi/passwd``.
 	"""
-	targetFile = '/etc/opsi/passwd'
-	logger.notice("Setting rights on %s", targetFile)
-	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
-	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
-	os.chown(targetFile, opsiconfdUid, adminGroupGid)
-	os.chmod(targetFile, 0o660)
-
-
-def setRights(path='/'):
-	logger.debug("Setting rights on %s", path)
-	logger.debug("euid is %s", os.geteuid())
-
-	dirAndRights = getDirectoriesAndExpectedRights()
-
-	for startPath, rights in filterDirsAndRights(path, dirAndRights):
-		if os.path.isfile(path):
-			chown(path, rights.uid, rights.gid)
-			setRightsOnFile(os.path.abspath(path), rights.files)
-			continue
-		
-		if not os.path.exists(startPath):
-			logger.warning("File not found '%s'", startPath)
-			continue
-
-		logger.notice("Setting rights on directory %s", startPath)
-		logger.trace("Rights configuration: %s", rights)
-		chown(startPath, rights.uid, rights.gid)
-		os.chmod(startPath, rights.directories)
-		for filepath in findFilesGenerator(startPath, prefix=startPath, returnLinks=rights.correctLinks, excludeFile=re.compile(r"(.swp|~)$")):
-			st = os.stat(filepath)
-			if (rights.uid != -1 and rights.uid != st.st_uid) or (rights.gid != -1 and rights.gid != st.st_gid):
-				chown(filepath, rights.uid, rights.gid)
-			
-			if stat.S_ISDIR(st.st_mode):
-				logger.debug("Setting rights on directory %s", filepath)
-				mode = st.st_mode & 0o07777
-				if mode != rights.directories:
-					#logger.trace("%s: %o != %o", filepath, mode, rights.directories)
-					os.chmod(filepath, rights.directories)
-			elif stat.S_ISREG(st.st_mode):
-				mode = st.st_mode & 0o07777
-				if mode != rights.files:
-					#logger.trace("%s: %o != %o", filepath, mode, rights.files)
-					setRightsOnFile(filepath, rights.files)
-
-		if startPath.startswith('/var/lib/opsi') and _HAS_ROOT_RIGHTS:
-			clientUserUid = pwd.getpwnam(_CLIENT_USER)[2]
-			fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
-
-			os.chmod('/var/lib/opsi', 0o750)
-			chown('/var/lib/opsi', clientUserUid, fileAdminGroupGid)
-			setRightsOnSSHDirectory(clientUserUid, fileAdminGroupGid)
-
-
-def filterDirsAndRights(path, iterable):
-	'''
-	Iterates over `iterable` and the yields the appropriate directories.
-
-	This function also avoids that directorires get returned more than once.
-	'''
-	basedir = getAbsoluteDir(path)
-
-	processedDirectories = set()
-	for dirname, right in iterable:
-		if not dirname.startswith(basedir) and not basedir.startswith(dirname):
-			logger.debug("Skipping %s", dirname)
-			continue
-
-		startPath = dirname
-		if basedir.startswith(dirname):
-			startPath = basedir
-
-		if startPath in processedDirectories:
-			logger.debug("Already proceesed %s, skipping.", startPath)
-			continue
-
-		yield startPath, right
-
-		processedDirectories.add(startPath)
-
-
-def getAbsoluteDir(path):
-	'''
-	Returns to absolute path to the directory.
-
-	If `path` is no directory the absolute path to the dir containing
-	`path` will be used.
-	'''
-	basedir = os.path.abspath(path)
-	if not os.path.isdir(basedir):
-		basedir = os.path.dirname(basedir)
-
-	return basedir
-
-
-def getDirectoriesAndExpectedRights():
-	opsiconfdUid = pwd.getpwnam(_OPSICONFD_USER)[2]
-	adminGroupGid = grp.getgrnam(_ADMIN_GROUP)[2]
-	fileAdminGroupGid = grp.getgrnam(_FILE_ADMIN_GROUP)[2]
-
-	yield '/etc/opsi', Rights(opsiconfdUid, adminGroupGid, 0o660, 0o770, True)
-	yield '/var/log/opsi', Rights(opsiconfdUid, adminGroupGid, 0o660, 0o770, True)
-	yield '/var/lib/opsi', Rights(opsiconfdUid, fileAdminGroupGid, 0o660, 0o770, False)
-
-	dd = getDepotDirectories()
-	yield dd["depot"], Rights(opsiconfdUid, fileAdminGroupGid, 0o660, 0o2770, False)
-	yield dd["repository"], Rights(opsiconfdUid, fileAdminGroupGid, 0o660, 0o2770, False)
-	yield dd["workbench"], Rights(-1, fileAdminGroupGid, 0o664, 0o2770, False)
-	
-	yield getPxeDirectory(), Rights(opsiconfdUid, fileAdminGroupGid, 0o664, 0o775, False)
-
-	apacheDir = getWebserverRepositoryPath()
-	if apacheDir:
-		try:
-			username, groupname = getWebserverUsernameAndGroupname()
-			webUid = pwd.getpwnam(username)[2]
-			webGid = grp.getgrnam(groupname)[2]
-
-			yield apacheDir, Rights(webUid, webGid, 0o664, 0o775, False)
-		except (KeyError, TypeError, RuntimeError) as kerr:
-			logger.debug("Lookup of user / group failed: %s", kerr)
+	return set_rights(OPSI_PASSWD_FILE)
 
 CACHED_DEPOT_DIRS = {}
 def getDepotDirectories():
@@ -224,7 +275,7 @@ def getDepotDirectories():
 		try:
 			from OPSI.Backend.BackendManager import BackendManager
 			with BackendManager() as backend:
-				depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFQDN())[0]
+				depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFqdn())[0]
 				for name, url in (
 					("depot", depot.getDepotLocalUrl()),
 					("repository", depot.getRepositoryLocalUrl()),
@@ -234,8 +285,8 @@ def getDepotDirectories():
 						CACHED_DEPOT_DIRS[name] = url[7:]
 		except IndexError:
 			logger.warning("Failed to get directories from depot: No depots found")
-		except Exception as e:
-			logger.warning("Failed to get directories from depot: %s", e)
+		except Exception as err:
+			logger.warning("Failed to get directories from depot: %s", err)
 	return CACHED_DEPOT_DIRS
 
 def getDepotDirectory():
@@ -250,112 +301,29 @@ def getWorkbenchDirectory():
 def getPxeDirectory():
 	if isSLES() or isOpenSUSE():
 		return '/var/lib/tftpboot/opsi'
-	else:
-		return '/tftpboot/linux'
+	return '/tftpboot/linux'
 
 def getWebserverRepositoryPath():
 	"""
-	Returns the path to the directory where packages for Linux netboot \
-installations may be.
+	Returns the path to the directory where packages for Linux netboot installations may be.
 
 	On an unsuported distribution or without the relevant folder
 	existing `None` will be returned.
 	"""
-	if any(func() for func in (isDebian, isCentOS, isRHEL, isUbuntu)):
-		path = '/var/www/html/opsi'
-	elif isUCS():
-		path = '/var/www/opsi'
-	elif isOpenSUSE() or isSLES():
-		path = '/srv/www/htdocs/opsi'
-	else:
-		logger.info("Unsupported distribution.")
-		return
-
-	if not os.path.exists(path):
-		logger.debug("Found path %s but does not exist.", path)
-		path = None
-
-	return path
+	if isUCS():
+		return '/var/www/opsi'
+	if isOpenSUSE() or isSLES():
+		return '/srv/www/htdocs/opsi'
+	return '/var/www/html/opsi'
 
 def getWebserverUsernameAndGroupname():
 	'''
-	Returns the name of the user and group belonging to the webserver \
-in the default configuration.
+	Returns the name of the user and group belonging to the webserver in the default configuration.
 
 	:raises RuntimeError: If running on an Unsupported distribution.
 	'''
-	if isDebian() or isUbuntu() or isUCS():
-		return 'www-data', 'www-data'
-	elif isOpenSUSE() or isSLES():
+	if isOpenSUSE() or isSLES():
 		return 'wwwrun', 'www'
-	elif isCentOS() or isRHEL():
+	if isCentOS() or isRHEL():
 		return 'apache', 'apache'
-	else:
-		raise RuntimeError("Unsupported distribution.")
-
-
-def setRightsOnFile(filepath, filemod):
-	logger.debug("Setting rights on file %s", filepath)
-	if filepath.startswith(getDepotDirectory()):
-		if os.path.basename(filepath) in KNOWN_EXECUTABLES:
-			logger.debug("Setting rights on special file %s", filepath)
-			os.chmod(filepath, 0o770)
-		else:
-			logger.debug("Setting rights on file %s", filepath)
-			os.chmod(filepath, (os.stat(filepath)[0] | 0o660) & 0o770)
-	else:
-		logger.debug("Setting rights %s on file %s", filemod, filepath)
-		os.chmod(filepath, filemod)
-
-
-def chown(path, uid, gid):
-	"""
-	Set the ownership of a file or folder.
-
-	The uid will only be set if the efficte uid is 0 - i.e. running with sudo.
-
-	If changing the owner fails an Exception will only be risen if the
-	current uid is 0 - we are root.
-	In all other cases only a warning is shown.
-	"""
-	try:
-		if _HAS_ROOT_RIGHTS:
-			logger.debug("Setting ownership to %s:%s on %s", uid, gid, path)
-			if os.path.islink(path):
-				os.lchown(path, uid, gid)
-			else:
-				os.chown(path, uid, gid)
-		else:
-			logger.debug("Setting ownership to -1:%s on %s", gid, path)
-			if os.path.islink(path):
-				os.lchown(path, -1, gid)
-			else:
-				os.chown(path, -1, gid)
-	except OSError as fist:
-		if _HAS_ROOT_RIGHTS:
-			# We are root so something must be really wrong!
-			raise fist
-
-		logger.warning("Failed to set ownership on %s: %s", path, fist)
-		logger.notice("Please try setting the rights as root.")
-
-
-def setRightsOnSSHDirectory(userId, groupId, path='/var/lib/opsi/.ssh'):
-	if os.path.exists(path):
-		os.chown(path, userId, groupId)
-		os.chmod(path, 0o750)
-
-		idRsa = os.path.join(path, 'id_rsa')
-		if os.path.exists(idRsa):
-			os.chmod(idRsa, 0o640)
-			os.chown(idRsa, userId, groupId)
-
-		idRsaPub = os.path.join(path, 'id_rsa.pub')
-		if os.path.exists(idRsaPub):
-			os.chmod(idRsaPub, 0o644)
-			os.chown(idRsaPub, userId, groupId)
-
-		authorizedKeys = os.path.join(path, 'authorized_keys')
-		if os.path.exists(authorizedKeys):
-			os.chmod(authorizedKeys, 0o600)
-			os.chown(authorizedKeys, userId, groupId)
+	return 'www-data', 'www-data'
