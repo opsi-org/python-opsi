@@ -39,6 +39,9 @@ OPSI_ADMIN_GROUP = "opsiadmin"
 # Default user when accessing the opsi depot
 DEFAULT_DEPOT_USER = "pcpatch"
 
+# Default home dir of depot user
+DEFAULT_DEPOT_USER_HOME = "/var/lib/opsi"
+
 # Path to global opsi configuration file
 OPSI_GLOBAL_CONF = "/etc/opsi/global.conf"
 
