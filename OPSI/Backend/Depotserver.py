@@ -24,7 +24,6 @@ Depotserver backend.
 
 import os
 from contextlib import contextmanager
-from sys import exc_info
 
 from OPSI.Backend.Base import ExtendedBackend
 from OPSI.Exceptions import (

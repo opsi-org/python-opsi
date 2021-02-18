@@ -25,7 +25,6 @@ import os
 import re
 import shutil
 import stat
-from sys import exc_info
 import time
 import urllib
 import xml.etree.ElementTree as ET

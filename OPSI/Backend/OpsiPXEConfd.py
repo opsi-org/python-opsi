@@ -29,7 +29,6 @@ import codecs
 import json
 import os.path
 import socket
-from sys import exc_info
 import tempfile
 import threading
 import time

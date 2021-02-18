@@ -27,7 +27,6 @@ The replicator allows replication from one backend into another.
 :license: GNU Affero General Public License version 3
 """
 
-from sys import exc_info
 from OPSI.Backend.Base import ExtendedConfigDataBackend
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Object import *

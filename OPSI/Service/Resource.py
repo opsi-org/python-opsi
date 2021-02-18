@@ -26,7 +26,6 @@ opsi python library - Resource
 :license: GNU Affero General Public License version 3
 """
 
-from sys import exc_info
 from twisted.internet import defer
 
 from OPSI.Logger import Logger
