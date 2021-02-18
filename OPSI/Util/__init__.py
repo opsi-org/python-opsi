@@ -142,7 +142,7 @@ object instance from it
 	if isinstance(obj, dict):
 		if not preventObjectCreation and 'type' in obj:
 			try:
-				objectClass = getattr('OPSIObject', obj['type'])
+				objectClass = getattr(OPSIObject, obj['type'])
 				return objectClass.fromHash(obj)
 			except Exception as err:  # pylint: disable=broad-except
 				logger.debug("Failed to get object from dict %s: %s", obj, err)
