@@ -90,7 +90,9 @@ class FilePermission:
 		stat_res = stat_res or os.stat(path, follow_symlinks=False)
 		if self.uid not in (-1, stat_res.st_uid) or self.gid not in (-1, stat_res.st_gid):
 			logger.trace("%s: %d:%d != %d:%d", path, stat_res.st_uid, stat_res.st_gid, self.uid, self.gid)
-			os.chown(path, self.uid, self.gid, follow_symlinks=not stat.S_ISLNK(stat_res.st_mode))
+			# Unprivileged user cannot change file owner
+			uid = self.uid if _HAS_ROOT_RIGHTS else -1
+			os.chown(path, uid, self.gid, follow_symlinks=not stat.S_ISLNK(stat_res.st_mode))
 
 	def apply(self, path):
 		stat_res = os.stat(path, follow_symlinks=False)
