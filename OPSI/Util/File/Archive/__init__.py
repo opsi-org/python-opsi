@@ -145,8 +145,8 @@ class BaseArchive:
 
 			if self._progressSubject:
 				self._progressSubject.setState(fileCount)
-		except Exception as e:
-			logger.logException(e)
+		except Exception as err:
+			logger.error(err, exc_info=True)
 			raise
 
 	def _create(self, fileList, baseDir, command):

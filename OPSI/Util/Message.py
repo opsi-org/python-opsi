@@ -473,7 +473,7 @@ class ProgressSubjectProxy(MessageSubjectProxy):
 
 class NotificationServerProtocol(LineReceiver):
 	def connectionMade(self):
-		self.factory.connectionMade(self)
+		self.factory.connectionMade(self)  # pylint: disable=no-member
 
 	def connectionLost(self, reason):
 		self.factory.connectionLost(self, reason)
@@ -594,7 +594,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 			clients = self.clients
 		if not isinstance(clients, list):
 			clients = [clients]
-		
+
 		logger.debug("Sending notification '%s' to %d client(s)", name, len(clients))
 
 		if not clients:
@@ -628,7 +628,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 	@property
 	def port(self):
 		return self._port
-	
+
 	def isListening(self):
 		return self._listening
 
@@ -659,7 +659,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 
 	def run(self):
 		logger.info("Notification server starting")
-		
+
 		trynum = 0
 		port = self._start_port
 		while True:
@@ -681,11 +681,11 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 				logger.debug("Notification server - attempt %d, failed to listen on port %d: %s" % (trynum, port, error))
 				if trynum >= 20:
 					self._error = forceUnicode(error)
-					logger.logException(error)
+					logger.error(error, exc_info=True)
 					break
 				port += 1
 		self._running_event.set()
-	
+
 	def start_and_wait(self, timeout=30):
 		self.start()
 		self._running_event.wait(timeout)
@@ -697,7 +697,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 	def stop(self, stopReactor=True):
 		self.requestEndConnections()
 		reactor.callLater(3.0, self._stopServer, stopReactor)
-	
+
 	def _stopServer(self, stopReactor=True):
 		if self._server:
 			result = self._server.stopListening()
@@ -708,7 +708,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 		if stopReactor:
 			reactor.callLater(3.0, self._stopReactor)
 		logger.info("Notification server stopped")
-	
+
 	def _stopReactor(self):
 		if reactor and reactor.running:
 			try:
@@ -834,7 +834,7 @@ class NotificationClient(threading.Thread):
 			if not reactor.running:
 				reactor.run(installSignalHandlers=0)
 		except Exception as error:
-			logger.logException(error)
+			logger.error(error, exc_info=True)
 
 	def stop(self, stopReactor=True):
 		if self._client:

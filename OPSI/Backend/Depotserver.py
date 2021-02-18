@@ -24,6 +24,7 @@ Depotserver backend.
 
 import os
 from contextlib import contextmanager
+from sys import exc_info
 
 from OPSI.Backend.Base import ExtendedBackend
 from OPSI.Exceptions import (
@@ -508,7 +509,7 @@ class DepotserverPackageManager:
 				cleanUpProductPropertyStates(dataBackend, productProperties, depotId, productOnDepot)
 			except Exception as installingPackageError:
 				logger.debug("Failed to install the package %s", filename)
-				logger.logException(installingPackageError, logLevel=LOG_DEBUG)
+				logger.debug(installingPackageError, exc_info=True)
 				raise installingPackageError
 		except Exception as err:
 			logger.error(err, exc_info=True)

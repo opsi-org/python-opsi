@@ -239,7 +239,7 @@ class SnackUI(UI):
 			self.refresh()
 		except Exception as error:
 			self.exit()
-			logger.logException(error)
+			logger.error(error, exc_info=True)
 			raise
 
 	def showError(self, text, title=_('An error occurred'), okLabel=_('OK'), width=-1, height=-1, seconds=0):
@@ -278,7 +278,7 @@ class SnackUI(UI):
 				return gridForm.runOnce()
 		except Exception as error:
 			self.exit()
-			logger.logException(error)
+			logger.error(error, exc_info=True)
 			raise
 
 	def showMessage(self, text, title=_('Message'), okLabel=_('OK'), width=-1, height=-1, seconds=0):
@@ -317,7 +317,7 @@ class SnackUI(UI):
 				return gridForm.runOnce()
 		except Exception as e:
 			self.exit()
-			logger.logException(e)
+			logger.error(e, exc_info=True)
 			raise
 
 	def createProgressBox(self, width=-1, height=-1, total=100, title=_('Progress'), text=''):
@@ -339,7 +339,7 @@ class SnackUI(UI):
 			return progressBox
 		except Exception as error:
 			self.exit()
-			logger.logException(error)
+			logger.error(error, exc_info=True)
 			raise
 
 	def createCopyProgressBox(self, width=-1, height=-1, total=100, title=_('Copy progress'), text=''):
@@ -361,7 +361,7 @@ class SnackUI(UI):
 			return progressBox
 		except Exception as error:
 			self.exit()
-			logger.logException(error)
+			logger.error(error, exc_info=True)
 			raise
 
 	def createDualProgressBox(self, width=-1, height=-1, total=100, title=_('Progress'), text=''):
@@ -383,7 +383,7 @@ class SnackUI(UI):
 			return dualProgressBox
 		except Exception as error:
 			self.exit()
-			logger.logException(error)
+			logger.error(error, exc_info=True)
 			raise
 
 	def createCopyDualProgressBox(self, width=-1, height=-1, total=100, title=_('Copy progress'), text=''):
@@ -405,7 +405,7 @@ class SnackUI(UI):
 			return progressBox
 		except Exception as error:
 			self.exit()
-			logger.logException(error)
+			logger.error(error, exc_info=True)
 			raise
 
 	def createMessageBox(self, width=-1, height=-1, title=_('Text'), text=''):
@@ -514,7 +514,7 @@ class SnackUI(UI):
 			return entry.value()
 		except Exception as error:
 			self.exit()
-			logger.logException(error)
+			logger.error(error, exc_info=True)
 			raise
 
 	def getSelection(self, entries, radio=False, width=-1, height=-1, title=_('Please select'), text='', okLabel=_('OK'), cancelLabel=_('Cancel')):
@@ -640,7 +640,7 @@ class SnackUI(UI):
 			return result
 		except Exception as error:
 			self.exit()
-			logger.logException(error)
+			logger.error(error, exc_info=True)
 			raise
 
 	def getValues(self, entries, width=-1, height=-1, title=_('Please fill in'), text='', okLabel=_('OK'), cancelLabel=_('Cancel')):
@@ -752,7 +752,7 @@ class SnackUI(UI):
 			return entries
 		except Exception as error:
 			self.exit()
-			logger.logException(error)
+			logger.error(error, exc_info=True)
 			raise
 
 	def yesno(self, text, title=_('Question'), okLabel=_('OK'), cancelLabel=_('Cancel'), width=-1, height=-1):
@@ -810,7 +810,7 @@ class SnackUI(UI):
 			return False
 		except Exception as error:
 			self.exit()
-			logger.logException(error)
+			logger.error(error, exc_info=True)
 			raise
 
 
@@ -849,7 +849,7 @@ class SnackMessageBox(MessageBox, MessageObserver):
 			self._ui.getScreen().pushHelpLine("")
 		except Exception as error:
 			self._ui.exit()
-			logger.logException(error)
+			logger.error(error, exc_info=True)
 			raise
 
 	def show(self, seconds=0):
@@ -862,7 +862,7 @@ class SnackMessageBox(MessageBox, MessageObserver):
 				self.hide()
 		except Exception as error:
 			self._ui.exit()
-			logger.logException(error)
+			logger.error(error, exc_info=True)
 			raise
 
 	def hide(self):
@@ -872,7 +872,7 @@ class SnackMessageBox(MessageBox, MessageObserver):
 			self._visible = False
 		except Exception as error:
 			self._ui.exit()
-			logger.logException(error)
+			logger.error(error, exc_info=True)
 			raise
 
 	def setText(self, text):
@@ -895,12 +895,12 @@ class SnackMessageBox(MessageBox, MessageObserver):
 
 			try:
 				self._textbox.setText(self._text)
-			except Exception as setTextError:
-				logger.logException(setTextError)
+			except Exception as err:
+				logger.error(err, exc_info=True)
 			self.show()
 		except Exception as error:
 			self._ui.exit()
-			logger.logException(error)
+			logger.error(error, exc_info=True)
 			raise
 
 	def addText(self, text):
@@ -908,7 +908,7 @@ class SnackMessageBox(MessageBox, MessageObserver):
 			self.setText(self._text + forceUnicode(text))
 		except Exception as error:
 			self._ui.exit()
-			logger.logException(error)
+			logger.error(error, exc_info=True)
 			raise
 
 	def messageChanged(self, subject, message):

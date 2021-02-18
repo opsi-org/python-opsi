@@ -33,7 +33,7 @@ from OPSI.System import execute, which
 from OPSI.Types import forceList, forceProductId
 from OPSI.Util import getfqdn
 
-LOGGER = Logger()
+logger = Logger()
 
 __all__ = ('getImageInformation', 'parseWIM', 'writeImageInformation')
 
@@ -48,10 +48,10 @@ def parseWIM(wimPath):
 	"""
 	Image = namedtuple("Image", 'name languages default_language')
 
-	LOGGER.notice("Detected the following images:")
+	logger.notice("Detected the following images:")
 	images = []
 	for image in getImageInformation(wimPath):
-		LOGGER.notice(image['name'])
+		logger.notice(image['name'])
 		images.append(Image(image['name'], image.get('languages', tuple()), image.get('default language', None)))
 
 	if not images:
@@ -74,9 +74,9 @@ def getImageInformation(imagePath):
 	try:
 		imagex = which('wimlib-imagex')
 	except Exception as error:
-		LOGGER.logException(error)
-		LOGGER.warning("Unable to find 'wimlib-imagex': {0}".format(error))
-		LOGGER.warning("Please install 'wimtools'.")
+		logger.error(error, exc_info=True)
+		logger.warning("Unable to find 'wimlib-imagex': {0}".format(error))
+		logger.warning("Please install 'wimtools'.")
 		raise RuntimeError("Unable to find 'wimlib-imagex': {0}".format(error))
 
 	imageinfo = {}
@@ -105,7 +105,7 @@ def getImageInformation(imagePath):
 			imageinfo[key] = value
 		elif not line and imageinfo:
 			if 'name' in imageinfo:  # Do not return file information.
-				LOGGER.debug("Collected information {0!r}".format(imageinfo))
+				logger.debug("Collected information {0!r}".format(imageinfo))
 				yield imageinfo
 
 			imageinfo = {}
@@ -128,28 +128,28 @@ def writeImageInformation(backend, productId, imagenames, languages=None, defaul
 	productProperty.possibleValues = imagenames
 	if productProperty.defaultValues:
 		if productProperty.defaultValues[0] not in imagenames:
-			LOGGER.info("Mismatching default value. Setting first imagename as default.")
+			logger.info("Mismatching default value. Setting first imagename as default.")
 			productProperty.defaultValues = [imagenames[0]]
 	else:
-		LOGGER.info("No default values found. Setting first imagename as default.")
+		logger.info("No default values found. Setting first imagename as default.")
 		productProperty.defaultValues = [imagenames[0]]
 
 	backend.productProperty_updateObject(productProperty)
-	LOGGER.notice("Wrote imagenames to property 'imagename' product on {0!r}.".format(productId))
+	logger.notice("Wrote imagenames to property 'imagename' product on {0!r}.".format(productId))
 
 	if languages:
-		LOGGER.debug("Writing detected languages...")
+		logger.debug("Writing detected languages...")
 		productProperty = _getProductProperty(backend, productId, "system_language")
 		productProperty.possibleValues = forceList(languages)
 
 		if defaultLanguage and defaultLanguage in languages:
-			LOGGER.debug("Setting language default to {0!r}".format(defaultLanguage))
+			logger.debug("Setting language default to {0!r}".format(defaultLanguage))
 			productProperty.defaultValues = [defaultLanguage]
 
-		LOGGER.debug("system_language property is now: {0!r}".format(productProperty))
-		LOGGER.debug("system_language possibleValues are: {0}".format(productProperty.possibleValues))
+		logger.debug("system_language property is now: {0!r}".format(productProperty))
+		logger.debug("system_language possibleValues are: {0}".format(productProperty.possibleValues))
 		backend.productProperty_updateObject(productProperty)
-		LOGGER.notice("Wrote languages to property 'system_language' product on {0!r}.".format(productId))
+		logger.notice("Wrote languages to property 'system_language' product on {0!r}.".format(productId))
 
 
 def _getProductProperty(backend, productId, propertyId):
@@ -158,12 +158,12 @@ def _getProductProperty(backend, productId, propertyId):
 		"propertyId": propertyId
 	}
 	properties = backend.productProperty_getObjects(**productFilter)
-	LOGGER.debug("Properties: {0}".format(properties))
+	logger.debug("Properties: {0}".format(properties))
 
 	if not properties:
 		raise RuntimeError("No property {1!r} for product {0!r} found!".format(productId, propertyId))
 	elif len(properties) > 1:
-		LOGGER.debug("Found more than one property... trying to be more specific")
+		logger.debug("Found more than one property... trying to be more specific")
 
 		serverId = getfqdn()
 		prodOnDepot = backend.productOnDepot_getObjects(depotId=serverId, productId=productId)
@@ -175,9 +175,9 @@ def _getProductProperty(backend, productId, propertyId):
 		prodOnDepot = prodOnDepot[0]
 		productFilter['packageVersion'] = prodOnDepot.packageVersion
 		productFilter['productVersion'] = prodOnDepot.productVersion
-		LOGGER.debug('New filter: {0}'.format(productFilter))
+		logger.debug('New filter: {0}'.format(productFilter))
 		properties = backend.productProperty_getObjects(**productFilter)
-		LOGGER.debug("Properties: {0}".format(properties))
+		logger.debug("Properties: {0}".format(properties))
 
 		if not properties:
 			raise RuntimeError("Unable to find property {1!r} for product {0!r}!".format(productId, propertyId))

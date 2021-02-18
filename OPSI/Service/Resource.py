@@ -26,6 +26,7 @@ opsi python library - Resource
 :license: GNU Affero General Public License version 3
 """
 
+from sys import exc_info
 from twisted.internet import defer
 
 from OPSI.Logger import Logger
@@ -66,8 +67,8 @@ class ResourceOpsi(resource.Resource):
 			worker = self.WorkerClass(self._service, request, self)
 			worker.process()
 			return server.NOT_DONE_YET
-		except Exception as exc:
-			logger.logException(exc)
+		except Exception as err:
+			logger.error(err, exc_info=True)
 
 
 class ResourceOpsiJsonRpc(ResourceOpsi):

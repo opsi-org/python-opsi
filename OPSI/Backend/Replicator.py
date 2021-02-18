@@ -27,6 +27,7 @@ The replicator allows replication from one backend into another.
 :license: GNU Affero General Public License version 3
 """
 
+from sys import exc_info
 from OPSI.Backend.Base import ExtendedConfigDataBackend
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Object import *
@@ -326,9 +327,9 @@ class BackendReplicator:
 						for obj in objs:
 							try:
 								meth(obj)
-							except Exception as e:
-								logger.logException(e, LOG_DEBUG)
-								logger.error(u"Failed to replicate object %s: %s" % (obj, e))
+							except Exception as err:
+								logger.debug(err, exc_info=True)
+								logger.error("Failed to replicate object %s: %s" % (obj, err))
 							self.__currentProgressSubject.addToState(1)
 					self.__currentProgressSubject.setState(len(objs))
 

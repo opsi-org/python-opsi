@@ -353,11 +353,11 @@ def getNetworkInterfaces():
 		GetAdaptersInfo.argtypes = [LP_IP_ADAPTER_INFO, POINTER(c_ulong)]
 		adapterList = (IP_ADAPTER_INFO * 10)()
 		buflen = c_ulong(sizeof(adapterList))
-		rc = GetAdaptersInfo(byref(adapterList[0]), byref(buflen))
+		GetAdaptersInfo(byref(adapterList[0]), byref(buflen))
 		return adapterList
-	except Exception as adapterReadingError:
-		logger.logException(adapterReadingError)
-		raise RuntimeError(u"Failed to get network interfaces: %s" % forceUnicode(adapterReadingError))
+	except Exception as err:
+		logger.error(err, exc_info=True)
+		raise RuntimeError(f"Failed to get network interfaces: {err}") from err
 
 
 def getDefaultNetworkInterfaceName():
@@ -489,15 +489,15 @@ class NetworkPerformanceCounterWMI(threading.Thread):
 			bestRatio = 0.0
 			for instance in self.wmi.Win32_PerfRawData_Tcpip_NetworkInterface():
 				ratio = difflib.SequenceMatcher(None, instance.Name, interface).ratio()
-				logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s",
+				logger.info("NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s",
 					interface, instance.Name, ratio
 				)
 				if ratio > bestRatio:
 					bestRatio = ratio
 					self.interface = instance.Name
-			logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s)", self.interface, bestRatio)
-		except Exception as error:
-			logger.logException(error)
+			logger.info("NetworkPerformanceCounter: using interface '%s' match ratio (%s)", self.interface, bestRatio)
+		except Exception as err:
+			logger.error(err, exc_info=True)
 
 		try:
 			while not self._stopped:
@@ -1828,8 +1828,8 @@ class Impersonate:
 
 			win32security.ImpersonateLoggedOnUser(self.userToken)
 			logger.debug("User impersonated")
-		except Exception as error:
-			logger.logException(error)
+		except Exception as err:
+			logger.error(err, exc_info=True)
 			self.end()
 			raise
 
@@ -1929,8 +1929,8 @@ class Impersonate:
 					self.userToken.Close()
 				except Exception as error:
 					logger.debug("Failed to close user token: %s", error)
-		except Exception as error:
-			logger.logException(error)
+		except Exception as err:
+			logger.error(err, exc_info=True)
 
 	def __del__(self):
 		self.end()
