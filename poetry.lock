@@ -1185,7 +1185,7 @@ reference = "uibpypi"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "56de7af51d18e42e5908d18aecfffc61876fa23f8a83e37be8b7afdfcd71946d"
+content-hash = "577533f912efdbe5df8eb9e543cc6d0043b99d6818c491c366d72ccc68bfcaf0"
 
 [metadata.files]
 astroid = [
