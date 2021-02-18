@@ -29,6 +29,7 @@ import codecs
 import json
 import os.path
 import socket
+from sys import exc_info
 import tempfile
 import threading
 import time
@@ -438,7 +439,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 			os.chmod(destinationFile, 0o640)
 			return destinationFile
 		except (OSError, IOError) as dataFileError:
-			logger.logException(dataFileError, logLevel=LOG_DEBUG)
+			logger.debug(dataFileError, exc_info=True)
 			logger.debug("Writing cache file %s failed: %s", destinationFile, dataFileError)
 
 	def backend_exit(self):

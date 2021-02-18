@@ -37,7 +37,6 @@ opsi python library - HTTP
 import base64
 import gzip
 import os
-import re
 import ssl as ssl_module
 import socket
 import time
@@ -45,7 +44,6 @@ import zlib
 import collections
 from contextlib import contextmanager
 from functools import lru_cache
-from io import BytesIO
 from queue import Queue, Empty, Full
 from http.client import HTTPConnection, HTTPSConnection, HTTPException
 from socket import error as SocketError, timeout as SocketTimeout
@@ -53,18 +51,16 @@ from urllib.parse import urlparse
 
 from OpenSSL import crypto
 
-from OPSI.Exceptions import (
-	OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError)
+from OPSI.Exceptions import OpsiTimeoutError, OpsiServiceVerificationError
 from OPSI.Types import (
-	forceBool, forceFilename, forceInt, forceUnicode, forceUnicodeLower)
-from OPSI.Logger import LOG_DEBUG, LOG_INFO, Logger
-from OPSI.Util import (
-	encryptWithPublicKeyFromX509CertificatePEMFile, randomString)
+	forceBool, forceFilename, forceInt, forceUnicode, forceUnicodeLower
+)
+from OPSI.Logger import Logger
 
 logger = Logger()
 
 connectionPools = {}
-totalRequests = 0
+totalRequests = 0  # pylint: disable=invalid-name
 
 
 def non_blocking_connect_http(self, connectTimeout=0):
@@ -75,13 +71,12 @@ def non_blocking_connect_http(self, connectTimeout=0):
 	lastError = None
 	while True:
 		try:
-			if connectTimeout > 0 and ((time.time() - started) >= connectTimeout):
-				raise OpsiTimeoutError(u"Timed out after {0:d} seconds (last error: {1})".format(connectTimeout, forceUnicode(lastError)))
+			if time.time() - started >= connectTimeout > 0:
+				raise OpsiTimeoutError(f"Timed out after {connectTimeout} seconds (last error: {lastError})")
 			sock.connect((self.host, self.port))
 			break
 		except socket.error as error:
-			logger.logException(error, LOG_DEBUG)
-			logger.debug(error)
+			logger.debug(error, exc_info=True)
 			if error.args[0] in (106, 10056):
 				# Transport endpoint is already connected
 				break
@@ -95,13 +90,18 @@ def non_blocking_connect_http(self, connectTimeout=0):
 
 def non_blocking_connect_https(self, connectTimeout=0, verifyByCaCertsFile=None):
 	non_blocking_connect_http(self, connectTimeout)
-	logger.debug2(u"verifyByCaCertsFile is: '%s'", verifyByCaCertsFile)
+	logger.debug2("verifyByCaCertsFile is: '%s'", verifyByCaCertsFile)
 	if verifyByCaCertsFile:
-		logger.debug(u"verifyByCaCertsFile is: '%s'", verifyByCaCertsFile)
-		self.sock = ssl_module.wrap_socket(self.sock, keyfile=self.key_file, certfile=self.cert_file, cert_reqs=ssl_module.CERT_REQUIRED, ca_certs=verifyByCaCertsFile)
-		logger.debug(u"Server verified by CA")
+		logger.debug("verifyByCaCertsFile is: '%s'", verifyByCaCertsFile)
+		self.sock = ssl_module.wrap_socket(
+			self.sock, keyfile=self.key_file, certfile=self.cert_file,
+			cert_reqs=ssl_module.CERT_REQUIRED, ca_certs=verifyByCaCertsFile
+		)
+		logger.debug("Server verified by CA")
 	else:
-		self.sock = ssl_module.wrap_socket(self.sock, keyfile=self.key_file, certfile=self.cert_file, cert_reqs=ssl_module.CERT_NONE)
+		self.sock = ssl_module.wrap_socket(
+			self.sock, keyfile=self.key_file, certfile=self.cert_file, cert_reqs=ssl_module.CERT_NONE
+		)
 
 
 def getPeerCertificate(httpsConnectionOrSSLSocket, asPEM=True):
@@ -116,8 +116,8 @@ def getPeerCertificate(httpsConnectionOrSSLSocket, asPEM=True):
 		if not asPEM:
 			return cert
 		return crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
-	except Exception as error:
-		logger.warning(u"Failed to get peer cert: %s", error)
+	except Exception as error:  # pylint: disable=broad-except
+		logger.warning("Failed to get peer cert: %s", error)
 		return None
 
 
@@ -125,7 +125,7 @@ class HTTPError(Exception):
 	"Base exception used by this module."
 
 
-class TimeoutError(HTTPError):
+class TimeoutError(HTTPError):  # pylint: disable=redefined-builtin
 	"Raised when a socket timeout occurs."
 
 
@@ -139,7 +139,7 @@ class HTTPResponse:
 
 	Similar to httplib's HTTPResponse but the data is pre-loaded.
 	"""
-	def __init__(self, data='', headers=None, status=0, version=0, reason=None):
+	def __init__(self, data='', headers=None, status=0, version=0, reason=None):  # pylint: disable=too-many-arguments
 		self.data = data
 		self.headers = HTTPHeaders(headers or {})
 		self.status = status
@@ -150,7 +150,7 @@ class HTTPResponse:
 		self.data += data
 
 	@staticmethod
-	def from_httplib(r):
+	def from_httplib(r):  # pylint: disable=invalid-name
 		"""
 		Given an httplib.HTTPResponse instance, return a corresponding
 		urllib3.HTTPResponse object.
@@ -224,17 +224,19 @@ class HTTPHeaders(collections.MutableMapping):
 	__unicode__ = __str__  # lazy
 
 	def __repr__(self):
-		return "{}({!r})".format(self.__class__.__name__, self._dict)
+		return f"{self.__class__.__name__}({self._dict})"
 
 
-class HTTPConnectionPool(object):
+class HTTPConnectionPool:  # pylint: disable=too-many-instance-attributes
 
 	scheme = 'http'
 
-	def __init__(self, host, port, socketTimeout=None, connectTimeout=None,
-				retryTime=0, maxsize=1, block=False, reuseConnection=False,
-				verifyServerCert=False, serverCertFile=None, caCertFile=None,
-				verifyServerCertByCa=False, proxyURL=None):
+	def __init__(  # pylint: disable=too-many-arguments
+		self, host, port, socketTimeout=None, connectTimeout=None,
+		retryTime=0, maxsize=1, block=False, reuseConnection=False,
+		verifyServerCert=False, serverCertFile=None, caCertFile=None,
+		verifyServerCertByCa=False, proxyURL=None
+	):
 
 		self.host = forceUnicode(host)
 		self.port = forceInt(port)
@@ -243,7 +245,7 @@ class HTTPConnectionPool(object):
 		self.retryTime = forceInt(retryTime)
 		self.block = forceBool(block)
 		self.reuseConnection = forceBool(reuseConnection)
-		self.proxyURL = forceUnicode(proxyURL or u"")
+		self.proxyURL = forceUnicode(proxyURL or "")
 		self.pool = None
 		self.usageCount = 1
 		self.num_connections = 0
@@ -259,7 +261,7 @@ class HTTPConnectionPool(object):
 		if isinstance(self, HTTPSConnectionPool):
 			if self.host in ('localhost', '127.0.0.1'):
 				self.serverVerified = True
-				logger.debug(u"No host verification for localhost")
+				logger.debug("No host verification for localhost")
 			else:
 				if caCertFile:
 					self.caCertFile = forceFilename(caCertFile)
@@ -267,20 +269,20 @@ class HTTPConnectionPool(object):
 
 				if self.verifyServerCertByCa:
 					if not self.caCertFile:
-						raise ValueError(u"Server certificate verfication by CA enabled but no CA cert file given")
-					logger.info(u"Server certificate verfication by CA file '%s' enabled for host '%s'", self.caCertFile, self.host)
+						raise ValueError("Server certificate verfication by CA enabled but no CA cert file given")
+					logger.info("Server certificate verfication by CA file '%s' enabled for host '%s'", self.caCertFile, self.host)
 				else:
 					self.verifyServerCert = forceBool(verifyServerCert)
 					if serverCertFile:
 						self.serverCertFile = forceFilename(serverCertFile)
 					if self.verifyServerCert:
 						if not self.serverCertFile:
-							raise ValueError(u"Server verfication enabled but no server cert file given")
-						logger.info(u"Server verfication by server certificate enabled for host '%s'", self.host)
-			
+							raise ValueError("Server verfication enabled but no server cert file given")
+						logger.info("Server verfication by server certificate enabled for host '%s'", self.host)
+
 			if self.host in ('localhost', '127.0.0.1') or (not self.verifyServerCert and not self.verifyServerCertByCa):
 				ssl_module._create_default_https_context = ssl_module._create_unverified_context
-		
+
 		self.adjustSize(maxsize)
 
 	def increaseUsageCount(self):
@@ -307,7 +309,7 @@ class HTTPConnectionPool(object):
 
 	def adjustSize(self, maxsize):
 		if maxsize < 1:
-			raise ValueError(u"Connection pool size %d is invalid" % maxsize)
+			raise ValueError("Connection pool size %d is invalid" % maxsize)
 		self.maxsize = forceInt(maxsize)
 		self.delPool()
 		self.pool = Queue(self.maxsize)
@@ -329,24 +331,24 @@ class HTTPConnectionPool(object):
 				url = urlparse(self.proxyURL)
 				if url.password:
 					logger.setConfidentialStrings(url.password)
-				logger.debug(u"Starting new HTTP connection (%d) to %s:%d over proxy-url %s", self.num_connections, self.host, self.port, self.proxyURL)
+				logger.debug("Starting new HTTP connection (%d) to %s:%d over proxy-url %s", self.num_connections, self.host, self.port, self.proxyURL)
 
 				conn = HTTPConnection(host=url.hostname, port=url.port)
 				if url.username and url.password:
-					logger.debug(u"Proxy Authentication detected, setting auth with user: %s", url.username)
+					logger.debug("Proxy Authentication detected, setting auth with user: %s", url.username)
 					headers['Proxy-Authorization'] = createBasicAuthHeader(
 						url.username,
 						url.password
 					)
 				conn.set_tunnel(self.host, self.port, headers)
-				logger.debug(u"Connection established to: %s", self.host)
-			except Exception as error:
-				logger.error(error)
+				logger.debug("Connection established to: %s", self.host)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error(err)
 		else:
-			logger.debug(u"Starting new HTTP connection (%d) to %s:%d", self.num_connections, self.host, self.port)
+			logger.debug("Starting new HTTP connection (%d) to %s:%d", self.num_connections, self.host, self.port)
 			conn = HTTPConnection(host=self.host, port=self.port)
 			non_blocking_connect_http(conn, self.connectTimeout)
-			logger.debug(u"Connection established to: %s", self.host)
+			logger.debug("Connection established to: %s", self.host)
 		return conn
 
 	def _get_conn(self, timeout=None):
@@ -361,7 +363,7 @@ class HTTPConnectionPool(object):
 			conn = None
 
 		return conn or self._new_conn()
-	
+
 	def _put_conn(self, conn):
 		"""
 		Put a connection back into the pool.
@@ -375,10 +377,10 @@ class HTTPConnectionPool(object):
 				self.num_connections -= 1
 		except Full:
 			# This should never happen if self.block == True
-			logger.warning(u"HttpConnectionPool is full, discarding connection: %s", self.host)
+			logger.warning("HttpConnectionPool is full, discarding connection: %s", self.host)
 
-	def get_host(self, url):
-		(scheme, host, port, baseurl, username, password) = urlsplit(url)
+	def get_host(self, url):  # pylint: disable=no-self-use
+		(scheme, host, port, _baseurl, _username, _password) = urlsplit(url)
 		return (scheme, host, port)
 
 	def is_same_host(self, url):
@@ -406,7 +408,9 @@ class HTTPConnectionPool(object):
 		self._put_conn(None)
 		return None
 
-	def urlopen(self, method, url, body=None, headers={}, retry=True, redirect=True, assert_same_host=True, firstTryTime=None):
+	def urlopen(  # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
+		self, method, url, body=None, headers=None, retry=True, redirect=True, assert_same_host=True, firstTryTime=None
+	):
 		"""
 		Get a connection from the pool and perform an HTTP request.
 
@@ -427,6 +431,8 @@ class HTTPConnectionPool(object):
 			Automatically handle redirects (status codes 301, 302, 303, 307),
 			each redirect counts as a retry.
 		"""
+		if not headers:
+			headers = {}
 		now = time.time()
 		if not firstTryTime:
 			firstTryTime = now
@@ -436,7 +442,7 @@ class HTTPConnectionPool(object):
 			host = "%s://%s" % (self.scheme, self.host)
 			if self.port:
 				host = "%s:%d" % (host, self.port)
-			raise HostChangedError(u"Connection pool with host '%s' tried to open a foreign host: %s" % (host, url))
+			raise HostChangedError("Connection pool with host '%s' tried to open a foreign host: %s" % (host, url))
 
 		try:
 			conn = self._get_conn()
@@ -446,7 +452,7 @@ class HTTPConnectionPool(object):
 
 			self.num_requests += 1
 
-			global totalRequests
+			global totalRequests  # pylint: disable=global-statement,invalid-name
 			totalRequests += 1
 
 			logger.debug2("Request headers: '%s'", headers)
@@ -456,32 +462,10 @@ class HTTPConnectionPool(object):
 				conn.sock.settimeout(self.socketTimeout)
 			else:
 				conn.sock.settimeout(None)
-			
+
 			if not self.peerCertificate and self.scheme.endswith("s"):
 				self.peerCertificate = getPeerCertificate(conn, asPEM=True)
-			
-			randomKey = None
-			if isinstance(self, HTTPSConnectionPool) and self.verifyServerCert and not self.serverVerified:
-				try:
-					logger.info(u"Encoding authorization")
-					randomKey = randomString(32).encode('latin-1')
-					encryptedKey = encryptWithPublicKeyFromX509CertificatePEMFile(randomKey, self.serverCertFile)
-					logger.debug2("Key encrypted...")
-					headers['X-opsi-service-verification-key'] = base64.b64encode(encryptedKey)
-					for key, value in headers.items():
-						if key.lower() == 'authorization':
-							logger.debug2("Procesing authorization header...")
-							if value.lower().startswith('basic'):
-								value = value[5:].strip()
-							value = base64.b64decode(value).strip()
-							logger.debug2("Decoded authorization header...")
-							encodedAuth = encryptWithPublicKeyFromX509CertificatePEMFile(value, self.serverCertFile)
-							headers[key] = 'Opsi ' + base64.b64encode(encodedAuth)
-				except Exception as error:
-					logger.logException(error, LOG_INFO)
-					logger.critical(u"Cannot verify server based on certificate file '%s': %s", self.serverCertFile, error)
-					randomKey = None
-			
+
 			httplib_response = conn.getresponse()
 
 			# from_httplib will perform httplib_response.read() which will have
@@ -490,69 +474,41 @@ class HTTPConnectionPool(object):
 			response = HTTPResponse.from_httplib(httplib_response)
 			logger.debug2("Response headers: '%s'", response.headers)
 
-			if randomKey:
-				logger.debug2("Checking for random key...")
-				try:
-					key = response.getheader('x-opsi-service-verification-key', None)
-					if not key:
-						raise ValueError(u"HTTP header 'X-opsi-service-verification-key' missing")
-					if key.strip() != randomKey.strip():
-						raise OpsiAuthenticationError(u"opsi-service-verification-key '%s' != '%s'" % (key, randomKey))
-					self.serverVerified = True
-					logger.notice(u"Service verified by opsi-service-verification-key")
-				except Exception as error:
-					logger.error(u"Service verification failed: %s", error)
-					raise OpsiServiceVerificationError(u"Service verification failed: %s" % error)
-
 			if self.serverCertFile and self.peerCertificate:
 				try:
 					certDir = os.path.dirname(self.serverCertFile)
 					if not os.path.exists(certDir):
 						os.makedirs(certDir)
-					with open(self.serverCertFile, "wb") as f:
-						f.write(self.peerCertificate)
-				except Exception as error:
-					logger.error(u"Failed to create server cert file '%s': %s", self.serverCertFile, error)
+					with open(self.serverCertFile, "wb") as file:
+						file.write(self.peerCertificate)
+				except Exception as err:  # pylint: disable=broad-except
+					logger.error("Failed to create server cert file '%s': %s", self.serverCertFile, err)
 
 			# Put the connection back to be reused
 			if self.reuseConnection:
 				self._put_conn(conn)
 			else:
-				logger.debug(u"Closing connection: %s", conn)
+				logger.debug("Closing connection: %s", conn)
 				self._put_conn(None)
 				closeConnection(conn)
 		except (SocketTimeout, Empty, HTTPException, SocketError) as error:
-			logger.logException(error, logLevel=LOG_DEBUG)
-			try:
-				logger.debug(
-					u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s ('%s')",
-					self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, error
-				)
-			except Exception as loggingError:
-				logger.debug(u"Logging exception failed: %s", forceUnicode(loggingError))
-				logger.debug(u"Trying to log again without original exception.")
-				try:
-					logger.debug(
-						u"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s",
-						self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.isocketTimeout
-					)
-				except Exception as error:
-					logger.debug(u"Logging message failed: '%s'", error)
-					logger.warning(u"Logging message failed: %s", forceUnicode(error))
+			logger.debug(error, exc_info=True)
+			logger.debug(
+				"Request to host '%s' failed, retry: %s, firstTryTime: %s, now: %s, retryTime: %s, connectTimeout: %s, socketTimeout: %s ('%s')",
+				self.host, retry, firstTryTime, now, self.retryTime, self.connectTimeout, self.socketTimeout, error
+			)
 
 			self._put_conn(None)
 			closeConnection(conn)
 
 			if retry and (now - firstTryTime < self.retryTime):
-				logger.debug(u"Request to '%s' failed: %s", self.host, forceUnicode(error))
-				logger.debug(u"Waiting before retry...")
+				logger.debug("Request to '%s' failed: %s", self.host, forceUnicode(error))
+				logger.debug("Waiting before retry...")
 				time.sleep(0.2)
 				return self.urlopen(method, url, body, headers, retry, redirect, assert_same_host, firstTryTime)
-			else:
-				if retry:
-					logger.warning("Connecting to '%s' did not succeed after retrying.", self.host)
-
-				raise
+			if retry:
+				logger.warning("Connecting to '%s' did not succeed after retrying.", self.host)
+			raise
 		except Exception:
 			self._put_conn(None)
 			closeConnection(conn)
@@ -560,7 +516,7 @@ class HTTPConnectionPool(object):
 
 		# Handle redirection
 		if redirect and response.status in (301, 302, 303, 307) and 'location' in response.headers:
-			logger.info(u"Redirecting %s -> %s" % (url, response.headers.get('location')))
+			logger.info("Redirecting %s -> %s", url, response.headers.get('location'))
 			time.sleep(0.1)
 			self._put_conn(None)
 			closeConnection(conn)
@@ -587,22 +543,22 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				url = urlparse(self.proxyURL)
 				if url.password:
 					logger.setConfidentialString(url.password)
-				logger.debug(u"Starting new HTTPS connection (%d) to %s:%d over proxy-url %s", self.num_connections, self.host, self.port, self.proxyURL)
+				logger.debug("Starting new HTTPS connection (%d) to %s:%d over proxy-url %s", self.num_connections, self.host, self.port, self.proxyURL)
 				conn = HTTPSConnection(host=url.hostname, port=url.port)
 				if url.username and url.password:
-					logger.debug(u"Proxy Authentication detected, setting auth with user: %s", url.username)
+					logger.debug("Proxy Authentication detected, setting auth with user: %s", url.username)
 					headers['Proxy-Authorization'] = createBasicAuthHeader(
 						url.username,
 						url.password
 					)
 				conn.set_tunnel(self.host, self.port, headers)
-				logger.debug(u"Connection established to: %s", self.host)
-			except Exception as e:
-				logger.logException(e)
+				logger.debug("Connection established to: %s", self.host)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error(err, exc_info=True)
 		else:
-			logger.debug(u"Starting new HTTPS connection (%d) to %s:%d", self.num_connections, self.host, self.port)
+			logger.debug("Starting new HTTPS connection (%d) to %s:%d", self.num_connections, self.host, self.port)
 			conn = HTTPSConnection(host=self.host, port=self.port)
-			logger.debug(u"Connection established to: %s", self.host)
+			logger.debug("Connection established to: %s", self.host)
 
 		if self.verifyServerCert or self.verifyServerCertByCa:
 			try:
@@ -610,29 +566,29 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 				if not self.verifyServerCertByCa:
 					self.serverVerified = True
 					logger.debug("Server verified.")
-			except ssl_module.SSLError as error:
-				logger.debug(u"Verification failed: '%s'", error)
+			except ssl_module.SSLError as err:
+				logger.debug("Verification failed: '%s'", err)
 				if self.verifyServerCertByCa:
-					raise OpsiServiceVerificationError(u"Failed to verify server cert by CA: %s" % error)
+					raise OpsiServiceVerificationError(f"Failed to verify server cert by CA: {err}") from err
 
 				logger.debug("Going to try a connect without caCertFile...")
 				non_blocking_connect_https(conn, self.connectTimeout)
-			except Exception as error:
-				logger.debug(u"Verification failed: '%s'", error)
-				raise OpsiServiceVerificationError(forceUnicode(error))
+			except Exception as err:
+				logger.debug("Verification failed: '%s'", err)
+				raise OpsiServiceVerificationError(str(err)) from err
 
 			self.peerCertificate = getPeerCertificate(conn, asPEM=True)
-		
+
 		if (self.verifyServerCert or self.verifyServerCertByCa) and self.serverVerified:
 			logger.info("Server verified (verifyServerCert=%s, verifyServerCertByCa=%s)", self.verifyServerCert, self.verifyServerCertByCa)
-		
+
 		return conn
 
 
 def urlsplit(url):
 	url = forceUnicode(url)
 	scheme = None
-	baseurl = u'/'
+	baseurl = '/'
 	port = None
 	username = None
 	password = None
@@ -666,7 +622,7 @@ def getSharedConnectionPoolFromUrl(url, **kw):
 	Passes on whatever kw arguments to the constructor of
 	HTTP(S)ConnectionPool. (e.g. timeout, maxsize, block)
 	"""
-	(scheme, host, port, baseurl, username, password) = urlsplit(url)
+	(scheme, host, port, _baseurl, _username, _password) = urlsplit(url)
 	if not port:
 		if scheme in ('https', 'webdavs'):
 			port = 443
@@ -681,8 +637,8 @@ def getSharedConnectionPool(scheme, host, port, **kw):
 	host = forceUnicode(host)
 	port = forceInt(port)
 
-	poolKey = u'httplib:%s:%d' % (host, port)
-	global connectionPools
+	poolKey = 'httplib:%s:%d' % (host, port)
+	global connectionPools  # pylint: disable=global-statement,invalid-name
 
 	if poolKey not in connectionPools:
 		if scheme in ('https', 'webdavs'):
@@ -699,7 +655,7 @@ def getSharedConnectionPool(scheme, host, port, **kw):
 
 
 def destroyPool(pool):
-	global connectionPools
+	global connectionPools  # pylint: disable=global-statement,invalid-name
 	for key, poolinstance in connectionPools.items():
 		if poolinstance == pool:
 			del connectionPools[key]
@@ -714,7 +670,7 @@ def deflateEncode(data, level=1):
 	:param level: Compression level
 	:rtype: bytes
 	"""
-	if not type(data) is bytes:
+	if not isinstance(data, bytes):
 		data = data.encode()
 	return zlib.compress(data, level)
 
@@ -736,7 +692,7 @@ def gzipEncode(data, level=1):
 	:param level: Compression level
 	:rtype: bytes
 	"""
-	if not type(data) is bytes:
+	if not isinstance(data, bytes):
 		data = data.encode()
 	return gzip.compress(data, level)
 
@@ -762,12 +718,12 @@ def closeConnection(connection):
 	"Close the given connection and any socket that may be open on it."
 	try:
 		connection.sock.close()
-	except Exception:
+	except Exception:  # pylint: disable=broad-except
 		pass
 
 	try:
 		connection.close()
-	except Exception:
+	except Exception:  # pylint: disable=broad-except
 		pass
 
 

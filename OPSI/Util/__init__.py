@@ -36,6 +36,7 @@ import binascii
 import codecs
 import ipaddress
 try:
+	# pyright: reportMissingModuleSource=false
 	# ujson is faster
 	import ujson as json
 except ModuleNotFoundError:
@@ -49,12 +50,14 @@ import struct
 import sys
 import time
 import types
+import secrets
 from collections import namedtuple
 from hashlib import md5
 from itertools import islice
 from functools import lru_cache
 
 try:
+	# pyright: reportMissingImports=false
 	# python3-pycryptodome installs into Cryptodome
 	from Cryptodome.Cipher import Blowfish
 	from Cryptodome.PublicKey import RSA
@@ -66,21 +69,14 @@ except ImportError:
 	from Crypto.Util.number import bytes_to_long
 
 from OPSI.Logger import Logger, LOG_DEBUG
-from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
-						forceIPAddress, forceNetworkAddress, forceUnicode)
+from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceUnicode)
 
-OPSIObject = None
-
-try:
-	import secrets  # Since Python 3.6
-except ImportError:
-	secrets = None
+OPSIObject = None  # pylint: disable=invalid-name
 
 __all__ = (
 	'BLOWFISH_IV', 'PickleString',
 	'RANDOM_DEVICE', 'blowfishDecrypt', 'blowfishEncrypt',
-	'chunk', 'compareVersions', 'decryptWithPrivateKeyFromPEMFile',
-	'deserialize', 'encryptWithPublicKeyFromX509CertificatePEMFile',
+	'chunk', 'compareVersions', 'deserialize',
 	'findFiles', 'findFilesGenerator', 'formatFileSize', 'fromJson', 'generateOpsiHostKey',
 	'getfqdn', 'ipAddressInNetwork', 'isRegularExpressionPattern',
 	'md5sum', 'objectToBash', 'objectToBeautifiedText', 'objectToHtml',
@@ -117,13 +113,10 @@ class PickleString(str):
 		return base64.standard_b64encode(self)
 
 	def __setstate__(self, state):
-		self = base64.standard_b64decode(state)
+		self = base64.standard_b64decode(state)  # pylint: disable=self-cls-assignment
 
 
 def deserialize(obj, preventObjectCreation=False):
-	global OPSIObject
-	if OPSIObject is None:
-		import OPSI.Object as OPSIObject
 	"""
 	Deserialization of `obj`.
 
@@ -139,23 +132,28 @@ object instance from it
 	:type obj: object
 	:type preventObjectCreation: bool
 	"""
+	global OPSIObject  # pylint: disable=global-statement,invalid-name
+	if OPSIObject is None:
+		import OPSI.Object as OPSIObject  # pylint: disable=redefined-outer-name,import-outside-toplevel
+
 	if isinstance(obj, list):
 		return [deserialize(element, preventObjectCreation=preventObjectCreation) for element in obj]
-	elif isinstance(obj, dict):
+
+	if isinstance(obj, dict):
 		if not preventObjectCreation and 'type' in obj:
 			try:
-				objectClass = eval('OPSIObject.%s' % obj['type'])
+				objectClass = getattr('OPSIObject', obj['type'])
 				return objectClass.fromHash(obj)
-			except Exception as error:
-				logger.debug(u"Failed to get object from dict %s: %s", obj, forceUnicode(error))
+			except Exception as err:  # pylint: disable=broad-except
+				logger.debug("Failed to get object from dict %s: %s", obj, err)
 				return obj
-		else:
-			return {
-				key: deserialize(value, preventObjectCreation=preventObjectCreation)
-				for key, value in obj.items()
-			}
-	else:
-		return obj
+
+		return {
+			key: deserialize(value, preventObjectCreation=preventObjectCreation)
+			for key, value in obj.items()
+		}
+
+	return obj
 
 
 def serialize(obj):
@@ -175,7 +173,7 @@ of strings, dicts, lists or numbers.
 	except AttributeError:
 		if isinstance(obj, (list, set, types.GeneratorType)):
 			return [serialize(tempObject) for tempObject in obj]
-		elif isinstance(obj, dict):
+		if isinstance(obj, dict):
 			return {key: serialize(value) for key, value in obj.items()}
 
 	return obj
@@ -184,18 +182,17 @@ of strings, dicts, lists or numbers.
 def formatFileSize(sizeInBytes):
 	if sizeInBytes < 1024:
 		return '%i' % sizeInBytes
-	elif sizeInBytes < 1048576:  # 1024**2
+	if sizeInBytes < 1048576:  # 1024**2
 		return '%iK' % (sizeInBytes / 1024)
-	elif sizeInBytes < 1073741824:  # 1024**3
+	if sizeInBytes < 1073741824:  # 1024**3
 		return '%iM' % (sizeInBytes / 1048576)
-	elif sizeInBytes < 1099511627776:  # 1024**4
+	if sizeInBytes < 1099511627776:  # 1024**4
 		return '%iG' % (sizeInBytes / 1073741824)
-	else:
-		return '%iT' % (sizeInBytes / 1099511627776)
+	return '%iT' % (sizeInBytes / 1099511627776)
 
 
 def fromJson(obj, objectType=None, preventObjectCreation=False):
-	if type(obj) is bytes:
+	if isinstance(obj, bytes):
 		# Allow decoding errors (workaround for opsi-script bug)
 		obj = obj.decode("utf-8", "replace")
 	obj = json.loads(obj)
@@ -225,10 +222,10 @@ def randomString(length, characters=_ACCEPTED_CHARACTERS):
 
 	:param characters: The characters to choose from. This defaults to 0-9a-Z.
 	"""
-	return forceUnicode(u''.join(random.choice(characters) for _ in range(length)))
+	return ''.join(random.choice(characters) for _ in range(length))
 
 
-def generateOpsiHostKey(forcePython=False):
+def generateOpsiHostKey(forcePython=False):  # pylint: disable=unused-argument
 	"""
 	Generates an random opsi host key.
 
@@ -239,21 +236,7 @@ def generateOpsiHostKey(forcePython=False):
 	:param forcePython: Force the usage of Python for host key generation.
 	:rtype: str
 	"""
-	if secrets:
-		return secrets.token_hex(16)
-
-	if os.name == 'posix' and not forcePython:
-		logger.debug2(u"Opening random device %s to generate opsi host key", RANDOM_DEVICE)
-		with open(RANDOM_DEVICE, 'rb') as r:
-			key = r.read(16)
-		logger.debug2("Random device closed")
-		key = binascii.hexlify(key)
-		key = key.decode()
-	else:
-		logger.debug(u"Using python random module to generate opsi host key")
-		key = randomString(32, "0123456789abcdef")
-
-	return key
+	return secrets.token_hex(16)
 
 
 def timestamp(secs=0, dateOnly=False):
@@ -261,16 +244,15 @@ def timestamp(secs=0, dateOnly=False):
 	if not secs:
 		secs = time.time()
 	if dateOnly:
-		return time.strftime(u"%Y-%m-%d", time.localtime(secs))
-	else:
-		return time.strftime(u"%Y-%m-%d %H:%M:%S", time.localtime(secs))
+		return time.strftime("%Y-%m-%d", time.localtime(secs))
+	return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(secs))
 
 
 def objectToBeautifiedText(obj):
 	return json.dumps(serialize(obj), indent=4, ensure_ascii=False)
 
 
-def objectToBash(obj, bashVars=None, level=0):
+def objectToBash(obj, bashVars=None, level=0):  # pylint: disable=too-many-branches
 	"""
 	Converts `obj` into bash-compatible format.
 
@@ -302,41 +284,41 @@ def objectToBash(obj, bashVars=None, level=0):
 		append = emptyList.append
 
 	if isinstance(obj, (list, set)):
-		append(u'(\n')
+		append('(\n')
 		for element in obj:
 			if isinstance(element, (dict, list)):
 				level += 1
 				objectToBash(element, bashVars, level)
-				append(u'RESULT%d=${RESULT%d[*]}' % (level, level))
+				append('RESULT%d=${RESULT%d[*]}' % (level, level))
 			else:
 				objectToBash(element, bashVars, level)
-			append(u'\n')
-		append(u')')
+			append('\n')
+		append(')')
 	elif isinstance(obj, dict):
-		append(u'(\n')
+		append('(\n')
 		for (key, value) in obj.items():
 			append('%s=' % key)
 			if isinstance(value, (dict, list)):
 				level += 1
 				objectToBash(value, bashVars, level)
-				append(u'${RESULT%d[*]}' % level)
+				append('${RESULT%d[*]}' % level)
 			else:
 				objectToBash(value, bashVars, level)
-			append(u'\n')
-		append(u')')
+			append('\n')
+		append(')')
 	elif obj is None:
-		append(u'""')
+		append('""')
 	else:
-		append(u'"%s"' % forceUnicode(obj))
+		append(f'"{obj}"')
 
 	if compress:
 		for key, value in bashVars.items():
-			bashVars[key] = u''.join(value)
+			bashVars[key] = ''.join(value)
 
 	return bashVars
 
 
-def objectToHtml(obj, level=0):
+def objectToHtml(obj, level=0):  # pylint: disable=too-many-branches
 	if level == 0:
 		obj = serialize(obj)
 
@@ -344,52 +326,52 @@ def objectToHtml(obj, level=0):
 	append = html.append
 
 	if isinstance(obj, (list, set)):
-		append(u'[')
+		append('[')
 		if len(obj) > 0:
-			append(u'<div style="padding-left: 3em;">')
+			append('<div style="padding-left: 3em;">')
 			for i, currentElement in enumerate(obj):
 				append(objectToHtml(currentElement, level + 1))
 				if i < len(obj) - 1:
-					append(u',<br />\n')
-			append(u'</div>')
-		append(u']')
+					append(',<br />\n')
+			append('</div>')
+		append(']')
 	elif isinstance(obj, dict):
-		append(u'{')
+		append('{')
 		if len(obj) > 0:
-			append(u'<div style="padding-left: 3em;">')
+			append('<div style="padding-left: 3em;">')
 			for i, (key, value) in enumerate(obj.items()):
-				append(u'<font class="json_key">')
+				append('<font class="json_key">')
 				append(objectToHtml(key))
-				append(u'</font>: ')
+				append('</font>: ')
 				append(objectToHtml(value, level + 1))
 				if i < len(obj) - 1:
-					append(u',<br />\n')
-			append(u'</div>')
-		append(u'}')
+					append(',<br />\n')
+			append('</div>')
+		append('}')
 	elif isinstance(obj, bool):
 		append(str(obj).lower())
 	elif obj is None:
 		append('null')
 	else:
 		if isinstance(obj, str):
-			append(replaceSpecialHTMLCharacters(obj).join((u'"', u'"')))
+			append(replaceSpecialHTMLCharacters(obj).join(('"', '"')))
 		else:
 			append(replaceSpecialHTMLCharacters(obj))
 
-	return u''.join(html)
+	return ''.join(html)
 
 
 def replaceSpecialHTMLCharacters(text):
-	return forceUnicode(text)\
-		.replace(u'\r', u'')\
-		.replace(u'\t', u'   ')\
-		.replace(u'&', u'&amp;')\
-		.replace(u'"', u'&quot;')\
-		.replace(u"'", u'&apos;')\
-		.replace(u' ', u'&nbsp;')\
-		.replace(u'<', u'&lt;')\
-		.replace(u'>', u'&gt;')\
-		.replace(u'\n', u'<br />\n')
+	return text \
+		.replace('\r', '')\
+		.replace('\t', '   ')\
+		.replace('&', '&amp;')\
+		.replace('"', '&quot;')\
+		.replace("'", '&apos;')\
+		.replace(' ', '&nbsp;')\
+		.replace('<', '&lt;')\
+		.replace('>', '&gt;')\
+		.replace('\n', '<br />\n')
 
 
 def combineVersions(obj):
@@ -403,7 +385,7 @@ def combineVersions(obj):
 	return '{0.productVersion}-{0.packageVersion}'.format(obj)
 
 
-def compareVersions(v1, condition, v2):
+def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many-locals,too-many-branches,too-many-statements
 	"""
 	Compare the versions `v1` and `v2` with the given `condition`.
 
@@ -422,15 +404,14 @@ def compareVersions(v1, condition, v2):
 	def removePartAfterWave(versionString):
 		if "~" in versionString:
 			return versionString[:versionString.find("~")]
-		else:
-			return versionString
+		return versionString
 
 	def splitProductAndPackageVersion(versionString):
-		productVersion = packageVersion = u'0'
+		productVersion = packageVersion = '0'
 
 		match = re.search(r'^\s*([\w.]+)-*([\w.]*)\s*$', versionString)
 		if not match:
-			raise ValueError(u"Bad version string '%s'" % versionString)
+			raise ValueError("Bad version string '%s'" % versionString)
 
 		productVersion = match.group(1)
 		if match.group(2):
@@ -440,35 +421,34 @@ def compareVersions(v1, condition, v2):
 
 	def makeEqualLength(first, second):
 		while len(first) < len(second):
-			first.append(u'0')
+			first.append('0')
 
 		while len(second) < len(first):
-			second.append(u'0')
+			second.append('0')
 
 	def splitValue(value):
 		match = re.search(r'^(\d+)(\D*.*)$', value)
 		if match:
 			return int(match.group(1)), match.group(2)
-		else:
-			match = re.search(r'^(\D+)(\d*.*)$', value)
-			if match:
-				return match.group(1), match.group(2)
+		match = re.search(r'^(\D+)(\d*.*)$', value)
+		if match:
+			return match.group(1), match.group(2)
 
-		return u'', value
+		return '', value
 
 	if not condition:
-		condition = u'=='
-	if condition not in (u'==', u'=', u'<', u'<=', u'>', u'>='):
-		raise ValueError(u"Bad condition '%s'" % condition)
-	if condition == u'=':
-		condition = u'=='
+		condition = '=='
+	if condition not in ('==', '=', '<', '<=', '>', '>='):
+		raise ValueError("Bad condition '%s'" % condition)
+	if condition == '=':
+		condition = '=='
 
-	v1 = removePartAfterWave(forceUnicode(v1))
-	v2 = removePartAfterWave(forceUnicode(v2))
+	v1 = removePartAfterWave(str(v1))
+	v2 = removePartAfterWave(str(v2))
 
 	version = splitProductAndPackageVersion(v1)
 	otherVersion = splitProductAndPackageVersion(v2)
-	logger.debug2("Versions: %s, %s", version, otherVersion)
+	logger.trace("Versions: %s, %s", version, otherVersion)
 
 	comparisons = (
 		(version.product, otherVersion.product),
@@ -476,9 +456,9 @@ def compareVersions(v1, condition, v2):
 	)
 
 	for first, second in comparisons:
-		logger.debug2("Comparing %s with %s...", first, second)
-		firstParts = first.split(u'.')
-		secondParts = second.split(u'.')
+		logger.trace("Comparing %s with %s...", first, second)
+		firstParts = first.split('.')
+		secondParts = second.split('.')
 		makeEqualLength(firstParts, secondParts)
 
 		for value, otherValue in zip(firstParts, secondParts):
@@ -486,38 +466,38 @@ def compareVersions(v1, condition, v2):
 				cv1, value = splitValue(value)
 				cv2, otherValue = splitValue(otherValue)
 
-				if cv1 == u'':
+				if cv1 == '':
 					cv1 = chr(1)
-				if cv2 == u'':
+				if cv2 == '':
 					cv2 = chr(1)
 
 				if cv1 == cv2:
-					logger.debug2(u"%s == %s => continue", cv1, cv2)
+					logger.trace("%s == %s => continue", cv1, cv2)
 					continue
 
 				if not isinstance(cv1, int):
-					cv1 = u"'%s'" % cv1
+					cv1 = f"'{cv1}'"
 				if not isinstance(cv2, int):
-					cv2 = u"'%s'" % cv2
+					cv2 = f"'{cv2}'"
 
-				logger.debug2(u"Is %s %s %s?", cv1, condition, cv2)
-				conditionFulfilled = eval(u"%s %s %s" % (cv1, condition, cv2))
+				logger.trace("Is %s %s %s?", cv1, condition, cv2)
+				conditionFulfilled = eval("%s %s %s" % (cv1, condition, cv2))  # pylint: disable=eval-used
 				if not conditionFulfilled:
-					logger.debug(u"Unfulfilled condition: %s %s %s", version, condition, otherVersion)
+					logger.debug("Unfulfilled condition: %s %s %s", version, condition, otherVersion)
 					return False
 
-				logger.debug(u"Fulfilled condition: %s %s %s", version, condition, otherVersion)
+				logger.debug("Fulfilled condition: %s %s %s", version, condition, otherVersion)
 				return True
 
-	if u'=' not in condition:
-		logger.debug(u"Unfulfilled condition: %s %s %s", version, condition, otherVersion)
+	if '=' not in condition:
+		logger.debug("Unfulfilled condition: %s %s %s", version, condition, otherVersion)
 		return False
 
-	logger.debug(u"Fulfilled condition: %s %s %s", version, condition, otherVersion)
+	logger.debug("Fulfilled condition: %s %s %s", version, condition, otherVersion)
 	return True
 
 
-def removeUnit(x):
+def removeUnit(x):  # pylint: disable=invalid-name,too-many-return-statements
 	'''
 	Take a string representing a byte-based size and return the
 	value in bytes.
@@ -526,12 +506,12 @@ def removeUnit(x):
 	:returns: `x` in bytes.
 	:rtype: int or float
 	'''
-	x = forceUnicode(x)
+	x = str(x)
 	match = UNIT_REGEX.search(x)
 	if not match:
 		return x
 
-	if u'.' in match.group(1):
+	if '.' in match.group(1):
 		value = float(match.group(1))
 	else:
 		value = int(match.group(1))
@@ -552,13 +532,13 @@ def removeUnit(x):
 
 	if unit.endswith('n'):
 		return float(value) / (mult * mult)
-	elif unit.endswith('m'):
+	if unit.endswith('m'):
 		return float(value) / mult
-	elif unit.lower().endswith('k'):
+	if unit.lower().endswith('k'):
 		return value * mult
-	elif unit.endswith('M'):
+	if unit.endswith('M'):
 		return value * mult * mult
-	elif unit.endswith('G'):
+	if unit.endswith('G'):
 		return value * mult * mult * mult
 
 	return value
@@ -587,9 +567,9 @@ def blowfishEncrypt(key, cleartext):
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
 	try:
 		crypt = blowfish.encrypt(cleartext.encode("utf-8"))
-	except Exception as encryptError:
-		logger.logException(encryptError, LOG_DEBUG)
-		raise BlowfishError(u"Failed to encrypt")
+	except Exception as err:
+		logger.debug(err, exc_info=True)
+		raise BlowfishError("Failed to encrypt") from err
 
 	return crypt.hex()
 
@@ -614,18 +594,18 @@ def blowfishDecrypt(key, crypt):
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
 	try:
 		cleartext = blowfish.decrypt(crypt)
-	except Exception as decryptError:
-		logger.debug(decryptError, exc_info=True)
-		raise BlowfishError("Failed to decrypt")
+	except Exception as err:
+		logger.debug(err, exc_info=True)
+		raise BlowfishError("Failed to decrypt") from err
 
 	# Remove possible \0-chars
 	cleartext = cleartext.rstrip(b'\0')
 
 	try:
 		return cleartext.decode("utf-8")
-	except Exception as e:
-		logger.error(e)
-		raise BlowfishError(u"Failed to convert decrypted text to unicode.")
+	except Exception as err:
+		logger.error(err)
+		raise BlowfishError("Failed to convert decrypted text to unicode.") from err
 
 
 def _prepareBlowfishKey(key: str) -> bytes:
@@ -634,56 +614,15 @@ def _prepareBlowfishKey(key: str) -> bytes:
 		key = forceUnicode(key).encode()
 		return codecs.decode(key, "hex")
 	except (binascii.Error, Exception) as err:
-		raise BlowfishError(f"Unable to prepare key: {err}")
+		raise BlowfishError(f"Unable to prepare key: {err}") from err
 
 
-def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
-	"""
-	Encrypt the data by using the certificate.
-
-	:type data: str
-	:type filename: str
-	:param filename: The path to the certificate to use.
-	:rtype: bytes
-	"""
-	import M2Crypto
-
-	cert = M2Crypto.X509.load_cert(filename)
-	rsa = cert.get_pubkey().get_rsa()
-	padding = M2Crypto.RSA.pkcs1_oaep_padding
-
-	def encrypt():
-		for parts in chunk(data, size=32):
-			partedText = ''.join(parts)
-			yield rsa.public_encrypt(data=partedText.encode(), padding=padding)
-
-	return b''.join(encrypt())
-
-
-def decryptWithPrivateKeyFromPEMFile(data, filename):
-	"""
-	Decrypt the data by using the certificate.
-
-	:type data: bytes
-	:type filename: str
-	:param filename: The path to the certificate to use.
-	:rtype: str
-	"""
-	import M2Crypto
-
-	privateKey = M2Crypto.RSA.load_key(filename)
-	padding = M2Crypto.RSA.pkcs1_oaep_padding
-
-	def decrypt():
-		for parts in chunk(data, size=256):
-			newBytes = bytearray(parts)
-			decr = privateKey.private_decrypt(data=bytes(newBytes), padding=padding)
-			yield decr
-
-	return (b''.join(decrypt())).decode()
-
-
-def findFilesGenerator(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, followLinks=False, repository=None):
+def findFilesGenerator(  # pylint: disable=too-many-branches,too-many-locals,too-many-arguments,too-many-statements
+	directory, prefix='',
+	excludeDir=None, excludeFile=None, includeDir=None, includeFile=None,
+	returnDirs=True, returnLinks=True, followLinks=False,
+	repository=None
+):
 	directory = forceFilename(directory)
 	prefix = forceUnicode(prefix)
 
@@ -734,12 +673,12 @@ def findFilesGenerator(directory, prefix=u'', excludeDir=None, excludeFile=None,
 				continue
 		if isdir(dp) and (not isLink or followLinks):
 			if excludeDir and re.search(excludeDir, entry):
-				logger.debug(u"Excluding dir '%s' and containing files", entry)
+				logger.debug("Excluding dir '%s' and containing files", entry)
 				continue
 			if includeDir:
 				if not re.search(includeDir, entry):
 					continue
-				logger.debug(u"Including dir '%s' and containing files", entry)
+				logger.debug("Including dir '%s' and containing files", entry)
 			if returnDirs:
 				yield pp
 			yield from findFilesGenerator(
@@ -758,28 +697,40 @@ def findFilesGenerator(directory, prefix=u'', excludeDir=None, excludeFile=None,
 
 		if excludeFile and re.search(excludeFile, entry):
 			if isLink:
-				logger.debug(u"Excluding link '%s'", entry)
+				logger.debug("Excluding link '%s'", entry)
 			else:
-				logger.debug(u"Excluding file '%s'", entry)
+				logger.debug("Excluding file '%s'", entry)
 			continue
 
 		if includeFile:
 			if not re.search(includeFile, entry):
 				continue
 			if isLink:
-				logger.debug(u"Including link '%s'", entry)
+				logger.debug("Including link '%s'", entry)
 			else:
-				logger.debug(u"Including file '%s'", entry)
+				logger.debug("Including file '%s'", entry)
 		yield pp
 
-def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, followLinks=False, repository=None):
-	return list(findFilesGenerator(directory, prefix, excludeDir, excludeFile, includeDir, includeFile, returnDirs, returnLinks, followLinks, repository))
+def findFiles(  # pylint: disable=too-many-arguments
+	directory, prefix='',
+	excludeDir=None, excludeFile=None, includeDir=None, includeFile=None,
+	returnDirs=True, returnLinks=True, followLinks=False,
+	repository=None
+):
+	return list(
+		findFilesGenerator(
+			directory, prefix,
+			excludeDir, excludeFile, includeDir, includeFile,
+			returnDirs, returnLinks, followLinks,
+			repository
+		)
+	)
 
 if sys.version_info >= (3, 7):
-	def isRegularExpressionPattern(object):
+	def isRegularExpressionPattern(object):  # pylint: disable=redefined-builtin
 		return isinstance(object, re.Pattern)
 else:
-	def isRegularExpressionPattern(object):
+	def isRegularExpressionPattern(object):  # pylint: disable=redefined-builtin
 		return "SRE_Pattern" in str(type(object))
 
 
@@ -801,13 +752,13 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 		ipAddress = ipaddress.ip_address(ipAddress)
 	if isinstance(ipAddress, ipaddress.IPv6Address) and ipAddress.ipv4_mapped:
 		ipAddress = ipAddress.ipv4_mapped
-	
+
 	if (
 		not isinstance(networkAddress, ipaddress.IPv4Network) and
 		not isinstance(networkAddress, ipaddress.IPv6Network)
 	):
 		networkAddress = ipaddress.ip_network(networkAddress)
-	
+
 	return ipAddress in networkAddress
 
 
@@ -828,7 +779,7 @@ def getfqdn(name='', conf=None):
 			pass
 
 		# lazy import to avoid circular dependency
-		from OPSI.Util.Config import getGlobalConfig
+		from OPSI.Util.Config import getGlobalConfig  # pylint: disable=import-outside-toplevel
 
 		if conf is not None:
 			hostname = getGlobalConfig('hostname', conf)
@@ -859,11 +810,12 @@ def removeDirectory(directory):
 	except UnicodeDecodeError:
 		# See http://bugs.python.org/issue3616
 		logger.info(
-			u'Client data directory seems to contain filenames '
-			u'with unicode characters. Trying fallback.'
+			'Client data directory seems to contain filenames '
+			'with unicode characters. Trying fallback.'
 		)
 
-		import OPSI.System  # late import to avoid circular dependency
+		# late import to avoid circular dependency
+		import OPSI.System  # pylint: disable=import-outside-toplevel
 		OPSI.System.execute('rm -rf {dir}'.format(dir=directory))
 
 

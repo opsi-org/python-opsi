@@ -25,6 +25,7 @@ import os
 import re
 import shutil
 import stat
+from sys import exc_info
 import time
 import urllib
 import xml.etree.ElementTree as ET
@@ -496,7 +497,7 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 			)
 			return self._bytesTransfered
 		except Exception as error:
-			logger.logException(error, LOG_INFO)
+			logger.info(error, exc_info=True)
 			raise
 
 	def _preProcessPath(self, path):  # pylint: disable=no-self-use

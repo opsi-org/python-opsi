@@ -433,8 +433,8 @@ class PackageContentFile(TextFile):
 					entryType, size, additional = handleFile(path)
 
 				self._lines.append(f"{entryType} '{maskQuoteChars(filename)}' {size} {additional}")
-			except Exception as error:
-				logger.logException(error)
+			except Exception as err:
+				logger.error(err, exc_info=True)
 
 		self.open('w')
 		self.writelines()
@@ -1247,7 +1247,7 @@ class OpsiConfFile(IniFile):
 			return self._opsiConfig["packages"]["use_pigz"]
 		else:
 			return True
-	
+
 	@requiresParsing
 	def get_ldap_auth_config(self) -> dict:
 		conf = self._opsiConfig.get("ldap_auth", {})
@@ -1752,10 +1752,10 @@ element of the tuple is replace with the second element.
 							out += line
 						else:
 							time.sleep(0.01)
-					
+
 					if p.returncode not in (0, None):
 						raise OpsiBackupFileError(f"Failed to restore MySQL Backend: {out.decode()}")
-					
+
 					cmd.append(backend["config"]["database"])
 					logger.trace("Running command: '%s'", cmd)
 					p = subprocess.Popen(cmd, stdin=fd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=get_subprocess_environment())

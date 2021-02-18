@@ -155,7 +155,7 @@ class OpsiBackup:
 			logger.notice("Backup complete")
 		except Exception as error:
 			os.remove(archive.name)
-			logger.logException(error, LOG_DEBUG)
+			logger.debug(error, exc_info=True)
 			raise error
 
 	def list(self, files):
