@@ -240,7 +240,6 @@ def set_rights(start_path='/'):  # pylint: disable=too-many-branches
 				parent = permissions[path]
 
 	if not permissions_to_process and parent:
-		logger.notice("Setting rights on '%s'", start_path)
 		permissions_to_process = [parent]
 
 	for permission in permissions_to_process:
