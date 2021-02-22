@@ -241,21 +241,26 @@ def set_rights(start_path='/'):  # pylint: disable=too-many-branches
 
 	if not permissions_to_process and parent:
 		logger.notice("Setting rights on '%s'", start_path)
-		parent.apply(start_path)
+		permissions_to_process = [parent]
 
 	for permission in permissions_to_process:
-		if not os.path.lexists(permission.path):
+		path = start_path
+		if not os.path.relpath(permission.path, start_path).startswith(".."):
+			# permission.path is sub path of start_path
+			path = permission.path
+
+		if not os.path.lexists(path):
 			continue
 
-		recursive = os.path.isdir(permission.path) and getattr(permission, "recursive", True)
+		recursive = os.path.isdir(path) and getattr(permission, "recursive", True)
 
-		logger.notice("Setting rights %son '%s'", "recursively " if recursive else "", permission.path)
-		permission.apply(permission.path)
+		logger.notice("Setting rights %son '%s'", "recursively " if recursive else "", path)
+		permission.apply(path)
 
 		if not recursive:
 			continue
 
-		for root, dirs, files in os.walk(permission.path, topdown=True):
+		for root, dirs, files in os.walk(path, topdown=True):
 			#logger.debug("Processing '%s'", root)
 			for name in files:
 				abspath = os.path.join(root, name)
@@ -305,7 +310,7 @@ def getDepotDirectories():
 					("repository", depot.getRepositoryLocalUrl()),
 					("workbench", depot.getWorkbenchLocalUrl())
 				):
-					if url and url.startswith('file:///'):
+					if url.startswith('file:///'):
 						CACHED_DEPOT_DIRS[name] = url[7:]
 		except IndexError:
 			logger.warning("Failed to get directories from depot: No depots found")
