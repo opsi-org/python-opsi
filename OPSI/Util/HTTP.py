@@ -28,15 +28,11 @@ opsi python library - HTTP
 	:py:func:`gzipEncode` and :py:func:`gzipDecode`.
 
 
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:author: Erol Ueluekmen <e.ueluekmen@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
 import base64
 import gzip
-import os
 import ssl as ssl_module
 import socket
 import time
@@ -92,12 +88,10 @@ def non_blocking_connect_https(self, connectTimeout=0, verifyByCaCertsFile=None)
 	non_blocking_connect_http(self, connectTimeout)
 	logger.debug2("verifyByCaCertsFile is: '%s'", verifyByCaCertsFile)
 	if verifyByCaCertsFile:
-		logger.debug("verifyByCaCertsFile is: '%s'", verifyByCaCertsFile)
 		self.sock = ssl_module.wrap_socket(
 			self.sock, keyfile=self.key_file, certfile=self.cert_file,
 			cert_reqs=ssl_module.CERT_REQUIRED, ca_certs=verifyByCaCertsFile
 		)
-		logger.debug("Server verified by CA")
 	else:
 		self.sock = ssl_module.wrap_socket(
 			self.sock, keyfile=self.key_file, certfile=self.cert_file, cert_reqs=ssl_module.CERT_NONE
@@ -234,8 +228,7 @@ class HTTPConnectionPool:  # pylint: disable=too-many-instance-attributes
 	def __init__(  # pylint: disable=too-many-arguments
 		self, host, port, socketTimeout=None, connectTimeout=None,
 		retryTime=0, maxsize=1, block=False, reuseConnection=False,
-		verifyServerCert=False, serverCertFile=None, caCertFile=None,
-		verifyServerCertByCa=False, proxyURL=None
+		proxyURL=None
 	):
 
 		self.host = forceUnicode(host)
@@ -254,35 +247,7 @@ class HTTPConnectionPool:  # pylint: disable=too-many-instance-attributes
 		self.peerCertificate = None
 		self.serverVerified = False
 		self.verifyServerCert = False
-		self.serverCertFile = None
 		self.caCertFile = None
-		self.verifyServerCertByCa = False
-
-		if isinstance(self, HTTPSConnectionPool):
-			if self.host in ('localhost', '127.0.0.1'):
-				self.serverVerified = True
-				logger.debug("No host verification for localhost")
-			else:
-				if caCertFile:
-					self.caCertFile = forceFilename(caCertFile)
-				self.verifyServerCertByCa = forceBool(verifyServerCertByCa)
-
-				if self.verifyServerCertByCa:
-					if not self.caCertFile:
-						raise ValueError("Server certificate verfication by CA enabled but no CA cert file given")
-					logger.info("Server certificate verfication by CA file '%s' enabled for host '%s'", self.caCertFile, self.host)
-				else:
-					self.verifyServerCert = forceBool(verifyServerCert)
-					if serverCertFile:
-						self.serverCertFile = forceFilename(serverCertFile)
-					if self.verifyServerCert:
-						if not self.serverCertFile:
-							raise ValueError("Server verfication enabled but no server cert file given")
-						logger.info("Server verfication by server certificate enabled for host '%s'", self.host)
-
-			if self.host in ('localhost', '127.0.0.1') or (not self.verifyServerCert and not self.verifyServerCertByCa):
-				ssl_module._create_default_https_context = ssl_module._create_unverified_context
-
 		self.adjustSize(maxsize)
 
 	def increaseUsageCount(self):
@@ -474,16 +439,6 @@ class HTTPConnectionPool:  # pylint: disable=too-many-instance-attributes
 			response = HTTPResponse.from_httplib(httplib_response)
 			logger.debug2("Response headers: '%s'", response.headers)
 
-			if self.serverCertFile and self.peerCertificate:
-				try:
-					certDir = os.path.dirname(self.serverCertFile)
-					if not os.path.exists(certDir):
-						os.makedirs(certDir)
-					with open(self.serverCertFile, "wb") as file:
-						file.write(self.peerCertificate)
-				except Exception as err:  # pylint: disable=broad-except
-					logger.error("Failed to create server cert file '%s': %s", self.serverCertFile, err)
-
 			# Put the connection back to be reused
 			if self.reuseConnection:
 				self._put_conn(conn)
@@ -532,6 +487,32 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 
 	scheme = 'https'
 
+	def __init__(  # pylint: disable=too-many-arguments
+		self, host, port, socketTimeout=None, connectTimeout=None,
+		retryTime=0, maxsize=1, block=False, reuseConnection=False,
+		verifyServerCert=False, caCertFile=None, proxyURL=None
+	):
+		super().__init__(
+			host, port, socketTimeout, connectTimeout,
+			retryTime, maxsize, block, reuseConnection,
+			proxyURL
+		)
+		self.serverVerified = False
+		self.verifyServerCert = False
+		self.caCertFile = None
+
+		if caCertFile:
+			self.caCertFile = forceFilename(caCertFile)
+		self.verifyServerCert = forceBool(verifyServerCert)
+
+		if self.verifyServerCert:
+			if not self.caCertFile:
+				raise ValueError("Server certificate verfication enabled but no CA cert file given")
+			logger.info("Server certificate verfication by CA file '%s' enabled for host '%s'", self.caCertFile, self.host)
+
+		if not self.verifyServerCert:
+			ssl_module._create_default_https_context = ssl_module._create_unverified_context
+
 	def _new_conn(self):
 		"""
 		Return a fresh HTTPSConnection.
@@ -560,27 +541,15 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 			conn = HTTPSConnection(host=self.host, port=self.port)
 			logger.debug("Connection established to: %s", self.host)
 
-		if self.verifyServerCert or self.verifyServerCertByCa:
+		if self.verifyServerCert:
 			try:
 				non_blocking_connect_https(conn, self.connectTimeout, self.caCertFile)
-				if not self.verifyServerCertByCa:
-					self.serverVerified = True
-					logger.debug("Server verified.")
+				self.serverVerified = True
+				logger.info("Server verified.")
 			except ssl_module.SSLError as err:
 				logger.debug("Verification failed: '%s'", err)
-				if self.verifyServerCertByCa:
-					raise OpsiServiceVerificationError(f"Failed to verify server cert by CA: {err}") from err
-
-				logger.debug("Going to try a connect without caCertFile...")
-				non_blocking_connect_https(conn, self.connectTimeout)
-			except Exception as err:
-				logger.debug("Verification failed: '%s'", err)
-				raise OpsiServiceVerificationError(str(err)) from err
-
+				raise OpsiServiceVerificationError(f"Failed to verify server cert by CA: {err}") from err
 			self.peerCertificate = getPeerCertificate(conn, asPEM=True)
-
-		if (self.verifyServerCert or self.verifyServerCertByCa) and self.serverVerified:
-			logger.info("Server verified (verifyServerCert=%s, verifyServerCertByCa=%s)", self.verifyServerCert, self.verifyServerCertByCa)
 
 		return conn
 
