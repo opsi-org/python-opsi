@@ -316,11 +316,8 @@ class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 		self._rpcQueue = None
 		self._rpcQueuePollingTime = 0.01
 		self._rpcQueueSize = 10
-		self._serverCertFile = None
 		self._caCertFile = None
 		self._verifyServerCert = False
-		self._verifyServerCertByCa = False
-		self._verifyByCaCertsFile = None
 		self._proxyURL = None
 		self.serverName = None
 
@@ -354,14 +351,10 @@ class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 				self._rpcQueuePollingTime = forceFloat(value)
 			elif option == 'rpcqueuesize':
 				self._rpcQueueSize = forceInt(value)
-			elif option == 'servercertfile' and value not in (None, ""):
-				self._serverCertFile = forceFilename(value)
 			elif option == 'verifyservercert':
 				self._verifyServerCert = forceBool(value)
 			elif option == 'cacertfile' and value not in (None, ""):
 				self._caCertFile = forceFilename(value)
-			elif option == 'verifyservercertbyca':
-				self._verifyServerCertByCa = forceBool(value)
 			elif option == 'proxyurl' and value not in (None, ""):
 				logger.debug("ProxyURL detected: '%s'", value)
 				self._proxyURL = forceUnicode(value)
@@ -383,9 +376,7 @@ class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 			maxsize=self._connectionPoolSize,
 			block=True,
 			verifyServerCert=self._verifyServerCert,
-			serverCertFile=self._serverCertFile,
 			caCertFile=self._caCertFile,
-			verifyServerCertByCa=self._verifyServerCertByCa,
 			proxyURL=self._proxyURL
 		)
 
