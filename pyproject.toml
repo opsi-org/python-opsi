@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "python-opsi"
-version = "4.2.0.144"
+version = "4.2.0.145"
 description = "The opsi python library"
 homepage = "https://www.opsi.org"
 license = "AGPL-3.0"
