@@ -8,8 +8,10 @@ This file is part of opsi - https://www.opsi.org
 
 from contextlib import contextmanager
 # pyright: reportMissingImports=false
-import win32crypt as wcrypt # pylint: disable=import-error
+import ctypes
+import win32crypt # pylint: disable=import-error
 from OpenSSL import crypto
+crypt32 = ctypes.WinDLL('crypt32.dll')
 
 from opsicommon.logging import logger
 
@@ -41,6 +43,10 @@ CERT_STORE_ADD_REPLACE_EXISTING_INHERIT_PROPERTIES = 5
 CERT_STORE_ADD_NEWER= 6
 CERT_STORE_ADD_NEWER_INHERIT_PROPERTIES= 7
 
+CERT_FIND_SUBJECT_STR = 0x00080007
+CERT_NAME_SIMPLE_DISPLAY_TYPE = 4
+CERT_NAME_FRIENDLY_DISPLAY_TYPE = 5
+
 # Specifies the name of the X.509 certificate store to open. Valid values include the following:
 
 # - AddressBook: Certificate store for other users.
@@ -55,8 +61,12 @@ CERT_STORE_ADD_NEWER_INHERIT_PROPERTIES= 7
 # The default is My.
 
 @contextmanager
-def _open_cert_store(store_name):
-	store = wcrypt.CertOpenStore(
+def _open_cert_store(store_name, ctype=False):
+	_open = win32crypt.CertOpenStore
+	if ctype:
+		_open = crypt32.CertOpenStore
+
+	store = _open(
 		CERT_STORE_PROV_SYSTEM,
 		0,
 		None,
@@ -66,7 +76,11 @@ def _open_cert_store(store_name):
 	try:
 		yield store
 	finally:
-		store.CertCloseStore(CERT_CLOSE_STORE_FORCE_FLAG)
+		if ctype:
+			crypt32.CertCloseStore(store, CERT_CLOSE_STORE_FORCE_FLAG)
+		else:
+			store.CertCloseStore(CERT_CLOSE_STORE_FORCE_FLAG)
+
 
 def install_ca(ca_file):
 	store_name = "Root"
@@ -84,3 +98,31 @@ def install_ca(ca_file):
 			crypto.dump_certificate(crypto.FILETYPE_ASN1, ca),
 			CERT_STORE_ADD_REPLACE_EXISTING
 		)
+
+def remove_ca(subject_match: str) -> bool:
+	store_name = "Root"
+
+	with _open_cert_store(store_name, ctype=True) as store:
+		p_cert_ctx = crypt32.CertFindCertificateInStore(
+			store,
+			X509_ASN_ENCODING,
+			0,
+			CERT_FIND_SUBJECT_STR,
+			subject_match, #"opsi CA",
+			None
+		)
+		if p_cert_ctx == 0:
+			# Cert not found
+			return False
+
+		#cbsize = crypt32.CertGetNameStringW(
+		#	p_cert_ctx, CERT_NAME_FRIENDLY_DISPLAY_TYPE, 0, None, None, 0
+		#)
+		#buf = ctypes.create_unicode_buffer(cbsize)
+		#cbsize = crypt32.CertGetNameStringW(
+		#	p_cert_ctx, CERT_NAME_FRIENDLY_DISPLAY_TYPE, 0, None, buf, cbsize
+		#)
+		#print(buf.value)
+		crypt32.CertDeleteCertificateFromStore(p_cert_ctx)
+		crypt32.CertFreeCertificateContext(p_cert_ctx)
+		return True
