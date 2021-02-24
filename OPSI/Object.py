@@ -2036,6 +2036,10 @@ class ProductOnClient(Relationship):  # pylint: disable=too-many-instance-attrib
 		return self.actionProgress
 
 	def setActionProgress(self, actionProgress):
+		actionProgress = forceActionProgress(actionProgress)
+		if actionProgress and len(actionProgress) > 250:
+			logger.warning("Data truncated for actionProgess")
+			actionProgress = actionProgress[:250]
 		self.actionProgress = forceActionProgress(actionProgress)
 
 	def getLastAction(self):
