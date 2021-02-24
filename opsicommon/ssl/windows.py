@@ -16,8 +16,6 @@ from opsicommon.logging import logger
 
 crypt32 = ctypes.WinDLL('crypt32.dll')
 
-__all__ = ["install_ca"]
-
 # lpszStoreProvider
 CERT_STORE_PROV_SYSTEM = 0x0000000A
 
