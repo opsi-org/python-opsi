@@ -545,9 +545,9 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 			try:
 				non_blocking_connect_https(conn, self.connectTimeout, self.caCertFile)
 				self.serverVerified = True
-				logger.info("Server verified.")
+				logger.debug("Server verified.")
 			except ssl_module.SSLError as err:
-				logger.debug("Verification failed: '%s'", err)
+				logger.debug("Verification failed: '%s'", err, exc_info=True)
 				raise OpsiServiceVerificationError(f"Failed to verify server cert by CA: {err}") from err
 			self.peerCertificate = getPeerCertificate(conn, asPEM=True)
 
