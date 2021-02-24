@@ -108,7 +108,7 @@ def remove_ca(subject_name: str) -> bool:
 			store,
 			X509_ASN_ENCODING,
 			0,
-			CERT_FIND_SUBJECT_NAME,
+			CERT_FIND_SUBJECT_STR, # Searches for a certificate that contains the specified subject name string
 			subject_name,
 			None
 		)
