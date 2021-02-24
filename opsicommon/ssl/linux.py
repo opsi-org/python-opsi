@@ -14,8 +14,6 @@ from OPSI.System import execute, isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
 
 from opsicommon.logging import logger
 
-__all__ = ["install_ca"]
-
 def _get_cert_path_and_cmd():
 	if isCentOS() or isRHEL():
 		# /usr/share/pki/ca-trust-source/anchors/
