@@ -11,9 +11,10 @@ from contextlib import contextmanager
 import ctypes
 import win32crypt # pylint: disable=import-error
 from OpenSSL import crypto
-crypt32 = ctypes.WinDLL('crypt32.dll')
 
 from opsicommon.logging import logger
+
+crypt32 = ctypes.WinDLL('crypt32.dll')
 
 __all__ = ["install_ca"]
 
@@ -44,6 +45,7 @@ CERT_STORE_ADD_NEWER= 6
 CERT_STORE_ADD_NEWER_INHERIT_PROPERTIES= 7
 
 CERT_FIND_SUBJECT_STR = 0x00080007
+CERT_FIND_SUBJECT_NAME = 0x00020007
 CERT_NAME_SIMPLE_DISPLAY_TYPE = 4
 CERT_NAME_FRIENDLY_DISPLAY_TYPE = 5
 
@@ -61,7 +63,7 @@ CERT_NAME_FRIENDLY_DISPLAY_TYPE = 5
 # The default is My.
 
 @contextmanager
-def _open_cert_store(store_name, ctype=False):
+def _open_cert_store(store_name: str, ctype: bool = False):
 	_open = win32crypt.CertOpenStore
 	if ctype:
 		_open = crypt32.CertOpenStore
@@ -82,7 +84,7 @@ def _open_cert_store(store_name, ctype=False):
 			store.CertCloseStore(CERT_CLOSE_STORE_FORCE_FLAG)
 
 
-def install_ca(ca_file):
+def install_ca(ca_file: str):
 	store_name = "Root"
 	with open(ca_file, "r") as file:
 		ca = crypto.load_certificate(crypto.FILETYPE_PEM, file.read())
@@ -99,30 +101,36 @@ def install_ca(ca_file):
 			CERT_STORE_ADD_REPLACE_EXISTING
 		)
 
-def remove_ca(subject_match: str) -> bool:
+def remove_ca(subject_name: str) -> bool:
 	store_name = "Root"
-
 	with _open_cert_store(store_name, ctype=True) as store:
 		p_cert_ctx = crypt32.CertFindCertificateInStore(
 			store,
 			X509_ASN_ENCODING,
 			0,
-			CERT_FIND_SUBJECT_STR,
-			subject_match, #"opsi CA",
+			CERT_FIND_SUBJECT_NAME,
+			subject_name,
 			None
 		)
 		if p_cert_ctx == 0:
 			# Cert not found
+			logger.info(
+				"CA '%s' not found in store '%s', nothing to remove",
+				subject_name, store_name
+			)
 			return False
 
-		#cbsize = crypt32.CertGetNameStringW(
-		#	p_cert_ctx, CERT_NAME_FRIENDLY_DISPLAY_TYPE, 0, None, None, 0
-		#)
-		#buf = ctypes.create_unicode_buffer(cbsize)
-		#cbsize = crypt32.CertGetNameStringW(
-		#	p_cert_ctx, CERT_NAME_FRIENDLY_DISPLAY_TYPE, 0, None, buf, cbsize
-		#)
-		#print(buf.value)
+		cbsize = crypt32.CertGetNameStringW(
+			p_cert_ctx, CERT_NAME_FRIENDLY_DISPLAY_TYPE, 0, None, None, 0
+		)
+		buf = ctypes.create_unicode_buffer(cbsize)
+		cbsize = crypt32.CertGetNameStringW(
+			p_cert_ctx, CERT_NAME_FRIENDLY_DISPLAY_TYPE, 0, None, buf, cbsize
+		)
+		logger.info(
+			"Removing CA '%s' (%s) from '%s' store",
+			subject_name, buf.value, store_name
+		)
 		crypt32.CertDeleteCertificateFromStore(p_cert_ctx)
 		crypt32.CertFreeCertificateContext(p_cert_ctx)
 		return True
