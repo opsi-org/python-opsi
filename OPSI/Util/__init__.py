@@ -362,7 +362,7 @@ def objectToHtml(obj, level=0):  # pylint: disable=too-many-branches
 
 
 def replaceSpecialHTMLCharacters(text):
-	return text \
+	return str(text) \
 		.replace('\r', '')\
 		.replace('\t', '   ')\
 		.replace('&', '&amp;')\
