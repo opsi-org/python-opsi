@@ -16,24 +16,23 @@ from opsicommon.logging import logger
 
 __all__ = ["install_ca"]
 
-def install_ca(ca_file):
-
+def _get_cert_path_and_cmd():
 	if isCentOS() or isRHEL():
 		# /usr/share/pki/ca-trust-source/anchors/
-		system_cert_path = "/etc/pki/ca-trust/source/anchors"
-		cmd = "update-ca-trust"
-	elif isDebian() or isUbuntu():
-		system_cert_path = "/usr/local/share/ca-certificates"
-		cmd = "update-ca-certificates"
-	elif isOpenSUSE() or isSLES():
-		system_cert_path = "/usr/share/pki/trust/anchors"
-		cmd = "update-ca-certificates"
-	else:
-		logger.error("Failed to set system cert path")
-		raise RuntimeError("Failed to set system cert path")
+		return("/etc/pki/ca-trust/source/anchors", "update-ca-trust")
+	if isDebian() or isUbuntu():
+		return("/usr/local/share/ca-certificates", "update-ca-certificates")
+	if isOpenSUSE() or isSLES():
+		return("/usr/share/pki/trust/anchors", "update-ca-certificates")
+
+	logger.error("Failed to set system cert path")
+	raise RuntimeError("Failed to set system cert path")
+
+def install_ca(ca_file: str):
+	system_cert_path, cmd = _get_cert_path_and_cmd()
 
 	with open(ca_file, "r") as file:
-		ca = crypto.load_certificate(crypto.FILETYPE_PEM,  file.read())
+		ca = crypto.load_certificate(crypto.FILETYPE_PEM, file.read())
 
 	logger.info(
 		"Installing CA '%s' from '%s' into system store",
@@ -44,3 +43,28 @@ def install_ca(ca_file):
 	copyfile(ca_file, os.path.join(system_cert_path, cert_file))
 	output = execute(cmd)
 	logger.debug("Output of '%s': %s", cmd, output)
+
+def remove_ca(subject_name: str) -> bool:
+	system_cert_path, cmd = _get_cert_path_and_cmd()
+	removed = 0
+	for entry in os.listdir(system_cert_path):
+		filename = os.path.join(system_cert_path, entry)
+		ca = None
+		with open(filename, "rb") as file:
+			try:
+				ca = crypto.load_certificate(crypto.FILETYPE_PEM, file.read())
+			except crypto.Error:
+				continue
+		if ca.get_subject().CN == subject_name:
+			logger.info("Removing CA '%s' (%s)", subject_name, filename)
+			os.remove(filename)
+			removed += 1
+
+	if removed:
+		output = execute(cmd)
+		logger.debug("Output of '%s': %s", cmd, output)
+	else:
+		logger.info(
+			"CA '%s' not found in '%s', nothing to remove",
+			subject_name, system_cert_path
+		)
