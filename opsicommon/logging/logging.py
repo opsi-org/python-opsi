@@ -214,13 +214,15 @@ class ContextFilter(logging.Filter, metaclass=Singleton):
 		:returns: True, if the record conforms to the filter rules.
 		:rtype: bool
 		"""
-		record.context = context.get()
+		if not hasattr(record, "context"):
+			record.context = context.get()
 		for (filter_key, filter_values) in self.filter_dict.items():
 			record_value = record.context.get(filter_key)
 			# Filter out record if key not present or value not in filter values
 			if record_value in (None, "") or record_value not in filter_values:
 				return False
 		return True
+
 
 class ContextSecretFormatter(logging.Formatter):
 	"""
@@ -671,6 +673,8 @@ def print_logger_info():
 	for _logger in get_all_loggers():
 		print(f"- Logger: {_logger}", file=sys.stderr)
 		if not isinstance(_logger, logging.PlaceHolder):
+			for _filter in _logger.filters:
+				print(f"  - Filter: {_filter} ", file=sys.stderr)
 			for _handler in _logger.handlers:
 				name = str(_handler)
 				if _handler.name:
