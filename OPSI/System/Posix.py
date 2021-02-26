@@ -853,7 +853,7 @@ def get_subprocess_environment(env: dict = None, add_lc_all_C=False, add_path_sb
 
 	return sp_env
 
-def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0, shell=None, waitForEnding=None, env={}, stdin_data=b''):
+def execute(cmd, nowait=False, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0, shell=True, waitForEnding=None, env={}, stdin_data=b''):
 	"""
 	Executes a command.
 
