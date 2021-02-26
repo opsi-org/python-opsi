@@ -7,14 +7,16 @@ This file is part of opsi - https://www.opsi.org
 """
 
 import os
-from shutil import copyfile
 from OpenSSL import crypto
 
-from OPSI.System import execute, isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES, isUbuntu
+from OPSI.System import (
+	execute, isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES, isUbuntu
+)
 
 from opsicommon.logging import logger
 
 __all__ = ["install_ca", "remove_ca"]
+
 
 def _get_cert_path_and_cmd():
 	if isCentOS() or isRHEL():
@@ -28,21 +30,22 @@ def _get_cert_path_and_cmd():
 	logger.error("Failed to set system cert path")
 	raise RuntimeError("Failed to set system cert path")
 
-def install_ca(ca_file: str):
+
+def install_ca(ca_cert: crypto.X509):
 	system_cert_path, cmd = _get_cert_path_and_cmd()
 
-	with open(ca_file, "r") as file:
-		ca = crypto.load_certificate(crypto.FILETYPE_PEM, file.read())
+	logger.info("Installing CA '%s' into system store", ca_cert.get_subject().CN)
 
-	logger.info(
-		"Installing CA '%s' from '%s' into system store",
-		ca.get_subject().commonName, ca_file
+	cert_file = os.path.join(
+		system_cert_path,
+		f"{ca_cert.get_subject().CN.replace(' ', '_')}.crt"
 	)
+	with open(cert_file, "wb") as file:
+		file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, ca_cert))
 
-	cert_file = f"{ca.get_subject().commonName.replace(' ', '_')}.crt"
-	copyfile(ca_file, os.path.join(system_cert_path, cert_file))
 	output = execute(cmd)
 	logger.debug("Output of '%s': %s", cmd, output)
+
 
 def remove_ca(subject_name: str) -> bool:
 	system_cert_path, cmd = _get_cert_path_and_cmd()
