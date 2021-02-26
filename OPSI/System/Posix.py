@@ -890,14 +890,13 @@ on Windows.
 output will be returned.
 	:rtype: list
 	"""
+	if not isinstance(cmd, list):
+		cmd = forceUnicode(cmd)
 	nowait = forceBool(nowait)
 	getHandle = forceBool(getHandle)
 	exitOnStderr = forceBool(exitOnStderr)
 	captureStderr = forceBool(captureStderr)
 	timeout = forceInt(timeout)
-
-	if shell is not None:
-		logger.warning("Argument 'shell' is unsupported on Linux.")
 
 	if waitForEnding is not None:
 		logger.debug("Detected kwarg 'waitForEnding'. Overwriting nowait.")
@@ -910,7 +909,7 @@ output will be returned.
 	result = []
 	startTime = time.time()
 	try:
-		logger.info(u"Executing: %s", cmd)
+		logger.info("Executing: %s", cmd)
 
 		if nowait:
 			os.spawnve(os.P_NOWAIT, which('bash'), [which('bash'), '-c', cmd], sp_env)
@@ -918,9 +917,9 @@ output will be returned.
 
 		elif getHandle:
 			if captureStderr:
-				return (subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=sp_env)).stdout
+				return (subprocess.Popen(cmd, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=sp_env)).stdout
 			else:
-				return (subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None, env=sp_env)).stdout
+				return (subprocess.Popen(cmd, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None, env=sp_env)).stdout
 
 		else:
 			data = b''
@@ -929,7 +928,7 @@ output will be returned.
 				stderr = subprocess.PIPE
 			proc = subprocess.Popen(
 				cmd,
-				shell=True,
+				shell=shell,
 				stdin=subprocess.PIPE,
 				stdout=subprocess.PIPE,
 				stderr=stderr,
@@ -969,7 +968,7 @@ output will be returned.
 						chunk = proc.stderr.read()
 						if chunk:
 							if exitOnStderr:
-								raise RuntimeError(u"Command '%s' failed: %s" % (cmd, chunk))
+								raise RuntimeError(f"Command '{cmd}' failed: {chunk}")
 							data += chunk
 					except IOError as e:
 						if e.errno != 11:
@@ -977,7 +976,7 @@ output will be returned.
 
 				if timeout > 0 and (time.time() - startTime >= timeout):
 					_terminateProcess(proc)
-					raise RuntimeError(u"Command '%s' timed out atfer %d seconds" % (cmd, (time.time() - startTime)))
+					raise RuntimeError(f"Command '{cmd}' timed out atfer {(time.time() - startTime)} seconds")
 
 				time.sleep(0.001)
 
@@ -989,18 +988,19 @@ output will be returned.
 					logger.debug(f'>>> {line}')
 					result.append(line)
 
-	except (os.error, IOError) as e:
+	except (os.error, IOError) as err:
 		# Some error occurred during execution
-		raise RuntimeError(u"Command '%s' failed:\n%s" % (cmd, e))
+		raise RuntimeError(f"Command '{cmd}' failed:\n{err}") from err
 
-	logger.debug(u"Exit code: %s", exitCode)
+	logger.debug("Exit code: %s", exitCode)
 	if exitCode:
 		if isinstance(ignoreExitCode, bool) and ignoreExitCode:
 			pass
 		elif isinstance(ignoreExitCode, (list, tuple, set)) and exitCode in ignoreExitCode:
 			pass
 		else:
-			raise RuntimeError(u"Command '%s' failed (%s):\n%s" % (cmd, exitCode, u'\n'.join(result)))
+			result = '\n'.join(result)
+			raise RuntimeError(f"Command '{cmd}' failed ({exitCode}):\n{result}")
 	return result
 
 
