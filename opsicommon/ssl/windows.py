@@ -84,22 +84,18 @@ def _open_cert_store(store_name: str, ctype: bool = False):
 			store.CertCloseStore(CERT_CLOSE_STORE_FORCE_FLAG)
 
 
-def install_ca(ca_file: str):
+def install_ca(ca_cert: crypto.X509):
 	store_name = "Root"
-	with open(ca_file, "r") as file:
-		ca = crypto.load_certificate(crypto.FILETYPE_PEM, file.read())
 
-	logger.info(
-		"Installing CA '%s' from '%s' into '%s' store",
-		ca.get_subject().commonName, ca_file, store_name
-	)
+	logger.info("Installing CA '%s' into '%s' store", ca_cert.get_subject().CN, store_name)
 
 	with _open_cert_store(store_name) as store:
 		store.CertAddEncodedCertificateToStore(
 			X509_ASN_ENCODING,
-			crypto.dump_certificate(crypto.FILETYPE_ASN1, ca),
+			crypto.dump_certificate(crypto.FILETYPE_ASN1, ca_cert),
 			CERT_STORE_ADD_REPLACE_EXISTING
 		)
+
 
 def remove_ca(subject_name: str) -> bool:
 	store_name = "Root"
