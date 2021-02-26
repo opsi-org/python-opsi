@@ -30,7 +30,7 @@ from OPSI.Exceptions import (
 	BackendBadValueError, BackendConfigurationError,
 	BackendError, BackendIOError, BackendMissingDataError,
 	BackendTemporaryError, BackendUnaccomplishableError)
-from OPSI.Logger import Logger, LOG_DEBUG
+from OPSI.Logger import Logger
 from OPSI.Types import (
 	forceBool, forceDict, forceFilename, forceHostId,
 	forceUnicode, forceUnicodeLower
