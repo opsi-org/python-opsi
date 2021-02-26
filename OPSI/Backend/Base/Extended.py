@@ -168,6 +168,9 @@ class ExtendedBackend(Backend):
 			logger.debug("Calling backend_exit() on backend %s", self._backend)
 			self._backend.backend_exit()
 
+	def getOpsiCACert(self) -> str:  # pylint: disable=invalid-name,no-self-use
+		raise NotImplementedError("Not implemented")
+
 
 class ExtendedConfigDataBackend(ExtendedBackend):  # pylint: disable=too-many-public-methods
 	option_defaults = {
@@ -711,6 +714,10 @@ class ExtendedConfigDataBackend(ExtendedBackend):  # pylint: disable=too-many-pu
 		if id is None:
 			id = []
 		return self._backend.host_deleteObjects(self._backend.host_getObjects(id=id))
+
+	def host_getTLSCertificate(self, hostId: str) -> str:  # pylint: disable=invalid-name
+		raise NotImplementedError("Not implemented")
+
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
