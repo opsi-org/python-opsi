@@ -1217,7 +1217,8 @@ def get_subprocess_environment():
 	return os.environ.copy()
 
 def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0, shell=True, env={}, stdin_data=b""):
-	cmd = forceUnicode(cmd)
+	if not isinstance(cmd, list):
+		cmd = forceUnicode(cmd)
 	waitForEnding = forceBool(waitForEnding)
 	getHandle = forceBool(getHandle)
 	exitOnStderr = forceBool(exitOnStderr)
@@ -1273,7 +1274,7 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 						chunk = proc.stderr.read()
 						if len(chunk) > 0:
 							if exitOnStderr:
-								raise IOError(exitCode, "Command '%s' failed: %s" % (cmd, chunk))
+								raise IOError(exitCode, f"Command '{cmd}' failed: {chunk}")
 							data += chunk
 					except IOError as error:
 						if error.errno != 11:
@@ -1285,7 +1286,7 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 					except Exception:
 						pass
 
-					raise IOError(exitCode, "Command '%s' timed out atfer %d seconds" % (cmd, (time.time() - startTime)))
+					raise IOError(exitCode, f"Command '{cmd}' timed out atfer {(time.time() - startTime)} seconds")
 
 				time.sleep(0.001)
 
@@ -1300,9 +1301,9 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 
 					logger.debug(">>> %s", line)
 					result.append(line)
-	except (os.error, IOError) as error:
+	except (os.error, IOError) as err:
 		# Some error occurred during execution
-		raise IOError(error.errno, "Command '%s' failed:\n%s" % (cmd, error))
+		raise IOError(error.errno, f"Command '{cmd}' failed:\n{err}") from err
 
 	logger.debug("Exit code: %s", exitCode)
 	if exitCode:
@@ -1311,7 +1312,8 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 		elif isinstance(ignoreExitCode, list) and exitCode in ignoreExitCode:
 			pass
 		else:
-			raise IOError(exitCode, "Command '%s' failed (%s):\n%s" % (cmd, exitCode, '\n'.join(result)))
+			result = '\n'.join(result)
+			raise IOError(exitCode, f"Command '{cmd}' failed ({exitCode}):\n{result}")
 
 	return result
 
