@@ -202,7 +202,7 @@ containing the localisation of the hardware audit.
 		}
 
 	def getOpsiCACert(self) -> str:  # pylint: disable=invalid-name,no-self-use
-		return ""
+		return None
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Logs                                                                                      -
@@ -477,7 +477,7 @@ depot where the method is.
 					self._context.softwareLicense_insertObject(softwareLicense)
 
 	def host_getTLSCertificate(self, hostId: str) -> str:  # pylint: disable=invalid-name
-		return ""
+		return None
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
