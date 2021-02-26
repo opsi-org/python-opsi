@@ -201,6 +201,9 @@ containing the localisation of the hardware audit.
 			}
 		}
 
+	def getOpsiCACert(self) -> str:  # pylint: disable=invalid-name,no-self-use
+		return ""
+
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Logs                                                                                      -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -472,6 +475,9 @@ depot where the method is.
 				for softwareLicense in softwareLicenses:
 					softwareLicense.boundToHost = None
 					self._context.softwareLicense_insertObject(softwareLicense)
+
+	def host_getTLSCertificate(self, hostId: str) -> str:  # pylint: disable=invalid-name
+		return ""
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
