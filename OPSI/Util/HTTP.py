@@ -261,7 +261,7 @@ class HTTPConnectionPool:  # pylint: disable=too-many-instance-attributes
 	free = decreaseUsageCount
 
 	def delPool(self):
-		if self.pool:
+		if getattr(self, "pool", None):
 			while True:
 				try:
 					conn = self.pool.get(block=False)

@@ -917,10 +917,8 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 		self._connectionPoolSize = 1
 		self._cookie = ''
 		self._proxy = None
-		serverCertFile = None
 		verifyServerCert = False
 		caCertFile = None
-		verifyServerCertByCa = False
 
 		for key, value in kwargs.items():
 			key = key.lower()
@@ -932,14 +930,10 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 				self._password = forceUnicode(value)
 			elif key == 'proxyurl':
 				self._proxy = forceUnicode(value)
-			elif key == 'servercertfile':
-				serverCertFile = forceFilename(value)
-			elif key == 'verifyservercert':
+			elif key in ('verifyservercert', 'verifyservercertbyca'):
 				verifyServerCert = forceBool(value)
 			elif key == 'cacertfile':
 				caCertFile = forceFilename(value)
-			elif key == 'verifyservercertbyca':
-				verifyServerCertByCa = forceBool(value)
 
 		(scheme, host, port, baseurl, username, password) = urlsplit(self._url)
 
@@ -973,10 +967,8 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 			retryTime=self._retryTime,
 			maxsize=self._connectionPoolSize,
 			block=True,
-			serverCertFile=serverCertFile,
 			verifyServerCert=verifyServerCert,
 			caCertFile=caCertFile,
-			verifyServerCertByCa=verifyServerCertByCa,
 			proxyURL=self._proxy
 		)
 
