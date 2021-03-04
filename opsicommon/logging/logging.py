@@ -687,8 +687,8 @@ def print_logger_info():
 def _log_warning(message, category, filename, lineno, line=None, file=None): # pylint: disable=unused-argument,too-many-arguments
 	logger.warning("Warning '%s' in file '%s', line %s", message, filename, lineno)
 	for entry in traceback.format_stack():
-		for line in entry.split("\n"):
-			logger.debug(line)
+		for _line in entry.split("\n"):
+			logger.debug(_line)
 warnings.showwarning = _log_warning
 
 observable_handler = ObservableHandler()
