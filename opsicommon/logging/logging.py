@@ -685,7 +685,10 @@ def print_logger_info():
 				print(f"    - Formatter: {_handler.formatter}", file=sys.stderr)
 
 def _log_warning(message, category, filename, lineno, line=None, file=None): # pylint: disable=unused-argument,too-many-arguments
-	logger.warning("%s - %s - %s", message, filename, lineno)
+	logger.warning("Warning '%s' in file '%s', line %s", message, filename, lineno)
+	for entry in traceback.format_stack():
+		for line in entry.split("\n"):
+			logger.debug(line)
 warnings.showwarning = _log_warning
 
 observable_handler = ObservableHandler()
