@@ -267,7 +267,8 @@ def setConsoleLevel(logLevel, object=None):  # pylint: disable=unused-argument,r
 		"OPSI.Logger.setConsoleLevel is deprecated, instead modify the StreamHandler loglevel.",
 		DeprecationWarning
 	)
-	logging_config(stderr_level=logging.opsi_level_to_level[logLevel])
+	if logLevel is not None:
+		logging_config(stderr_level=logging.opsi_level_to_level[logLevel])
 logger.setConsoleLevel = setConsoleLevel
 
 @staticmethod
