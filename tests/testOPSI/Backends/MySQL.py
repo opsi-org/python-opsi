@@ -24,66 +24,66 @@ from contextlib import contextmanager
 import pytest
 
 from OPSI.Backend.MySQL import (
-    MySQL, MySQLBackend, MySQLBackendObjectModificationTracker)
+	MySQL, MySQLBackend, MySQLBackendObjectModificationTracker)
 from OPSI.Util.Task.UpdateBackend.MySQL import disableForeignKeyChecks
 
 try:
-    from .config import MySQLconfiguration
+	from .config import MySQLconfiguration
 except ImportError:
-    MySQLconfiguration = None
+	MySQLconfiguration = None
 
 UNKNOWN_TABLE_ERROR_CODE = 1051
 
 
 @contextmanager
 def getMySQLBackend(**backendOptions):
-    if not MySQLconfiguration:
-        pytest.skip('no MySQL backend configuration given.')
+	if not MySQLconfiguration:
+		pytest.skip('no MySQL backend configuration given.')
 
-    optionsForBackend = MySQLconfiguration
-    optionsForBackend.update(backendOptions)
+	optionsForBackend = MySQLconfiguration
+	optionsForBackend.update(backendOptions)
 
-    with cleanDatabase(MySQL(**optionsForBackend)):
-        yield MySQLBackend(**optionsForBackend)
+	with cleanDatabase(MySQL(**optionsForBackend)):
+		yield MySQLBackend(**optionsForBackend)
 
 
 @contextmanager
 def getMySQLModificationTracker():
-    if not MySQLconfiguration:
-        pytest.skip('no MySQL backend configuration given.')
+	if not MySQLconfiguration:
+		pytest.skip('no MySQL backend configuration given.')
 
-    yield MySQLBackendObjectModificationTracker(**MySQLconfiguration)
+	yield MySQLBackendObjectModificationTracker(**MySQLconfiguration)
 
 
 @contextmanager
 def cleanDatabase(database):
-    def dropAllTables(database):
-        with disableForeignKeyChecks(database):
-            tablesToDropAgain = set()
-            for tableName in getTableNames(database):
-                try:
-                    database.execute(u'DROP TABLE `{0}`;'.format(tableName))
-                except Exception as error:
-                    print("Failed to drop {0}: {1}".format(tableName, error))
-                    tablesToDropAgain.add(tableName)
+	def dropAllTables(database):
+		with disableForeignKeyChecks(database):
+			tablesToDropAgain = set()
+			for tableName in getTableNames(database):
+				try:
+					database.execute(u'DROP TABLE `{0}`;'.format(tableName))
+				except Exception as error:
+					print("Failed to drop {0}: {1}".format(tableName, error))
+					tablesToDropAgain.add(tableName)
 
-            for tableName in tablesToDropAgain:
-                try:
-                    database.execute(u'DROP TABLE `{0}`;'.format(tableName))
-                except Exception as error:
-                    errorCode = error.args[0]
-                    if errorCode == UNKNOWN_TABLE_ERROR_CODE:
-                        continue
+			for tableName in tablesToDropAgain:
+				try:
+					database.execute(u'DROP TABLE `{0}`;'.format(tableName))
+				except Exception as error:
+					errorCode = error.args[0]
+					if errorCode == UNKNOWN_TABLE_ERROR_CODE:
+						continue
 
-                    print("Failed to drop {0} a second time: {1}".format(tableName, error))
-                    raise error
+					print("Failed to drop {0} a second time: {1}".format(tableName, error))
+					raise error
 
-    dropAllTables(database)
-    try:
-        yield database
-    finally:
-        dropAllTables(database)
+	dropAllTables(database)
+	try:
+		yield database
+	finally:
+		dropAllTables(database)
 
 
 def getTableNames(database):
-    return set(tuple(i.values())[0] for i in database.getSet(u'SHOW TABLES;'))
+	return set(tuple(i.values())[0] for i in database.getSet(u'SHOW TABLES;'))

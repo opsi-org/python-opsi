@@ -74,23 +74,3 @@ def testDisablingPigz(dumbArchive):
 	"""
 	with mock.patch('OPSI.Util.File.Archive.PIGZ_ENABLED', False):
 		assert dumbArchive.is_pigz_available() is False
-
-
-@pytest.fixture(params=[('Python', __file__)])
-# TODO: enhance this with more files...
-def filenameAndExpectedType(request):
-	yield request.param
-
-
-def testGetFileType(filenameAndExpectedType):
-	expectedType, filename = filenameAndExpectedType
-	assert expectedType.lower() in getFileType(filename).lower()
-
-
-def testGetFileTypeFollowsSymlink(filenameAndExpectedType, tempDir):
-	expectedType, filename = filenameAndExpectedType
-
-	linkFile = os.path.join(tempDir, 'mylink')
-	os.symlink(filename, linkFile)
-
-	assert expectedType.lower() in getFileType(linkFile).lower()

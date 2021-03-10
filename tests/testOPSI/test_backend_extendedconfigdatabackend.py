@@ -284,7 +284,7 @@ def testHost_createDepotServer(extendedConfigDataBackend):
 	assert depot.maxBandwidth == 0
 
 
-@pytest.mark.parametrize("lastSeen", [None, '0000-00-00 00:00:00'])
+@pytest.mark.parametrize("lastSeen", [None, '2020-01-01 01:01:01'])
 def testHost_createClient(extendedConfigDataBackend, lastSeen):
 	extendedConfigDataBackend.host_createOpsiClient(
 		id='client100.test.invalid',

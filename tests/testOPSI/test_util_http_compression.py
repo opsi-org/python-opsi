@@ -34,7 +34,7 @@ def compressionLevel(request):
 
 
 @pytest.fixture(
-	params=[u"Mötörheäd!", "Das ist ein Test und so."],
+	params=["Mötörheäd!", "Das ist ein Test und so."],
 	ids=["unicode", "str"],
 	scope="session"
 )
@@ -61,7 +61,7 @@ def testCompressionAndDecompression(compressionFunctions, text):
 	assert text != compressed
 
 	newText = decode(compressed)
-	assert text == newText
+	assert text == newText.decode("utf-8")
 
 
 def testCompressionWithDifferentLevels(compressionFunctions, text, compressionLevel):
@@ -72,4 +72,4 @@ def testCompressionWithDifferentLevels(compressionFunctions, text, compressionLe
 	assert text != compressed
 
 	newText = decode(compressed)
-	assert text == newText
+	assert text == newText.decode("utf-8")

@@ -67,7 +67,7 @@ def testProcessingResponseWithEncodedContent(jsonRpcBackend, encodingFunction, c
 		header={'Content-Encoding': contentEncoding}
 	)
 
-	assert text == jsonRpcBackend._processResponse(response)
+	assert text.encode() == jsonRpcBackend._processResponse(response)
 
 
 @pytest.mark.parametrize("compressionOptions, expectedCompression", [
