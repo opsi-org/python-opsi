@@ -297,7 +297,7 @@ def forceHardwareAddress(var):
 
 	match = re.search(_HARDWARE_ADDRESS_REGEX, var)
 	if not match:
-		raise ValueError(f"Bad hardware address: {var}")
+		raise ValueError(f"Invalid hardware address: {var}")
 
 	return (
 		f"{match.group(1)}:{match.group(2)}:{match.group(3)}:"
@@ -305,6 +305,8 @@ def forceHardwareAddress(var):
 	).lower()
 
 def forceIPAddress(var):
+	if not isinstance(var, (ipaddress.IPv4Address, ipaddress.IPv6Address, str)):
+		raise ValueError(f"Invalid ip address: '{var}'")
 	var = ipaddress.ip_address(var)
 	if isinstance(var, ipaddress.IPv6Address) and var.ipv4_mapped:
 		return var.ipv4_mapped.compressed
@@ -336,6 +338,8 @@ def forceNetmask(var):
 
 
 def forceNetworkAddress(var):
+	if not isinstance(var, (ipaddress.IPv4Network, ipaddress.IPv6Network, str)):
+		raise ValueError(f"Invalid network address: '{var}'")
 	return ipaddress.ip_network(var).compressed
 
 
