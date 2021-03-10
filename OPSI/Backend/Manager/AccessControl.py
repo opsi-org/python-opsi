@@ -467,7 +467,7 @@ class BackendAccessControl:
 			break
 
 		logger.debug("Method %s using acls: %s", methodName, acls)
-		if granted:
+		if granted is True:
 			logger.debug("Full access to method %s granted to user %s by acl %s", methodName, self.user_store.username, acls[0])
 			newKwargs = kwargs
 		elif granted is False:
