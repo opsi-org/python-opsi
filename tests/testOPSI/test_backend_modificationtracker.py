@@ -90,6 +90,7 @@ def testTrackingOfUpdatingObject(backendAndTracker):
 	assert mod['ident'] == host.getIdent()
 
 
+@pytest.mark.requiresModulesFile
 def testTrackingOfDeletingObject(backendAndTracker):
 	backend, tracker = backendAndTracker
 

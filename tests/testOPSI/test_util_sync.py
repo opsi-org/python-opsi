@@ -47,8 +47,8 @@ def librsyncTestfile():
 @pytest.mark.skipif(importFailed, reason="Import failed.")
 def testLibrsyncSignatureBase64Encoded(librsyncTestfile):
 	assert librsyncSignature(librsyncTestfile) in (
-		b'cnMBNgAACAAAAAAI/6410IBmvH1GKbBN\n', # librsync1
-		b'cnMBNwAACAAAAAAI/6410EtC5dhLF6sI\n', # librsync2
+		'cnMBNgAACAAAAAAI/6410IBmvH1GKbBN\n', # librsync1
+		'cnMBNwAACAAAAAAI/6410EtC5dhLF6sI\n', # librsync2
 	)
 
 
@@ -68,7 +68,7 @@ def testLibrsyncDeltaFileCreation(librsyncTestfile, tempDir):
 	with open(oldfile, "wb") as f:
 		f.write(b"olddata")
 	signature = librsyncSignature(oldfile, base64Encoded=False)
-	
+
 	librsyncDeltaFile(librsyncTestfile, signature.strip(), deltafile)
 	assert os.path.exists(deltafile), "No delta file was created"
 
@@ -76,7 +76,7 @@ def testLibrsyncDeltaFileCreation(librsyncTestfile, tempDir):
 	with open(librsyncTestfile, "rb") as f:
 		expectedDelta += f.read()
 	expectedDelta += b"\x00"
-	
+
 	with open(deltafile, "rb") as f:
 		assert expectedDelta == f.read()
 
@@ -92,7 +92,7 @@ def testLibrsyncDeltaSize(librsyncTestfile, tempDir):
 		f.write(data)
 	with open(oldfile, "w") as f:
 		f.write(data[:int(size/2)])
-	
+
 	signature = librsyncSignature(oldfile, False)
 	librsyncDeltaFile(baseFile, signature, deltaFile)
 	delta_size = os.path.getsize(deltaFile)
@@ -112,7 +112,7 @@ def testLibrsyncPatchFileDoesNotAlterIfUnneeded(librsyncTestfile, tempDir):
 	expectedDelta = b"rs\x026F\x00\x04\x8a\x00"
 	with open(deltaFile, "rb") as f:
 		assert expectedDelta == f.read()
-	
+
 	newfile = os.path.join(tempDir, 'newFile.txt')
 	librsyncPatchFile(oldfile, deltaFile, newfile)
 	assert os.path.exists(newfile)

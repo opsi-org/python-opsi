@@ -35,19 +35,14 @@ from .test_groups import fillBackendWithObjectToGroups
 def testMultiThreadingBackend(multithreadingBackend, numberOfThreads):
 	backend = ExtendedConfigDataBackend(multithreadingBackend)
 
-	MySQLdb = pytest.importorskip("MySQLdb")
-	IntegrityError = MySQLdb.IntegrityError
-	errorConstants = pytest.importorskip("MySQLdb.constants.ER")
-	DUP_ENTRY = errorConstants.DUP_ENTRY
-
 	o2g, _, clients = fillBackendWithObjectToGroups(backend)
 
+	print("====================START=============================")
 	class MultiThreadTester(threading.Thread):
 		def __init__(self, backend, clients, objectToGroups):
 			threading.Thread.__init__(self)
 
-			self.exitCode = 0
-			self.errorMessage = None
+			self.error = None
 
 			self.backend = backend
 			self.clients = clients
@@ -78,15 +73,14 @@ def testMultiThreadingBackend(multithreadingBackend, numberOfThreads):
 				self.backend.host_deleteObjects(self.client2)
 				self.backend.host_createObjects(self.client1)
 				self.backend.host_getObjects()
-			except IntegrityError as e:
-				if e.args[0] != DUP_ENTRY:
-					self.errorMessage = e.msg
-					self.exitCode = 2
-			except Exception as e:
-				self.errorMessage = e
-				self.exitCode = 1
+			except Exception as err:
+				if "duplicate entry" in str(err).lower():
+					# Allow duplicate entry error
+					pass
+				else:
+					self.error = err
 			finally:
-				print(u"Thread %s done" % self)
+				print("Thread %s done" % self)
 
 	mtts = [MultiThreadTester(backend, clients, o2g) for i in range(numberOfThreads)]
 	for mtt in mtts:
@@ -101,6 +95,6 @@ def testMultiThreadingBackend(multithreadingBackend, numberOfThreads):
 	while mtts:
 		mtt = mtts.pop(0)
 		if not mtt.is_alive():
-			assert 0 == mtt.exitCode, u"Multithreading test failed: Exit Code {0.exitCode}: {0.errorMessage}".format(mtt)
+			assert not mtt.error, f"Multithreading test failed: Exit Code {mtt.error}"
 		else:
 			mtts.append(mtt)

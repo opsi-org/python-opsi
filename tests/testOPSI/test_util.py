@@ -62,7 +62,7 @@ def testIpAddressInNetworkWithEmptyNetworkMask():
 
 
 def testIpAddressInNetworkWithFullNetmask():
-	assert ipAddressInNetwork('10.10.1.1', '10.10.0.0/255.240.0.0')
+	assert ipAddressInNetwork('10.10.1.1', '10.10.0.0/255.255.0.0')
 
 
 def generateLocalbootProducts(amount):

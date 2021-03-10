@@ -305,7 +305,7 @@ def testforceNetworkAddress(address, expected):
 
 
 @pytest.mark.parametrize("address", (
-	'192.168.101.1',
+	'192.168.101',
 	'192.1.1.1/40',
 	None,
 	True,

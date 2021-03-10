@@ -47,12 +47,12 @@ def exampleMySQLBackendConfig():
 
 def testReadingMySQLConfigFile(exampleMySQLBackendConfig):
 	defaultMySQLConfig = {
-		"address": u"127.0.0.1",
-		"database": u"opsi",
-		"username": u"opsi",
-		"password": u"opsi",
+		"address": "127.0.0.1",
+		"database": "opsi",
+		"username": "opsi",
+		"password": "opsi",
 		"databaseCharset": "utf8",
-		"connectionPoolSize": 20,
+		"connectionPoolSize": 25,
 		"connectionPoolMaxOverflow": 10,
 		"connectionPoolTimeout": 30,
 		"connectionPoolRecycling": 28000,
