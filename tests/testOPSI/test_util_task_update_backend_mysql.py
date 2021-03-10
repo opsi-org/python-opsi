@@ -281,6 +281,14 @@ def createRequiredTables(database):
 	''' % database.getTableCreationOptions('OBJECT_TO_GROUP'))
 	database.execute('CREATE INDEX `index_object_to_group_objectId` on `OBJECT_TO_GROUP` (`objectId`);')
 
+	database.execute('''CREATE TABLE `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (
+		`windowsSoftwareId` VARCHAR(100) NOT NULL,
+		`productId` varchar(255) NOT NULL,
+		PRIMARY KEY (`windowsSoftwareId`, `productId`)
+	) %s;
+	''' % database.getTableCreationOptions('WINDOWS_SOFTWARE_ID_TO_PRODUCT'))
+
+
 
 def createOpsi40HostTable(database):
 	"Creates a table for hosts as seen in opsi 4.0."

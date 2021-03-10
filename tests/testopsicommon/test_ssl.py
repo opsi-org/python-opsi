@@ -14,8 +14,11 @@ import http.server
 import socketserver
 import ssl
 import threading
+from OpenSSL.crypto import (
+	FILETYPE_PEM, load_certificate
+)
 
-from opsicommon.ssl import install_ca
+from opsicommon.ssl import install_ca, remove_ca
 from OPSI.System import execute, isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES, isUbuntu
 
 
@@ -49,8 +52,8 @@ def start_httpserver():
 	Handler = http.server.SimpleHTTPRequestHandler
 
 	httpd = socketserver.TCPServer(("", PORT), Handler)
-	httpd.socket = ssl.wrap_socket (httpd.socket, 
-        keyfile="tests/testopsicommon/data/ssl/test-server.key", 
+	httpd.socket = ssl.wrap_socket (httpd.socket,
+        keyfile="tests/testopsicommon/data/ssl/test-server.key",
         certfile="tests/testopsicommon/data/ssl/test-server.crt", server_side=True)
 	thread = threading.Thread(target = httpd.serve_forever)
 	thread.daemon = True
@@ -60,38 +63,22 @@ def start_httpserver():
 	httpd.shutdown()
 
 
-def remove_ca():
-	print("remove ca")
-	if isCentOS() or isRHEL():
-		# /usr/share/pki/ca-trust-source/anchors/
-		system_cert_path = "/etc/pki/ca-trust/source/anchors"
-		cmd = "update-ca-trust"
-	elif isDebian() or isUbuntu():
-		system_cert_path = "/usr/local/share/ca-certificates"
-		cmd = "update-ca-certificates"
-	elif isOpenSUSE() or isSLES():
-		system_cert_path = "/usr/share/pki/trust/anchors"
-		cmd = "update-ca-certificates"
-	else:
-		print("Failed to set system cert path!")
 
-	r = subprocess.call(["rm", system_cert_path], encoding="utf-8")
-	print(r)
-	r = subprocess.call([cmd], encoding="utf-8")
-	print(r)
 
 def test_curl(start_httpserver):
 
 	time.sleep(5)
 
-	remove_ca()
-
-	r = subprocess.call(["curl", "https://localhost:8080"], encoding="utf-8")
-	print(r)
-	assert r == 60
-
-	install_ca("tests/testopsicommon/data/ssl/ca.crt")
+	with open("tests/testopsicommon/data/ssl/ca.crt", "rb") as file:
+		ca = load_certificate(FILETYPE_PEM, file.read())
+		install_ca(ca)
 
 	r = subprocess.call(["curl", "https://localhost:8080"], encoding="utf-8")
 	print(r)
 	assert r == 0
+
+	remove_ca(ca.get_subject().CN)
+
+	r = subprocess.call(["curl", "https://localhost:8080"], encoding="utf-8")
+	print(r)
+	assert r == 60
