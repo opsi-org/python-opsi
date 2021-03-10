@@ -32,8 +32,7 @@ from contextlib import contextmanager
 from OPSI.Object import ConfigState, LocalbootProduct, OpsiClient
 from OPSI.Util import (
 	blowfishDecrypt, blowfishEncrypt, chunk, compareVersions,
-	decryptWithPrivateKeyFromPEMFile,
-	encryptWithPublicKeyFromX509CertificatePEMFile, findFilesGenerator, formatFileSize,
+	findFilesGenerator, formatFileSize,
 	fromJson, generateOpsiHostKey, getfqdn, ipAddressInNetwork,
 	isRegularExpressionPattern,	md5sum, objectToBash, objectToBeautifiedText,
 	objectToHtml, randomString, removeUnit, toJson)

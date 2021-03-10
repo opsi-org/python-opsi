@@ -29,8 +29,6 @@ MySQL-Backend
 
 import base64
 import time
-import threading
-from contextlib import contextmanager
 from hashlib import md5
 try:
 	# pyright: reportMissingImports=false
@@ -42,100 +40,24 @@ except ImportError:
 	from Crypto.Hash import MD5
 	from Crypto.Signature import pkcs1_15
 
-import MySQLdb
-from MySQLdb.constants import FIELD_TYPE
-from MySQLdb.converters import conversions
-from sqlalchemy import pool
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.SQL import (
-	onlyAllowSelect, SQL, SQLBackend, SQLBackendObjectModificationTracker)
-from OPSI.Exceptions import (BackendBadValueError, BackendUnableToConnectError,
-	BackendUnaccomplishableError)
+	onlyAllowSelect, SQL, SQLBackend, SQLBackendObjectModificationTracker
+)
+from OPSI.Exceptions import BackendBadValueError
 from OPSI.Logger import Logger
 from OPSI.Types import forceInt, forceUnicode
 from OPSI.Util import getPublicKey
 from OPSI.Object import Product, ProductProperty
 
 __all__ = (
-	'ConnectionPool', 'MySQL', 'MySQLBackend',
-	'MySQLBackendObjectModificationTracker'
+	'MySQL', 'MySQLBackend', 'MySQLBackendObjectModificationTracker'
 )
 
 logger = Logger()
-
-MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE = 2006
-# 2006: 'MySQL server has gone away'
-DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE = 1213
-# 1213: 'Deadlock found when trying to get lock; try restarting transaction'
-
-
-@contextmanager
-def closingConnectionAndCursor(sqlInstance):
-	(connection, cursor) = sqlInstance.connect()
-	try:
-		yield (connection, cursor)
-	finally:
-		sqlInstance.close(connection, cursor)
-
-
-@contextmanager
-def disableAutoCommit(sqlInstance):
-	"""
-	Disable automatic committing.
-
-	:type sqlInstance: MySQL
-	"""
-	sqlInstance.autoCommit = False
-	logger.trace('autoCommit set to False')
-	try:
-		yield
-	finally:
-		sqlInstance.autoCommit = True
-		logger.trace('autoCommit set to true')
-
-
-class ConnectionPool:
-	# Storage for the instance reference
-	__instance = None
-
-	def __init__(self, **kwargs):
-		""" Create singleton instance """
-
-		# Check whether we already have an instance
-		if ConnectionPool.__instance is None:
-			logger.debug("Creating ConnectionPool instance")
-			# Create and remember instance
-			poolArgs = {}
-			for key in ('pool_size', 'max_overflow', 'timeout', 'recycle'):
-				try:
-					poolArgs[key] = kwargs.pop(key)
-				except KeyError:
-					pass
-
-			def getConnection():
-				return MySQLdb.connect(**kwargs)
-
-			ConnectionPool.__instance = pool.QueuePool(getConnection, **poolArgs)
-			con = ConnectionPool.__instance.connect()
-			con.autocommit(False)
-			con.close()
-
-		# Store instance reference as the only member in the handle
-		self.__dict__['_ConnectionPool__instance'] = ConnectionPool.__instance
-
-	def destroy(self):  # pylint: disable=no-self-use
-		logger.debug("Destroying ConnectionPool instance")
-		ConnectionPool.__instance = None
-
-	def __getattr__(self, attr):
-		""" Delegate access to implementation """
-		return getattr(self.__instance, attr)
-
-	def __setattr__(self, attr, value):
-		""" Delegate access to implementation """
-		return setattr(self.__instance, attr, value)
-
 
 class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 
@@ -144,8 +66,6 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 	ESCAPED_BACKSLASH = "\\\\"
 	ESCAPED_APOSTROPHE = "\\\'"
 	ESCAPED_ASTERISK = "\\*"
-
-	_POOL_LOCK = threading.Lock()
 
 	def __init__(self, **kwargs):
 		super().__init__(**kwargs)
@@ -177,376 +97,112 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 				self._connectionPoolSize = forceInt(value)
 			elif option == 'connectionpoolmaxoverflow':
 				self._connectionPoolMaxOverflow = forceInt(value)
-			elif option == 'connectionpooltimeout':
-				self._connectionPoolTimeout = forceInt(value)
+			#elif option == 'connectionpooltimeout':
+			#	self._connectionPoolTimeout = forceInt(value)
 			elif option == 'connectionpoolrecycling':
 				self._connectionPoolRecyclingSeconds = forceInt(value)
 
-		self._transactionLock = threading.Lock()
-		self._pool = None
-		self._createConnectionPool()
+		self.engine = create_engine(
+			f'mysql://{self._username}:{self._password}@{self._address}/{self._database}',
+			pool_pre_ping=True, # auto reconnect
+			encoding=self._databaseCharset,
+			pool_size=self._connectionPoolSize,
+			max_overflow=self._connectionPoolMaxOverflow,
+			pool_recycle=self._connectionPoolRecyclingSeconds
+		)
+		self.session_factory = sessionmaker(
+			bind=self.engine,
+			autocommit=False,
+			autoflush=False
+		)
+		self.session = scoped_session(self.session_factory)
+
 		logger.debug('MySQL created: %s', self)
 
 	def __repr__(self):
 		return '<{0}(address={1!r})>'.format(self.__class__.__name__, self._address)
 
-	def _createConnectionPool(self):  # pylint: disable=too-many-branches
-		logger.trace("Creating connection pool")
-
-		if self._pool is not None:
-			logger.trace("Connection pool exists - fast exit.")
-			return
-
-		logger.trace("Waiting for pool lock...")
-		self._POOL_LOCK.acquire(False)  # non-blocking
-		try:
-			logger.trace("Got pool lock...")
-
-			if self._pool is not None:
-				logger.trace("Connection pool has been created while waiting for lock - fast exit.")
-				return
-
-			conv = dict(conversions)
-			conv[FIELD_TYPE.DATETIME] = str
-			conv[FIELD_TYPE.TIMESTAMP] = str
-
-			address = self._address
-			tryNumber = 0
-			while True:
-				tryNumber += 1
-				try:
-					logger.debug("Creating connection pool - connecting to %s/%s as %s", address, self._database, self._username)
-					self._pool = ConnectionPool(
-						host=address,
-						user=self._username,
-						passwd=self._password,
-						db=self._database,
-						use_unicode=True,
-						charset=self._databaseCharset,
-						pool_size=self._connectionPoolSize,
-						max_overflow=self._connectionPoolMaxOverflow,
-						timeout=self._connectionPoolTimeout,
-						conv=conv,
-						recycle=self._connectionPoolRecyclingSeconds,
-					)
-					logger.trace("Created connection pool %s", self._pool)
-					# Test connection pool
-					conn = self._pool.connect()
-					conn.close()
-					break
-				except Exception as err:  # pylint: disable=broad-except
-					try:
-						self._pool.destroy()
-					except Exception:  # pylint: disable=broad-except
-						pass
-					logger.debug(err, exc_info=True)
-					if tryNumber >= 10:
-						raise BackendUnableToConnectError(
-							f"Failed to connect to database '{self._database}' address '{address}': {err}"
-						)  from err
-					if address == "localhost":
-						# If address is localhost mysqlclient will use the mysql unix socket.
-						# Mysqlclient will use /tmp/mysql.sock as default which will fail in
-						# nearly all environments. The correct location of the unix socket is
-						# not easy to find. Therefore switch to use the tcp/ip socket on error.
-						address = "127.0.0.1"
-					else:
-						secondsToWait = 0
-						if tryNumber >= 3:
-							secondsToWait = 1
-						logger.debug("We are waiting %s seconds before retrying connect.", secondsToWait)
-						for _ in range(secondsToWait * 10):
-							time.sleep(0.1)
-		finally:
-			logger.trace("Releasing pool lock...")
-			if self._POOL_LOCK.locked():
-				self._POOL_LOCK.release()
-
 	def connect(self, cursorType=None):
-		"""
-		Connect to the MySQL server.
-		If `cursorType` is given this type will be used as the cursor.
-
-		Establishing a connection will be tried multiple times.
-		If no connection can be made during this an exception will be
-		raised.
-
-		:param cursorType: The class of the cursor to use. \
-Defaults to :py:class:MySQLdb.cursors.DictCursor:.
-		:raises BackendUnableToConnectError: In case no connection can be established.
-		:return: The connection and the corresponding cursor.
-		"""
-		retryLimit = 10
-
-		cursorType = cursorType or MySQLdb.cursors.DictCursor
-
-		# We create an connection pool in any case.
-		# If a pool exists the function will return very fast.
-		self._createConnectionPool()
-
-		for retryCount in range(retryLimit):
-			try:
-				logger.trace("Connecting to connection pool")
-				self._transactionLock.acquire()
-				logger.trace("Connection pool status: %s", self._pool.status())
-				conn = self._pool.connect()
-				conn.autocommit(False)
-				cursor = conn.cursor(cursorType)
-				cursor.execute("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));")
-				conn.commit()
-				break
-			except Exception as err:  # pylint: disable=broad-except
-				logger.debug("MySQL connection error: %s", err)
-				errorCode = err.args[0]
-
-				self._transactionLock.release()
-				logger.trace("Lock released")
-
-				if errorCode == MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
-					logger.notice('MySQL server has gone away (Code %s) - restarting connection: retry #%s', retryCount, errorCode)
-					time.sleep(0.1)
-				else:
-					logger.error('Unexpected database error: %s', err)
-					raise
-		else:
-			logger.trace("Destroying connection pool.")
-			self._pool.destroy()
-			self._pool = None
-
-			self._transactionLock.release()
-			logger.trace("Lock released")
-
-			raise BackendUnableToConnectError("Unable to connnect to mysql server. Giving up after {0} retries!".format(retryLimit))
-
-		return (conn, cursor)
+		pass
 
 	def close(self, conn, cursor):
-		try:
-			cursor.close()
-			conn.close()
-		finally:
-			self._transactionLock.release()
+		pass
 
 	def getSet(self, query):
+		"""
+		Return a list of rows, every row is a dict of key / values pairs
+		"""
 		logger.trace("getSet: %s", query)
-		(conn, cursor) = self.connect()
-
-		try:
-			try:
-				self.execute(query, conn, cursor)
-			except Exception as err:  # pylint: disable=broad-except
-				logger.debug("Execute error: %s", err)
-				if err.args[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
-					raise
-
-				self.close(conn, cursor)
-				(conn, cursor) = self.connect()
-				self.execute(query, conn, cursor)
-
-			valueSet = cursor.fetchall()
-		finally:
-			self.close(conn, cursor)
-
-		return valueSet or []
+		onlyAllowSelect(query)
+		result = self.session.execute(query).fetchall()  # pylint: disable=no-member
+		if not result:
+			return []
+		return [ dict(row.items()) for row in result if row is not None ]
 
 	def getRows(self, query):
+		"""
+		Return a list of rows, every row is a list of values
+		"""
 		logger.trace("getRows: %s", query)
 		onlyAllowSelect(query)
-
-		(conn, cursor) = self.connect(cursorType=MySQLdb.cursors.Cursor)
-		valueSet = []
-		try:
-			try:
-				self.execute(query, conn, cursor)
-			except Exception as err:  # pylint: disable=broad-except
-				logger.debug("Execute error: %s", err)
-				if err.args[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
-					raise
-
-				self.close(conn, cursor)
-				(conn, cursor) = self.connect(cursorType=MySQLdb.cursors.Cursor)
-				self.execute(query, conn, cursor)
-
-			valueSet = cursor.fetchall()
-			if not valueSet:
-				logger.debug("No result for query %s", query)
-				valueSet = []
-		finally:
-			self.close(conn, cursor)
-
-		return valueSet
+		result = self.session.execute(query).fetchall()  # pylint: disable=no-member
+		if not result:
+			return []
+		return [ list(row) for row in result if row is not None ]
 
 	def getRow(self, query, conn=None, cursor=None):
+		"""
+		Return one row as value list
+		"""
 		logger.trace("getRow: %s", query)
-		closeConnection = True
-		if conn and cursor:
-			logger.debug("TRANSACTION: conn and cursor given, so we should not close the connection.")
-			closeConnection = False
-		else:
-			(conn, cursor) = self.connect()
-
-		row = {}
-		try:
-			try:
-				self.execute(query, conn, cursor)
-			except Exception as err:  # pylint: disable=broad-except
-				logger.debug("Execute error: %s", err)
-				if err.args[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
-					raise
-
-				self.close(conn, cursor)
-				(conn, cursor) = self.connect()
-				self.execute(query, conn, cursor)
-
-			row = cursor.fetchone()
-			if not row:
-				logger.debug("No result for query %s", query)
-				row = {}
-			else:
-				logger.trace("Result: %s", row)
-		finally:
-			if closeConnection:
-				self.close(conn, cursor)
-		return row
+		onlyAllowSelect(query)
+		result = self.session.execute(query).fetchone()  # pylint: disable=no-member
+		if not result:
+			return []
+		return list(result)
 
 	def insert(self, table, valueHash, conn=None, cursor=None):  # pylint: disable=too-many-branches
-		closeConnection = True
-		if conn and cursor:
-			logger.debug("TRANSACTION: conn and cursor given, so we should not close the connection.")
-			closeConnection = False
-		else:
-			(conn, cursor) = self.connect()
+		if not valueHash:
+			raise BackendBadValueError("No values given")
 
-		result = -1
-		try:
-			colNames = []
-			values = []
-			for (key, value) in valueHash.items():
-				colNames.append("`{0}`".format(key))
-				if value is None:
-					values.append("NULL")
-				elif isinstance(value, bool):
-					if value:
-						values.append("1")
-					else:
-						values.append("0")
-				elif isinstance(value, (float, int)):
-					values.append("{0}".format(value))
-				elif isinstance(value, str):
-					values.append("\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value))))
-				else:
-					values.append("\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value))))
-
-			query = 'INSERT INTO `{0}` ({1}) VALUES ({2});'.format(table, ', '.join(colNames), ', '.join(values))
-			logger.trace("insert: %s", query)
-			try:
-				self.execute(query, conn, cursor)
-			except Exception as err:  # pylint: disable=broad-except
-				logger.debug("Execute error: %s", err)
-				if err.args[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
-					raise
-
-				self.close(conn, cursor)
-				(conn, cursor) = self.connect()
-				self.execute(query, conn, cursor)
-			result = cursor.lastrowid
-		finally:
-			if closeConnection:
-				self.close(conn, cursor)
-		return result
+		col_names = [ f"`{col_name}`" for col_name in list(valueHash) ]
+		bind_names = [ f":{col_name}" for col_name in list(valueHash) ]
+		query = f"INSERT INTO `{table}` ({','.join(col_names)}) VALUES ({','.join(bind_names)})"
+		logger.trace("insert: %s - %s", query, valueHash)
+		result = self.session.execute(query, valueHash)  # pylint: disable=no-member
+		self.session.commit()  # pylint: disable=no-member
+		return result.lastrowid
 
 	def update(self, table, where, valueHash, updateWhereNone=False):  # pylint: disable=too-many-branches
-		(conn, cursor) = self.connect()
-		result = 0
-		try:
-			if not valueHash:
-				raise BackendBadValueError("No values given")
-			query = []
-			for (key, value) in valueHash.items():
-				if value is None:
-					if not updateWhereNone:
-						continue
+		if not valueHash:
+			raise BackendBadValueError("No values given")
 
-					value = "NULL"
-				elif isinstance(value, bool):
-					if value:
-						value = "1"
-					else:
-						value = "0"
-				elif isinstance(value, (float, int)):
-					value = "%s" % value
-				elif isinstance(value, str):
-					value = "\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value)))
-				else:
-					value = "\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value)))
+		updates = []
+		for (key, value) in valueHash.items():
+			if value is None and not updateWhereNone:
+				continue
+			updates.append(f"`{key}` = :{key}")
 
-				query.append("`{0}` = {1}".format(key, value))
+		query = f"UPDATE `{table}` SET {','.join(updates)} WHERE {where}"
 
-			query = "UPDATE `{0}` SET {1} WHERE {2};".format(table, ', '.join(query), where)
-			logger.trace("update: %s", query)
-			try:
-				self.execute(query, conn, cursor)
-			except Exception as err:  # pylint: disable=broad-except
-				logger.debug("Execute error: %s", err)
-				if err.args[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
-					raise
-
-				self.close(conn, cursor)
-				(conn, cursor) = self.connect()
-				self.execute(query, conn, cursor)
-			result = cursor.rowcount
-		finally:
-			self.close(conn, cursor)
-		return result
+		logger.trace("update: %s - %s", query, valueHash)
+		result = self.session.execute(query, valueHash)  # pylint: disable=no-member
+		self.session.commit()  # pylint: disable=no-member
+		return result.rowcount
 
 	def delete(self, table, where, conn=None, cursor=None):
-		if conn and cursor:
-			logger.debug("TRANSACTION: conn and cursor given, so we should not close the connection.")
-			closeConnection = False
-		else:
-			closeConnection = True
-			(conn, cursor) = self.connect()
-
-		result = 0
-		try:
-			query = "DELETE FROM `%s` WHERE %s;" % (table, where)
-			logger.trace("delete: %s", query)
-			try:
-				self.execute(query, conn, cursor)
-			except Exception as err:  # pylint: disable=broad-except
-				logger.debug("Execute error: %s", err)
-				if err.args[0] != MYSQL_SERVER_HAS_GONE_AWAY_ERROR_CODE:
-					raise
-
-				self.close(conn, cursor)
-				conn, cursor = self.connect()
-				self.execute(query, conn, cursor)
-
-			result = cursor.rowcount
-		finally:
-			if closeConnection:
-				self.close(conn, cursor)
-
-		return result
+		query = f"DELETE FROM `{table}` WHERE {where}"
+		logger.trace("delete: %s", query)
+		result = self.session.execute(query)  # pylint: disable=no-member
+		self.session.commit()  # pylint: disable=no-member
+		return result.rowcount
 
 	def execute(self, query, conn=None, cursor=None):
-		if conn and cursor:
-			needClose = False
-		else:
-			needClose = True
-			conn, cursor = self.connect()
-
-		res = None
-		try:
-			query = forceUnicode(query)
-			logger.trace("SQL query: %s", query)
-			res = cursor.execute(query)
-			if self.autoCommit:
-				conn.commit()
-		finally:
-			if needClose:
-				self.close(conn, cursor)
-		return res
+		result = self.session.execute(query)  # pylint: disable=no-member
+		self.session.commit()  # pylint: disable=no-member
+		if not result:
+			return []
+		return [ dict(row) for row in result if row is not None ]
 
 	def getTables(self):
 		"""
@@ -814,171 +470,6 @@ class MySQLBackend(SQLBackend):
 				productProperty['defaultValues'] = []
 			productProperties.append(ProductProperty.fromHash(productProperty))
 		return productProperties
-
-	# Overwriting productProperty_insertObject and
-	# productProperty_updateObject to implement Transaction
-	def productProperty_insertObject(self, productProperty):  # pylint: disable=too-many-branches,too-many-locals,too-many-statements
-		self._requiresEnabledSQLBackendModule()
-		ConfigDataBackend.productProperty_insertObject(self, productProperty)
-		data = self._objectToDatabaseHash(productProperty)
-		possibleValues = data.pop('possibleValues') or []
-		defaultValues = data.pop('defaultValues') or []
-
-		where = self._uniqueCondition(productProperty)
-		if self._sql.getRow('select * from `PRODUCT_PROPERTY` where %s' % where):
-			self._sql.update('PRODUCT_PROPERTY', where, data, updateWhereNone=True)
-		else:
-			self._sql.insert('PRODUCT_PROPERTY', data)
-
-		with closingConnectionAndCursor(self._sql) as (conn, cursor):
-			retries = 10
-			for retry in range(retries):
-				try:
-					# transaction
-					cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
-					with disableAutoCommit(self._sql):
-						logger.trace('Start Transaction: delete from ppv #%s', retry)
-						conn.begin()
-						self._sql.delete('PRODUCT_PROPERTY_VALUE', where, conn, cursor)
-						conn.commit()
-						logger.trace('End Transaction')
-						break
-				except Exception as err:  # pylint: disable=broad-except
-					logger.debug("Execute error: %s", err)
-					if err.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
-						logger.debug(
-							'Table locked (Code %s) - restarting Transaction',
-							DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE
-						)
-						time.sleep(0.1)
-					else:
-						logger.error('Unknown DB Error: %s', err)
-						raise
-			else:
-				errorMessage = 'Table locked (Code {}) - giving up after {} retries'.format(
-					DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE,
-					retries
-				)
-				logger.error(errorMessage)
-				raise BackendUnaccomplishableError(errorMessage)
-
-		with closingConnectionAndCursor(self._sql) as (conn, cursor):
-			for value in possibleValues:
-				# transform arguments for sql
-				# from uniqueCondition
-				if value in defaultValues:
-					myPPVdefault = "`isDefault` = 1"
-				else:
-					myPPVdefault = "`isDefault` = 0"
-
-				if isinstance(value, bool):
-					if value:
-						myPPVvalue = "`value` = 1"
-					else:
-						myPPVvalue = "`value` = 0"
-				elif isinstance(value, (float, int)):
-					myPPVvalue = "`value` = %s" % (value)
-				else:
-					myPPVvalue = "`value` = '%s'" % (self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
-				myPPVselect = (
-					"select * from PRODUCT_PROPERTY_VALUE where "
-					"`propertyId` = '{0}' AND `productId` = '{1}' AND "
-					"`productVersion` = '{2}' AND "
-					"`packageVersion` = '{3}' AND {4} AND {5}".format(
-						data['propertyId'],
-						data['productId'],
-						str(data['productVersion']),
-						str(data['packageVersion']),
-						myPPVvalue,
-						myPPVdefault
-					)
-				)
-
-				retries = 10
-				for retry in range(retries):
-					try:
-						# transaction
-						cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE")
-						with disableAutoCommit(self._sql):
-							logger.trace('Start Transaction: insert to ppv #%s', retry)
-							conn.begin()
-							if not self._sql.getRow(myPPVselect, conn, cursor):
-								self._sql.insert('PRODUCT_PROPERTY_VALUE', {
-									'productId': data['productId'],
-									'productVersion': data['productVersion'],
-									'packageVersion': data['packageVersion'],
-									'propertyId': data['propertyId'],
-									'value': value,
-									'isDefault': bool(value in defaultValues)
-									}, conn, cursor)
-								conn.commit()
-							else:
-								conn.rollback()
-							logger.trace('End Transaction')
-							break
-					except Exception as err:  # pylint: disable=broad-except
-						logger.debug("Execute error: %s", err)
-						if err.args[0] == DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE:
-							# 1213: May be table locked because of concurrent access - retrying
-							logger.notice(
-								'Table locked (Code %s) - restarting Transaction',
-								DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE
-							)
-							time.sleep(0.1)
-						else:
-							logger.error('Unknown DB Error: %s', err)
-							raise
-				else:
-					errorMessage = 'Table locked (Code {}) - giving up after {} retries'.format(
-						DEADLOCK_FOUND_WHEN_TRYING_TO_GET_LOCK_ERROR_CODE,
-						retries
-					)
-					logger.error(errorMessage)
-					raise BackendUnaccomplishableError(errorMessage)
-
-	def productProperty_updateObject(self, productProperty):
-		self._requiresEnabledSQLBackendModule()
-		ConfigDataBackend.productProperty_updateObject(self, productProperty)
-		data = self._objectToDatabaseHash(productProperty)
-		where = self._uniqueCondition(productProperty)
-		possibleValues = data.pop('possibleValues') or []
-		defaultValues = data.pop('defaultValues') or []
-
-		self._sql.update('PRODUCT_PROPERTY', where, data)
-
-		try:
-			self._sql.delete('PRODUCT_PROPERTY_VALUE', where)
-		except Exception as err:  # pylint: disable=broad-except
-			logger.trace("Failed to delete from PRODUCT_PROPERTY_VALUE: %s", err)
-
-		for value in possibleValues:
-			with disableAutoCommit(self._sql):
-				valuesExist = self._sql.getRow(
-					"select * from PRODUCT_PROPERTY_VALUE where "
-					"`propertyId` = '{0}' AND `productId` = '{1}' AND "
-					"`productVersion` = '{2}' AND `packageVersion` = '{3}' "
-					"AND `value` = '{4}' AND `isDefault` = {5}".format(
-						data['propertyId'],
-						data['productId'],
-						str(data['productVersion']),
-						str(data['packageVersion']),
-						value,
-						str(value in defaultValues)
-					)
-				)
-
-				if not valuesExist:
-					self._sql.autoCommit = True
-					logger.trace('autoCommit set to True')
-					self._sql.insert('PRODUCT_PROPERTY_VALUE', {
-						'productId': data['productId'],
-						'productVersion': data['productVersion'],
-						'packageVersion': data['packageVersion'],
-						'propertyId': data['propertyId'],
-						'value': value,
-						'isDefault': bool(value in defaultValues)
-						}
-					)
 
 
 class MySQLBackendObjectModificationTracker(SQLBackendObjectModificationTracker):
