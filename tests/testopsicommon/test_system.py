@@ -24,7 +24,7 @@ with open("/proc/self/cgroup") as f:
 
 @pytest.mark.skipif(running_in_docker, reason="Running in docker.")
 def test_get_user_sessions():
-	username = getpass.getuser()
+	username = os.environ.get("SUDO_USER", getpass.getuser())
 	usernames = []
 	for sess in get_user_sessions():
 		usernames.append(sess.username)
@@ -56,5 +56,5 @@ def test_ensure_not_already_running_child_process(tmpdir):
 	test_system_sleep = tmpdir.join("test_system_sleep_child")
 	shutil.copy("/bin/sleep", test_system_sleep)
 	subprocess.Popen([test_system_sleep, "3"])
-	# test_system_sleep_child is our child => no Exception should be raised 
+	# test_system_sleep_child is our child => no Exception should be raised
 	ensure_not_already_running("test_system_sleep_child")

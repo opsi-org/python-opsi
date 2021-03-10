@@ -123,18 +123,19 @@ def test_filter_from_string(log_stream):
 		assert "test that should appear" in log
 		assert "test that should also appear" in log
 		assert "test that should not appear" not in log
-		
+
 def test_log_devel(log_stream):
 	with log_stream as stream:
-		logger.setLevel(LOG_ERROR)
-		logger.warning("test that should not appear")
-		logger.devel("test that should appear")
-		logger.debug("test that should not appear")
+		logger.setLevel(logging.ERROR)
+		logger.warning("warning")
+		logger.devel("devel")
+		logger.debug("debug")
 
 		stream.seek(0)
 		log = stream.read()
-		assert "test that should appear" in log
-		assert "test that should not appear" not in log
+		assert "devel" in log
+		assert "warning" not in log
+		assert "debug" not in log
 
 def test_multi_call_init_logging(tmpdir):
 	logger.setLevel(logging.DEBUG)

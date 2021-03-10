@@ -135,12 +135,12 @@ started but never ended.
 			version = result['version']
 			start = result['updateStarted']
 			assert start
-			start = datetime.strptime(start, '%Y-%m-%d %H:%M:%S')
+			#start = datetime.strptime(start, '%Y-%m-%d %H:%M:%S')
 
 			try:
 				end = result['updateEnded']
 				assert end
-				end = datetime.strptime(end, '%Y-%m-%d %H:%M:%S')
+				#end = datetime.strptime(end, '%Y-%m-%d %H:%M:%S')
 			except (AssertionError, ValueError):
 				raise DatabaseMigrationUnfinishedError(
 					"Migration to version {version} started at {start} "

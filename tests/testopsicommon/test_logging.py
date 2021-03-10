@@ -113,100 +113,6 @@ def test_secret_filter(log_stream):
 		assert "SECRETSTRING2" in log
 		assert "SECRETSTRING3" not in log
 
-@pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
-def test_legacy_logger(log_stream):
-	with log_stream as stream:
-		#handler.setLevel(logging.SECRET)
-		logger.setLevel(logging.SECRET)
-
-		legacy_logger = LegacyLogger()
-		assert legacy_logger == logger
-		#init_logging(file_level=logging.SECRET)
-		#legacy_logger.setLogFile("/tmp/test.log")
-		# This method does nothing
-		legacy_logger.setLogFormat("xy")
-
-		secret_filter.set_min_length(7)
-		legacy_logger.setConfidentialStrings(["SECRETSTRING1", "SECRETSTRING2"])
-		legacy_logger.addConfidentialString("SECRETSTRING3")
-		legacy_logger.info("SECRETSTRING1 SECRETSTRING2 SECRETSTRING3")
-
-		stream.seek(0)
-		log = stream.read()
-		assert "SECRETSTRING1" not in log
-		assert "SECRETSTRING2" not in log
-		assert "SECRETSTRING3" not in log
-
-		legacy_logger.logException(Exception("LOG_EXCEPTION"), logLevel=logging.CRITICAL)
-		stream.seek(0)
-		log = stream.read()
-		assert "LOG_EXCEPTION" in log
-
-
-@pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
-def test_legacy_logger_calls(log_stream):
-	with log_stream as stream:
-		logging_config(stderr_level=logging.SECRET)
-		legacy_logger = LegacyLogger()
-		assert legacy_logger == logger
-
-		#print_logger_info()
-		legacy_logger.getStderr()
-		legacy_logger.getStdout()
-		legacy_logger.setConfidentialStrings(["topsecret"])
-		legacy_logger.addConfidentialString("evenmoresecret")
-		legacy_logger.setLogFormat("%s some format %s", currentThread=False, object=None)
-		legacy_logger.setConsoleFormat("%s some format %s", currentThread=False, object=None)
-		legacy_logger.setComponentName("name", currentThread=False, object=None)
-		legacy_logger.logToStdout(None)
-		legacy_logger.setSyslogFormat("%s some format %s", currentThread=False, object=None)
-		legacy_logger.setFileFormat("%s some format %s", currentThread=False, object=None)
-		legacy_logger.setUniventionFormat("%s some format %s", currentThread=False, object=None)
-		legacy_logger.setMessageSubjectFormat("%s some format %s", currentThread=False, object=None)
-		legacy_logger.setUniventionLogger(None)
-		legacy_logger.setUniventionClass(None)
-		legacy_logger.getMessageSubject()
-		legacy_logger.setColor(True)
-		legacy_logger.setFileColor(True)
-		legacy_logger.setConsoleColor(True)
-		legacy_logger.setSyslogLevel(0)
-		legacy_logger.setMessageSubjectLevel(0)
-		legacy_logger.setConsoleLevel(0)
-		legacy_logger.getConsoleLevel()
-		legacy_logger.getFileLevel()
-		legacy_logger.getLogFile(currentThread=False, object=None)
-		legacy_logger.setLogFile("logfile.log", currentThread=False, object=None)
-		legacy_logger.linkLogFile("logfile", currentThread=False, object=None)
-		legacy_logger.setFileLevel(0)
-		legacy_logger.exit(object=None)
-		legacy_logger._setThreadConfig(None, None)
-		legacy_logger._getThreadConfig(key=None)
-		legacy_logger._setObjectConfig(None, None, None)
-		legacy_logger._getObjectConfig(None, key=None)
-		legacy_logger.logException(None)
-		legacy_logger.logFailure(None)
-		legacy_logger.logTraceback(None)
-		legacy_logger.logWarnings()
-		legacy_logger.startTwistedLogging()
-		legacy_logger.setConsoleLevel(9)
-		legacy_logger.confidential("mymessage %s", "fill-value")
-		legacy_logger.debug3("mymessage %s", "fill-value")
-		legacy_logger.debug2("mymessage %s", "fill-value")
-		legacy_logger.debug("mymessage %s", "fill-value")
-		legacy_logger.info("mymessage %s", "fill-value")
-		legacy_logger.msg("mymessage %s", "fill-value")
-		legacy_logger.notice("mymessage %s", "fill-value")
-		legacy_logger.warning("mymessage %s", "fill-value")
-		legacy_logger.error("mymessage %s", "fill-value")
-		legacy_logger.err("mymessage %s", "fill-value")
-		legacy_logger.critical("mymessage %s", "fill-value")
-		legacy_logger.essential("mymessage %s", "fill-value")
-		legacy_logger.comment("mymessage %s", "fill-value")
-		# calling log still fails as method signature has changed with opsi 4.2
-		#legacy_logger.log(3, "text %s", raiseException=False, formatArgs=["some format arg"], formatKwargs={})
-		stream.seek(0)
-		log = stream.read()
-		assert log.count("fill-value") == 13
 
 @pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
 def test_legacy_logger_file(log_stream):
@@ -335,3 +241,96 @@ def test_observable_handler():
 	logger.warning("warning")
 	logger.info("in%s%s", "f", "o")
 	assert lo.messages == ["error", "warning", "info"]
+
+
+@pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
+def test_legacy_logger(log_stream):
+	with log_stream as stream:
+		logger.setLevel(logging.TRACE)
+
+		legacy_logger = LegacyLogger()
+		assert legacy_logger == logger
+		#init_logging(file_level=logging.SECRET)
+		#legacy_logger.setLogFile("/tmp/test.log")
+		# This method does nothing
+		legacy_logger.setLogFormat("xy")
+
+		secret_filter.set_min_length(7)
+		legacy_logger.setConfidentialStrings(["SECRETSTRING1", "SECRETSTRING2"])
+		legacy_logger.addConfidentialString("SECRETSTRING3")
+		legacy_logger.info("SECRETSTRING1 SECRETSTRING2 SECRETSTRING3")
+
+		stream.seek(0)
+		log = stream.read()
+		assert "SECRETSTRING1" not in log
+		assert "SECRETSTRING2" not in log
+		assert "SECRETSTRING3" not in log
+
+		legacy_logger.logException(Exception("LOG_EXCEPTION"), logLevel=logging.CRITICAL)
+		stream.seek(0)
+		log = stream.read()
+		assert "LOG_EXCEPTION" in log
+
+@pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
+def test_legacy_logger_calls(log_stream):
+	with log_stream as stream:
+		logging_config(stderr_level=logging.SECRET)
+		legacy_logger = LegacyLogger()
+		assert legacy_logger == logger
+
+		#print_logger_info()
+		legacy_logger.getStderr()
+		legacy_logger.getStdout()
+		legacy_logger.setConfidentialStrings(["topsecret"])
+		legacy_logger.addConfidentialString("evenmoresecret")
+		legacy_logger.setLogFormat("%s some format %s", currentThread=False, object=None)
+		legacy_logger.setConsoleFormat("%s some format %s", currentThread=False, object=None)
+		legacy_logger.setComponentName("name", currentThread=False, object=None)
+		legacy_logger.logToStdout(None)
+		legacy_logger.setSyslogFormat("%s some format %s", currentThread=False, object=None)
+		legacy_logger.setFileFormat("%s some format %s", currentThread=False, object=None)
+		legacy_logger.setUniventionFormat("%s some format %s", currentThread=False, object=None)
+		legacy_logger.setMessageSubjectFormat("%s some format %s", currentThread=False, object=None)
+		legacy_logger.setUniventionLogger(None)
+		legacy_logger.setUniventionClass(None)
+		legacy_logger.getMessageSubject()
+		legacy_logger.setColor(True)
+		legacy_logger.setConsoleColor(True)
+		legacy_logger.setSyslogLevel(0)
+		legacy_logger.setMessageSubjectLevel(0)
+		legacy_logger.setConsoleLevel(0)
+		legacy_logger.getConsoleLevel()
+		legacy_logger.getFileLevel()
+		legacy_logger.getLogFile(currentThread=False, object=None)
+		legacy_logger.setLogFile("logfile.log", currentThread=False, object=None)
+		legacy_logger.linkLogFile("logfile", currentThread=False, object=None)
+		legacy_logger.setFileLevel(0)
+		legacy_logger.exit(object=None)
+		legacy_logger._setThreadConfig(None, None)
+		legacy_logger._getThreadConfig(key=None)
+		legacy_logger._setObjectConfig(None, None, None)
+		legacy_logger._getObjectConfig(None, key=None)
+		legacy_logger.logException(None)
+		legacy_logger.logFailure(None)
+		legacy_logger.logTraceback(None)
+		legacy_logger.logWarnings()
+		legacy_logger.startTwistedLogging()
+		legacy_logger.setConsoleLevel(9)
+		legacy_logger.confidential("mymessage %s", "fill-value")
+		legacy_logger.debug3("mymessage %s", "fill-value")
+		legacy_logger.debug2("mymessage %s", "fill-value")
+		legacy_logger.debug("mymessage %s", "fill-value")
+		legacy_logger.info("mymessage %s", "fill-value")
+		legacy_logger.msg("mymessage %s", "fill-value")
+		legacy_logger.notice("mymessage %s", "fill-value")
+		legacy_logger.warning("mymessage %s", "fill-value")
+		legacy_logger.error("mymessage %s", "fill-value")
+		legacy_logger.err("mymessage %s", "fill-value")
+		legacy_logger.critical("mymessage %s", "fill-value")
+		legacy_logger.essential("mymessage %s", "fill-value")
+		legacy_logger.comment("mymessage %s", "fill-value")
+		# calling log still fails as method signature has changed with opsi 4.2
+		#legacy_logger.log(3, "text %s", raiseException=False, formatArgs=["some format arg"], formatKwargs={})
+		stream.seek(0)
+		log = stream.read()
+		assert log.count("fill-value") == 13
