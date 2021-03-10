@@ -745,18 +745,12 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 	:param networkAddress: The network address written with slash notation.
 	:type networkAddress: str
 	"""
-	if (
-		not isinstance(ipAddress, ipaddress.IPv4Address) and
-		not isinstance(ipAddress, ipaddress.IPv6Address)
-	):
+	if not isinstance(ipAddress, (ipaddress.IPv4Address, ipaddress.IPv6Address)):
 		ipAddress = ipaddress.ip_address(ipAddress)
 	if isinstance(ipAddress, ipaddress.IPv6Address) and ipAddress.ipv4_mapped:
 		ipAddress = ipAddress.ipv4_mapped
 
-	if (
-		not isinstance(networkAddress, ipaddress.IPv4Network) and
-		not isinstance(networkAddress, ipaddress.IPv6Network)
-	):
+	if not isinstance(networkAddress, (ipaddress.IPv4Network, ipaddress.IPv6Network)):
 		networkAddress = ipaddress.ip_network(networkAddress)
 
 	return ipAddress in networkAddress
