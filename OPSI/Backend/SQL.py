@@ -81,8 +81,8 @@ def timeQuery(query):
 
 
 def onlyAllowSelect(query):
-	if not forceUnicodeLower(query).strip().startswith('select'):
-		raise ValueError('Only queries to SELECT data are allowed.')
+	if not forceUnicodeLower(query).strip().startswith(('select', 'show')):
+		raise ValueError('Only queries to SELECT/SHOW data are allowed.')
 
 
 def createSchemaVersionTable(database):
