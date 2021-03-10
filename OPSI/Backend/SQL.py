@@ -2652,11 +2652,19 @@ AND `packageVersion` = '{packageVersion}'""".format(**productProperty)
 		onlyAllowSelect(query)
 
 		with timeQuery(query):
-			return self._sql.getSet(query)
+			for row in self._sql.getSet(query):
+				for key, val in row.items():
+					if isinstance(val, datetime):
+						row[key] = val.strftime('%Y-%m-%d %H:%M:%S')
+				yield row
 
 	def getRawData(self, query):
 		self._requiresEnabledSQLBackendModule()
 		onlyAllowSelect(query)
 
 		with timeQuery(query):
-			return self._sql.getRows(query)
+			for row in self._sql.getRows(query):
+				for idx, val in enumerate(row):
+					if isinstance(val, datetime):
+						row[idx] = val.strftime('%Y-%m-%d %H:%M:%S')
+				yield row
