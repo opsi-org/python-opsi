@@ -296,11 +296,12 @@ def testBackendManagerMethods(backendManager):
 	for client in origClients:
 		status = bm.getProductInstallationStatus_hash(productId=origProduct1.id, objectId=client.id)
 
+
 	bm.config_createObjects([{
 		"id": u'clientconfig.depot.id',
 		"type": "UnicodeConfig",
 	}])
-	bm.configState_create(u'clientconfig.depot.id', client.id, values=[depotId])
+	bm.configState_create(u'clientconfig.depot.id', client.id, values=[origDepotserver1.id])
 
 	bm.setProductState(productId=origProduct1.id, objectId=client.id, installationStatus="not_installed", actionRequest="setup")
 	bm.setProductInstallationStatus(productId=origProduct1.id, objectId=client.id, installationStatus="installed")
