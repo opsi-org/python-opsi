@@ -29,6 +29,7 @@ MySQL-Backend
 
 import base64
 import time
+from contextlib import contextmanager
 from hashlib import md5
 try:
 	# pyright: reportMissingImports=false
@@ -41,6 +42,7 @@ except ImportError:
 	from Crypto.Signature import pkcs1_15
 
 from sqlalchemy import create_engine
+from sqlalchemy.event import listen
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from OPSI.Backend.Base import ConfigDataBackend
@@ -58,6 +60,21 @@ __all__ = (
 )
 
 logger = Logger()
+
+
+def retry_on_dedlock(func):
+	def wrapper(*args, **kwargs):
+		trynum = 0
+		while True:
+			trynum += 1
+			try:
+				return func(*args, **kwargs)
+			except Exception as err:
+				if trynum >= 3 or not "deadlock" in str(err).lower():
+					raise
+				time.sleep(0.1)
+	return wrapper
+
 
 class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 
@@ -78,7 +95,6 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 		self._connectionPoolMaxOverflow = 10
 		self._connectionPoolTimeout = 30
 		self._connectionPoolRecyclingSeconds = -1
-		self.autoCommit = True
 
 		# Parse arguments
 		for (option, value) in kwargs.items():
@@ -110,17 +126,45 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			max_overflow=self._connectionPoolMaxOverflow,
 			pool_recycle=self._connectionPoolRecyclingSeconds
 		)
+
+		def on_engine_connect(conn, branch):
+			conn.execute("""
+				SET SESSION sql_mode=(SELECT
+					REPLACE(
+						REPLACE(
+							REPLACE(@@sql_mode,
+								'ONLY_FULL_GROUP_BY', ''
+							),
+							'NO_ZERO_IN_DATE', ''
+						),
+						'NO_ZERO_DATE', ''
+					)
+				);
+			""")
+			#conn.execute("SHOW VARIABLES LIKE 'sql_mode';").fetchone()
+
+		listen(self.engine, 'engine_connect', on_engine_connect)
+
 		self.session_factory = sessionmaker(
 			bind=self.engine,
 			autocommit=False,
 			autoflush=False
 		)
-		self.session = scoped_session(self.session_factory)
+		self.Session = scoped_session(self.session_factory)
 
+		# Test connection
+		res = self.getSet("SELECT 1")
 		logger.debug('MySQL created: %s', self)
 
 	def __repr__(self):
-		return '<{0}(address={1!r})>'.format(self.__class__.__name__, self._address)
+		return f"<{self.__class__.__name__}(address={self._address})>"
+
+	@contextmanager
+	def session(self):
+		try:
+			yield self.Session()
+		finally:
+			self.Session.remove()
 
 	def connect(self, cursorType=None):
 		pass
@@ -134,10 +178,11 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 		"""
 		logger.trace("getSet: %s", query)
 		onlyAllowSelect(query)
-		result = self.session.execute(query).fetchall()  # pylint: disable=no-member
-		if not result:
-			return []
-		return [ dict(row.items()) for row in result if row is not None ]
+		with self.session() as session:
+			result = session.execute(query).fetchall()  # pylint: disable=no-member
+			if not result:
+				return []
+			return [ dict(row.items()) for row in result if row is not None ]
 
 	def getRows(self, query):
 		"""
@@ -145,10 +190,11 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 		"""
 		logger.trace("getRows: %s", query)
 		onlyAllowSelect(query)
-		result = self.session.execute(query).fetchall()  # pylint: disable=no-member
-		if not result:
-			return []
-		return [ list(row) for row in result if row is not None ]
+		with self.session() as session:
+			result = session.execute(query).fetchall()  # pylint: disable=no-member
+			if not result:
+				return []
+			return [ list(row) for row in result if row is not None ]
 
 	def getRow(self, query, conn=None, cursor=None):
 		"""
@@ -156,11 +202,13 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 		"""
 		logger.trace("getRow: %s", query)
 		onlyAllowSelect(query)
-		result = self.session.execute(query).fetchone()  # pylint: disable=no-member
-		if not result:
-			return []
-		return list(result)
+		with self.session() as session:
+			result = session.execute(query).fetchone()  # pylint: disable=no-member
+			if not result:
+				return []
+			return list(result)
 
+	@retry_on_dedlock
 	def insert(self, table, valueHash, conn=None, cursor=None):  # pylint: disable=too-many-branches
 		if not valueHash:
 			raise BackendBadValueError("No values given")
@@ -169,10 +217,12 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 		bind_names = [ f":{col_name}" for col_name in list(valueHash) ]
 		query = f"INSERT INTO `{table}` ({','.join(col_names)}) VALUES ({','.join(bind_names)})"
 		logger.trace("insert: %s - %s", query, valueHash)
-		result = self.session.execute(query, valueHash)  # pylint: disable=no-member
-		self.session.commit()  # pylint: disable=no-member
-		return result.lastrowid
+		with self.session() as session:
+			result = session.execute(query, valueHash)  # pylint: disable=no-member
+			session.commit()  # pylint: disable=no-member
+			return result.lastrowid
 
+	@retry_on_dedlock
 	def update(self, table, where, valueHash, updateWhereNone=False):  # pylint: disable=too-many-branches
 		if not valueHash:
 			raise BackendBadValueError("No values given")
@@ -186,23 +236,24 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 		query = f"UPDATE `{table}` SET {','.join(updates)} WHERE {where}"
 
 		logger.trace("update: %s - %s", query, valueHash)
-		result = self.session.execute(query, valueHash)  # pylint: disable=no-member
-		self.session.commit()  # pylint: disable=no-member
-		return result.rowcount
+		with self.session() as session:
+			result = session.execute(query, valueHash)  # pylint: disable=no-member
+			session.commit()  # pylint: disable=no-member
+			return result.rowcount
 
+	@retry_on_dedlock
 	def delete(self, table, where, conn=None, cursor=None):
 		query = f"DELETE FROM `{table}` WHERE {where}"
 		logger.trace("delete: %s", query)
-		result = self.session.execute(query)  # pylint: disable=no-member
-		self.session.commit()  # pylint: disable=no-member
-		return result.rowcount
+		with self.session() as session:
+			result = session.execute(query)  # pylint: disable=no-member
+			session.commit()  # pylint: disable=no-member
+			return result.rowcount
 
 	def execute(self, query, conn=None, cursor=None):
-		result = self.session.execute(query)  # pylint: disable=no-member
-		self.session.commit()  # pylint: disable=no-member
-		if not result:
-			return []
-		return [ dict(row) for row in result if row is not None ]
+		with self.session() as session:
+			session.execute(query)  # pylint: disable=no-member
+			session.commit()  # pylint: disable=no-member
 
 	def getTables(self):
 		"""
