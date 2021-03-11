@@ -148,7 +148,7 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 		self.session_factory = sessionmaker(
 			bind=self.engine,
 			autocommit=False,
-			autoflush=False
+			autoflush=True
 		)
 		self.Session = scoped_session(self.session_factory)
 
