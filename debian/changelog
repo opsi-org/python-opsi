@@ -1,3 +1,9 @@
+python-opsi (4.1.1.100-1) stable; urgency=medium
+
+  * introduced TPM section and fields for MacOS data in opsihwaudit.conf
+
+ -- Nils Doerrer <n.doerrer@uib.de>  Fri, 12 Mar 2021 09:29:43 +0100
+
 python-opsi (4.1.1.99-1) testing; urgency=medium
 
   * adding more opsi-bootimage.append parameters
