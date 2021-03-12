@@ -1193,6 +1193,8 @@ class OpsiConfFile(IniFile):
 				value = match.group(2).strip()
 
 			if sectionType == "groups":
+				if key == "admingroup":
+					value = forceUnicodeLower(value)
 				if key == "fileadmingroup":
 					value = forceUnicodeLower(value)
 				elif value:
@@ -1224,9 +1226,14 @@ class OpsiConfFile(IniFile):
 	@requiresParsing
 	def getOpsiFileAdminGroup(self):
 		if not self._opsiConfig.get("groups", {}).get("fileadmingroup", ""):
-			return u"pcpatch"
-		else:
-			return self._opsiConfig["groups"]["fileadmingroup"]
+			return "pcpatch"
+		return self._opsiConfig["groups"]["fileadmingroup"]
+
+	@requiresParsing
+	def getOpsiAdminGroup(self):
+		if not self._opsiConfig.get("groups", {}).get("admingroup", ""):
+			return "opsiadmin"
+		return self._opsiConfig["groups"]["admingroup"]
 
 	@requiresParsing
 	def getOpsiGroups(self, groupType):

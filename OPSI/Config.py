@@ -47,6 +47,7 @@ OPSI_GLOBAL_CONF = "/etc/opsi/global.conf"
 
 try:
 	from OPSI.Util.File.Opsi import OpsiConfFile
+	OPSI_ADMIN_GROUP = OpsiConfFile().getOpsiAdminGroup()
 	FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
 except Exception:  # pylint: disable=broad-except
 	# Use "pcpatch" if group exists otherwise use the new default "opsifileadmins"
