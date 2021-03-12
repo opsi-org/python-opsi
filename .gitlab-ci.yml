@@ -6,7 +6,7 @@ stages:
 
 
 run unittests:
-  image: docker.uib.local/py-test-image
+  image: docker.uib.gmbh/py-test-image
   stage: test
   before_script:
 #    - hostname test.uib.local
