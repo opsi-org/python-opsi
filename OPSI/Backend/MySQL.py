@@ -118,8 +118,38 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			elif option == 'connectionpoolrecycling':
 				self._connectionPoolRecyclingSeconds = forceInt(value)
 
+		try:
+			self.init_connection()
+		except Exception as err:
+			if self._address != "localhost":
+				raise
+			logger.info("Failed to connect to socket (%s), retrying with tcp/ip", err)
+			self._address = "127.0.0.1"
+			self.init_connection()
+
+	@staticmethod
+	def on_engine_connect(conn, branch):
+		conn.execute("""
+			SET SESSION sql_mode=(SELECT
+				REPLACE(
+					REPLACE(
+						REPLACE(@@sql_mode,
+							'ONLY_FULL_GROUP_BY', ''
+						),
+						'NO_ZERO_IN_DATE', ''
+					),
+					'NO_ZERO_DATE', ''
+				)
+			);
+		""")
+		#conn.execute("SHOW VARIABLES LIKE 'sql_mode';").fetchone()
+
+	def init_connection(self):
+		uri = f'mysql://{self._username}:{self._password}@{self._address}/{self._database}'
+		logger.info("Connecting to %s", uri)
+
 		self.engine = create_engine(
-			f'mysql://{self._username}:{self._password}@{self._address}/{self._database}',
+			uri,
 			pool_pre_ping=True, # auto reconnect
 			encoding=self._databaseCharset,
 			pool_size=self._connectionPoolSize,
@@ -127,34 +157,19 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			pool_recycle=self._connectionPoolRecyclingSeconds
 		)
 
-		def on_engine_connect(conn, branch):
-			conn.execute("""
-				SET SESSION sql_mode=(SELECT
-					REPLACE(
-						REPLACE(
-							REPLACE(@@sql_mode,
-								'ONLY_FULL_GROUP_BY', ''
-							),
-							'NO_ZERO_IN_DATE', ''
-						),
-						'NO_ZERO_DATE', ''
-					)
-				);
-			""")
-			#conn.execute("SHOW VARIABLES LIKE 'sql_mode';").fetchone()
-
-		listen(self.engine, 'engine_connect', on_engine_connect)
+		listen(self.engine, 'engine_connect', self.on_engine_connect)
 
 		self.session_factory = sessionmaker(
 			bind=self.engine,
 			autocommit=False,
-			autoflush=True
+			autoflush=False
 		)
 		self.Session = scoped_session(self.session_factory)
 
 		# Test connection
 		res = self.getSet("SELECT 1")
-		logger.debug('MySQL created: %s', self)
+		logger.debug('MySQL connected: %s', self)
+
 
 	def __repr__(self):
 		return f"<{self.__class__.__name__}(address={self._address})>"
