@@ -62,15 +62,15 @@ __all__ = (
 logger = Logger()
 
 
-def retry_on_dedlock(func):
+def retry_on_deadlock(func):
 	def wrapper(*args, **kwargs):
 		trynum = 0
 		while True:
 			trynum += 1
 			try:
 				return func(*args, **kwargs)
-			except Exception as err:
-				if trynum >= 3 or not "deadlock" in str(err).lower():
+			except Exception as err:  # pylint: disable=broad-except
+				if trynum >= 3 or "deadlock" not in str(err).lower():
 					raise
 				time.sleep(0.1)
 	return wrapper
@@ -122,7 +122,7 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 
 		try:
 			self.init_connection()
-		except Exception as err:
+		except Exception as err:  # pylint: disable=broad-except
 			if self._address != "localhost":
 				raise
 			logger.info("Failed to connect to socket (%s), retrying with tcp/ip", err)
@@ -130,7 +130,7 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			self.init_connection()
 
 	@staticmethod
-	def on_engine_connect(conn, branch):
+	def on_engine_connect(conn, branch):  # pylint: disable=unused-argument
 		conn.execute("""
 			SET SESSION sql_mode=(SELECT
 				REPLACE(
@@ -166,10 +166,10 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			autocommit=False,
 			autoflush=False
 		)
-		self.Session = scoped_session(self.session_factory)
+		self.Session = scoped_session(self.session_factory)  # pylint: disable=invalid-name
 
 		# Test connection
-		res = self.getSet("SELECT 1")
+		self.getSet("SELECT 1")
 		logger.debug('MySQL connected: %s', self)
 
 
@@ -225,7 +225,7 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 				return []
 			return list(result)
 
-	@retry_on_dedlock
+	@retry_on_deadlock
 	def insert(self, table, valueHash, conn=None, cursor=None):  # pylint: disable=too-many-branches
 		if not valueHash:
 			raise BackendBadValueError("No values given")
@@ -239,7 +239,7 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			session.commit()  # pylint: disable=no-member
 			return result.lastrowid
 
-	@retry_on_dedlock
+	@retry_on_deadlock
 	def update(self, table, where, valueHash, updateWhereNone=False):  # pylint: disable=too-many-branches
 		if not valueHash:
 			raise BackendBadValueError("No values given")
@@ -258,7 +258,7 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			session.commit()  # pylint: disable=no-member
 			return result.rowcount
 
-	@retry_on_dedlock
+	@retry_on_deadlock
 	def delete(self, table, where, conn=None, cursor=None):
 		query = f"DELETE FROM `{table}` WHERE {where}"
 		logger.trace("delete: %s", query)
