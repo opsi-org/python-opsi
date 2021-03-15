@@ -1195,7 +1195,7 @@ class OpsiConfFile(IniFile):
 			if sectionType == "groups":
 				if key == "admingroup":
 					value = forceUnicodeLower(value)
-				if key == "fileadmingroup":
+				elif key == "fileadmingroup":
 					value = forceUnicodeLower(value)
 				elif value:
 					value = forceUnicodeList(
