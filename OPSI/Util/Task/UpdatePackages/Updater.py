@@ -28,12 +28,10 @@ Component for handling package updates.
 import os
 import os.path
 import re
-import ssl
 import time
 import json
 import datetime
-import urllib.request
-import cookielib
+import requests
 from urllib.parse import quote
 
 from OPSI import System
@@ -752,12 +750,10 @@ class OpsiPackageUpdater:
 		url = availablePackage["packageFile"]
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 
-		opener = self._getUrllibOpener(repository)
-		urllib.request.install_opener(opener)
-
-		req = urllib.request.Request(url, None, self.httpHeaders)
-		con = opener.open(req)
-		size = int(con.info().get('Content-length', 0))
+		# one session for each package as different repos might have different settings (proxy etc)
+		session = self.makeSession(repository)
+		response = session.get(url, headers=self.httpHeaders)
+		size = int(response.headers.get('Content-length', 0))
 		if size:
 			logger.info("Downloading %s (%s MB) to %s", url, round(size / (1024.0 * 1024.0), 2), outFile)
 		else:
@@ -771,7 +767,7 @@ class OpsiPackageUpdater:
 		speed = 0
 
 		with open(outFile, 'wb') as out:
-			for chunk in iter(lambda: con.read(32768), b''):
+			for chunk in response.iter_content(chunk_size=32768):
 				completed += len(chunk)
 				out.write(chunk)
 
@@ -896,8 +892,7 @@ class OpsiPackageUpdater:
 				raise ValueError(f"Invalid repository local url for depot '{repository.opsiDepotId}'")
 			depotRepositoryPath = repositoryLocalUrl[7:]
 
-		opener = self._getUrllibOpener(repository)
-		urllib.request.install_opener(opener)
+		session = self.makeSession(repository)
 
 		packages = []
 		errors = set()
@@ -910,7 +905,7 @@ class OpsiPackageUpdater:
 					try:
 						repo_data = None
 						if url.startswith("http"):
-							repo_data = urllib.request.urlopen(f"{url}/packages.json").read()
+							repo_data = session.get(f"{url}/packages.json").content
 						elif url.startswith("file://"):
 							with open(f"{url[7:]}/packages.json", "rb") as file:
 								repo_data = file.read()
@@ -933,11 +928,9 @@ class OpsiPackageUpdater:
 					except Exception as err:  # pylint: disable=broad-except
 						logger.warning("No repofile found, falling back to scanning the repository")
 
-				req = urllib.request.Request(url, None, self.httpHeaders)
-				response = opener.open(req)
-				content = response.read()
+				response = session.get(url, headers=self.httpHeaders)
+				content = response.content.decode("utf-8")
 				logger.debug("content: '%s'", content)
-				content = content.decode()  # to str
 
 				htmlParser = LinksExtractor()
 				htmlParser.feed(content)
@@ -983,6 +976,8 @@ class OpsiPackageUpdater:
 						logger.error("Failed to process link '%s': %s", link, err)
 
 				if not depotConnection:
+					# if checking for md5sum only retrieve first 64 bytes of file
+					md5getHeader = self.httpHeaders.copy().update({"Range": "bytes=0-64"})
 					for link in htmlParser.getLinks():
 						isMd5 = link.endswith('.opsi.md5')
 						isZsync = link.endswith('.opsi.zsync')
@@ -999,9 +994,8 @@ class OpsiPackageUpdater:
 							for i, package in enumerate(packages):
 								if package.get('filename') == filename:
 									if isMd5:
-										req = urllib.request.Request(f"{url}/{link}", None, self.httpHeaders)
-										con = opener.open(req)
-										match = re.search(r'([a-z\d]{32})', con.read(64).decode())
+										response = session.get(f"{url}/{link}", headers=md5getHeader)
+										match = re.search(r'([a-z\d]{32})', response.content.decode("utf-8"))
 										if match:
 											foundMd5sum = match.group(1)
 											packages[i]["md5sum"] = foundMd5sum
@@ -1024,39 +1018,17 @@ class OpsiPackageUpdater:
 
 		return packages
 
-	def _getUrllibOpener(self, repository):
-		handler = self._getHTTPHandler(repository)
-		cookiejar = cookielib.CookieJar()
-		cookieHandler = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookiejar))
+	def makeSession(self, repository):
+		session = requests.session()
 		if repository.proxy:
-			logger.notice("Using Proxy: %s", repository.proxy)
-			proxyHandler = urllib.request.ProxyHandler(
-				{
-					'http': repository.proxy,
-					'https': repository.proxy
-				}
-			)
-			opener = urllib.request.build_opener(cookieHandler, proxyHandler, handler)
-		else:
-			opener = urllib.request.build_opener(cookieHandler, handler)
+			proxies = {
+				'http': repository.proxy,
+				'https': repository.proxy,
+			}
+			session.proxies.update(proxies)
 
-		return opener
-
-	@staticmethod
-	def _getHTTPHandler(repository):
-		authcertfile = repository.authcertfile
-		authkeyfile = repository.authkeyfile
-		if os.path.exists(authcertfile) and os.path.exists(authkeyfile):
-			context = ssl.create_default_context()
-			context.load_cert_chain(authcertfile, authkeyfile)
-			handler = urllib.request.HTTPSHandler(context=context)
-		else:
-			passwordManager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
-			passwordManager.add_password(None, repository.baseUrl, repository.username, repository.password)
-			handler = urllib.request.HTTPBasicAuthHandler(passwordManager)
-
-		return handler
-
+		session.auth = (repository.username, repository.password)
+		return session
 
 def getLocalPackages(packageDirectory, forceChecksumCalculation=False):
 	"""
