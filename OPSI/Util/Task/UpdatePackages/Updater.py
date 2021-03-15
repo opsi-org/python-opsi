@@ -25,14 +25,14 @@ Component for handling package updates.
 """
 # pylint: disable=too-many-lines
 
+from contextlib import contextmanager
 import os
 import os.path
 import re
-import ssl
 import time
 import json
 import datetime
-import urllib.request
+import requests
 from urllib.parse import quote
 
 from OPSI import System
@@ -751,12 +751,10 @@ class OpsiPackageUpdater:
 		url = availablePackage["packageFile"]
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 
-		opener = self._getUrllibOpener(repository)
-		urllib.request.install_opener(opener)
-
-		req = urllib.request.Request(url, None, self.httpHeaders)
-		con = opener.open(req)
-		size = int(con.info().get('Content-length', 0))
+		# one session for each package as different repos might have different settings (proxy etc)
+		with self.makeSession(repository) as session:
+			response = session.get(url, headers=self.httpHeaders)
+		size = int(response.headers.get('Content-length', 0))
 		if size:
 			logger.info("Downloading %s (%s MB) to %s", url, round(size / (1024.0 * 1024.0), 2), outFile)
 		else:
@@ -770,7 +768,7 @@ class OpsiPackageUpdater:
 		speed = 0
 
 		with open(outFile, 'wb') as out:
-			for chunk in iter(lambda: con.read(32768), b''):
+			for chunk in response.iter_content(chunk_size=32768):
 				completed += len(chunk)
 				out.write(chunk)
 
@@ -895,166 +893,145 @@ class OpsiPackageUpdater:
 				raise ValueError(f"Invalid repository local url for depot '{repository.opsiDepotId}'")
 			depotRepositoryPath = repositoryLocalUrl[7:]
 
-		opener = self._getUrllibOpener(repository)
-		urllib.request.install_opener(opener)
+		with self.makeSession(repository) as session:
+			packages = []
+			errors = set()
 
-		packages = []
-		errors = set()
+			for url in repository.getDownloadUrls():  # pylint: disable=too-many-nested-blocks
+				try:
+					url = quote(url.encode('utf-8'), safe="/#%[]=:;$&()+,!?*@'~")
+					if str(os.environ.get("USE_REPOFILE")).lower() == "true":
+						logger.debug("Trying to retrieve packages.json from %s", url)
+						try:
+							repo_data = None
+							if url.startswith("http"):
+								repo_data = session.get(f"{url}/packages.json").content
+							elif url.startswith("file://"):
+								with open(f"{url[7:]}/packages.json", "rb") as file:
+									repo_data = file.read()
+							else:
+								raise ValueError(f"invalid repository url: {url}")
 
-		for url in repository.getDownloadUrls():  # pylint: disable=too-many-nested-blocks
-			try:
-				url = quote(url.encode('utf-8'), safe="/#%[]=:;$&()+,!?*@'~")
-				if str(os.environ.get("USE_REPOFILE")).lower() == "true":
-					logger.debug("Trying to retrieve packages.json from %s", url)
-					try:
-						repo_data = None
-						if url.startswith("http"):
-							repo_data = urllib.request.urlopen(f"{url}/packages.json").read()
-						elif url.startswith("file://"):
-							with open(f"{url[7:]}/packages.json", "rb") as file:
-								repo_data = file.read()
-						else:
-							raise ValueError(f"invalid repository url: {url}")
+							repo_packages = json.loads(repo_data.decode("utf-8"))["packages"]
+							for key, pdict in repo_packages.items():
+								link = ".".join([key, "opsi"])
+								pdict["repository"] = repository
+								pdict["productId"] = pdict.pop("product_id")
+								pdict["version"] = f"{pdict.pop('product_version')}-{pdict.pop('package_version')}"
+								pdict["packageFile"] = f"{url}/{link}"
+								pdict["filename"] = link
+								pdict["md5sum"] = pdict.pop("md5sum", None)
+								pdict["zsyncFile"] = pdict.pop("zsync_file", None)
+								packages.append(pdict)
+								logger.info("Found opsi package: %s/%s", url, link)
+							continue
+						except Exception as err:  # pylint: disable=broad-except
+							logger.warning("No repofile found, falling back to scanning the repository")
 
-						repo_packages = json.loads(repo_data.decode("utf-8"))["packages"]
-						for key, pdict in repo_packages.items():
-							link = ".".join([key, "opsi"])
-							pdict["repository"] = repository
-							pdict["productId"] = pdict.pop("product_id")
-							pdict["version"] = f"{pdict.pop('product_version')}-{pdict.pop('package_version')}"
-							pdict["packageFile"] = f"{url}/{link}"
-							pdict["filename"] = link
-							pdict["md5sum"] = pdict.pop("md5sum", None)
-							pdict["zsyncFile"] = pdict.pop("zsync_file", None)
-							packages.append(pdict)
-							logger.info("Found opsi package: %s/%s", url, link)
-						continue
-					except Exception as err:  # pylint: disable=broad-except
-						logger.warning("No repofile found, falling back to scanning the repository")
+					response = session.get(url, headers=self.httpHeaders)
+					content = response.content.decode("utf-8")
+					logger.debug("content: '%s'", content)
 
-				req = urllib.request.Request(url, None, self.httpHeaders)
-				response = opener.open(req)
-				content = response.read()
-				logger.debug("content: '%s'", content)
-				content = content.decode()  # to str
-
-				htmlParser = LinksExtractor()
-				htmlParser.feed(content)
-				htmlParser.close()
-				for link in htmlParser.getLinks():
-					if not link.endswith('.opsi'):
-						continue
-
-					if link.startswith("/"):
-						# absolute link to relative link
-						path = "/" + url.split("/", 3)[-1]
-						rlink = link[len(path):].lstrip("/")
-						logger.info("Absolute link: '%s', relative link: '%s'", link, rlink)
-						link = rlink
-
-					if repository.includes:
-						if not any(include.search(link) for include in repository.includes):
-							logger.info("Package '%s' is not included. Please check your includeProductIds-entry in configurationfile.", link)
+					htmlParser = LinksExtractor()
+					htmlParser.feed(content)
+					htmlParser.close()
+					for link in htmlParser.getLinks():
+						if not link.endswith('.opsi'):
 							continue
 
-					if any(exclude.search(link) for exclude in repository.excludes):
-						logger.info("Package '%s' excluded by regular expression", link)
-						continue
+						if link.startswith("/"):
+							# absolute link to relative link
+							path = "/" + url.split("/", 3)[-1]
+							rlink = link[len(path):].lstrip("/")
+							logger.info("Absolute link: '%s', relative link: '%s'", link, rlink)
+							link = rlink
 
-					try:
-						productId, version = parseFilename(link)
-						packageFile = url + '/' + link
-						logger.info("Found opsi package: %s", packageFile)
-						packageInfo = {
-							"repository": repository,
-							"productId": forceProductId(productId),
-							"version": version,
-							"packageFile": packageFile,
-							"filename": link,
-							"md5sum": None,
-							"zsyncFile": None
-						}
-						if depotConnection:
-							packageInfo["md5sum"] = depotConnection.getMD5Sum(f"{depotRepositoryPath}/{link}")
-						logger.debug("Repository package info: %s", packageInfo)
-						packages.append(packageInfo)
-					except Exception as err:  # pylint: disable=broad-except
-						logger.error("Failed to process link '%s': %s", link, err)
+						if repository.includes:
+							if not any(include.search(link) for include in repository.includes):
+								logger.info("Package '%s' is not included. Please check your includeProductIds-entry in configurationfile.", link)
+								continue
 
-				if not depotConnection:
-					for link in htmlParser.getLinks():
-						isMd5 = link.endswith('.opsi.md5')
-						isZsync = link.endswith('.opsi.zsync')
-
-						filename = None
-						if isMd5:
-							filename = link[:-4]
-						elif isZsync:
-							filename = link[:-6]
-						else:
+						if any(exclude.search(link) for exclude in repository.excludes):
+							logger.info("Package '%s' excluded by regular expression", link)
 							continue
 
 						try:
-							for i, package in enumerate(packages):
-								if package.get('filename') == filename:
-									if isMd5:
-										req = urllib.request.Request(f"{url}/{link}", None, self.httpHeaders)
-										con = opener.open(req)
-										match = re.search(r'([a-z\d]{32})', con.read(64).decode())
-										if match:
-											foundMd5sum = match.group(1)
-											packages[i]["md5sum"] = foundMd5sum
-											logger.debug("Got md5sum for package %s: %s", filename, foundMd5sum)
-									elif isZsync:
-										zsyncFile = url + '/' + link
-										packages[i]["zsyncFile"] = zsyncFile
-										logger.debug("Found zsync file for package '%s': %s", filename, zsyncFile)
-
-									break
+							productId, version = parseFilename(link)
+							packageFile = url + '/' + link
+							logger.info("Found opsi package: %s", packageFile)
+							packageInfo = {
+								"repository": repository,
+								"productId": forceProductId(productId),
+								"version": version,
+								"packageFile": packageFile,
+								"filename": link,
+								"md5sum": None,
+								"zsyncFile": None
+							}
+							if depotConnection:
+								packageInfo["md5sum"] = depotConnection.getMD5Sum(f"{depotRepositoryPath}/{link}")
+							logger.debug("Repository package info: %s", packageInfo)
+							packages.append(packageInfo)
 						except Exception as err:  # pylint: disable=broad-except
 							logger.error("Failed to process link '%s': %s", link, err)
-			except Exception as err:  # pylint: disable=broad-except
-				logger.debug(err, exc_info=True)
-				self.errors.append(err)
-				errors.add(str(err))
 
-		if errors:
-			logger.warning("Problems processing repository %s: %s", repository.name, '; '.join(str(e) for e in errors))
+					if not depotConnection:
+						# if checking for md5sum only retrieve first 64 bytes of file
+						md5getHeader = self.httpHeaders.copy().update({"Range": "bytes=0-64"})
+						for link in htmlParser.getLinks():
+							isMd5 = link.endswith('.opsi.md5')
+							isZsync = link.endswith('.opsi.zsync')
 
-		return packages
+							filename = None
+							if isMd5:
+								filename = link[:-4]
+							elif isZsync:
+								filename = link[:-6]
+							else:
+								continue
 
-	def _getUrllibOpener(self, repository):
-		handler = self._getHTTPHandler(repository)
+							try:
+								for i, package in enumerate(packages):
+									if package.get('filename') == filename:
+										if isMd5:
+											response = session.get(f"{url}/{link}", headers=md5getHeader)
+											match = re.search(r'([a-z\d]{32})', response.content.decode("utf-8"))
+											if match:
+												foundMd5sum = match.group(1)
+												packages[i]["md5sum"] = foundMd5sum
+												logger.debug("Got md5sum for package %s: %s", filename, foundMd5sum)
+										elif isZsync:
+											zsyncFile = url + '/' + link
+											packages[i]["zsyncFile"] = zsyncFile
+											logger.debug("Found zsync file for package '%s': %s", filename, zsyncFile)
 
-		if repository.proxy:
-			logger.notice("Using Proxy: %s", repository.proxy)
-			proxyHandler = urllib.request.ProxyHandler(
-				{
+										break
+							except Exception as err:  # pylint: disable=broad-except
+								logger.error("Failed to process link '%s': %s", link, err)
+				except Exception as err:  # pylint: disable=broad-except
+					logger.debug(err, exc_info=True)
+					self.errors.append(err)
+					errors.add(str(err))
+
+			if errors:
+				logger.warning("Problems processing repository %s: %s", repository.name, '; '.join(str(e) for e in errors))
+
+			return packages
+
+	@contextmanager
+	def makeSession(self, repository):
+		try:
+			session = requests.session()
+			if repository.proxy:
+				proxies = {
 					'http': repository.proxy,
-					'https': repository.proxy
+					'https': repository.proxy,
 				}
-			)
-			opener = urllib.request.build_opener(proxyHandler, handler)
-		else:
-			opener = urllib.request.build_opener(handler)
-
-		return opener
-
-	@staticmethod
-	def _getHTTPHandler(repository):
-		authcertfile = repository.authcertfile
-		authkeyfile = repository.authkeyfile
-		if os.path.exists(authcertfile) and os.path.exists(authkeyfile):
-			context = ssl.create_default_context()
-			context.load_cert_chain(authcertfile, authkeyfile)
-			handler = urllib.request.HTTPSHandler(context=context)
-		else:
-			passwordManager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
-			passwordManager.add_password(None, repository.baseUrl, repository.username, repository.password)
-			handler = urllib.request.HTTPBasicAuthHandler(passwordManager)
-
-		return handler
-
+				session.proxies.update(proxies)
+			session.auth = (repository.username, repository.password)
+			yield session
+		finally:
+			session.close()
 
 def getLocalPackages(packageDirectory, forceChecksumCalculation=False):
 	"""
