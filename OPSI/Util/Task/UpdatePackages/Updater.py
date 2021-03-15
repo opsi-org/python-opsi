@@ -33,6 +33,7 @@ import time
 import json
 import datetime
 import urllib.request
+import cookielib
 from urllib.parse import quote
 
 from OPSI import System
@@ -1025,7 +1026,8 @@ class OpsiPackageUpdater:
 
 	def _getUrllibOpener(self, repository):
 		handler = self._getHTTPHandler(repository)
-
+		cookiejar = cookielib.CookieJar()
+		cookieHandler = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookiejar))
 		if repository.proxy:
 			logger.notice("Using Proxy: %s", repository.proxy)
 			proxyHandler = urllib.request.ProxyHandler(
@@ -1034,9 +1036,9 @@ class OpsiPackageUpdater:
 					'https': repository.proxy
 				}
 			)
-			opener = urllib.request.build_opener(proxyHandler, handler)
+			opener = urllib.request.build_opener(cookieHandler, proxyHandler, handler)
 		else:
-			opener = urllib.request.build_opener(handler)
+			opener = urllib.request.build_opener(cookieHandler, handler)
 
 		return opener
 
