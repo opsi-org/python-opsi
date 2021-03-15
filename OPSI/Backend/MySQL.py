@@ -101,6 +101,8 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			option = option.lower()
 			if option == 'address':
 				self._address = forceUnicode(value)
+				if self._address == "::1":
+					self._address = "[::1]"
 			elif option == 'username':
 				self._username = forceUnicode(value)
 			elif option == 'password':
