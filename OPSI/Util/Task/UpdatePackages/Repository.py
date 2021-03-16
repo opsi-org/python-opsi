@@ -53,7 +53,8 @@ class ProductRepositoryInfo:
 		excludes=[],
 		includes=[],
 		active=False,
-		autoSetupExcludes=[]
+		autoSetupExcludes=[],
+		verifySession=None
 	):
 		self.name = forceUnicode(name)
 		self.baseUrl = forceUnicode(baseUrl)
@@ -79,6 +80,14 @@ class ProductRepositoryInfo:
 			self.proxy = proxy
 		if self.baseUrl.startswith('webdav'):
 			self.baseUrl = f'http{self.baseUrl[6:]}'
+
+		if verifySession is None:
+			if self.baseUrl.startswith("https:"):
+				self.verifySession = True
+			else:
+				self.verifySession = False
+		else:
+			self.verifySession = verifySession
 
 	def getDownloadUrls(self):
 		urls = set()
