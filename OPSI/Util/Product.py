@@ -31,7 +31,7 @@ import shutil
 from OPSI.Config import (
 	FILE_ADMIN_GROUP as DEFAULT_CLIENT_DATA_GROUP,
 	OPSICONFD_USER as DEFAULT_CLIENT_DATA_USER)
-from OPSI.Logger import Logger, LOG_INFO, LOG_ERROR
+from OPSI.Logger import Logger
 from OPSI.Util.File.Opsi import PackageControlFile, PackageContentFile
 from OPSI.Util.File.Archive import Archive
 from OPSI.Util import randomString, findFilesGenerator, removeDirectory
@@ -106,9 +106,9 @@ class ProductPackageFile:
 			raise ValueError("Client data dir not set")
 
 		productId = self.packageControlFile.getProduct().getId()
-		for f in os.listdir(self.clientDataDir):
-			if f.lower() == productId.lower():
-				clientDataDir = os.path.join(self.clientDataDir, f)
+		for file in os.listdir(self.clientDataDir):
+			if file.lower() == productId.lower():
+				clientDataDir = os.path.join(self.clientDataDir, file)
 				logger.info("Deleting client data dir '%s'", clientDataDir)
 				removeDirectory(clientDataDir)
 
@@ -134,7 +134,7 @@ class ProductPackageFile:
 		self.runPostinst()
 		self.cleanup()
 
-	def unpackSource(self, destinationDir='.', newProductId=None, progressSubject=None):
+	def unpackSource(self, destinationDir='.', newProductId=None, progressSubject=None):  # pylint: disable=too-many-branches,too-many-statements
 		logger.info("Extracting package source from '%s'", self.packageFile)
 		if progressSubject:
 			progressSubject.setMessage(_("Extracting package source from '%s'") % self.packageFile)
@@ -152,23 +152,23 @@ class ProductPackageFile:
 				progressSubject.setMessage(_('Extracting archives'))
 			archive.extract(targetPath=self.tmpUnpackDir)
 
-			for f in os.listdir(self.tmpUnpackDir):
-				logger.info("Processing file '%s'", f)
+			for file in os.listdir(self.tmpUnpackDir):
+				logger.info("Processing file '%s'", file)
 				archiveName = ''
-				if f.endswith('.cpio.gz'):
-					archiveName = f[:-8]
-				elif f.endswith('.cpio'):
-					archiveName = f[:-5]
-				elif f.endswith('.tar.gz'):
-					archiveName = f[:-7]
-				elif f.endswith('.tar'):
-					archiveName = f[:-4]
-				elif f.startswith('OPSI'):
+				if file.endswith('.cpio.gz'):
+					archiveName = file[:-8]
+				elif file.endswith('.cpio'):
+					archiveName = file[:-5]
+				elif file.endswith('.tar.gz'):
+					archiveName = file[:-7]
+				elif file.endswith('.tar'):
+					archiveName = file[:-4]
+				elif file.startswith('OPSI'):
 					continue
 				else:
-					logger.warning("Unknown content in archive: %s", f)
+					logger.warning("Unknown content in archive: %s", file)
 					continue
-				archive = Archive(filename=os.path.join(self.tmpUnpackDir, f), progressSubject=progressSubject)
+				archive = Archive(filename=os.path.join(self.tmpUnpackDir, file), progressSubject=progressSubject)
 				if progressSubject:
 					progressSubject.setMessage(_('Extracting archive %s') % archiveName)
 				archive.extract(targetPath=os.path.join(destinationDir, archiveName))
@@ -176,7 +176,7 @@ class ProductPackageFile:
 			if newProductId:
 				self.getMetaData()
 				product = self.packageControlFile.getProduct()
-				if self.packageControlFile._filename.endswith("control.yml"):
+				if self.packageControlFile._filename.endswith("control.yml"):  # pylint: disable=protected-access
 					control_filename = "control.yml"
 				else:
 					control_filename = "control"
@@ -200,7 +200,7 @@ class ProductPackageFile:
 			self.cleanup()
 			raise RuntimeError(f"Failed to extract package source from '{self.packageFile}': {err}") from err
 
-	def getMetaData(self, output_dir=None):
+	def getMetaData(self, output_dir=None):  # pylint: disable=inconsistent-return-statements,too-many-branches
 		if self.packageControlFile:
 			# Already done
 			return
@@ -219,12 +219,12 @@ class ProductPackageFile:
 			archive.extract(targetPath=metaDataTmpDir, patterns=["OPSI*"])
 
 			metadataArchives = []
-			for f in os.listdir(metaDataTmpDir):
-				if not f.endswith(('.cpio.gz', '.tar.gz', '.cpio', '.tar')):
-					logger.warning("Unknown content in archive: %s", f)
+			for file in os.listdir(metaDataTmpDir):
+				if not file.endswith(('.cpio.gz', '.tar.gz', '.cpio', '.tar')):
+					logger.warning("Unknown content in archive: %s", file)
 					continue
-				logger.debug("Metadata archive found: %s", f)
-				metadataArchives.append(f)
+				logger.debug("Metadata archive found: %s", file)
+				metadataArchives.append(file)
 			if not metadataArchives:
 				raise ValueError("No metadata archive found")
 			if len(metadataArchives) > 2:
@@ -259,7 +259,7 @@ class ProductPackageFile:
 		logger.debug("Got meta data from package '%s'", self.packageFile)
 		return self.packageControlFile
 
-	def extractData(self):
+	def extractData(self):  # pylint: disable=too-many-branches
 		logger.info("Extracting data from package '%s'", self.packageFile)
 
 		try:
@@ -278,20 +278,20 @@ class ProductPackageFile:
 
 			clientDataArchives = []
 			serverDataArchives = []
-			for f in os.listdir(self.tmpUnpackDir):
-				if f.startswith('OPSI'):
+			for file in os.listdir(self.tmpUnpackDir):
+				if file.startswith('OPSI'):
 					continue
 
-				if not f.endswith(('.cpio.gz', '.tar.gz', '.cpio', '.tar')):
-					logger.warning("Unknown content in archive: %s", f)
+				if not file.endswith(('.cpio.gz', '.tar.gz', '.cpio', '.tar')):
+					logger.warning("Unknown content in archive: %s", file)
 					continue
 
-				if f.startswith('CLIENT_DATA'):
-					logger.debug("Client-data archive found: %s", f)
-					clientDataArchives.append(f)
-				elif f.startswith('SERVER_DATA'):
-					logger.debug("Server-data archive found: %s", f)
-					serverDataArchives.append(f)
+				if file.startswith('CLIENT_DATA'):
+					logger.debug("Client-data archive found: %s", file)
+					clientDataArchives.append(file)
+				elif file.startswith('SERVER_DATA'):
+					logger.debug("Server-data archive found: %s", file)
+					serverDataArchives.append(file)
 
 			if not clientDataArchives:
 				logger.warning("No client-data archive found")
@@ -309,7 +309,7 @@ class ProductPackageFile:
 
 			for serverDataArchive in serverDataArchives:
 				archiveFile = os.path.join(self.tmpUnpackDir, serverDataArchive)
-				logger.info("Extracting server-data archive '%s' to '/'" % archiveFile)
+				logger.info("Extracting server-data archive '%s' to '/'", archiveFile)
 				archive = Archive(archiveFile)
 				archive.extract(targetPath='/')
 
@@ -325,18 +325,24 @@ class ProductPackageFile:
 				archive.extract(targetPath=productClientDataDir)
 
 			logger.debug("Finished extracting data from package")
-		except Exception as e:
+		except Exception as err:  # pylint: disable:broad-except
 			self.cleanup()
-			raise RuntimeError("Failed to extract data from package '%s': %s" % (self.packageFile, e))
+			raise RuntimeError(f"Failed to extract data from package '{self.packageFile}': {err}") from err
 
 	def getClientDataFiles(self):
 		if self.clientDataFiles:
 			return self.clientDataFiles
 
-		self.clientDataFiles = list(findFilesGenerator(self.getProductClientDataDir()))
+		self.clientDataFiles = list(
+			findFilesGenerator(
+				directory=self.getProductClientDataDir(),
+				followLinks=True,
+				returnLinks=False
+			)
+		)
 		return self.clientDataFiles
 
-	def setAccessRights(self):
+	def setAccessRights(self):  # pylint: disable=too-many-branches
 		logger.info("Setting access rights of client-data files")
 
 		if os.name != 'posix':
@@ -367,14 +373,14 @@ class ProductPackageFile:
 						continue
 					logger.debug("Setting owner of '%s' to '%s:%s'", path, uid, gid)
 					os.chown(path, uid, gid)
-				except Exception as e:
-					raise RuntimeError("Failed to change owner of '%s' to '%s:%s': %s" % (path, uid, gid, e))
+				except Exception as err:
+					raise RuntimeError(f"Failed to change owner of '{path}' to '{uid}:{gid}': {err}") from err
 
 				mode = None
 				try:
 					if os.path.islink(path):
 						continue
-					elif os.path.isdir(path):
+					if os.path.isdir(path):
 						logger.debug("Setting rights on directory '%s'", path)
 						mode = 0o2770
 					elif os.path.isfile(path):
@@ -383,15 +389,14 @@ class ProductPackageFile:
 
 					if mode is not None:
 						os.chmod(path, mode)
-				except Exception as error:
+				except Exception as err:  # pylint: disable=broad-except
 					if mode is None:
-						raise RuntimeError("Failed to set access rights of '%s': %s" % (path, error))
-					else:
-						raise RuntimeError("Failed to set access rights of '%s' to '%o': %s" % (path, mode, error))
+						raise RuntimeError(f"Failed to set access rights of '{path}': {err}") from err
+					raise RuntimeError(f"Failed to set access rights of '{path}' to '{mode}': {err}") from err
 			logger.debug("Finished setting access rights of client-data files")
-		except Exception as e:
+		except Exception as err:  # pylint: disable=broad-except
 			self.cleanup()
-			raise RuntimeError("Failed to set access rights of client-data files of package '%s': %s" % (self.packageFile, e))
+			raise RuntimeError(f"Failed to set access rights of client-data files of package '{self.packageFile}': {err}") from err
 
 	def createPackageContentFile(self):
 		logger.info("Creating package content file")
@@ -429,23 +434,8 @@ class ProductPackageFile:
 			self.cleanup()
 			raise RuntimeError(f"Failed to create package content file of package '{self.packageFile}': {err}") from err
 
-	"""
-	def _replacePythonShebang(self, script):
-		with open(script, "rb") as f:
-			data = f.read()
-		idx = data.index(b"\n")
-		if idx == -1:
-			return
-		shebang = data[:idx]
-		if not shebang.strip().rstrip(b"3").endswith(b"python"):
-			return
-		logger.info("Replacing interpreter %s with /usr/bin/opsi-python", shebang[2:].strip())
-		data = b"#!/usr/bin/opsi-python" + data[idx:]
-		with open(script, "wb") as f:
-			f.write(data)
-	"""
-
-	def _runPackageScript(self, scriptName, env={}):
+	def _runPackageScript(self, scriptName, env=None):
+		env = env or {}
 		logger.info("Attempt to run package script %s", scriptName)
 		try:
 			if not self.packageControlFile:
@@ -460,25 +450,16 @@ class ProductPackageFile:
 				logger.info("Package script '%s' not found", scriptName)
 				return []
 
-			with open(script, "rb") as f:
-				data = f.read()
+			with open(script, "rb") as file:
+				data = file.read()
 			if data.startswith(b"#!"):
-				new_data = re.sub(b"(^|\s|/)python3?(\s+)", b'\g<1>opsi-python\g<2>', data)
+				new_data = re.sub(b"(^|\s|/)python3?(\s+)", b'\g<1>opsi-python\g<2>', data)  # pylint: disable=anomalous-backslash-in-string
 				if b"\r\n" in data:
 					logger.info("Replacing dos line breaks in %s", script)
 					new_data = new_data.replace(b"\r\n", b"\n")
 				if data != new_data:
-					with open(script, "wb") as f:
-						f.write(new_data)
-
-			"""
-			self._replacePythonShebang(script)
-			for match in re.finditer(b"\${?CLIENT_DATA_DIR}?/(\S+\.py)", data):
-				pyScript = os.path.join(clientDataDir, match.group(1).decode("utf8"))
-				logger.info("Found python script %s in package script %s", pyScript, scriptName)
-				if os.path.exists(pyScript):
-					self._replacePythonShebang(pyScript)
-			"""
+					with open(script, "wb") as file:
+						file.write(new_data)
 
 			logger.notice("Running package script '%s'", scriptName)
 			os.chmod(script, 0o700)
@@ -502,16 +483,19 @@ class ProductPackageFile:
 		finally:
 			logger.debug("Finished running package script %s", scriptName)
 
-	def runPreinst(self, env={}):
-		return self._runPackageScript('preinst', env=env)
+	def runPreinst(self, env=None):
+		return self._runPackageScript('preinst', env=env or {})
 
-	def runPostinst(self, env={}):
-		return self._runPackageScript('postinst', env=env)
+	def runPostinst(self, env=None):
+		return self._runPackageScript('postinst', env=env or {})
 
 
-class ProductPackageSource:
+class ProductPackageSource:  # pylint: disable=too-many-instance-attributes
 
-	def __init__(self, packageSourceDir, tempDir=None, customName=None, customOnly=False, packageFileDestDir=None, format='cpio', compression='gzip', dereference=False):
+	def __init__(  # pylint: disable=too-many-arguments,too-many-branches,too-many-locals
+		self, packageSourceDir, tempDir=None, customName=None, customOnly=False,
+		packageFileDestDir=None, format='cpio', compression='gzip', dereference=False  # pylint: disable=redefined-builtin
+	):
 		self.packageSourceDir = os.path.abspath(forceFilename(packageSourceDir))
 		if not os.path.isdir(self.packageSourceDir):
 			raise IOError("Package source directory '%s' not found" % self.packageSourceDir)
@@ -583,7 +567,7 @@ class ProductPackageSource:
 			shutil.rmtree(self.tmpPackDir)
 		logger.debug("Finished cleaning up")
 
-	def pack(self, progressSubject=None):
+	def pack(self, progressSubject=None):  # pylint: disable=too-many-branches,too-many-locals,too-many-statements
 		# Create temporary directory
 		if os.path.exists(self.tmpPackDir):
 			shutil.rmtree(self.tmpPackDir)
@@ -608,49 +592,49 @@ class ProductPackageSource:
 					raise RuntimeError("No custom dirs found for '%s'" % self.customName)
 
 			# Try to define diskusage from Sourcedirectory to prevent a override from cpio sizelimit.
-			for d in dirs:
-				if not os.path.exists(os.path.join(self.packageSourceDir, d)) and d != 'OPSI':
-					logger.info("Directory '%s' does not exist", os.path.join(self.packageSourceDir, d))
+			for _dir in dirs:
+				if not os.path.exists(os.path.join(self.packageSourceDir, _dir)) and _dir != 'OPSI':
+					logger.info("Directory '%s' does not exist", os.path.join(self.packageSourceDir, _dir))
 					continue
-				for f in findFilesGenerator(
-					os.path.join(self.packageSourceDir, d),
+				for file in findFilesGenerator(
+					os.path.join(self.packageSourceDir, _dir),
 					excludeDir=EXCLUDE_DIRS_ON_PACK_REGEX,
 					excludeFile=EXCLUDE_FILES_ON_PACK_REGEX,
 					followLinks=self.dereference
 				):
-					diskusage = diskusage + os.path.getsize(os.path.join(self.packageSourceDir, d, f))
+					diskusage = diskusage + os.path.getsize(os.path.join(self.packageSourceDir, _dir, file))
 
 			if diskusage >= 2147483648:
 				logger.info("Switching to tar format, because sourcefiles overrides cpio sizelimit.")
 				self.format = 'tar'
 
-			for d in dirs:
-				if not os.path.exists(os.path.join(self.packageSourceDir, d)) and d != 'OPSI':
-					logger.info("Directory '%s' does not exist", os.path.join(self.packageSourceDir, d))
+			for _dir in dirs:
+				if not os.path.exists(os.path.join(self.packageSourceDir, _dir)) and _dir != 'OPSI':
+					logger.info("Directory '%s' does not exist", os.path.join(self.packageSourceDir, _dir))
 					continue
 
 				fileList = list(findFilesGenerator(
-					os.path.join(self.packageSourceDir, d),
+					os.path.join(self.packageSourceDir, _dir),
 					excludeDir=EXCLUDE_DIRS_ON_PACK_REGEX,
 					excludeFile=EXCLUDE_FILES_ON_PACK_REGEX,
 					followLinks=self.dereference))
 
-				if d.startswith('SERVER_DATA'):
+				if _dir.startswith('SERVER_DATA'):
 					# Never change permissions of existing directories in /
 					tmp = []
-					for f in fileList:
-						if f.find(os.sep) == -1:
-							logger.info("Skipping dir '%s'", f)
+					for file in fileList:
+						if file.find(os.sep) == -1:
+							logger.info("Skipping dir '%s'", file)
 							continue
-						tmp.append(f)
+						tmp.append(file)
 
 					fileList = tmp
 
 				if not fileList:
-					logger.notice("Skipping empty dir '%s'", os.path.join(self.packageSourceDir, d))
+					logger.notice("Skipping empty dir '%s'", os.path.join(self.packageSourceDir, _dir))
 					continue
 
-				filename = os.path.join(self.tmpPackDir, '%s.%s' % (d, self.format))
+				filename = os.path.join(self.tmpPackDir, '%s.%s' % (_dir, self.format))
 				if self.compression == 'gzip':
 					filename += '.gz'
 				elif self.compression == 'bzip2':
@@ -659,7 +643,7 @@ class ProductPackageSource:
 				if progressSubject:
 					progressSubject.reset()
 					progressSubject.setMessage('Creating archive %s' % os.path.basename(archive.getFilename()))
-				archive.create(fileList=fileList, baseDir=os.path.join(self.packageSourceDir, d), dereference=self.dereference)
+				archive.create(fileList=fileList, baseDir=os.path.join(self.packageSourceDir, _dir), dereference=self.dereference)
 				archives.append(filename)
 
 			archive = Archive(self.packageFile, format=self.format, compression=None, progressSubject=progressSubject)
@@ -667,6 +651,6 @@ class ProductPackageSource:
 				progressSubject.reset()
 				progressSubject.setMessage('Creating archive %s' % os.path.basename(archive.getFilename()))
 			archive.create(fileList=archives, baseDir=self.tmpPackDir)
-		except Exception as error:
+		except Exception as err:
 			self.cleanup()
-			raise RuntimeError("Failed to create package '%s': %s" % (self.packageFile, error))
+			raise RuntimeError(f"Failed to create package '{self.packageFile}': {err}") from err

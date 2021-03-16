@@ -265,7 +265,7 @@ overriden based on values in configuration file.
 			elif option == 'proxy':
 				if value:
 					proxy = forceUrl(value)
-			if option == 'verifySession':
+			elif option == 'verifysession':
 				verifySession = forceBool(value)
 
 
