@@ -333,7 +333,13 @@ class ProductPackageFile:
 		if self.clientDataFiles:
 			return self.clientDataFiles
 
-		self.clientDataFiles = list(findFilesGenerator(self.getProductClientDataDir()))
+		self.clientDataFiles = list(
+			findFilesGenerator(
+				directory=self.getProductClientDataDir(),
+				followLinks=True,
+				returnLinks=False
+			)
+		)
 		return self.clientDataFiles
 
 	def setAccessRights(self):  # pylint: disable=too-many-branches
