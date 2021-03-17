@@ -248,7 +248,7 @@ overriden based on values in configuration file.
 
 	def _getRepository(self, config, section, forceRepositoryActivation=False, repositoryName=None, installAllAvailable=False, proxy=None):
 		active = False
-		verifySession = False
+		verifyCert = False
 		baseUrl = None
 		opsiDepotId = None
 		for (option, value) in config.items(section):
@@ -265,8 +265,8 @@ overriden based on values in configuration file.
 			elif option == 'proxy':
 				if value:
 					proxy = forceUrl(value)
-			elif option == 'verifysession':
-				verifySession = forceBool(value)
+			elif option == 'verifycert':
+				verifyCert = forceBool(value)
 
 
 		repoName = section.replace('repository_', '', 1)
@@ -297,7 +297,7 @@ overriden based on values in configuration file.
 				password=self.depotKey,
 				opsiDepotId=opsiDepotId,
 				active=active,
-				verifySession=verifySession
+				verifyCert=verifyCert
 			)
 
 		elif baseUrl:
@@ -309,7 +309,7 @@ overriden based on values in configuration file.
 				baseUrl=baseUrl,
 				proxy=proxy,
 				active=active,
-				verifySession=verifySession
+				verifyCert=verifyCert
 			)
 		else:
 			raise MissingConfigurationValueError(u"Repository section '{0}': neither baseUrl nor opsiDepotId set".format(section))

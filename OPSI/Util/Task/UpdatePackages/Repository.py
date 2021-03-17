@@ -54,7 +54,7 @@ class ProductRepositoryInfo:
 		includes=[],
 		active=False,
 		autoSetupExcludes=[],
-		verifySession=False
+		verifyCert=False
 	):
 		self.name = forceUnicode(name)
 		self.baseUrl = forceUnicode(baseUrl)
@@ -74,7 +74,7 @@ class ProductRepositoryInfo:
 		self.inheritProductProperties = None
 		self.description = ''
 		self.active = forceBool(active)
-		self.verifySession = forceBool(verifySession)
+		self.verifyCert = forceBool(verifyCert)
 
 		self.proxy = None
 		if proxy:
