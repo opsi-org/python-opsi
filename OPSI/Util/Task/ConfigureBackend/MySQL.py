@@ -143,7 +143,16 @@ def initializeDatabase(
 			with closing(MySQLdb.connect(**conConfig)) as db:
 				yield db
 		except Exception as error:
-			raise DatabaseConnectionFailedException(error)
+			if  config['address'] == "127.0.0.1":
+				LOGGER.info("Failed to connect with tcp/ip (%s), retrying with socket", error)
+				try:
+					conConfig["host"] = "localhost"
+					with closing(MySQLdb.connect(**conConfig)) as db:
+						yield db
+				except Exception as error:
+					raise DatabaseConnectionFailedException(error)
+			else:
+				raise DatabaseConnectionFailedException(error)
 
 	def createUser(host):
 		notificationFunction(f"Creating user '{config['username']}' and granting all rights on '{config['database']}'")
@@ -160,7 +169,7 @@ def initializeDatabase(
 		db.query(f"GRANT ALL ON {config['database']}.* TO '{config['username']}'@'{host}'")
 		db.query("FLUSH PRIVILEGES")
 		notificationFunction(f"User '{config['username']}' created and privileges set")
-	
+
 	if notificationFunction is None:
 		notificationFunction = LOGGER.notice
 
