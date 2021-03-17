@@ -106,7 +106,9 @@ def describeInterface(instance):
 			'args': args,
 			'varargs': spec.varargs,
 			'keywords': spec.varkw,
-			'defaults': defaults
+			'defaults': defaults,
+			"deprecated": getattr(function, "deprecated", False),
+			"alternative_method": getattr(function, "alternative_method", None)
 		}
 
 	return [methods[name] for name in sorted(list(methods.keys()))]

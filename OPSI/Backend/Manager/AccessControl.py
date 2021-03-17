@@ -372,7 +372,10 @@ class BackendAccessControl:
 				logger.trace("Not protecting method '%s'", methodName)
 				exec(f'def {methodName}(self, {argString}): return self._executeMethod("{methodName}", {callString})')  # pylint: disable=exec-used
 
-			setattr(self, methodName, types.MethodType(eval(methodName), self))  # pylint: disable=eval-used
+			new_function = eval(methodName)  # pylint: disable=eval-used
+			new_function.deprecated = getattr(functionRef, "deprecated", False)
+			new_function.alternative_method = getattr(functionRef, "alternative_method", None)
+			setattr(self, methodName, types.MethodType(new_function, self))
 
 	def _isMemberOfGroup(self, ids):
 		for groupId in forceUnicodeList(ids):
