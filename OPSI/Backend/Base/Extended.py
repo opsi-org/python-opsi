@@ -130,7 +130,10 @@ class ExtendedBackend(Backend):
 			argString, callString = getArgAndCallString(functionRef)
 
 			exec('def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))  # pylint: disable=exec-used
-			setattr(self, methodName, MethodType(eval(methodName), self))  # pylint: disable=eval-used
+			new_function = eval(methodName)  # pylint: disable=eval-used
+			new_function.deprecated = getattr(functionRef, "deprecated", False)
+			new_function.alternative_method = getattr(functionRef, "alternative_method", None)
+			setattr(self, methodName, MethodType(new_function, self))
 
 	def _executeMethod(self, methodName, **kwargs):
 		logger.debug("ExtendedBackend %s: executing %s on backend %s", self, methodName, self._backend)

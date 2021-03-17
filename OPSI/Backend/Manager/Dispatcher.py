@@ -199,7 +199,10 @@ class BackendDispatcher(Backend):
 				argString, callString = getArgAndCallString(functionRef)
 
 				exec(f'def {methodName}(self, {argString}): return self._dispatchMethod({methodBackends}, "{methodName}", {callString})')  # pylint: disable=exec-used
-				setattr(self, methodName, types.MethodType(eval(methodName), self))  # pylint: disable=eval-used
+				new_function = eval(methodName)  # pylint: disable=eval-used
+				new_function.deprecated = getattr(functionRef, "deprecated", False)
+				new_function.alternative_method = getattr(functionRef, "alternative_method", None)
+				setattr(self, methodName, types.MethodType(new_function, self))
 
 	def _dispatchMethod(self, methodBackends, methodName, **kwargs):
 		logger.debug("Dispatching method %s to backends: %s", methodName, methodBackends)
