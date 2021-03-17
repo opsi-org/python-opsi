@@ -1028,7 +1028,12 @@ class OpsiPackageUpdater:
 					'https': repository.proxy,
 				}
 				session.proxies.update(proxies)
+			if os.path.exists(repository.authcertfile) and os.path.exists(repository.authkeyfile):
+				logger.debug("setting session.cert to", (repository.authcertfile, repository.authkeyfile))
+				session.cert = (repository.authcertfile, repository.authkeyfile)
+			session.verify = repository.verifyCert
 			session.auth = (repository.username, repository.password)
+			logger.debug("Initiating session with verify=%s", repository.verifyCert)
 			yield session
 		finally:
 			session.close()
