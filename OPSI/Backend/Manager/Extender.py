@@ -42,6 +42,7 @@ from OPSI.Types import *  # this is needed for dynamic extension loading  # pyli
 from OPSI.Util import objectToBeautifiedText, getfqdn  # used in extensions  # pylint: disable=unused-import
 
 from .Dispatcher import BackendDispatcher
+from .. import deprecated  # used in extensions  # pylint: disable=unused-import
 
 __all__ = ('BackendExtender', )
 
