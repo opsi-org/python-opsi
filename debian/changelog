@@ -1,3 +1,9 @@
+python-opsi (4.1.1.101-1) stable; urgency=medium
+
+  * updated hwaudit locales to include TPM data
+
+ -- Nils Doerrer <n.doerrer@uib.de>  Fri, 19 Mar 2021 09:23:33 +0100
+
 python-opsi (4.1.1.100-1) stable; urgency=medium
 
   * introduced TPM section and fields for MacOS data in opsihwaudit.conf
