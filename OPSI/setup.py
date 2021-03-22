@@ -97,7 +97,7 @@ def setup_users_and_groups():
 			username=DEFAULT_DEPOT_USER,
 			primary_groupname=FILE_ADMIN_GROUP,
 			home=DEFAULT_DEPOT_USER_HOME,
-			shell="/bin/bash",
+			shell="/bin/false",
 			system=True
 		)
 		users = get_users()
