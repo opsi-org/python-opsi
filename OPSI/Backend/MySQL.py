@@ -49,8 +49,9 @@ from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.SQL import (
 	onlyAllowSelect, SQL, SQLBackend, SQLBackendObjectModificationTracker
 )
+
+from opsicommon.logging import logger, secret_filter
 from OPSI.Exceptions import BackendBadValueError
-from OPSI.Logger import Logger
 from OPSI.Types import forceInt, forceUnicode
 from OPSI.Util import getPublicKey
 from OPSI.Object import Product, ProductProperty
@@ -58,8 +59,6 @@ from OPSI.Object import Product, ProductProperty
 __all__ = (
 	'MySQL', 'MySQLBackend', 'MySQLBackendObjectModificationTracker'
 )
-
-logger = Logger()
 
 
 def retry_on_deadlock(func):
@@ -119,6 +118,8 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			#	self._connectionPoolTimeout = forceInt(value)
 			elif option == 'connectionpoolrecycling':
 				self._connectionPoolRecyclingSeconds = forceInt(value)
+
+		secret_filter.add_secrets(self._password)
 
 		try:
 			self.init_connection()
