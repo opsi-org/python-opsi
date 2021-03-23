@@ -106,11 +106,14 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 		self._port = '/var/run/opsipxeconfd/opsipxeconfd.socket'
 		self._timeout = 10
 		self._depotId = forceHostId(getfqdn())
+		self._opsiHostKey = None
 		self._depotConnections = {}
 		self._updateThreads = {}
 		self._updateThreadsLock = threading.Lock()
 		self._parseArguments(kwargs)
-		depots = self._context.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
+
+	def _init_backend(self, config_data_backend):
+		depots = config_data_backend.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
 		if not depots or not depots[0].getOpsiHostKey():
 			raise BackendMissingDataError(f"Failed to get opsi host key for depot '{self._depotId}'")
 		self._opsiHostKey = depots[0].getOpsiHostKey()

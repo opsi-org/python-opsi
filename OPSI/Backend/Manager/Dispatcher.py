@@ -32,11 +32,13 @@ import types
 from functools import lru_cache
 
 from OPSI.Backend.Base import (
-	Backend, ConfigDataBackend, getArgAndCallString)
-from OPSI.Exceptions import BackendConfigurationError
+	Backend, ConfigDataBackend, getArgAndCallString
+)
+from OPSI.Exceptions import BackendConfigurationError, BackendMissingDataError
 from OPSI.Logger import Logger
-from OPSI.Types import forceList
+from OPSI.Types import forceList, forceHostId
 from OPSI.Util.File.Opsi import BackendDispatchConfigFile
+from OPSI.Util import getfqdn
 
 from .Config import loadBackendConfig
 
@@ -78,6 +80,8 @@ class BackendDispatcher(Backend):
 
 		self.__loadBackends(dict(kwargs))
 		self._createInstanceMethods()
+		for be in self._backends.values():
+			be['instance']._init_backend(self)
 
 	def __repr__(self):
 		additionalInformation = []
