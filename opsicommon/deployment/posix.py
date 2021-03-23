@@ -71,6 +71,19 @@ class PosixDeployThread(DeployThread):
 	def run(self):
 		self._installWithSSH()
 
+	def copy_and_link_macos_ssl(self, remoteFolder, credentialsfile=None):
+		lib_origin = os.path.join(remoteFolder, 'files', 'opsi', 'opsi-script_helper')
+		libs = [('libssl.1.1.dylib', 'libssl.dylib'), ('libcrypto.1.1.dylib', 'libssl.dylib')]
+		lib_dir = '/usr/local/lib/'
+
+		self._executeViaSSH(f"mkdir -p {lib_dir}", credentialsfile=credentialsfile)
+		for lib, link in libs:
+			command = f"cp {os.path.join(lib_origin, lib)} {os.path.join(lib_dir, lib)}"
+			self._executeViaSSH(command, credentialsfile=credentialsfile)
+
+			command = f"ln -sf {os.path.join(lib_dir, lib)} {os.path.join(lib_dir, link)}"
+			self._executeViaSSH(command, credentialsfile=credentialsfile)
+
 	def _installWithSSH(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		logger.debug('Installing with files copied to client via scp.')
 		host = forceUnicodeLower(self.host)
@@ -103,6 +116,7 @@ class PosixDeployThread(DeployThread):
 			configFile.generate(config)
 			logger.debug("Generated config.")
 
+			credentialsfile=None
 			try:
 				logger.notice("Copying installation scripts...")
 				self._copyDirectoryOverSSH(
@@ -133,21 +147,20 @@ class PosixDeployThread(DeployThread):
 					f"{opsiscript} -batch -silent /tmp/opsi-client-agent/files/opsi/setup.opsiscript"
 					" /var/log/opsi-client-agent/opsi-script/opsi-client-agent.log -PARAMETER REMOTEDEPLOY"
 				)
-				nonrootExecution = self.username != 'root'
-				credentialsfile=None
-				if nonrootExecution:
+				if self.username != 'root':
 					credentialsfile = os.path.join(remoteFolder, '.credentials')
 					self._executeViaSSH(f"touch {credentialsfile}")
 					self._executeViaSSH(f"chmod 600 {credentialsfile}")
 					self._executeViaSSH(f"echo '{self.password}' > {credentialsfile}")
 					self._executeViaSSH(f'echo "\n" >> {credentialsfile}')
-					installCommand = f"sudo --stdin -- {installCommand} < {credentialsfile}"
 
 				try:
+					if self.target_os == "macos":
+						self.copy_and_link_macos_ssl(remoteFolder, credentialsfile=credentialsfile)
 					logger.notice('Running installation script...')
-					self._executeViaSSH(installCommand)
+					self._executeViaSSH(installCommand, credentialsfile=credentialsfile)
 				except Exception:
-					if nonrootExecution:
+					if credentialsfile:
 						self._executeViaSSH(f"rm -f {credentialsfile}")
 					raise
 
@@ -155,10 +168,7 @@ class PosixDeployThread(DeployThread):
 				self._executeViaSSH("test -d /etc/opsi-client-agent/")
 				logger.debug("Testing if config can be found...")
 				checkCommand = "test -e /etc/opsi-client-agent/opsiclientd.conf"
-				if nonrootExecution:
-					# This call is executed with sudo, because etc/opsi-client-agent belongs to root:root
-					checkCommand = f"sudo --stdin -- {checkCommand} < {credentialsfile}"
-				self._executeViaSSH(checkCommand)
+				self._executeViaSSH(checkCommand, credentialsfile=credentialsfile)
 
 				logger.debug("Testing if executable was found...")
 				if self.target_os == "linux":
@@ -218,7 +228,7 @@ class PosixDeployThread(DeployThread):
 			return hostId
 		raise ValueError(f"invalid host {host}")
 
-	def _executeViaSSH(self, command):
+	def _executeViaSSH(self, command, credentialsfile=None):
 		"""
 		Executing a command via SSH.
 
@@ -227,6 +237,8 @@ class PosixDeployThread(DeployThread):
 		"""
 		self._connectViaSSH()
 
+		if credentialsfile:
+			command = f"sudo --stdin -- {command} < {credentialsfile}"
 		logger.debug("Executing on remote: %s", command)
 
 		with closing(self._sshConnection.get_transport().open_session()) as channel:
@@ -336,10 +348,8 @@ class PosixDeployThread(DeployThread):
 			else:
 				raise ValueError(f"invalid target os {self.target_os}")
 
-			if credentialsfile:
-				command = f"sudo --stdin -- {command} < {credentialsfile}"
 			try:
-				self._executeViaSSH(command)
+				self._executeViaSSH(command, credentialsfile=credentialsfile)
 			except Exception as err:  # pylint: disable=broad-except
 				logger.error("Failed to restart service opsiclientd on computer: %s", self.networkAddress)
 
