@@ -238,7 +238,11 @@ class PosixDeployThread(DeployThread):
 		self._connectViaSSH()
 
 		if credentialsfile:
-			command = f"sudo --stdin -- {command} < {credentialsfile}"
+			if "&" in command:
+				parts = command.split("&", 1)
+				command = f"sudo --stdin -- {parts[0]} < {credentialsfile} &{parts[1]}"
+			else:
+				command = f"sudo --stdin -- {command} < {credentialsfile}"
 		logger.debug("Executing on remote: %s", command)
 
 		with closing(self._sshConnection.get_transport().open_session()) as channel:
@@ -327,16 +331,16 @@ class PosixDeployThread(DeployThread):
 	def _finaliseInstallation(self, credentialsfile=None):
 		if self.reboot:
 			logger.notice("Rebooting machine %s", self.networkAddress)
-			command = "shutdown -r 1 & disown"
+			command = "shutdown -r +1 & disown"
 			try:
-				self._executeViaSSH(command)
+				self._executeViaSSH(command, credentialsfile=credentialsfile)
 			except Exception as err:  # pylint: disable=broad-except
 				logger.error("Failed to reboot computer: %s", err)
 		elif self.shutdown:
 			logger.notice("Shutting down machine %s", self.networkAddress)
-			command = "shutdown -h 1 & disown"
+			command = "shutdown -h +1 & disown"
 			try:
-				self._executeViaSSH(command)
+				self._executeViaSSH(command, credentialsfile=credentialsfile)
 			except Exception as err:  # pylint: disable=broad-except
 				logger.error("Failed to shutdown computer: %s", err)
 		elif self.startService:
