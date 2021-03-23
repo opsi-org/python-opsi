@@ -20,14 +20,12 @@
 OpsiPXEConfd-Backend
 
 :copyright:	uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
 :license: GNU Affero General Public License version 3
 """
 
-import codecs
+import os
 import json
-import os.path
+import codecs
 import socket
 import tempfile
 import threading
@@ -35,11 +33,12 @@ import time
 from contextlib import closing, contextmanager
 from pipes import quote
 
+from opsicommon.logging import logger, secret_filter
 from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
-from OPSI.Exceptions import (BackendMissingDataError,
-	BackendUnableToConnectError, BackendUnaccomplishableError)
-from OPSI.Logger import LOG_DEBUG, Logger
+from OPSI.Exceptions import (
+	BackendMissingDataError, BackendUnableToConnectError, BackendUnaccomplishableError
+)
 from OPSI.Object import ConfigState, OpsiClient, ProductPropertyState
 from OPSI.Types import forceHostId, forceInt, forceUnicode, forceUnicodeList
 from OPSI.Util import getfqdn, serialize
@@ -47,8 +46,6 @@ from OPSI.Util import getfqdn, serialize
 __all__ = ('ServerConnection', 'OpsiPXEConfdBackend', 'createUnixSocket')
 
 ERROR_MARKER = '(ERROR)'
-
-logger = Logger()
 
 
 class ServerConnection:  # pylint: disable=too-few-public-methods
@@ -109,11 +106,15 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 		self._port = '/var/run/opsipxeconfd/opsipxeconfd.socket'
 		self._timeout = 10
 		self._depotId = forceHostId(getfqdn())
-		self._opsiHostKey = None
 		self._depotConnections = {}
 		self._updateThreads = {}
 		self._updateThreadsLock = threading.Lock()
 		self._parseArguments(kwargs)
+		depots = self._context.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
+		if not depots or not depots[0].getOpsiHostKey():
+			raise BackendMissingDataError(f"Failed to get opsi host key for depot '{self._depotId}'")
+		self._opsiHostKey = depots[0].getOpsiHostKey()
+		secret_filter.add_secrets(self._opsiHostKey)
 
 	def _parseArguments(self, kwargs):
 		for (option, value) in kwargs.items():
@@ -123,41 +124,19 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 			elif option == 'timeout':
 				self._timeout = forceInt(value)
 
-	def _getDepotConnection(self, depotId):
-		depotId = forceHostId(depotId)
-		if depotId == self._depotId:
+	def _getDepotConnection(self, depot: str, port: int = 4447) -> None:
+		depot = depot.lower()
+		if depot == self._depotId:
 			return self
 
-		try:
-			return self._depotConnections[depotId]
-		except KeyError as err:
-			if not self._opsiHostKey:
-				depots = self._context.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
-				if not depots or not depots[0].getOpsiHostKey():
-					raise BackendMissingDataError(f"Failed to get opsi host key for depot '{self._depotId}'") from err
-				self._opsiHostKey = depots[0].getOpsiHostKey()
-
-			self._depotConnections[depotId] = self._getExternalBackendConnection(
-				depotId, self._depotId, self._opsiHostKey
-			)
-			return self._depotConnections[depotId]
-
-	def _getScalabilityDepotConnection(self, depot, port):
-		try:
-			return self._depotConnections[depot]
-		except KeyError as err:
-			if not self._opsiHostKey:
-				depots = self._context.host_getObjects(type="OpsiConfigserver")  # pylint: disable=maybe-no-member
-				if not depots or not depots[0].getOpsiHostKey():
-					raise BackendMissingDataError(f"Failed to get opsi host key for depot '{self._depotId}'") from err
-				self._opsiHostKey = depots[0].getOpsiHostKey()
-
+		if depot not in self._depotConnections:
 			self._depotConnections[depot] = self._getExternalBackendConnection(
 				depot, self._depotId, self._opsiHostKey, port=port
 			)
-			return self._depotConnections[depot]
+		return self._depotConnections[depot]
 
-	def _getExternalBackendConnection(self, address, username, password, port=4447):
+	def _getExternalBackendConnection(self, address: str, username: str, password: str, port: int = 4447):
+		secret_filter.add_secrets(password)
 		try:
 			return JSONRPCBackend(
 				address=f"https://{address}:{port}/rpc/backend/{self._name}",
@@ -378,7 +357,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 			# Prefer connections to addr:port over all others.
 			# They are used in scaled setups.
 			depot, port = self._port.split(":")
-			destination = self._getScalabilityDepotConnection(depot, port)
+			destination = self._getDepotConnection(depot, port)
 		elif responsibleDepot != self._depotId:
 			logger.info("Not responsible for client '%s', forwarding request to depot %s", productOnClient.clientId, responsibleDepot)
 			destination = self._getDepotConnection(responsibleDepot)
@@ -440,6 +419,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 		except (OSError, IOError) as dataFileError:
 			logger.debug(dataFileError, exc_info=True)
 			logger.debug("Writing cache file %s failed: %s", destinationFile, dataFileError)
+		return None
 
 	def backend_exit(self):
 		for connection in self._depotConnections.values():
