@@ -163,13 +163,6 @@ containing the localisation of the hardware audit.
 			if attribute not in possibleAttributes:
 				raise BackendBadValueError("Class {0!r} has no attribute '{1}'".format(Class, attribute))
 
-	def _init_backend(self, config_data_backend):
-		"""
-		Init backend
-		"""
-		pass
-
-
 	def backend_createBase(self):
 		"""
 		Setting up the base for the backend to store its data.
