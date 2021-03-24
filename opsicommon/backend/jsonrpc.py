@@ -222,6 +222,16 @@ class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 	def serverName(self):
 		return self.server_name
 
+	@property
+	def interface(self):
+		if not self._connected:
+			self._connect()
+		return self._interface
+
+	@no_export
+	def getInterface(self):
+		return self.interface
+
 	@no_export
 	def set_compression(self, compression):
 		if isinstance(compression, bool):
@@ -435,6 +445,14 @@ class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 		self._http_adapter.max_retries = Retry.from_int(self._http_max_retries)
 		logger.debug("Connected to service %s", self.base_url)
 		self._connected = True
+
+	def jsonrpc_getSessionId(self):
+		if not self._session.cookies or not self._session.cookies._cookies:  # pylint: disable=protected-access
+			return None
+		for tmp1 in self._session.cookies._cookies.values():  # pylint: disable=protected-access
+			for tmp2 in tmp1.values():
+				for cookie in tmp2.values():
+					return f"{cookie.name}={cookie.value}"
 
 	def backend_exit(self):
 		if self._connected:
