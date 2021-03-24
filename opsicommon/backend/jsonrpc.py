@@ -19,9 +19,13 @@ from requests.packages import urllib3
 from urllib3.util.retry import Retry
 import msgpack
 try:
-	import orjson as json
-except ImportError:
-	import json
+	# pyright: reportMissingModuleSource=false
+	import orjson as json  # pylint: disable=import-error
+except ModuleNotFoundError:
+	try:
+		import ujson as json
+	except ModuleNotFoundError:
+		import json
 import lz4.frame
 
 from OPSI.Backend import no_export

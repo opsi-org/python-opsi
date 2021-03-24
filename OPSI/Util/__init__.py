@@ -37,10 +37,12 @@ import codecs
 import ipaddress
 try:
 	# pyright: reportMissingModuleSource=false
-	# ujson is faster
-	import ujson as json
+	import orjson as json  # pylint: disable=import-error
 except ModuleNotFoundError:
-	import json
+	try:
+		import ujson as json
+	except ModuleNotFoundError:
+		import json
 import os
 import random
 import re
