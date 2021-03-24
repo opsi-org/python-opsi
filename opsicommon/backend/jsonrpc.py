@@ -145,7 +145,7 @@ class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 		if session_id:
 			cookie_name, cookie_value = session_id.split("=")
 			self._session.cookies.set(
-				cookie_name, cookie_value, domain=urlparse(self.base_url).hostname
+				cookie_name, cookie_value, domain=self.hostname
 			)
 		if self._proxy_url:
 			self._session.proxies.update({
@@ -166,13 +166,12 @@ class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 		self._session.mount('https://', self._http_adapter)
 
 		try:
-			hostname = urlparse(self.base_url).hostname
-			address = ipaddress.ip_address(hostname)
+			address = ipaddress.ip_address(self.hostname)
 			if isinstance(address, ipaddress.IPv6Address) and self._ip_version != "6":
-				logger.info("%s is an ipv6 address, forcing ipv6", hostname)
+				logger.info("%s is an ipv6 address, forcing ipv6", self.hostname)
 				self._ip_version = 6
 			elif isinstance(address, ipaddress.IPv4Address) and self._ip_version != "4":
-				logger.info("%s is an ipv4 address, forcing ipv4", hostname)
+				logger.info("%s is an ipv4 address, forcing ipv4", self.hostname)
 				self._ip_version = 4
 		except ValueError:
 			pass
@@ -195,6 +194,10 @@ class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 		if urllib3.util.connection.HAS_IPV6:
 			return socket.AF_UNSPEC
 		return socket.AF_INET
+
+	@property
+	def hostname(self):
+		return urlparse(self.base_url).hostname
 
 	@property
 	def session(self):
@@ -436,7 +439,6 @@ class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 	def backend_exit(self):
 		if self._connected:
 			try:
-				self._http_adapter.max_retries = Retry.from_int(0)
 				self._execute_rpc('backend_exit')
 			except Exception:  # pylint: disable=broad-except
 				pass
