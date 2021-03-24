@@ -329,6 +329,9 @@ class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 				if sv and (sv[0] > 4 or (sv[0] == 4 and sv[1] > 1)):
 					compression = _LZ4_COMPRESSION
 
+			if not isinstance(data, bytes):
+				data = data.encode("utf-8")
+
 			if compression == _LZ4_COMPRESSION:
 				logger.trace("Compressing data with lz4")
 				headers['Content-Encoding'] = 'lz4'
@@ -342,7 +345,7 @@ class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 
 		logger.info(
 			"JSONRPC request to %s: id=%d, method=%s, Content-Type=%s, Content-Encoding=%s",
-			self.base_url, rpc_id, method, headers['Content-Type'], headers['Content-Encoding']
+			self.base_url, rpc_id, method, headers.get('Content-Type', ''), headers.get('Content-Encoding', '')
 		)
 		response = self._session.post(self.base_url, headers=headers, data=data, stream=True)
 		content_type = response.headers.get("Content-Type", "")
