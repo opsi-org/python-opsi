@@ -208,6 +208,12 @@ This defaults to ``self``.
 	def __exit__(self, exc_type, exc_value, traceback):
 		self.backend_exit()
 
+	def _init_backend(self, config_data_backend):
+		"""
+		Init backend
+		"""
+		pass
+
 	def _setContext(self, context):
 		"""Setting the context backend."""
 		self._context = context
