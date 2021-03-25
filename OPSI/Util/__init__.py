@@ -43,6 +43,7 @@ except ModuleNotFoundError:
 		import ujson as json
 	except ModuleNotFoundError:
 		import json
+import json as pyjson
 import os
 import random
 import re
@@ -251,7 +252,7 @@ def timestamp(secs=0, dateOnly=False):
 
 
 def objectToBeautifiedText(obj):
-	return json.dumps(serialize(obj), indent=4, ensure_ascii=False)
+	return pyjson.dumps(serialize(obj), indent=4, ensure_ascii=False)
 
 
 def objectToBash(obj, bashVars=None, level=0):  # pylint: disable=too-many-branches
