@@ -1076,13 +1076,15 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 
 
 class FileProgessWrapper:  # pylint: disable=too-few-public-methods
-	def __init__(self, file, progressSubject):
+	def __init__(self, file, progress_subject, block_size=64*1024):
 		self.file = file
-		self.progressSubject = progressSubject
+		self.progress_subject = progress_subject
+		self.block_size = block_size
 
 	def read(self, size):
-		data = self.file.read(size)
-		self.progressSubject.addToState(len(data))
+		# Read block_size to speed up transfer
+		data = self.file.read(self.block_size)
+		self.progress_subject.addToState(len(data))
 		return data
 
 
@@ -1165,9 +1167,7 @@ class WebDAVRepository(HTTPRepository):
 			with open(source, 'rb') as src:
 				#self._transferUp(src, 'yield', size, progressSubject)
 				fpw = FileProgessWrapper(src, progressSubject)
-				response = self._session.put(
-					url=destination_url, headers=headers, data=fpw
-				)
+				response = self._session.put(url=destination_url, headers=headers, data=fpw)
 				if response.status_code not in (requests.codes['created'], requests.codes['no_content']):
 					raise RuntimeError(f"{response.status_code} - {response.text}")
 		except Exception as err:  # pylint: disable=broad-except
