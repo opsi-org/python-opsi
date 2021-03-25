@@ -23,42 +23,33 @@
 
 import os
 import re
-import shutil
 import stat
 import time
-import urllib
+import shutil
+import socket
+import ipaddress
+from urllib.parse import urlparse, quote, unquote
 import xml.etree.ElementTree as ET
-from enum import IntEnum
-from http.client import HTTPConnection, HTTPSConnection, HTTPResponse
-from urllib.parse import quote
+import requests
+from requests.adapters import HTTPAdapter
+from requests.packages import urllib3
+
+from opsicommon.logging import logger, secret_filter
 
 from OPSI import __version__
 from OPSI.Exceptions import RepositoryError
-from OPSI.Logger import LOG_INFO, Logger
 from OPSI.System import mount, umount
 from OPSI.Types import (
-	forceBool, forceFilename, forceInt, forceUnicode, forceUnicodeList)
+	forceBool, forceFilename, forceInt, forceUnicode, forceUnicodeList
+)
 from OPSI.Util.Message import ProgressSubject
 from OPSI.Util import md5sum, randomString
 from OPSI.Util.File.Opsi import PackageContentFile
-from OPSI.Util.HTTP import (
-	createBasicAuthHeader, getSharedConnectionPool, urlsplit)
-from OPSI.Util.HTTP import HTTPResponse as OpsiHTTPResponse
 from OPSI.Util.Path import cd
-
 if os.name == 'nt':
 	from OPSI.System.Windows import getFreeDrive
 
-logger = Logger()
-
-
-class ResponseCode(IntEnum):
-	OK = 200
-	CREATED = 201
-	NO_CONTENT = 204
-	PARTIAL_CONTENT = 206
-	MULTI_STATUS = 207
-
+urllib3.disable_warnings()
 
 def _(string):
 	return string
@@ -86,7 +77,7 @@ def getFileInfosFromDavXML(davxmldata, encoding='utf-8'):  # pylint: disable=unu
 			raise RepositoryError("No valid davxml given")
 
 		if child[0].tag == "{DAV:}href":
-			info['path'] = urllib.parse.unquote(child[0].text)
+			info['path'] = unquote(child[0].text)
 			info['name'] = info['path'].rstrip('/').split('/')[-1]
 
 		if child[1].tag == "{DAV:}propstat":
@@ -246,11 +237,11 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 			except Exception as err:  # pylint: disable=broad-except
 				logger.error(err)
 
-	def _transferDown(self, src, dst, progressSubject=None, bytes=-1):  # pylint: disable=redefined-builtin
-		return self._transfer('in', src, dst, progressSubject, bytes=bytes)
+	def _transferDown(self, src, dst, size, progressSubject=None):  # pylint: disable=redefined-builtin
+		return self._transfer('in', src, dst, size, progressSubject)
 
-	def _transferUp(self, src, dst, progressSubject=None):
-		return self._transfer('out', src, dst, progressSubject)
+	def _transferUp(self, src, dst, size, progressSubject=None):
+		return self._transfer('out', src, dst, size, progressSubject)
 
 	def _getNetworkUsage(self):
 		networkUsage = 0.0
@@ -434,9 +425,9 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 
 		time.sleep(self._bandwidthSleepTime)
 
-	def _transfer(self, transferDirection, src, dst, progressSubject=None, bytes=-1):  # pylint: disable=redefined-builtin,too-many-arguments,too-many-branches
-		logger.debug("Transfer %s from %s to %s, dynamic bandwidth %s, max bandwidth %s",
-			transferDirection, src, dst, self._dynamicBandwidth, self._maxBandwidth
+	def _transfer(self, transferDirection, src, dst, size, progressSubject=None):  # pylint: disable=redefined-builtin,too-many-arguments,too-many-branches
+		logger.debug("Transfer %s from %s to %s (bytes=%s, dynamic bandwidth=%s, max bandwidth=%s)",
+			transferDirection, src, dst, size, self._dynamicBandwidth, self._maxBandwidth
 		)
 		try:
 			self._transferDirection = transferDirection
@@ -444,18 +435,12 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 			transferStartTime = time.time()
 			buf = True
 
-			if isinstance(src, HTTPResponse) or hasattr(src, 'length'):
-				fileSize = src.length
-			else:
-				fileSize = os.path.getsize(src.name)
-			logger.debug('Filesize is: %s', fileSize)
-
-			while buf and (bytes < 0 or self._bytesTransfered < bytes):
+			while buf and self._bytesTransfered < size:
 				logger.trace("self._bufferSize: %d", self._bufferSize)
 				logger.trace("self._bytesTransfered: %d", self._bytesTransfered)
-				logger.trace("bytes: %d", bytes)
+				logger.trace("size: %d", size)
 
-				remainingBytes = fileSize - self._bytesTransfered
+				remainingBytes = size - self._bytesTransfered
 				logger.trace("remainingBytes: %d", remainingBytes)
 				if 0 < remainingBytes < self._bufferSize:
 					buf = src.read(remainingBytes)
@@ -471,7 +456,9 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 						buf = buf[:bytes - self._bytesTransfered]
 						read = len(buf)
 					self._bytesTransfered += read
-					if isinstance(dst, (HTTPConnection, HTTPSConnection)):
+					if isinstance(dst, str) and dst == "yield":
+						yield buf
+					elif hasattr(dst, "send"):
 						dst.send(buf)
 					else:
 						dst.write(buf)
@@ -867,7 +854,7 @@ class FileRepository(Repository):
 					dstWriteMode = 'wb'
 
 				with open(destination, dstWriteMode) as dst:
-					self._transferDown(src, dst, progressSubject, bytes=_bytes)
+					self._transferDown(src, dst, _bytes, progressSubject)
 		except Exception as err:  # pylint: disable=broad-except
 			raise RepositoryError(f"Failed to download '{source}' to '{destination}': {err}") from err
 
@@ -885,7 +872,7 @@ class FileRepository(Repository):
 		try:
 			with open(source, 'rb') as src:
 				with open(destination, 'wb') as dst:
-					self._transferUp(src, dst, progressSubject)
+					self._transferUp(src, dst, size, progressSubject)
 		except Exception as err:
 			raise RepositoryError(f"Failed to upload '{source}' to '{destination}': {err}") from err
 
@@ -899,105 +886,145 @@ class FileRepository(Repository):
 			os.mkdir(destination)
 
 
-class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attributes
+class TimeoutHTTPAdapter(HTTPAdapter):
+	def __init__(self, *args, **kwargs):
+		self.timeout = None
+		if "timeout" in kwargs:
+			self.timeout = kwargs["timeout"]
+			del kwargs["timeout"]
+		super().__init__(*args, **kwargs)
 
-	_USER_AGENT = f"opsi-HTTPRepository/{__version__}"
+	def send(self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None):  # pylint: disable=too-many-arguments
+		if timeout is None:
+			timeout = self.timeout
+		return super().send(request, stream, timeout, verify, cert, proxies)
+
+class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attributes
 
 	def __init__(self, url, **kwargs):  # pylint: disable=too-many-branches,too-many-statements
 		Repository.__init__(self, url, **kwargs)
 
-		self._application = self._USER_AGENT
-		self._username = ''
-		self._password = ''
-		self._port = 80
-		self._path = '/'
-		self._socketTimeout = None
-		self._connectTimeout = 30
-		self._retryTime = 5
-		self._connectionPoolSize = 1
-		self._cookie = ''
-		self._proxy = None
-		verifyServerCert = False
-		caCertFile = None
+		self._application = f"opsi-http-repository/{__version__}"
+		self._ca_cert_file = None
+		self._verify_server_cert = False
+		self._proxy_url = None
+		self._username = None
+		self._password = None
+		self._ip_version = "auto"
+		self._connect_timeout = 10
+		self._read_timeout = 60
+		self._http_pool_maxsize = 10
+		self._http_max_retries = 1
+		self.base_url = None
 
-		for key, value in kwargs.items():
-			key = key.lower()
-			if key == 'application':
+		for option, value in kwargs.items():
+			option = option.lower()
+			if option == 'application':
 				self._application = str(value)
-			elif key == 'username':
-				self._username = forceUnicode(value)
-			elif key == 'password':
-				self._password = forceUnicode(value)
-			elif key == 'proxyurl':
-				self._proxy = forceUnicode(value)
-			elif key in ('verifyservercert', 'verifyservercertbyca'):
-				verifyServerCert = forceBool(value)
-			elif key == 'cacertfile':
-				caCertFile = forceFilename(value)
+			elif option == 'username':
+				self._username = str(value or "")
+			elif option == 'password':
+				self._password = str(value or "")
+			elif option == 'connecttimeout' and value not in (None, ""):
+				self._connect_timeout = int(value)
+			elif option in ('readtimeout', 'timeout', 'sockettimeout') and value not in (None, ""):
+				self._read_timeout = int(value)
+			elif option == 'verifyservercert':
+				self._verify_server_cert = bool(value)
+			elif option == 'cacertfile' and value not in (None, ""):
+				self._ca_cert_file = str(value)
+			elif option == 'proxyurl' and value not in (None, ""):
+				self._proxy_url = str(value)
+			elif option == 'ipversion' and value not in (None, ""):
+				if str(value) in ("auto", "4", "6"):
+					self._ip_version = str(value)
+				else:
+					logger.error("Invalid ip version '%s', using %s", value, self._ip_version)
 
-		(scheme, host, port, baseurl, username, password) = urlsplit(self._url)
+		self._set_url(url)
 
-		if scheme not in ('http', 'https', 'webdav', 'webdavs'):
-			raise RepositoryError(f"Bad http url: '{self._url}'")
-		self._protocol = scheme
-		if port:
-			self._port = port
-		elif self._protocol.endswith('s'):
-			self._port = 443
-
-		self._host = host
-		self._path = baseurl
-		if not self._username and username:
-			self._username = username
-		if not self._password and password:
-			self._password = password
-		self._username = forceUnicode(self._username)
-		self._password = forceUnicode(self._password)
 		if self._password:
-			logger.addConfidentialString(self._password)
+			secret_filter.add_secrets(self._password)
 
-		self._auth = createBasicAuthHeader(self._username, self._password)
+		self._session = requests.Session()
+		self._session.auth = (self._username or '', self._password or '')
+		self._session.headers.update({
+			'User-Agent': self._application
+		})
+		if self._proxy_url:
+			self._session.proxies.update({
+				'http': self._proxy_url,
+				'https': self._proxy_url,
+			})
+		if self._verify_server_cert:
+			self._session.verify = self._ca_cert_file or True
+		else:
+			self._session.verify = False
 
-		self._connectionPool = getSharedConnectionPool(
-			scheme=self._protocol,
-			host=self._host,
-			port=self._port,
-			socketTimeout=self._socketTimeout,
-			connectTimeout=self._connectTimeout,
-			retryTime=self._retryTime,
-			maxsize=self._connectionPoolSize,
-			block=True,
-			verifyServerCert=verifyServerCert,
-			caCertFile=caCertFile,
-			proxyURL=self._proxy
+		self._http_adapter = TimeoutHTTPAdapter(
+			timeout=(self._connect_timeout, self._read_timeout),
+			pool_maxsize=self._http_pool_maxsize,
+			max_retries=self._http_max_retries
 		)
+		self._session.mount('http://', self._http_adapter)
+		self._session.mount('https://', self._http_adapter)
 
-	def _preProcessPath(self, path):
-		path = forceUnicode(path).lstrip("/")
-		path = ("/".join([self._path, path])).lstrip("/")
-		if not self._url.endswith("/"):
-			path = "/" + path
+		try:
+			address = ipaddress.ip_address(self.hostname)
+			if isinstance(address, ipaddress.IPv6Address) and self._ip_version != "6":
+				logger.info("%s is an ipv6 address, forcing ipv6", self.hostname)
+				self._ip_version = 6
+			elif isinstance(address, ipaddress.IPv4Address) and self._ip_version != "4":
+				logger.info("%s is an ipv4 address, forcing ipv4", self.hostname)
+				self._ip_version = 4
+		except ValueError:
+			pass
 
-		path = path.rstrip("/")
-		return quote(path.encode('utf-8'))
+		urllib3.util.connection.allowed_gai_family = self._allowed_gai_family
 
-	def _headers(self):
-		headers = {'user-agent': self._application}
-		if self._cookie:
-			headers['cookie'] = self._cookie
-		if self._auth:
-			headers['authorization'] = self._auth
-		return headers
+	@property
+	def hostname(self):
+		return urlparse(self.base_url).hostname
 
-	def _processResponseHeaders(self, response):
-		# Get cookie from header
-		cookie = response.getheader('set-cookie', None)
-		if cookie:
-			# Store cookie
-			self._cookie = cookie.split(';')[0].strip()
+	def _allowed_gai_family(self):
+		"""This function is designed to work in the context of
+		getaddrinfo, where family=socket.AF_UNSPEC is the default and
+		will perform a DNS search for both IPv6 and IPv4 records."""
+		# https://github.com/urllib3/urllib3/blob/main/src/urllib3/util/connection.py
 
-	def getPeerCertificate(self, asPem=False):
-		return self._connectionPool.getPeerCertificate(asPem)
+		if self._ip_version == "4":
+			return socket.AF_INET
+		if self._ip_version == "6":
+			return socket.AF_INET6
+		if urllib3.util.connection.HAS_IPV6:
+			return socket.AF_UNSPEC
+		return socket.AF_INET
+
+	def _set_url(self, url):
+		url = urlparse(url)
+		if url.scheme not in ('http', 'https', 'webdav', 'webdavs'):
+			raise ValueError(f"Protocol {url.scheme} not supported")
+
+		self._path = url.path
+
+		scheme = "https" if url.scheme.endswith("s") else "http"
+
+		port = url.port
+		if not port:
+			port = 80 if scheme == "http" else 443
+
+		hostname = url.hostname
+		if ":" in hostname:
+			hostname = f"[{hostname}]"
+
+		self.base_url = f"{scheme}://{hostname}:{port}{url.path}"
+		if url.username and not self._username:
+			self._username = url.username
+		if url.password and not self._password:
+			self._password = url.password
+
+	def _get_url(self, path):
+		return self.base_url.rstrip("/") + "/" + quote(path.lstrip("/").rstrip("/").encode('utf-8'))
 
 	def download(self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1):  # pylint: disable=too-many-arguments,too-many-locals,too-many-statements,too-many-branches
 		'''
@@ -1007,95 +1034,64 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 		destination = forceUnicode(destination)
 		startByteNumber = forceInt(startByteNumber)
 		endByteNumber = forceInt(endByteNumber)
-		source = self._preProcessPath(source)
+		source_url = self._get_url(source)
+		source = urlparse(source_url).path
 
 		try:
-			trynum = 0
+			headers = {}
 			bytesTransfered = 0
-			while True:
-				trynum += 1
-				conn = self._connectionPool.getConnection()
 
-				headers = self._headers()
-				startByteNumber += bytesTransfered
-				if startByteNumber > -1 or endByteNumber > -1:
-					sbn = startByteNumber
-					ebn = endByteNumber
-					if sbn <= -1:
-						sbn = 0
-					if ebn <= -1:
-						ebn = ""
-					headers["range"] = f"bytes={sbn}-{ebn}"
-				if self._proxy:
-					conn.putrequest("GET", source, skip_host=True)
-					conn.putheader("Host", f"{self._host}:{self._port}")
-				else:
-					conn.putrequest("GET", source)
-				for key, value in headers.items():
-					conn.putheader(key, value)
-				conn.endheaders()
-				conn.sock.settimeout(self._socketTimeout)
+			startByteNumber += bytesTransfered
+			if startByteNumber > -1 or endByteNumber > -1:
+				sbn = startByteNumber
+				ebn = endByteNumber
+				if sbn <= -1:
+					sbn = 0
+				if ebn <= -1:
+					ebn = ""
+				headers["range"] = f"bytes={sbn}-{ebn}"
 
-				httplibResponse = None
-				try:
-					httplibResponse = conn.getresponse()
-					self._processResponseHeaders(httplibResponse)
-					if httplibResponse.status not in (ResponseCode.OK, ResponseCode.PARTIAL_CONTENT):
-						raise RuntimeError(httplibResponse.status)
-					size = forceInt(httplibResponse.getheader('content-length', 0))
-					logger.debug("Length of binary data to download: %d bytes", size)
+			response = self._session.get(source_url, headers=headers, stream=True)
+			if response.status_code not in (requests.codes['ok'], requests.codes['partial_content']):
+				raise RuntimeError(response.status_code)
 
-					if progressSubject:
-						progressSubject.setEnd(size)
+			size = int(response.headers.get('content-length', 0))
+			logger.debug("Length of binary data to download: %d bytes", size)
 
-					if startByteNumber > 0 and os.path.exists(destination):
-						mode = 'ab'
-					else:
-						mode = 'wb'
+			if progressSubject:
+				progressSubject.setEnd(size)
 
-					with open(destination, mode) as dst:
-						bytesTransfered = self._transferDown(httplibResponse, dst, progressSubject)
-				except Exception as err:  # pylint: disable=broad-except
-					conn = None
-					self._connectionPool.endConnection(conn)
-					if trynum > 2:
-						raise
-					logger.info("Error '%s' occurred while downloading, retrying", err)
-					continue
-				OpsiHTTPResponse.from_httplib(httplibResponse)
+			mode = 'ab' if startByteNumber > 0 and os.path.exists(destination) else 'wb'
+			with open(destination, mode) as dst:
+				response.raw.decode_content = True
+				bytesTransfered = self._transferDown(response.raw, dst, size, progressSubject)
 
-				conn = None
-				self._connectionPool.endConnection(conn)
-				break
-
-		except Exception as err:
+		except Exception as err: # pylint: disable=broad-except
 			logger.error(err, exc_info=True)
 			raise RepositoryError(f"Failed to download '{source}' to '{destination}': {err}") from err
 		logger.trace("HTTP download done")
 
 	def disconnect(self):
 		Repository.disconnect(self)
-		if self._connectionPool:
-			self._connectionPool.free()
 
 
 class WebDAVRepository(HTTPRepository):
 
-	_USER_AGENT = f"opsi-WebDAVRepository/{__version__}"
-
 	def __init__(self, url, **kwargs):
 		HTTPRepository.__init__(self, url, **kwargs)
+
+		self._application = f"opsi-webdav-repository/{__version__}"
+
 		parts = self._url.split('/')
 		if len(parts) < 3 or parts[0].lower() not in ('webdav:', 'webdavs:'):
 			raise RepositoryError(f"Bad http url: '{self._url}'")
 		self._contentCache = {}
 
 	def content(self, source='', recursive=False):
-		source = forceUnicode(source)
-
-		source = self._preProcessPath(source)
-		if not source.endswith('/'):
-			source += '/'
+		source_url = self._get_url(source)
+		source = urlparse(source_url).path
+		if not source_url.endswith('/'):
+			source_url += '/'
 
 		if recursive and source in self._contentCache:
 			if time.time() - self._contentCache[source]['time'] > 60:
@@ -1103,25 +1099,25 @@ class WebDAVRepository(HTTPRepository):
 			else:
 				return self._contentCache[source]['content']
 
-		headers = self._headers()
+		headers = {}
 		depth = '1'
 		if recursive:
 			depth = 'infinity'
 		headers['depth'] = depth
 
-		response = self._connectionPool.urlopen(method='PROPFIND', url=source, body=None, headers=headers, retry=True, redirect=True)
-		self._processResponseHeaders(response)
-		if response.status != ResponseCode.MULTI_STATUS:
-			raise RepositoryError(f"Failed to list dir '{source}': {response.status}")
+		response = self._session.request("PROPFIND", url=source_url, headers=headers)
+		if response.status_code != requests.codes['multi_status']:
+			raise RepositoryError(f"Failed to list dir '{source}': {response.status_code}")
 
 		encoding = 'utf-8'
-		contentType = response.getheader('content-type', '').lower()
+		contentType = response.headers.get('content-type', '').lower()
 		for part in contentType.split(';'):
 			if 'charset=' in part:
 				encoding = part.split('=')[1].replace('"', '').strip()
 
-		davxmldata = response.data
+		davxmldata = response.content
 		logger.trace("davxmldata: %s", davxmldata)
+
 		content = []
 		for entry in getFileInfosFromDavXML(davxmldata=davxmldata, encoding=encoding):
 			if entry["path"].startswith("/"):
@@ -1140,7 +1136,8 @@ class WebDAVRepository(HTTPRepository):
 
 	def upload(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
-		destination = self._preProcessPath(destination)
+		destination_url = self._get_url(destination)
+		destination = urlparse(destination_url).path
 		self._contentCache = {}
 
 		fs = os.stat(source)
@@ -1150,57 +1147,30 @@ class WebDAVRepository(HTTPRepository):
 		if progressSubject:
 			progressSubject.setEnd(size)
 
-		conn = None
-		response = None
 		try:
-			headers = self._headers()
-			headers['content-length'] = size
+			headers = {
+				'content-length': size
+			}
 
-			trynum = 0
-			while True:
-				trynum += 1
-				conn = self._connectionPool.getConnection()
-				conn.putrequest('PUT', destination)
-				for (key, value) in headers.items():
-					conn.putheader(key, value)
-				conn.endheaders()
-				conn.sock.settimeout(self._socketTimeout)
-
-				httplibResponse = None
-				try:
-					with open(source, 'rb') as src:
-						self._transferUp(src, conn, progressSubject)
-					httplibResponse = conn.getresponse()
-				except Exception as err:  # pylint: disable=broad-except
-					conn = None
-					self._connectionPool.endConnection(conn)
-					if trynum > 2:
-						raise
-					logger.info("Error '%s' occurred while uploading, retrying", err)
-					continue
-				response = OpsiHTTPResponse.from_httplib(httplibResponse)
-				conn = None
-				self._connectionPool.endConnection(conn)
-				break
-
-			self._processResponseHeaders(response)
-			if response.status not in (ResponseCode.CREATED, ResponseCode.NO_CONTENT):
-				raise RuntimeError(response.status)
-		except Exception as err:
+			with open(source, 'rb') as src:
+				response = self._session.put(
+					url=destination_url, headers=headers,
+					data=self._transferUp(src, 'yield', size, progressSubject)
+				)
+				if response.status_code not in (requests.codes['created'], requests.codes['no_content']):
+					raise RuntimeError(response.status_code)
+			progressSubject.setState(size)
+		except Exception as err:  # pylint: disable=broad-except
 			logger.error(err, exc_info=True)
-			if conn:
-				self._connectionPool.endConnection(None)
 			raise RepositoryError(f"Failed to upload '{source}' to '{destination}': {err}") from err
 		logger.trace("WebDAV upload done")
 
 	def delete(self, destination):
-		destination = self._preProcessPath(destination)
-
-		headers = self._headers()
-		response = self._connectionPool.urlopen(method='DELETE', url=destination, body=None, headers=headers, retry=True, redirect=True)
-		self._processResponseHeaders(response)
-		if response.status != ResponseCode.NO_CONTENT:
-			raise RepositoryError(f"Failed to delete '{destination}': {response.status}")
+		destination_url = self._get_url(destination)
+		destination = urlparse(destination_url).path
+		response = self._session.delete(url=destination_url)
+		if response.status_code != requests.codes['no_content']:
+			raise RepositoryError(f"Failed to delete '{destination}': {response.status_code}")
 
 
 class CIFSRepository(FileRepository):  # pylint: disable=too-many-instance-attributes
