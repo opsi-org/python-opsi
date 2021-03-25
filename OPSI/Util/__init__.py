@@ -35,15 +35,7 @@ import base64
 import binascii
 import codecs
 import ipaddress
-try:
-	# pyright: reportMissingModuleSource=false
-	import orjson as json  # pylint: disable=import-error
-except ModuleNotFoundError:
-	try:
-		import ujson as json
-	except ModuleNotFoundError:
-		import json
-import json as pyjson
+import json
 import os
 import random
 import re
@@ -252,7 +244,7 @@ def timestamp(secs=0, dateOnly=False):
 
 
 def objectToBeautifiedText(obj):
-	return pyjson.dumps(serialize(obj), indent=4, ensure_ascii=False)
+	return json.dumps(serialize(obj), indent=4, ensure_ascii=False)
 
 
 def objectToBash(obj, bashVars=None, level=0):  # pylint: disable=too-many-branches
