@@ -452,8 +452,8 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 				read = len(buf)
 
 				if read > 0:
-					if (self._bytesTransfered + read) > bytes >= 0:
-						buf = buf[:bytes - self._bytesTransfered]
+					if (self._bytesTransfered + read) > size >= 0:
+						buf = buf[:size - self._bytesTransfered]
 						read = len(buf)
 					self._bytesTransfered += read
 					if isinstance(dst, str) and dst == "yield":
@@ -912,7 +912,7 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 		self._password = None
 		self._ip_version = "auto"
 		self._connect_timeout = 10
-		self._read_timeout = 60
+		self._read_timeout = 3600
 		self._http_pool_maxsize = 10
 		self._http_max_retries = 1
 		self.base_url = None
@@ -1053,7 +1053,7 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 
 			response = self._session.get(source_url, headers=headers, stream=True)
 			if response.status_code not in (requests.codes['ok'], requests.codes['partial_content']):
-				raise RuntimeError(response.status_code)
+				raise RuntimeError(f"{response.status_code} - {response.text}")
 
 			size = int(response.headers.get('content-length', 0))
 			logger.debug("Length of binary data to download: %d bytes", size)
@@ -1073,6 +1073,17 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 
 	def disconnect(self):
 		Repository.disconnect(self)
+
+
+class FileProgessWrapper:  # pylint: disable=too-few-public-methods
+	def __init__(self, file, progressSubject):
+		self.file = file
+		self.progressSubject = progressSubject
+
+	def read(self, size):
+		data = self.file.read(size)
+		self.progressSubject.addToState(len(data))
+		return data
 
 
 class WebDAVRepository(HTTPRepository):
@@ -1107,7 +1118,7 @@ class WebDAVRepository(HTTPRepository):
 
 		response = self._session.request("PROPFIND", url=source_url, headers=headers)
 		if response.status_code != requests.codes['multi_status']:
-			raise RepositoryError(f"Failed to list dir '{source}': {response.status_code}")
+			raise RepositoryError(f"Failed to list dir '{source}': {response.status_code} - {response.text}")
 
 		encoding = 'utf-8'
 		contentType = response.headers.get('content-type', '').lower()
@@ -1149,17 +1160,16 @@ class WebDAVRepository(HTTPRepository):
 
 		try:
 			headers = {
-				'content-length': size
+				'content-length': str(size)
 			}
-
 			with open(source, 'rb') as src:
+				#self._transferUp(src, 'yield', size, progressSubject)
+				fpw = FileProgessWrapper(src, progressSubject)
 				response = self._session.put(
-					url=destination_url, headers=headers,
-					data=self._transferUp(src, 'yield', size, progressSubject)
+					url=destination_url, headers=headers, data=fpw
 				)
 				if response.status_code not in (requests.codes['created'], requests.codes['no_content']):
-					raise RuntimeError(response.status_code)
-			progressSubject.setState(size)
+					raise RuntimeError(f"{response.status_code} - {response.text}")
 		except Exception as err:  # pylint: disable=broad-except
 			logger.error(err, exc_info=True)
 			raise RepositoryError(f"Failed to upload '{source}' to '{destination}': {err}") from err
