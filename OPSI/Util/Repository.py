@@ -1081,7 +1081,7 @@ class FileProgessWrapper:  # pylint: disable=too-few-public-methods
 		self.progress_subject = progress_subject
 		self.block_size = block_size
 
-	def read(self, size):
+	def read(self, size):  # pylint: disable=unused-argument
 		# Read block_size to speed up transfer
 		data = self.file.read(self.block_size)
 		self.progress_subject.addToState(len(data))
