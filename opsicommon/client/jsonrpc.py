@@ -273,7 +273,10 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		if not path or path == "/":
 			path = "/rpc"
 
-		self.base_url = f"{url.scheme}://{url.hostname}:{port}{path}"
+		hostname = url.hostname
+		if ":" in hostname:
+			hostname = f"[{hostname}]"
+		self.base_url = f"{url.scheme}://{hostname}:{port}{path}"
 		if url.username and not self._username:
 			self._username = url.username
 		if url.password and not self._password:
