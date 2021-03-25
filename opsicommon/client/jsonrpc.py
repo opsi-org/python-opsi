@@ -58,21 +58,14 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 		return super().send(request, stream, timeout, verify, cert, proxies)
 
 
-class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
+class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 
 	def __init__(self, address, **kwargs):  # pylint: disable=too-many-branches,too-many-statements
 		"""
-		Backend for JSON-RPC access to another opsi service.
-
-		:param compression: Should requests be compressed?
-		:type compression: bool
+		JSONRPC client
 		"""
 
-		self._name = 'jsonrpc'
-
-		Backend.__init__(self, **kwargs)
-
-		self._application = 'opsi-jsonrpc-backend/%s' % __version__
+		self._application = 'opsi-jsonrpc-client/%s' % __version__
 		self._compression = False
 		self._connect_on_init = True
 		self._connected = False
@@ -183,7 +176,7 @@ class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 		urllib3.util.connection.allowed_gai_family = self._allowed_gai_family
 
 		if self._connect_on_init:
-			self._connect()
+			self.connect()
 
 	def _allowed_gai_family(self):
 		"""This function is designed to work in the context of
@@ -206,7 +199,7 @@ class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 	@property
 	def session(self):
 		if not self._connected:
-			self._connect()
+			self.connect()
 		return self._session
 
 	@property
@@ -229,7 +222,7 @@ class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 	@property
 	def interface(self):
 		if not self._connected:
-			self._connect()
+			self.connect()
 		return self._interface
 
 	@no_export
@@ -445,13 +438,39 @@ class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 			except Exception as err:  # pylint: disable=broad-except
 				logger.critical("Failed to create instance method '%s': %s", method, err)
 
-	def _connect(self):
+	def connect(self):
 		logger.info("Connecting to service %s", self.base_url)
 		self._interface = self._execute_rpc('backend_getInterface')
 		self._create_instance_methods()
 		self._http_adapter.max_retries = Retry.from_int(self._http_max_retries)
 		logger.debug("Connected to service %s", self.base_url)
 		self._connected = True
+
+	def disconnect(self):
+		if self._connected:
+			try:
+				self._execute_rpc('backend_exit')
+			except Exception:  # pylint: disable=broad-except
+				pass
+			self._connected = False
+
+
+class JSONRPCBackend(Backend, JSONRPCClient):  # pylint: disable=too-many-instance-attributes
+
+	def __init__(self, address, **kwargs):  # pylint: disable=too-many-branches,too-many-statements
+		"""
+		Backend for JSON-RPC access to another opsi service.
+
+		:param compression: Should requests be compressed?
+		:type compression: bool
+		"""
+
+		self._name = 'jsonrpc'
+
+		Backend.__init__(self, **kwargs)
+		JSONRPCClient.__init__(self, address, **kwargs)
+
+		self._application = 'opsi-jsonrpc-backend/%s' % __version__
 
 	def jsonrpc_getSessionId(self):
 		if not self._session.cookies or not self._session.cookies._cookies:  # pylint: disable=protected-access
@@ -462,8 +481,4 @@ class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 					return f"{cookie.name}={cookie.value}"
 
 	def backend_exit(self):
-		if self._connected:
-			try:
-				self._execute_rpc('backend_exit')
-			except Exception:  # pylint: disable=broad-except
-				pass
+		self.disconnect()
