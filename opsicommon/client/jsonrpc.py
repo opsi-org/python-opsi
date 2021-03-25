@@ -65,12 +65,10 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		JSONRPC client
 		"""
 
-		self._application = 'opsi-jsonrpc-client/%s' % __version__
+		self._application = f"opsi-jsonrpc-client/{__version__}"
 		self._compression = False
 		self._connect_on_init = True
 		self._connected = False
-		self._http_pool_maxsize = 10
-		self._http_max_retries = 1
 		self._interface = None
 		self._rpc_id = 0
 		self._rpc_id_lock = threading.Lock()
@@ -83,6 +81,8 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		self._ip_version = "auto"
 		self._connect_timeout = 10
 		self._read_timeout = 60
+		self._http_pool_maxsize = 10
+		self._http_max_retries = 1
 		self.server_name = None
 		self.base_url = None
 
@@ -91,8 +91,6 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 			option = option.lower().replace("_", "")
 			if option == 'application':
 				self._application = str(value)
-			elif option == 'sessionid':
-				session_id = str(value)
 			elif option == 'username':
 				self._username = str(value or "")
 			elif option == 'password':
@@ -129,10 +127,10 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 				else:
 					logger.error("Invalid serialization '%s', using %s", value, self._serialization)
 
+		self._set_address(address)
+
 		if self._password:
 			secret_filter.add_secrets(self._password)
-
-		self._set_address(address)
 
 		self._session = requests.Session()
 		self._session.auth = (self._username or '', self._password or '')
