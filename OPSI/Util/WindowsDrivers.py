@@ -474,6 +474,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 					vendorFromHost = "%s_" % vendorFromHost[:-1]
 
 			for vendordirectory in vendordirectories:
+				logger.info("Checking Vendor directory: %s" % vendordirectory)
 				if vendordirectory.lower() == vendorFromHost.lower():
 					modeldirectories = listdir(os.path.join(rulesdir, vendordirectory))
 					if skuFromHost and skuFromHost in modelFromHost:
@@ -482,8 +483,9 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 						if modelFromHost.endswith((".", " ")):
 							modelFromHost = "%s_" % modelFromHost[:-1]
 					for modeldirectory in modeldirectories:
+						logger.info("Checking Model directory %s" % modeldirectory)
 						if modeldirectory.lower() == modelFromHost.lower():
-							logger.info("ByAudit: Exact match found.")
+							logger.info("ByAudit: Exact match found in Vendor directory: %s" % vendordirectory)
 							additionalDrivers.append(os.path.join("byAudit", vendordirectory, modeldirectory))
 							byAuditIntegrated = True
 							break
