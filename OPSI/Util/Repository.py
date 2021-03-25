@@ -986,10 +986,6 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 	def hostname(self):
 		return urlparse(self.base_url).hostname
 
-	@property
-	def _path(self):
-		return urlparse(self.base_url).path
-
 	def _allowed_gai_family(self):
 		"""This function is designed to work in the context of
 		getaddrinfo, where family=socket.AF_UNSPEC is the default and
@@ -1009,6 +1005,8 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 		if url.scheme not in ('http', 'https', 'webdav', 'webdavs'):
 			raise ValueError(f"Protocol {url.scheme} not supported")
 
+		self._path = url.path
+
 		scheme = "https" if url.scheme.endswith("s") else "http"
 
 		port = url.port
@@ -1018,6 +1016,7 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 		hostname = url.hostname
 		if ":" in hostname:
 			hostname = f"[{hostname}]"
+
 		self.base_url = f"{scheme}://{hostname}:{port}{url.path}"
 		if url.username and not self._username:
 			self._username = url.username
@@ -1036,6 +1035,7 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 		startByteNumber = forceInt(startByteNumber)
 		endByteNumber = forceInt(endByteNumber)
 		source_url = self._get_url(source)
+		source = urlparse(source_url).path
 
 		try:
 			headers = {}
@@ -1089,6 +1089,7 @@ class WebDAVRepository(HTTPRepository):
 
 	def content(self, source='', recursive=False):
 		source_url = self._get_url(source)
+		source = urlparse(source_url).path
 		if not source_url.endswith('/'):
 			source_url += '/'
 
@@ -1114,8 +1115,9 @@ class WebDAVRepository(HTTPRepository):
 			if 'charset=' in part:
 				encoding = part.split('=')[1].replace('"', '').strip()
 
-		davxmldata = response.data
+		davxmldata = response.content
 		logger.trace("davxmldata: %s", davxmldata)
+
 		content = []
 		for entry in getFileInfosFromDavXML(davxmldata=davxmldata, encoding=encoding):
 			if entry["path"].startswith("/"):
@@ -1135,6 +1137,7 @@ class WebDAVRepository(HTTPRepository):
 	def upload(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
 		destination_url = self._get_url(destination)
+		destination = urlparse(destination_url).path
 		self._contentCache = {}
 
 		fs = os.stat(source)
@@ -1164,6 +1167,7 @@ class WebDAVRepository(HTTPRepository):
 
 	def delete(self, destination):
 		destination_url = self._get_url(destination)
+		destination = urlparse(destination_url).path
 		response = self._session.delete(url=destination_url)
 		if response.status_code != requests.codes['no_content']:
 			raise RepositoryError(f"Failed to delete '{destination}': {response.status_code}")
