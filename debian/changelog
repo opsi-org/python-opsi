@@ -1,4 +1,4 @@
-python-opsi (4.1.0.102-1) stable; urgency=medium
+python-opsi (4.1.1.102-1) stable; urgency=medium
 
   * WindowsDrivers.py: added more logging on searched byAudit vendor and model directories
 
