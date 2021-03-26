@@ -544,7 +544,14 @@ class Host(Object):
 		return self.ipAddress
 
 	def setIpAddress(self, ipAddress):
-		self.ipAddress = forceIPAddress(ipAddress)
+		try:
+			self.ipAddress = forceIPAddress(ipAddress)
+		except ValueError as err:
+			logger.error(
+				"Failed to set ip address '%s' for host %s: %s",
+				ipAddress, self.id, err
+			)
+			self.ipAddress = None
 
 	def getInventoryNumber(self):
 		return self.inventoryNumber
