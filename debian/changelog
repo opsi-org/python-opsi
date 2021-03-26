@@ -1,3 +1,9 @@
+python-opsi (4.1.1.103-1) stable; urgency=medium
+
+  * WindowsDrivers.py: changed logging to be more like in show_drivers.py
+
+ -- Mathias Radtke <m.radtke@uib.de> Thu, 25 Mar 2021 16:22:00 +0100
+
 python-opsi (4.1.1.102-1) stable; urgency=medium
 
   * WindowsDrivers.py: added more logging on searched byAudit vendor and model directories

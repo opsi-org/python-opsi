@@ -468,6 +468,8 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		fallbackPath = ""
 
 		if vendorFromHost and modelFromHost:
+			logger.notice(u"Additional drivers for integration found using byAudit (System) for vendor: '%s' model : '%s' Check if drivers are available." % (vendorFromHost, modelFromHost))
+
 			vendordirectories = listdir(rulesdir)
 			if vendorFromHost not in vendordirectories:
 				if vendorFromHost.endswith((".", " ")):
@@ -504,6 +506,8 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		productFromHost = invalidCharactersRegex.sub("_", auditHardwareOnHost.product or "")
 
 		if vendorFromHost and productFromHost:
+			logger.notice(u"Additional drivers for integration found using byAudit (System) for vendor: '%s' model : '%s' Check if drivers are available." % (vendorFromHost, modelFromHost))
+
 			vendordirectories = listdir(rulesdir)
 			if vendorFromHost not in vendordirectories:
 				if vendorFromHost.endswith((".", " ")):
