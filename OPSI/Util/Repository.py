@@ -456,9 +456,7 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 						buf = buf[:size - self._bytesTransfered]
 						read = len(buf)
 					self._bytesTransfered += read
-					if isinstance(dst, str) and dst == "yield":
-						yield buf
-					elif hasattr(dst, "send"):
+					if hasattr(dst, "send"):
 						dst.send(buf)
 					else:
 						dst.write(buf)
@@ -1017,14 +1015,15 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 		if ":" in hostname:
 			hostname = f"[{hostname}]"
 
-		self.base_url = f"{scheme}://{hostname}:{port}{url.path}"
+		self.base_url = f"{scheme}://{hostname}:{port}{url.path.rstrip('/')}"
 		if url.username and not self._username:
 			self._username = url.username
 		if url.password and not self._password:
 			self._password = url.password
 
-	def _get_url(self, path):
-		return self.base_url.rstrip("/") + "/" + quote(path.lstrip("/").rstrip("/").encode('utf-8'))
+	def _preProcessPath(self, path):
+		path = "/" + forceUnicode(path).lstrip("/").rstrip("/")
+		return quote(path.encode('utf-8'))
 
 	def download(self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1):  # pylint: disable=too-many-arguments,too-many-locals,too-many-statements,too-many-branches
 		'''
@@ -1034,8 +1033,8 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 		destination = forceUnicode(destination)
 		startByteNumber = forceInt(startByteNumber)
 		endByteNumber = forceInt(endByteNumber)
-		source_url = self._get_url(source)
-		source = urlparse(source_url).path
+		source = self._preProcessPath(source)
+		source_url = self.base_url.rstrip("/") + source
 
 		try:
 			headers = {}
@@ -1101,8 +1100,8 @@ class WebDAVRepository(HTTPRepository):
 		self._contentCache = {}
 
 	def content(self, source='', recursive=False):
-		source_url = self._get_url(source)
-		source = urlparse(source_url).path
+		source = self._preProcessPath(source)
+		source_url = self.base_url.rstrip("/") + source
 		if not source_url.endswith('/'):
 			source_url += '/'
 
@@ -1149,8 +1148,8 @@ class WebDAVRepository(HTTPRepository):
 
 	def upload(self, source, destination, progressSubject=None):
 		source = forceUnicode(source)
-		destination_url = self._get_url(destination)
-		destination = urlparse(destination_url).path
+		destination = self._preProcessPath(destination)
+		destination_url = self.base_url.rstrip("/") + destination
 		self._contentCache = {}
 
 		fs = os.stat(source)
@@ -1176,8 +1175,8 @@ class WebDAVRepository(HTTPRepository):
 		logger.trace("WebDAV upload done")
 
 	def delete(self, destination):
-		destination_url = self._get_url(destination)
-		destination = urlparse(destination_url).path
+		destination = self._preProcessPath(destination)
+		destination_url = self.base_url.rstrip("/") + destination
 		response = self._session.delete(url=destination_url)
 		if response.status_code != requests.codes['no_content']:
 			raise RepositoryError(f"Failed to delete '{destination}': {response.status_code}")
