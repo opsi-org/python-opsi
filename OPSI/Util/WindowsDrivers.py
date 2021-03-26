@@ -505,7 +505,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		productFromHost = re.sub(r"[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.product or "")
 
 		if vendorFromHost and productFromHost:
-			logger.notice(u"Additional drivers for integration found using byAudit (System) for vendor: '%s' model : '%s' Check if drivers are available." % (vendorFromHost, modelFromHost))
+			logger.notice(u"Additional drivers for integration found using byAudit (Board) for vendor: '%s' model : '%s' Check if drivers are available." % (vendorFromHost, modelFromHost))
 
 			vendordirectories = listdir(rulesdir)
 			if vendorFromHost not in vendordirectories:
