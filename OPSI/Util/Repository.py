@@ -426,7 +426,7 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 		time.sleep(self._bandwidthSleepTime)
 
 	def _transfer(self, transferDirection, src, dst, size, progressSubject=None):  # pylint: disable=redefined-builtin,too-many-arguments,too-many-branches
-		logger.debug("Transfer %s from %s to %s (bytes=%s, dynamic bandwidth=%s, max bandwidth=%s)",
+		logger.debug("Transfer %s from %s to %s (size=%s, dynamic bandwidth=%s, max bandwidth=%s)",
 			transferDirection, src, dst, size, self._dynamicBandwidth, self._maxBandwidth
 		)
 		try:
@@ -827,7 +827,7 @@ class FileRepository(Repository):
 		endByteNumber = forceInt(endByteNumber)
 
 		if endByteNumber > -1:
-			size -= endByteNumber
+			size = endByteNumber
 		if startByteNumber > -1:
 			size -= startByteNumber
 
@@ -840,19 +840,8 @@ class FileRepository(Repository):
 			with open(source, 'rb') as src:
 				if startByteNumber > -1:
 					src.seek(startByteNumber)
-				_bytes = -1
-				if endByteNumber > -1:
-					_bytes = endByteNumber + 1
-					if startByteNumber > -1:
-						_bytes -= startByteNumber
-
-				if startByteNumber > 0 and os.path.exists(destination):
-					dstWriteMode = 'ab'
-				else:
-					dstWriteMode = 'wb'
-
-				with open(destination, dstWriteMode) as dst:
-					self._transferDown(src, dst, _bytes, progressSubject)
+				with open(destination, 'wb') as dst:
+					self._transferDown(src, dst, size, progressSubject)
 		except Exception as err:  # pylint: disable=broad-except
 			raise RepositoryError(f"Failed to download '{source}' to '{destination}': {err}") from err
 
@@ -1038,9 +1027,6 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 
 		try:
 			headers = {}
-			bytesTransfered = 0
-
-			startByteNumber += bytesTransfered
 			if startByteNumber > -1 or endByteNumber > -1:
 				sbn = startByteNumber
 				ebn = endByteNumber
@@ -1060,10 +1046,9 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 			if progressSubject:
 				progressSubject.setEnd(size)
 
-			mode = 'ab' if startByteNumber > 0 and os.path.exists(destination) else 'wb'
-			with open(destination, mode) as dst:
+			with open(destination, 'wb') as dst:
 				response.raw.decode_content = True
-				bytesTransfered = self._transferDown(response.raw, dst, size, progressSubject)
+				self._transferDown(response.raw, dst, size, progressSubject)
 
 		except Exception as err: # pylint: disable=broad-except
 			logger.error(err, exc_info=True)
@@ -1333,7 +1318,7 @@ class DepotToLocalDirectorySychronizer:  # pylint: disable=too-few-public-method
 						md5s = md5sum(destinationPath)
 						logger.debug("Destination file '%s' already exists (size: %s, md5sum: %s)", destinationPath, size, md5s)
 						localSize = os.path.getsize(destinationPath)
-						if (localSize == size) and (md5s == self._fileInfo[relSource]['md5sum']):
+						if localSize == size and md5s == self._fileInfo[relSource]['md5sum']:
 							continue
 
 				if progressSubject:

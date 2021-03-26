@@ -95,3 +95,30 @@ def testGetFileInfosFromDavXML(twistedDAVXML):
 
 	assert dirs == 1
 	assert files == 3
+
+def test_file_repo_start_end(tmpdir):
+	src_dir = tmpdir.mkdir("src")
+	src = src_dir.join("test.txt")
+	src.write("123456789")
+	dst_dir = tmpdir.mkdir("dst")
+	dst = dst_dir.join("test.txt")
+
+	repo = getRepository(f"file://{src_dir}")
+	repo.download("test.txt", str(dst), startByteNumber=-1, endByteNumber=-1)
+	assert dst.read() == "123456789"
+
+	repo.download("test.txt", str(dst), startByteNumber=0, endByteNumber=-1)
+	assert dst.read() == "123456789"
+
+	repo.download("test.txt", str(dst), startByteNumber=0, endByteNumber=1)
+	assert dst.read() == "1"
+
+	repo.download("test.txt", str(dst), startByteNumber=1, endByteNumber=1)
+	assert dst.read() == ""
+
+	repo.download("test.txt", str(dst), startByteNumber=0, endByteNumber=2)
+	assert dst.read() == "12"
+
+	repo.download("test.txt", str(dst), startByteNumber=5, endByteNumber=9)
+	assert dst.read() == "6789"
+
