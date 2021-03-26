@@ -35,14 +35,7 @@ import base64
 import binascii
 import codecs
 import ipaddress
-try:
-	# pyright: reportMissingModuleSource=false
-	import orjson as json  # pylint: disable=import-error
-except ModuleNotFoundError:
-	try:
-		import ujson as json
-	except ModuleNotFoundError:
-		import json
+import json
 import os
 import random
 import re

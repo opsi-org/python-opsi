@@ -148,7 +148,7 @@ class DepotserverBackend(ExtendedBackend):
 			md5file.write(md5)
 		if os.name == "posix":
 			os.chown(md5sumFilename, -1, grp.getgrnam(FILE_ADMIN_GROUP)[2])
-			os.chmod(md5file, 0o660)
+			os.chmod(md5sumFilename, 0o660)
 
 	def depot_createZsyncFile(self, filename, zsyncFilename):  # pylint: disable=no-self-use
 		if not os.path.exists(filename):
