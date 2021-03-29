@@ -259,6 +259,8 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		return response
 
 	def _set_address(self, address):
+		if "://" not in address:
+			address = f"https://{address}"
 		url = urlparse(address)
 		if url.scheme not in ('http', 'https'):
 			raise ValueError(f"Protocol {url.scheme} not supported")
