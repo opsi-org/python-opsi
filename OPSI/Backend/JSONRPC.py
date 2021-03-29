@@ -524,6 +524,7 @@ class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 		return self._rpcId
 
 	def _processAddress(self, address):
+		logger.debug("Processing address: %s", address)
 		self._protocol = 'https'
 		(scheme, host, port, baseurl, username, password) = urlsplit(address)
 		if scheme:

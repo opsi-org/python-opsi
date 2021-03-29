@@ -556,6 +556,8 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 
 def urlsplit(url):
 	_url = urlparse(url)
+	if _url.hostname is None:
+		return (None, _url.path, None, None, None, None)
 	return (_url.scheme, _url.hostname, _url.port, _url.path, _url.username, _url.password)
 
 
