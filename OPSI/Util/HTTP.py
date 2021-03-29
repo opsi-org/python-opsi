@@ -555,30 +555,8 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 
 
 def urlsplit(url):
-	url = forceUnicode(url)
-	scheme = None
-	baseurl = '/'
-	port = None
-	username = None
-	password = None
-	if url.find('://') != -1:
-		(scheme, url) = url.split('://', 1)
-		scheme = scheme.lower()
-	parts = url.split('/', 1)
-	host = parts[0]
-
-	if len(parts) > 1:
-		baseurl += parts[1]
-
-	if '@' in host:
-		username, host = host.split('@', 1)
-		if ':' in username:
-			username, password = username.split(':', 1)
-
-	if ':' in host:
-		host, port = host.split(':', 1)
-		port = int(port)
-	return (scheme, host, port, baseurl, username, password)
+	_url = urlparse(url)
+	return (_url.scheme, _url.hostname, _url.port, _url.path, _url.username, _url.password)
 
 
 def getSharedConnectionPoolFromUrl(url, **kw):
