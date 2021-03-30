@@ -282,7 +282,7 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		if url.password and not self._password:
 			self._password = url.password
 
-	def _execute_rpc(self, method, params=None):  # pylint: disable=too-many-branches,too-many-statements
+	def execute_rpc(self, method, params=None):  # pylint: disable=too-many-branches,too-many-statements
 		params = params or []
 
 		rpc_id = 0
@@ -436,14 +436,14 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 
 				logger.trace("%s: arg string is: %s", method_name, arg_string)
 				logger.trace("%s: call string is: %s", method_name, call_string)
-				exec(f'def {method_name}(self, {arg_string}): return self._execute_rpc("{method_name}", [{call_string}])')  # pylint: disable=exec-used
+				exec(f'def {method_name}(self, {arg_string}): return self.execute_rpc("{method_name}", [{call_string}])')  # pylint: disable=exec-used
 				setattr(self, method_name, types.MethodType(eval(method_name), self))  # pylint: disable=eval-used
 			except Exception as err:  # pylint: disable=broad-except
 				logger.critical("Failed to create instance method '%s': %s", method, err)
 
 	def connect(self):
 		logger.info("Connecting to service %s", self.base_url)
-		self._interface = self._execute_rpc('backend_getInterface')
+		self._interface = self.execute_rpc('backend_getInterface')
 		self._create_instance_methods()
 		self._http_adapter.max_retries = Retry.from_int(self._http_max_retries)
 		logger.debug("Connected to service %s", self.base_url)
@@ -452,7 +452,7 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 	def disconnect(self):
 		if self._connected:
 			try:
-				self._execute_rpc('backend_exit')
+				self.execute_rpc('backend_exit')
 			except Exception:  # pylint: disable=broad-except
 				pass
 			self._connected = False
