@@ -309,7 +309,7 @@ def getDepotDirectories():
 					("repository", depot.getRepositoryLocalUrl()),
 					("workbench", depot.getWorkbenchLocalUrl())
 				):
-					if url.startswith('file:///'):
+					if url and url.startswith('file:///'):
 						CACHED_DEPOT_DIRS[name] = url[7:]
 		except IndexError:
 			logger.warning("Failed to get directories from depot: No depots found")
