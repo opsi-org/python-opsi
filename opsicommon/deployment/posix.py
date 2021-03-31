@@ -71,6 +71,19 @@ class PosixDeployThread(DeployThread):
 	def run(self):
 		self._installWithSSH()
 
+	def copy_and_link_macos_ssl(self, remoteFolder, credentialsfile=None):
+		lib_origin = os.path.join(remoteFolder, 'files', 'opsi', 'opsi-script_helper')
+		libs = [('libssl.1.1.dylib', 'libssl.dylib'), ('libcrypto.1.1.dylib', 'libssl.dylib')]
+		lib_dir = '/usr/local/lib/'
+
+		self._executeViaSSH(f"mkdir -p {lib_dir}", credentialsfile=credentialsfile)
+		for lib, link in libs:
+			command = f"cp {os.path.join(lib_origin, lib)} {os.path.join(lib_dir, lib)}"
+			self._executeViaSSH(command, credentialsfile=credentialsfile)
+
+			command = f"ln -sf {os.path.join(lib_dir, lib)} {os.path.join(lib_dir, link)}"
+			self._executeViaSSH(command, credentialsfile=credentialsfile)
+
 	def _installWithSSH(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		logger.debug('Installing with files copied to client via scp.')
 		host = forceUnicodeLower(self.host)
@@ -142,6 +155,8 @@ class PosixDeployThread(DeployThread):
 					self._executeViaSSH(f'echo "\n" >> {credentialsfile}')
 
 				try:
+					if self.target_os == "macos":
+						self.copy_and_link_macos_ssl(remoteFolder, credentialsfile=credentialsfile)
 					logger.notice('Running installation script...')
 					self._executeViaSSH(installCommand, credentialsfile=credentialsfile)
 				except Exception:
