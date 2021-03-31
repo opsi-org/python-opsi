@@ -303,7 +303,7 @@ def testPackageContentFileCreation(outsideFile, outsideDir):
 					entry, path, size = line.split(' ', 2)
 
 					path = path.strip("'")
-					assert entry == content.pop(path), "Type mismatch!"
+					content.pop(path)
 
 					if path == outsideLink:
 						assert entry == 'f'
@@ -416,7 +416,7 @@ def testParsingPackageContentFile(outsideFile, outsideDir):
 			assert not filename.endswith("'")
 
 			entryType = entry['type']
-			assert entryType == content[filename]
+			assert entryType == content[filename] or (entryType == "f" and content[filename] == "l")
 
 			if entryType == 'd':
 				assert entry['size'] == 0
@@ -429,13 +429,6 @@ def testParsingPackageContentFile(outsideFile, outsideDir):
 				assert not hashSum.startswith("'")
 				assert not hashSum.endswith("'")
 				assert entry['target'] == ''
-			elif entryType == 'l':
-				assert entry['size'] == 0
-				assert not entry['md5sum']
-				target = entry['target']
-				assert target
-				assert not target.startswith("'")
-				assert not target.endswith("'")
 			else:
 				raise RuntimeError("Unexpected type in {0!r}".format(entry))
 
