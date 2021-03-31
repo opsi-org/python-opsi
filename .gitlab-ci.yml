@@ -25,6 +25,7 @@ test:pylint-pytest:
   script: |
     # Installing opsi testmodules file
     mkdir -p /etc/opsi
+    mkdir -p /var/log/opsi
     echo "${OPSI_TEST_MODULES}" > /etc/opsi/modules
     cat /etc/opsi/modules
     export DEBIAN_FRONTEND=noninteractive
