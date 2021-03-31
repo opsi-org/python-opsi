@@ -182,6 +182,7 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		will perform a DNS search for both IPv6 and IPv4 records."""
 		# https://github.com/urllib3/urllib3/blob/main/src/urllib3/util/connection.py
 
+		logger.debug("Using ip version %s", self._ip_version)
 		if self._ip_version == "4":
 			return socket.AF_INET
 		if self._ip_version == "6":
@@ -340,8 +341,8 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 				data = gzip.compress(data)
 
 		logger.info(
-			"JSONRPC request to %s: id=%d, method=%s, Content-Type=%s, Content-Encoding=%s",
-			self.base_url, rpc_id, method, headers.get('Content-Type', ''), headers.get('Content-Encoding', '')
+			"JSONRPC request to %s: ip_version=%s, id=%d, method=%s, Content-Type=%s, Content-Encoding=%s",
+			self.base_url, self._ip_version, rpc_id, method, headers.get('Content-Type', ''), headers.get('Content-Encoding', '')
 		)
 		response = self._session.post(self.base_url, headers=headers, data=data, stream=True)
 		content_type = response.headers.get("Content-Type", "")

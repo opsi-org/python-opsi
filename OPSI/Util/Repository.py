@@ -979,6 +979,7 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 		will perform a DNS search for both IPv6 and IPv4 records."""
 		# https://github.com/urllib3/urllib3/blob/main/src/urllib3/util/connection.py
 
+		logger.debug("Using ip version %s", self._ip_version)
 		if self._ip_version == "4":
 			return socket.AF_INET
 		if self._ip_version == "6":
