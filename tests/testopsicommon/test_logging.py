@@ -13,13 +13,16 @@ import time
 import threading
 import asyncio
 import random
+import requests
 from contextlib import contextmanager
+from opsicommon.logging.logging import print_logger_info
 import pytest
 
 from opsicommon.logging import (
 	logger, handle_log_exception, secret_filter, observable_handler,
 	ContextSecretFormatter, log_context, set_format,
-	init_logging, logging_config, print_logger_info
+	init_logging, print_logger_info, set_filter, set_context,
+	set_filter_from_string
 )
 
 try:
@@ -27,23 +30,36 @@ try:
 except ImportError:
 	LegacyLogger = None
 
-@contextmanager
-@pytest.fixture(scope="function")
-def log_stream():
-	stream = io.StringIO()
-	handler = logging.StreamHandler(stream)
-	handler.name = "opsicommon test stream"
-	try:
-		logging.root.addHandler(handler)
-		yield stream
-	finally:
-		logging.root.removeHandler(handler)
+MY_FORMAT = "%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(contextstring)s] %(message)s"
+OTHER_FORMAT = "[%(opsilevel)d] [%(asctime)s.%(msecs)03d] [%(contextstring)s] %(message)s   (%(filename)s:%(lineno)d)"
 
-def test_levels(log_stream):
-	with log_stream as stream:
-		#handler.setLevel(logging.SECRET)
-		logger.setLevel(logging.SECRET)
-		set_format(stderr_format="%(message)s")
+
+class Utils:
+	@staticmethod
+	@contextmanager
+	def log_stream(new_level, format=None):
+		stream = io.StringIO()
+		handler = logging.StreamHandler(stream)
+		handler.name = "opsicommon test stream"
+		if new_level < 10:
+			new_level = logging.opsi_level_to_level[new_level]
+		handler.setLevel(new_level)
+		try:
+			logging.root.addHandler(handler)
+			if format:
+				set_format(stderr_format=format)
+			else:
+				set_format()
+			yield stream
+		finally:
+			logging.root.removeHandler(handler)
+
+@pytest.fixture
+def utils():
+	return Utils
+
+def test_levels(utils):
+	with utils.log_stream(logging.SECRET, format="%(message)s") as stream:
 		expected = ""
 		for level in (
 			"secret", "confidential", "trace", "debug2", "debug",
@@ -67,13 +83,12 @@ def test_secret_formatter_attr():
 	sf = ContextSecretFormatter(logging.Formatter())
 	sf.format(log_record)
 
-def test_secret_filter(log_stream):
-	with log_stream as stream:
-		logger.setLevel(logging.TRACE)
-		set_format(stderr_format="[%(asctime)s.%(msecs)03d] %(message)s")
+def test_secret_filter(utils):
+	secret_filter.set_min_length(7)
+	secret_filter.add_secrets("PASSWORD", "2SHORT", "SECRETSTRING")
 
-		secret_filter.set_min_length(7)
-		secret_filter.add_secrets("PASSWORD", "2SHORT", "SECRETSTRING")
+	with utils.log_stream(logging.TRACE, format="[%(asctime)s.%(msecs)03d] %(message)s") as stream:
+		print_logger_info()
 		logger.info("line 1")
 		logger.info("line 2 PASSWORD")
 		logger.info("line 3 2SHORT")
@@ -85,7 +100,8 @@ def test_secret_filter(log_stream):
 		assert "line 3 2SHORT\n" in log
 		assert "line 4 SECRETSTRING\n" not in log
 
-		logger.setLevel(logging.SECRET)
+	with utils.log_stream(logging.SECRET, format="[%(asctime)s.%(msecs)03d] %(message)s") as stream:
+		print_logger_info()
 		logger.info("line 5 PASSWORD")
 		logger.secret("line 6 SECRETSTRING")
 		stream.seek(0)
@@ -93,6 +109,8 @@ def test_secret_filter(log_stream):
 		assert "line 5 PASSWORD\n" in log
 		assert "line 6 SECRETSTRING\n" in log
 
+		secret_filter.clear_secrets()
+		logger.info("line 7 PASSWORD")
 
 		secret_filter.clear_secrets()
 		logger.info("line 7 PASSWORD")
@@ -101,12 +119,11 @@ def test_secret_filter(log_stream):
 		assert "line 7 PASSWORD\n" in log
 
 
-		logger.setLevel(logging.INFO)
-		stream.seek(0)
-		stream.truncate()
-		secret_filter.add_secrets("SECRETSTRING1", "SECRETSTRING2", "SECRETSTRING3")
-		secret_filter.remove_secrets("SECRETSTRING2")
+	secret_filter.add_secrets("SECRETSTRING1", "SECRETSTRING2", "SECRETSTRING3")
+	secret_filter.remove_secrets("SECRETSTRING2")
+	with utils.log_stream(logging.INFO) as stream:
 		logger.info("SECRETSTRING1 SECRETSTRING2 SECRETSTRING3")
+
 		stream.seek(0)
 		log = stream.read()
 		assert "SECRETSTRING1" not in log
@@ -115,10 +132,8 @@ def test_secret_filter(log_stream):
 
 
 @pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
-def test_legacy_logger_file(log_stream):
-	with log_stream as stream:
-		logger.setLevel(logging.SECRET)
-
+def test_legacy_logger_file(utils):
+	with utils.log_stream(logging.SECRET) as stream:
 		legacy_logger = LegacyLogger("/tmp/test.log")
 		assert legacy_logger == logger
 		legacy_logger.info("test should appear")
@@ -131,10 +146,8 @@ def test_legacy_logger_file(log_stream):
 		content = logfile.read()
 		assert "test should appear" in content
 
-def test_context(log_stream):
-	with log_stream as stream:
-		#handler.setLevel(logging.SECRET)
-		logger.setLevel(logging.SECRET)
+def test_context(utils):
+	with utils.log_stream(logging.SECRET) as stream:
 		set_format(stderr_format="%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(contextstring)s] %(message)s   (%(filename)s:%(lineno)d)")
 
 		logger.info("before setting context")
@@ -147,7 +160,8 @@ def test_context(log_stream):
 		assert "first-context" in log
 		assert "second-context" in log
 
-def test_context_threads(log_stream):
+
+def test_context_threads(utils):
 	def common_work():
 		time.sleep(0.2)
 		logger.info("common_work")
@@ -205,10 +219,9 @@ def test_context_threads(log_stream):
 				logger.essential("MyModule.run")
 				common_work()
 
-	#init_logging(stderr_level=logging.INFO)
 	set_format(stderr_format="%(contextstring)s %(message)s")
 	with log_context({'whoami' : "MAIN"}):
-		with log_stream as stream:
+		with utils.log_stream(logging.INFO) as stream:
 			main = Main()
 			try:
 				main.run()
@@ -221,12 +234,11 @@ def test_context_threads(log_stream):
 			stream.seek(0)
 
 			log = stream.read()
-			print(log)
 			assert re.search(r"module Client-1.*MyModule.run", log) is not None
 			# to check for corrent handling of async contexti when eventloop is not running in main thread
 			assert re.search(r"handler for client Client-0.*handling client Client-1", log) is None
 
-def test_observable_handler():
+def test_observable_handler(utils):
 	class LogObserver():
 		def __init__(self):
 			self.messages = []
@@ -234,20 +246,18 @@ def test_observable_handler():
 		def messageChanged(self, handler, message):
 			self.messages.append(message)
 
-	logger.setLevel(logging.SECRET)
-	lo = LogObserver()
-	observable_handler.attach_observer(lo)
-	logger.error("error")
-	logger.warning("warning")
-	logger.info("in%s%s", "f", "o")
-	assert lo.messages == ["error", "warning", "info"]
+	with utils.log_stream(logging.SECRET):
+		lo = LogObserver()
+		observable_handler.attach_observer(lo)
+		logger.error("error")
+		logger.warning("warning")
+		logger.info("in%s%s", "f", "o")
+		assert lo.messages == ["error", "warning", "info"]
 
 
 @pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
-def test_legacy_logger(log_stream):
-	with log_stream as stream:
-		logger.setLevel(logging.TRACE)
-
+def test_legacy_logger(utils):
+	with utils.log_stream(logging.TRACE) as stream:
 		legacy_logger = LegacyLogger()
 		assert legacy_logger == logger
 		#init_logging(file_level=logging.SECRET)
@@ -272,13 +282,11 @@ def test_legacy_logger(log_stream):
 		assert "LOG_EXCEPTION" in log
 
 @pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
-def test_legacy_logger_calls(log_stream):
-	with log_stream as stream:
-		logging_config(stderr_level=logging.SECRET)
+def test_legacy_logger_calls(utils):
+	with utils.log_stream(logging.SECRET) as stream:
 		legacy_logger = LegacyLogger()
 		assert legacy_logger == logger
 
-		#print_logger_info()
 		legacy_logger.getStderr()
 		legacy_logger.getStdout()
 		legacy_logger.setConfidentialStrings(["topsecret"])
@@ -334,3 +342,130 @@ def test_legacy_logger_calls(log_stream):
 		stream.seek(0)
 		log = stream.read()
 		assert log.count("fill-value") == 13
+
+
+def test_simple_colored(utils):
+	with utils.log_stream(logging.WARNING, format=MY_FORMAT) as stream:
+		with log_context({'firstcontext' : 'asdf', 'secondcontext' : 'jkl'}):
+			logger.error("test message")
+		stream.seek(0)
+		log = stream.read()
+		assert "asdf" in log and "jkl" in log
+
+def test_simple_plain(utils):
+	with utils.log_stream(logging.WARNING, format=OTHER_FORMAT) as stream:
+		with log_context({'firstcontext' : 'asdf', 'secondcontext' : 'jkl'}):
+			logger.error("test message")
+		stream.seek(0)
+		log = stream.read()
+		assert "asdf" in log and "jkl" in log
+
+def test_set_context(utils):
+	with utils.log_stream(logging.WARNING, format=MY_FORMAT) as stream:
+		set_context({'firstcontext' : 'asdf', 'secondcontext' : 'jkl'})
+		logger.error("test message")
+		stream.seek(0)
+		log = stream.read()
+		assert "asdf" in log and "jkl" in log
+		stream.seek(0)
+		stream.truncate()
+
+		set_context({'firstcontext' : 'asdf'})
+		logger.error("test message")
+		stream.seek(0)
+		log = stream.read()
+		assert "asdf" in log and "jkl" not in log
+
+		stream.seek(0)
+		stream.truncate()
+		set_context({})
+		logger.error("test message")
+		stream.seek(0)
+		log = stream.read()
+		assert "asdf" not in log
+
+		stream.seek(0)
+		stream.truncate()
+		set_context("suddenly a string")
+		logger.error("test message")
+		stream.seek(0)
+		log = stream.read()
+		assert "suddenly a string" not in log	# must be given as dictionary
+
+def test_foreign_logs(utils):
+	with utils.log_stream(logging.DEBUG, format="%(message)s") as stream:
+		logger.error("message before request")
+
+		requests.get("http://www.uib.de")
+
+		logger.error("message after request")
+		stream.seek(0)
+		log = stream.read()
+		assert "www.uib.de" in log
+
+def test_filter(utils):
+	with utils.log_stream(logging.WARNING, format="%(message)s") as stream:
+		set_filter({"testkey" : ["t1", "t3"]})
+		with log_context({"testkey" : "t1"}):
+			logger.warning("test that should appear")
+		with log_context({"testkey" : "t2"}):
+			logger.warning("test that should not appear")
+		stream.seek(0)
+		log = stream.read()
+		assert "test that should appear" in log
+		assert "test that should not appear" not in log
+
+def test_filter_from_string(utils):
+	with utils.log_stream(logging.WARNING, format="%(message)s") as stream:
+		# as one string (like --log-filter "")
+		set_filter_from_string("testkey = t1 , t3 ; alsotest = a1")
+		with log_context({"testkey" : "t1", "alsotest" : "a1"}):
+			logger.warning("test that should appear")
+		with log_context({"testkey" : "t2", "alsotest" : "a1"}):
+			logger.warning("test that should not appear")
+		with log_context({"testkey" : "t3", "alsotest" : "a2"}):
+			logger.warning("test that should not appear")
+
+		# as list of strings (like --log-filter "" --log-filter "")
+		set_filter_from_string(["testkey = t1 , t3", "alsotest = a1"])
+		with log_context({"testkey" : "t1", "alsotest" : "a1"}):
+			logger.warning("test that should also appear")
+		with log_context({"testkey" : "t2", "alsotest" : "a1"}):
+			logger.warning("test that should not appear")
+		with log_context({"testkey" : "t3", "alsotest" : "a2"}):
+			logger.warning("test that should not appear")
+
+		stream.seek(0)
+		log = stream.read()
+		set_filter(None)
+		assert "test that should appear" in log
+		assert "test that should also appear" in log
+		assert "test that should not appear" not in log
+
+def test_log_devel(utils):
+	with utils.log_stream(logging.ERROR) as stream:
+		logger.warning("warning")
+		logger.devel("devel")
+		logger.debug("debug")
+
+		stream.seek(0)
+		log = stream.read()
+		assert "devel" in log
+		assert "warning" not in log
+		assert "debug" not in log
+
+def test_multi_call_init_logging(tmpdir, utils):
+	log_file = tmpdir.join("opsi.log")
+	init_logging(stderr_level=logging.INFO, log_file=log_file, file_level=logging.INFO, file_format="%(message)s")
+	print_logger_info()
+	logger.info("LINE1")
+	init_logging(stderr_level=logging.INFO, log_file=log_file, file_level=logging.INFO, file_format="%(message)s")
+	logger.info("LINE2")
+	init_logging(stderr_level=logging.INFO, log_file=log_file, file_level=logging.ERROR, file_format="%(message)s")
+	logger.info("LINE3")
+	init_logging(stderr_level=logging.NONE, file_level=logging.INFO)
+	logger.info("LINE4")
+
+	with open(log_file) as f:
+		data = f.read()
+		assert data == "LINE1\nLINE2\nLINE4\n"

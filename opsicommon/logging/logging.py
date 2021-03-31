@@ -235,7 +235,7 @@ class ContextSecretFormatter(logging.Formatter):
 	2. It can replace secret strings specified to a SecretFilter by a
 		replacement string, thus censor passwords etc.
 	"""
-	def __init__(self, orig_formatter: logging.Formatter): # pylint: disable=super-init-not-called
+	def __init__(self, orig_formatter: logging.Formatter, may_format_secrets : bool=False): # pylint: disable=super-init-not-called
 		"""
 		ContextSecretFormatter constructor
 
@@ -248,6 +248,7 @@ class ContextSecretFormatter(logging.Formatter):
 		if orig_formatter is None:
 			orig_formatter = logging.Formatter()
 		self.orig_formatter = orig_formatter
+		self.may_format_secrets = may_format_secrets
 
 	def format(self, record: logging.LogRecord) -> str:
 		"""
@@ -275,9 +276,11 @@ class ContextSecretFormatter(logging.Formatter):
 			record.contextstring = ""
 		#record.contextstring = 	f"{record.contextstring:{CONTEXT_STRING_MIN_LENGTH}}"
 		msg = self.orig_formatter.format(record)
-		if not logger.isEnabledFor(logging.SECRET) and record.levelno != logging.SECRET:
-			for _secret in secret_filter.secrets:
-				msg = msg.replace(_secret, SECRET_REPLACEMENT_STRING)
+		if self.may_format_secrets:
+			return msg
+
+		for _secret in secret_filter.secrets:
+			msg = msg.replace(_secret, SECRET_REPLACEMENT_STRING)
 		return msg
 
 	def __getattr__(self, attr) -> Any:
@@ -519,7 +522,7 @@ def set_format(
 				formatter = colorlog.ColoredFormatter(fmt, datefmt=datefmt, log_colors=log_colors or LOG_COLORS)
 			else:
 				formatter = logging.Formatter(fmt, datefmt=datefmt)
-			csformatter = ContextSecretFormatter(formatter)
+			csformatter = ContextSecretFormatter(formatter, may_format_secrets=(handler.level == logging.SECRET))
 			handler.setFormatter(csformatter)
 
 @contextmanager
