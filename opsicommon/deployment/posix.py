@@ -134,9 +134,7 @@ class PosixDeployThread(DeployThread):
 						raise RuntimeError("Could not get architecture of client.")
 					opsiscript = f"/tmp/opsi-client-agent/files/opsi/opsi-script/{remoteArch}/opsi-script"
 				elif self.target_os == "macos":
-					opsiscript = "/tmp/opsi-client-agent/files/opsi/opsi-script/opsi-script"
-					if not os.path.exists("/tmp/opsi-client-agent/files/opsi/opsi-script"):
-						opsiscript = "/tmp/opsi-client-agent/files/opsi/opsi-script-nogui/opsi-script"
+					opsiscript = "/tmp/opsi-client-agent/files/opsi/opsi-script.app/Contents/MacOS/opsi-script"
 				else:
 					raise ValueError(f"invalid target os {self.target_os}")
 

@@ -248,6 +248,25 @@ class ContextSecretFormatter(logging.Formatter):
 		if orig_formatter is None:
 			orig_formatter = logging.Formatter()
 		self.orig_formatter = orig_formatter
+		self.secret_filter_enabled = True
+
+	def disable_filter(self):
+		"""
+		Disable the Secret Filter
+
+		This method sets secret_filter_enabled to False such that on evaluating LogRecords,
+		the List if secrets is disregarded on formatting.
+		"""
+		self.secret_filter_enabled = False
+
+	def enable_filter(self):
+		"""
+		Enable the Secret Filter
+
+		This method sets secret_filter_enabled to True such that on evaluating LogRecords,
+		the List if secrets is consulted on formatting.
+		"""
+		self.secret_filter_enabled = True
 
 	def format(self, record: logging.LogRecord) -> str:
 		"""
@@ -275,9 +294,11 @@ class ContextSecretFormatter(logging.Formatter):
 			record.contextstring = ""
 		#record.contextstring = 	f"{record.contextstring:{CONTEXT_STRING_MIN_LENGTH}}"
 		msg = self.orig_formatter.format(record)
-		if not logger.isEnabledFor(logging.SECRET) and record.levelno != logging.SECRET:
-			for _secret in secret_filter.secrets:
-				msg = msg.replace(_secret, SECRET_REPLACEMENT_STRING)
+		if not self.secret_filter_enabled:
+			return msg
+
+		for _secret in secret_filter.secrets:
+			msg = msg.replace(_secret, SECRET_REPLACEMENT_STRING)
 		return msg
 
 	def __getattr__(self, attr) -> Any:
@@ -520,6 +541,8 @@ def set_format(
 			else:
 				formatter = logging.Formatter(fmt, datefmt=datefmt)
 			csformatter = ContextSecretFormatter(formatter)
+			if handler.level == logging.SECRET:
+				csformatter.disable_filter()
 			handler.setFormatter(csformatter)
 
 @contextmanager
