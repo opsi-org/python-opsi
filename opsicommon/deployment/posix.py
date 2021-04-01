@@ -128,11 +128,7 @@ class PosixDeployThread(DeployThread):
 				self._copyFileOverSSH(configIniPath, os.path.join(remoteFolder, 'files', 'opsi', 'cfg', 'config.ini'))
 
 				if self.target_os == "linux":
-					logger.debug("Checking architecture of client...")
-					remoteArch = self._getTargetArchitecture()
-					if not remoteArch:
-						raise RuntimeError("Could not get architecture of client.")
-					opsiscript = f"/tmp/opsi-client-agent/files/opsi/opsi-script/{remoteArch}/opsi-script"
+					opsiscript = f"/tmp/opsi-client-agent/files/opsi/opsi-script/opsi-script"
 				elif self.target_os == "macos":
 					opsiscript = "/tmp/opsi-client-agent/files/opsi/opsi-script.app/Contents/MacOS/opsi-script"
 				else:
