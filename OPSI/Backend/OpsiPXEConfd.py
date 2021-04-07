@@ -95,12 +95,21 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 		self._updateThreadsLock = threading.Lock()
 		self._parseArguments(kwargs)
 
-	def _init_backend(self, config_data_backend):
-		depots = config_data_backend.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
+	def _get_opsi_host_key(self, backend=None):
+		if backend is None:
+			backend = self._context
+		depots = backend.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
 		if not depots or not depots[0].getOpsiHostKey():
 			raise BackendMissingDataError(f"Failed to get opsi host key for depot '{self._depotId}'")
 		self._opsiHostKey = depots[0].getOpsiHostKey()
 		secret_filter.add_secrets(self._opsiHostKey)
+
+	def _init_backend(self, config_data_backend):
+		try:
+			self._get_opsi_host_key(config_data_backend)
+		except BackendMissingDataError as err:
+			# This can fail if backend is not yet initialized, continue!
+			logger.info(err)
 
 	def _parseArguments(self, kwargs):
 		for (option, value) in kwargs.items():
@@ -116,6 +125,8 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 			return self
 
 		if depot not in self._depotConnections:
+			if not self._opsiHostKey:
+				self._get_opsi_host_key()
 			self._depotConnections[depot] = self._getExternalBackendConnection(
 				depot, self._depotId, self._opsiHostKey, port=port
 			)
