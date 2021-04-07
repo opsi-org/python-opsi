@@ -1,25 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# This file is part of python-opsi.
-# Copyright (C) 2013-2018 uib GmbH <info@uib.de>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 Testing functionality of OPSI.Util.
-
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
 import random
@@ -510,7 +494,7 @@ def testGetGlobalConfigExitsGracefullyIfFileIsMissing(globalConfigTestFile):
 
 
 @pytest.mark.parametrize("value", [
-	re.compile("ABC"),
+	re.compile(r"ABC"),
 	pytest.param("no pattern", marks=pytest.mark.xfail),
 	pytest.param("SRE_Pattern", marks=pytest.mark.xfail),
 ])
@@ -903,6 +887,22 @@ def testBlowfishDecryptionFailsWithNoKey(randomText, blowfishKey):
 def testBlowfishEncryptionFailsWithNoKey(randomText, blowfishKey):
 	with pytest.raises(BlowfishError):
 		blowfishEncrypt(None, randomText)
+
+
+def testBlowfishWithFixedValues():
+	"""
+	Testing that blowfish encryption returns the desired values.
+
+	This is important to assure that across different versions and
+	platforms we always get the same values.
+	"""
+	key = "08e23bfada2293e0ecbd7612acf15275"
+
+	encryptedPassword = blowfishEncrypt(key, "tanz1tanz2tanz3")
+	assert encryptedPassword == '3b189043053c4e32befa7291c2f162c3'
+
+	pcpatchPassword = blowfishDecrypt(key, encryptedPassword)
+	assert pcpatchPassword == "tanz1tanz2tanz3"
 
 
 @pytest.mark.parametrize("objectCount", [1, 10240])

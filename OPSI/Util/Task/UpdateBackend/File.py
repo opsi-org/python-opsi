@@ -1,28 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# This file is part of python-opsi.
-# Copyright (C) 2017-2018 uib GmbH <info@uib.de>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 Functionality to update a file-based backend.
 
 This module handles the database migrations for opsi.
 Usually the function :py:func:updateFileBackend: is called from opsi-setup
-
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
 from __future__ import absolute_import
@@ -93,7 +77,7 @@ def readBackendVersion(baseDirectory):
 	:raises FileBackendUpdateError: In case a migration was \
 started but never ended.
 	:returns: The version of the schema. `None` if no info is found.
-	:returntype: int or None
+	:rtype: int or None
 	"""
 	schemaConfig = _readVersionFile(baseDirectory)
 	if not schemaConfig:
@@ -147,7 +131,7 @@ def _readVersionFile(baseDirectory):
 	:return: The complete backend information. The key is the version,
 the value is a dict with two keys: `start` holds information about the
 time the update was started and `end` about the time the update finished.
-	:returntype: {int: {str: float}}
+	:rtype: {int: {str: float}}
 	"""
 	schemaConfigFile = getVersionFilePath(baseDirectory)
 
@@ -170,7 +154,7 @@ def getVersionFilePath(baseDirectory):
 
 	:param baseDirectory: The base directory of the backend.
 	:type baseDirectory: str
-	:returntype: str
+	:rtype: str
 	"""
 	return os.path.join(os.path.dirname(baseDirectory), u'config', u'schema.json')
 

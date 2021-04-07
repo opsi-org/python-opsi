@@ -1,31 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# This module is part of the desktop management solution opsi
-# (open pc server integration) http://www.opsi.org
-
-# Copyright (C) 2006-2018 uib GmbH - http://www.uib.de/
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 Working with files.
 
 This includes classes not only useful for reading and writing but
 parsing files for information.
-
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
 import builtins
@@ -42,11 +23,12 @@ from itertools import islice
 
 from OPSI.Exceptions import BackendBadValueError, BackendMissingDataError
 from OPSI.Logger import Logger
-from OPSI.Types import (forceArchitecture, forceBool, forceDict,
-	forceEmailAddress, forceFilename, forceHardwareAddress,
-	forceHardwareDeviceId, forceHardwareVendorId, forceHostname, forceInt,
-	forceIPAddress, forceList, forceOct, forceProductId, forceTime,
-	forceUnicode, forceUnicodeList, forceUnicodeLower, forceUnicodeLowerList)
+from OPSI.Types import (
+	forceArchitecture, forceBool, forceDict, forceEmailAddress, forceFilename,
+	forceHardwareAddress, forceHardwareDeviceId, forceHardwareVendorId,
+	forceHostname, forceInt, forceIPAddress, forceList, forceOct,
+	forceProductId, forceTime, forceUnicode, forceUnicodeList,
+	forceUnicodeLower, forceUnicodeLowerList)
 from OPSI.System import which, execute
 from OPSI.Util import ipAddressInNetwork
 
@@ -298,6 +280,10 @@ class TextFile(LockableFile):
 
 class ChangelogFile(TextFile):
 	'''
+	Files containing changelogs.
+
+	These follow the Debian style changelogs:
+
 	package (version) distribution(s); urgency=urgency
 		[optional blank line(s), stripped]
 	  * change details
@@ -307,7 +293,8 @@ class ChangelogFile(TextFile):
 		  [optional blank line(s), stripped]
 	[one space]-- maintainer name <email address>[two spaces]date
 	'''
-	releaseLineRegex = re.compile(r'^\s*(\S+)\s+\(([^\)]+)\)\s+([^;]+);\s+urgency\=(\S+)\s*$')
+
+	releaseLineRegex = re.compile(r'^\s*(\S+)\s+\(([^\)]+)\)\s+([^;]+);\s+urgency=(\S+)\s*$')
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
@@ -498,7 +485,8 @@ class ConfigFile(TextFile):
 
 
 class IniFile(ConfigFile):
-	optionMatch = re.compile(r'^([^\:\=]+)\s*([\:\=].*)$')
+
+	optionMatch = re.compile(r'^([^:=]+)\s*([:=].*)$')
 
 	def __init__(self, filename, lockFailTimeout=2000, ignoreCase=True, raw=True):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
@@ -665,9 +653,10 @@ class IniFile(ConfigFile):
 
 
 class InfFile(ConfigFile):
+
 	sectionRegex = re.compile(r'\[\s*([^\]]+)\s*\]')
 	pciDeviceRegex = re.compile(r'VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
-	hdaudioDeviceRegex = re.compile(r'HDAUDIO\\\.*VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
+	hdaudioDeviceRegex = re.compile(r'HDAUDIO\\.*VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
 	usbDeviceRegex = re.compile(r'USB.*VID_([\da-fA-F]+)&PID_([\da-fA-F]+)', re.IGNORECASE)
 	acpiDeviceRegex = re.compile(r'ACPI\\(\S+)_-_(\S+)', re.IGNORECASE)
 	varRegex = re.compile(r'%([^%]+)%')
@@ -801,6 +790,12 @@ class InfFile(ConfigFile):
 					return False
 			return True
 
+		regexAndType = (
+			(self.hdaudioDeviceRegex, u'HDAUDIO'),
+			(self.pciDeviceRegex, u'PCI'),
+			(self.usbDeviceRegex, u'USB'),
+			(self.acpiDeviceRegex, u'ACPI'),
+		)
 		found = set()
 		section = ''
 		sectionsParsed = []
@@ -818,42 +813,36 @@ class InfFile(ConfigFile):
 						try:
 							if '=' not in line or ',' not in line:
 								continue
+
 							devString = line.split(u'=')[1].split(u',')[1].strip()
 							logger.debug2(u"      - Processing device string: %s" % devString)
-							type = ''
-							match = re.search(self.hdaudioDeviceRegex, devString)
-							if match:
-								type = u'HDAUDIO'
-							else:
-								match = re.search(self.pciDeviceRegex, devString)
+
+							for regex, deviceType in regexAndType:
+								match = regex.search(devString)
 								if match:
-									type = u'PCI'
-								else:
-									match = re.search(self.usbDeviceRegex, devString)
-									if match:
-										type = u'USB'
-									else:
-										match = re.search(self.acpiDeviceRegex, devString)
-										if match:
-											type = u'ACPI'
+									break
+							else:  # No match found
+								deviceType = ''  # reset the device type
+
 							if match:
-								logger.debug2(u"         - Device type is %s" % type)
-								if type == u'ACPI':
+								logger.debug2(u"         - Device type is %s" % deviceType)
+								if deviceType == u'ACPI':
 									vendor = match.group(1)
 									device = match.group(2)
 								else:
 									vendor = forceHardwareVendorId(match.group(1))
 									device = forceHardwareDeviceId(match.group(2))
+
 								if u"%s:%s" % (vendor, device) not in found:
-									logger.debug2(u"         - Found %s device: %s:%s" % (type, vendor, device))
-									found.add(u"%s:%s:%s" % (type, vendor, device))
+									logger.debug2(u"         - Found %s device: %s:%s" % (deviceType, vendor, device))
+									found.add(u"%s:%s:%s" % (deviceType, vendor, device))
 									self._devices.append(
 										{
 											'path': path,
 											'class': deviceClass,
 											'vendor': vendor,
 											'device': device,
-											'type': type
+											'type': deviceType
 										}
 									)
 						except IndexError:
@@ -943,10 +932,12 @@ class PciidsFile(ConfigFile):
 				logger.error(e)
 		self._parsed = True
 
+
 UsbidsFile = PciidsFile
 
 
 class TxtSetupOemFile(ConfigFile):
+
 	sectionRegex = re.compile(r'\[\s*([^\]]+)\s*\]')
 	pciDeviceRegex = re.compile(r'VEN_([\da-fA-F]+)(&DEV_([\da-fA-F]+))?(\S*)\s*$')
 	usbDeviceRegex = re.compile(r'USB.*VID_([\da-fA-F]+)(&PID_([\da-fA-F]+))?(\S*)\s*$', re.IGNORECASE)
@@ -1436,8 +1427,8 @@ class DHCPDConf_Parameter(DHCPDConf_Component):
 			else:
 				value = u'off'
 		elif (self.key in (u'filename', u'ddns-domainname') or
-				re.match('.*[\'/\\\].*', value) or
-				re.match('^\w+\.\w+$', value) or
+				re.match(r".*['/\\].*", value) or
+				re.match(r'^\w+\.\w+$', value) or
 				self.key.endswith(u'-name')):
 
 			value = u'"%s"' % value
@@ -1466,8 +1457,8 @@ class DHCPDConf_Option(DHCPDConf_Component):
 
 		text = []
 		for value in self.value:
-			if (re.match('.*[\'/\\\].*', value) or
-				re.match('^\w+\.\w+$', value) or
+			if (re.match(r".*['/\\].*", value) or
+				re.match(r"^\w+\.\w+$", value) or
 				self.key.endswith(quotedOptions)):
 
 				text.append(u'"%s"' % value)
@@ -1660,13 +1651,14 @@ class DHCPDConfFile(TextFile):
 		self._currentToken = None
 		self._currentIndex = -1
 		self._data = u''
-		self._currentBlock = self._globalBlock = DHCPDConf_GlobalBlock()
 		self._parsed = False
 
 		if lines:
 			self._lines = forceUnicodeList(lines)
 		else:
 			self.readlines()
+
+		self._currentBlock = self._globalBlock = DHCPDConf_GlobalBlock()
 		self._globalBlock.endLine = len(self._lines)
 
 		minIndex = 0
@@ -1679,6 +1671,7 @@ class DHCPDConfFile(TextFile):
 				if not self._data.strip():
 					self._parse_emptyline()
 				continue
+
 			for token in ('#', ';', '{', '}'):
 				index = self._data.find(token)
 				if (index != -1) and (index >= minIndex) and ((self._currentIndex == -1) or (index < self._currentIndex)):
@@ -1686,11 +1679,14 @@ class DHCPDConfFile(TextFile):
 						continue
 					self._currentToken = token
 					self._currentIndex = index
+					break
+
 			if not self._currentToken:
 				minIndex = len(self._data)
 				if not self._getNewData():
 					break
 				continue
+
 			minIndex = 0
 			if self._currentToken == '#':
 				self._parse_comment()
@@ -1700,6 +1696,7 @@ class DHCPDConfFile(TextFile):
 				self._parse_lbracket()
 			elif self._currentToken == '}':
 				self._parse_rbracket()
+
 		self._parsed = True
 
 	def generate(self):
@@ -1898,7 +1895,8 @@ class DHCPDConfFile(TextFile):
 		data = self._data[:self._currentIndex]
 		self._data = self._data[self._currentIndex + 1:]
 
-		key = data.split()[0]
+		splittedData = data.split()
+		key = splittedData[0]
 		if key != 'option':
 			# Parameter
 			value = u' '.join(data.split()[1:]).strip()
@@ -1916,10 +1914,8 @@ class DHCPDConfFile(TextFile):
 			return
 
 		# Option
-		key = data.split()[1]
-		value = u' '.join(data.split()[2:]).strip()
-		if len(value) > 1 and value.startswith('"') and value.endswith('"'):
-			value = value[1:-1]
+		key = splittedData[1]
+		value = u' '.join(splittedData[2:]).strip()
 		values = []
 		quote = u''
 		current = []
@@ -1969,11 +1965,12 @@ class DHCPDConfFile(TextFile):
 		# Split the block definition at whitespace
 		# The first value is the block type
 		# Example: subnet 194.31.185.0 netmask 255.255.255.0 => type is subnet
+		splittedData = data.split()
 		block = DHCPDConf_Block(
 			startLine=self._currentLine,
 			parentBlock=self._currentBlock,
-			type=data.split()[0].strip(),
-			settings=data.split()
+			type=splittedData[0].strip(),
+			settings=splittedData
 		)
 		self._currentBlock.addComponent(block)
 		self._currentBlock = block

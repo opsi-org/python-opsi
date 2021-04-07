@@ -1,30 +1,9 @@
 # -*- coding: utf-8 -*-
-#
-# This module is part of the desktop management solution opsi
-# (open pc server integration) http://www.opsi.org
-#
-# Copyright (C) 2006-2010, 2013-2017 uib GmbH <info@uib.de>
-# All rights reserved.
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 Functions to work with Windows drivers.
-
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Erol Ueluekmen <e.ueluekmen@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
 import os
@@ -501,8 +480,8 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 	if not byAuditIntegrated and exists(rulesdir) and "BASE_BOARD" in auditInfoByClass:
 		logger.info(u"Checking if mainboard-fallback for automated integrating of additional drivers are possible")
 		auditHardwareOnHost = auditInfoByClass["BASE_BOARD"]
-		vendorFromHost = re.sub(r"[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor or "")
-		productFromHost = re.sub(r"[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.product or "")
+		vendorFromHost = invalidCharactersRegex.sub("_", auditHardwareOnHost.vendor or "")
+		productFromHost = invalidCharactersRegex.sub("_", auditHardwareOnHost.product or "")
 
 		if vendorFromHost and productFromHost:
 			logger.notice(u"Additional drivers for integration found using byAudit (Board) for vendor: '%s' model : '%s' Check if drivers are available." % (vendorFromHost, modelFromHost))
