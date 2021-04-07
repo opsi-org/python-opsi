@@ -109,7 +109,7 @@ class WindowsDeployThread(DeployThread):
 
 				logger.notice("Installing opsi-client-agent")
 				cmd = (
-					r"c:\\tmp\\opsi-client-agent_inst\\files\\opsi\\opsi-winst\\winst32.exe"
+					r"c:\\tmp\\opsi-client-agent_inst\\files\\opsi\\opsi-script\\opsi-script.exe"
 					r" /batch c:\\tmp\\opsi-client-agent_inst\\files\\opsi\\setup.opsiscript"
 					r" c:\\tmp\\opsi-client-agent.log /PARAMETER REMOTEDEPLOY"
 				)
@@ -322,7 +322,7 @@ class WindowsDeployThread(DeployThread):
 			if not os.path.exists(os.path.join(mountDir, 'tmp')):
 				os.makedirs(os.path.join(mountDir, 'tmp'))
 			cmd = (
-				f"c:\\{instDirName}\\files\\opsi\\opsi-winst\\winst32.exe"
+				f"c:\\{instDirName}\\files\\opsi\\opsi-script\\opsi-script.exe"
 				f" /batch c:\\{instDirName}\\files\\opsi\\setup.opsiscript"
 				" c:\\tmp\\opsi-client-agent.log /PARAMETER REMOTEDEPLOY"
 			)
