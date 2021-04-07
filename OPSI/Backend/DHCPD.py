@@ -18,21 +18,20 @@ import threading
 from functools import lru_cache
 from contextlib import contextmanager
 
+from opsicommon.logging import logger, secret_filter
+
 import OPSI.System as System
 from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import (
 	BackendIOError, BackendBadValueError, BackendMissingDataError,
 	BackendUnableToConnectError, BackendUnaccomplishableError)
-from OPSI.Logger import Logger
 from OPSI.Object import OpsiClient, Host
 from OPSI.Types import forceBool, forceDict, forceHostId, forceObjectClass
 from OPSI.Util.File import DHCPDConfFile
 from OPSI.Util import getfqdn
 
 __all__ = ('DHCPDBackend', )
-
-logger = Logger()
 
 WAIT_AFTER_RELOAD = 4.0
 
@@ -109,6 +108,22 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 		self._opsiHostKey = None
 		self._depotConnections = {}
 
+	def _get_opsi_host_key(self, backend=None):
+		if backend is None:
+			backend = self._context
+		depots = backend.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
+		if not depots or not depots[0].getOpsiHostKey():
+			raise BackendMissingDataError(f"Failed to get opsi host key for depot '{self._depotId}'")
+		self._opsiHostKey = depots[0].getOpsiHostKey()
+		secret_filter.add_secrets(self._opsiHostKey)
+
+	def _init_backend(self, config_data_backend):
+		try:
+			self._get_opsi_host_key(config_data_backend)
+		except BackendMissingDataError as err:
+			# This can fail if backend is not yet initialized, continue!
+			logger.info(err)
+
 	def _startReloadThread(self):
 		class ReloadThread(threading.Thread):
 			def __init__(self, reloadConfigCommand):
@@ -160,18 +175,10 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 		if depotId == self._depotId:
 			return self
 
-		try:
-			return self._depotConnections[depotId]
-		except KeyError as err:
-			if not self._opsiHostKey:
-				depots = self._context.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
-				if not depots or not depots[0].getOpsiHostKey():
-					raise BackendMissingDataError(
-						f"Failed to get opsi host key for depot '{self._depotId}'"
-					) from err
-				self._opsiHostKey = depots[0].getOpsiHostKey()
-
+		if depotId not in self._depotConnections:
 			try:
+				if not self._opsiHostKey:
+					self._get_opsi_host_key()
 				self._depotConnections[depotId] = JSONRPCBackend(
 					address=f'https://{depotId}:4447/rpc/backend/dhcpd',
 					username=self._depotId,
@@ -181,8 +188,7 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 				raise BackendUnableToConnectError(
 					f"Failed to connect to depot '{depotId}': {err}"
 				) from err
-
-			return self._depotConnections[depotId]
+		return self._depotConnections[depotId]
 
 	def _getResponsibleDepotId(self, clientId):
 		configStates = self._context.configState_getObjects(configId='clientconfig.depot.id', objectId=clientId)  # pylint: disable=maybe-no-member
