@@ -1763,11 +1763,16 @@ def createMySQLDefaultsFile(program, username, password):
 	:returns: Path to the created file
 	:rtype: str
 	"""
+	if '"' in username:
+		raise ValueError("Double quotation marks not allowed in username")
+	if '"' in password:
+		raise ValueError("Double quotation marks not allowed in password")
+
 	# password enclosed in double quotes (not allowed in MySQL passwords) to avoid special character interpretation
 	with tempfile.NamedTemporaryFile(mode='wt', delete=False) as cFile:
-		cFile.write("""[%s]
-user=%s
-password="%s"
-""" % (program, username, password))
-
+		cFile.write((
+			f'[{program}]\n'
+			f'user = "{username}"\n'
+			f'password = "{password}"\n'
+		))
 		return cFile.name
