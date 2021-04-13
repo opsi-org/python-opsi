@@ -8,14 +8,33 @@ ssl
 
 import os
 import random
-from typing import Tuple
+from typing import Tuple, Union
 
 from OpenSSL.crypto import (
 	FILETYPE_PEM, TYPE_RSA,
-	dump_privatekey, dump_certificate, load_privatekey, load_certificate,
+	dump_privatekey, dump_certificate,
 	X509, PKey, X509Name, X509Extension
 )
 from opsicommon.logging import logger
+
+PRIVATE_KEY_CIPHER = "DES3"
+
+
+def as_pem(cert_or_key: Union[X509, PKey], passphrase=None):
+	if isinstance(cert_or_key, X509):
+		return dump_certificate(
+			FILETYPE_PEM,
+			cert_or_key
+		).decode("ascii")
+	if isinstance(cert_or_key, PKey):
+		return dump_privatekey(
+			FILETYPE_PEM,
+			cert_or_key,
+			cipher=None if passphrase is None else PRIVATE_KEY_CIPHER,
+			passphrase=None if passphrase is None else passphrase.encode("utf-8")
+		).decode("ascii")
+	raise TypeError(f"Invalid type: {cert_or_key}")
+
 
 def create_x590_name(subject: dict = None) -> X509Name:
 	subj = {
@@ -36,9 +55,10 @@ def create_x590_name(subject: dict = None) -> X509Name:
 	x509_name.organizationName = subj.get("organizationName", subj.get("O"))
 	x509_name.organizationalUnitName = subj.get("organizationalUnitName", subj.get("OU"))
 	x509_name.commonName = subj.get("commonName", subj.get("CN"))
-	x509_name.emailAddress = subject.get("emailAddress")
+	x509_name.emailAddress = subj.get("emailAddress")
 
 	return x509_name
+
 
 def create_ca(
 	subject: dict,

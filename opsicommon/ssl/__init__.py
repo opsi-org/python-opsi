@@ -19,5 +19,5 @@ else:
 	raise NotImplementedError(f"{platform.system().lower()} not supported")
 
 from .common import (
-	create_x590_name, create_ca, create_server_cert
+	as_pem, create_x590_name, create_ca, create_server_cert
 )
