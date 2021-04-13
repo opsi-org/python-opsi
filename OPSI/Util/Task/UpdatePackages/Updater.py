@@ -15,6 +15,7 @@ import time
 import json
 import datetime
 import requests
+from requests.packages import urllib3
 from urllib.parse import quote
 
 from OPSI import System
@@ -33,6 +34,8 @@ from OPSI.Util.Task.Rights import setRights
 from .Config import DEFAULT_USER_AGENT, ConfigurationParser
 from .Notifier import DummyNotifier, EmailNotifier
 from .Repository import LinksExtractor
+
+urllib3.disable_warnings()
 
 __all__ = ('OpsiPackageUpdater', )
 
