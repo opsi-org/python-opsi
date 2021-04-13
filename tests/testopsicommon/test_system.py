@@ -19,8 +19,11 @@ from opsicommon.system import (
 )
 
 running_in_docker = False
-with open("/proc/self/cgroup") as f:
-	running_in_docker = f.readline().split(':')[2].startswith("/docker/")
+with open("/proc/self/cgroup") as f: # pylint: disable=invalid-name
+	for line in f.readlines():
+		if line.split(':')[2].startswith("/docker/"):
+			running_in_docker = True
+			break
 
 @pytest.mark.skipif(running_in_docker, reason="Running in docker.")
 def test_get_user_sessions():
