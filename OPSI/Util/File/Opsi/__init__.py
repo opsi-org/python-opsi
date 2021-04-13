@@ -25,7 +25,7 @@ from hashlib import sha1
 from io import BytesIO, StringIO
 from operator import itemgetter
 import subprocess
-import ruamel.yaml
+import ruyaml
 
 import OPSI.System
 from OPSI import __version__ as LIBRARY_VERSION
@@ -727,7 +727,7 @@ class PackageControlFile(TextFile):
 		return self._sections
 
 	def parseYaml(self): # pylint: disable=too-many-locals
-		yaml = ruamel.yaml.YAML(typ="safe")
+		yaml = ruyaml.YAML(typ="safe")
 		self.open('r')
 		data_dict = yaml.load(self)
 		self.close()
@@ -1094,7 +1094,7 @@ class PackageControlFile(TextFile):
 			with codecs.open(os.path.join(path, "changelog.txt"), "w", encoding="utf-8") as file:
 				file.write(changelog)
 
-		yaml = ruamel.yaml.YAML()
+		yaml = ruyaml.YAML()
 		yaml.indent(mapping=2, sequence=4, offset=2)		# to have list "-" also indented by 2
 		yaml.default_flow_style = False
 		self.open("w")			#contextmanager would be better
