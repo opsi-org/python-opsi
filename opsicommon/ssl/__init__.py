@@ -3,7 +3,7 @@
 # Copyright (c) uib GmbH <info@uib.de>
 # License: AGPL-3.0
 """
-This file is part of opsi - https://www.opsi.org
+ssl
 """
 
 import platform
@@ -17,3 +17,7 @@ elif platform.system().lower() == 'darwin':
 	from .darwin import *
 else:
 	raise NotImplementedError(f"{platform.system().lower()} not supported")
+
+from .common import (
+	create_x590_name, create_ca, create_server_cert
+)
