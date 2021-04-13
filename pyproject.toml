@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "python-opsi"
-version = "4.2.0.176"
+version = "4.2.0.177"
 description = "The opsi python library"
 homepage = "https://www.opsi.org"
 license = "AGPL-3.0"
@@ -38,6 +38,7 @@ ruyaml = "^0.19.2"
 lz4 = "^3.1.1"
 service-identity = "^18.1.0"
 msgpack = "^1.0.2"
+ipaddress = "^1.0.23"
 
 [tool.poetry.dev-dependencies]
 opsi-dev-tools = "^1.0"
