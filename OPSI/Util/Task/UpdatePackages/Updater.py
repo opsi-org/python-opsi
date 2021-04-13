@@ -14,9 +14,9 @@ import re
 import time
 import json
 import datetime
+from urllib.parse import quote
 import requests
 from requests.packages import urllib3
-from urllib.parse import quote
 
 from OPSI import System
 from OPSI.Backend.BackendManager import BackendManager
@@ -1017,7 +1017,7 @@ class OpsiPackageUpdater:
 				}
 				session.proxies.update(proxies)
 			if os.path.exists(repository.authcertfile) and os.path.exists(repository.authkeyfile):
-				logger.debug("setting session.cert to", (repository.authcertfile, repository.authkeyfile))
+				logger.debug("setting session.cert to %s %s", repository.authcertfile, repository.authkeyfile)
 				session.cert = (repository.authcertfile, repository.authkeyfile)
 			session.verify = repository.verifyCert
 			session.auth = (repository.username, repository.password)
