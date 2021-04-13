@@ -6,7 +6,6 @@
 ssl
 """
 
-import os
 import random
 from typing import Tuple, Union
 
