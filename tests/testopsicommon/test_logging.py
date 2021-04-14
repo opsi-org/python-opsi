@@ -15,14 +15,14 @@ import asyncio
 import random
 import requests
 from contextlib import contextmanager
-from opsicommon.logging.logging import print_logger_info
 import pytest
 
 from opsicommon.logging import (
 	logger, handle_log_exception, secret_filter, observable_handler,
 	ContextSecretFormatter, log_context, set_format,
 	init_logging, print_logger_info, set_filter, set_context,
-	set_filter_from_string
+	set_filter_from_string, logging_config
+
 )
 from opsicommon.logging.constants import (
 	LOG_SECRET, LOG_WARNING, LOG_ERROR, LOG_DEBUG, LOG_TRACE, LOG_INFO,
@@ -43,20 +43,11 @@ class Utils:
 	@contextmanager
 	def log_stream(new_level, format=None):
 		stream = io.StringIO()
-		handler = logging.StreamHandler(stream)
-		handler.name = "opsicommon test stream"
-		if new_level < 10:
-			new_level = OPSI_LEVEL_TO_LEVEL[new_level]
-		handler.setLevel(new_level)
+		logging_config(stderr_level=new_level, stderr_format=format, stderr_file=stream)
 		try:
-			logging.root.addHandler(handler)
-			if format:
-				set_format(stderr_format=format)
-			else:
-				set_format()
 			yield stream
 		finally:
-			logging.root.removeHandler(handler)
+			pass	#somehow revert to previous values? Impossible as logging_config deletes all stream handlers
 
 @pytest.fixture
 def utils():
@@ -224,9 +215,8 @@ def test_context_threads(utils):
 				logger.essential("MyModule.run")
 				common_work()
 
-	set_format(stderr_format="%(contextstring)s %(message)s")
 	with log_context({'whoami' : "MAIN"}):
-		with utils.log_stream(LOG_INFO) as stream:
+		with utils.log_stream(LOG_INFO, format="%(contextstring)s %(message)s") as stream:
 			main = Main()
 			try:
 				main.run()
@@ -236,8 +226,8 @@ def test_context_threads(utils):
 				if hasattr(_thread, "stop"):
 					_thread.stop()
 					_thread.join()
-			stream.seek(0)
 
+			stream.seek(0)
 			log = stream.read()
 			assert re.search(r"module Client-1.*MyModule.run", log) is not None
 			# to check for corrent handling of async contexti when eventloop is not running in main thread
@@ -288,47 +278,47 @@ def test_legacy_logger(utils):
 
 @pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
 def test_legacy_logger_calls(utils):
-	with utils.log_stream(LOG_SECRET) as stream:
-		legacy_logger = LegacyLogger()
-		assert legacy_logger == logger
+	legacy_logger = LegacyLogger()
+	assert legacy_logger == logger
+	legacy_logger.getStderr()
+	legacy_logger.getStdout()
+	legacy_logger.setConfidentialStrings(["topsecret"])
+	legacy_logger.addConfidentialString("evenmoresecret")
+	legacy_logger.setLogFormat("%s some format %s", currentThread=False, object=None)
+	legacy_logger.setConsoleFormat("%s some format %s", currentThread=False, object=None)
+	legacy_logger.setComponentName("name", currentThread=False, object=None)
+	legacy_logger.logToStdout(None)
+	legacy_logger.setSyslogFormat("%s some format %s", currentThread=False, object=None)
+	legacy_logger.setFileFormat("%s some format %s", currentThread=False, object=None)
+	legacy_logger.setUniventionFormat("%s some format %s", currentThread=False, object=None)
+	legacy_logger.setMessageSubjectFormat("%s some format %s", currentThread=False, object=None)
+	legacy_logger.setUniventionLogger(None)
+	legacy_logger.setUniventionClass(None)
+	legacy_logger.getMessageSubject()
+	legacy_logger.setColor(True)
+	legacy_logger.setConsoleColor(True)
+	legacy_logger.setSyslogLevel(0)
+	legacy_logger.setMessageSubjectLevel(0)
+	legacy_logger.setConsoleLevel(0)
+	legacy_logger.getConsoleLevel()
+	legacy_logger.getFileLevel()
+	legacy_logger.getLogFile(currentThread=False, object=None)
+	legacy_logger.setLogFile("logfile.log", currentThread=False, object=None)
+	legacy_logger.linkLogFile("logfile", currentThread=False, object=None)
+	legacy_logger.setFileLevel(0)
+	legacy_logger.exit(object=None)
+	legacy_logger._setThreadConfig(None, None)
+	legacy_logger._getThreadConfig(key=None)
+	legacy_logger._setObjectConfig(None, None, None)
+	legacy_logger._getObjectConfig(None, key=None)
+	legacy_logger.logException(None)
+	legacy_logger.logFailure(None)
+	legacy_logger.logTraceback(None)
+	legacy_logger.logWarnings()
+	legacy_logger.startTwistedLogging()
+	legacy_logger.setConsoleLevel(9)
 
-		legacy_logger.getStderr()
-		legacy_logger.getStdout()
-		legacy_logger.setConfidentialStrings(["topsecret"])
-		legacy_logger.addConfidentialString("evenmoresecret")
-		legacy_logger.setLogFormat("%s some format %s", currentThread=False, object=None)
-		legacy_logger.setConsoleFormat("%s some format %s", currentThread=False, object=None)
-		legacy_logger.setComponentName("name", currentThread=False, object=None)
-		legacy_logger.logToStdout(None)
-		legacy_logger.setSyslogFormat("%s some format %s", currentThread=False, object=None)
-		legacy_logger.setFileFormat("%s some format %s", currentThread=False, object=None)
-		legacy_logger.setUniventionFormat("%s some format %s", currentThread=False, object=None)
-		legacy_logger.setMessageSubjectFormat("%s some format %s", currentThread=False, object=None)
-		legacy_logger.setUniventionLogger(None)
-		legacy_logger.setUniventionClass(None)
-		legacy_logger.getMessageSubject()
-		legacy_logger.setColor(True)
-		legacy_logger.setConsoleColor(True)
-		legacy_logger.setSyslogLevel(0)
-		legacy_logger.setMessageSubjectLevel(0)
-		legacy_logger.setConsoleLevel(0)
-		legacy_logger.getConsoleLevel()
-		legacy_logger.getFileLevel()
-		legacy_logger.getLogFile(currentThread=False, object=None)
-		legacy_logger.setLogFile("logfile.log", currentThread=False, object=None)
-		legacy_logger.linkLogFile("logfile", currentThread=False, object=None)
-		legacy_logger.setFileLevel(0)
-		legacy_logger.exit(object=None)
-		legacy_logger._setThreadConfig(None, None)
-		legacy_logger._getThreadConfig(key=None)
-		legacy_logger._setObjectConfig(None, None, None)
-		legacy_logger._getObjectConfig(None, key=None)
-		legacy_logger.logException(None)
-		legacy_logger.logFailure(None)
-		legacy_logger.logTraceback(None)
-		legacy_logger.logWarnings()
-		legacy_logger.startTwistedLogging()
-		legacy_logger.setConsoleLevel(9)
+	with utils.log_stream(LOG_SECRET) as stream:
 		legacy_logger.confidential("mymessage %s", "fill-value")
 		legacy_logger.debug3("mymessage %s", "fill-value")
 		legacy_logger.debug2("mymessage %s", "fill-value")
