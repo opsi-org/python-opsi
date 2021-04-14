@@ -24,6 +24,9 @@ from opsicommon.logging import (
 	init_logging, print_logger_info, set_filter, set_context,
 	set_filter_from_string
 )
+from opsicommon.logging.constants import (
+	LOG_SECRET, LOG_WARNING, LOG_ERROR, LOG_DEBUG, LOG_TRACE, LOG_INFO
+)
 
 try:
 	from OPSI.Logger import Logger as LegacyLogger
@@ -59,7 +62,7 @@ def utils():
 	return Utils
 
 def test_levels(utils):
-	with utils.log_stream(logging.SECRET, format="%(message)s") as stream:
+	with utils.log_stream(LOG_SECRET, format="%(message)s") as stream:
 		expected = ""
 		for level in (
 			"secret", "confidential", "trace", "debug2", "debug",
@@ -87,7 +90,7 @@ def test_secret_filter(utils):
 	secret_filter.set_min_length(7)
 	secret_filter.add_secrets("PASSWORD", "2SHORT", "SECRETSTRING")
 
-	with utils.log_stream(logging.TRACE, format="[%(asctime)s.%(msecs)03d] %(message)s") as stream:
+	with utils.log_stream(LOG_TRACE, format="[%(asctime)s.%(msecs)03d] %(message)s") as stream:
 		print_logger_info()
 		logger.info("line 1")
 		logger.info("line 2 PASSWORD")
@@ -100,7 +103,7 @@ def test_secret_filter(utils):
 		assert "line 3 2SHORT\n" in log
 		assert "line 4 SECRETSTRING\n" not in log
 
-	with utils.log_stream(logging.SECRET, format="[%(asctime)s.%(msecs)03d] %(message)s") as stream:
+	with utils.log_stream(LOG_SECRET, format="[%(asctime)s.%(msecs)03d] %(message)s") as stream:
 		print_logger_info()
 		logger.info("line 5 PASSWORD")
 		logger.secret("line 6 SECRETSTRING")
@@ -121,7 +124,7 @@ def test_secret_filter(utils):
 
 	secret_filter.add_secrets("SECRETSTRING1", "SECRETSTRING2", "SECRETSTRING3")
 	secret_filter.remove_secrets("SECRETSTRING2")
-	with utils.log_stream(logging.INFO) as stream:
+	with utils.log_stream(LOG_INFO) as stream:
 		logger.info("SECRETSTRING1 SECRETSTRING2 SECRETSTRING3")
 
 		stream.seek(0)
@@ -133,7 +136,7 @@ def test_secret_filter(utils):
 
 @pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
 def test_legacy_logger_file(utils):
-	with utils.log_stream(logging.SECRET) as stream:
+	with utils.log_stream(LOG_SECRET) as stream:
 		legacy_logger = LegacyLogger("/tmp/test.log")
 		assert legacy_logger == logger
 		legacy_logger.info("test should appear")
@@ -147,7 +150,7 @@ def test_legacy_logger_file(utils):
 		assert "test should appear" in content
 
 def test_context(utils):
-	with utils.log_stream(logging.SECRET) as stream:
+	with utils.log_stream(LOG_SECRET) as stream:
 		set_format(stderr_format="%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(contextstring)s] %(message)s   (%(filename)s:%(lineno)d)")
 
 		logger.info("before setting context")
@@ -221,7 +224,7 @@ def test_context_threads(utils):
 
 	set_format(stderr_format="%(contextstring)s %(message)s")
 	with log_context({'whoami' : "MAIN"}):
-		with utils.log_stream(logging.INFO) as stream:
+		with utils.log_stream(LOG_INFO) as stream:
 			main = Main()
 			try:
 				main.run()
@@ -246,7 +249,7 @@ def test_observable_handler(utils):
 		def messageChanged(self, handler, message):
 			self.messages.append(message)
 
-	with utils.log_stream(logging.SECRET):
+	with utils.log_stream(LOG_SECRET):
 		lo = LogObserver()
 		observable_handler.attach_observer(lo)
 		logger.error("error")
@@ -257,7 +260,7 @@ def test_observable_handler(utils):
 
 @pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
 def test_legacy_logger(utils):
-	with utils.log_stream(logging.TRACE) as stream:
+	with utils.log_stream(LOG_TRACE) as stream:
 		legacy_logger = LegacyLogger()
 		assert legacy_logger == logger
 		#init_logging(file_level=logging.SECRET)
@@ -283,7 +286,7 @@ def test_legacy_logger(utils):
 
 @pytest.mark.skipif(not LegacyLogger, reason="OPSI.Logger not available.")
 def test_legacy_logger_calls(utils):
-	with utils.log_stream(logging.SECRET) as stream:
+	with utils.log_stream(LOG_SECRET) as stream:
 		legacy_logger = LegacyLogger()
 		assert legacy_logger == logger
 
@@ -345,7 +348,7 @@ def test_legacy_logger_calls(utils):
 
 
 def test_simple_colored(utils):
-	with utils.log_stream(logging.WARNING, format=MY_FORMAT) as stream:
+	with utils.log_stream(LOG_WARNING, format=MY_FORMAT) as stream:
 		with log_context({'firstcontext' : 'asdf', 'secondcontext' : 'jkl'}):
 			logger.error("test message")
 		stream.seek(0)
@@ -353,7 +356,7 @@ def test_simple_colored(utils):
 		assert "asdf" in log and "jkl" in log
 
 def test_simple_plain(utils):
-	with utils.log_stream(logging.WARNING, format=OTHER_FORMAT) as stream:
+	with utils.log_stream(LOG_WARNING, format=OTHER_FORMAT) as stream:
 		with log_context({'firstcontext' : 'asdf', 'secondcontext' : 'jkl'}):
 			logger.error("test message")
 		stream.seek(0)
@@ -361,7 +364,7 @@ def test_simple_plain(utils):
 		assert "asdf" in log and "jkl" in log
 
 def test_set_context(utils):
-	with utils.log_stream(logging.WARNING, format=MY_FORMAT) as stream:
+	with utils.log_stream(LOG_WARNING, format=MY_FORMAT) as stream:
 		set_context({'firstcontext' : 'asdf', 'secondcontext' : 'jkl'})
 		logger.error("test message")
 		stream.seek(0)
@@ -393,7 +396,7 @@ def test_set_context(utils):
 		assert "suddenly a string" not in log	# must be given as dictionary
 
 def test_foreign_logs(utils):
-	with utils.log_stream(logging.DEBUG, format="%(message)s") as stream:
+	with utils.log_stream(LOG_DEBUG, format="%(message)s") as stream:
 		logger.error("message before request")
 
 		requests.get("http://www.uib.de")
@@ -404,7 +407,7 @@ def test_foreign_logs(utils):
 		assert "www.uib.de" in log
 
 def test_filter(utils):
-	with utils.log_stream(logging.WARNING, format="%(message)s") as stream:
+	with utils.log_stream(LOG_WARNING, format="%(message)s") as stream:
 		set_filter({"testkey" : ["t1", "t3"]})
 		with log_context({"testkey" : "t1"}):
 			logger.warning("test that should appear")
@@ -416,7 +419,7 @@ def test_filter(utils):
 		assert "test that should not appear" not in log
 
 def test_filter_from_string(utils):
-	with utils.log_stream(logging.WARNING, format="%(message)s") as stream:
+	with utils.log_stream(LOG_WARNING, format="%(message)s") as stream:
 		# as one string (like --log-filter "")
 		set_filter_from_string("testkey = t1 , t3 ; alsotest = a1")
 		with log_context({"testkey" : "t1", "alsotest" : "a1"}):
@@ -443,7 +446,7 @@ def test_filter_from_string(utils):
 		assert "test that should not appear" not in log
 
 def test_log_devel(utils):
-	with utils.log_stream(logging.ERROR) as stream:
+	with utils.log_stream(LOG_ERROR) as stream:
 		logger.warning("warning")
 		logger.devel("devel")
 		logger.debug("debug")
