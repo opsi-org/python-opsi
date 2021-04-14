@@ -56,39 +56,55 @@ def get_users():
 		users[user.pw_name] = user
 	return users
 
-def setup_users_and_groups():
+def setup_users_and_groups(ignore_errors: bool = False):
 	logger.info("Setup users and groups")
-	groups = get_groups()
-	users = get_users()
 
-	if OPSI_ADMIN_GROUP not in groups:
-		create_group(
-			groupname=OPSI_ADMIN_GROUP,
-			system=False
-		)
-		groups = get_groups()
+	try:
+		grp.getgrnam(OPSI_ADMIN_GROUP)
+	except KeyError:
+		try:
+			create_group(
+				groupname=OPSI_ADMIN_GROUP,
+				system=False
+			)
+		except Exception as err:  # pylint: disable=broad-except
+			if not ignore_errors:
+				raise
+			logger.info(err)
 
-	if FILE_ADMIN_GROUP not in groups:
-		create_group(
-			groupname=FILE_ADMIN_GROUP,
-			system=True
-		)
-		groups = get_groups()
+	try:
+		grp.getgrnam(FILE_ADMIN_GROUP)
+	except KeyError:
+		try:
+			create_group(
+				groupname=FILE_ADMIN_GROUP,
+				system=True
+			)
+		except Exception as err:  # pylint: disable=broad-except
+			if not ignore_errors:
+				raise
+			logger.info(err)
 
-	if DEFAULT_DEPOT_USER not in users:
-		create_user(
-			username=DEFAULT_DEPOT_USER,
-			primary_groupname=FILE_ADMIN_GROUP,
-			home=DEFAULT_DEPOT_USER_HOME,
-			shell="/bin/false",
-			system=True
-		)
-		users = get_users()
+	try:
+		pwd.getpwnam(DEFAULT_DEPOT_USER)
+	except KeyError:
+		try:
+			create_user(
+				username=DEFAULT_DEPOT_USER,
+				primary_groupname=FILE_ADMIN_GROUP,
+				home=DEFAULT_DEPOT_USER_HOME,
+				shell="/bin/false",
+				system=True
+			)
+		except Exception as err:  # pylint: disable=broad-except
+			if not ignore_errors:
+				raise
+			logger.info(err)
 
 def setup_file_permissions(path: str = '/'):
 	set_rights(path)
 
-def setup():
+def setup(ignore_errors: bool = False):
 	logger.notice("Running setup")
-	setup_users_and_groups()
+	setup_users_and_groups(ignore_errors)
 	setup_file_permissions()
