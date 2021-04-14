@@ -137,23 +137,25 @@ def handle_log_exception(exc: Exception, record: logging.LogRecord = None, stder
 	:type log: bool
 	"""
 	try:
+
+		text = "Logging error:\nTraceback (most recent call last):\n"
+		text += "".join(traceback.format_tb(exc.__traceback__))
+		text += f"{exc.__class__.__name__}: {exc}\n"
+
+		if record:
+			text += f"record: {record.__dict__}\n"
+
 		if stderr:
-			print("Logging error:", file=sys.stderr)
-			traceback.print_exc(file=sys.stderr)
-			if record:
-				print(str(record.__dict__), file=sys.stderr)
+			sys.stderr.write(text)
 
 		if temp_file:
 			filename = os.path.join(tempfile.gettempdir(), f"log_exception_{os.getpid()}.txt")
-			with codecs.open(filename, "utf-8", "a") as file:
-				traceback.print_exc(file=file)
-				if record:
-					print(str(record.__dict__), file=file)
+			with codecs.open(filename, "a", "utf-8") as file:
+				file.write(text)
 
 		if log:
-			logger.error("Logging error: %s", exc, exc_info=True)
-			if record:
-				logger.error(record.__dict__)
+			logger.error(text)
+
 	except Exception: # pylint: disable=broad-except
 		pass
 
