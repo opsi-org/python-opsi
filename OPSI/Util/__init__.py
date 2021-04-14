@@ -116,11 +116,14 @@ object instance from it
 	if isinstance(obj, dict):
 		if not preventObjectCreation and 'type' in obj:
 			try:
-				objectClass = getattr(OPSIObject, obj['type'])
+				objectClass = getattr(OPSIObject, obj['type'], None)
+				if not objectClass:
+					# Not an OPSI object
+					return dict
 				return objectClass.fromHash(obj)
 			except Exception as err:  # pylint: disable=broad-except
-				logger.debug("Failed to get object from dict %s: %s", obj, err)
-				return obj
+				logger.error(err, exc_info=True)
+				raise ValueError(f"Failed to create object from dict {obj}: {err}") from err
 
 		return {
 			key: deserialize(value, preventObjectCreation=preventObjectCreation)
