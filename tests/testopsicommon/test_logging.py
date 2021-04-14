@@ -65,6 +65,7 @@ def utils():
 def test_levels(utils):
 	with utils.log_stream(LOG_SECRET, format="%(message)s") as stream:
 		expected = ""
+		print_logger_info()
 		for level in (
 			"secret", "confidential", "trace", "debug2", "debug",
 			"info", "notice", "warning", "error", "critical", "comment"
