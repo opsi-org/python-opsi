@@ -119,7 +119,7 @@ object instance from it
 				objectClass = getattr(OPSIObject, obj['type'], None)
 				if not objectClass:
 					# Not an OPSI object
-					return dict
+					return obj
 				return objectClass.fromHash(obj)
 			except Exception as err:  # pylint: disable=broad-except
 				logger.error(err, exc_info=True)

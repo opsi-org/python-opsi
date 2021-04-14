@@ -710,6 +710,26 @@ def testDeserialisationWithObjectCreation():
 	obj = result[0]
 	assert isinstance(obj, OpsiClient)
 
+def testDeserialisationWithObjectCreationFailure():
+	json = """[
+	{
+	"ident" : "invalid",
+	"description" : "",
+	"created" : "2014-08-29 10:41:27",
+	"inventoryNumber" : "loel",
+	"ipAddress" : null,
+	"notes" : "",
+	"oneTimePassword" : null,
+	"lastSeen" : "2014-08-29 10:41:27",
+	"hardwareAddress" : null,
+	"opsiHostKey" : "7dc2b49c20d545bdbfad9a326380cea3",
+	"type" : "OpsiClient",
+	"id" : "invalid"
+	}
+]"""
+
+	with pytest.raises(ValueError):
+		result = fromJson(json, preventObjectCreation=False)
 
 def testDeserialisationWithoutObjectCreation():
 	json = """[
