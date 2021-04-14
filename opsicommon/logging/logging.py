@@ -116,7 +116,7 @@ def logrecord_init(self, name, level, pathname, lineno, msg, args, exc_info, fun
 logging.LogRecord.__init_orig__ = logging.LogRecord.__init__
 logging.LogRecord.__init__ = logrecord_init
 
-def handle_log_exception(exc: Exception, record: logging.LogRecord = None, log: bool = True):
+def handle_log_exception(exc: Exception, record: logging.LogRecord = None, log: bool = False):
 	"""
 	Handles an exception in logging process.
 
