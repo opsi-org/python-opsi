@@ -3,12 +3,15 @@
 # Copyright (c) uib GmbH <info@uib.de>
 # License: AGPL-3.0
 """
-This file is part of opsi - https://www.opsi.org
+logging
 """
 
-import traceback
+import os
 import sys
+import codecs
+import traceback
 import logging
+import tempfile
 import warnings
 import contextvars
 from contextlib import contextmanager
@@ -116,7 +119,7 @@ def logrecord_init(self, name, level, pathname, lineno, msg, args, exc_info, fun
 logging.LogRecord.__init_orig__ = logging.LogRecord.__init__
 logging.LogRecord.__init__ = logrecord_init
 
-def handle_log_exception(exc: Exception, record: logging.LogRecord = None, log: bool = False):
+def handle_log_exception(exc: Exception, record: logging.LogRecord = None, stderr: bool = True, temp_file: bool = False, log: bool = False):
 	"""
 	Handles an exception in logging process.
 
@@ -126,18 +129,31 @@ def handle_log_exception(exc: Exception, record: logging.LogRecord = None, log: 
 	:type exc: Exception
 	:param record: Log record where the exception occured.
 	:type record: logging.LogRecord.
-	:param log: If true, the Exception is also output by the logger. (Default: True)
+	:param stderr: If true, the Exception is printed to srderr. (default: True)
+	:type stderr: bool
+	:param temp_file: If true, the Exception is written to a temp file. (default: False)
+	:type temp_file: bool
+	:param log: If true, the Exception is output by the logger. (default: False)
 	:type log: bool
 	"""
-	print("Logging error:", file=sys.stderr)
-	traceback.print_exc(file=sys.stderr)
-	if not log:
-		return
 	try:
-		logger.error("Logging error: %s", exc, exc_info=True)
-		if record:
-			logger.error(record.__dict__)
-			#logger.error(f"{record.msg} - {record.args}")
+		if stderr:
+			print("Logging error:", file=sys.stderr)
+			traceback.print_exc(file=sys.stderr)
+			if record:
+				print(str(record.__dict__), file=sys.stderr)
+
+		if temp_file:
+			filename = os.path.join(tempfile.gettempdir(), f"log_exception_{os.getpid()}.txt")
+			with codecs.open(filename, "utf-8", "a") as file:
+				traceback.print_exc(file=file)
+				if record:
+					print(str(record.__dict__), file=file)
+
+		if log:
+			logger.error("Logging error: %s", exc, exc_info=True)
+			if record:
+				logger.error(record.__dict__)
 	except Exception: # pylint: disable=broad-except
 		pass
 
