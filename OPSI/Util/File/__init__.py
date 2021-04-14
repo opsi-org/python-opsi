@@ -656,10 +656,7 @@ class IniFile(ConfigFile):
 				if comments:
 					for cline in comments.get(section, {}).get(option, []):
 						self._lines.append(forceUnicode(cline))
-				val = self._configParser.get(section, option)
-				if isinstance(val, bool):
-					val = str(val).lower()
-				self._lines.append(f"{option} = {val}")
+				self._lines.append(f"{option} = {self._configParser.get(section, option)}")
 			if not comments:
 				self._lines.append("")
 		self.open('w')
