@@ -6,16 +6,19 @@
 This file is part of opsi - https://www.opsi.org
 """
 
+import os
 import io
-import logging
 import re
 import time
+import codecs
+import logging
 import threading
 import asyncio
 import random
 import requests
 from contextlib import contextmanager
 import pytest
+import tempfile
 
 from opsicommon.logging import (
 	logger, handle_log_exception, secret_filter, observable_handler,
@@ -71,8 +74,18 @@ def test_levels(utils):
 
 def test_log_exception_handler():
 	log_record = logging.LogRecord(name=None, level=logging.ERROR, pathname=None, lineno=1, msg="t", args=None, exc_info=None)
-	handle_log_exception(exc=Exception(), record=log_record, log=True)
-	handle_log_exception(exc=Exception(), record=None, log=False)
+
+	filename = os.path.join(tempfile.gettempdir(), f"log_exception_{os.getpid()}.txt")
+	if os.path.exists(filename):
+		os.remove(filename)
+	try:
+		raise Exception("TESTäöüß")
+	except Exception as err:
+		handle_log_exception(exc=err, record=log_record, log=True, temp_file=True, stderr=True)
+		with codecs.open(filename, "r", "utf-8") as file:
+			data = file.read()
+			assert "TESTäöüß" in data
+			assert "'levelname': 'ERROR'" in data
 
 def test_secret_formatter_attr():
 	log_record = logging.LogRecord(name=None, level=logging.ERROR, pathname=None, lineno=1, msg="t", args=None, exc_info=None)
