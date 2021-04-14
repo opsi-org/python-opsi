@@ -25,7 +25,8 @@ from opsicommon.logging import (
 	set_filter_from_string
 )
 from opsicommon.logging.constants import (
-	LOG_SECRET, LOG_WARNING, LOG_ERROR, LOG_DEBUG, LOG_TRACE, LOG_INFO
+	LOG_SECRET, LOG_WARNING, LOG_ERROR, LOG_DEBUG, LOG_TRACE, LOG_INFO,
+	OPSI_LEVEL_TO_LEVEL
 )
 
 try:
@@ -45,7 +46,7 @@ class Utils:
 		handler = logging.StreamHandler(stream)
 		handler.name = "opsicommon test stream"
 		if new_level < 10:
-			new_level = logging.opsi_level_to_level[new_level]
+			new_level = OPSI_LEVEL_TO_LEVEL[new_level]
 		handler.setLevel(new_level)
 		try:
 			logging.root.addHandler(handler)
@@ -74,7 +75,7 @@ def test_levels(utils):
 			expected += f"{msg}\n"
 
 		stream.seek(0)
-		assert stream.read().find(expected) >= 0		# not == as other instances might also log
+		assert expected in stream.read()
 
 def test_log_exception_handler():
 	log_record = logging.LogRecord(name=None, level=logging.ERROR, pathname=None, lineno=1, msg="t", args=None, exc_info=None)
