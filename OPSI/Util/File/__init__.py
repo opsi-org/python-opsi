@@ -8,6 +8,7 @@ Working with files.
 This includes classes not only useful for reading and writing but
 parsing files for information.
 """
+# pylint: disable=too-many-lines
 
 import builtins
 import codecs
@@ -36,10 +37,17 @@ if os.name == 'posix':
 	import fcntl
 	import grp
 	import pwd
-elif os.name == 'nt':
-	import win32con
-	import win32file
-	import pywintypes
+
+if os.name == 'nt':
+	import win32con  # pylint: disable=import-error
+	import win32file  # pylint: disable=import-error
+	import pywintypes  # pylint: disable=import-error
+	import pywintypes.error as pywintypeserror  # pylint: disable=import-error
+else:
+	win32con = None # pylint: disable=invalid-name
+	win32file = None # pylint: disable=invalid-name
+	pywintypes = None # pylint: disable=invalid-name
+	pywintypeserror = IOError # pylint: disable=invalid-name
 
 logger = Logger()
 
@@ -50,7 +58,7 @@ def requiresParsing(function):
 	"""
 	@functools.wraps(function)
 	def parsedFile(self, *args, **kwargs):
-		if not self._parsed:
+		if not self._parsed:  # pylint: disable=protected-access
 			self.parse()
 
 		return function(self, *args, **kwargs)
@@ -62,6 +70,7 @@ class File:
 	def __init__(self, filename):
 		self._filename = forceFilename(filename)
 		self._fileHandle = None
+		self.fileState = None
 
 	def getFilename(self):
 		return self._filename
@@ -78,7 +87,7 @@ class File:
 
 	def chown(self, user, group):
 		if os.name == 'nt':
-			logger.warning(u"Not implemented on windows")
+			logger.warning("Not implemented on windows")
 			return
 		uid = -1
 		if isinstance(user, int):
@@ -87,8 +96,8 @@ class File:
 		elif user is not None:
 			try:
 				uid = pwd.getpwnam(user)[2]
-			except KeyError:
-				raise ValueError(u"Unknown user '%s'" % user)
+			except KeyError as err:
+				raise ValueError(f"Unknown user '{user}'") from err
 
 		gid = -1
 		if isinstance(group, int):
@@ -97,8 +106,8 @@ class File:
 		elif group is not None:
 			try:
 				gid = grp.getgrnam(group)[2]
-			except KeyError:
-				raise ValueError(u"Unknown group '%s'" % group)
+			except KeyError as err:
+				raise ValueError(f"Unknown group '{group}'") from err
 
 		os.chown(self._filename, uid, gid)
 
@@ -129,8 +138,9 @@ class File:
 	def __getattr__(self, attr):
 		if attr in self.__dict__:
 			return self.__dict__[attr]
-		elif self.__dict__['_fileHandle']:
+		if self.__dict__['_fileHandle']:
 			return getattr(self.__dict__['_fileHandle'], attr)
+		return None
 
 	def __getstate__(self):
 		state = self.__dict__.copy()
@@ -164,7 +174,7 @@ class LockableFile(File):
 		File.__init__(self, filename)
 		self._lockFailTimeout = forceInt(lockFailTimeout)
 
-	def open(self, mode='r', encoding=None, errors='replace'):
+	def open(self, mode='r', encoding=None, errors='replace'):  # pylint: disable=arguments-differ
 		truncate = False
 		if mode in ('w', 'wb') and os.path.exists(self._filename):
 			if mode == 'w':
@@ -193,7 +203,7 @@ class LockableFile(File):
 		timeout = 0
 		while timeout < self._lockFailTimeout:
 			# While not timed out and not locked
-			logger.debug("Trying to lock file '%s' (%s/%s)" % (self._filename, timeout, self._lockFailTimeout))
+			logger.debug("Trying to lock file '%s' (%s/%s)", self._filename, timeout, self._lockFailTimeout)
 			try:
 				if os.name == 'posix':
 					# Flags for exclusive, non-blocking lock
@@ -206,20 +216,20 @@ class LockableFile(File):
 					flags = win32con.LOCKFILE_EXCLUSIVE_LOCK | win32con.LOCKFILE_FAIL_IMMEDIATELY
 					if mode in ('r', 'rb'):
 						flags = win32con.LOCKFILE_FAIL_IMMEDIATELY
-					hfile = win32file._get_osfhandle(self._fileHandle.fileno())
+					hfile = win32file._get_osfhandle(self._fileHandle.fileno())  # pylint: disable=protected-access
 					win32file.LockFileEx(hfile, flags, 0, 0x7fff0000, pywintypes.OVERLAPPED())
-			except (IOError, pywintypes.error):
+			except (IOError, pywintypeserror):
 				# increase timeout counter, sleep 100 millis
 				timeout += 100
 				time.sleep(0.1)
 				continue
 			# File successfully locked
-			logger.debug("File '%s' locked after %d millis" % (self._filename, timeout))
+			logger.debug("File '%s' locked after %d millis", self._filename, timeout)
 			return self._fileHandle
 
 		File.close(self)
 		# File lock failed => raise IOError
-		raise IOError("Failed to lock file '%s' after %d millis" % (self._filename, self._lockFailTimeout))
+		raise IOError(f"Failed to lock file '{self._filename}' after {self._lockFailTimeout} millis")
 
 	def _unlockFile(self):
 		if not self._fileHandle:
@@ -227,7 +237,7 @@ class LockableFile(File):
 		if os.name == 'posix':
 			fcntl.flock(self._fileHandle.fileno(), fcntl.LOCK_UN)
 		elif os.name == 'nt':
-			hfile = win32file._get_osfhandle(self._fileHandle.fileno())
+			hfile = win32file._get_osfhandle(self._fileHandle.fileno())  # pylint: disable=protected-access
 			win32file.UnlockFileEx(hfile, 0, 0x7fff0000, pywintypes.OVERLAPPED())
 
 
@@ -235,12 +245,12 @@ class TextFile(LockableFile):
 	def __init__(self, filename, lockFailTimeout=2000):
 		LockableFile.__init__(self, filename, lockFailTimeout)
 		self._lines = []
-		self._lineSeperator = u'\n'
+		self._lineSeperator = '\n'
 
 	def open(self, mode='r', encoding='utf-8', errors='replace'):
 		return LockableFile.open(self, mode, encoding, errors)
 
-	def write(self, str):
+	def write(self, str):  # pylint: disable=redefined-builtin
 		if not self._fileHandle:
 			raise IOError("File not opened")
 		str = forceUnicode(str)
@@ -268,7 +278,7 @@ class TextFile(LockableFile):
 	def getLines(self):
 		return self._lines
 
-	def writelines(self, sequence=[]):
+	def writelines(self, sequence=[]):  # pylint: disable=dangerous-default-value
 		if not self._fileHandle:
 			raise IOError("File not opened")
 		if sequence:
@@ -301,7 +311,7 @@ class ChangelogFile(TextFile):
 		self._parsed = False
 		self._entries = []
 
-	def parse(self, lines=None):
+	def parse(self, lines=None): # pylint: disable=too-many-branches,too-many-statements
 		if lines:
 			self._lines = forceUnicodeList(lines)
 		else:
@@ -322,52 +332,52 @@ class ChangelogFile(TextFile):
 						'release': match.group(3),
 						'urgency': match.group(4),
 						'changelog': [],
-						'maintainerName': u'',
-						'maintainerEmail': u'',
+						'maintainerName': '',
+						'maintainerEmail': '',
 						'date': None
 					}
 					continue
 
 				if line.startswith(' --'):
 					if '  ' not in line:
-						raise ValueError(u"maintainer must be separated from date using two spaces")
+						raise ValueError("maintainer must be separated from date using two spaces")
 					if not currentEntry or currentEntry['date']:
-						raise ValueError(u"found trailer out of release")
+						raise ValueError("found trailer out of release")
 
-					(maintainer, date) = line[3:].strip().split(u'  ', 1)
-					email = u''
+					(maintainer, date) = line[3:].strip().split('  ', 1)
+					email = ''
 					try:
-						(maintainer, email) = maintainer.split(u'<', 1)
+						(maintainer, email) = maintainer.split('<', 1)
 						maintainer = maintainer.strip()
-						email = email.strip().replace(u'<', u'').replace(u'>', u'')
+						email = email.strip().replace('<', '').replace('>', '')
 					except ValueError:
 						pass
 
 					currentEntry['maintainerName'] = maintainer
 					currentEntry['maintainerEmail'] = email
-					if u'+' in date:
-						date = date.split(u'+')[0]
+					if '+' in date:
+						date = date.split('+')[0]
 					currentEntry['date'] = time.strptime(date.strip(), "%a, %d %b %Y %H:%M:%S")
 					changelog = []
 					buf = []
-					for l in currentEntry['changelog']:
-						if not changelog and not l.strip():
+					for cline in currentEntry['changelog']:
+						if not changelog and not cline.strip():
 							continue
-						if not l.strip():
-							buf.append(forceUnicode(l))
+						if not cline.strip():
+							buf.append(forceUnicode(cline))
 						else:
 							changelog.extend(buf)
 							buf = []
-							changelog.append(forceUnicode(l))
+							changelog.append(forceUnicode(cline))
 					currentEntry['changelog'] = forceUnicodeList(changelog)
 
 				else:
 					if not currentEntry and line.strip():
-						raise ValueError(u"text not in release")
+						raise ValueError("text not in release")
 					if currentEntry:
 						currentEntry['changelog'].append(line.rstrip())
-			except Exception as error:
-				raise ValueError(u"Parse error in line %d: %s" % (lineNum, error))
+			except Exception as err:
+				raise ValueError(f"Parse error in line {lineNum}: {err}") from err
 		if currentEntry:
 			self.addEntry(currentEntry)
 		self._parsed = True
@@ -379,17 +389,19 @@ class ChangelogFile(TextFile):
 		locale.setlocale(locale.LC_ALL, 'C')
 		try:
 			if not self._entries:
-				raise ValueError(u"No entries to write")
+				raise ValueError("No entries to write")
 			self._lines = []
 			for entry in self._entries:
-				self._lines.append(u'%s (%s) %s; urgency=%s' % (entry['package'], entry['version'], entry['release'], entry['urgency']))
-				self._lines.append(u'')
+				self._lines.append('%s (%s) %s; urgency=%s' % (entry['package'], entry['version'], entry['release'], entry['urgency']))
+				self._lines.append('')
 				for line in entry['changelog']:
 					self._lines.append(line)
 				if self._lines[-1].strip():
-					self._lines.append(u'')
-				self._lines.append(u' -- %s <%s>  %s' % (entry['maintainerName'], entry['maintainerEmail'], time.strftime('%a, %d %b %Y %H:%M:%S +0000', entry['date'])))
-				self._lines.append(u'')
+					self._lines.append('')
+				self._lines.append(' -- %s <%s>  %s' % (
+					entry['maintainerName'], entry['maintainerEmail'], time.strftime('%a, %d %b %Y %H:%M:%S +0000', entry['date']))
+				)
+				self._lines.append('')
 
 			self.open('w')
 			self.writelines()
@@ -398,7 +410,7 @@ class ChangelogFile(TextFile):
 			if loc:
 				try:
 					locale.setlocale(locale.LC_ALL, loc)
-				except Exception:
+				except Exception:  # pylint: disable=broad-except
 					pass
 
 	@requiresParsing
@@ -416,8 +428,8 @@ class ChangelogFile(TextFile):
 		for key in ('package', 'version', 'release', 'urgency', 'changelog', 'maintainerName', 'maintainerEmail', 'date'):
 			try:
 				entry[key]
-			except KeyError:
-				raise KeyError(u"Missing key '%s' in entry %s" % (key, entry))
+			except KeyError as err:
+				raise KeyError(f"Missing key '{key}' in entry {entry}") from err
 
 		entry['package'] = forceProductId(entry['package'])
 		entry['version'] = forceUnicode(entry['version'])
@@ -431,13 +443,13 @@ class ChangelogFile(TextFile):
 
 
 class ConfigFile(TextFile):
-	def __init__(self, filename, lockFailTimeout=2000, commentChars=[';', '#'], lstrip=True):
+	def __init__(self, filename, lockFailTimeout=2000, commentChars=[';', '#'], lstrip=True):  # pylint: disable=dangerous-default-value
 		TextFile.__init__(self, filename, lockFailTimeout)
 		self._commentChars = forceList(commentChars)
 		self._lstrip = forceBool(lstrip)
 		self._parsed = False
 
-	def parse(self, lines=None):
+	def parse(self, lines=None): # pylint: disable=too-many-branches
 		if lines:
 			self._lines = forceUnicodeList(lines)
 		else:
@@ -445,8 +457,8 @@ class ConfigFile(TextFile):
 		self._parsed = False
 		lines = []
 		for line in self._lines:
-			l = line.strip()
-			if not l or l[0] in self._commentChars:
+			sline = line.strip()
+			if not sline or sline[0] in self._commentChars:
 				continue
 
 			if self._lstrip:
@@ -503,8 +515,8 @@ class IniFile(ConfigFile):
 	def setKeepOrdering(self, keepOrdering):
 		self._keepOrdering = forceBool(keepOrdering)
 
-	def parse(self, lines=None, returnComments=False):
-		logger.debug(u"Parsing ini file '%s'" % self._filename)
+	def parse(self, lines=None, returnComments=False):  # pylint: disable=arguments-differ,too-many-branches,too-many-statements,too-many-locals
+		logger.debug("Parsing ini file '%s'", self._filename)
 		start = time.time()
 		if lines:
 			self._lines = forceUnicodeList(lines)
@@ -520,7 +532,7 @@ class IniFile(ConfigFile):
 			line = line.strip()
 			if not line:
 				if returnComments:
-					currentComments.append(u'')
+					currentComments.append('')
 				continue
 			if line.startswith('['):
 				currentSection = line.split('[', 1)[1].split(']', 1)[0].strip()
@@ -577,22 +589,22 @@ class IniFile(ConfigFile):
 			self._configParser = SafeConfigParser()
 
 		try:
-			self._configParser.read_file(StringIO(u'\r\n'.join(lines)))
-		except Exception as e:
-			raise RuntimeError(u"Failed to parse ini file '%s': %s" % (self._filename, e))
+			self._configParser.read_file(StringIO('\r\n'.join(lines)))
+		except Exception as err:
+			raise RuntimeError(f"Failed to parse ini file '{self._filename}': {err}") from err
 
-		logger.debug(u"Finished reading file after %0.3f seconds" % (time.time() - start))
+		logger.debug("Finished reading file after %0.3f seconds", time.time() - start)
 
 		self._parsed = True
 		if returnComments:
 			return (self._configParser, comments)
 		return self._configParser
 
-	def generate(self, configParser, comments={}):
+	def generate(self, configParser, comments={}):  # pylint: disable=dangerous-default-value,too-many-branches
 		self._configParser = configParser
 
 		if not self._configParser:
-			raise ValueError(u"Got no data to write")
+			raise ValueError("Got no data to write")
 
 		sectionSequence = []
 		optionSequence = {}
@@ -617,22 +629,22 @@ class IniFile(ConfigFile):
 		sections.sort()
 		for section in sectionSequence:
 			if section in sections:
-				logger.debug2(u"Moving section %s to top" % section)
+				logger.trace("Moving section %s to top", section)
 				sections.remove(section)
 				sections.insert(0, section)
-			logger.debug2(u"Section sequence: %s" % sections)
+			logger.trace("Section sequence: %s", sections)
 
 		self._lines = []
 		for section in sections:
 			section = forceUnicode(section)
 			if comments:
-				for l in comments.get(section, {}).get('[]', []):
-					self._lines.append(forceUnicode(l))
-			self._lines.append(u'[%s]' % section)
+				for cline in comments.get(section, {}).get('[]', []):
+					self._lines.append(forceUnicode(cline))
+			self._lines.append(f'[{section}]')
 			options = self._configParser.options(section)
 			options.sort()
-			for i, option in enumerate(options):
-				options[i] = forceUnicode(option)
+			for num, option in enumerate(options):
+				options[num] = forceUnicode(option)
 			optseq = optionSequence.get(section, [])
 			if optseq:
 				optseq.reverse()
@@ -642,11 +654,11 @@ class IniFile(ConfigFile):
 						options.insert(0, option)
 			for option in options:
 				if comments:
-					for l in comments.get(section, {}).get(option, []):
-						self._lines.append(forceUnicode(l))
-				self._lines.append(u'%s = %s' % (option, forceUnicode(self._configParser.get(section, option))))
+					for cline in comments.get(section, {}).get(option, []):
+						self._lines.append(forceUnicode(cline))
+				self._lines.append('%s = %s' % (option, forceUnicode(self._configParser.get(section, option))))
 			if not comments:
-				self._lines.append(u'')
+				self._lines.append('')
 		self.open('w')
 		self.writelines()
 		self.close()
@@ -679,25 +691,29 @@ class InfFile(ConfigFile):
 		try:
 			vendorId = forceHardwareVendorId(vendorId)
 			deviceId = forceHardwareDeviceId(deviceId)
-		except Exception as e:
-			logger.error(e)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.error(err)
 			return False
 		if not self._parsed:
 			self.parse()
-		for d in self._devices:
-			if (not deviceType or (d.get('type') == deviceType)) and (d.get('vendor') == vendorId) and (not d.get('device') or (d['device'] == deviceId)):
+		for dev in self._devices:
+			if (
+				(not deviceType or (dev.get('type') == deviceType)) and
+				(dev.get('vendor') == vendorId) and
+				(not dev.get('device') or (dev['device'] == deviceId))
+			):
 				return True
 		return False
 
-	def parse(self, lines=None):
-		logger.debug(u"Parsing inf file %s" % self._filename)
+	def parse(self, lines=None): # pylint: disable=too-many-branches,too-many-statements,too-many-locals
+		logger.debug("Parsing inf file %s", self._filename)
 		lines = ConfigFile.parse(self, lines)
 		self._parsed = False
 		self._devices = []
 
 		path = os.path.dirname(self._filename)
 
-		deviceClass = u'???'
+		deviceClass = '???'
 		deviceSections = []
 		appendNext = False
 		newLines = []
@@ -707,30 +723,30 @@ class InfFile(ConfigFile):
 			else:
 				newLines.append(line)
 
-			appendNext = line.endswith(u'\\')
+			appendNext = line.endswith('\\')
 		lines = newLines
 
 		# Get strings
-		logger.debug2(u"   - Getting strings")
+		logger.trace("   - Getting strings")
 		strings = {}
-		section = u''
+		section = ''
 		for line in lines:
 			match = re.search(self.sectionRegex, line)
 			if match:
-				if section.lower() == u'strings':
+				if section.lower() == 'strings':
 					break
 				section = match.group(1)
 			else:
-				if section.lower() == u'strings':
+				if section.lower() == 'strings':
 					try:
-						(var, string) = line.split(u'=', 1)
+						(var, string) = line.split('=', 1)
 						string = string.strip()
-						if string.startswith(u'"') and string.endswith(u'"'):
+						if string.startswith('"') and string.endswith('"'):
 							string = string[1:-1]
 						strings[var.strip().lower()] = string
-					except Exception:
+					except Exception:  # pylint: disable=broad-except
 						pass
-		logger.debug2(u"        got strings: %s" % strings)
+		logger.trace("        got strings: %s", strings)
 
 		# Get source disks names
 		self._sourceDisksNames = []
@@ -739,67 +755,67 @@ class InfFile(ConfigFile):
 			match = re.search(self.sectionRegex, line)
 			if match:
 				section = match.group(1)
-				sectionFound = section.lower().startswith(u'sourcedisksnames')
+				sectionFound = section.lower().startswith('sourcedisksnames')
 				continue
 
 			if sectionFound:
 				if '=' not in line:
 					continue
-				name = line.split(u'=')[1].split(u',')[0].strip()
+				name = line.split('=')[1].split(',')[0].strip()
 				name = strings.get(name.replace('%', '').lower(), name)
 				if name not in self._sourceDisksNames:
 					self._sourceDisksNames.append(name)
 
 		# Get devices
-		logger.debug2(u"   - Getting devices")
-		section = u''
-		for line in lines:
+		logger.trace("   - Getting devices")
+		section = ''
+		for line in lines:  # pylint: disable=too-many-locals,too-many-nested-blocks
 			match = re.search(self.sectionRegex, line)
 			if match:
-				if section.lower() == u'manufacturer':
+				if section.lower() == 'manufacturer':
 					break
 				section = match.group(1)
 			else:
-				if section.lower() == u'version':
-					if line.lower().startswith(u'class'):
+				if section.lower() == 'version':
+					if line.lower().startswith('class'):
 						if re.search(self.classRegex, line.lower()):
 							deviceClass = line.split('=')[1].strip().lower()
 							match = re.search(self.varRegex, deviceClass)
 							if match:
 								var = match.group(1).lower()
 								if var in strings:
-									deviceClass = deviceClass.replace(u'%{0}%'.format(var), strings[var])
+									deviceClass = deviceClass.replace('%{0}%'.format(var), strings[var])
 
-				elif section.lower() == u'manufacturer':
-					if line and u'=' in line:
-						for d in line.split(u'=')[1].split(u','):
-							deviceSections.append(d.strip())
+				elif section.lower() == 'manufacturer':
+					if line and '=' in line:
+						for dev in line.split('=')[1].split(','):
+							deviceSections.append(dev.strip())
 
 		devSections = set()
 		for deviceSection in deviceSections:
 			for i in deviceSection.split('.'):
 				devSections.add(i)
 		deviceSections = devSections
-		logger.debug2(u"      - Device sections: %s" % ', '.join(deviceSections))
+		logger.trace("      - Device sections: %s", ', '.join(deviceSections))
 
 		def isDeviceSection(section):
 			if section in deviceSections:
 				return True
-			for s in section.split(u'.'):
-				if s not in deviceSections:
+			for sec in section.split('.'):
+				if sec not in deviceSections:
 					return False
 			return True
 
 		regexAndType = (
-			(self.hdaudioDeviceRegex, u'HDAUDIO'),
-			(self.pciDeviceRegex, u'PCI'),
-			(self.usbDeviceRegex, u'USB'),
-			(self.acpiDeviceRegex, u'ACPI'),
+			(self.hdaudioDeviceRegex, 'HDAUDIO'),
+			(self.pciDeviceRegex, 'PCI'),
+			(self.usbDeviceRegex, 'USB'),
+			(self.acpiDeviceRegex, 'ACPI'),
 		)
 		found = set()
 		section = ''
 		sectionsParsed = []
-		for line in lines:
+		for line in lines:  # pylint: disable=too-many-locals,too-many-nested-blocks
 			try:
 				match = re.search(self.sectionRegex, line)
 				if match:
@@ -807,15 +823,15 @@ class InfFile(ConfigFile):
 						sectionsParsed.append(section)
 					section = match.group(1)
 					if isDeviceSection(section):
-						logger.debug2(u"   - Parsing device section: %s" % section)
+						logger.trace("   - Parsing device section: %s", section)
 				else:
 					if isDeviceSection(section) and section not in sectionsParsed:
 						try:
 							if '=' not in line or ',' not in line:
 								continue
 
-							devString = line.split(u'=')[1].split(u',')[1].strip()
-							logger.debug2(u"      - Processing device string: %s" % devString)
+							devString = line.split('=')[1].split(',')[1].strip()
+							logger.trace("      - Processing device string: %s", devString)
 
 							for regex, deviceType in regexAndType:
 								match = regex.search(devString)
@@ -825,17 +841,17 @@ class InfFile(ConfigFile):
 								deviceType = ''  # reset the device type
 
 							if match:
-								logger.debug2(u"         - Device type is %s" % deviceType)
-								if deviceType == u'ACPI':
+								logger.trace("         - Device type is %s", deviceType)
+								if deviceType == 'ACPI':
 									vendor = match.group(1)
 									device = match.group(2)
 								else:
 									vendor = forceHardwareVendorId(match.group(1))
 									device = forceHardwareDeviceId(match.group(2))
 
-								if u"%s:%s" % (vendor, device) not in found:
-									logger.debug2(u"         - Found %s device: %s:%s" % (deviceType, vendor, device))
-									found.add(u"%s:%s:%s" % (deviceType, vendor, device))
+								if f"{vendor}:{device}" not in found:
+									logger.trace("         - Found %s device: %s:%s" % (deviceType, vendor, device))
+									found.add(f"{deviceType}:{vendor}:{device}")
 									self._devices.append(
 										{
 											'path': path,
@@ -846,9 +862,9 @@ class InfFile(ConfigFile):
 										}
 									)
 						except IndexError:
-							logger.warning(u"Skipping bad line '%s' in file %s" % (line, self._filename))
-			except Exception as e:
-				logger.error(u"Parse error in inf file '%s' line '%s': %s" % (self._filename, line, e))
+							logger.warning("Skipping bad line '%s' in file %s", line, self._filename)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error("Parse error in inf file '%s' line '%s': %s", self._filename, line, err)
 		self._parsed = True
 
 
@@ -880,7 +896,7 @@ class PciidsFile(ConfigFile):
 		return self._subDevices.get(vendorId, {}).get(deviceId, {}).get(subVendorId + ':' + subDeviceId, None)
 
 	def parse(self, lines=None):
-		logger.debug(u"Parsing ids file %s" % self._filename)
+		logger.debug("Parsing ids file %s", self._filename)
 
 		lines = ConfigFile.parse(self, lines)
 		self._parsed = False
@@ -893,17 +909,17 @@ class PciidsFile(ConfigFile):
 		currentDeviceId = None
 		for line in lines:
 			try:
-				if line.startswith(u'C '):
+				if line.startswith('C '):
 					# Start of list of known device classes, subclasses and programming interfaces
 					break
 
-				if line.startswith(u'\t'):
+				if line.startswith('\t'):
 					if not currentVendorId or currentVendorId not in self._devices:
-						raise ValueError(u"Parse error in file '%s': %s" % (self._filename, line))
+						raise ValueError(f"Parse error in file '{self._filename}': {line}")
 
-					if line.startswith(u'\t\t'):
+					if line.startswith('\t\t'):
 						if not currentDeviceId or currentVendorId not in self._subDevices or currentDeviceId not in self._subDevices[currentVendorId]:
-							raise ValueError(u"Parse error in file '%s': %s" % (self._filename, line))
+							raise ValueError(f"Parse error in file '{self._filename}': {line}")
 						(subVendorId, subDeviceId, subName) = line.lstrip().split(None, 2)
 						subVendorId = forceHardwareVendorId(subVendorId)
 						subDeviceId = forceHardwareDeviceId(subDeviceId)
@@ -928,15 +944,15 @@ class PciidsFile(ConfigFile):
 						self._subDevices[vendorId] = {}
 
 					self._vendors[vendorId] = vendorName.strip()
-			except Exception as e:
-				logger.error(e)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error(err)
 		self._parsed = True
 
 
 UsbidsFile = PciidsFile
 
 
-class TxtSetupOemFile(ConfigFile):
+class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attributes
 
 	sectionRegex = re.compile(r'\[\s*([^\]]+)\s*\]')
 	pciDeviceRegex = re.compile(r'VEN_([\da-fA-F]+)(&DEV_([\da-fA-F]+))?(\S*)\s*$')
@@ -965,8 +981,12 @@ class TxtSetupOemFile(ConfigFile):
 	def isDeviceKnown(self, vendorId, deviceId, deviceType=None):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
-		for d in self._devices:
-			if (not deviceType or (d.get('type') == deviceType)) and (d.get('vendor') == vendorId) and (not d.get('device') or (d['device'] == deviceId)):
+		for dev in self._devices:
+			if (
+				(not deviceType or (dev.get('type') == deviceType)) and
+				(dev.get('vendor') == vendorId) and
+				(not dev.get('device') or (dev['device'] == deviceId))
+			):
 				return True
 		return False
 
@@ -977,23 +997,33 @@ class TxtSetupOemFile(ConfigFile):
 		architecture = forceArchitecture(architecture)
 
 		device = None
-		for d in self._devices:
-			if (not deviceType or (d.get('type') == deviceType)) and (d.get('vendor') == vendorId) and (not d.get('device') or d['device'] == deviceId):
+		for dev in self._devices:
+			if (
+				(not deviceType or (dev.get('type') == deviceType)) and
+				(dev.get('vendor') == vendorId) and
+				(not dev.get('device') or dev['device'] == deviceId)
+			):
 				if architecture == 'x86':
-					if 'amd64' in d['componentId'].lower() or 'x64' in d['componentId'].lower():
-						logger.debug(u"Skipping device with component id '%s' which does not seem to match architecture '%s'" % (d['componentId'], architecture))
+					if 'amd64' in dev['componentId'].lower() or 'x64' in dev['componentId'].lower():
+						logger.debug(
+							"Skipping device with component id '%s' which does not seem to match architecture '%s'",
+							dev['componentId'], architecture
+						)
 						continue
 				elif architecture == 'x64':
-					if 'i386' in d['componentId'].lower() or 'x86' in d['componentId'].lower():
-						logger.debug(u"Skipping device with component id '%s' which does not seem to match architecture '%s'" % (d['componentId'], architecture))
+					if 'i386' in dev['componentId'].lower() or 'x86' in dev['componentId'].lower():
+						logger.debug(
+							"Skipping device with component id '%s' which does not seem to match architecture '%s'",
+							dev['componentId'], architecture
+						)
 						continue
-				device = d
+				device = dev
 				break
 		if not device:
-			raise ValueError(u"Device '%s:%s' not found in txtsetup.oem file '%s'" % (vendorId, deviceId, self._filename))
+			raise ValueError(f"Device '{vendorId}:{deviceId}' not found in txtsetup.oem file '{self._filename}'")
 		return device
 
-	def getFilesForDevice(self, vendorId, deviceId, deviceType=None, fileTypes=[], architecture='x86'):
+	def getFilesForDevice(self, vendorId, deviceId, deviceType=None, fileTypes=[], architecture='x86'):  # pylint: disable=dangerous-default-value,too-many-arguments
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
 		fileTypes = forceUnicodeLowerList(fileTypes)
@@ -1003,17 +1033,17 @@ class TxtSetupOemFile(ConfigFile):
 
 		files = []
 		diskDriverDirs = {}
-		for d in self._driverDisks:
-			diskDriverDirs[d["diskName"]] = d["driverDir"]
+		for dev in self._driverDisks:
+			diskDriverDirs[dev["diskName"]] = dev["driverDir"]
 
-		for f in self._files:
-			if f['componentName'] != device['componentName'] or f['componentId'] != device['componentId']:
+		for file in self._files:
+			if file['componentName'] != device['componentName'] or file['componentId'] != device['componentId']:
 				continue
-			if fileTypes and f['fileType'] not in fileTypes:
+			if fileTypes and file['fileType'] not in fileTypes:
 				continue
-			if f['diskName'] not in diskDriverDirs:
-				raise ValueError(u"Driver disk for file %s not found in txtsetup.oem file '%s'" % (f, self._filename))
-			files.append(os.path.join(diskDriverDirs[f['diskName']], f['filename']))
+			if file['diskName'] not in diskDriverDirs:
+				raise ValueError(f"Driver disk for file {file} not found in txtsetup.oem file '{self._filename}'")
+			files.append(os.path.join(diskDriverDirs[file['diskName']], file['filename']))
 		return files
 
 	def getComponentOptionsForDevice(self, vendorId, deviceId, deviceType=None, architecture='x86'):
@@ -1023,34 +1053,41 @@ class TxtSetupOemFile(ConfigFile):
 		device = self.getDevice(vendorId=vendorId, deviceId=deviceId, deviceType=deviceType, architecture=architecture)
 
 		for componentOptions in self._componentOptions:
-			if componentOptions['componentName'] == device['componentName'] and componentOptions["componentId"] == device['componentId']:
+			if (
+				componentOptions['componentName'] == device['componentName'] and
+				componentOptions["componentId"] == device['componentId']
+			):
 				return componentOptions
 		for componentOptions in self._componentOptions:
-			if componentOptions['componentName'].lower() == device['componentName'].lower() and componentOptions["componentId"].lower() == device['componentId'].lower():
+			if (
+				componentOptions['componentName'].lower() == device['componentName'].lower() and
+				componentOptions["componentId"].lower() == device['componentId'].lower()
+			):
 				return componentOptions
-		raise ValueError(u"Component options for device %s not found in txtsetup.oem file '%s'" % (device, self._filename))
+		raise ValueError(f"Component options for device {device} not found in txtsetup.oem file '{self._filename}'")
 
 	@requiresParsing
 	def applyWorkarounds(self):
 		if not self._defaultComponentIds:
 			# Missing default component will cause problems in windows textmode setup
-			logger.info(u"No default component ids found, using '%s' as default component id" % self._componentOptions[0]['componentId'])
-			self._defaultComponentIds.append(
-				{
-					'componentName': self._componentOptions[0]['componentName'],
-					'componentId': self._componentOptions[0]['componentId']
-				}
+			logger.info(
+				"No default component ids found, using '%s' as default component id",
+				self._componentOptions[0]['componentId']
 			)
+			self._defaultComponentIds.append({
+				'componentName': self._componentOptions[0]['componentName'],
+				'componentId': self._componentOptions[0]['componentId']
+			})
 		files = []
-		for f in self._files:
-			if f['fileType'] == 'dll':
+		for file in self._files:
+			if file['fileType'] == 'dll':
 				# dll entries will cause problems in windows textmode setup
 				continue
-			files.append(f)
+			files.append(file)
 		self._files = files
 
-	def parse(self, lines=None):
-		logger.debug(u"Parsing txtsetup.oem file %s" % self._filename)
+	def parse(self, lines=None): # pylint: disable=too-many-branches,too-many-statements,too-many-locals
+		logger.debug("Parsing txtsetup.oem file %s", self._filename)
 
 		lines = ConfigFile.parse(self, lines)
 		self._parsed = False
@@ -1067,7 +1104,7 @@ class TxtSetupOemFile(ConfigFile):
 		sections = {}
 		section = None
 		for line in lines:
-			logger.debug2(u"txtsetup.oem: %s" % line)
+			logger.trace("txtsetup.oem: %s", line)
 			match = re.search(self.sectionRegex, line)
 			if match:
 				section = match.group(1)
@@ -1076,13 +1113,13 @@ class TxtSetupOemFile(ConfigFile):
 				sections[section].append(line)
 
 		# Search for component options
-		logger.info(u"Searching for component names and options")
-		for (section, lines) in sections.items():
+		logger.info("Searching for component names and options")
+		for (section, sec_lines) in sections.items():
 			if section.lower() not in ('computer', 'display', 'keyboard', 'mouse', 'scsi'):
 				continue
 			componentName = section
-			for line in lines:
-				if u'=' not in line:
+			for line in sec_lines:
+				if '=' not in line:
 					continue
 				optionName = None
 				(componentId, value) = line.split('=', 1)
@@ -1093,58 +1130,57 @@ class TxtSetupOemFile(ConfigFile):
 				except ValueError:
 					description = value
 				description = description.strip()
-				if description.startswith(u'"') and description.endswith(u'"'):
+				if description.startswith('"') and description.endswith('"'):
 					description = description[1:-1]
 				if not componentName in self._componentNames:
 					self._componentNames.append(componentName)
-				self._componentOptions.append(
-					{
-						"componentName": componentName,
-						"description": description,
-						"componentId": componentId,
-						"optionName": optionName
-					}
-				)
+				self._componentOptions.append({
+					"componentName": componentName,
+					"description": description,
+					"componentId": componentId,
+					"optionName": optionName
+				})
 
-		logger.info(u"Component names found: %s" % self._componentNames)
-		logger.info(u"Component options found: %s" % self._componentOptions)
+		logger.info("Component names found: %s", self._componentNames)
+		logger.info("Component options found: %s", self._componentOptions)
 
 		# Search for default component ids
-		logger.info(u"Searching for default component ids")
-		for (section, lines) in sections.items():
+		logger.info("Searching for default component ids")
+		for (section, sec_lines) in sections.items():
 			if section.lower() != 'defaults':
 				continue
 
-			for line in lines:
+			for line in sec_lines:
 				(componentName, componentId) = line.split('=', 1)
-				self._defaultComponentIds.append(
-					{
-						'componentName': componentName.strip(),
-						'componentId': componentId.strip()
-					}
-				)
+				self._defaultComponentIds.append({
+					'componentName': componentName.strip(),
+					'componentId': componentId.strip()
+				})
 
 		if self._defaultComponentIds:
-			logger.info(u"Found default component ids: %s" % self._defaultComponentIds)
+			logger.info("Found default component ids: %s", self._defaultComponentIds)
 
 		# Search for hardware ids
-		logger.info(u"Searching for devices")
-		for (section, lines) in sections.items():
+		logger.info("Searching for devices")
+		for (section, sec_lines) in sections.items():
 			match = re.search(self.hardwareIdsRegex, section)
 			if not match:
 				continue
 			componentName = match.group(1)
 			componentId = match.group(2)
-			logger.info(u"Found hardwareIds section '%s', component name '%s', component id '%s'" % (section, componentName, componentId))
-			for line in lines:
+			logger.info(
+				"Found hardwareIds section '%s', component name '%s', component id '%s'",
+				section, componentName, componentId
+			)
+			for line in sec_lines:
 				if not re.search(r'[iI][dD]\s*=', line):
 					continue
-				(device, serviceName) = line.split(u'=', 1)[1].strip().split(u',', 1)
+				(device, serviceName) = line.split('=', 1)[1].strip().split(',', 1)
 				device = device.strip()
-				if device.startswith(u'"') and device.endswith(u'"'):
+				if device.startswith('"') and device.endswith('"'):
 					device = device[1:-1]
 				serviceName = serviceName.strip()
-				if serviceName.startswith(u'"') and serviceName.endswith(u'"'):
+				if serviceName.startswith('"') and serviceName.endswith('"'):
 					serviceName = serviceName[1:-1]
 				match = re.search(self.pciDeviceRegex, device)
 				if not match:
@@ -1156,174 +1192,169 @@ class TxtSetupOemFile(ConfigFile):
 				extra = None
 				if match.group(4):
 					extra = forceUnicode(match.group(4))
-				logger.debug(u"   Found %s device: %s:%s, service name: %s" % (u'PCI', vendor, device, serviceName))
-				self._devices.append(
-					{
-						'vendor': vendor,
-						'device': device,
-						'extra': extra,
-						'type': u'PCI',
-						'serviceName': serviceName,
-						'componentName': componentName,
-						'componentId': componentId
-					}
-				)
+				logger.debug("   Found %s device: %s:%s, service name: %s", 'PCI', vendor, device, serviceName)
+				self._devices.append({
+					'vendor': vendor,
+					'device': device,
+					'extra': extra,
+					'type': 'PCI',
+					'serviceName': serviceName,
+					'componentName': componentName,
+					'componentId': componentId
+				})
 				if serviceName not in self._serviceNames:
 					self._serviceNames.append(serviceName)
 
 		if not self._devices:
-			raise ValueError(u"No devices found in txtsetup file '%s'" % self._filename)
+			raise ValueError(f"No devices found in txtsetup file '{self._filename}'")
 
-		logger.info(u"Found services: %s" % self._serviceNames)
-		logger.debug(u"Found devices: %s" % self._devices)
+		logger.info("Found services: %s", self._serviceNames)
+		logger.debug("Found devices: %s", self._devices)
 
 		# Search for disks
-		logger.info(u"Searching for disks")
-		for (section, lines) in sections.items():
+		logger.info("Searching for disks")
+		for (section, sec_lines) in sections.items():
 			if section.lower() != 'disks':
 				continue
 
-			for line in lines:
-				if u'=' not in line:
+			for line in sec_lines:
+				if '=' not in line:
 					continue
 
 				(diskName, value) = line.split('=', 1)
 				diskName = diskName.strip()
 				(desc, tf, dd) = value.split(',', 2)
 				desc = desc.strip()
-				if desc.startswith(u'"') and desc.endswith(u'"'):
+				if desc.startswith('"') and desc.endswith('"'):
 					desc = desc[1:-1]
 				tf = tf.strip()
-				if tf.startswith(u'\\'):
+				if tf.startswith('\\'):
 					tf = tf[1:]
 				dd = dd.strip()
-				if dd.startswith(u'\\'):
+				if dd.startswith('\\'):
 					dd = dd[1:]
 
-				self._driverDisks.append(
-					{
-						"diskName": diskName,
-						"description": desc,
-						"tagfile": tf,
-						"driverDir": dd
-					}
-				)
+				self._driverDisks.append({
+					"diskName": diskName,
+					"description": desc,
+					"tagfile": tf,
+					"driverDir": dd
+				})
 		if not self._driverDisks:
-			raise ValueError(u"No driver disks found in txtsetup file '%s'" % self._filename)
-		logger.info(u"Found driver disks: %s" % self._driverDisks)
+			raise ValueError(f"No driver disks found in txtsetup file '{self._filename}'")
+		logger.info("Found driver disks: %s", self._driverDisks)
 
 		# Search for files
-		logger.info(u"Searching for files")
-		for (section, lines) in sections.items():
+		logger.info("Searching for files")
+		for (section, sec_lines) in sections.items():
 			match = re.search(self.filesRegex, section)
 			if not match:
 				continue
 			componentName = match.group(1)
 			componentId = match.group(2)
-			logger.info(u"Found files section '%s', component name '%s', component id '%s'" % (section, componentName, componentId))
-			for line in lines:
-				(fileType, value) = line.split(u'=', 1)
+			logger.info(
+				"Found files section '%s', component name '%s', component id '%s'",
+				section, componentName, componentId
+			)
+			for line in sec_lines:
+				(fileType, value) = line.split('=', 1)
 				fileType = fileType.strip()
-				parts = value.split(u',')
+				parts = value.split(',')
 				diskName = parts[0].strip()
 				filename = parts[1].strip()
 				optionName = None
 				if len(parts) > 2:
 					optionName = parts[2].strip()
 
-				self._files.append(
-					{
-						'fileType': fileType,
-						'diskName': diskName,
-						'filename': filename,
-						'componentName': componentName,
-						'componentId': componentId,
-						'optionName': optionName
-					}
-				)
-		logger.debug(u"Found files: %s" % self._files)
+				self._files.append({
+					'fileType': fileType,
+					'diskName': diskName,
+					'filename': filename,
+					'componentName': componentName,
+					'componentId': componentId,
+					'optionName': optionName
+				})
+		logger.debug("Found files: %s", self._files)
 
 		# Search for configs
-		logger.info(u"Searching for configs")
-		for (section, lines) in sections.items():
+		logger.info("Searching for configs")
+		for (section, sec_lines) in sections.items():
 			match = re.search(self.configsRegex, section)
 			if not match:
 				continue
 			componentId = match.group(1)
-			logger.info(u"Found configs section '%s', component id '%s'" % (section, componentId))
-			for line in lines:
-				value = line.split(u'=', 1)[1]
-				(keyName, valueName, valueType, value) = value.split(u',', 3)
+			logger.info("Found configs section '%s', component id '%s'", section, componentId)
+			for line in sec_lines:
+				value = line.split('=', 1)[1]
+				(keyName, valueName, valueType, value) = value.split(',', 3)
 				keyName = keyName.strip()
 				valueName = valueName.strip()
 				valueType = valueType.strip()
 				value = value.strip()
-				self._configs.append(
-					{
-						'keyName': keyName.strip(),
-						'valueName': valueName.strip(),
-						'valueType': valueType.strip(),
-						'value': value.strip(),
-						'componentId': componentId
-					}
-				)
-		logger.debug(u"Found configs: %s" % self._configs)
+				self._configs.append({
+					'keyName': keyName.strip(),
+					'valueName': valueName.strip(),
+					'valueType': valueType.strip(),
+					'value': value.strip(),
+					'componentId': componentId
+				})
+		logger.debug("Found configs: %s", self._configs)
 		self._parsed = True
 
-	def generate(self):
+	def generate(self): # pylint: disable=too-many-branches,too-many-statements
 		lines = []
-		lines.append(u'[Disks]\r\n')
+		lines.append('[Disks]\r\n')
 		for disk in self._driverDisks:
-			lines.append(u'%s = "%s", \\%s, \\%s\r\n' % (disk["diskName"], disk["description"], disk["tagfile"], disk["driverDir"]))
-		lines.append(u'\r\n')
-		lines.append(u'[Defaults]\r\n')
+			lines.append('%s = "%s", \\%s, \\%s\r\n' % (disk["diskName"], disk["description"], disk["tagfile"], disk["driverDir"]))
+		lines.append('\r\n')
+		lines.append('[Defaults]\r\n')
 		for default in self._defaultComponentIds:
-			lines.append(u'%s = %s\r\n' % (default["componentName"], default["componentId"]))
+			lines.append('%s = %s\r\n' % (default["componentName"], default["componentId"]))
 
 		for name in self._componentNames:
-			lines.append(u'\r\n')
-			lines.append(u'[%s]\r\n' % name)
+			lines.append('\r\n')
+			lines.append('[%s]\r\n' % name)
 			for options in self._componentOptions:
 				if options["componentName"] != name:
 					continue
-				line = u'%s = "%s"' % (options["componentId"], options["description"])
+				line = '%s = "%s"' % (options["componentId"], options["description"])
 				if options["optionName"]:
-					line += u', %s' % options["optionName"]
-				lines.append(line + u'\r\n')
+					line += ', %s' % options["optionName"]
+				lines.append(line + '\r\n')
 
 		for name in self._componentNames:
 			for options in self._componentOptions:
 				if options["componentName"] != name:
 					continue
-				lines.append(u'\r\n')
-				lines.append(u'[Files.%s.%s]\r\n' % (name, options["componentId"]))
-				for f in self._files:
-					if f['componentName'] != name or f['componentId'] != options["componentId"]:
+				lines.append('\r\n')
+				lines.append('[Files.%s.%s]\r\n' % (name, options["componentId"]))
+				for file in self._files:
+					if file['componentName'] != name or file['componentId'] != options["componentId"]:
 						continue
-					line = u'%s = %s, %s' % (f['fileType'], f['diskName'], f['filename'])
-					if f["optionName"]:
-						line += u', %s' % f["optionName"]
-					lines.append(line + u'\r\n')
+					line = '%s = %s, %s' % (file['fileType'], file['diskName'], file['filename'])
+					if file["optionName"]:
+						line += ', %s' % file["optionName"]
+					lines.append(line + '\r\n')
 
 		for name in self._componentNames:
 			for options in self._componentOptions:
 				if options["componentName"] != name:
 					continue
-				lines.append(u'\r\n')
-				lines.append(u'[HardwareIds.%s.%s]\r\n' % (name, options["componentId"]))
+				lines.append('\r\n')
+				lines.append('[HardwareIds.%s.%s]\r\n' % (name, options["componentId"]))
 				for dev in self._devices:
 					if dev['componentName'] != name or dev['componentId'] != options["componentId"]:
 						continue
 
-					line = u'id = "%s\\VEN_%s' % (dev['type'], dev['vendor'])
+					line = 'id = "%s\\VEN_%s' % (dev['type'], dev['vendor'])
 					if dev['device']:
-						line += u'&DEV_%s' % dev['device']
+						line += '&DEV_%s' % dev['device']
 					if dev['extra']:
 						line += dev['extra']
 					if dev['type'] == 'USB':
-						line = line.replace(u'VEN_', u'VID_').replace(u'DEV_', u'PID_')
+						line = line.replace('VEN_', 'VID_').replace('DEV_', 'PID_')
 					line += '", "%s"' % dev['serviceName']
-					lines.append(line + u'\r\n')
+					lines.append(line + '\r\n')
 
 		configComponents = {}
 		for config in self._configs:
@@ -1332,10 +1363,10 @@ class TxtSetupOemFile(ConfigFile):
 			configComponents[config['componentId']].append(config)
 
 		for (componentId, configs) in configComponents.items():
-			lines.append(u'\r\n')
-			lines.append(u'[Config.%s]\r\n' % componentId)
+			lines.append('\r\n')
+			lines.append('[Config.%s]\r\n' % componentId)
 			for conf in configs:
-				lines.append(u'value = %s, %s, %s, %s\r\n' % (conf['keyName'], conf['valueName'], conf['valueType'], conf['value']))
+				lines.append('value = %s, %s, %s, %s\r\n' % (conf['keyName'], conf['valueName'], conf['valueType'], conf['value']))
 
 		self._lines = lines
 		self._fileHandle = codecs.open(self._filename, 'w', 'cp1250')
@@ -1350,50 +1381,50 @@ class ZsyncFile(LockableFile):
 		self._data = ''
 		self._parsed = False
 
-	def parse(self, lines=None):
-		logger.debug(u"Parsing zsync file %s" % self._filename)
+	def parse(self, lines=None):  # pylint: disable=unused-argument
+		logger.debug("Parsing zsync file %s", self._filename)
 
 		self._parsed = False
 
-		with open(self._filename, 'rb') as f:
-			for line in iter(lambda: f.readline().strip(), b''):
+		with open(self._filename, 'rb') as file:
+			for line in iter(lambda: file.readline().strip(), b''):
 				strLine = line.decode()
 				key, value = strLine.split(':', 1)
 				self._header[key.strip()] = value.strip()
 
 			# Header and data are divided by an empty line
-			self._data = f.read()
+			self._data = file.read()
 
 		self._parsed = True
 
 	def generate(self, dataFile=None):
 		if dataFile:
-			execute(u"%s -u '%s' -o '%s' '%s'" % (which('zsyncmake'), os.path.basename(dataFile), self._filename, dataFile))
+			execute("%s -u '%s' -o '%s' '%s'" % (which('zsyncmake'), os.path.basename(dataFile), self._filename, dataFile))
 			self.parse()
 
-		with open(self._filename, 'wb') as f:
+		with open(self._filename, 'wb') as file:
 			for key, value in self._header.items():
 				if key.lower() == 'mtime':
 					continue
 				headerData = '%s: %s\n' % (key, value)
-				f.write(headerData.encode())
-			f.write('\n'.encode())
-			f.write(self._data)
+				file.write(headerData.encode())
+			file.write('\n'.encode())
+			file.write(self._data)
 
 
-class DHCPDConf_Component:
+class DHCPDConf_Component:  # pylint: disable=invalid-name
 	def __init__(self, startLine, parentBlock):
 		self.startLine = startLine
 		self.endLine = startLine
 		self.parentBlock = parentBlock
 
 	def getShifting(self):
-		shifting = u''
+		shifting = ''
 		if not self.parentBlock:
 			return shifting
 		parentBlock = self.parentBlock.parentBlock
 		while parentBlock:
-			shifting += u'\t'
+			shifting += '\t'
 			parentBlock = parentBlock.parentBlock
 		return shifting
 
@@ -1401,44 +1432,44 @@ class DHCPDConf_Component:
 		return self.getShifting()
 
 	def __str__(self):
-		return u'<{0}({1:d}, {2})>'.format(
+		return '<{0}({1:d}, {2})>'.format(
 			self.__class__.__name__, self.startLine, self.endLine)
 
 	def __repr__(self):
 		return self.__str__()
 
 
-class DHCPDConf_Parameter(DHCPDConf_Component):
+class DHCPDConf_Parameter(DHCPDConf_Component):  # pylint: disable=invalid-name
 	def __init__(self, startLine, parentBlock, key, value):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
 		self.key = key
 		self.value = value
 		if isinstance(self.value, str):
-			if self.value.lower() in (u'yes', u'true', u'on'):
+			if self.value.lower() in ('yes', 'true', 'on'):
 				self.value = True
-			elif self.value.lower() in (u'no', u'false', u'off'):
+			elif self.value.lower() in ('no', 'false', 'off'):
 				self.value = False
 
 	def asText(self):
 		value = self.value
 		if isinstance(value, bool):
 			if value:
-				value = u'on'
+				value = 'on'
 			else:
-				value = u'off'
-		elif (self.key in (u'filename', u'ddns-domainname') or
+				value = 'off'
+		elif (self.key in ('filename', 'ddns-domainname') or
 				re.match(r".*['/\\].*", value) or
 				re.match(r'^\w+\.\w+$', value) or
-				self.key.endswith(u'-name')):
+				self.key.endswith('-name')):
 
-			value = u'"%s"' % value
-		return u"%s%s %s;" % (self.getShifting(), self.key, value)
+			value = '"%s"' % value
+		return "%s%s %s;" % (self.getShifting(), self.key, value)
 
 	def asHash(self):
 		return {self.key: self.value}
 
 
-class DHCPDConf_Option(DHCPDConf_Component):
+class DHCPDConf_Option(DHCPDConf_Component):  # pylint: disable=invalid-name
 	def __init__(self, startLine, parentBlock, key, value):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
 		self.key = key
@@ -1448,11 +1479,11 @@ class DHCPDConf_Option(DHCPDConf_Component):
 
 	def asText(self):
 		quotedOptions = (
-			u'-name', u'-domain', u'-identifier', u'-search',
-			u'merit-dump', u'nds-context', u'netbios-scope', u'nwip-domain',
-			u'nwip-suboptions', u'nis-domain', u'nisplus-domain', u'root-path',
-			u'uap-servers', u'user-class', u'vendor-encapsulated-options',
-			u'circuit-id', u'remote-id', u'fqdn.fqdn', u'ddns-rev-domainname'
+			'-name', '-domain', '-identifier', '-search',
+			'merit-dump', 'nds-context', 'netbios-scope', 'nwip-domain',
+			'nwip-suboptions', 'nis-domain', 'nisplus-domain', 'root-path',
+			'uap-servers', 'user-class', 'vendor-encapsulated-options',
+			'circuit-id', 'remote-id', 'fqdn.fqdn', 'ddns-rev-domainname'
 		)
 
 		text = []
@@ -1461,32 +1492,32 @@ class DHCPDConf_Option(DHCPDConf_Component):
 				re.match(r"^\w+\.\w+$", value) or
 				self.key.endswith(quotedOptions)):
 
-				text.append(u'"%s"' % value)
+				text.append(f'"{value}"')
 			else:
 				text.append(value)
 
-		return "{0}option {key} {values};".format(self.getShifting(), key=self.key, values=u', '.join(text))
+		return "{0}option {key} {values};".format(self.getShifting(), key=self.key, values=', '.join(text))
 
 	def asHash(self):
 		return {self.key: self.value}
 
 
-class DHCPDConf_Comment(DHCPDConf_Component):
+class DHCPDConf_Comment(DHCPDConf_Component):  # pylint: disable=invalid-name
 	def __init__(self, startLine, parentBlock, data):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
 		self._data = data
 
 	def asText(self):
-		return u'{0}#{1}'.format(self.getShifting(), self._data)
+		return '{0}#{1}'.format(self.getShifting(), self._data)
 
 
-class DHCPDConf_EmptyLine(DHCPDConf_Component):
+class DHCPDConf_EmptyLine(DHCPDConf_Component):  # pylint: disable=invalid-name
 	def __init__(self, startLine, parentBlock):
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
 
 
-class DHCPDConf_Block(DHCPDConf_Component):
-	def __init__(self, startLine, parentBlock, type, settings=[]):
+class DHCPDConf_Block(DHCPDConf_Component):  # pylint: disable=invalid-name
+	def __init__(self, startLine, parentBlock, type, settings=[]):  # pylint: disable=redefined-builtin,dangerous-default-value
 		DHCPDConf_Component.__init__(self, startLine, parentBlock)
 		self.type = type
 		self.settings = settings
@@ -1497,9 +1528,9 @@ class DHCPDConf_Block(DHCPDConf_Component):
 		return self.components
 
 	def removeComponents(self):
-		logger.debug(u"Removing components: %s" % self.components)
-		for c in forceList(self.components):
-			self.removeComponent(c)
+		logger.debug("Removing components: %s", self.components)
+		for comp in forceList(self.components):
+			self.removeComponent(comp)
 
 	def addComponent(self, component):
 		self.components.append(component)
@@ -1515,7 +1546,7 @@ class DHCPDConf_Block(DHCPDConf_Component):
 				break
 
 		if index < 0:
-			raise BackendMissingDataError(u"Component '{0}' not found".format(component))
+			raise BackendMissingDataError("Component '{0}' not found".format(component))
 
 		del self.components[index]
 
@@ -1575,7 +1606,7 @@ class DHCPDConf_Block(DHCPDConf_Component):
 
 		return parameters
 
-	def getBlocks(self, type, recursive=False):
+	def getBlocks(self, type, recursive=False):  # pylint: disable=redefined-builtin
 		blocks = []
 		for component in self.components:
 			if not isinstance(component, DHCPDConf_Block):
@@ -1587,10 +1618,10 @@ class DHCPDConf_Block(DHCPDConf_Component):
 		return blocks
 
 	def asText(self):
-		text = u''
+		text = ''
 		shifting = self.getShifting()
 		if not isinstance(self, DHCPDConf_GlobalBlock):
-			text += shifting + u' '.join(self.settings) + u' {\n'
+			text += shifting + ' '.join(self.settings) + ' {\n'
 
 		notWritten = self.components
 		lineNumber = self.startLine
@@ -1605,52 +1636,51 @@ class DHCPDConf_Block(DHCPDConf_Component):
 			for i, lineRef in enumerate(self.lineRefs[lineNumber]):
 				compText = lineRef.asText()
 				if i > 0 and isinstance(lineRef, DHCPDConf_Comment):
-					compText = u' ' + compText.lstrip()
+					compText = ' ' + compText.lstrip()
 				text += compText
 				# Mark component as written
 				if lineRef in notWritten:
 					notWritten.remove(lineRef)
-			text += u'\n'
+			text += '\n'
 			lineNumber += 1
 
 		for component in notWritten:
-			text += component.asText() + u'\n'
+			text += component.asText() + '\n'
 
 		if not isinstance(self, DHCPDConf_GlobalBlock):
 			# Write '}' to close block
-			text += shifting + u'}'
+			text += shifting + '}'
 
 		return text
 
 
-class DHCPDConf_GlobalBlock(DHCPDConf_Block):
+class DHCPDConf_GlobalBlock(DHCPDConf_Block):  # pylint: disable=invalid-name
 	def __init__(self):
-		DHCPDConf_Block.__init__(self, 1, None, u'global')
+		DHCPDConf_Block.__init__(self, 1, None, 'global')
 
 
-class DHCPDConfFile(TextFile):
-
+class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
 
 		self._currentLine = 0
 		self._currentToken = None
 		self._currentIndex = -1
-		self._data = u''
+		self._data = ''
 		self._currentBlock = None
 		self._globalBlock = None
 		self._parsed = False
 
-		logger.debug(u"Parsing dhcpd conf file '%s'" % self._filename)
+		logger.debug("Parsing dhcpd conf file '%s'", self._filename)
 
 	def getGlobalBlock(self):
 		return self._globalBlock
 
-	def parse(self, lines=None):
+	def parse(self, lines=None): # pylint: disable=too-many-branches
 		self._currentLine = 0
 		self._currentToken = None
 		self._currentIndex = -1
-		self._data = u''
+		self._data = ''
 		self._parsed = False
 
 		if lines:
@@ -1701,14 +1731,14 @@ class DHCPDConfFile(TextFile):
 
 	def generate(self):
 		if not self._globalBlock:
-			raise ValueError(u"Got no data to write")
+			raise ValueError("Got no data to write")
 
 		self.open('w')
 		self.write(self._globalBlock.asText())
 		self.close()
 
 	@requiresParsing
-	def addHost(self, hostname, hardwareAddress, ipAddress, fixedAddress, parameters=None):
+	def addHost(self, hostname, hardwareAddress, ipAddress, fixedAddress, parameters=None): # pylint: disable=too-many-branches,too-many-locals,too-many-arguments
 		if not parameters:
 			parameters = {}
 
@@ -1725,16 +1755,18 @@ class DHCPDConfFile(TextFile):
 			else:
 				for (key, value) in block.getParameters_hash().items():
 					if key == 'fixed-address' and value.lower() == fixedAddress:
-						raise BackendBadValueError(u"Host '%s' uses the same fixed address" % block.settings[1])
-					elif key == 'hardware' and value.lower() == 'ethernet %s' % hardwareAddress:
-						raise BackendBadValueError(u"Host '%s' uses the same hardware ethernet address" % block.settings[1])
+						raise BackendBadValueError(f"Host '{block.settings[1]}' uses the same fixed address")
+					if key == 'hardware' and value.lower() == f'ethernet {hardwareAddress}':
+						raise BackendBadValueError(f"Host '{block.settings[1]}' uses the same hardware ethernet address")
 
 		if existingHost:
-			logger.info(u"Host '%s' already exists in config file '%s', deleting first" % (hostname, self._filename))
+			logger.info("Host '%s' already exists in config file '%s', deleting first", hostname, self._filename)
 			self.deleteHost(hostname)
 
-		logger.notice(u"Creating host '%s', hardwareAddress '%s', ipAddress '%s', fixedAddress '%s', parameters '%s' in dhcpd config file '%s'" %
-					(hostname, hardwareAddress, ipAddress, fixedAddress, parameters, self._filename))
+		logger.notice(
+			"Creating host '%s', hardwareAddress '%s', ipAddress '%s', fixedAddress '%s', parameters '%s' in dhcpd config file '%s'",
+			hostname, hardwareAddress, ipAddress, fixedAddress, parameters, self._filename
+		)
 
 		for (key, value) in parameters.items():
 			parameters[key] = DHCPDConf_Parameter(-1, None, key, value).asHash()[key]
@@ -1744,8 +1776,8 @@ class DHCPDConfFile(TextFile):
 
 		# Search the right subnet block
 		for block in self._globalBlock.getBlocks('subnet', recursive=True):
-			if ipAddressInNetwork(ipAddress, u'%s/%s' % (block.settings[1], block.settings[3])):
-				logger.debug(u"Choosing subnet %s/%s for host %s" % (block.settings[1], block.settings[3], hostname))
+			if ipAddressInNetwork(ipAddress, f"{block.settings[1]}/{block.settings[3]}"):
+				logger.debug("Choosing subnet %s/%s for host %s", block.settings[1], block.settings[3], hostname)
 				parentBlock = block
 
 		# Search the right group for the host
@@ -1786,7 +1818,7 @@ class DHCPDConfFile(TextFile):
 			settings=['host', hostname]
 		)
 		hostBlock.addComponent(DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key='fixed-address', value=fixedAddress))
-		hostBlock.addComponent(DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key='hardware', value="ethernet %s" % hardwareAddress))
+		hostBlock.addComponent(DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key='hardware', value=f"ethernet {hardwareAddress}"))
 		for (key, value) in parameters.items():
 			hostBlock.addComponent(
 				DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key=key, value=value))
@@ -1806,7 +1838,7 @@ class DHCPDConfFile(TextFile):
 	def deleteHost(self, hostname):
 		hostname = forceHostname(hostname)
 
-		logger.notice(u"Deleting host '%s' from dhcpd config file '%s'" % (hostname, self._filename))
+		logger.notice("Deleting host '%s' from dhcpd config file '%s'", hostname, self._filename)
 		hostBlocks = []
 		for block in self._globalBlock.getBlocks('host', recursive=True):
 			if block.settings[1] == hostname:
@@ -1817,7 +1849,7 @@ class DHCPDConfFile(TextFile):
 						hostBlocks.append(block)
 
 		if not hostBlocks:
-			logger.warning(u"Failed to remove host '%s': not found" % hostname)
+			logger.warning("Failed to remove host '%s': not found", hostname)
 			return
 
 		for block in hostBlocks:
@@ -1828,7 +1860,7 @@ class DHCPDConfFile(TextFile):
 		hostname = forceHostname(hostname)
 		parameters = forceDict(parameters)
 
-		logger.notice(u"Modifying host '%s' in dhcpd config file '%s'" % (hostname, self.filename))
+		logger.notice("Modifying host '%s' in dhcpd config file '%s'", hostname, self.filename)
 
 		hostBlocks = []
 		for block in self._globalBlock.getBlocks('host', recursive=True):
@@ -1839,10 +1871,10 @@ class DHCPDConfFile(TextFile):
 					if key == 'fixed-address' and value == hostname:
 						hostBlocks.append(block)
 					elif key == 'hardware' and value.lower() == parameters.get('hardware'):
-						raise BackendBadValueError(u"Host '%s' uses the same hardware ethernet address" % block.settings[1])
+						raise BackendBadValueError(f"Host '{block.settings[1]}' uses the same hardware ethernet address")
 
 		if len(hostBlocks) != 1:
-			raise BackendBadValueError(u"Host '%s' found %d times" % (hostname, len(hostBlocks)))
+			raise BackendBadValueError(f"Host '{hostname}' found {len(hostBlocks)} times")
 
 		hostBlock = hostBlocks[0]
 		hostBlock.removeComponents()
@@ -1870,7 +1902,7 @@ class DHCPDConfFile(TextFile):
 		return True
 
 	def _parse_emptyline(self):
-		logger.debug2(u"_parse_emptyline")
+		logger.trace("_parse_emptyline")
 		self._currentBlock.addComponent(
 			DHCPDConf_EmptyLine(
 				startLine=self._currentLine,
@@ -1880,7 +1912,7 @@ class DHCPDConfFile(TextFile):
 		self._data = self._data[:self._currentIndex]
 
 	def _parse_comment(self):
-		logger.debug2(u"_parse_comment")
+		logger.trace("_parse_comment")
 		self._currentBlock.addComponent(
 			DHCPDConf_Comment(
 				startLine=self._currentLine,
@@ -1890,8 +1922,8 @@ class DHCPDConfFile(TextFile):
 		)
 		self._data = self._data[:self._currentIndex]
 
-	def _parse_semicolon(self):
-		logger.debug2(u"_parse_semicolon")
+	def _parse_semicolon(self): # pylint: disable=too-many-branches
+		logger.trace("_parse_semicolon")
 		data = self._data[:self._currentIndex]
 		self._data = self._data[self._currentIndex + 1:]
 
@@ -1899,7 +1931,7 @@ class DHCPDConfFile(TextFile):
 		key = splittedData[0]
 		if key != 'option':
 			# Parameter
-			value = u' '.join(data.split()[1:]).strip()
+			value = ' '.join(data.split()[1:]).strip()
 			if len(value) > 1 and value.startswith('"') and value.endswith('"'):
 				value = value[1:-1]
 
@@ -1915,38 +1947,38 @@ class DHCPDConfFile(TextFile):
 
 		# Option
 		key = splittedData[1]
-		value = u' '.join(splittedData[2:]).strip()
+		value = ' '.join(splittedData[2:]).strip()
 		values = []
-		quote = u''
+		quote = ''
 		current = []
-		for l in value:
-			if l == u'"':
-				if quote == u'"':
-					quote = u''
-				elif quote == u"'":
-					current.append(l)
+		for val in value:
+			if val == '"':
+				if quote == '"':
+					quote = ''
+				elif quote == "'":
+					current.append(val)
 				else:
-					quote = u'"'
-			elif l == u"'":
-				if quote == u"'":
-					quote = u''
-				elif quote == u'"':
-					current.append(l)
+					quote = '"'
+			elif val == "'":
+				if quote == "'":
+					quote = ''
+				elif quote == '"':
+					current.append(val)
 				else:
-					quote = u"'"
-			elif re.search(r'\s', l):
-				current.append(l)
-			elif l == u',':
+					quote = "'"
+			elif re.search(r'\s', val):
+				current.append(val)
+			elif val == ',':
 				if quote:
-					current.append(l)
+					current.append(val)
 				else:
-					values.append(u''.join(current).strip())
+					values.append(''.join(current).strip())
 					current = []
 			else:
-				current.append(l)
+				current.append(val)
 
 		if current:
-			values.append(u''.join(current).strip())
+			values.append(''.join(current).strip())
 
 		self._currentBlock.addComponent(
 			DHCPDConf_Option(
@@ -1958,7 +1990,7 @@ class DHCPDConfFile(TextFile):
 		)
 
 	def _parse_lbracket(self):
-		logger.debug2(u"_parse_lbracket")
+		logger.trace("_parse_lbracket")
 		# Start of a block
 		data = self._data[:self._currentIndex]
 		self._data = self._data[self._currentIndex+1:]
@@ -1976,9 +2008,8 @@ class DHCPDConfFile(TextFile):
 		self._currentBlock = block
 
 	def _parse_rbracket(self):
-		logger.debug2(u"_parse_rbracket")
+		logger.trace("_parse_rbracket")
 		# End of a block
-		data = self._data[:self._currentIndex]
 		self._data = self._data[self._currentIndex+1:]
 
 		self._currentBlock.endLine = self._currentLine
