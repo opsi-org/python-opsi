@@ -12,7 +12,7 @@ import logging
 import warnings
 import contextvars
 from contextlib import contextmanager
-from typing import Dict, Any
+from typing import Dict, Any, IO
 import colorlog
 
 from .constants import (
@@ -427,7 +427,8 @@ def logging_config( # pylint: disable=too-many-arguments,too-many-branches
 	log_file: str = None,
 	file_level: int = None,
 	file_format: str = None,
-	remove_handlers: bool = False
+	remove_handlers: bool = False,
+	stderr_file: IO = sys.stderr
 ):
 	"""
 	Initialize logging.
@@ -481,7 +482,7 @@ def logging_config( # pylint: disable=too-many-arguments,too-many-branches
 		else:
 			remove_all_handlers(handler_name="opsi_stderr_handler")
 		if stderr_level != 0:
-			handler = logging.StreamHandler(stream=sys.stderr)
+			handler = logging.StreamHandler(stream=stderr_file)
 			handler.name = "opsi_stderr_handler"
 			logging.root.addHandler(handler)
 		for handler in get_all_handlers(logging.StreamHandler):
@@ -496,7 +497,7 @@ def logging_config( # pylint: disable=too-many-arguments,too-many-branches
 			min_value = handler.level
 	logging.root.setLevel(min_value)
 
-	if stderr_format and stderr_format.find("(log_color)") != -1 and not sys.stderr.isatty():
+	if stderr_format and stderr_format.find("(log_color)") != -1 and not stderr_file.isatty():
 		stderr_format = stderr_format.replace('%(log_color)s', '').replace('%(reset)s', '')
 	set_format(file_format, stderr_format)
 
@@ -691,7 +692,7 @@ def print_logger_info():
 	Debug output logger status.
 
 	This method prints all loggers with their respective
-	handlers and formatters to stdout.
+	handlers and formatters to stderr.
 	"""
 	for _logger in get_all_loggers():
 		print(f"- Logger: {_logger}", file=sys.stderr)
