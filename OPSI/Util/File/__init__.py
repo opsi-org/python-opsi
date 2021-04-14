@@ -42,7 +42,7 @@ if os.name == 'nt':
 	import win32con  # pylint: disable=import-error
 	import win32file  # pylint: disable=import-error
 	import pywintypes  # pylint: disable=import-error
-	import pywintypes.error as pywintypeserror  # pylint: disable=import-error
+	pywintypeserror = pywintypes.error
 else:
 	win32con = None # pylint: disable=invalid-name
 	win32file = None # pylint: disable=invalid-name
