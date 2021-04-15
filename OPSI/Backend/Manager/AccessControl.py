@@ -307,7 +307,8 @@ class BackendAccessControl:
 			else:
 				raise BackendAuthenticationError(f"Invalid auth type {auth_type}")
 		except Exception as err:
-			raise BackendAuthenticationError(str(err)) from err
+			logger.debug(err, exc_info=True)
+			raise BackendAuthenticationError(f"{err} (auth_type={auth_type})") from err
 
 
 	def accessControl_authenticated(self):
