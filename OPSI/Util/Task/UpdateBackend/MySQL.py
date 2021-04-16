@@ -216,7 +216,11 @@ def _processOpsi40migrations(mysql, session):  # pylint: disable=too-many-locals
 			logger.info("Updating database table %s from opsi 3.3 to 3.4", key)
 			mysql.execute(session, "alter table %s add `hostId` varchar(50) NOT NULL;" % key)
 			for res in mysql.getSet(session, "SELECT hostId,host_id FROM `HOST` WHERE `hostId` != ''"):
-				mysql.execute(session, "update %s set `hostId` = '%s' where `host_id` = %s;" % (key, res['hostId'].replace("'", "\\'"), res['host_id']))
+				mysql.execute(
+					session,
+					"update %s set `hostId` = '%s' where `host_id` = %s;" \
+						% (key, res['hostId'].replace("'", "\\'"), res['host_id'])
+				)
 			mysql.execute(session, "alter table %s drop `host_id`;" % key)
 			mysql.execute(session, "alter table %s DEFAULT CHARACTER set utf8;" % key)
 			mysql.execute(session, "alter table %s ENGINE = InnoDB;" % key)
@@ -227,7 +231,11 @@ def _processOpsi40migrations(mysql, session):  # pylint: disable=too-many-locals
 		logger.info("Updating table HARDWARE_INFO")
 		mysql.execute(session, "alter table HARDWARE_INFO add `hostId` varchar(50) NOT NULL;")
 		for res in mysql.getSet(session, "SELECT hostId,host_id FROM `HOST` WHERE `hostId` != ''"):
-			mysql.execute(session, "update HARDWARE_INFO set `hostId` = '%s' where `host_id` = %s;" % (res['hostId'].replace("'", "\\'"), res['host_id']))
+			mysql.execute(
+				session,
+				"update HARDWARE_INFO set `hostId` = '%s' where `host_id` = %s;" \
+					% (res['hostId'].replace("'", "\\'"), res['host_id'])
+			)
 		mysql.execute(session, "alter table HARDWARE_INFO drop `host_id`;")
 		mysql.execute(session, "alter table HARDWARE_INFO DEFAULT CHARACTER set utf8;")
 		mysql.execute(session, "alter table HARDWARE_INFO ENGINE = InnoDB;")
