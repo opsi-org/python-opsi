@@ -96,6 +96,8 @@ class SQL:
 
 	def __init__(self, **kwargs):  # pylint: disable=unused-argument
 		self.Session = lambda : None  # pylint: disable=invalid-name
+		self.session_factory = None
+		self.engine = None
 
 	@staticmethod
 	def on_engine_connect(conn, branch):  # pylint: disable=unused-argument
@@ -103,6 +105,10 @@ class SQL:
 
 	def init_connection(self):  # pylint: disable=unused-argument
 		pass
+
+	def disconnect(self):
+		if self.engine:
+			self.engine.dispose()
 
 	@contextmanager
 	def session(self, commit=True):
@@ -115,13 +121,11 @@ class SQL:
 				session.commit()
 			self.Session.remove()
 
-	###
-	def connect(self, cursorType=None):
-		pass
+	def connect(self, cursorType=None):  # pylint: disable=no-self-use,unused-argument
+		logger.warning("Method 'connect' is deprecated")
 
-	def close(self, conn, cursor):
-		pass
-	###
+	def close(self, conn, cursor):  # pylint: disable=no-self-use,unused-argument
+		logger.warning("Method 'close' is deprecated")
 
 	def execute(self, session, query):  # pylint: disable=no-self-use
 		session.execute(query)  # pylint: disable=no-member

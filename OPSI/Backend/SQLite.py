@@ -64,7 +64,6 @@ class SQLite(SQL):
 		pass
 
 	def init_connection(self):
-		#uri = f'sqlite://{"" if self._database == ":memory:" else self._database}'
 		uri = f'sqlite:///{self._database}'
 		logger.info("Connecting to %s", uri)
 
@@ -91,8 +90,7 @@ class SQLite(SQL):
 		return f"<{self.__class__.__name__}(database={self._database})>"
 
 	def delete_db(self):
-		if self.engine:
-			self.engine.dispose()
+		self.disconnect()
 		if os.path.exists(self._database):
 			os.remove(self._database)
 
