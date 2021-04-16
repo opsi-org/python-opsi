@@ -14,7 +14,8 @@ from OPSI.Backend.MySQL import MySQL, MySQLBackend
 from OPSI.Backend.SQL import DATABASE_SCHEMA_VERSION, createSchemaVersionTable
 from OPSI.Util.Task.UpdateBackend.MySQL import (
 	DatabaseMigrationUnfinishedError,
-	getTableColumns, readSchemaVersion, updateMySQLBackend, updateSchemaVersion)
+	getTableColumns, readSchemaVersion, updateMySQLBackend, updateSchemaVersion
+)
 from OPSI.Util.Task.ConfigureBackend import updateConfigFile
 
 from .Backends.MySQL import MySQLconfiguration, getTableNames, cleanDatabase
@@ -63,9 +64,10 @@ def testCorrectingLicenseOnClientLicenseKeyLength(mysqlBackendConfig, mySQLBacke
 		for tableName in ('LICENSE_ON_CLIENT', 'SOFTWARE_CONFIG', 'SOFTWARE_LICENSE_TO_LICENSE_POOL'):
 			print("Checking {0}...".format(tableName))
 
-			assert tableName in getTableNames(db)
+			with db.session() as session:
+				assert tableName in getTableNames(db, session)
 
-			assertColumnIsVarchar(db, tableName, 'licenseKey', 1024)
+				assertColumnIsVarchar(db, session, tableName, 'licenseKey', 1024)
 
 
 def testCorrectingProductIdLength(mysqlBackendConfig, mySQLBackendConfigFile):
@@ -80,9 +82,10 @@ def testCorrectingProductIdLength(mysqlBackendConfig, mySQLBackendConfigFile):
 		for tableName in ('PRODUCT_PROPERTY', ):
 			print("Checking {0}...".format(tableName))
 
-			assert tableName in getTableNames(db)
+			with db.session() as session:
+				assert tableName in getTableNames(db, session)
 
-			assertColumnIsVarchar(db, tableName, 'productId', 255)
+				assertColumnIsVarchar(db, session, tableName, 'productId', 255)
 
 
 def testDropTableBootConfiguration(mysqlBackendConfig, mySQLBackendConfigFile):
@@ -94,190 +97,192 @@ def testDropTableBootConfiguration(mysqlBackendConfig, mySQLBackendConfigFile):
 
 		updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
 
-		assert 'BOOT_CONFIGURATION' not in getTableNames(db)
+		with db.session() as session:
+			assert 'BOOT_CONFIGURATION' not in getTableNames(db, session)
 
 
 def createRequiredTables(database):
-	table = u'''CREATE TABLE `LICENSE_POOL` (
-			`licensePoolId` VARCHAR(100) NOT NULL,
-			`type` varchar(30) NOT NULL,
-			`description` varchar(200),
-			PRIMARY KEY (`licensePoolId`)
-		) %s;
-		''' % database.getTableCreationOptions('LICENSE_POOL')
-	database.execute(table)
-	database.execute('CREATE INDEX `index_license_pool_type` on `LICENSE_POOL` (`type`);')
+	with database.session() as session:
+		table = '''CREATE TABLE `LICENSE_POOL` (
+				`licensePoolId` VARCHAR(100) NOT NULL,
+				`type` varchar(30) NOT NULL,
+				`description` varchar(200),
+				PRIMARY KEY (`licensePoolId`)
+			) %s;
+			''' % database.getTableCreationOptions('LICENSE_POOL')
+		database.execute(session, table)
+		database.execute(session, 'CREATE INDEX `index_license_pool_type` on `LICENSE_POOL` (`type`);')
 
-	table = u'''CREATE TABLE `LICENSE_CONTRACT` (
-			`licenseContractId` VARCHAR(100) NOT NULL,
-			`type` varchar(30) NOT NULL,
-			`description` varchar(100),
-			`notes` varchar(1000),
-			`partner` varchar(100),
-			`conclusionDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
-			`notificationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
-			`expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
-			PRIMARY KEY (`licenseContractId`)
-		) %s;
-		''' % database.getTableCreationOptions('LICENSE_CONTRACT')
-	database.execute(table)
-	database.execute('CREATE INDEX `index_license_contract_type` on `LICENSE_CONTRACT` (`type`);')
+		table = '''CREATE TABLE `LICENSE_CONTRACT` (
+				`licenseContractId` VARCHAR(100) NOT NULL,
+				`type` varchar(30) NOT NULL,
+				`description` varchar(100),
+				`notes` varchar(1000),
+				`partner` varchar(100),
+				`conclusionDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+				`notificationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+				`expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+				PRIMARY KEY (`licenseContractId`)
+			) %s;
+			''' % database.getTableCreationOptions('LICENSE_CONTRACT')
+		database.execute(session, table)
+		database.execute(session, 'CREATE INDEX `index_license_contract_type` on `LICENSE_CONTRACT` (`type`);')
 
-	table = u'''CREATE TABLE `SOFTWARE_LICENSE` (
+		table = '''CREATE TABLE `SOFTWARE_LICENSE` (
+				`softwareLicenseId` VARCHAR(100) NOT NULL,
+				`licenseContractId` VARCHAR(100) NOT NULL,
+				`type` varchar(30) NOT NULL,
+				`boundToHost` varchar(255),
+				`maxInstallations` integer,
+				`expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+				PRIMARY KEY (`softwareLicenseId`),
+				FOREIGN KEY (`licenseContractId`) REFERENCES `LICENSE_CONTRACT` (`licenseContractId`)
+			) %s;
+			''' % database.getTableCreationOptions('SOFTWARE_LICENSE')
+		database.execute(session, table)
+		database.execute(session, 'CREATE INDEX `index_software_license_type` on `SOFTWARE_LICENSE` (`type`);')
+		database.execute(session, 'CREATE INDEX `index_software_license_boundToHost` on `SOFTWARE_LICENSE` (`boundToHost`);')
+
+		database.execute(session, """CREATE TABLE `PRODUCT_PROPERTY` (
+			`productId` varchar(128) NOT NULL,
+			`productVersion` varchar(32) NOT NULL,
+			`packageVersion` varchar(16) NOT NULL,
+			`propertyId` varchar(200) NOT NULL,
+			`type` varchar(30) NOT NULL,
+			`description` TEXT,
+			`multiValue` bool NOT NULL,
+			`editable` bool NOT NULL,
+			PRIMARY KEY (`productId`, `productVersion`, `packageVersion`, `propertyId`)
+		) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci """)
+
+		database.execute(session, """CREATE TABLE `BOOT_CONFIGURATION` (
+			`name` varchar(64) NOT NULL,
+			`clientId` varchar(255) NOT NULL,
+			`priority` integer DEFAULT 0,
+			`description` TEXT,
+			`netbootProductId` varchar(255),
+			`pxeTemplate` varchar(255),
+			`options` varchar(255),
+			`disk` integer,
+			`partition` integer,
+			`active` bool,
+			`deleteAfter` integer,
+			`deactivateAfter` integer,
+			`accessCount` integer,
+			`osName` varchar(128),
+			PRIMARY KEY (`name`, `clientId`)
+		) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci """)
+
+		database.execute(session, '''CREATE TABLE `SOFTWARE_LICENSE_TO_LICENSE_POOL` (
 			`softwareLicenseId` VARCHAR(100) NOT NULL,
-			`licenseContractId` VARCHAR(100) NOT NULL,
-			`type` varchar(30) NOT NULL,
-			`boundToHost` varchar(255),
-			`maxInstallations` integer,
-			`expirationDate` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
-			PRIMARY KEY (`softwareLicenseId`),
-			FOREIGN KEY (`licenseContractId`) REFERENCES `LICENSE_CONTRACT` (`licenseContractId`)
+			`licensePoolId` VARCHAR(100) NOT NULL,
+			`licenseKey` VARCHAR(100),
+			PRIMARY KEY (`softwareLicenseId`, `licensePoolId`),
+			FOREIGN KEY (`softwareLicenseId`) REFERENCES `SOFTWARE_LICENSE` (`softwareLicenseId`),
+			FOREIGN KEY (`licensePoolId`) REFERENCES `LICENSE_POOL` (`licensePoolId`)
+		) %s;''' % database.getTableCreationOptions('SOFTWARE_LICENSE_TO_LICENSE_POOL'))
+
+		database.execute(session, """CREATE TABLE `LICENSE_USED_BY_HOST` (
+			`softwareLicenseId` VARCHAR(100) NOT NULL,
+			`licensePoolId` VARCHAR(100) NOT NULL,
+			`hostId` varchar(255),
+			`licenseKey` VARCHAR(100),
+			`notes` VARCHAR(1024)
+		) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci """)
+
+		database.execute(session, '''CREATE TABLE `SOFTWARE_CONFIG` (
+			`config_id` integer NOT NULL AUTO_INCREMENT,
+			`clientId` varchar(255) NOT NULL,
+			`name` varchar(100) NOT NULL,
+			`version` varchar(100) NOT NULL,
+			`subVersion` varchar(100) NOT NULL,
+			`language` varchar(10) NOT NULL,
+			`architecture` varchar(3) NOT NULL,
+			`uninstallString` varchar(200),
+			`binaryName` varchar(100),
+			`firstseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+			`lastseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+			`state` TINYINT NOT NULL,
+			`usageFrequency` integer NOT NULL DEFAULT -1,
+			`lastUsed` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
+			`licenseKey` VARCHAR(100),
+			PRIMARY KEY (`config_id`)
 		) %s;
-		''' % database.getTableCreationOptions('SOFTWARE_LICENSE')
-	database.execute(table)
-	database.execute('CREATE INDEX `index_software_license_type` on `SOFTWARE_LICENSE` (`type`);')
-	database.execute('CREATE INDEX `index_software_license_boundToHost` on `SOFTWARE_LICENSE` (`boundToHost`);')
+		''' % database.getTableCreationOptions('SOFTWARE_CONFIG'))
 
-	database.execute("""CREATE TABLE `PRODUCT_PROPERTY` (
-		`productId` varchar(128) NOT NULL,
-		`productVersion` varchar(32) NOT NULL,
-		`packageVersion` varchar(16) NOT NULL,
-		`propertyId` varchar(200) NOT NULL,
-		`type` varchar(30) NOT NULL,
-		`description` TEXT,
-		`multiValue` bool NOT NULL,
-		`editable` bool NOT NULL,
-		PRIMARY KEY (`productId`, `productVersion`, `packageVersion`, `propertyId`)
-	) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci """)
+		database.execute(session, '''CREATE TABLE `PRODUCT` (
+				`productId` varchar(255) NOT NULL,
+				`productVersion` varchar(32) NOT NULL,
+				`packageVersion` varchar(16) NOT NULL,
+				`type` varchar(32) NOT NULL,
+				`name` varchar(128) NOT NULL,
+				`licenseRequired` varchar(50),
+				`setupScript` varchar(50),
+				`uninstallScript` varchar(50),
+				`updateScript` varchar(50),
+				`alwaysScript` varchar(50),
+				`onceScript` varchar(50),
+				`customScript` varchar(50),
+				`userLoginScript` varchar(50),
+				`priority` integer,
+				`description` TEXT,
+				`advice` TEXT,
+				`pxeConfigTemplate` varchar(50),
+				`changelog` TEXT,
+				PRIMARY KEY (`productId`, `productVersion`, `packageVersion`)
+			) %s;
+			''' % database.getTableCreationOptions('PRODUCT'))
+		database.execute(session, 'CREATE INDEX `index_product_type` on `PRODUCT` (`type`);')
 
-	database.execute("""CREATE TABLE `BOOT_CONFIGURATION` (
-		`name` varchar(64) NOT NULL,
-		`clientId` varchar(255) NOT NULL,
-		`priority` integer DEFAULT 0,
-		`description` TEXT,
-		`netbootProductId` varchar(255),
-		`pxeTemplate` varchar(255),
-		`options` varchar(255),
-		`disk` integer,
-		`partition` integer,
-		`active` bool,
-		`deleteAfter` integer,
-		`deactivateAfter` integer,
-		`accessCount` integer,
-		`osName` varchar(128),
-		PRIMARY KEY (`name`, `clientId`)
-	) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci """)
-
-	database.execute(u'''CREATE TABLE `SOFTWARE_LICENSE_TO_LICENSE_POOL` (
-		`softwareLicenseId` VARCHAR(100) NOT NULL,
-		`licensePoolId` VARCHAR(100) NOT NULL,
-		`licenseKey` VARCHAR(100),
-		PRIMARY KEY (`softwareLicenseId`, `licensePoolId`),
-		FOREIGN KEY (`softwareLicenseId`) REFERENCES `SOFTWARE_LICENSE` (`softwareLicenseId`),
-		FOREIGN KEY (`licensePoolId`) REFERENCES `LICENSE_POOL` (`licensePoolId`)
-	) %s;''' % database.getTableCreationOptions('SOFTWARE_LICENSE_TO_LICENSE_POOL'))
-
-	database.execute("""CREATE TABLE `LICENSE_USED_BY_HOST` (
-		`softwareLicenseId` VARCHAR(100) NOT NULL,
-		`licensePoolId` VARCHAR(100) NOT NULL,
-		`hostId` varchar(255),
-		`licenseKey` VARCHAR(100),
-		`notes` VARCHAR(1024)
-	) ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci """)
-
-	database.execute(u'''CREATE TABLE `SOFTWARE_CONFIG` (
-		`config_id` integer NOT NULL AUTO_INCREMENT,
-		`clientId` varchar(255) NOT NULL,
-		`name` varchar(100) NOT NULL,
-		`version` varchar(100) NOT NULL,
-		`subVersion` varchar(100) NOT NULL,
-		`language` varchar(10) NOT NULL,
-		`architecture` varchar(3) NOT NULL,
-		`uninstallString` varchar(200),
-		`binaryName` varchar(100),
-		`firstseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
-		`lastseen` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
-		`state` TINYINT NOT NULL,
-		`usageFrequency` integer NOT NULL DEFAULT -1,
-		`lastUsed` TIMESTAMP NOT NULL DEFAULT '0000-00-00 00:00:00',
-		`licenseKey` VARCHAR(100),
-		PRIMARY KEY (`config_id`)
-	) %s;
-	''' % database.getTableCreationOptions('SOFTWARE_CONFIG'))
-
-	database.execute(u'''CREATE TABLE `PRODUCT` (
+		database.execute(session, '''CREATE TABLE `PRODUCT_PROPERTY_VALUE` (
+			`product_property_id` integer NOT NULL ''' + database.AUTOINCREMENT + ''',
 			`productId` varchar(255) NOT NULL,
 			`productVersion` varchar(32) NOT NULL,
 			`packageVersion` varchar(16) NOT NULL,
-			`type` varchar(32) NOT NULL,
-			`name` varchar(128) NOT NULL,
-			`licenseRequired` varchar(50),
-			`setupScript` varchar(50),
-			`uninstallScript` varchar(50),
-			`updateScript` varchar(50),
-			`alwaysScript` varchar(50),
-			`onceScript` varchar(50),
-			`customScript` varchar(50),
-			`userLoginScript` varchar(50),
-			`priority` integer,
-			`description` TEXT,
-			`advice` TEXT,
-			`pxeConfigTemplate` varchar(50),
-			`changelog` TEXT,
-			PRIMARY KEY (`productId`, `productVersion`, `packageVersion`)
+			`propertyId` varchar(200) NOT NULL,
+			`value` text,
+			`isDefault` bool,
+			PRIMARY KEY (`product_property_id`),
+			FOREIGN KEY (`productId`, `productVersion`, `packageVersion`, `propertyId`) REFERENCES `PRODUCT_PROPERTY` (`productId`, `productVersion`, `packageVersion`, `propertyId`)
+		) %s; ''' % database.getTableCreationOptions('PRODUCT_PROPERTY_VALUE'))
+
+		createOpsi40HostTable(database, session)
+
+		database.execute(session, '''CREATE TABLE `GROUP` (
+			`type` varchar(30) NOT NULL,
+			`groupId` varchar(255) NOT NULL,
+			`parentGroupId` varchar(255),
+			`description` varchar(100),
+			`notes` varchar(500),
+			PRIMARY KEY (`type`, `groupId`)
 		) %s;
-		''' % database.getTableCreationOptions('PRODUCT'))
-	database.execute('CREATE INDEX `index_product_type` on `PRODUCT` (`type`);')
+		''' % database.getTableCreationOptions('GROUP'))
+		database.execute(session, 'CREATE INDEX `index_group_parentGroupId` on `GROUP` (`parentGroupId`);')
 
-	database.execute(u'''CREATE TABLE `PRODUCT_PROPERTY_VALUE` (
-		`product_property_id` integer NOT NULL ''' + database.AUTOINCREMENT + ''',
-		`productId` varchar(255) NOT NULL,
-		`productVersion` varchar(32) NOT NULL,
-		`packageVersion` varchar(16) NOT NULL,
-		`propertyId` varchar(200) NOT NULL,
-		`value` text,
-		`isDefault` bool,
-		PRIMARY KEY (`product_property_id`),
-		FOREIGN KEY (`productId`, `productVersion`, `packageVersion`, `propertyId`) REFERENCES `PRODUCT_PROPERTY` (`productId`, `productVersion`, `packageVersion`, `propertyId`)
-	) %s; ''' % database.getTableCreationOptions('PRODUCT_PROPERTY_VALUE'))
+		database.execute(session, '''CREATE TABLE `OBJECT_TO_GROUP` (
+			`object_to_group_id` integer NOT NULL ''' + database.AUTOINCREMENT + ''',
+			`groupType` varchar(30) NOT NULL,
+			`groupId` varchar(100) NOT NULL,
+			`objectId` varchar(255) NOT NULL,
+			PRIMARY KEY (`object_to_group_id`),
+			FOREIGN KEY (`groupType`, `groupId`) REFERENCES `GROUP` (`type`, `groupId`)
+		) %s;
+		''' % database.getTableCreationOptions('OBJECT_TO_GROUP'))
+		database.execute(session, 'CREATE INDEX `index_object_to_group_objectId` on `OBJECT_TO_GROUP` (`objectId`);')
 
-	createOpsi40HostTable(database)
-
-	database.execute(u'''CREATE TABLE `GROUP` (
-		`type` varchar(30) NOT NULL,
-		`groupId` varchar(255) NOT NULL,
-		`parentGroupId` varchar(255),
-		`description` varchar(100),
-		`notes` varchar(500),
-		PRIMARY KEY (`type`, `groupId`)
-	) %s;
-	''' % database.getTableCreationOptions('GROUP'))
-	database.execute('CREATE INDEX `index_group_parentGroupId` on `GROUP` (`parentGroupId`);')
-
-	database.execute(u'''CREATE TABLE `OBJECT_TO_GROUP` (
-		`object_to_group_id` integer NOT NULL ''' + database.AUTOINCREMENT + ''',
-		`groupType` varchar(30) NOT NULL,
-		`groupId` varchar(100) NOT NULL,
-		`objectId` varchar(255) NOT NULL,
-		PRIMARY KEY (`object_to_group_id`),
-		FOREIGN KEY (`groupType`, `groupId`) REFERENCES `GROUP` (`type`, `groupId`)
-	) %s;
-	''' % database.getTableCreationOptions('OBJECT_TO_GROUP'))
-	database.execute('CREATE INDEX `index_object_to_group_objectId` on `OBJECT_TO_GROUP` (`objectId`);')
-
-	database.execute('''CREATE TABLE `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (
-		`windowsSoftwareId` VARCHAR(100) NOT NULL,
-		`productId` varchar(255) NOT NULL,
-		PRIMARY KEY (`windowsSoftwareId`, `productId`)
-	) %s;
-	''' % database.getTableCreationOptions('WINDOWS_SOFTWARE_ID_TO_PRODUCT'))
+		database.execute(session, '''CREATE TABLE `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (
+			`windowsSoftwareId` VARCHAR(100) NOT NULL,
+			`productId` varchar(255) NOT NULL,
+			PRIMARY KEY (`windowsSoftwareId`, `productId`)
+		) %s;
+		''' % database.getTableCreationOptions('WINDOWS_SOFTWARE_ID_TO_PRODUCT'))
 
 
 
-def createOpsi40HostTable(database):
+def createOpsi40HostTable(database, session):
 	"Creates a table for hosts as seen in opsi 4.0."
 
-	query = u'''CREATE TABLE `HOST` (
+	query = '''CREATE TABLE `HOST` (
 		`hostId` varchar(255) NOT NULL,
 		`type` varchar(30),
 		`description` varchar(100),
@@ -300,11 +305,11 @@ def createOpsi40HostTable(database):
 		`masterDepotId` varchar(255),
 		PRIMARY KEY (`hostId`)
 	) %s;''' % database.getTableCreationOptions('HOST')
-	database.execute(query)
+	database.execute(session, query)
 
 
-def assertColumnIsVarchar(database, tableName, columnName, length):
-	for column in getTableColumns(database, tableName):
+def assertColumnIsVarchar(database, session, tableName, columnName, length):
+	for column in getTableColumns(database, session, tableName):
 		if column.name.lower() == columnName.lower():
 			assert column.type.lower().startswith('varchar(')
 			assert getColumnLength(column.type) == length
@@ -319,78 +324,83 @@ def testInsertingSchemaNumber(mysqlBackendConfig, mySQLBackendConfigFile):
 
 		updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
 
-		assert 'OPSI_SCHEMA' in getTableNames(db)
+		with db.session() as session:
+			assert 'OPSI_SCHEMA' in getTableNames(db, session)
 
-		for column in getTableColumns(db, 'OPSI_SCHEMA'):
-			name = column.name
-			if name == 'version':
-				assert column.type.lower().startswith('int')
-			elif name == 'updateStarted':
-				assert column.type.lower().startswith('timestamp')
-			elif name == 'updateEnded':
-				assert column.type.lower().startswith('timestamp')
-			else:
-				raise Exception("Unexpected column!")
+			for column in getTableColumns(db, session, 'OPSI_SCHEMA'):
+				name = column.name
+				if name == 'version':
+					assert column.type.lower().startswith('int')
+				elif name == 'updateStarted':
+					assert column.type.lower().startswith('timestamp')
+				elif name == 'updateEnded':
+					assert column.type.lower().startswith('timestamp')
+				else:
+					raise Exception("Unexpected column!")
 
 
 def testReadingSchemaVersionIfTableIsMissing(mysqlBackendConfig, mySQLBackendConfigFile):
 	with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
-		assert readSchemaVersion(db) is None
+		with db.session() as session:
+			assert readSchemaVersion(db, session) is None
 
 
 def testReadingSchemaVersionFromEmptyTable(mysqlBackendConfig, mySQLBackendConfigFile):
 	with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
-		createSchemaVersionTable(db)
-
-		assert readSchemaVersion(db) is None
+		with db.session() as session:
+			createSchemaVersionTable(db, session)
+			assert readSchemaVersion(db, session) is None
 
 
 def testUpdatingSchemaVersion(mysqlBackendConfig, mySQLBackendConfigFile):
 	with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
-		createSchemaVersionTable(db)
+		with db.session() as session:
+			createSchemaVersionTable(db, session)
 
-		version = readSchemaVersion(db)
-		assert version is None
+			version = readSchemaVersion(db, session)
+			assert version is None
 
-		with updateSchemaVersion(db, version=2):
-			pass  # NOOP
+			with updateSchemaVersion(db, session, version=2):
+				pass  # NOOP
 
-		version = readSchemaVersion(db)
-		assert version == 2
+			version = readSchemaVersion(db, session)
+			assert version == 2
 
 
 def testReadingSchemaVersionOnlyReturnsNewestValue(mysqlBackendConfig, mySQLBackendConfigFile):
 	with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
-		createSchemaVersionTable(db)
+		with db.session() as session:
+			createSchemaVersionTable(db, session)
 
-		with updateSchemaVersion(db, version=1):
-			pass
-
-		with updateSchemaVersion(db, version=15):
-			pass
-
-		for number in range(1, 4):
-			with updateSchemaVersion(db, version=number * 2):
+			with updateSchemaVersion(db, session, version=1):
 				pass
 
-		with updateSchemaVersion(db, version=3):
-			pass
+			with updateSchemaVersion(db, session, version=15):
+				pass
 
-		assert readSchemaVersion(db) == 15
+			for number in range(1, 4):
+				with updateSchemaVersion(db, session, version=number * 2):
+					pass
+
+			with updateSchemaVersion(db, session, version=3):
+				pass
+
+			assert readSchemaVersion(db, session) == 15
 
 
 def testReadingSchemaVersionFailsOnUnfinishedUpdate(mysqlBackendConfig, mySQLBackendConfigFile):
 	with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
-		createSchemaVersionTable(db)
+		with db.session() as session:
+			createSchemaVersionTable(db, session)
 
-		try:
-			with updateSchemaVersion(db, version=1):
-				raise RuntimeError("For testing.")
-		except RuntimeError:
-			pass
+			try:
+				with updateSchemaVersion(db, session, version=1):
+					raise RuntimeError("For testing.")
+			except RuntimeError:
+				pass
 
-		with pytest.raises(DatabaseMigrationUnfinishedError):
-			readSchemaVersion(db)
+			with pytest.raises(DatabaseMigrationUnfinishedError):
+				readSchemaVersion(db, session)
 
 
 def testUpdatingCurrentBackendDoesBreakNothing(mysqlBackendConfig, mySQLBackendConfigFile):
@@ -404,14 +414,16 @@ def testUpdatingCurrentBackendDoesBreakNothing(mysqlBackendConfig, mySQLBackendC
 
 		with MySQLBackend(**mysqlBackendConfig) as anotherBackend:
 			# We want to have the latest schema version
-			assert DATABASE_SCHEMA_VERSION == readSchemaVersion(anotherBackend._sql)
+			with anotherBackend._sql.session() as session:
+				assert DATABASE_SCHEMA_VERSION == readSchemaVersion(anotherBackend._sql, session)
 
 
 def testCreatingBackendSetsTheLatestSchemaVersion(mysqlBackendConfig, mySQLBackendConfigFile):
 	with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
 		with MySQLBackend(**mysqlBackendConfig) as freshBackend:
 			freshBackend.backend_createBase()
-			assert readSchemaVersion(db) == DATABASE_SCHEMA_VERSION
+			with db.session() as session:
+				assert readSchemaVersion(db, session) == DATABASE_SCHEMA_VERSION
 
 
 def testAddingIndexToProductPropertyValues(mysqlBackendConfig, mySQLBackendConfigFile):
@@ -432,21 +444,22 @@ def testAddingWorkbenchAttributesToHost(mysqlBackendConfig, mySQLBackendConfigFi
 
 		updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
 
-		changesFound = 0
-		for column in getTableColumns(db, 'HOST'):
-			if column.name == 'workbenchLocalUrl':
-				assert column.type.lower().startswith('varchar(')
-				assert getColumnLength(column.type) == 128
-				changesFound += 1
-			elif column.name == 'workbenchRemoteUrl':
-				assert column.type.lower().startswith('varchar(')
-				assert getColumnLength(column.type) == 255
-				changesFound += 1
+		with db.session() as session:
+			changesFound = 0
+			for column in getTableColumns(db, session, 'HOST'):
+				if column.name == 'workbenchLocalUrl':
+					assert column.type.lower().startswith('varchar(')
+					assert getColumnLength(column.type) == 128
+					changesFound += 1
+				elif column.name == 'workbenchRemoteUrl':
+					assert column.type.lower().startswith('varchar(')
+					assert getColumnLength(column.type) == 255
+					changesFound += 1
 
-			if changesFound == 2:
-				break
+				if changesFound == 2:
+					break
 
-		assert changesFound == 2
+			assert changesFound == 2
 
 
 def testCorrectingObjectToGroupGroupIdFieldLength(mysqlBackendConfig, mySQLBackendConfigFile):
@@ -454,12 +467,12 @@ def testCorrectingObjectToGroupGroupIdFieldLength(mysqlBackendConfig, mySQLBacke
 		createRequiredTables(db)
 
 		updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
-
-		for column in getTableColumns(db, 'OBJECT_TO_GROUP'):
-			if column.name == 'groupId':
-				assert column.type.lower().startswith('varchar(')
-				assert getColumnLength(column.type) == 255
-				break
+		with db.session() as session:
+			for column in getTableColumns(db, session, 'OBJECT_TO_GROUP'):
+				if column.name == 'groupId':
+					assert column.type.lower().startswith('varchar(')
+					assert getColumnLength(column.type) == 255
+					break
 
 
 def testIncreasingInventoryNumberFieldLength(mysqlBackendConfig, mySQLBackendConfigFile):
@@ -468,13 +481,14 @@ def testIncreasingInventoryNumberFieldLength(mysqlBackendConfig, mySQLBackendCon
 
 		updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
 
-		for column in getTableColumns(db, 'HOST'):
-			if column.name == 'inventoryNumber':
-				assert column.type.lower().startswith('varchar(')
-				assert getColumnLength(column.type) == 64
-				break
-		else:
-			raise RuntimeError("Expected to find matching column.")
+		with db.session() as session:
+			for column in getTableColumns(db, session, 'HOST'):
+				if column.name == 'inventoryNumber':
+					assert column.type.lower().startswith('varchar(')
+					assert getColumnLength(column.type) == 64
+					break
+			else:
+				raise RuntimeError("Expected to find matching column.")
 
 
 def testChangingSoftwareConfigIdToBigInt(mysqlBackendConfig, mySQLBackendConfigFile):
@@ -483,9 +497,10 @@ def testChangingSoftwareConfigIdToBigInt(mysqlBackendConfig, mySQLBackendConfigF
 
 		updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
 
-		for column in getTableColumns(db, 'SOFTWARE_CONFIG'):
-			if column.name == 'config_id':
-				assert column.type.lower().startswith('bigint')
-				break
-		else:
-			raise RuntimeError("Unable to find column SOFTWARE_CONFIG.config_id")
+		with db.session() as session:
+			for column in getTableColumns(db, session, 'SOFTWARE_CONFIG'):
+				if column.name == 'config_id':
+					assert column.type.lower().startswith('bigint')
+					break
+			else:
+				raise RuntimeError("Unable to find column SOFTWARE_CONFIG.config_id")
