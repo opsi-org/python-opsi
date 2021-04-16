@@ -8,7 +8,6 @@ MySQL-Backend
 
 import base64
 import time
-from contextlib import contextmanager
 from hashlib import md5
 try:
 	# pyright: reportMissingImports=false
@@ -24,13 +23,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.event import listen
 from sqlalchemy.orm import scoped_session, sessionmaker
 
+from opsicommon.logging import logger, secret_filter
+
 from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.SQL import (
-	onlyAllowSelect, SQL, SQLBackend, SQLBackendObjectModificationTracker
+	SQL, SQLBackend, SQLBackendObjectModificationTracker
 )
-
-from opsicommon.logging import logger, secret_filter
-from OPSI.Exceptions import BackendBadValueError
 from OPSI.Types import forceInt, forceUnicode
 from OPSI.Util import getPublicKey
 from OPSI.Object import Product, ProductProperty
@@ -149,110 +147,27 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 		self.Session = scoped_session(self.session_factory)  # pylint: disable=invalid-name
 
 		# Test connection
-		self.getSet("SELECT 1")
+		with self.session() as session:
+			self.getSet(session, "SELECT 1")
 		logger.debug('MySQL connected: %s', self)
 
 
 	def __repr__(self):
 		return f"<{self.__class__.__name__}(address={self._address})>"
 
-	@contextmanager
-	def session(self):
-		try:
-			yield self.Session()
-		finally:
-			self.Session.remove()
-
-	def connect(self, cursorType=None):
-		pass
-
-	def close(self, conn, cursor):
-		pass
-
-	def getSet(self, query):
-		"""
-		Return a list of rows, every row is a dict of key / values pairs
-		"""
-		logger.trace("getSet: %s", query)
-		onlyAllowSelect(query)
-		with self.session() as session:
-			result = session.execute(query).fetchall()  # pylint: disable=no-member
-			if not result:
-				return []
-			return [ dict(row.items()) for row in result if row is not None ]
-
-	def getRows(self, query):
-		"""
-		Return a list of rows, every row is a list of values
-		"""
-		logger.trace("getRows: %s", query)
-		onlyAllowSelect(query)
-		with self.session() as session:
-			result = session.execute(query).fetchall()  # pylint: disable=no-member
-			if not result:
-				return []
-			return [ list(row) for row in result if row is not None ]
-
-	def getRow(self, query, conn=None, cursor=None):
-		"""
-		Return one row as value list
-		"""
-		logger.trace("getRow: %s", query)
-		onlyAllowSelect(query)
-		with self.session() as session:
-			result = session.execute(query).fetchone()  # pylint: disable=no-member
-			if not result:
-				return []
-			return list(result)
+	@retry_on_deadlock
+	def insert(self, session, table, valueHash):  # pylint: disable=too-many-branches
+		return super().insert(session, table, valueHash)
 
 	@retry_on_deadlock
-	def insert(self, table, valueHash, conn=None, cursor=None):  # pylint: disable=too-many-branches
-		if not valueHash:
-			raise BackendBadValueError("No values given")
-
-		col_names = [ f"`{col_name}`" for col_name in list(valueHash) ]
-		bind_names = [ f":{col_name}" for col_name in list(valueHash) ]
-		query = f"INSERT INTO `{table}` ({','.join(col_names)}) VALUES ({','.join(bind_names)})"
-		logger.trace("insert: %s - %s", query, valueHash)
-		with self.session() as session:
-			result = session.execute(query, valueHash)  # pylint: disable=no-member
-			session.commit()  # pylint: disable=no-member
-			return result.lastrowid
+	def update(self, session, table, where, valueHash, updateWhereNone=False):  # pylint: disable=too-many-branches,too-many-arguments
+		return super().update(session, table, where, valueHash, updateWhereNone)
 
 	@retry_on_deadlock
-	def update(self, table, where, valueHash, updateWhereNone=False):  # pylint: disable=too-many-branches
-		if not valueHash:
-			raise BackendBadValueError("No values given")
+	def delete(self, session, table, where):
+		return super().delete(session, table, where)
 
-		updates = []
-		for (key, value) in valueHash.items():
-			if value is None and not updateWhereNone:
-				continue
-			updates.append(f"`{key}` = :{key}")
-
-		query = f"UPDATE `{table}` SET {','.join(updates)} WHERE {where}"
-
-		logger.trace("update: %s - %s", query, valueHash)
-		with self.session() as session:
-			result = session.execute(query, valueHash)  # pylint: disable=no-member
-			session.commit()  # pylint: disable=no-member
-			return result.rowcount
-
-	@retry_on_deadlock
-	def delete(self, table, where, conn=None, cursor=None):
-		query = f"DELETE FROM `{table}` WHERE {where}"
-		logger.trace("delete: %s", query)
-		with self.session() as session:
-			result = session.execute(query)  # pylint: disable=no-member
-			session.commit()  # pylint: disable=no-member
-			return result.rowcount
-
-	def execute(self, query, conn=None, cursor=None):
-		with self.session() as session:
-			session.execute(query)  # pylint: disable=no-member
-			session.commit()  # pylint: disable=no-member
-
-	def getTables(self):
+	def getTables(self, session):
 		"""
 		Get what tables are present in the database.
 
@@ -263,11 +178,11 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 		"""
 		tables = {}
 		logger.trace("Current tables:")
-		for i in self.getSet('SHOW TABLES;'):
+		for i in self.getSet(session, 'SHOW TABLES;'):
 			for tableName in i.values():
 				tableName = tableName.upper()
 				logger.trace(" [ %s ]", tableName)
-				fields = [j['Field'] for j in self.getSet('SHOW COLUMNS FROM `%s`' % tableName)]
+				fields = [j['Field'] for j in self.getSet(session, 'SHOW COLUMNS FROM `%s`' % tableName)]
 				tables[tableName] = fields
 				logger.trace("Fields in %s: %s", tableName, fields)
 
@@ -395,8 +310,9 @@ class MySQLBackend(SQLBackend):
 				PRIMARY KEY (`hostId`)
 			) %s;''' % self._sql.getTableCreationOptions('HOST')
 		logger.debug(table)
-		self._sql.execute(table)
-		self._sql.execute('CREATE INDEX `index_host_type` on `HOST` (`type`);')
+		with self._sql.session() as session:
+			self._sql.execute(session, table)
+			self._sql.execute(session, 'CREATE INDEX `index_host_type` on `HOST` (`type`);')
 
 	def _createTableSoftwareConfig(self):
 		logger.debug('Creating table SOFTWARE_CONFIG')
@@ -423,11 +339,13 @@ class MySQLBackend(SQLBackend):
 			) %s;
 			''' % self._sql.getTableCreationOptions('SOFTWARE_CONFIG')
 		logger.debug(table)
-		self._sql.execute(table)
-		self._sql.execute('CREATE INDEX `index_software_config_clientId` on `SOFTWARE_CONFIG` (`clientId`);')
-		self._sql.execute(
-			'CREATE INDEX `index_software_config_nvsla` on `SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);'
-		)
+		with self._sql.session() as session:
+			self._sql.execute(session, table)
+			self._sql.execute(session, 'CREATE INDEX `index_software_config_clientId` on `SOFTWARE_CONFIG` (`clientId`);')
+			self._sql.execute(
+				session,
+				'CREATE INDEX `index_software_config_nvsla` on `SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);'
+			)
 
 	# Overwriting product_getObjects to use JOIN for speedup
 	def product_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -457,18 +375,19 @@ class MySQLBackend(SQLBackend):
 		'''
 
 		products = []
-		for product in self._sql.getSet(query):
-			product['productClassIds'] = []
-			if readWindowsSoftwareIDs and product['windowsSoftwareIds']:
-				product['windowsSoftwareIds'] = product['windowsSoftwareIds'].split("\n")
-			else:
-				product['windowsSoftwareIds'] = []
+		with self._sql.session() as session:
+			for product in self._sql.getSet(session, query):
+				product['productClassIds'] = []
+				if readWindowsSoftwareIDs and product['windowsSoftwareIds']:
+					product['windowsSoftwareIds'] = product['windowsSoftwareIds'].split("\n")
+				else:
+					product['windowsSoftwareIds'] = []
 
-			if not attributes or 'productClassIds' in attributes:
-				pass
+				if not attributes or 'productClassIds' in attributes:
+					pass
 
-			self._adjustResult(Product, product)
-			products.append(Product.fromHash(product))
+				self._adjustResult(Product, product)
+				products.append(Product.fromHash(product))
 		return products
 
 	# Overwriting productProperty_getObjects to use JOIN for speedup
@@ -506,17 +425,18 @@ class MySQLBackend(SQLBackend):
 				pp.propertyId
 		'''
 		productProperties = []
-		for productProperty in self._sql.getSet(query):
-			if readValues and productProperty['possibleValues']:
-				productProperty['possibleValues'] = productProperty['possibleValues'].split("\n")
-			else:
-				productProperty['possibleValues'] = []
+		with self._sql.session() as session:
+			for productProperty in self._sql.getSet(session, query):
+				if readValues and productProperty['possibleValues']:
+					productProperty['possibleValues'] = productProperty['possibleValues'].split("\n")
+				else:
+					productProperty['possibleValues'] = []
 
-			if readValues and productProperty['defaultValues']:
-				productProperty['defaultValues'] = productProperty['defaultValues'].split("\n")
-			else:
-				productProperty['defaultValues'] = []
-			productProperties.append(ProductProperty.fromHash(productProperty))
+				if readValues and productProperty['defaultValues']:
+					productProperty['defaultValues'] = productProperty['defaultValues'].split("\n")
+				else:
+					productProperty['defaultValues'] = []
+				productProperties.append(ProductProperty.fromHash(productProperty))
 		return productProperties
 
 
