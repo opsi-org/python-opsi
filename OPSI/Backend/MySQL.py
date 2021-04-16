@@ -46,7 +46,7 @@ def retry_on_deadlock(func):
 			try:
 				return func(*args, **kwargs)
 			except Exception as err:  # pylint: disable=broad-except
-				if trynum >= 3 or "deadlock" not in str(err).lower():
+				if trynum >= 10 or "deadlock" not in str(err).lower():
 					raise
 				time.sleep(0.1)
 	return wrapper
