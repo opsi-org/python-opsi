@@ -25,11 +25,11 @@ from .test_products import getProducts
 
 def testParsingBackendACLFile(tempDir):
 	expectedACL = [
-		[u'host_.*', [
-			{'denyAttributes': [], 'type': u'opsi_depotserver', 'ids': [u'depot1.test.invalid', u'depot2.test.invalid'], 'allowAttributes': []},
-			{'denyAttributes': [], 'type': u'opsi_client', 'ids': [u'self'], 'allowAttributes': [u'attr1', u'attr2']},
-			{'denyAttributes': [], 'type': u'sys_user', 'ids': [u'some user', u'some other user'], 'allowAttributes': []},
-			{'denyAttributes': [], 'type': u'sys_group', 'ids': [u'a_group', u'group2'], 'allowAttributes': []}
+		['host_.*', [
+			{'denyAttributes': [], 'type': 'opsi_depotserver', 'ids': ['depot1.test.invalid', 'depot2.test.invalid'], 'allowAttributes': []},
+			{'denyAttributes': [], 'type': 'opsi_client', 'ids': ['self'], 'allowAttributes': ['attr1', 'attr2']},
+			{'denyAttributes': [], 'type': 'sys_user', 'ids': ['some user', 'some other user'], 'allowAttributes': []},
+			{'denyAttributes': [], 'type': 'sys_group', 'ids': ['a_group', 'group2'], 'allowAttributes': []}
 			]
 		]
 	]
@@ -60,8 +60,8 @@ def testAllowingMethodsForSpecificClient(extendedConfigDataBackend):
 		password=client1.opsiHostKey,
 		backend=backend,
 		acl=[
-			['host_getObjects',   [{'type': u'opsi_client', 'ids': [client1.id], 'denyAttributes': [], 'allowAttributes': []}]],
-			['config_getObjects', [{'type': u'opsi_client', 'ids': [client2.id], 'denyAttributes': [], 'allowAttributes': []}]],
+			['host_getObjects',   [{'type': 'opsi_client', 'ids': [client1.id], 'denyAttributes': [], 'allowAttributes': []}]],
+			['config_getObjects', [{'type': 'opsi_client', 'ids': [client2.id], 'denyAttributes': [], 'allowAttributes': []}]],
 		]
 	)
 
@@ -88,8 +88,8 @@ def testDenyingAttributes(extendedConfigDataBackend):
 		password=client1.opsiHostKey,
 		backend=backend,
 		acl=[
-			['host_getObjects', [{'type': u'self',		'ids': [], 'denyAttributes': [],			  'allowAttributes': []}]],
-			['host_getObjects', [{'type': u'opsi_client', 'ids': [], 'denyAttributes': ['opsiHostKey'], 'allowAttributes': []}]],
+			['host_getObjects', [{'type': 'self',		'ids': [], 'denyAttributes': [],			  'allowAttributes': []}]],
+			['host_getObjects', [{'type': 'opsi_client', 'ids': [], 'denyAttributes': ['opsiHostKey'], 'allowAttributes': []}]],
 		]
 	)
 
@@ -116,9 +116,9 @@ def testDenyingAttributes(extendedConfigDataBackend):
 #		 password=client1.opsiHostKey,
 #		 backend=backend,
 #		 acl=[
-#			 ['host_.*',	   [{'type': u'self',		'ids': [], 'denyAttributes': [],			  'allowAttributes': []}]],
-#			 ['host_get.*',	[{'type': u'opsi_client', 'ids': [], 'denyAttributes': ['opsiHostKey'], 'allowAttributes': []}]],
-#			 ['host_update.*', [{'type': u'opsi_client', 'ids': [], 'denyAttributes': [],			  'allowAttributes': ['notes']}]]
+#			 ['host_.*',	   [{'type': 'self',		'ids': [], 'denyAttributes': [],			  'allowAttributes': []}]],
+#			 ['host_get.*',	[{'type': 'opsi_client', 'ids': [], 'denyAttributes': ['opsiHostKey'], 'allowAttributes': []}]],
+#			 ['host_update.*', [{'type': 'opsi_client', 'ids': [], 'denyAttributes': [],			  'allowAttributes': ['notes']}]]
 #		 ]
 #	 )
 
@@ -174,10 +174,10 @@ def testDenyingAccessToOtherObjects(extendedConfigDataBackend):
 	product1 = products[0]
 
 	backend.config_createObjects([{
-		"id": u'clientconfig.depot.id',
+		"id": 'clientconfig.depot.id',
 		"type": "UnicodeConfig",
 	}])
-	backend.configState_create(u'clientconfig.depot.id', client1.getId(), values=[depotserver1['id']])
+	backend.configState_create('clientconfig.depot.id', client1.getId(), values=[depotserver1['id']])
 
 	productOnDepot1 = OPSI.Object.ProductOnDepot(
 		productId=product1.getId(),
@@ -195,7 +195,7 @@ def testDenyingAccessToOtherObjects(extendedConfigDataBackend):
 		password=client1.opsiHostKey,
 		backend=backend,
 		acl=[
-			['productOnClient_create', [{'type': u'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}]],
+			['productOnClient_create', [{'type': 'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}]],
 		]
 	)
 
@@ -228,7 +228,7 @@ def testGettingFullAccess(extendedConfigDataBackend):
 		acl=[
 				['.*',
 					[
-						{'type': u'opsi_depotserver', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
+						{'type': 'opsi_depotserver', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
 					]
 				]
 			]
@@ -257,7 +257,7 @@ def testOnlyAccessingSelfIsPossible(extendedConfigDataBackend):
 		acl=[
 				['.*',
 					[
-						{'type': u'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
+						{'type': 'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
 					]
 				]
 			]
@@ -281,7 +281,7 @@ def testDenyingAccessToSpecifiedAttributes(extendedConfigDataBackend):
 		acl=[
 				['.*',
 					[
-						{'type': u'opsi_depotserver', 'ids': [], 'denyAttributes': denyAttributes, 'allowAttributes': []}
+						{'type': 'opsi_depotserver', 'ids': [], 'denyAttributes': denyAttributes, 'allowAttributes': []}
 					]
 				]
 			]
@@ -310,7 +310,7 @@ def testGettingAccessAndOnlyAllowingSomeAttributes(extendedConfigDataBackend):
 		acl=[
 				['.*',
 					[
-						{'type': u'opsi_depotserver', 'ids': [], 'denyAttributes': [], 'allowAttributes': allowAttributes}
+						{'type': 'opsi_depotserver', 'ids': [], 'denyAttributes': [], 'allowAttributes': allowAttributes}
 					]
 				]
 			]
@@ -339,8 +339,8 @@ def testGettingAccessButDenyingAttributesOnSelf(extendedConfigDataBackend):
 		acl=[
 				['.*',
 					[
-						{'type': u'opsi_depotserver', 'ids': [], 'denyAttributes': denyAttributes, 'allowAttributes': []},
-						{'type': u'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
+						{'type': 'opsi_depotserver', 'ids': [], 'denyAttributes': denyAttributes, 'allowAttributes': []},
+						{'type': 'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
 					]
 				]
 			]
@@ -378,7 +378,7 @@ def testAccessingSelfProductOnClients(extendedConfigDataBackend):
 		acl=[
 				['.*',
 					[
-						{'type': u'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
+						{'type': 'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
 					]
 				]
 			]
