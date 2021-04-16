@@ -7,8 +7,6 @@ Functionality to update an MySQL backend.
 
 This module handles the database migrations for opsi.
 Usually the function :py:func:updateMySQLBackend: is called from opsi-setup
-
-.. versionadded:: 4.0.6.1
 """
 
 from __future__ import absolute_import
@@ -68,39 +66,40 @@ read from `backendConfigFile`.
 	)
 	mysql = MySQL(**config)
 
-	schemaVersion = readSchemaVersion(mysql)
-	logger.debug("Found database schema version %s", schemaVersion)
+	with mysql.session() as session:
+		schemaVersion = readSchemaVersion(mysql, session)
+		logger.debug("Found database schema version %s", schemaVersion)
 
-	if schemaVersion is None:
-		logger.notice("Missing information about database schema. Creating...")
-		createSchemaVersionTable(mysql)
-		with updateSchemaVersion(mysql, version=0):
-			_processOpsi40migrations(mysql)
+		if schemaVersion is None:
+			logger.notice("Missing information about database schema. Creating...")
+			createSchemaVersionTable(mysql, session)
+			with updateSchemaVersion(mysql, session, version=0):
+				_processOpsi40migrations(mysql, session)
 
-		schemaVersion = readSchemaVersion(mysql)
+			schemaVersion = readSchemaVersion(mysql, session)
 
-	# The migrations that follow are each a function that will take the
-	# established database connection as first parameter.
-	# Do not change the order of the migrations once released, because
-	# this may lead to hard-to-debug inconsistent version numbers.
-	migrations = [
-		_dropTableBootconfiguration,
-		_addIndexOnProductPropertyValues,
-		_addWorkbenchAttributesToHosts,
-		_adjustLengthOfGroupId,
-		_increaseInventoryNumberLength,
-		_changeSoftwareConfigConfigIdToBigInt,
-		_addIndexProductIdOnProductAndWindowsSoftwareIDToProduct
-	]
+		# The migrations that follow are each a function that will take the
+		# established database connection as first parameter.
+		# Do not change the order of the migrations once released, because
+		# this may lead to hard-to-debug inconsistent version numbers.
+		migrations = [
+			_dropTableBootconfiguration,
+			_addIndexOnProductPropertyValues,
+			_addWorkbenchAttributesToHosts,
+			_adjustLengthOfGroupId,
+			_increaseInventoryNumberLength,
+			_changeSoftwareConfigConfigIdToBigInt,
+			_addIndexProductIdOnProductAndWindowsSoftwareIDToProduct
+		]
 
-	for newSchemaVersion, migration in enumerate(migrations, start=1):
-		if schemaVersion < newSchemaVersion:
-			with updateSchemaVersion(mysql, version=newSchemaVersion):
-				migration(mysql)
+		for newSchemaVersion, migration in enumerate(migrations, start=1):
+			if schemaVersion < newSchemaVersion:
+				with updateSchemaVersion(mysql, session, version=newSchemaVersion):
+					migration(mysql, session)
 
-	logger.debug("Expected database schema version: %s", DATABASE_SCHEMA_VERSION)
-	if not readSchemaVersion(mysql) == DATABASE_SCHEMA_VERSION:
-		raise BackendUpdateError("Not all migrations have been run!")
+		logger.debug("Expected database schema version: %s", DATABASE_SCHEMA_VERSION)
+		if not readSchemaVersion(mysql, session) == DATABASE_SCHEMA_VERSION:
+			raise BackendUpdateError("Not all migrations have been run!")
 
 	with MySQLBackend(**config) as mysqlBackend:
 		# We do this to make sure all tables that are currently
@@ -109,7 +108,7 @@ read from `backendConfigFile`.
 		mysqlBackend.backend_createBase()
 
 
-def readSchemaVersion(database):
+def readSchemaVersion(database, session):
 	"""
 	Read the version of the schema from the database.
 
@@ -119,7 +118,7 @@ started but never ended.
 	:rtype: int or None
 	"""
 	try:
-		for result in database.getSet("SELECT `version`, `updateStarted`, `updateEnded` FROM OPSI_SCHEMA ORDER BY `version` DESC;"):
+		for result in database.getSet(session, "SELECT `version`, `updateStarted`, `updateEnded` FROM OPSI_SCHEMA ORDER BY `version` DESC;"):
 			version = result['version']
 			start = result['updateStarted']
 			assert start
@@ -147,7 +146,7 @@ started but never ended.
 
 
 @contextmanager
-def updateSchemaVersion(database, version):
+def updateSchemaVersion(database, session, version):
 	"""
 	Update the schema information to the given version.
 
@@ -158,18 +157,18 @@ def updateSchemaVersion(database, version):
 	"""
 	logger.notice("Migrating to schema version %s...", version)
 	query = "INSERT INTO OPSI_SCHEMA(`version`) VALUES({version});".format(version=version)
-	database.execute(query)
+	database.execute(session, query)
 	yield
-	_finishSchemaVersionUpdate(database, version)
+	_finishSchemaVersionUpdate(database, session, version)
 	logger.notice("Migration to schema version %s successful", version)
 
 
-def _finishSchemaVersionUpdate(database, version):
+def _finishSchemaVersionUpdate(database, session, version):
 	query = "UPDATE OPSI_SCHEMA SET `updateEnded` = CURRENT_TIMESTAMP WHERE VERSION = {version};".format(version=version)
-	database.execute(query)
+	database.execute(session, query)
 
 
-def _processOpsi40migrations(mysql):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+def _processOpsi40migrations(mysql, session):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 	"""
 	Process migrations done before opsi 4.1.
 
@@ -179,12 +178,12 @@ def _processOpsi40migrations(mysql):  # pylint: disable=too-many-locals,too-many
 	"""
 	tables = {}
 	logger.debug("Current tables:")
-	for i in mysql.getSet('SHOW TABLES;'):
+	for i in mysql.getSet(session, 'SHOW TABLES;'):
 		for tableName in i.values():
 			logger.debug(" [ %s ]", tableName)
 			tables[tableName] = []
-			mysql.execute("alter table `%s` convert to charset utf8 collate utf8_general_ci;" % tableName)
-			for row in mysql.getSet('SHOW COLUMNS FROM `%s`' % tableName):
+			mysql.execute(session, "alter table `%s` convert to charset utf8 collate utf8_general_ci;" % tableName)
+			for row in mysql.getSet(session, 'SHOW COLUMNS FROM `%s`' % tableName):
 				logger.debug("      %s", row)
 				tables[tableName].append(row['Field'])
 
@@ -192,79 +191,81 @@ def _processOpsi40migrations(mysql):  # pylint: disable=too-many-locals,too-many
 		logger.info("Updating database table HOST from opsi 3.3 to 3.4")
 		# SOFTWARE_CONFIG
 		logger.info("Updating table SOFTWARE_CONFIG")
-		mysql.execute("alter table SOFTWARE_CONFIG add `hostId` varchar(50) NOT NULL;")
-		mysql.execute("alter table SOFTWARE_CONFIG add `softwareId` varchar(100) NOT NULL;")
-		for res in mysql.getSet("SELECT hostId,host_id FROM `HOST` WHERE `hostId` != ''"):
+		mysql.execute(session, "alter table SOFTWARE_CONFIG add `hostId` varchar(50) NOT NULL;")
+		mysql.execute(session, "alter table SOFTWARE_CONFIG add `softwareId` varchar(100) NOT NULL;")
+		for res in mysql.getSet(session, "SELECT hostId,host_id FROM `HOST` WHERE `hostId` != ''"):
 			mysql.execute(
+				session,
 				"update SOFTWARE_CONFIG set `hostId`='%s' where `host_id`=%s;" % \
 				(res['hostId'].replace("'", "\\'"), res['host_id'])
 			)
-		for res in mysql.getSet("SELECT softwareId,software_id FROM `SOFTWARE` WHERE `softwareId` != ''"):
+		for res in mysql.getSet(session, "SELECT softwareId,software_id FROM `SOFTWARE` WHERE `softwareId` != ''"):
 			mysql.execute(
+				session,
 				"update SOFTWARE_CONFIG set `softwareId`='%s' where `software_id`=%s;" % \
 				(res['softwareId'].replace("'", "\\'"), res['software_id'])
 			)
-		mysql.execute("alter table SOFTWARE_CONFIG drop `host_id`;")
-		mysql.execute("alter table SOFTWARE_CONFIG drop `software_id`;")
-		mysql.execute("alter table SOFTWARE_CONFIG DEFAULT CHARACTER set utf8;")
-		mysql.execute("alter table SOFTWARE_CONFIG ENGINE = InnoDB;")
+		mysql.execute(session, "alter table SOFTWARE_CONFIG drop `host_id`;")
+		mysql.execute(session, "alter table SOFTWARE_CONFIG drop `software_id`;")
+		mysql.execute(session, "alter table SOFTWARE_CONFIG DEFAULT CHARACTER set utf8;")
+		mysql.execute(session, "alter table SOFTWARE_CONFIG ENGINE = InnoDB;")
 
 	for key in tables:
 		# HARDWARE_CONFIG
 		if key.startswith('HARDWARE_CONFIG') and 'host_id' in tables[key]:
 			logger.info("Updating database table %s from opsi 3.3 to 3.4", key)
-			mysql.execute("alter table %s add `hostId` varchar(50) NOT NULL;" % key)
-			for res in mysql.getSet("SELECT hostId,host_id FROM `HOST` WHERE `hostId` != ''"):
-				mysql.execute("update %s set `hostId` = '%s' where `host_id` = %s;" % (key, res['hostId'].replace("'", "\\'"), res['host_id']))
-			mysql.execute("alter table %s drop `host_id`;" % key)
-			mysql.execute("alter table %s DEFAULT CHARACTER set utf8;" % key)
-			mysql.execute("alter table %s ENGINE = InnoDB;" % key)
+			mysql.execute(session, "alter table %s add `hostId` varchar(50) NOT NULL;" % key)
+			for res in mysql.getSet(session, "SELECT hostId,host_id FROM `HOST` WHERE `hostId` != ''"):
+				mysql.execute(session, "update %s set `hostId` = '%s' where `host_id` = %s;" % (key, res['hostId'].replace("'", "\\'"), res['host_id']))
+			mysql.execute(session, "alter table %s drop `host_id`;" % key)
+			mysql.execute(session, "alter table %s DEFAULT CHARACTER set utf8;" % key)
+			mysql.execute(session, "alter table %s ENGINE = InnoDB;" % key)
 
 	if 'HARDWARE_INFO' in tables and 'host_id' in tables['HARDWARE_INFO']:
 		logger.info("Updating database table HARDWARE_INFO from opsi 3.3 to 3.4")
 		# HARDWARE_INFO
 		logger.info("Updating table HARDWARE_INFO")
-		mysql.execute("alter table HARDWARE_INFO add `hostId` varchar(50) NOT NULL;")
-		for res in mysql.getSet("SELECT hostId,host_id FROM `HOST` WHERE `hostId` != ''"):
-			mysql.execute("update HARDWARE_INFO set `hostId` = '%s' where `host_id` = %s;" % (res['hostId'].replace("'", "\\'"), res['host_id']))
-		mysql.execute("alter table HARDWARE_INFO drop `host_id`;")
-		mysql.execute("alter table HARDWARE_INFO DEFAULT CHARACTER set utf8;")
-		mysql.execute("alter table HARDWARE_INFO ENGINE = InnoDB;")
+		mysql.execute(session, "alter table HARDWARE_INFO add `hostId` varchar(50) NOT NULL;")
+		for res in mysql.getSet(session, "SELECT hostId,host_id FROM `HOST` WHERE `hostId` != ''"):
+			mysql.execute(session, "update HARDWARE_INFO set `hostId` = '%s' where `host_id` = %s;" % (res['hostId'].replace("'", "\\'"), res['host_id']))
+		mysql.execute(session, "alter table HARDWARE_INFO drop `host_id`;")
+		mysql.execute(session, "alter table HARDWARE_INFO DEFAULT CHARACTER set utf8;")
+		mysql.execute(session, "alter table HARDWARE_INFO ENGINE = InnoDB;")
 
 	if 'SOFTWARE' in tables and 'software_id' in tables['SOFTWARE']:
 		logger.info("Updating database table SOFTWARE from opsi 3.3 to 3.4")
 		# SOFTWARE
 		logger.info("Updating table SOFTWARE")
 		# remove duplicates
-		mysql.execute("delete S1 from SOFTWARE S1, SOFTWARE S2 where S1.softwareId=S2.softwareId and S1.software_id > S2.software_id")
-		mysql.execute("alter table SOFTWARE drop `software_id`;")
-		mysql.execute("alter table SOFTWARE add primary key (`softwareId`);")
+		mysql.execute(session, "delete S1 from SOFTWARE S1, SOFTWARE S2 where S1.softwareId=S2.softwareId and S1.software_id > S2.software_id")
+		mysql.execute(session, "alter table SOFTWARE drop `software_id`;")
+		mysql.execute(session, "alter table SOFTWARE add primary key (`softwareId`);")
 
 	if 'HOST' in tables and 'host_id' in tables['HOST']:
 		logger.info("Updating database table HOST from opsi 3.3 to 3.4")
 		# HOST
 		logger.info("Updating table HOST")
 		# remove duplicates
-		mysql.execute("delete H1 from HOST H1, HOST H2 where H1.hostId=H2.hostId and H1.host_id > H2.host_id")
-		mysql.execute("alter table HOST drop `host_id`;")
-		mysql.execute("alter table HOST add primary key (`hostId`);")
-		mysql.execute("alter table HOST add `type` varchar(20);")
-		mysql.execute("alter table HOST add `description` varchar(100);")
-		mysql.execute("alter table HOST add `notes` varchar(500);")
-		mysql.execute("alter table HOST add `hardwareAddress` varchar(17);")
-		mysql.execute("alter table HOST add `lastSeen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;")
-		mysql.execute("alter table HOST DEFAULT CHARACTER set utf8;")
-		mysql.execute("alter table HOST ENGINE = InnoDB;")
+		mysql.execute(session, "delete H1 from HOST H1, HOST H2 where H1.hostId=H2.hostId and H1.host_id > H2.host_id")
+		mysql.execute(session, "alter table HOST drop `host_id`;")
+		mysql.execute(session, "alter table HOST add primary key (`hostId`);")
+		mysql.execute(session, "alter table HOST add `type` varchar(20);")
+		mysql.execute(session, "alter table HOST add `description` varchar(100);")
+		mysql.execute(session, "alter table HOST add `notes` varchar(500);")
+		mysql.execute(session, "alter table HOST add `hardwareAddress` varchar(17);")
+		mysql.execute(session, "alter table HOST add `lastSeen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;")
+		mysql.execute(session, "alter table HOST DEFAULT CHARACTER set utf8;")
+		mysql.execute(session, "alter table HOST ENGINE = InnoDB;")
 
-		mysql.execute("update HOST set `type` = 'OPSI_CLIENT' where `hostId` != '';")
+		mysql.execute(session, "update HOST set `type` = 'OPSI_CLIENT' where `hostId` != '';")
 
 	tables = {}
 	logger.debug("Current tables:")
-	for i in mysql.getSet('SHOW TABLES;'):
+	for i in mysql.getSet(session, 'SHOW TABLES;'):
 		for tableName in i.values():
 			logger.debug(" [ %s ]", tableName)
 			tables[tableName] = []
-			for row in mysql.getSet('SHOW COLUMNS FROM `%s`' % tableName):
+			for row in mysql.getSet(session, 'SHOW COLUMNS FROM `%s`' % tableName):
 				logger.debug("      %s", row)
 				tables[tableName].append(row['Field'])
 
@@ -272,30 +273,30 @@ def _processOpsi40migrations(mysql):  # pylint: disable=too-many-locals,too-many
 		logger.info("Updating database table HOST from opsi 3.4 to 4.0")
 		# HOST
 		logger.info("Updating table HOST")
-		mysql.execute("alter table HOST modify `hostId` varchar(255) NOT NULL;")
-		mysql.execute("alter table HOST modify `type` varchar(30);")
+		mysql.execute(session, "alter table HOST modify `hostId` varchar(255) NOT NULL;")
+		mysql.execute(session, "alter table HOST modify `type` varchar(30);")
 
-		mysql.execute("alter table HOST add `ipAddress` varchar(15);")
-		mysql.execute("alter table HOST add `inventoryNumber` varchar(30);")
-		mysql.execute("alter table HOST add `created` TIMESTAMP;")
-		mysql.execute("alter table HOST add `opsiHostKey` varchar(32);")
-		mysql.execute("alter table HOST add `oneTimePassword` varchar(32);")
-		mysql.execute("alter table HOST add `maxBandwidth` int;")
-		mysql.execute("alter table HOST add `depotLocalUrl` varchar(128);")
-		mysql.execute("alter table HOST add `depotRemoteUrl` varchar(255);")
-		mysql.execute("alter table HOST add `depotWebdavUrl` varchar(255);")
-		mysql.execute("alter table HOST add `repositoryLocalUrl` varchar(128);")
-		mysql.execute("alter table HOST add `repositoryRemoteUrl` varchar(255);")
-		mysql.execute("alter table HOST add `networkAddress` varchar(31);")
-		mysql.execute("alter table HOST add `isMasterDepot` bool;")
-		mysql.execute("alter table HOST add `masterDepotId` varchar(255);")
+		mysql.execute(session, "alter table HOST add `ipAddress` varchar(15);")
+		mysql.execute(session, "alter table HOST add `inventoryNumber` varchar(30);")
+		mysql.execute(session, "alter table HOST add `created` TIMESTAMP;")
+		mysql.execute(session, "alter table HOST add `opsiHostKey` varchar(32);")
+		mysql.execute(session, "alter table HOST add `oneTimePassword` varchar(32);")
+		mysql.execute(session, "alter table HOST add `maxBandwidth` int;")
+		mysql.execute(session, "alter table HOST add `depotLocalUrl` varchar(128);")
+		mysql.execute(session, "alter table HOST add `depotRemoteUrl` varchar(255);")
+		mysql.execute(session, "alter table HOST add `depotWebdavUrl` varchar(255);")
+		mysql.execute(session, "alter table HOST add `repositoryLocalUrl` varchar(128);")
+		mysql.execute(session, "alter table HOST add `repositoryRemoteUrl` varchar(255);")
+		mysql.execute(session, "alter table HOST add `networkAddress` varchar(31);")
+		mysql.execute(session, "alter table HOST add `isMasterDepot` bool;")
+		mysql.execute(session, "alter table HOST add `masterDepotId` varchar(255);")
 
-		mysql.execute("update HOST set `type`='OpsiClient' where `type`='OPSI_CLIENT';")
-		mysql.execute("update HOST set `description`=NULL where `description`='None';")
-		mysql.execute("update HOST set `notes`=NULL where `notes`='None';")
-		mysql.execute("update HOST set `hardwareAddress`=NULL where `hardwareAddress`='None';")
+		mysql.execute(session, "update HOST set `type`='OpsiClient' where `type`='OPSI_CLIENT';")
+		mysql.execute(session, "update HOST set `description`=NULL where `description`='None';")
+		mysql.execute(session, "update HOST set `notes`=NULL where `notes`='None';")
+		mysql.execute(session, "update HOST set `hardwareAddress`=NULL where `hardwareAddress`='None';")
 
-		mysql.execute("alter table HOST add INDEX(`type`);")
+		mysql.execute(session, "alter table HOST add INDEX(`type`);")
 
 	for key in tables:
 		if key.startswith('HARDWARE_DEVICE'):
@@ -304,88 +305,91 @@ def _processOpsi40migrations(mysql):  # pylint: disable=too-many-locals,too-many
 
 			logger.info("Updating database table %s", key)
 			for vendorId in ('NDIS', 'SSTP', 'AGIL', 'L2TP', 'PPTP', 'PPPO', 'PTIM'):
-				mysql.execute("update %s set `vendorId`=NULL where `vendorId`='%s';" % (key, vendorId))
+				mysql.execute(session, "update %s set `vendorId`=NULL where `vendorId`='%s';" % (key, vendorId))
 
 			for attr in ('vendorId', 'deviceId', 'subsystemVendorId', 'subsystemDeviceId'):
 				if attr not in tables[key]:
 					continue
-				mysql.execute("update %s set `%s`=NULL where `%s`='';" % (key, attr, attr))
-				mysql.execute("update %s set `%s`=NULL where `%s`='None';" % (key, attr, attr))
+				mysql.execute(session, "update %s set `%s`=NULL where `%s`='';" % (key, attr, attr))
+				mysql.execute(session, "update %s set `%s`=NULL where `%s`='None';" % (key, attr, attr))
 
-			for res in mysql.getSet("SELECT * FROM %s" % key):
+			for res in mysql.getSet(session, "SELECT * FROM %s" % key):
 				if res.get('vendorId'):
 					try:
 						forceHardwareVendorId(res['vendorId'])
 					except Exception:  # pylint: disable=broad-except
 						logger.warning("Dropping bad vendorId '%s'", res['vendorId'])
-						mysql.execute("update %s set `vendorId`=NULL where `vendorId`='%s';" % (key, res['vendorId']))
+						mysql.execute(session, "update %s set `vendorId`=NULL where `vendorId`='%s';" % (key, res['vendorId']))
 
 				if res.get('subsystemVendorId'):
 					try:
 						forceHardwareVendorId(res['subsystemVendorId'])
 					except Exception:  # pylint: disable=broad-except
 						logger.warning("Dropping bad subsystemVendorId id '%s'", res['subsystemVendorId'])
-						mysql.execute("update %s set `subsystemVendorId`=NULL where `subsystemVendorId`='%s';" % (key, res['subsystemVendorId']))
+						mysql.execute(session, "update %s set `subsystemVendorId`=NULL where `subsystemVendorId`='%s';" % (key, res['subsystemVendorId']))
 
 				if res.get('deviceId'):
 					try:
 						forceHardwareDeviceId(res['deviceId'])
 					except Exception:  # pylint: disable=broad-except
 						logger.warning("Dropping bad deviceId '%s'", res['deviceId'])
-						mysql.execute("update %s set `deviceId`=NULL where `deviceId`='%s';" % (key, res['deviceId']))
+						mysql.execute(session, "update %s set `deviceId`=NULL where `deviceId`='%s';" % (key, res['deviceId']))
 
 				if res.get('subsystemDeviceId'):
 					try:
 						forceHardwareDeviceId(res['subsystemDeviceId'])
 					except Exception:  # pylint: disable=broad-except
 						logger.warning("Dropping bad subsystemDeviceId '%s'", res['subsystemDeviceId'])
-						mysql.execute("update %s set `subsystemDeviceId`=NULL where `subsystemDeviceId`='%s';" % (key, res['subsystemDeviceId']))
+						mysql.execute(session, "update %s set `subsystemDeviceId`=NULL where `subsystemDeviceId`='%s';" % (key, res['subsystemDeviceId']))
 
 		# HARDWARE_CONFIG
 		if key.startswith('HARDWARE_CONFIG') and 'audit_lastseen' in tables[key]:
 			logger.info("Updating database table %s from opsi 3.4 to 4.0", key)
 
-			mysql.execute("alter table %s change `audit_firstseen` `firstseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;" % key)
-			mysql.execute("alter table %s change `audit_lastseen` `lastseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;" % key)
-			mysql.execute("alter table %s change `audit_state` `state` TINYINT NOT NULL;" % key)
+			mysql.execute(session, "alter table %s change `audit_firstseen` `firstseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;" % key)
+			mysql.execute(session, "alter table %s change `audit_lastseen` `lastseen` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;" % key)
+			mysql.execute(session, "alter table %s change `audit_state` `state` TINYINT NOT NULL;" % key)
 
 	if 'LICENSE_USED_BY_HOST' in tables:
 		# LICENSE_ON_CLIENT
 		logger.info("Updating table LICENSE_USED_BY_HOST to LICENSE_ON_CLIENT")
-		mysql.execute('''CREATE TABLE `LICENSE_ON_CLIENT` (
-					`license_on_client_id` int NOT NULL AUTO_INCREMENT,
-					PRIMARY KEY( `license_on_client_id` ),
-					`softwareLicenseId` VARCHAR(100) NOT NULL,
-					`licensePoolId` VARCHAR(100) NOT NULL,
-					`clientId` varchar(255),
-					FOREIGN KEY( `softwareLicenseId`, `licensePoolId` ) REFERENCES SOFTWARE_LICENSE_TO_LICENSE_POOL( `softwareLicenseId`, `licensePoolId` ),
-					INDEX( `clientId` ),
-					`licenseKey` VARCHAR(100),
-					`notes` VARCHAR(1024)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-				''')
+		mysql.execute(
+			session,
+			'''CREATE TABLE `LICENSE_ON_CLIENT` (
+				`license_on_client_id` int NOT NULL AUTO_INCREMENT,
+				PRIMARY KEY( `license_on_client_id` ),
+				`softwareLicenseId` VARCHAR(100) NOT NULL,
+				`licensePoolId` VARCHAR(100) NOT NULL,
+				`clientId` varchar(255),
+				FOREIGN KEY( `softwareLicenseId`, `licensePoolId` ) REFERENCES SOFTWARE_LICENSE_TO_LICENSE_POOL( `softwareLicenseId`, `licensePoolId` ),
+				INDEX( `clientId` ),
+				`licenseKey` VARCHAR(100),
+				`notes` VARCHAR(1024)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+			''')
 
-		mysql.execute('''
-			insert into LICENSE_ON_CLIENT (`softwareLicenseId`, `licensePoolId`, `clientId`, `licenseKey`, `notes`)
-			select `softwareLicenseId`, `licensePoolId`, `hostId`, `licenseKey`, `notes`
-			from LICENSE_USED_BY_HOST where `softwareLicenseId` != ''
-		''')
-		mysql.execute("drop table LICENSE_USED_BY_HOST")
+		mysql.execute(
+			session,
+			'''insert into LICENSE_ON_CLIENT (`softwareLicenseId`, `licensePoolId`, `clientId`, `licenseKey`, `notes`)
+				select `softwareLicenseId`, `licensePoolId`, `hostId`, `licenseKey`, `notes`
+				from LICENSE_USED_BY_HOST where `softwareLicenseId` != ''
+			''')
+		mysql.execute(session, "drop table LICENSE_USED_BY_HOST")
 
 	if 'SOFTWARE' in tables and 'name' not in tables['SOFTWARE']:
 		logger.info("Updating database table SOFTWARE from opsi 3.4 to 4.0")
 		# SOFTWARE
 		logger.info("Updating table SOFTWARE")
-		mysql.execute("alter table SOFTWARE add `name` varchar(100) NOT NULL;")
-		mysql.execute("alter table SOFTWARE add `version` varchar(100) NOT NULL;")
-		mysql.execute("alter table SOFTWARE add `subVersion` varchar(100) NOT NULL;")
-		mysql.execute("alter table SOFTWARE add `language` varchar(10) NOT NULL;")
-		mysql.execute("alter table SOFTWARE add `architecture` varchar(3) NOT NULL;")
-		mysql.execute("alter table SOFTWARE add `windowsSoftwareId` varchar(100) NOT NULL;")
-		mysql.execute("alter table SOFTWARE add `windowsDisplayName` varchar(100) NOT NULL;")
-		mysql.execute("alter table SOFTWARE add `windowsDisplayVersion` varchar(100) NOT NULL;")
-		mysql.execute("alter table SOFTWARE add `type` varchar(30) NOT NULL;")
-		for res in mysql.getSet("SELECT * FROM `SOFTWARE`"):
+		mysql.execute(session, "alter table SOFTWARE add `name` varchar(100) NOT NULL;")
+		mysql.execute(session, "alter table SOFTWARE add `version` varchar(100) NOT NULL;")
+		mysql.execute(session, "alter table SOFTWARE add `subVersion` varchar(100) NOT NULL;")
+		mysql.execute(session, "alter table SOFTWARE add `language` varchar(10) NOT NULL;")
+		mysql.execute(session, "alter table SOFTWARE add `architecture` varchar(3) NOT NULL;")
+		mysql.execute(session, "alter table SOFTWARE add `windowsSoftwareId` varchar(100) NOT NULL;")
+		mysql.execute(session, "alter table SOFTWARE add `windowsDisplayName` varchar(100) NOT NULL;")
+		mysql.execute(session, "alter table SOFTWARE add `windowsDisplayVersion` varchar(100) NOT NULL;")
+		mysql.execute(session, "alter table SOFTWARE add `type` varchar(30) NOT NULL;")
+		for res in mysql.getSet(session, "SELECT * FROM `SOFTWARE`"):
 			name = res['displayName']
 			if not name:
 				name = res['softwareId']
@@ -395,10 +399,10 @@ def _processOpsi40migrations(mysql):  # pylint: disable=too-many-locals,too-many
 			if res['displayVersion']:
 				version = res['displayVersion'].replace("'", "\\'")
 
-			res2 = mysql.getSet("SELECT * FROM `SOFTWARE` where `name` = '%s' and version ='%s'" % (name, version))
+			res2 = mysql.getSet(session, "SELECT * FROM `SOFTWARE` where `name` = '%s' and version ='%s'" % (name, version))
 			if res2:
 				logger.warning("Skipping duplicate: %s", res2)
-				mysql.execute("DELETE FROM `SOFTWARE` where `softwareId` = '%s'" % res['softwareId'].replace("'", "\\'"))
+				mysql.execute(session, "DELETE FROM `SOFTWARE` where `softwareId` = '%s'" % res['softwareId'].replace("'", "\\'"))
 				continue
 
 			update = "update SOFTWARE set"
@@ -414,25 +418,25 @@ def _processOpsi40migrations(mysql):  # pylint: disable=too-many-locals,too-many
 			update += ", `version`='%s'" % version
 			update += ", `subVersion`=''"
 			update += " where `softwareId`='%s';" % res['softwareId'].replace("'", "\\'")
-			mysql.execute(update)
+			mysql.execute(session, update)
 
-		mysql.execute("alter table SOFTWARE drop PRIMARY KEY;")
-		mysql.execute("alter table SOFTWARE add PRIMARY KEY ( `name`, `version`, `subVersion`, `language`, `architecture` );")
-		mysql.execute("alter table SOFTWARE drop `softwareId`;")
-		mysql.execute("alter table SOFTWARE drop `displayName`;")
-		mysql.execute("alter table SOFTWARE drop `displayVersion`;")
-		mysql.execute("alter table SOFTWARE drop `uninstallString`;")
-		mysql.execute("alter table SOFTWARE drop `binaryName`;")
+		mysql.execute(session, "alter table SOFTWARE drop PRIMARY KEY;")
+		mysql.execute(session, "alter table SOFTWARE add PRIMARY KEY ( `name`, `version`, `subVersion`, `language`, `architecture` );")
+		mysql.execute(session, "alter table SOFTWARE drop `softwareId`;")
+		mysql.execute(session, "alter table SOFTWARE drop `displayName`;")
+		mysql.execute(session, "alter table SOFTWARE drop `displayVersion`;")
+		mysql.execute(session, "alter table SOFTWARE drop `uninstallString`;")
+		mysql.execute(session, "alter table SOFTWARE drop `binaryName`;")
 
-		mysql.execute("alter table SOFTWARE add INDEX( `windowsSoftwareId` );")
-		mysql.execute("alter table SOFTWARE add INDEX( `type` );")
+		mysql.execute(session, "alter table SOFTWARE add INDEX( `windowsSoftwareId` );")
+		mysql.execute(session, "alter table SOFTWARE add INDEX( `type` );")
 
 	if 'SOFTWARE_CONFIG' in tables and 'clientId' not in tables['SOFTWARE_CONFIG']:
 		logger.info("Updating database table SOFTWARE_CONFIG from opsi 3.4 to 4.0")
 		# SOFTWARE_CONFIG
 		logger.info("Updating table SOFTWARE_CONFIG")
 
-		mysql.execute("alter table SOFTWARE_CONFIG 	change `hostId` `clientId` varchar(255) NOT NULL, \
+		mysql.execute(session, "alter table SOFTWARE_CONFIG 	change `hostId` `clientId` varchar(255) NOT NULL, \
 				add `name` varchar(100) NOT NULL, \
 				add `version` varchar(100) NOT NULL, \
 				add `subVersion` varchar(100) NOT NULL, \
@@ -447,55 +451,56 @@ def _processOpsi40migrations(mysql):  # pylint: disable=too-many-locals,too-many
 				add INDEX( `clientId` ), \
 				add INDEX( `name`, `version`, `subVersion`, `language`, `architecture` );")
 
-		mysql.execute("UPDATE SOFTWARE_CONFIG as sc \
+		mysql.execute(session, "UPDATE SOFTWARE_CONFIG as sc \
 				LEFT JOIN (select windowsSoftwareId, name, version, subVersion, language, architecture from SOFTWARE group by windowsSoftwareId) \
 				as s on s.windowsSoftwareId = sc.softwareId \
 				set sc.name = s.name, sc.version = s.version, sc.subVersion = s.subVersion, sc.architecture = s.architecture \
 				where s.windowsSoftwareId is not null;")
 
-		mysql.execute("delete from SOFTWARE_CONFIG where `name` = '';")
-		mysql.execute("alter table SOFTWARE_CONFIG drop `softwareId`;")
+		mysql.execute(session, "delete from SOFTWARE_CONFIG where `name` = '';")
+		mysql.execute(session, "alter table SOFTWARE_CONFIG drop `softwareId`;")
 
 	if 'LICENSE_CONTRACT' in tables and 'type' not in tables['LICENSE_CONTRACT']:
 		logger.info("Updating database table LICENSE_CONTRACT from opsi 3.4 to 4.0")
 		# LICENSE_CONTRACT
-		mysql.execute("alter table LICENSE_CONTRACT add `type` varchar(30) NOT NULL;")
-		mysql.execute("alter table LICENSE_CONTRACT add `description` varchar(100) NOT NULL;")
-		mysql.execute("alter table LICENSE_CONTRACT modify `conclusionDate` TIMESTAMP NULL DEFAULT NULL;")
-		mysql.execute("alter table LICENSE_CONTRACT modify `notificationDate` TIMESTAMP NULL DEFAULT NULL;")
-		mysql.execute("alter table LICENSE_CONTRACT modify `expirationDate` TIMESTAMP NULL DEFAULT NULL;")
-		mysql.execute("update LICENSE_CONTRACT set `type`='LicenseContract' where 1=1")
+		mysql.execute(session, "alter table LICENSE_CONTRACT add `type` varchar(30) NOT NULL;")
+		mysql.execute(session, "alter table LICENSE_CONTRACT add `description` varchar(100) NOT NULL;")
+		mysql.execute(session, "alter table LICENSE_CONTRACT modify `conclusionDate` TIMESTAMP NULL DEFAULT NULL;")
+		mysql.execute(session, "alter table LICENSE_CONTRACT modify `notificationDate` TIMESTAMP NULL DEFAULT NULL;")
+		mysql.execute(session, "alter table LICENSE_CONTRACT modify `expirationDate` TIMESTAMP NULL DEFAULT NULL;")
+		mysql.execute(session, "update LICENSE_CONTRACT set `type`='LicenseContract' where 1=1")
 
-		mysql.execute("alter table LICENSE_CONTRACT add INDEX( `type` );")
+		mysql.execute(session, "alter table LICENSE_CONTRACT add INDEX( `type` );")
 
 	if 'SOFTWARE_LICENSE' in tables and 'type' not in tables['SOFTWARE_LICENSE']:
 		logger.info("Updating database table SOFTWARE_LICENSE from opsi 3.4 to 4.0")
 		# SOFTWARE_LICENSE
-		mysql.execute("alter table SOFTWARE_LICENSE add `type` varchar(30) NOT NULL;")
-		mysql.execute("alter table SOFTWARE_LICENSE modify `expirationDate` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01';")
-		mysql.execute("alter table SOFTWARE_LICENSE modify `boundToHost` varchar(255);")
-		mysql.execute("update SOFTWARE_LICENSE set `type`='RetailSoftwareLicense' where `licenseType`='RETAIL'")
-		mysql.execute("update SOFTWARE_LICENSE set `type`='OEMSoftwareLicense' where `licenseType`='OEM'")
-		mysql.execute("update SOFTWARE_LICENSE set `type`='VolumeSoftwareLicense' where `licenseType`='VOLUME'")
-		mysql.execute("update SOFTWARE_LICENSE set `type`='ConcurrentSoftwareLicense' where `licenseType`='CONCURRENT'")
-		mysql.execute("alter table SOFTWARE_LICENSE drop `licenseType`;")
+		mysql.execute(session, "alter table SOFTWARE_LICENSE add `type` varchar(30) NOT NULL;")
+		mysql.execute(session, "alter table SOFTWARE_LICENSE modify `expirationDate` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01';")
+		mysql.execute(session, "alter table SOFTWARE_LICENSE modify `boundToHost` varchar(255);")
+		mysql.execute(session, "update SOFTWARE_LICENSE set `type`='RetailSoftwareLicense' where `licenseType`='RETAIL'")
+		mysql.execute(session, "update SOFTWARE_LICENSE set `type`='OEMSoftwareLicense' where `licenseType`='OEM'")
+		mysql.execute(session, "update SOFTWARE_LICENSE set `type`='VolumeSoftwareLicense' where `licenseType`='VOLUME'")
+		mysql.execute(session, "update SOFTWARE_LICENSE set `type`='ConcurrentSoftwareLicense' where `licenseType`='CONCURRENT'")
+		mysql.execute(session, "alter table SOFTWARE_LICENSE drop `licenseType`;")
 
-		mysql.execute("alter table SOFTWARE_LICENSE add INDEX( `type` );")
-		mysql.execute("alter table SOFTWARE_LICENSE add INDEX( `boundToHost` );")
+		mysql.execute(session, "alter table SOFTWARE_LICENSE add INDEX( `type` );")
+		mysql.execute(session, "alter table SOFTWARE_LICENSE add INDEX( `boundToHost` );")
 
 	if 'LICENSE_POOL' in tables and 'type' not in tables['LICENSE_POOL']:
 		logger.info("Updating database table LICENSE_POOL from opsi 3.4 to 4.0")
 		# LICENSE_POOL
-		mysql.execute("alter table LICENSE_POOL add `type` varchar(30) NOT NULL;")
-		mysql.execute("update LICENSE_POOL set `type`='LicensePool' where 1=1")
+		mysql.execute(session, "alter table LICENSE_POOL add `type` varchar(30) NOT NULL;")
+		mysql.execute(session, "update LICENSE_POOL set `type`='LicensePool' where 1=1")
 
-		mysql.execute("alter table LICENSE_POOL add INDEX( `type` );")
+		mysql.execute(session, "alter table LICENSE_POOL add INDEX( `type` );")
 
 	if 'WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL' in tables:
 		# AUDIT_SOFTWARE_TO_LICENSE_POOL
 		logger.info("Updating table WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL to AUDIT_SOFTWARE_TO_LICENSE_POOL")
 
-		mysql.execute('''CREATE TABLE `AUDIT_SOFTWARE_TO_LICENSE_POOL` (
+		mysql.execute(session,
+				'''CREATE TABLE `AUDIT_SOFTWARE_TO_LICENSE_POOL` (
 					`licensePoolId` VARCHAR(100) NOT NULL,
 					FOREIGN KEY ( `licensePoolId` ) REFERENCES LICENSE_POOL( `licensePoolId` ),
 					`name` varchar(100) NOT NULL,
@@ -507,12 +512,13 @@ def _processOpsi40migrations(mysql):  # pylint: disable=too-many-locals,too-many
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 				''')
 
-		for res in mysql.getSet("SELECT * FROM `WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL`"):
-			res2 = mysql.getSet("SELECT * FROM `SOFTWARE` where `windowsSoftwareId` = '%s'" % res['windowsSoftwareId'].replace("'", "\\'"))
+		for res in mysql.getSet(session, "SELECT * FROM `WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL`"):
+			res2 = mysql.getSet(session, "SELECT * FROM `SOFTWARE` where `windowsSoftwareId` = '%s'" % res['windowsSoftwareId'].replace("'", "\\'"))
 			if not res2:
 				continue
 			res2 = res2[0]
 			mysql.execute(
+				session,
 				"""
 				insert into AUDIT_SOFTWARE_TO_LICENSE_POOL (`licensePoolId`, `name`, `version`, `subVersion`, `language`, `architecture`)
 				VALUES ('%s', '%s', '%s', '%s', '%s', '%s');
@@ -522,9 +528,9 @@ def _processOpsi40migrations(mysql):  # pylint: disable=too-many-locals,too-many
 				)
 			)
 
-		mysql.execute("drop table WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL;")
+		mysql.execute(session, "drop table WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL;")
 
-	for res in mysql.getSet("SELECT * FROM `LICENSE_CONTRACT`"):
+	for res in mysql.getSet(session, "SELECT * FROM `LICENSE_CONTRACT`"):
 		if res['licenseContractId'] != forceLicenseContractId(res['licenseContractId']):
 			deleteLicenseContractId = res['licenseContractId']
 			res['licenseContractId'] = forceLicenseContractId(res['licenseContractId'])
@@ -535,21 +541,21 @@ def _processOpsi40migrations(mysql):  # pylint: disable=too-many-locals,too-many
 				'LICENSE_ON_CLIENT': [],
 				'SOFTWARE_LICENSE_TO_LICENSE_POOL': []
 			}
-			for res2 in mysql.getSet("SELECT * FROM `SOFTWARE_LICENSE` where licenseContractId = '%s'" % deleteLicenseContractId):
+			for res2 in mysql.getSet(session, "SELECT * FROM `SOFTWARE_LICENSE` where licenseContractId = '%s'" % deleteLicenseContractId):
 				res2['licenseContractId'] = res['licenseContractId']
 				data['SOFTWARE_LICENSE'].append(res2)
 				for tab in ('LICENSE_ON_CLIENT', 'SOFTWARE_LICENSE_TO_LICENSE_POOL'):
-					for res3 in mysql.getSet("SELECT * FROM `%s` where softwareLicenseId = '%s'" % (tab, res2['softwareLicenseId'])):
+					for res3 in mysql.getSet(session, "SELECT * FROM `%s` where softwareLicenseId = '%s'" % (tab, res2['softwareLicenseId'])):
 						data[tab].append(res3)
-					mysql.delete(tab, "softwareLicenseId = '%s'" % res2['softwareLicenseId'])
-			mysql.delete('SOFTWARE_LICENSE', "licenseContractId = '%s'" % deleteLicenseContractId)
-			mysql.delete('LICENSE_CONTRACT', "licenseContractId = '%s'" % deleteLicenseContractId)
-			mysql.insert('LICENSE_CONTRACT', res)
+					mysql.delete(session, tab, "softwareLicenseId = '%s'" % res2['softwareLicenseId'])
+			mysql.delete(session, 'SOFTWARE_LICENSE', "licenseContractId = '%s'" % deleteLicenseContractId)
+			mysql.delete(session, 'LICENSE_CONTRACT', "licenseContractId = '%s'" % deleteLicenseContractId)
+			mysql.insert(session, 'LICENSE_CONTRACT', res)
 			for tab in ('SOFTWARE_LICENSE', 'SOFTWARE_LICENSE_TO_LICENSE_POOL', 'LICENSE_ON_CLIENT'):
 				for i in data[tab]:
-					mysql.insert(tab, i)
+					mysql.insert(session, tab, i)
 
-	for res in mysql.getSet("SELECT * FROM `LICENSE_POOL`"):
+	for res in mysql.getSet(session, "SELECT * FROM `LICENSE_POOL`"):
 		if (res['licensePoolId'] != res['licensePoolId'].strip()) or (res['licensePoolId'] != forceLicensePoolId(res['licensePoolId'])):
 			deleteLicensePoolId = res['licensePoolId']
 			res['licensePoolId'] = forceLicensePoolId(res['licensePoolId'].strip())
@@ -558,18 +564,18 @@ def _processOpsi40migrations(mysql):  # pylint: disable=too-many-locals,too-many
 			data = {}
 			for tab in ('AUDIT_SOFTWARE_TO_LICENSE_POOL', 'PRODUCT_ID_TO_LICENSE_POOL', 'LICENSE_ON_CLIENT', 'SOFTWARE_LICENSE_TO_LICENSE_POOL'):
 				data[tab] = []
-				for res2 in mysql.getSet("SELECT * FROM `%s` where licensePoolId = '%s'" % (tab, deleteLicensePoolId)):
+				for res2 in mysql.getSet(session, "SELECT * FROM `%s` where licensePoolId = '%s'" % (tab, deleteLicensePoolId)):
 					res2['licensePoolId'] = res['licensePoolId']
 					data[tab].append(res2)
-				mysql.delete(tab, "licensePoolId = '%s'" % deleteLicensePoolId)
+				mysql.delete(session, tab, "licensePoolId = '%s'" % deleteLicensePoolId)
 
-			mysql.delete('LICENSE_POOL', "licensePoolId = '%s'" % deleteLicensePoolId)
-			mysql.insert('LICENSE_POOL', res)
+			mysql.delete(session, 'LICENSE_POOL', "licensePoolId = '%s'" % deleteLicensePoolId)
+			mysql.insert(session, 'LICENSE_POOL', res)
 			for tab in ('AUDIT_SOFTWARE_TO_LICENSE_POOL', 'PRODUCT_ID_TO_LICENSE_POOL', 'SOFTWARE_LICENSE_TO_LICENSE_POOL', 'LICENSE_ON_CLIENT'):
 				for i in data[tab]:
-					mysql.insert(tab, i)
+					mysql.insert(session, tab, i)
 
-	for res in mysql.getSet("SELECT * FROM `SOFTWARE_LICENSE`"):
+	for res in mysql.getSet(session, "SELECT * FROM `SOFTWARE_LICENSE`"):
 		if (
 			res['softwareLicenseId'] != res['softwareLicenseId'].strip() or
 			res['softwareLicenseId'] != forceSoftwareLicenseId(res['softwareLicenseId'])
@@ -581,35 +587,36 @@ def _processOpsi40migrations(mysql):  # pylint: disable=too-many-locals,too-many
 			data = {}
 			for tab in ('LICENSE_ON_CLIENT', 'SOFTWARE_LICENSE_TO_LICENSE_POOL'):
 				data[tab] = []
-				for res2 in mysql.getSet("SELECT * FROM `%s` where softwareLicenseId = '%s'" % (tab, deleteSoftwareLicenseId)):
+				for res2 in mysql.getSet(session, "SELECT * FROM `%s` where softwareLicenseId = '%s'" % (tab, deleteSoftwareLicenseId)):
 					res2['softwareLicenseId'] = res['softwareLicenseId']
 					data[tab].append(res2)
-				mysql.delete(tab, "softwareLicenseId = '%s'" % deleteSoftwareLicenseId)
+				mysql.delete(session, tab, "softwareLicenseId = '%s'" % deleteSoftwareLicenseId)
 
-			mysql.delete('SOFTWARE_LICENSE', "softwareLicenseId = '%s'" % deleteSoftwareLicenseId)
-			mysql.insert('SOFTWARE_LICENSE', res)
+			mysql.delete(session, 'SOFTWARE_LICENSE', "softwareLicenseId = '%s'" % deleteSoftwareLicenseId)
+			mysql.insert(session, 'SOFTWARE_LICENSE', res)
 			for tab in ('SOFTWARE_LICENSE_TO_LICENSE_POOL', 'LICENSE_ON_CLIENT'):
 				for i in data[tab]:
-					mysql.insert(tab, i)
+					mysql.insert(session, tab, i)
 
 	# Increase productId Fields on existing database:
-	with disableForeignKeyChecks(mysql):
+	with disableForeignKeyChecks(mysql, session):
 		logger.info("Updating productId Columns")
-		for line in mysql.getSet("SHOW TABLES;"):
+		for line in mysql.getSet(session, "SHOW TABLES;"):
 			for tableName in line.values():
 				logger.debug(" [ %s ]", tableName)
-				for column in mysql.getSet('SHOW COLUMNS FROM `%s`;' % tableName):
+				for column in mysql.getSet(session, 'SHOW COLUMNS FROM `%s`;' % tableName):
 					fieldName = column['Field']
 					fieldType = column['Type']
 					if "productid" in fieldName.lower() and fieldType != "varchar(255)":
 						logger.debug("ALTER TABLE for Table: '%s' and Column: '%s'", tableName, fieldName)
-						mysql.execute("alter table %s MODIFY COLUMN `%s` VARCHAR(255);" % (tableName, fieldName))
+						mysql.execute(session, "alter table %s MODIFY COLUMN `%s` VARCHAR(255);" % (tableName, fieldName))
 
 	# Changing description fields to type TEXT
 	for tableName in ("PRODUCT_PROPERTY", ):
 		logger.info("Updating field 'description' on table %s", tableName)
 		fieldName = "description"
 		mysql.execute(
+			session,
 			"alter table {name} MODIFY COLUMN `{column}` TEXT;".format(
 				name=tableName,
 				column=fieldName
@@ -619,11 +626,11 @@ def _processOpsi40migrations(mysql):  # pylint: disable=too-many-locals,too-many
 	# Fixing unwanted MySQL defaults:
 	if 'HOST' in tables:
 		logger.info("Fixing DEFAULT for colum 'created' on table HOST")
-		mysql.execute("alter table HOST modify `created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;")
+		mysql.execute(session, "alter table HOST modify `created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;")
 
 	# Changing the length of too small hostId / depotId column
 	def tableNeedsHostIDLengthFix(table, columnName="hostId"):
-		for column in mysql.getSet('SHOW COLUMNS FROM `{0}`;'.format(table)):
+		for column in mysql.getSet(session, 'SHOW COLUMNS FROM `{0}`;'.format(table)):
 			if column['Field'] != columnName:
 				continue
 
@@ -632,20 +639,20 @@ def _processOpsi40migrations(mysql):  # pylint: disable=too-many-locals,too-many
 
 		return False
 
-	with disableForeignKeyChecks(mysql):
+	with disableForeignKeyChecks(mysql, session):
 		for tablename in tables:
 			if tablename == 'PRODUCT_ON_DEPOT' and tableNeedsHostIDLengthFix(tablename, columnName="depotId"):
 				logger.info("Fixing length of 'depotId' column on %s", tablename)
-				mysql.execute("ALTER TABLE `PRODUCT_ON_DEPOT` MODIFY COLUMN `depotId` VARCHAR(255) NOT NULL;")
+				mysql.execute(session, "ALTER TABLE `PRODUCT_ON_DEPOT` MODIFY COLUMN `depotId` VARCHAR(255) NOT NULL;")
 			elif tablename.startswith('HARDWARE_CONFIG') and tableNeedsHostIDLengthFix(tablename):
 				logger.info("Fixing length of 'hostId' column on %s", tablename)
-				mysql.execute("ALTER TABLE `{table}` MODIFY COLUMN `hostId` VARCHAR(255) NOT NULL;".format(table=tablename))
+				mysql.execute(session, "ALTER TABLE `{table}` MODIFY COLUMN `hostId` VARCHAR(255) NOT NULL;".format(table=tablename))
 
-	_fixLengthOfLicenseKeys(mysql)
+	_fixLengthOfLicenseKeys(mysql, session)
 
 
 @contextmanager
-def disableForeignKeyChecks(database):
+def disableForeignKeyChecks(database, session):
 	"""
 	Disable checks for foreign keys in context and enable afterwards.
 
@@ -653,16 +660,16 @@ def disableForeignKeyChecks(database):
 	them afterwards.
 	It will set this per session, not global.
 	"""
-	database.execute('SET FOREIGN_KEY_CHECKS=0;')
+	database.execute(session, 'SET FOREIGN_KEY_CHECKS=0;')
 	logger.debug("Disabled FOREIGN_KEY_CHECKS for session.")
 	try:
 		yield
 	finally:
-		database.execute('SET FOREIGN_KEY_CHECKS=1;')
+		database.execute(session, 'SET FOREIGN_KEY_CHECKS=1;')
 		logger.debug("Enabled FOREIGN_KEY_CHECKS for session.")
 
 
-def _fixLengthOfLicenseKeys(database):
+def _fixLengthOfLicenseKeys(database, session):
 	"Correct the length of license key columns to be consistent."
 
 	relevantTables = (
@@ -671,7 +678,7 @@ def _fixLengthOfLicenseKeys(database):
 	)
 
 	for table in relevantTables:
-		for column in getTableColumns(database, table):
+		for column in getTableColumns(database, session, table):
 			if column.name == 'licenseKey':
 				assert column.type.lower().startswith('varchar(')
 
@@ -680,57 +687,59 @@ def _fixLengthOfLicenseKeys(database):
 
 				if length != 1024:
 					logger.info("Fixing length of 'licenseKey' column on table '%s'", table)
-					database.execute("ALTER TABLE `{0}` MODIFY COLUMN `licenseKey` VARCHAR(1024);".format(table))
+					database.execute(session, "ALTER TABLE `{0}` MODIFY COLUMN `licenseKey` VARCHAR(1024);".format(table))
 
 
-def getTableColumns(database, tableName):
+def getTableColumns(database, session, tableName):
 	TableColumn = namedtuple("TableColumn", ["name", "type"])
 	return [TableColumn(column['Field'], column['Type']) for column
-			in database.getSet('SHOW COLUMNS FROM `{0}`;'.format(tableName))]
+			in database.getSet(session, 'SHOW COLUMNS FROM `{0}`;'.format(tableName))]
 
 
-def _dropTableBootconfiguration(database):
+def _dropTableBootconfiguration(database, session):
 	logger.info("Dropping table BOOT_CONFIGURATION.")
-	database.execute("drop table BOOT_CONFIGURATION;")
+	database.execute(session, "drop table BOOT_CONFIGURATION;")
 
 
-def _addIndexOnProductPropertyValues(database):
+def _addIndexOnProductPropertyValues(database, session):
 	logger.info("Adding index on table PRODUCT_PROPERTY_VALUE.")
-	database.execute('''
+	database.execute(session, '''
 		CREATE INDEX `index_product_property_value` on
 		`PRODUCT_PROPERTY_VALUE`
 		(`productId`, `propertyId`, `productVersion`, `packageVersion`);''')
 
 
-def _addWorkbenchAttributesToHosts(database):
+def _addWorkbenchAttributesToHosts(database, session):
 	logger.info("Adding column 'workbenchLocalUrl' on table HOST.")
-	database.execute('ALTER TABLE `HOST` add `workbenchLocalUrl` varchar(128);')
+	database.execute(session, 'ALTER TABLE `HOST` add `workbenchLocalUrl` varchar(128);')
 
 	logger.info("Adding column 'workbenchRemoteUrl' on table HOST.")
-	database.execute('ALTER TABLE `HOST` add `workbenchRemoteUrl` varchar(255);')
+	database.execute(session, 'ALTER TABLE `HOST` add `workbenchRemoteUrl` varchar(255);')
 
 
-def _adjustLengthOfGroupId(database):
+def _adjustLengthOfGroupId(database, session):
 	logger.info("Correcting length of column 'groupId' on table OBJECT_TO_GROUP")
 	database.execute(
+		session,
 		'ALTER TABLE `OBJECT_TO_GROUP` '
 		'MODIFY COLUMN `groupId` varchar(255) NOT NULL;'
 	)
 
 
-def _increaseInventoryNumberLength(database):
+def _increaseInventoryNumberLength(database, session):
 	logger.info("Correcting length of column 'groupId' on table OBJECT_TO_GROUP")
 	database.execute(
+		session,
 		'ALTER TABLE `HOST` '
 		'MODIFY COLUMN `inventoryNumber` varchar(64) NOT NULL;'
 	)
 
 
-def _changeSoftwareConfigConfigIdToBigInt(database):
+def _changeSoftwareConfigConfigIdToBigInt(database, session):
 	logger.info("Changing the type of SOFTWARE_CONFIG.config_id to bigint")
-	database.execute("ALTER TABLE `SOFTWARE_CONFIG` MODIFY COLUMN `config_id` bigint auto_increment;")
+	database.execute(session, "ALTER TABLE `SOFTWARE_CONFIG` MODIFY COLUMN `config_id` bigint auto_increment;")
 
-def _addIndexProductIdOnProductAndWindowsSoftwareIDToProduct(database):
+def _addIndexProductIdOnProductAndWindowsSoftwareIDToProduct(database, session):
 	logger.info("Adding productId index on PRODUCT and WINDOWS_SOFTWARE_ID_TO_PRODUCT")
-	database.execute('CREATE INDEX `index_productId` on `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (`productId`);')
-	database.execute('CREATE INDEX `index_productId` on `PRODUCT` (`productId`);')
+	database.execute(session, 'CREATE INDEX `index_productId` on `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (`productId`);')
+	database.execute(session, 'CREATE INDEX `index_productId` on `PRODUCT` (`productId`);')

@@ -1607,11 +1607,11 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 				productProperty['defaultValues'] = []
 				if readValues:
 					valueQuery = (
-						"select value, isDefault"
-						f"from PRODUCT_PROPERTY_VALUE"
-						f"where `propertyId` = '{productProperty['propertyId']}'"
-						f"AND `productId` = '{productProperty['productId']}'"
-						f"AND `productVersion` = '{productProperty['productVersion']}'"
+						"select value, isDefault "
+						f"from PRODUCT_PROPERTY_VALUE "
+						f"where `propertyId` = '{productProperty['propertyId']}' "
+						f"AND `productId` = '{productProperty['productId']}' "
+						f"AND `productVersion` = '{productProperty['productVersion']}' "
 						f"AND `packageVersion` = '{productProperty['packageVersion']}'"
 					)
 					for propertyValues in self._sql.getSet(session, valueQuery):
