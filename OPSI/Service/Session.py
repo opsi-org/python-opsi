@@ -21,8 +21,8 @@ from OPSI.Util import randomString
 logger = Logger()
 
 
-class Session(object):
-	def __init__(self, sessionHandler, name=u'OPSISID', sessionMaxInactiveInterval=120):
+class Session:  # pylint: disable=too-many-instance-attributes
+	def __init__(self, sessionHandler, name='OPSISID', sessionMaxInactiveInterval=120):
 		self.sessionHandler = sessionHandler
 		self.name = forceUnicode(name)
 		self.sessionMaxInactiveInterval = forceInt(sessionMaxInactiveInterval)
@@ -30,11 +30,11 @@ class Session(object):
 		self.lastModified = time.time()
 		self.sessionTimer = None
 		self.uid = randomString(32)
-		self.ip = u''
-		self.userAgent = u''
-		self.hostname = u''
-		self.user = u''
-		self.password = u''
+		self.ip = ''  # pylint: disable=invalid-name
+		self.userAgent = ''
+		self.hostname = ''
+		self.user = ''
+		self.password = ''
 		self.authenticated = False
 		self.postpath = []
 		self.usageCount = 0
@@ -44,7 +44,7 @@ class Session(object):
 		self.touch()
 
 	def __repr__(self):
-		return u"<{0}({1!r}, name={2!r}, sessionMaxInactiveInterval={3!r}>".format(
+		return "<{0}({1!r}, name={2!r}, sessionMaxInactiveInterval={3!r}>".format(
 			self.__class__.__name__,
 			self.sessionHandler,
 			self.name,
@@ -98,22 +98,22 @@ class Session(object):
 
 		self.deleted = True
 		if self.usageCount > 0:
-			logger.warning(u"Deleting session in use: %s" % self)
+			logger.debug("Deleting session in use: %s", self)
 
 		if self.sessionTimer:
 			try:
 				self.sessionTimer.cancel()
 				try:
 					self.sessionTimer.join(1)
-				except Exception:
+				except Exception:  # pylint: disable=broad-except
 					pass
-				logger.info(u"Session timer %s canceled", self.sessionTimer)
-			except Exception as err:
-				logger.error(u"Failed to cancel session timer: %s", err)
+				logger.info("Session timer %s canceled", self.sessionTimer)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error("Failed to cancel session timer: %s", err)
 
 
-class SessionHandler(object):
-	def __init__(self, sessionName=u'OPSISID', sessionMaxInactiveInterval=120, maxSessionsPerIp=0, sessionDeletionTimeout=60):
+class SessionHandler:
+	def __init__(self, sessionName='OPSISID', sessionMaxInactiveInterval=120, maxSessionsPerIp=0, sessionDeletionTimeout=60):
 		self.sessionName = forceUnicode(sessionName)
 		self.sessionMaxInactiveInterval = forceInt(sessionMaxInactiveInterval)
 		self.maxSessionsPerIp = forceInt(maxSessionsPerIp)
@@ -123,7 +123,7 @@ class SessionHandler(object):
 	def cleanup(self):
 		self.deleteAllSessions()
 
-	def getSessions(self, ip=None):
+	def getSessions(self, ip=None):  # pylint: disable=invalid-name
 		"""
 		Get the sessions handled by this handler.
 
@@ -138,32 +138,32 @@ the value holds the sesion.
 
 		return {uid: session for uid, session in self.sessions.items() if session.ip == ip}
 
-	def getSession(self, uid=None, ip=None):
+	def getSession(self, uid=None, ip=None):  # pylint: disable=invalid-name
 		if uid:
 			session = self.sessions.get(uid)
 			if session:
 				if session.getMarkedForDeletion():
-					logger.info(u'Session found but marked for deletion')
+					logger.info('Session found but marked for deletion')
 				else:
 					# Set last modified to current time
 					session.increaseUsageCount()
-					logger.confidential(u"Returning session: %s (count: %d)" % (session.uid, session.usageCount))
+					logger.confidential("Returning session: %s (count: %d)", session.uid, session.usageCount)
 					return session
 			else:
-				logger.info(u'Failed to get session: session id %s not found' % uid)
+				logger.info('Failed to get session: session id %s not found', uid)
 
 		if ip and self.maxSessionsPerIp > 0:
 			sessions = self.getSessions(ip)
 			if len(sessions) >= self.maxSessionsPerIp:
-				logger.warning(u"Session limit for ip '%s' reached" % ip)
+				logger.warning("Session limit for ip '%s' reached", ip)
 				for sessionUid, session in sessions.items():
 					if session.usageCount > 0:
 						continue
-					logger.info(u"Deleting unused session")
+					logger.info("Deleting unused session")
 					self.deleteSession(sessionUid)
 
 				if len(self.getSessions(ip)) >= self.maxSessionsPerIp:
-					raise OpsiAuthenticationError(u"Session limit for ip '%s' reached" % ip)
+					raise OpsiAuthenticationError(f"Session limit for ip '{ip}' reached")
 
 		session = self.createSession()
 		session.increaseUsageCount()
@@ -172,17 +172,17 @@ the value holds the sesion.
 	def createSession(self):
 		session = Session(self, self.sessionName, self.sessionMaxInactiveInterval)
 		self.sessions[session.uid] = session
-		logger.notice(u"New session created")
+		logger.notice("New session created")
 		return session
 
 	def sessionExpired(self, session):
 		logger.notice(
-			u"Session '%s' from ip '%s', application '%s' expired after %d seconds" %
+			"Session '%s' from ip '%s', application '%s' expired after %d seconds" %
 			(session.uid, session.ip, session.userAgent, (time.time() - session.lastModified))
 		)
 
 		if session.usageCount > 0:
-			logger.notice(u"Session %s currently in use, waiting before deletion", session.uid)
+			logger.notice("Session %s currently in use, waiting before deletion", session.uid)
 
 		session.setMarkedForDeletion()
 		timeout = self.sessionDeletionTimeout
@@ -195,7 +195,10 @@ the value holds the sesion.
 			timeout -= sleepInSeconds
 
 		if timeout == 0:
-			logger.warning(u"Session '%s': timeout occurred while waiting for session to get free for deletion" % session.uid)
+			logger.warning(
+				"Session '%s': timeout occurred while waiting for session to get free for deletion",
+				session.uid
+			)
 
 		self.deleteSession(session.uid)
 		return True
@@ -203,23 +206,23 @@ the value holds the sesion.
 	def deleteSession(self, uid):
 		session = self.sessions.get(uid)
 		if not session:
-			logger.warning(u'No such session id: %s' % uid)
+			logger.warning('No such session id: %s', uid)
 			return
 
 		try:
 			session.delete()
-		except Exception:
+		except Exception:  # pylint: disable=broad-except
 			pass
 
 		try:
 			del self.sessions[uid]
-			logger.notice(u"Session '%s' from ip '%s', application '%s' deleted" % (session.uid, session.ip, session.userAgent))
+			logger.notice("Session '%s' from ip '%s', application '%s' deleted" % (session.uid, session.ip, session.userAgent))
 			del session
 		except KeyError:
 			pass
 
 	def deleteAllSessions(self):
-		logger.notice(u"Deleting all sessions")
+		logger.notice("Deleting all sessions")
 
 		class SessionDeletionThread(threading.Thread):
 			def __init__(self, sessionHandler, uid):
@@ -232,7 +235,7 @@ the value holds the sesion.
 
 		deletionThreads = []
 		for uid in self.sessions:
-			logger.debug(u"Deleting session %s", uid)
+			logger.debug("Deleting session %s", uid)
 			thread = SessionDeletionThread(self, uid)
 			deletionThreads.append(thread)
 
