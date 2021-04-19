@@ -83,7 +83,7 @@ class SQLite(SQL):
 
 		# Test connection
 		with self.session() as session:
-			self.getSet(session, "SELECT 1")
+			self.getTables(session)
 		logger.debug('SQLite connected: %s', self)
 
 	def __repr__(self):
