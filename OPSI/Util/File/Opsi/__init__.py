@@ -246,7 +246,9 @@ class BackendDispatchConfigFile(ConfigFile):
 			self.readlines()
 
 		self._parsed = False
+
 		dispatch = []
+		used_backends = set()
 		for line in ConfigFile.parse(self, lines):
 			match = self.DISPATCH_ENTRY_REGEX.search(line)
 			if not match:
@@ -256,10 +258,19 @@ class BackendDispatchConfigFile(ConfigFile):
 			method = match.group(1).strip()
 			backends = (entry.strip() for entry in match.group(2).strip(',').split(','))
 			backends = tuple(backend for backend in backends if backend)
-
+			used_backends.update(backends)
 			dispatch.append((method, backends))
-		self._parsed = True
 
+		for num, entry in enumerate(dispatch):
+			if entry[0].startswith("backend_"):
+				new_backends = list(entry[1])
+				for used_backend in used_backends:
+					if used_backend not in entry[1]:
+						logger.warning("Adding missing backend '%s' in dispatch entry '%s'", used_backend, entry[0])
+						new_backends.insert(0, used_backend)
+				dispatch[num] = (entry[0], tuple(new_backends))
+
+		self._parsed = True
 		return dispatch
 
 	def getUsedBackends(self, lines=None):
