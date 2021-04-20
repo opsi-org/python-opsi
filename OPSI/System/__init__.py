@@ -15,10 +15,9 @@ should end up with runnable commands.
 from __future__ import absolute_import
 
 import os
-import sys
+import platform
 import shutil
 import psutil
-import platform
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceFilename
@@ -35,52 +34,52 @@ else:
 	logger.error("Unable to import System library for system %s", platform.system().lower())
 
 class SystemHook(SystemSpecificHook):
-	def __init__(self):
+	def __init__(self):  # pylint: disable=super-init-not-called
 		pass
 
-	def pre_getDirectorySize(self, path):
+	def pre_getDirectorySize(self, path):  # pylint: disable=no-self-use
 		return path
 
-	def post_getDirectorySize(self, path, result):
+	def post_getDirectorySize(self, path, result):  # pylint: disable=no-self-use,unused-argument
 		return result
 
-	def error_getDirectorySize(self, path, result, exception):
+	def error_getDirectorySize(self, path, result, exception):  # pylint: disable=no-self-use
 		pass
 
-	def pre_getSize(self, path):
+	def pre_getSize(self, path):  # pylint: disable=no-self-use
 		return path
 
-	def post_getSize(self, path, result):
+	def post_getSize(self, path, result):  # pylint: disable=no-self-use,unused-argument
 		return result
 
-	def error_getSize(self, path, result, exception):
+	def error_getSize(self, path, result, exception):  # pylint: disable=no-self-use
 		pass
 
-	def pre_countFiles(self, path):
+	def pre_countFiles(self, path):  # pylint: disable=no-self-use
 		return path
 
-	def post_countFiles(self, path, result):
+	def post_countFiles(self, path, result):  # pylint: disable=no-self-use,unused-argument
 		return result
 
-	def error_countFiles(self, path, result, exception):
+	def error_countFiles(self, path, result, exception):  # pylint: disable=no-self-use
 		pass
 
-	def pre_getCountAndSize(self, path):
+	def pre_getCountAndSize(self, path):  # pylint: disable=no-self-use
 		return path
 
-	def post_getCountAndSize(self, path, result):
+	def post_getCountAndSize(self, path, result):  # pylint: disable=no-self-use,unused-argument
 		return result
 
-	def error_getCountAndSize(self, path, result, exception):
+	def error_getCountAndSize(self, path, result, exception):  # pylint: disable=no-self-use
 		pass
 
-	def pre_copy(self, src, dst, progressSubject):
+	def pre_copy(self, src, dst, progressSubject):  # pylint: disable=no-self-use
 		return (src, dst, progressSubject)
 
-	def post_copy(self, src, dst, progressSubject):
+	def post_copy(self, src, dst, progressSubject):  # pylint: disable=no-self-use,unused-argument
 		return None
 
-	def error_copy(self, src, dst, progressSubject, exception):
+	def error_copy(self, src, dst, progressSubject, exception):  # pylint: disable=no-self-use,unused-argument
 		pass
 
 
@@ -95,7 +94,7 @@ def getDirectorySize(path):
 			absolutePath = os.path.join(path, element)
 			if os.path.islink(absolutePath):
 				continue
-			elif os.path.isfile(absolutePath):
+			if os.path.isfile(absolutePath):
 				size += os.path.getsize(absolutePath)
 			elif os.path.isdir(absolutePath):
 				size += getDirectorySize(absolutePath)
@@ -260,16 +259,16 @@ def copy(src, dst, progressSubject=None):
 		logger.info(u'Copy done')
 		if progressSubject:
 			progressSubject.setState(size)
-	except Exception as e:
+	except Exception as err:
 		for hook in hooks:
-			hook.error_copy(src, dst, progressSubject, e)
+			hook.error_copy(src, dst, progressSubject, err)
 		raise
 
 	for hook in hooks:
 		hook.post_copy(src, dst, progressSubject)
 
 
-def _copy(src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0, progressSubject=None):
+def _copy(src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0, progressSubject=None):  # pylint: disable=too-many-arguments,too-many-branches
 	src = forceFilename(src)
 	dst = forceFilename(dst)
 
@@ -329,26 +328,3 @@ def _copy(src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0
 			)
 
 	return fileCount
-
-# From opsi-common
-def ensure_not_already_running(process_name: str = None):
-	our_pid = os.getpid()
-	other_pid = None
-	try:
-		our_proc = psutil.Process(our_pid)
-		if not process_name:
-			process_name = our_proc.name()
-		ignore_pids = [p.pid for p in our_proc.children(recursive=True)]
-		ignore_pids += [p.pid for p in our_proc.parents()]
-		for proc in psutil.process_iter():
-			#logger.debug("Found running process: %s", proc)
-			if proc.name() == process_name or proc.name() == f"{process_name}.exe":
-				logger.debug("Found running '%s' process: %s", process_name, proc)
-				if proc.pid != our_pid and proc.pid not in ignore_pids:
-					other_pid = proc.pid
-					break
-	except Exception as error:
-		logger.debug("Check for running processes failed: %s", error)
-	
-	if other_pid:
-		raise RuntimeError(f"Another '{process_name}' process is running (pids: {other_pid} / {our_pid}).")
