@@ -16,11 +16,10 @@ from functools import lru_cache
 from OPSI.Backend.Base import (
 	Backend, ConfigDataBackend, getArgAndCallString
 )
-from OPSI.Exceptions import BackendConfigurationError, BackendMissingDataError
+from OPSI.Exceptions import BackendConfigurationError
 from OPSI.Logger import Logger
-from OPSI.Types import forceList, forceHostId
+from OPSI.Types import forceList
 from OPSI.Util.File.Opsi import BackendDispatchConfigFile
-from OPSI.Util import getfqdn
 
 from .Config import loadBackendConfig
 

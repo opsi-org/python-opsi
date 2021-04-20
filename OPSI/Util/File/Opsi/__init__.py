@@ -1047,40 +1047,43 @@ class PackageControlFile(TextFile):
 	def generate_yaml(self):
 		# TODO: set meaningful data types: list, int, etc... instead of string
 		data_dict = {}
-		data_dict['Package'] = {	"version" : self._product.getPackageVersion(),
-									"depends" : self.getPackageDependencies()
+		data_dict['Package'] = {
+			"version" : self._product.getPackageVersion(),
+			"depends" : self.getPackageDependencies()
 		}
 		prod = self._product
-		data_dict['Product'] = {	"type" : prod.getType(),
-									"id" : prod.getId(),
-									"name" : prod.getName(),
-									"description" : prod.getDescription() if prod.getDescription() else None,
-									"advice" : prod.getAdvice() if prod.getAdvice() else None,
-									"version" : prod.getProductVersion(),
-									"priority" : prod.getPriority(),
-									"licenseRequired" : prod.getLicenseRequired(),
-									"productClasses" : prod.getProductClassIds(),
-									"setupScript" : prod.getSetupScript() if prod.getSetupScript() else None,
-									"uninstallScript" : prod.getUninstallScript() if prod.getUninstallScript() else None,
-									"updateScript" : prod.getUpdateScript() if prod.getUpdateScript() else None,
-									"alwaysScript" : prod.getAlwaysScript() if prod.getAlwaysScript() else None,
-									"onceScript" : prod.getOnceScript() if prod.getOnceScript() else None,
-									"customScript" : prod.getCustomScript() if prod.getCustomScript() else None,
-									"userLoginScript" : prod.getUserLoginScript() if prod.getUserLoginScript() else None,
-									"windowsSoftwareIds" : prod.getWindowsSoftwareIds()
+		data_dict['Product'] = {
+			"type" : prod.getType(),
+			"id" : prod.getId(),
+			"name" : prod.getName(),
+			"description" : prod.getDescription() if prod.getDescription() else None,
+			"advice" : prod.getAdvice() if prod.getAdvice() else None,
+			"version" : prod.getProductVersion(),
+			"priority" : prod.getPriority(),
+			"licenseRequired" : prod.getLicenseRequired(),
+			"productClasses" : prod.getProductClassIds(),
+			"setupScript" : prod.getSetupScript() if prod.getSetupScript() else None,
+			"uninstallScript" : prod.getUninstallScript() if prod.getUninstallScript() else None,
+			"updateScript" : prod.getUpdateScript() if prod.getUpdateScript() else None,
+			"alwaysScript" : prod.getAlwaysScript() if prod.getAlwaysScript() else None,
+			"onceScript" : prod.getOnceScript() if prod.getOnceScript() else None,
+			"customScript" : prod.getCustomScript() if prod.getCustomScript() else None,
+			"userLoginScript" : prod.getUserLoginScript() if prod.getUserLoginScript() else None,
+			"windowsSoftwareIds" : prod.getWindowsSoftwareIds()
 		}
 		if data_dict['Product']['type'] == "netboot":
 			data_dict['Product']['pxeConfigTemplate'] = self._product.getPxeConfigTemplate()
 
 		prop_list = []
 		for prop in self.getProductProperties():
-			prop_dict = {	"type" : prop.getType(),
-							"name" : prop.getPropertyId(),
-							"multivalue" : prop.getMultiValue(),
-							"editable" : prop.getEditable(),
-							"description" : prop.getDescription(),
-							"values" :prop.getPossibleValues(),
-							"default" : prop.getDefaultValues()
+			prop_dict = {
+				"type" : prop.getType(),
+				"name" : prop.getPropertyId(),
+				"multivalue" : prop.getMultiValue(),
+				"editable" : prop.getEditable(),
+				"description" : prop.getDescription(),
+				"values" :prop.getPossibleValues(),
+				"default" : prop.getDefaultValues()
 			}
 
 			prop_list.append(prop_dict)
@@ -1088,13 +1091,14 @@ class PackageControlFile(TextFile):
 
 		dep_list = []
 		for dep in self.getProductDependencies():
-			dep_dict = {	"required_product_id" : dep.getRequiredProductId(),
-							"required_product_version" : dep.getRequiredProductVersion(),
-							"required_package_version" : dep.getRequiredPackageVersion(),
-							"action" : dep.getProductAction(),
-							"requirement_type" : dep.getRequirementType(),
-							"required_action" : dep.getRequiredAction(),
-							"required_status" : dep.getRequiredInstallationStatus()
+			dep_dict = {
+				"required_product_id" : dep.getRequiredProductId(),
+				"required_product_version" : dep.getRequiredProductVersion(),
+				"required_package_version" : dep.getRequiredPackageVersion(),
+				"action" : dep.getProductAction(),
+				"requirement_type" : dep.getRequirementType(),
+				"required_action" : dep.getRequiredAction(),
+				"required_status" : dep.getRequiredInstallationStatus()
 			}
 			dep_list.append(dep_dict)
 		data_dict['ProductDependencies'] = dep_list
