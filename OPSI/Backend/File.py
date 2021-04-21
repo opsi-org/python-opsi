@@ -441,6 +441,9 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 			else:
 				idFilter = {}
 
+			if not os.path.isdir(self.__depotConfigDir):
+				raise BackendMissingDataError(f"Directory {self.__depotConfigDir} does not exist")
+
 			for entry in os.listdir(self.__depotConfigDir):
 				if not entry.lower().endswith('.ini'):
 					logger.trace("Ignoring invalid depot file '%s'", entry)
