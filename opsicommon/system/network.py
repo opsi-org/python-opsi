@@ -28,6 +28,7 @@ def get_ip_addresses():
 				ip_address = ipaddress.ip_address(snic.address.split('%')[0])
 			except ValueError:
 				logger.warning("Unrecognised ip address: %r", snic.address)
+				continue
 
 			yield {
 				"family": family,
