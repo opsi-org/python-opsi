@@ -3910,8 +3910,10 @@ until the execution of the process is terminated.
 				"Failed to grant access to session %s to user %s: %s",
 				sessionId, getpass.getuser(), err, exc_info=True
 			)
-
+	if not "opsiclientd" in command:
+		sp_env.pop("LD_LIBRARY_PATH", None)
 	logger.info("Running command %s", command)
+	logger.devel("Using process env: %s", sp_env)
 	process = subprocess.Popen(
 		args=command,
 		shell=True,

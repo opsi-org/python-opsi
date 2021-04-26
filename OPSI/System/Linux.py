@@ -114,15 +114,15 @@ def grant_session_access(username: str, session_id: str):
 	for proc in psutil.process_iter():
 		env = proc.environ()
 		if env.get("DISPLAY") == session_id:
-			if session_env is None or env.get("XAUTHORITY"):
+			if env.get("XAUTHORITY"):
 				session_username = proc.username()
 				session_env = env
-			if session_env.get("XAUTHORITY"):
 				break
+			if env.get("USER") != "root":
+				session_username = proc.username()
+				session_env = env
 	if not session_env:
 		raise ValueError(f"Session {session_id} not found")
-	if not session_env.get("XAUTHORITY"):
-		session_env["XAUTHORITY"] = os.path.join(session_env.get("HOME"), ".Xauthority")
 
 	if "LD_PRELOAD" in session_env:
 		del session_env["LD_PRELOAD"]
