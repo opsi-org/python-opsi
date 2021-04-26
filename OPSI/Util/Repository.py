@@ -1103,7 +1103,7 @@ class WebDAVRepository(HTTPRepository):
 		for entry in getFileInfosFromDavXML(davxmldata=davxmldata, encoding=encoding):
 			if entry["path"].startswith("/"):
 				# Absolut path to realtive path
-				entry["path"] = os.path.relpath(entry["path"], start=source)
+				entry["path"] = os.path.relpath(entry["path"], start=self._path + source)
 			content.append(entry)
 		logger.debug("fileinfo: %s", content)
 
