@@ -44,7 +44,10 @@ except ImportError:
 	from Crypto.Util.number import bytes_to_long
 
 from OPSI.Logger import Logger, LOG_DEBUG
-from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceUnicode)
+from OPSI.Types import (
+	forceBool, forceFilename, forceFqdn, forceUnicode,
+	_PRODUCT_VERSION_REGEX, _PACKAGE_VERSION_REGEX
+)
 
 OPSIObject = None  # pylint: disable=invalid-name
 
@@ -379,13 +382,21 @@ def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many
 			return versionString[:versionString.find("~")]
 		return versionString
 
+	for version in (v1, v2):
+		parts = version.split("-", 2)
+		if (
+			not _PRODUCT_VERSION_REGEX.search(parts[0]) or \
+			(len(parts) == 2 and not _PACKAGE_VERSION_REGEX.search(parts[1]))
+		):
+			raise ValueError(f"Bad package version provided: '{version}'")
+
 	try:
 		first = packver.parse(removePartAfterWave(v1))
 		second = packver.parse(removePartAfterWave(v2))
 	except packver.InvalidVersion as version_error:
 		raise ValueError("Invalid version provided to compareVersions") from version_error
 
-	if condition in ("==", "="):
+	if condition in ("==", "=") or not condition:
 		result = first == second
 	elif condition == "<":
 		result = first < second
