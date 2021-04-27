@@ -71,6 +71,7 @@ WHICH_CACHE = {}
 DHCLIENT_LEASES_FILE = '/var/lib/dhcp/dhclient.leases'
 _DHCP_SERVICE_NAME = None
 _SAMBA_SERVICE_NAME = None
+LD_LIBRARY_EXCLUDE_LIST = ["/usr/lib/opsiclientd"]
 
 hooks = []
 x86_64 = False  # pylint: disable=invalid-name
@@ -815,6 +816,7 @@ def get_subprocess_environment(env: dict = None, add_lc_all_C=False, add_path_sb
 		# Running in pyinstaller / frozen
 		lp_orig = sp_env.get("LD_LIBRARY_PATH_ORIG")
 		if lp_orig is not None:
+			lp_orig = os.pathsep.join([entry for entry in lp_orig.split(os.pathsep) if entry not in LD_LIBRARY_EXCLUDE_LIST])
 			# Restore the original, unmodified value
 			logger.debug("Setting original LD_LIBRARY_PATH '%s' in env for subprocess", lp_orig)
 			sp_env["LD_LIBRARY_PATH"] = lp_orig
@@ -3910,7 +3912,6 @@ until the execution of the process is terminated.
 				"Failed to grant access to session %s to user %s: %s",
 				sessionId, getpass.getuser(), err, exc_info=True
 			)
-
 	logger.info("Running command %s", command)
 	process = subprocess.Popen(
 		args=command,
