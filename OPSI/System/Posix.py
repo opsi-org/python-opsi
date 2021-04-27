@@ -816,7 +816,7 @@ def get_subprocess_environment(env: dict = None, add_lc_all_C=False, add_path_sb
 		# Running in pyinstaller / frozen
 		lp_orig = sp_env.get("LD_LIBRARY_PATH_ORIG")
 		if lp_orig is not None:
-			lp_orig = ":".join([entry for entry in lp_orig.split(":") if entry not in LD_LIBRARY_EXCLUDE_LIST])
+			lp_orig = os.pathsep.join([entry for entry in lp_orig.split(os.pathsep) if entry not in LD_LIBRARY_EXCLUDE_LIST])
 			# Restore the original, unmodified value
 			logger.debug("Setting original LD_LIBRARY_PATH '%s' in env for subprocess", lp_orig)
 			sp_env["LD_LIBRARY_PATH"] = lp_orig
