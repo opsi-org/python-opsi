@@ -25,7 +25,7 @@ import sys
 import time
 import types
 import secrets
-import packaging.versions as packver
+import packaging.version as packver
 from collections import namedtuple
 from hashlib import md5
 from itertools import islice
@@ -385,7 +385,7 @@ def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many
 	except packver.InvalidVersion as version_error:
 		raise ValueError("Invalid version provided to compareVersions") from version_error
 
-	if condition == "==" or condition == "=":
+	if condition in ("==", "="):
 		result = first == second
 	elif condition == "<":
 		result = first < second
@@ -396,7 +396,7 @@ def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many
 	elif condition == ">=":
 		result = first >= second
 	else:
-		raise ValueError("Bad condition %s provided to compareVersions", condition)
+		raise ValueError(f"Bad condition {condition} provided to compareVersions")
 
 	if result:
 		logger.debug("Fulfilled condition: %s %s %s", v1, condition, v2)
