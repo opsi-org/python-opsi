@@ -56,8 +56,8 @@ _HARDWARE_ADDRESS_REGEX = re.compile(r'^([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-
 _NETMASK_REGEX = re.compile(r'^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')  # pylint: disable=line-too-long
 _URL_REGEX = re.compile(r'^[a-z0-9]+:\/\/[/a-zA-Z0-9@:%._\+~#?&=\[\]]+')
 _OPSI_HOST_KEY_REGEX = re.compile(r'^[0-9a-f]{32}$')
-_PRODUCT_VERSION_REGEX = re.compile(r'^[a-z0-9.]{1,32}$')
-_PACKAGE_VERSION_REGEX = re.compile(r'^[a-z0-9.]{1,16}$')
+_PRODUCT_VERSION_REGEX = re.compile(r'^[a-zA-Z0-9.]{1,32}$')
+_PACKAGE_VERSION_REGEX = re.compile(r'^[a-zA-Z0-9.]{1,16}$')
 _PRODUCT_ID_REGEX = re.compile(r'^[a-z0-9-_\.]{1,128}$')
 _PACKAGE_CUSTOM_NAME_REGEX = re.compile(r'^[a-zA-Z0-9]+$')
 _PRODUCT_PROPERTY_ID_REGEX = re.compile(r'^\S+$')
