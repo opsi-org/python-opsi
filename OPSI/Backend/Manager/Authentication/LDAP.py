@@ -85,7 +85,7 @@ class LDAPAuthentication(AuthenticationModule):
 				f"LDAP authentication failed for user '{username}': {err}"
 			) from err
 
-	def get_groupnames(self, username: str) -> Set[str]:  # pylint: disable=too-many-branches,too-many-statements
+	def get_groupnames(self, username: str) -> Set[str]:  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 		groupnames = set()
 		if not self._ldap:
 			raise RuntimeError("Failed to get groupnames, not connected to ldap")
@@ -124,7 +124,7 @@ class LDAPAuthentication(AuthenticationModule):
 		if ldap_type == "ad":
 			if self._group_filter is None:
 				group_filter = "(objectclass=group)"
-			attributes = ["sAMAccountName", "member"]
+			attributes = ["sAMAccountName", "member", "memberOf"]
 		else:
 			if self._group_filter is None:
 				group_filter = "(objectclass=posixGroup)"
@@ -146,6 +146,12 @@ class LDAPAuthentication(AuthenticationModule):
 				if group_dns:
 					logger.debug("Entry %s by memberOf", entry.entry_dn)
 					groupnames.add(group_name)
+					# Get nested groups (one level only, uses RDN)
+					if "memberOf" in entry.entry_attributes:
+						logger.debug("Nested groups of %s: %s", entry.entry_dn, entry.memberOf)
+						for nested_group_dn in entry.memberOf:
+							groupnames.add(nested_group_dn.split(",")[0].split("=", 1)[1])
+
 				elif "member" in entry.entry_attributes:
 					logger.debug("Entry %s member: %s", entry.entry_dn, entry.member)
 					for member in entry.member:
