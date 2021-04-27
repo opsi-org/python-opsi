@@ -29,12 +29,15 @@ import ruyaml
 
 import OPSI.System
 from OPSI import __version__ as LIBRARY_VERSION
+from OPSI.Config import OPSI_ADMIN_GROUP, FILE_ADMIN_GROUP
 from OPSI.Exceptions import (
-	OpsiBackupBackendNotFound, OpsiBackupFileError,	OpsiBackupFileNotFound)
+	OpsiBackupBackendNotFound, OpsiBackupFileError,	OpsiBackupFileNotFound
+)
 from OPSI.Logger import Logger
 from OPSI.Object import (
 	BoolProductProperty, LocalbootProduct, NetbootProduct,
-	Product, ProductDependency, ProductProperty, UnicodeProductProperty)
+	Product, ProductDependency, ProductProperty, UnicodeProductProperty
+)
 from OPSI.Types import (
 	forceActionRequest, forceBool, forceDictList, forceFilename, forceHostId,
 	forceInstallationStatus, forceList, forceObjectClass, forceObjectClassList,
@@ -219,7 +222,11 @@ class BackendACLFile(ConfigFile):
 										else:
 											entry['allowAttributes'].append(val)
 								elif aclType in ('sys_group', 'sys_user', 'opsi_depotserver', 'opsi_client'):
-									entry['ids'].append(aclTypeParam.strip())
+									val = aclTypeParam.strip()
+									if aclType == 'sys_group':
+										val = val.replace("{admingroup}", OPSI_ADMIN_GROUP)
+										val = val.replace("{fileadmingroup}", FILE_ADMIN_GROUP)
+									entry['ids'].append(val)
 								else:
 									raise ValueError(f"Unhandled acl type param '{aclTypeParam}' for acl type '{aclType}'")
 								aclTypeParam = ''
