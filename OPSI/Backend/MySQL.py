@@ -6,6 +6,7 @@
 MySQL-Backend
 """
 
+import re
 import base64
 import time
 from hashlib import md5
@@ -30,7 +31,7 @@ from OPSI.Backend.SQL import (
 	SQL, SQLBackend, SQLBackendObjectModificationTracker
 )
 from OPSI.Types import forceInt, forceUnicode
-from OPSI.Util import getPublicKey
+from OPSI.Util import getPublicKey, compareVersions
 from OPSI.Object import Product, ProductProperty
 
 __all__ = (
@@ -148,9 +149,21 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 
 		# Test connection
 		with self.session() as session:
-			self.getSet(session, "SELECT 1")
-		logger.debug('MySQL connected: %s', self)
-
+			version_string = self.getRow(session, "SHOW VARIABLES LIKE 'VERSION'")[1]
+			logger.info('Connected to server version: %s', version_string)
+			server_type = "MariaDB" if "maria" in version_string.lower() else "MySQL"
+			match = re.search(r"^([\d\.]+)", version_string)
+			if match:
+				min_version = "5.6.5"
+				if server_type == "MariaDB":
+					min_version = "10.4"
+				if compareVersions(match.group(1), "<", min_version):
+					error = (
+						f"{server_type} server version '{version_string}' to old."
+						" Supported versions are MariaDB >= 10.1 and MySQL >= 5.6.5"
+					)
+					logger.error(error)
+					raise RuntimeError(error)
 
 	def __repr__(self):
 		return f"<{self.__class__.__name__}(address={self._address})>"
