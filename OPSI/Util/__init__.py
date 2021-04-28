@@ -385,8 +385,8 @@ def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many
 	for version in (removePartAfterWave(v1), removePartAfterWave(v2)):
 		parts = version.split("-")
 		if (
-			not _PRODUCT_VERSION_REGEX.search(parts[0]) or \
-			(len(parts) == 2 and not _PACKAGE_VERSION_REGEX.search(parts[1])) or \
+			not _PRODUCT_VERSION_REGEX.search(parts[0]) or
+			(len(parts) == 2 and not _PACKAGE_VERSION_REGEX.search(parts[1])) or
 			len(parts) > 2
 		):
 			raise ValueError(f"Bad package version provided: '{version}'")
