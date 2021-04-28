@@ -25,6 +25,7 @@ import sys
 import time
 import types
 import secrets
+import packaging.version as packver
 from collections import namedtuple
 from hashlib import md5
 from itertools import islice
@@ -43,7 +44,10 @@ except ImportError:
 	from Crypto.Util.number import bytes_to_long
 
 from OPSI.Logger import Logger, LOG_DEBUG
-from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceUnicode)
+from OPSI.Types import (
+	forceBool, forceFilename, forceFqdn, forceUnicode,
+	_PRODUCT_VERSION_REGEX, _PACKAGE_VERSION_REGEX
+)
 
 OPSIObject = None  # pylint: disable=invalid-name
 
@@ -362,116 +366,55 @@ def combineVersions(obj):
 	return '{0.productVersion}-{0.packageVersion}'.format(obj)
 
 
-def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many-locals,too-many-branches,too-many-statements
+def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many-locals
 	"""
 	Compare the versions `v1` and `v2` with the given `condition`.
 
 	`condition` may be one of `==`, `<`, `<=`, `>`, `>=`.
 
-	Versions will be made the same length by appending '.0' until they
-	match.
-	If `1.0.0` and `2` are compared the latter will be viewed as `2.0.0`.
-	If a version contains a `~` that character and everything following
-	it will not be taken into account.
-
 	:raises ValueError: If invalid value for version or condition if given.
 	:rtype: bool
 	:return: If the comparison matches this will return True.
 	"""
+	# Kept removePartAfterWave to not break current behaviour
 	def removePartAfterWave(versionString):
 		if "~" in versionString:
 			return versionString[:versionString.find("~")]
 		return versionString
 
-	def splitProductAndPackageVersion(versionString):
-		productVersion = packageVersion = '0'
+	for version in (removePartAfterWave(v1), removePartAfterWave(v2)):
+		parts = version.split("-")
+		if (
+			not _PRODUCT_VERSION_REGEX.search(parts[0]) or
+			(len(parts) == 2 and not _PACKAGE_VERSION_REGEX.search(parts[1])) or
+			len(parts) > 2
+		):
+			raise ValueError(f"Bad package version provided: '{version}'")
 
-		match = re.search(r'^\s*([\w.]+)-*([\w.]*)\s*$', versionString)
-		if not match:
-			raise ValueError("Bad version string '%s'" % versionString)
+	try:
+		first = packver.parse(removePartAfterWave(v1))
+		second = packver.parse(removePartAfterWave(v2))
+	except packver.InvalidVersion as version_error:
+		raise ValueError("Invalid version provided to compareVersions") from version_error
 
-		productVersion = match.group(1)
-		if match.group(2):
-			packageVersion = match.group(2)
+	if condition in ("==", "=") or not condition:
+		result = first == second
+	elif condition == "<":
+		result = first < second
+	elif condition == "<=":
+		result = first <= second
+	elif condition == ">":
+		result = first > second
+	elif condition == ">=":
+		result = first >= second
+	else:
+		raise ValueError(f"Bad condition {condition} provided to compareVersions")
 
-		return Version(productVersion, packageVersion)
-
-	def makeEqualLength(first, second):
-		while len(first) < len(second):
-			first.append('0')
-
-		while len(second) < len(first):
-			second.append('0')
-
-	def splitValue(value):
-		match = re.search(r'^(\d+)(\D*.*)$', value)
-		if match:
-			return int(match.group(1)), match.group(2)
-		match = re.search(r'^(\D+)(\d*.*)$', value)
-		if match:
-			return match.group(1), match.group(2)
-
-		return '', value
-
-	if not condition:
-		condition = '=='
-	if condition not in ('==', '=', '<', '<=', '>', '>='):
-		raise ValueError("Bad condition '%s'" % condition)
-	if condition == '=':
-		condition = '=='
-
-	v1 = removePartAfterWave(str(v1))
-	v2 = removePartAfterWave(str(v2))
-
-	version = splitProductAndPackageVersion(v1)
-	otherVersion = splitProductAndPackageVersion(v2)
-	logger.trace("Versions: %s, %s", version, otherVersion)
-
-	comparisons = (
-		(version.product, otherVersion.product),
-		(version.package, otherVersion.package)
-	)
-
-	for first, second in comparisons:
-		logger.trace("Comparing %s with %s...", first, second)
-		firstParts = first.split('.')
-		secondParts = second.split('.')
-		makeEqualLength(firstParts, secondParts)
-
-		for value, otherValue in zip(firstParts, secondParts):
-			while value or otherValue:
-				cv1, value = splitValue(value)
-				cv2, otherValue = splitValue(otherValue)
-
-				if cv1 == '':
-					cv1 = chr(1)
-				if cv2 == '':
-					cv2 = chr(1)
-
-				if cv1 == cv2:
-					logger.trace("%s == %s => continue", cv1, cv2)
-					continue
-
-				if not isinstance(cv1, int):
-					cv1 = f"'{cv1}'"
-				if not isinstance(cv2, int):
-					cv2 = f"'{cv2}'"
-
-				logger.trace("Is %s %s %s?", cv1, condition, cv2)
-				conditionFulfilled = eval("%s %s %s" % (cv1, condition, cv2))  # pylint: disable=eval-used
-				if not conditionFulfilled:
-					logger.debug("Unfulfilled condition: %s %s %s", version, condition, otherVersion)
-					return False
-
-				logger.debug("Fulfilled condition: %s %s %s", version, condition, otherVersion)
-				return True
-
-	if '=' not in condition:
-		logger.debug("Unfulfilled condition: %s %s %s", version, condition, otherVersion)
-		return False
-
-	logger.debug("Fulfilled condition: %s %s %s", version, condition, otherVersion)
-	return True
+	if result:
+		logger.debug("Fulfilled condition: %s %s %s", v1, condition, v2)
+	else:
+		logger.debug("Unfulfilled condition: %s %s %s", v1, condition, v2)
+	return result
 
 
 def removeUnit(x):  # pylint: disable=invalid-name,too-many-return-statements
