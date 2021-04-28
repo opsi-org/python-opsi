@@ -11,7 +11,7 @@ import re
 from OPSI.System import execute, getFQDN
 from OPSI.Object import OpsiClient, ProductOnClient
 from OPSI.Types import forceHostId, forceIPAddress, forceUnicodeLower, forceInt
-from opsicommon.logging import logger, logging_config, LOG_DEBUG, LOG_WARNING	# is imported by submodules pylint: disable=unused-import
+from opsicommon.logging import logger
 
 
 SKIP_MARKER = 'clientskipped'
