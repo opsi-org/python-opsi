@@ -1239,6 +1239,10 @@ class OpsiConfFile(IniFile):
 	def get_ldap_auth_config(self) -> dict:
 		conf = self._opsiConfig.get("ldap_auth", {})
 		if conf and conf.get("ldap_url"):
+			if "username" in conf:
+				# Option was renamed
+				conf["bind_user"] = conf["username"]
+				del conf["username"]
 			return conf
 		return None
 
