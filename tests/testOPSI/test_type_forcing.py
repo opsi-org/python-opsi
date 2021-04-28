@@ -366,12 +366,6 @@ def testForceProductVersion(version, expected):
 	assert isinstance(result, str)
 
 
-@pytest.mark.parametrize("version", ('A1.0', ))
-def testProductVersionDoesNotContainUppercase(version):
-	with pytest.raises(ValueError):
-		forceProductVersion(version)
-
-
 @pytest.mark.parametrize("version, expected", (
 	(1, '1'),
 	(8, '8')
@@ -380,12 +374,6 @@ def testForcePackageVersion(version, expected):
 	result = forcePackageVersion(version)
 	assert expected == result
 	assert isinstance(result, str)
-
-
-@pytest.mark.parametrize("version", ('A', ))
-def testPackageVersionDoesNotAcceptUppercase(version):
-	with pytest.raises(ValueError):
-		forcePackageVersion(version)
 
 
 @pytest.mark.parametrize("productId, expectedProductId", (
