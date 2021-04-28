@@ -110,18 +110,27 @@ class PosixDeployThread(DeployThread):
 				self._copyFileOverSSH(configIniPath, os.path.join(remoteFolder, 'files', 'opsi', 'cfg', 'config.ini'))
 
 				if self.target_os == "linux":
-					opsiscript = "/tmp/opsi-client-agent/files/opsi/opsi-script/opsi-script"
+					opsiscript = "/tmp/opsi-client-agent/files/opsi-script/opsi-script"
 				elif self.target_os == "macos":
-					opsiscript = "/tmp/opsi-client-agent/files/opsi/opsi-script.app/Contents/MacOS/opsi-script"
+					opsiscript = "/tmp/opsi-client-agent/files/opsi-script.app/Contents/MacOS/opsi-script"
 				else:
 					raise ValueError(f"invalid target os {self.target_os}")
 
 				logger.debug("Will use: %s", opsiscript)
 				self._executeViaSSH(f"chmod +x {opsiscript}")
 
+				service_ip = self.backend.host_getObjects(type="OpsiConfigserver")[0].ipAddress
+				service_address = f"https://{service_ip}:4447"
+				finalize = "noreboot"
+				if self.reboot:
+					finalize = "reboot"
+				elif self.shutdown:
+					finalize = "shutdown"
+
 				installCommand = (
-					f"{opsiscript} -batch -silent /tmp/opsi-client-agent/files/opsi/setup.opsiscript"
-					" /var/log/opsi-client-agent/opsi-script/opsi-client-agent.log -PARAMETER REMOTEDEPLOY"
+					f"{opsiscript} -batch -silent /tmp/opsi-client-agent/setup.opsiscript"
+					" /var/log/opsi-client-agent/opsi-script/opsi-client-agent.log -parameter"
+					f" {service_address}||{hostObj.id}||{hostObj.opsiHostKey}||{finalize}"
 				)
 				if self.username != 'root':
 					credentialsfile = os.path.join(remoteFolder, '.credentials')
@@ -162,7 +171,6 @@ class PosixDeployThread(DeployThread):
 			logger.notice("opsi-client-agent successfully installed on %s", hostId)
 			self.success = True
 			self._setOpsiClientAgentToInstalled(hostId)
-			self._finaliseInstallation(credentialsfile=credentialsfile)
 		except SkipClientException:
 			logger.notice("Skipping host %s", hostId)
 			self.success = SKIP_MARKER
@@ -303,35 +311,6 @@ class PosixDeployThread(DeployThread):
 
 						logger.trace("Copying %s -> %s", local, remote)
 						ftpConnection.put(local, remote)
-
-	def _finaliseInstallation(self, credentialsfile=None):
-		if self.reboot:
-			logger.notice("Rebooting machine %s", self.networkAddress)
-			command = "shutdown -r +1 & disown"
-			try:
-				self._executeViaSSH(command, credentialsfile=credentialsfile)
-			except Exception as err:  # pylint: disable=broad-except
-				logger.error("Failed to reboot computer: %s", err)
-		elif self.shutdown:
-			logger.notice("Shutting down machine %s", self.networkAddress)
-			command = "shutdown -h +1 & disown"
-			try:
-				self._executeViaSSH(command, credentialsfile=credentialsfile)
-			except Exception as err:  # pylint: disable=broad-except
-				logger.error("Failed to shutdown computer: %s", err)
-		elif self.startService:
-			logger.notice("Restarting opsiclientd service on computer: %s", self.networkAddress)
-			if self.target_os == "linux":
-				command = "service opsiclientd restart"
-			elif self.target_os == "macos":
-				command = "launchctl kickstart -k system/org.opsi.opsiclientd"
-			else:
-				raise ValueError(f"invalid target os {self.target_os}")
-
-			try:
-				self._executeViaSSH(command, credentialsfile=credentialsfile)
-			except Exception as err:  # pylint: disable=broad-except
-				logger.error("Failed to restart service opsiclientd on computer: %s", self.networkAddress)
 
 	def _setOpsiClientAgentToInstalled(self, hostId):
 		if self.target_os == "linux":

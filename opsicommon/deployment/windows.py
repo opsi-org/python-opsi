@@ -69,6 +69,31 @@ class WindowsDeployThread(DeployThread):
 		else:
 			self._installWithServersideMount()
 
+	def install_from_path(self, path, hostObj):
+		service_ip = self.backend.host_getObjects(type="OpsiConfigserver")[0].ipAddress
+		service_address = f"https://{service_ip}:4447"
+		finalize = "noreboot"
+		if self.reboot:
+			finalize = "reboot"
+		elif self.shutdown:
+			finalize = "shutdown"
+		logger.notice("Installing opsi-client-agent")
+		cmd = (
+			f"{path}\\files\\opsi-script\\opsi-script.exe"
+			f" /batch {path}\\setup.opsiscript"
+			f" c:\\tmp\\opsi-client-agent.log /parameter"
+			f" {service_address}||{hostObj.id}||{hostObj.opsiHostKey}||{finalize}"
+		)
+		for trynum in (1, 2):
+			try:
+				winexe(cmd, self.networkAddress, self.username, self.password)
+				break
+			except Exception as err:  # pylint: disable=broad-except
+				if trynum == 2:
+					raise Exception(f"Failed to install opsi-client-agent: {err}") from err
+				logger.info("Winexe failure %s, retrying", err)
+				time.sleep(2)
+
 	def _installWithSmbclient(self):  # pylint: disable=too-many-branches,too-many-statements
 		logger.debug('Installing using client-side mount.')
 		host = forceUnicodeLower(self.host)
@@ -107,21 +132,7 @@ class WindowsDeployThread(DeployThread):
 				)
 				execute(cmd)
 
-				logger.notice("Installing opsi-client-agent")
-				cmd = (
-					r"c:\\tmp\\opsi-client-agent_inst\\files\\opsi\\opsi-script\\opsi-script.exe"
-					r" /batch c:\\tmp\\opsi-client-agent_inst\\files\\opsi\\setup.opsiscript"
-					r" c:\\tmp\\opsi-client-agent.log /PARAMETER REMOTEDEPLOY"
-				)
-				for trynum in (1, 2):
-					try:
-						winexe(cmd, self.networkAddress, self.username, self.password)
-						break
-					except Exception as err:  # pylint: disable=broad-except
-						if trynum == 2:
-							raise Exception(f"Failed to install opsi-client-agent: {err}") from err
-						logger.info("Winexe failure %s, retrying", err)
-						time.sleep(2)
+				self.install_from_path(r"c:\\tmp\\opsi-client-agent_inst", hostObj)
 			finally:
 				os.remove(f'/tmp/{configIniName}')
 
@@ -137,7 +148,6 @@ class WindowsDeployThread(DeployThread):
 			logger.notice("opsi-client-agent successfully installed on %s", hostId)
 			self.success = True
 			self._setOpsiClientAgentToInstalled(hostId)
-			self._finaliseInstallation()
 		except SkipClientException:
 			logger.notice("Skipping host %s", hostId)
 			self.success = SKIP_MARKER
@@ -218,51 +228,6 @@ class WindowsDeployThread(DeployThread):
 				logger.info("Winexe failure %s, retrying", err)
 				time.sleep(2)
 
-	def _finaliseInstallation(self):  # pylint: disable=too-many-branches
-		if self.reboot or self.shutdown:
-			if self.reboot:
-				logger.notice("Rebooting machine %s", self.networkAddress)
-				cmd = r'"%ProgramFiles%\\opsi.org\\opsi-client-agent\\utilities\\shutdown.exe" /L /R /T:20 "opsi-client-agent installed - reboot" /Y /C'
-			else:	# self.shutdown must be set
-				logger.notice("Shutting down machine %s", self.networkAddress)
-				cmd = r'"%ProgramFiles%\\opsi.org\\opsi-client-agent\\utilities\\shutdown.exe" /L /T:20 "opsi-client-agent installed - shutdown" /Y /C'
-
-			try:
-				pf = None
-				for const in ('%ProgramFiles(x86)%', '%ProgramFiles%'):
-					try:
-						lines = winexe(f'cmd.exe /C "echo {const}"', self.networkAddress, self.username, self.password)
-					except Exception as err:  # pylint: disable=broad-except
-						logger.warning(err)
-						continue
-
-					for line in lines:
-						line = line.strip()
-						if 'unavailable' in line:
-							continue
-						pf = line
-
-					if pf and pf != const:
-						break
-
-					pf = None
-
-				if not pf:
-					raise Exception("Failed to get program files path")
-
-				logger.info("Program files path is %s", pf)
-				winexe(cmd.replace('%ProgramFiles%', pf), self.networkAddress, self.username, self.password)
-			except Exception as err:  # pylint: disable=broad-except
-				if self.reboot:
-					logger.error("Failed to reboot computer: %s", err)
-				else:
-					logger.error("Failed to shutdown computer: %s", err)
-		elif self.startService:
-			try:
-				winexe('net start opsiclientd', self.networkAddress, self.username, self.password)
-			except Exception as err:  # pylint: disable=broad-except
-				logger.error("Failed to start opsiclientd on %s: %s", self.networkAddress, err)
-
 	def _installWithServersideMount(self):  # pylint: disable=too-many-branches,too-many-statements
 		logger.debug('Installing using server-side mount.')
 		host = forceUnicodeLower(self.host)
@@ -303,6 +268,8 @@ class WindowsDeployThread(DeployThread):
 			instDirName = f'opsi_{randomString(10)}'
 			instDir = os.path.join(mountDir, instDirName)
 			os.makedirs(instDir)
+			if not os.path.exists(os.path.join(mountDir, 'tmp')):
+				os.makedirs(os.path.join(mountDir, 'tmp'))
 
 			copy('files', instDir)
 			copy('utils', instDir)
@@ -318,28 +285,10 @@ class WindowsDeployThread(DeployThread):
 			config.set('general', 'dnsdomain', '.'.join(hostObj.id.split('.')[1:]))
 			configFile.generate(config)
 
-			logger.notice("Installing opsi-client-agent")
-			if not os.path.exists(os.path.join(mountDir, 'tmp')):
-				os.makedirs(os.path.join(mountDir, 'tmp'))
-			cmd = (
-				f"c:\\{instDirName}\\files\\opsi\\opsi-script\\opsi-script.exe"
-				f" /batch c:\\{instDirName}\\files\\opsi\\setup.opsiscript"
-				" c:\\tmp\\opsi-client-agent.log /PARAMETER REMOTEDEPLOY"
-			)
-			for trynum in (1, 2):
-				try:
-					winexe(cmd, self.networkAddress, self.username, self.password)
-					break
-				except Exception as err:  # pylint: disable=broad-except
-					if trynum == 2:
-						raise Exception(f"Failed to install opsi-client-agent: {err}") from err
-					logger.info("Winexe failure %s, retrying", err)
-					time.sleep(2)
-
+			self.install_from_path(f"c:\\{instDirName}", hostObj)
 			logger.notice("opsi-client-agent successfully installed on %s", hostId)
 			self.success = True
 			self._setOpsiClientAgentToInstalled(hostId)
-			self._finaliseInstallation()
 		except SkipClientException:
 			logger.notice("Skipping host %s", hostId)
 			self.success = SKIP_MARKER
