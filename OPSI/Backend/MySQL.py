@@ -156,7 +156,7 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			if match:
 				min_version = "5.6.5"
 				if server_type == "MariaDB":
-					min_version = "10.4"
+					min_version = "10.1"
 				if compareVersions(match.group(1), "<", min_version):
 					error = (
 						f"{server_type} server version '{version_string}' to old."
