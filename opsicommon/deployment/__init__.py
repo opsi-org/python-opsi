@@ -190,7 +190,7 @@ def deploy_client_agent(  # pylint: disable=too-many-arguments,too-many-locals,t
 
 	success = total - fails - skips
 
-	logger.notice("%s/%s deployments successfully", success, total)
+	logger.notice("%s/%s deployments successful", success, total)
 	if skips:
 		logger.notice("%s/%s deployments skipped", skips, total)
 	if fails:
