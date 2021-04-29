@@ -288,3 +288,12 @@ class DeployThread(threading.Thread):  # pylint: disable=too-many-instance-attri
 			self.backend.host_deleteObjects([host])
 		except Exception as err:  # pylint: disable=broad-except
 			logger.error(err)
+
+	def _getServiceAddress(self, host_id):
+		service_configstate = self.backend.configState_getObjects(configId='clientconfig.configserver.url', objectId=host_id)
+		if len(service_configstate) == 1 and len(service_configstate[0].values) == 1:
+			return service_configstate[0].values[0]
+		service_config = self.backend.config_getObjects(id='clientconfig.configserver.url')
+		if len(service_config) == 1 and len(service_config[0].defaultValues) == 1:
+			return service_config[0].defaultValues[0]
+		raise ValueError("Could not determine associated configservice url")

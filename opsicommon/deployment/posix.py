@@ -119,10 +119,7 @@ class PosixDeployThread(DeployThread):
 				logger.debug("Will use: %s", opsiscript)
 				self._executeViaSSH(f"chmod +x {opsiscript}")
 
-				service_configstate = self.backend.configState_getObjects(configId='clientconfig.configserver.url', objectId=hostObj.id)
-				if len(service_configstate) != 1 and len(service_configstate[0].values) != 1:
-					raise ValueError("Could not determine associated configservice url")
-				service_address = service_configstate[0].values[0]
+				service_address = self._getServiceAddress(hostObj.id)
 				finalize = "noreboot"
 				if self.reboot:
 					finalize = "reboot"
