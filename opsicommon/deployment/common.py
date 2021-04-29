@@ -291,7 +291,7 @@ class DeployThread(threading.Thread):  # pylint: disable=too-many-instance-attri
 
 	def _getServiceAddress(self, host_id):
 		service_configstate = self.backend.configState_getObjects(configId='clientconfig.configserver.url', objectId=host_id)
-		if len(service_configstate) == 1 and len(service_configstate[0].values) == 1:
+		if len(service_configstate) == 1 and len(service_configstate[0].values) >= 1:
 			return service_configstate[0].values[0]
 		service_config = self.backend.config_getObjects(id='clientconfig.configserver.url')
 		if len(service_config) == 1 and len(service_config[0].defaultValues) >= 1:
