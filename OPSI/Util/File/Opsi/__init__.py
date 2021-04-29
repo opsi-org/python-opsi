@@ -29,7 +29,6 @@ import ruyaml
 
 import OPSI.System
 from OPSI import __version__ as LIBRARY_VERSION
-from OPSI.Config import OPSI_ADMIN_GROUP, FILE_ADMIN_GROUP
 from OPSI.Exceptions import (
 	OpsiBackupBackendNotFound, OpsiBackupFileError,	OpsiBackupFileNotFound
 )
@@ -152,6 +151,7 @@ class BackendACLFile(ConfigFile):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=['#'])
 
 	def parse(self, lines=None):  # pylint: disable=too-many-branches,too-many-statements
+		from OPSI.Config import OPSI_ADMIN_GROUP, FILE_ADMIN_GROUP   # pylint: disable=import-outside-toplevel
 		if lines:
 			self._lines = forceUnicodeList(lines)
 		else:
