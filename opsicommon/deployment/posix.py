@@ -119,8 +119,7 @@ class PosixDeployThread(DeployThread):
 				logger.debug("Will use: %s", opsiscript)
 				self._executeViaSSH(f"chmod +x {opsiscript}")
 
-				service_ip = self.backend.host_getObjects(type="OpsiConfigserver")[0].ipAddress
-				service_address = f"https://{service_ip}:4447"
+				service_address = self.backend.configState_getObjects(configId='clientconfig.configserver.url', objectId=hostObj.id)[0].values[0]
 				finalize = "noreboot"
 				if self.reboot:
 					finalize = "reboot"
