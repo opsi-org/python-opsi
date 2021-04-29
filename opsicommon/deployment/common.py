@@ -294,6 +294,6 @@ class DeployThread(threading.Thread):  # pylint: disable=too-many-instance-attri
 		if len(service_configstate) == 1 and len(service_configstate[0].values) == 1:
 			return service_configstate[0].values[0]
 		service_config = self.backend.config_getObjects(id='clientconfig.configserver.url')
-		if len(service_config) == 1 and len(service_config[0].defaultValues) == 1:
+		if len(service_config) == 1 and len(service_config[0].defaultValues) >= 1:
 			return service_config[0].defaultValues[0]
 		raise ValueError("Could not determine associated configservice url")
