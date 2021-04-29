@@ -80,7 +80,7 @@ class WindowsDeployThread(DeployThread):
 		cmd = (
 			f"{path}\\files\\opsi-script\\opsi-script.exe"
 			f" /batch {path}\\setup.opsiscript"
-			f" c:\\tmp\\opsi-client-agent.log /parameter"
+			f" c:\\opsi.org\\log\\opsi-client-agent.log /parameter"
 			f" {service_address}||{hostObj.id}||{hostObj.opsiHostKey}||{finalize}"
 		)
 		for trynum in (1, 2):
@@ -106,39 +106,24 @@ class WindowsDeployThread(DeployThread):
 			hostObj = self._prepareDeploymentToHost(hostId)
 			self._testWinexeConnection()
 
-			logger.notice("Patching config.ini")
-			configIniName = f'{randomString(10)}_config.ini'
-			copy(os.path.join('files', 'opsi', 'cfg', 'config.ini'), f'/tmp/{configIniName}')
-			configFile = IniFile(f'/tmp/{configIniName}')
-			config = configFile.parse()
-			if not config.has_section('shareinfo'):
-				config.add_section('shareinfo')
-			config.set('shareinfo', 'pckey', hostObj.opsiHostKey)
-			if not config.has_section('general'):
-				config.add_section('general')
-			config.set('general', 'dnsdomain', '.'.join(hostObj.id.split('.')[1:]))
-			configFile.generate(config)
-
 			try:
 				logger.notice("Copying installation files")
 				credentials=self.username + '%' + self.password.replace("'", "'\"'\"'")
 				debug_param = " -d 9" if logger.isEnabledFor(logging.DEBUG) else ""
 				cmd = (
 					f"{which('smbclient')} -m SMB3{debug_param} //{self.networkAddress}/c$ -U '{credentials}'"
-					" -c 'prompt; recurse; md tmp; cd tmp; md opsi-client-agent_inst;"
-					" cd opsi-client-agent_inst; mput files; mput utils; cd files\\opsi\\cfg;"
-					f" lcd /tmp; put {configIniName} config.ini; exit;'"
+					" -c 'prompt; recurse;"
+					" md opsi.org; cd opsi.org; md log; md tmp; cd tmp; md opsi-client-agent_inst;"
+					" cd opsi-client-agent_inst; mput files; mput setup.opsiscript; exit;'"
 				)
 				execute(cmd)
 
-				self.install_from_path(r"c:\\tmp\\opsi-client-agent_inst", hostObj)
+				self.install_from_path(r"c:\\opsi.org\\tmp\\opsi-client-agent_inst", hostObj)
 			finally:
-				os.remove(f'/tmp/{configIniName}')
-
 				try:
 					cmd = (
-						r'cmd.exe /C "del /s /q c:\\tmp\\opsi-client-agent_inst'
-						r' && rmdir /s /q c:\\tmp\\opsi-client-agent_inst"'
+						r'cmd.exe /C "del /s /q c:\\opsi.org\\tmp\\opsi-client-agent_inst'
+						r' && rmdir /s /q c:\\opsi.org\\tmp\\opsi-client-agent_inst"'
 					)
 					winexe(cmd, self.networkAddress, self.username, self.password)
 				except Exception as err:  # pylint: disable=broad-except
