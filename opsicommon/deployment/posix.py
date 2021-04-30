@@ -15,8 +15,8 @@ from OPSI.Types import forceUnicodeLower
 from OPSI.System import copy
 from OPSI.Object import ProductOnClient
 
-from ..logging import logger
-from .common import DeployThread, SkipClientException, SKIP_MARKER
+from opsicommon.logging import logger, secret_filter
+from opsicommon.deployment.common import DeployThread, SkipClientException, SKIP_MARKER
 
 try:
 	import paramiko	# type: ignore
@@ -55,7 +55,7 @@ class PosixDeployThread(DeployThread):
 
 	def copy_and_link_macos_ssl(self, remoteFolder, credentialsfile=None):
 		lib_origin = os.path.join(remoteFolder, 'files', 'opsi', 'opsi-script_helper')
-		libs = [('libssl.1.1.dylib', 'libssl.dylib'), ('libcrypto.1.1.dylib', 'libssl.dylib')]
+		libs = [('libssl.1.1.dylib', 'libssl.dylib'), ('libcrypto.1.1.dylib', 'libcrypto.dylib')]
 		lib_dir = '/usr/local/lib/'
 
 		self._executeViaSSH(f"mkdir -p {lib_dir}", credentialsfile=credentialsfile)
@@ -71,7 +71,7 @@ class PosixDeployThread(DeployThread):
 		host = forceUnicodeLower(self.host)
 		hostId = ''
 		hostObj = None
-		remoteFolder = os.path.join('/tmp', 'opsi-client-agent')
+		remoteFolder = os.path.join('/tmp/opsi-client-agent')
 		try:
 			hostId = self._getHostId(host)
 			self._checkIfClientShouldBeSkipped(hostId)
@@ -101,10 +101,8 @@ class PosixDeployThread(DeployThread):
 			credentialsfile=None
 			try:
 				logger.notice("Copying installation scripts...")
-				self._copyDirectoryOverSSH(
-					os.path.join(localFolder, 'files'),
-					remoteFolder
-				)
+				self._copyDirectoryOverSSH(os.path.join(localFolder, 'files'), remoteFolder)
+				self._copyFileOverSSH(os.path.join(localFolder, 'setup.opsiscript'), os.path.join(remoteFolder, 'setup.opsiscript'))
 
 				logger.debug("Copying config for client...")
 				self._copyFileOverSSH(configIniPath, os.path.join(remoteFolder, 'files', 'opsi', 'cfg', 'config.ini'))
@@ -126,10 +124,11 @@ class PosixDeployThread(DeployThread):
 				elif self.shutdown:
 					finalize = "shutdown"
 
+				secret_filter.add_secrets(hostObj.opsiHostKey)
 				installCommand = (
 					f"{opsiscript} -batch -silent /tmp/opsi-client-agent/setup.opsiscript"
 					" /var/log/opsi-client-agent/opsi-script/opsi-client-agent.log -parameter"
-					f" {service_address}||{hostObj.id}||{hostObj.opsiHostKey}||{finalize}"
+					f" {service_address}\\|\\|{hostObj.id}\\|\\|{hostObj.opsiHostKey}\\|\\|{finalize}"
 				)
 				if self.username != 'root':
 					credentialsfile = os.path.join(remoteFolder, '.credentials')
@@ -138,15 +137,11 @@ class PosixDeployThread(DeployThread):
 					self._executeViaSSH(f"echo '{self.password}' > {credentialsfile}")
 					self._executeViaSSH(f'echo "\n" >> {credentialsfile}')
 
-				try:
-					if self.target_os == "macos":
-						self.copy_and_link_macos_ssl(remoteFolder, credentialsfile=credentialsfile)
-					logger.notice('Running installation script...')
-					self._executeViaSSH(installCommand, credentialsfile=credentialsfile)
-				except Exception:
-					if credentialsfile:
-						self._executeViaSSH(f"rm -f {credentialsfile}")
-					raise
+				if self.target_os == "macos":
+					self.copy_and_link_macos_ssl(remoteFolder, credentialsfile=credentialsfile)
+				logger.notice('Running installation script...')
+				logger.info('Executing %s', installCommand)
+				self._executeViaSSH(installCommand, credentialsfile=credentialsfile)
 
 				logger.debug("Testing if folder was created...")
 				self._executeViaSSH("test -d /etc/opsi-client-agent/")
@@ -163,9 +158,11 @@ class PosixDeployThread(DeployThread):
 					raise ValueError(f"invalid target os {self.target_os}")
 			finally:
 				try:
+					if credentialsfile:
+						self._executeViaSSH(f"rm -f {credentialsfile}")
 					os.remove(configIniPath)
-				except OSError as error:
-					logger.debug("Removing %s failed: %s", configIniPath, error)
+				except Exception:
+					logger.error("Cleanup on error failed")
 
 			logger.notice("opsi-client-agent successfully installed on %s", hostId)
 			self.success = True

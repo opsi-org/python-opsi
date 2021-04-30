@@ -15,8 +15,8 @@ from OPSI.Util import randomString
 from OPSI.Types import forceHostId, forceIPAddress, forceUnicode, forceUnicodeLower
 from OPSI.System import copy, execute, getFQDN, umount, which
 
-from ..logging import logger
-from .common import DeployThread, SkipClientException, SKIP_MARKER
+from opsicommon.logging import logger, secret_filter
+from opsicommon.deployment.common import DeployThread, SkipClientException, SKIP_MARKER
 
 
 def winexe(cmd, host, username, password):
@@ -77,6 +77,7 @@ class WindowsDeployThread(DeployThread):
 		elif self.shutdown:
 			finalize = "shutdown"
 		logger.notice("Installing opsi-client-agent")
+		secret_filter.add_secrets(hostObj.opsiHostKey)
 		cmd = (
 			f"{path}\\files\\opsi-script\\opsi-script.exe"
 			f" /batch {path}\\setup.opsiscript"

@@ -18,10 +18,10 @@ from OPSI.Backend.BackendManager import BackendManager
 from OPSI.System import which
 from OPSI.Types import forceUnicode, forceUnicodeLower
 
-from ..logging import logger, LOG_WARNING, LOG_DEBUG, logging_config
-from .common import SKIP_MARKER
-from .posix import PosixDeployThread, paramiko, WARNING_POLICY
-from .windows import WindowsDeployThread
+from opsicommon.logging import logger, LOG_WARNING, LOG_DEBUG, logging_config
+from opsicommon.deployment.common import SKIP_MARKER
+from opsicommon.deployment.posix import PosixDeployThread, paramiko, WARNING_POLICY
+from opsicommon.deployment.windows import WindowsDeployThread
 
 
 def deploy_client_agent(  # pylint: disable=too-many-arguments,too-many-locals,too-many-statements,too-many-branches
