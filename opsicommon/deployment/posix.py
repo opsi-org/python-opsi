@@ -161,7 +161,7 @@ class PosixDeployThread(DeployThread):
 					if credentialsfile:
 						self._executeViaSSH(f"rm -f {credentialsfile}")
 					os.remove(configIniPath)
-				except Exception:
+				except Exception:  # pylint: disable=broad-except
 					logger.error("Cleanup on error failed")
 
 			logger.notice("opsi-client-agent successfully installed on %s", hostId)
