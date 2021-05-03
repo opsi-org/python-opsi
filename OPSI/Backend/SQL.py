@@ -139,7 +139,7 @@ class SQL:
 		result = session.execute(query).fetchall()  # pylint: disable=no-member
 		if not result:
 			return []
-		return [ dict(row.items()) for row in result if row is not None ]
+		return [ dict(row) for row in result if row is not None ]
 
 	def getRows(self, session, query):  # pylint: disable=no-self-use
 		"""
