@@ -71,7 +71,7 @@ class PosixDeployThread(DeployThread):
 		host = forceUnicodeLower(self.host)
 		hostId = ''
 		hostObj = None
-		remoteFolder = os.path.join('/tmp/opsi-client-agent')
+		remoteFolder = os.path.join('/tmp', 'opsi-client-agent')
 		try:
 			hostId = self._getHostId(host)
 			self._checkIfClientShouldBeSkipped(hostId)
@@ -102,6 +102,9 @@ class PosixDeployThread(DeployThread):
 			try:
 				logger.notice("Copying installation scripts...")
 				self._copyDirectoryOverSSH(os.path.join(localFolder, 'files'), remoteFolder)
+				if not os.path.exists(os.path.join(localFolder, 'custom')):
+					os.makedirs(os.path.join(localFolder, 'custom'))
+				self._copyDirectoryOverSSH(os.path.join(localFolder, 'custom'), remoteFolder)
 				self._copyFileOverSSH(os.path.join(localFolder, 'setup.opsiscript'), os.path.join(remoteFolder, 'setup.opsiscript'))
 
 				logger.debug("Copying config for client...")
