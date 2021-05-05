@@ -81,8 +81,13 @@ class WindowsDeployThread(DeployThread):
 		cmd = (
 			f"{path}\\files\\opsi-script\\opsi-script.exe"
 			f" /batch {path}\\setup.opsiscript"
-			f" c:\\opsi.org\\log\\opsi-client-agent.log /parameter"
-			f" {service_address}||{hostObj.id}||{hostObj.opsiHostKey}||{finalize}"
+			" c:\\opsi.org\\log\\opsi-client-agent.log"
+			" /productid opsi-client-agent"
+			f" /opsiservice {service_address}"
+			f" /clientid {hostObj.id}"
+			f" /username {hostObj.id}"
+			f" /password {hostObj.opsiHostKey}"
+			f" /parameter {finalize}"
 		)
 		for trynum in (1, 2):
 			try:
