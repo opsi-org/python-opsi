@@ -689,7 +689,10 @@ def getfqdn(name='', conf=None):
 		try:
 			return forceFqdn(os.environ["OPSI_HOSTNAME"])
 		except KeyError:
-			# not set in environment.
+			# Not set in environment.
+			pass
+		except ValueError:
+			# Not a fqdn
 			pass
 
 		# lazy import to avoid circular dependency
