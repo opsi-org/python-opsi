@@ -126,12 +126,18 @@ class PosixDeployThread(DeployThread):
 					finalize = "reboot"
 				elif self.shutdown:
 					finalize = "shutdown"
+				product = self._getProductId()
 
 				secret_filter.add_secrets(hostObj.opsiHostKey)
 				installCommand = (
 					f"{opsiscript} -batch -silent /tmp/opsi-client-agent/setup.opsiscript"
-					" /var/log/opsi-client-agent/opsi-script/opsi-client-agent.log -parameter"
-					f" {service_address}\\|\\|{hostObj.id}\\|\\|{hostObj.opsiHostKey}\\|\\|{finalize}"
+					" /var/log/opsi-client-agent/opsi-script/opsi-client-agent.log"
+					f" -productid {product}"
+					f" -opsiservice {service_address}"
+					f" -clientid {hostObj.id}"
+					f" -username {hostObj.id}"
+					f" -password {hostObj.opsiHostKey}"
+					f" -parameter {finalize}"
 				)
 				if self.username != 'root':
 					credentialsfile = os.path.join(remoteFolder, '.credentials')
@@ -311,14 +317,16 @@ class PosixDeployThread(DeployThread):
 						logger.trace("Copying %s -> %s", local, remote)
 						ftpConnection.put(local, remote)
 
-	def _setOpsiClientAgentToInstalled(self, hostId):
+	def _getProductId(self):
 		if self.target_os == "linux":
-			prod_id = "opsi-linux-client-agent"
-		elif self.target_os == "macos":
-			prod_id = "opsi-mac-client-agent"
-		else:
-			raise ValueError(f"invalid target os {self.target_os}")
+			return "opsi-linux-client-agent"
+		if self.target_os == "macos":
+			return "opsi-mac-client-agent"
+		raise ValueError(f"invalid target os {self.target_os}")
 
+
+	def _setOpsiClientAgentToInstalled(self, hostId):
+		prod_id = self._getProductId()
 		poc = ProductOnClient(
 			productType='LocalbootProduct',
 			clientId=hostId,
