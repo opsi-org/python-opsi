@@ -16,6 +16,7 @@ import ipaddress
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages import urllib3
+from requests.exceptions import SSLError
 from urllib3.util.retry import Retry
 import msgpack
 try:
@@ -31,7 +32,10 @@ import lz4.frame
 from OPSI.Backend import no_export
 from OPSI.Backend.Base import Backend
 from OPSI.Util import serialize, deserialize
-from OPSI.Exceptions import OpsiRpcError, BackendAuthenticationError, BackendPermissionDeniedError
+from OPSI.Exceptions import (
+	OpsiRpcError, OpsiServiceVerificationError,
+	BackendAuthenticationError, BackendPermissionDeniedError
+)
 
 from opsicommon import __version__
 from opsicommon.logging import logger, secret_filter
@@ -344,7 +348,11 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 			"JSONRPC request to %s: ip_version=%s, id=%d, method=%s, Content-Type=%s, Content-Encoding=%s",
 			self.base_url, self._ip_version, rpc_id, method, headers.get('Content-Type', ''), headers.get('Content-Encoding', '')
 		)
-		response = self._session.post(self.base_url, headers=headers, data=data, stream=True)
+		try:
+			response = self._session.post(self.base_url, headers=headers, data=data, stream=True)
+		except SSLError as err:
+			raise OpsiServiceVerificationError(str(err)) from err
+
 		content_type = response.headers.get("Content-Type", "")
 		content_encoding = response.headers.get("Content-Encoding", "")
 		logger.info(
