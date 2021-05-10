@@ -9,10 +9,7 @@ import re
 import socket
 from contextlib import closing, contextmanager
 
-from OPSI.Util.File import IniFile
-from OPSI.Util import randomString
 from OPSI.Types import forceUnicodeLower
-from OPSI.System import copy
 from OPSI.Object import ProductOnClient
 
 from opsicommon.logging import logger, secret_filter
@@ -53,19 +50,6 @@ class PosixDeployThread(DeployThread):
 	def run(self):
 		self._installWithSSH()
 
-	def copy_and_link_macos_ssl(self, remoteFolder, credentialsfile=None):
-		lib_origin = os.path.join(remoteFolder, 'files', 'opsi', 'opsi-script_helper')
-		libs = [('libssl.1.1.dylib', 'libssl.dylib'), ('libcrypto.1.1.dylib', 'libcrypto.dylib')]
-		lib_dir = '/usr/local/lib/'
-
-		self._executeViaSSH(f"mkdir -p {lib_dir}", credentialsfile=credentialsfile)
-		for lib, link in libs:
-			command = f"cp {os.path.join(lib_origin, lib)} {os.path.join(lib_dir, lib)}"
-			self._executeViaSSH(command, credentialsfile=credentialsfile)
-
-			command = f"ln -sf {os.path.join(lib_dir, lib)} {os.path.join(lib_dir, link)}"
-			self._executeViaSSH(command, credentialsfile=credentialsfile)
-
 	def _installWithSSH(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		logger.debug('Installing with files copied to client via scp.')
 		host = forceUnicodeLower(self.host)
@@ -83,20 +67,6 @@ class PosixDeployThread(DeployThread):
 				localFolder = os.path.dirname(os.path.abspath(sys.executable))		# for running as executable
 			else:
 				localFolder = os.path.dirname(os.path.abspath(__file__))			# for running from python
-			logger.notice("Patching config.ini")
-			configIniName = f'{randomString(10)}_config.ini'
-			configIniPath = os.path.join('/tmp', configIniName)
-			copy(os.path.join(localFolder, 'files', 'opsi', 'cfg', 'config.ini'), configIniPath)
-			configFile = IniFile(configIniPath)
-			config = configFile.parse()
-			if not config.has_section('shareinfo'):
-				config.add_section('shareinfo')
-			config.set('shareinfo', 'pckey', hostObj.opsiHostKey)
-			if not config.has_section('general'):
-				config.add_section('general')
-			config.set('general', 'dnsdomain', '.'.join(hostObj.id.split('.')[1:]))
-			configFile.generate(config)
-			logger.debug("Generated config.")
 
 			credentialsfile=None
 			try:
@@ -106,9 +76,6 @@ class PosixDeployThread(DeployThread):
 					os.makedirs(os.path.join(localFolder, 'custom'))
 				self._copyDirectoryOverSSH(os.path.join(localFolder, 'custom'), remoteFolder)
 				self._copyFileOverSSH(os.path.join(localFolder, 'setup.opsiscript'), os.path.join(remoteFolder, 'setup.opsiscript'))
-
-				logger.debug("Copying config for client...")
-				self._copyFileOverSSH(configIniPath, os.path.join(remoteFolder, 'files', 'opsi', 'cfg', 'config.ini'))
 
 				if self.target_os == "linux":
 					opsiscript = "/tmp/opsi-client-agent/files/opsi-script/opsi-script"
@@ -130,8 +97,8 @@ class PosixDeployThread(DeployThread):
 
 				secret_filter.add_secrets(hostObj.opsiHostKey)
 				installCommand = (
-					f"{opsiscript} -batch -silent /tmp/opsi-client-agent/setup.opsiscript"
-					" /var/log/opsi-client-agent/opsi-script/opsi-client-agent.log"
+					f"{opsiscript} /tmp/opsi-client-agent/setup.opsiscript"
+					" /var/log/opsi-client-agent/opsi-script/opsi-client-agent.log -batch"
 					f" -productid {product}"
 					f" -opsiservice {service_address}"
 					f" -clientid {hostObj.id}"
@@ -146,8 +113,6 @@ class PosixDeployThread(DeployThread):
 					self._executeViaSSH(f"echo '{self.password}' > {credentialsfile}")
 					self._executeViaSSH(f'echo "\n" >> {credentialsfile}')
 
-				if self.target_os == "macos":
-					self.copy_and_link_macos_ssl(remoteFolder, credentialsfile=credentialsfile)
 				logger.notice('Running installation script...')
 				logger.info('Executing %s', installCommand)
 				self._executeViaSSH(installCommand, credentialsfile=credentialsfile)
@@ -169,9 +134,8 @@ class PosixDeployThread(DeployThread):
 				try:
 					if credentialsfile:
 						self._executeViaSSH(f"rm -f {credentialsfile}")
-					os.remove(configIniPath)
 				except Exception:  # pylint: disable=broad-except
-					logger.error("Cleanup on error failed")
+					logger.error("Cleanup failed")
 
 			logger.notice("opsi-client-agent successfully installed on %s", hostId)
 			self.success = True
