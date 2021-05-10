@@ -44,8 +44,8 @@ these.
 Installing the depedencies via apt-get:
 
 ```bash
-apt-get install python3-dev python3-twisted python3-magic python3-pycryptodome python3-newt python3-pampy python3-openssl python3-mysqldb python3-sqlalchemy python3-psutil iproute2 lshw mysql-server libmysqlclient-dev
-python3.7 -m pip install mysqlclient
+apt-get install python3-dev python3-newt python3-pip iproute2 lshw mysql-server libmysqlclient-dev
+pip3 install poetry
 ```
 
 ## Packaging
@@ -185,23 +185,6 @@ Please use conventions described in [PEP 8 -- Style Guide for Python Code](https
 Deviating from this, indentation has to be done with hard tabs.
 
 For general information about webservice methods please refer to the [manual](http://download.uib.de/opsi4.0/doc/html/en/opsi-manual/opsi-manual.html#opsi-manual-api-datastructure-opsi).
-
-
-#### Semi-Automated Quality Checks
-There is a script that runs `pylint`, `flake8` and all the tests.
-
-```bash
-poetry install
-poetry run ./run_qa.sh
-```
-
-The script will not display any problems reported by `pylint` or
-`pep8` but instead creates the files `pylint.txt` and `pep8.txt`.
-You then can check the corresponding output.
-
-It will also run all tests and create a coverage from those tests as
-`coverage.xml`.
-
 
 ### Documentation
 Documentation should be provided for any non-intuitive or complex part.
