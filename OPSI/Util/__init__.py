@@ -382,7 +382,14 @@ def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many
 			return versionString[:versionString.find("~")]
 		return versionString
 
-	for version in (removePartAfterWave(v1), removePartAfterWave(v2)):
+	def removeOrVersion(versionString):
+		if "or" in versionString:
+			return versionString[:versionString.find("or")]
+		return versionString
+
+	first = removeOrVersion(removePartAfterWave(v1))
+	second = removeOrVersion(removePartAfterWave(v2))
+	for version in (first, second):
 		parts = version.split("-")
 		if (
 			not _PRODUCT_VERSION_REGEX.search(parts[0]) or
@@ -392,8 +399,8 @@ def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many
 			raise ValueError(f"Bad package version provided: '{version}'")
 
 	try:
-		first = packver.parse(removePartAfterWave(v1))
-		second = packver.parse(removePartAfterWave(v2))
+		first = packver.parse(first)
+		second = packver.parse(second)
 	except packver.InvalidVersion as version_error:
 		raise ValueError("Invalid version provided to compareVersions") from version_error
 
