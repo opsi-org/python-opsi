@@ -54,14 +54,13 @@ def getImageInformation(imagePath):
 
 	try:
 		imagex = which('wimlib-imagex')
-	except Exception as error:
-		logger.error(error, exc_info=True)
-		logger.warning("Unable to find 'wimlib-imagex': {0}".format(error))
-		logger.warning("Please install 'wimtools'.")
-		raise RuntimeError("Unable to find 'wimlib-imagex': {0}".format(error))
+	except Exception as err:
+		logger.debug(err, exc_info=True)
+		logger.error("Unable to find 'wimlib-imagex', please install 'wimtools': %s", err)
+		raise RuntimeError(f"Unable to find 'wimlib-imagex': {err}") from err
 
 	imageinfo = {}
-	for line in execute("{imagex} info '{file}'".format(imagex=imagex, file=imagePath)):
+	for line in execute(f"{imagex} info '{imagePath}'"):
 		if line and ':' in line:
 			key, value = line.split(':', 1)
 			key = key.strip().lower()
@@ -86,7 +85,7 @@ def getImageInformation(imagePath):
 			imageinfo[key] = value
 		elif not line and imageinfo:
 			if 'name' in imageinfo:  # Do not return file information.
-				logger.debug("Collected information {0!r}".format(imageinfo))
+				logger.debug("Collected information: %s", imageinfo)
 				yield imageinfo
 
 			imageinfo = {}
@@ -124,13 +123,13 @@ def writeImageInformation(backend, productId, imagenames, languages=None, defaul
 		productProperty.possibleValues = forceList(languages)
 
 		if defaultLanguage and defaultLanguage in languages:
-			logger.debug("Setting language default to {0!r}".format(defaultLanguage))
+			logger.debug("Setting language default to '%s'", defaultLanguage)
 			productProperty.defaultValues = [defaultLanguage]
 
-		logger.debug("system_language property is now: {0!r}".format(productProperty))
-		logger.debug("system_language possibleValues are: {0}".format(productProperty.possibleValues))
+		logger.debug("system_language property is now: %s", productProperty)
+		logger.debug("system_language possibleValues are: %s", productProperty.possibleValues)
 		backend.productProperty_updateObject(productProperty)
-		logger.notice("Wrote languages to property 'system_language' product on {0!r}.".format(productId))
+		logger.notice("Wrote languages to property 'system_language' product on %s.", productId)
 
 
 def _getProductProperty(backend, productId, propertyId):
@@ -139,30 +138,30 @@ def _getProductProperty(backend, productId, propertyId):
 		"propertyId": propertyId
 	}
 	properties = backend.productProperty_getObjects(**productFilter)
-	logger.debug("Properties: {0}".format(properties))
+	logger.debug("Properties: %s", properties)
 
 	if not properties:
 		raise RuntimeError("No property {1!r} for product {0!r} found!".format(productId, propertyId))
-	elif len(properties) > 1:
+	if len(properties) > 1:
 		logger.debug("Found more than one property... trying to be more specific")
 
 		serverId = getfqdn()
 		prodOnDepot = backend.productOnDepot_getObjects(depotId=serverId, productId=productId)
 		if not prodOnDepot:
 			raise RuntimeError("Did not find product {0!r} on depot {1!r}".format(productId, serverId))
-		elif len(prodOnDepot) > 1:
+		if len(prodOnDepot) > 1:
 			raise RuntimeError("Too many products {0!r} on depot {1!r}".format(productId, serverId))
 
 		prodOnDepot = prodOnDepot[0]
 		productFilter['packageVersion'] = prodOnDepot.packageVersion
 		productFilter['productVersion'] = prodOnDepot.productVersion
-		logger.debug('New filter: {0}'.format(productFilter))
+		logger.debug('New filter: %s', productFilter)
 		properties = backend.productProperty_getObjects(**productFilter)
-		logger.debug("Properties: {0}".format(properties))
+		logger.debug("Properties: %s", properties)
 
 		if not properties:
 			raise RuntimeError("Unable to find property {1!r} for product {0!r}!".format(productId, propertyId))
-		elif len(properties) > 1:
+		if len(properties) > 1:
 			raise RuntimeError("Too many product properties found - aborting.")
 
 	return properties[0]

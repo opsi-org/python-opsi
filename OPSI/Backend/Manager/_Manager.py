@@ -224,6 +224,13 @@ class BackendManager(ExtendedBackend):
 		exec(f'from OPSI.Backend.{moduleName} import {backendClassName}')  # pylint: disable=exec-used
 		return eval(f'{backendClassName}(**config["config"])')  # pylint: disable=eval-used
 
+	def _get_backend_dispatcher(self):
+		backend = self
+		while backend:
+			if isinstance(backend, BackendDispatcher):
+				return backend
+			backend = getattr(backend, "_backend", None)
+		return None
 
 def backendManagerFactory(
 	user, password, dispatchConfigFile, backendConfigDir,
