@@ -2032,8 +2032,8 @@ class Harddisk:  # pylint: disable=too-many-instance-attributes,too-many-public-
 				logger.debug(
 					"NTFS Boot Record currently using %s %s %s %s "
 					"as partition start sector",
-						hex(ord(start[0])), hex(ord(start[1])),
-						hex(ord(start[2])), hex(ord(start[3]))
+						hex(start[0]), hex(start[1]),
+						hex(start[2]), hex(start[3])
 				)
 			finally:
 				os.close(hd)
@@ -2044,7 +2044,7 @@ class Harddisk:  # pylint: disable=too-many-instance-attributes,too-many-public-
 			try:
 				os.lseek(hd, 0x1c, 0)
 				for i in dat:
-					os.write(hd, chr(i))
+					os.write(hd, str.encode(chr(i)))
 			finally:
 				os.close(hd)
 
@@ -2055,8 +2055,8 @@ class Harddisk:  # pylint: disable=too-many-instance-attributes,too-many-public-
 				logger.debug(
 					"NTFS Boot Record now using %s %s %s %s as partition "
 					"start sector",
-						hex(ord(start[0])), hex(ord(start[1])),
-						hex(ord(start[2])), hex(ord(start[3]))
+						hex(start[0]), hex(start[1]),
+						hex(start[2]), hex(start[3])
 				)
 			finally:
 				os.close(hd)
