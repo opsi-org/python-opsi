@@ -269,9 +269,6 @@ class BackendAccessControl:
 				credentials = self._context.user_getCredentials(self.user_store.username)
 				if self.user_store.password and self.user_store.password == credentials.get("password"):
 					self.user_store.authenticated = True
-					if self.user_store.username == "monitoring":
-						self.user_store.isAdmin = False
-						self.user_store.isReadOnly = True
 				else:
 					raise BackendAuthenticationError(f"Authentication failed for user {self.user_store.username}")
 			elif auth_type == "auth-module":
