@@ -368,6 +368,7 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 				else:
 					value = value.replace(self._sql.ESCAPED_ASTERISK, '\uffff')
 					value = self._sql.escapeApostrophe(self._sql.escapeBackslash(value))
+					value = value.replace(":", "\\:")
 					match = self._OPERATOR_IN_CONDITION_PATTERN.search(value)
 					if match:
 						operator = match.group(1)
