@@ -382,13 +382,8 @@ def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many
 			return versionString[:versionString.find("~")]
 		return versionString
 
-	def removeOrVersion(versionString):
-		if "or" in versionString:
-			return versionString[:versionString.find("or")]
-		return versionString
-
-	first = removeOrVersion(removePartAfterWave(v1))
-	second = removeOrVersion(removePartAfterWave(v2))
+	first = removePartAfterWave(v1)
+	second = removePartAfterWave(v2)
 	for version in (first, second):
 		parts = version.split("-")
 		if (
@@ -399,8 +394,10 @@ def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many
 			raise ValueError(f"Bad package version provided: '{version}'")
 
 	try:
-		first = packver.parse(first)
-		second = packver.parse(second)
+		#dont use packver.parse() here as it produces LegacyVersions if some letters are contained (else Versions)
+		#in comparisson, LegacyVersion is always smaller than Version (Problem for 20.09 and 21.h1)
+		first = packver.LegacyVersion(first)
+		second = packver.LegacyVersion(second)
 	except packver.InvalidVersion as version_error:
 		raise ValueError("Invalid version provided to compareVersions") from version_error
 

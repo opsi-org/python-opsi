@@ -421,7 +421,11 @@ def testComparingWithOnlyOneEqualitySign():
 
 
 def testComparingOrVersions():
-	assert compareVersions('1.0or2.0', '<=', '1.0or2.1')
+	assert compareVersions('1.0or2.0', '<', '1.0or2.1')
+
+
+def testComparingLetterVersions():
+	assert compareVersions('20.09', '<', '21.h1')
 
 
 @pytest.mark.parametrize("operator", ['asdf', '+-', '<>', '!='])
