@@ -419,13 +419,23 @@ def testComparingWithoutGivingOperatorDefaultsToEqual(v1, operator, v2):
 def testComparingWithOnlyOneEqualitySign():
 	assert compareVersions('1.0', '=', '1.0')
 
+@pytest.mark.parametrize("first, operator, second", [
+	('1.0or2.0', '<', '1.0or2.1'),
+	('1.0or2.0', '<', '1.1or2.0'),
+	('1.0or2.1', '<', '1.1or2.0')
+])
+def testComparingOrVersions(first, operator, second):
+	assert compareVersions(first, operator, second)
 
-def testComparingOrVersions():
-	assert compareVersions('1.0or2.0', '<', '1.0or2.1')
-
-
-def testComparingLetterVersions():
-	assert compareVersions('20.09', '<', '21.h1')
+@pytest.mark.parametrize("first, operator, second", [
+	('20.09', '<', '21.h1'),
+	('1.0.2s', '<', '1.0.2u'),
+	('1.blubb.bla', '<', '1.foo')
+	('1.0.a', '<', '1.0.b'),
+	('a.b', '>', 'a.a'),
+])
+def testComparingLetterVersions(first, operator, second):
+	assert compareVersions(first, operator, second)
 
 
 @pytest.mark.parametrize("operator", ['asdf', '+-', '<>', '!='])
@@ -449,14 +459,6 @@ def testIgnoringVersionsWithWaveInThem(v1, operator, v2):
 def testUsingInvalidVersionStringsFails(v1, operator, v2):
 	with pytest.raises(ValueError):
 		compareVersions(v1, operator, v2)
-
-
-@pytest.mark.parametrize("v1, operator, v2", [
-	('1.0.a', '<', '1.0.b'),
-	('a.b', '>', 'a.a'),
-])
-def testComparingWorksWithLettersInVersionString(v1, operator, v2):
-	assert compareVersions(v1, operator, v2)
 
 
 @pytest.mark.parametrize("v1, operator, v2", [
