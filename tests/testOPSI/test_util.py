@@ -430,7 +430,7 @@ def testComparingOrVersions(first, operator, second):
 @pytest.mark.parametrize("first, operator, second", [
 	('20.09', '<', '21.h1'),
 	('1.0.2s', '<', '1.0.2u'),
-	('1.blubb.bla', '<', '1.foo')
+	('1.blubb.bla', '<', '1.foo'),
 	('1.0.a', '<', '1.0.b'),
 	('a.b', '>', 'a.a'),
 ])
