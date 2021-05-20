@@ -15,7 +15,6 @@ pip-wheel-metadata
 *.egg-info
 *.sublime-*
 *.idea/
-*.venv/
 tests/Backends/config.py
 
 # QA files:

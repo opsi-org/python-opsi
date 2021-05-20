@@ -511,6 +511,7 @@ def blowfishDecrypt(key, crypt):
 	"""
 	if not key:
 		raise BlowfishError("Missing key")
+
 	key = _prepareBlowfishKey(key)
 	crypt = bytes.fromhex(crypt)
 

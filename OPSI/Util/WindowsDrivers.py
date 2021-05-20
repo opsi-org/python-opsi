@@ -435,12 +435,13 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 			if auditHardwareOnHost.hardwareClass not in auditInfoByClass:
 				auditInfoByClass[auditHardwareOnHost.hardwareClass] = auditHardwareOnHost
 
+	invalidCharactersRegex = re.compile(r'[<>?":|\\/*]')
 	byAuditIntegrated = False
 	if exists(rulesdir) and "COMPUTER_SYSTEM" in auditInfoByClass:
 		logger.info(u"Checking if automated integrating of additional drivers are possible")
 		auditHardwareOnHost = auditInfoByClass["COMPUTER_SYSTEM"]
-		vendorFromHost = re.sub(r"[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.vendor or "")
-		modelFromHost = re.sub(r"[\<\>\?\"\:\|\\\/\*]", "_", auditHardwareOnHost.model or "")
+		vendorFromHost = invalidCharactersRegex.sub("_", auditHardwareOnHost.vendor or "")
+		modelFromHost = invalidCharactersRegex.sub("_", auditHardwareOnHost.model or "")
 		skuFromHost = auditHardwareOnHost.sku or ""
 		skuLabel = ""
 		fallbackPath = ""
