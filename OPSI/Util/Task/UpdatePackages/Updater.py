@@ -732,17 +732,17 @@ class OpsiPackageUpdater:
 				notifier.appendLine(message)
 
 	def downloadPackage(self, availablePackage, notifier=None):  # pylint: disable=too-many-locals
-		repository = availablePackage['repository']
+		repository = availablePackage["repository"]
 		url = availablePackage["packageFile"]
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 
 		# one session for each package as different repos might have different settings (proxy etc)
 		with self.makeSession(repository) as session:
-			response = session.get(url, headers=self.httpHeaders, timeout=3600*8) # 8h timeout
+			response = session.get(url, headers=self.httpHeaders, stream=True, timeout=3600*8) # 8h timeout
 			if response.status_code < 200 or response.status_code > 299:
 				logger.error("Unable to download Package from %s", url)
 				raise ConnectionError(f"Unable to download Package from {url}")
-		size = int(response.headers.get('Content-length', 0))
+		size = int(response.headers.get("Content-length", 0))
 		if size:
 			logger.info("Downloading %s (%s MB) to %s", url, round(size / (1024.0 * 1024.0), 2), outFile)
 		else:

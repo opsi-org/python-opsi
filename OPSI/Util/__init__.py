@@ -382,13 +382,8 @@ def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many
 			return versionString[:versionString.find("~")]
 		return versionString
 
-	def removeOrVersion(versionString):
-		if "or" in versionString:
-			return versionString[:versionString.find("or")]
-		return versionString
-
-	first = removeOrVersion(removePartAfterWave(v1))
-	second = removeOrVersion(removePartAfterWave(v2))
+	first = removePartAfterWave(v1)
+	second = removePartAfterWave(v2)
 	for version in (first, second):
 		parts = version.split("-")
 		if (
@@ -399,8 +394,10 @@ def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many
 			raise ValueError(f"Bad package version provided: '{version}'")
 
 	try:
-		first = packver.parse(first)
-		second = packver.parse(second)
+		#dont use packver.parse() here as it produces LegacyVersions if some letters are contained (else Versions)
+		#in comparisson, LegacyVersion is always smaller than Version (Problem for 20.09 and 21.h1)
+		first = packver.LegacyVersion(first)
+		second = packver.LegacyVersion(second)
 	except packver.InvalidVersion as version_error:
 		raise ValueError("Invalid version provided to compareVersions") from version_error
 
@@ -481,8 +478,11 @@ def blowfishEncrypt(key, cleartext):
 	:raises BlowfishError: In case things go wrong.
 	:rtype: str
 	"""
-	cleartext = forceUnicode(cleartext)
+	if not key:
+		raise BlowfishError("Missing key")
+
 	key = _prepareBlowfishKey(key)
+	cleartext = forceUnicode(cleartext)
 
 	while len(cleartext) % 8 != 0:
 		# Fill up with \0 until length is a mutiple of 8
@@ -509,8 +509,10 @@ def blowfishDecrypt(key, crypt):
 	:raises BlowfishError: In case things go wrong.
 	:rtype: str
 	"""
-	crypt = bytes.fromhex(crypt)
+	if not key:
+		raise BlowfishError("Missing key")
 	key = _prepareBlowfishKey(key)
+	crypt = bytes.fromhex(crypt)
 
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
 	try:
@@ -520,8 +522,7 @@ def blowfishDecrypt(key, crypt):
 		raise BlowfishError("Failed to decrypt") from err
 
 	# Remove possible \0-chars
-	if b'\0' in cleartext:
-		cleartext = cleartext[:cleartext.find(b'\0')]
+	cleartext = cleartext.rstrip(b'\0')
 
 	try:
 		return cleartext.decode("utf-8")

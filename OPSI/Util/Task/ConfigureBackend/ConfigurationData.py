@@ -189,7 +189,7 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 			possibleValues=[
 				u'acpi=off', u'irqpoll', u'noapic', u'pci=nomsi',
 				u'vga=normal', u'reboot=b', u'mem=2G', u'nomodeset',
-				u'ramdisk_size=2097152'
+				u'ramdisk_size=2097152', u'dhclienttimeout=N'
 			],
 			defaultValues=[u''],
 			editable=True,
