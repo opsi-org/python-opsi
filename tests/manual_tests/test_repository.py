@@ -1,21 +1,8 @@
-#! /usr/bin/env python
-#-*- coding: utf-8 -*-
+#! /usr/bin/env python3
+# -*- coding: utf-8 -*-
 
-# This file is part of python-opsi.
-# Copyright (C) 2015-2019 uib GmbH <info@uib.de>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 opsi python library - Repository
 ================================
@@ -23,8 +10,6 @@ opsi python library - Repository
 Functionality to work with opsi repositories.
 
 
-:copyright: uib GmbH <info@uib.de>
-:license: GNU Affero General Public License version 3
 .. codeauthor:: Jan Schneider <j.schneider@uib.de>
 .. codeauthor:: Erol Ueluekmen <e.ueluekmen@uib.de>
 .. codeauthor:: Niko Wenselowski <n.wenselowski@uib.de>
@@ -48,7 +33,7 @@ def workingWithRepositories():
 
     sourceDepot = getRepository(url = u'smb://lelap530.vmnat.local/opsi_depot', username = u'pcpatch', password = u'linux123', mountPoint = tempDir,  mountOptions = { "iocharset": 'utf8' } )
 
-    print sourceDepot.listdir()
+    print(sourceDepot.listdir())
 
     sourceDepot.download(u'winxppro/i386/IEXPLORE.CH_', u'/mnt/hd/IEXPLORE.CH_')
     sourceDepot.download(u'winxppro/i386/NTKRNLMP.EX_', u'/mnt/hd/NTKRNLMP.EX_')

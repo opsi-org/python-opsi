@@ -1,0 +1,28 @@
+locale:
+  languages:
+    - de
+    - da
+    - fr
+  source_files:
+    - OPSI/UI.py
+  install: python-opsi_data/locale
+
+package:
+  name: python3-opsi
+  type: poetry
+  depends:
+    - python3-magic
+    - python3-pampy
+    - python3-pyasn1
+    - python3-openssl
+    - python3-pycryptodome
+    - python3-twisted
+    - python3-sqlalchemy
+    - python3-mysqldb
+    - python3-distro
+    - python3-newt
+    - python3-psutil
+    - librsync | librsync2 | librsync1
+    - iproute2
+    - lshw
+

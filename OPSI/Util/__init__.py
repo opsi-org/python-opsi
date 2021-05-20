@@ -1,37 +1,19 @@
 # -*- coding: utf-8 -*-
 
-# This module is part of the desktop management solution opsi
-# (open pc server integration) http://www.opsi.org
-
-# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
-# http://www.uib.de/
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 General utility functions.
 
 This module holds various utility functions for the work with opsi.
 This includes functions for (de)serialisation, converting classes from
 or to JSON, working with librsync and more.
-
-:copyright:	uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
 import base64
+import binascii
+import codecs
+import ipaddress
 import json
 import os
 import random
@@ -39,29 +21,42 @@ import re
 import shutil
 import socket
 import struct
+import sys
 import time
 import types
+import secrets
+import packaging.version as packver
 from collections import namedtuple
-from contextlib import closing
 from hashlib import md5
 from itertools import islice
+from functools import lru_cache
 
-from Crypto.Cipher import Blowfish
-from Crypto.PublicKey import RSA
-from Crypto.Util.number import bytes_to_long
+try:
+	# pyright: reportMissingImports=false
+	# python3-pycryptodome installs into Cryptodome
+	from Cryptodome.Cipher import Blowfish
+	from Cryptodome.PublicKey import RSA
+	from Cryptodome.Util.number import bytes_to_long
+except ImportError:
+	# PyCryptodome from pypi installs into Crypto
+	from Crypto.Cipher import Blowfish
+	from Crypto.PublicKey import RSA
+	from Crypto.Util.number import bytes_to_long
 
 from OPSI.Logger import Logger, LOG_DEBUG
-from OPSI.Types import (forceBool, forceFilename, forceFqdn, forceInt,
-						forceIPAddress, forceNetworkAddress, forceUnicode)
+from OPSI.Types import (
+	forceBool, forceFilename, forceFqdn, forceUnicode,
+	_PRODUCT_VERSION_REGEX, _PACKAGE_VERSION_REGEX
+)
+
+OPSIObject = None  # pylint: disable=invalid-name
 
 __all__ = (
 	'BLOWFISH_IV', 'PickleString',
 	'RANDOM_DEVICE', 'blowfishDecrypt', 'blowfishEncrypt',
-	'chunk', 'compareVersions', 'decryptWithPrivateKeyFromPEMFile',
-	'deserialize', 'encryptWithPublicKeyFromX509CertificatePEMFile',
-	'findFiles', 'formatFileSize', 'fromJson', 'generateOpsiHostKey',
+	'chunk', 'compareVersions', 'deserialize',
+	'findFiles', 'findFilesGenerator', 'formatFileSize', 'fromJson', 'generateOpsiHostKey',
 	'getfqdn', 'ipAddressInNetwork', 'isRegularExpressionPattern',
-	'librsyncDeltaFile', 'librsyncPatchFile', 'librsyncSignature',
 	'md5sum', 'objectToBash', 'objectToBeautifiedText', 'objectToHtml',
 	'randomString', 'removeDirectory', 'removeUnit',
 	'replaceSpecialHTMLCharacters', 'serialize', 'timestamp', 'toJson'
@@ -69,16 +64,9 @@ __all__ = (
 
 logger = Logger()
 
-if os.name == 'posix':
-	from duplicity import librsync
-elif os.name == 'nt':
-	try:
-		import librsync
-	except Exception as e:
-		logger.error(u"Failed to import librsync: %s" % e)
-
-BLOWFISH_IV = 'OPSI1234'
-RANDOM_DEVICE = u'/dev/urandom'
+BLOWFISH_IV = b"OPSI1234"
+RANDOM_DEVICE = "/dev/urandom"
+UNIT_REGEX = re.compile(r'^(\d+\.*\d*)\s*([\w]{0,4})$')
 UNIT_REGEX = re.compile(r'^(\d+\.*\d*)\s*(\w{0,4})$')
 _ACCEPTED_CHARACTERS = (
 	"abcdefghijklmnopqrstuvwxyz"
@@ -103,7 +91,7 @@ class PickleString(str):
 		return base64.standard_b64encode(self)
 
 	def __setstate__(self, state):
-		self = base64.standard_b64decode(state)
+		self = base64.standard_b64decode(state)  # pylint: disable=self-cls-assignment
 
 
 def deserialize(obj, preventObjectCreation=False):
@@ -122,24 +110,31 @@ object instance from it
 	:type obj: object
 	:type preventObjectCreation: bool
 	"""
+	global OPSIObject  # pylint: disable=global-statement,invalid-name
+	if OPSIObject is None:
+		import OPSI.Object as OPSIObject  # pylint: disable=redefined-outer-name,import-outside-toplevel
+
 	if isinstance(obj, list):
 		return [deserialize(element, preventObjectCreation=preventObjectCreation) for element in obj]
-	elif isinstance(obj, dict):
+
+	if isinstance(obj, dict):
 		if not preventObjectCreation and 'type' in obj:
-			import OPSI.Object
 			try:
-				objectClass = eval('OPSI.Object.%s' % obj['type'])
+				objectClass = getattr(OPSIObject, obj['type'], None)
+				if not objectClass:
+					# Not an OPSI object
+					return obj
 				return objectClass.fromHash(obj)
-			except Exception as error:
-				logger.debug(u"Failed to get object from dict {0!r}: {1}", obj, forceUnicode(error))
-				return obj
-		else:
-			return {
-				key: deserialize(value, preventObjectCreation=preventObjectCreation)
-				for key, value in obj.items()
-			}
-	else:
-		return obj
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error(err, exc_info=True)
+				raise ValueError(f"Failed to create object from dict {obj}: {err}") from err
+
+		return {
+			key: deserialize(value, preventObjectCreation=preventObjectCreation)
+			for key, value in obj.items()
+		}
+
+	return obj
 
 
 def serialize(obj):
@@ -151,7 +146,7 @@ of strings, dicts, lists or numbers.
 
 	:return: a JSON-compatible serialisation of the input.
 	"""
-	if isinstance(obj, (unicode, str)):
+	if isinstance(obj, str):
 		return obj
 
 	try:
@@ -159,7 +154,7 @@ of strings, dicts, lists or numbers.
 	except AttributeError:
 		if isinstance(obj, (list, set, types.GeneratorType)):
 			return [serialize(tempObject) for tempObject in obj]
-		elif isinstance(obj, dict):
+		if isinstance(obj, dict):
 			return {key: serialize(value) for key, value in obj.items()}
 
 	return obj
@@ -168,17 +163,19 @@ of strings, dicts, lists or numbers.
 def formatFileSize(sizeInBytes):
 	if sizeInBytes < 1024:
 		return '%i' % sizeInBytes
-	elif sizeInBytes < 1048576:  # 1024**2
+	if sizeInBytes < 1048576:  # 1024**2
 		return '%iK' % (sizeInBytes / 1024)
-	elif sizeInBytes < 1073741824:  # 1024**3
+	if sizeInBytes < 1073741824:  # 1024**3
 		return '%iM' % (sizeInBytes / 1048576)
-	elif sizeInBytes < 1099511627776:  # 1024**4
+	if sizeInBytes < 1099511627776:  # 1024**4
 		return '%iG' % (sizeInBytes / 1073741824)
-	else:
-		return '%iT' % (sizeInBytes / 1099511627776)
+	return '%iT' % (sizeInBytes / 1099511627776)
 
 
 def fromJson(obj, objectType=None, preventObjectCreation=False):
+	if isinstance(obj, bytes):
+		# Allow decoding errors (workaround for opsi-script bug)
+		obj = obj.decode("utf-8", "replace")
 	obj = json.loads(obj)
 	if isinstance(obj, dict) and objectType:
 		obj['type'] = objectType
@@ -189,83 +186,12 @@ def toJson(obj, ensureAscii=False):
 	return json.dumps(serialize(obj), ensure_ascii=ensureAscii)
 
 
-def librsyncSignature(filename, base64Encoded=True):
-	filename = forceFilename(filename)
-	try:
-		with open(filename, 'rb') as f:
-			with closing(librsync.SigFile(f)) as sf:
-				sig = sf.read()
-
-				if base64Encoded:
-					sig = base64.encodestring(sig)
-
-				return sig
-	except Exception as sigError:
-		raise RuntimeError(
-			u"Failed to get librsync signature from %s: %s" % (
-				filename,
-				forceUnicode(sigError)
-			)
-		)
-
-
-def librsyncPatchFile(oldfile, deltafile, newfile):
-	logger.debug(u"Librsync patch: old file {!r}, delta file {!r}, new file {!r}", oldfile, deltafile, newfile)
-
-	oldfile = forceFilename(oldfile)
-	newfile = forceFilename(newfile)
-	deltafile = forceFilename(deltafile)
-
-	if oldfile == newfile:
-		raise ValueError(u"Oldfile and newfile are the same file")
-	if deltafile == newfile:
-		raise ValueError(u"deltafile and newfile are the same file")
-	if deltafile == oldfile:
-		raise ValueError(u"oldfile and deltafile are the same file")
-
-	bufsize = 1024 * 1024
-	try:
-		with open(oldfile, "rb") as of:
-			with open(deltafile, "rb") as df:
-				with open(newfile, "wb") as nf:
-					with closing(librsync.PatchedFile(of, df)) as pf:
-						data = True
-						while data:
-							data = pf.read(bufsize)
-							nf.write(data)
-	except Exception as patchError:
-		logger.debug(
-			"Patching {!r} with delta {!r} into {!r} failed: {}",
-			oldfile, deltafile, newfile, patchError
-		)
-		raise RuntimeError(u"Failed to patch file %s: %s" % (oldfile, forceUnicode(patchError)))
-
-
-def librsyncDeltaFile(filename, signature, deltafile):
-	bufsize = 1024 * 1024
-	filename = forceFilename(filename)
-	deltafile = forceFilename(deltafile)
-	logger.debug("Creating deltafile {!r} on base of {!r}", deltafile, filename)
-	try:
-		with open(filename, "rb") as f:
-			with open(deltafile, "wb") as df:
-				with closing(librsync.DeltaFile(signature, f)) as ldf:
-					data = True
-					while data:
-						data = ldf.read(bufsize)
-						df.write(data)
-	except Exception as e:
-		raise RuntimeError(
-			u"Failed to write delta file %s: %s" % (deltafile, forceUnicode(e))
-		)
-
-
 def md5sum(filename):
 	""" Returns the md5sum of the given file. """
 	md5object = md5()
 
 	with open(filename, 'rb') as fileToHash:
-		for data in iter(lambda: fileToHash.read(524288), ''):
+		for data in iter(lambda: fileToHash.read(524288), b''):
 			md5object.update(data)
 
 	return md5object.hexdigest()
@@ -277,29 +203,21 @@ def randomString(length, characters=_ACCEPTED_CHARACTERS):
 
 	:param characters: The characters to choose from. This defaults to 0-9a-Z.
 	"""
-	return forceUnicode(u''.join(random.choice(characters) for _ in range(length)))
+	return ''.join(random.choice(characters) for _ in range(length))
 
 
-def generateOpsiHostKey(forcePython=False):
+def generateOpsiHostKey(forcePython=False):  # pylint: disable=unused-argument
 	"""
 	Generates an random opsi host key.
 
-	This will try to make use of an existing random device.
+	On Python 3.5 or lower this will try to make use of an existing
+	random device.
 	As a fallback the generation is done in plain Python.
 
 	:param forcePython: Force the usage of Python for host key generation.
+	:rtype: str
 	"""
-	if os.name == 'posix' and not forcePython:
-		logger.debug(u"Opening random device '%s' to generate opsi host key" % RANDOM_DEVICE)
-		with open(RANDOM_DEVICE) as r:
-			key = r.read(16)
-		logger.debug("Random device closed")
-		key = unicode(key.encode("hex"))
-	else:
-		logger.debug(u"Using python random module to generate opsi host key")
-		key = randomString(32, "0123456789abcdef")
-
-	return key
+	return secrets.token_hex(16)
 
 
 def timestamp(secs=0, dateOnly=False):
@@ -307,16 +225,15 @@ def timestamp(secs=0, dateOnly=False):
 	if not secs:
 		secs = time.time()
 	if dateOnly:
-		return time.strftime(u"%Y-%m-%d", time.localtime(secs))
-	else:
-		return time.strftime(u"%Y-%m-%d %H:%M:%S", time.localtime(secs))
+		return time.strftime("%Y-%m-%d", time.localtime(secs))
+	return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(secs))
 
 
 def objectToBeautifiedText(obj):
 	return json.dumps(serialize(obj), indent=4, ensure_ascii=False)
 
 
-def objectToBash(obj, bashVars=None, level=0):
+def objectToBash(obj, bashVars=None, level=0):  # pylint: disable=too-many-branches
 	"""
 	Converts `obj` into bash-compatible format.
 
@@ -348,41 +265,41 @@ def objectToBash(obj, bashVars=None, level=0):
 		append = emptyList.append
 
 	if isinstance(obj, (list, set)):
-		append(u'(\n')
+		append('(\n')
 		for element in obj:
 			if isinstance(element, (dict, list)):
 				level += 1
 				objectToBash(element, bashVars, level)
-				append(u'RESULT%d=${RESULT%d[*]}' % (level, level))
+				append('RESULT%d=${RESULT%d[*]}' % (level, level))
 			else:
 				objectToBash(element, bashVars, level)
-			append(u'\n')
-		append(u')')
+			append('\n')
+		append(')')
 	elif isinstance(obj, dict):
-		append(u'(\n')
+		append('(\n')
 		for (key, value) in obj.items():
 			append('%s=' % key)
 			if isinstance(value, (dict, list)):
 				level += 1
 				objectToBash(value, bashVars, level)
-				append(u'${RESULT%d[*]}' % level)
+				append('${RESULT%d[*]}' % level)
 			else:
 				objectToBash(value, bashVars, level)
-			append(u'\n')
-		append(u')')
+			append('\n')
+		append(')')
 	elif obj is None:
-		append(u'""')
+		append('""')
 	else:
-		append(u'"%s"' % forceUnicode(obj))
+		append(f'"{obj}"')
 
 	if compress:
 		for key, value in bashVars.items():
-			bashVars[key] = u''.join(value)
+			bashVars[key] = ''.join(value)
 
 	return bashVars
 
 
-def objectToHtml(obj, level=0):
+def objectToHtml(obj, level=0):  # pylint: disable=too-many-branches
 	if level == 0:
 		obj = serialize(obj)
 
@@ -390,52 +307,52 @@ def objectToHtml(obj, level=0):
 	append = html.append
 
 	if isinstance(obj, (list, set)):
-		append(u'[')
+		append('[')
 		if len(obj) > 0:
-			append(u'<div style="padding-left: 3em;">')
+			append('<div style="padding-left: 3em;">')
 			for i, currentElement in enumerate(obj):
 				append(objectToHtml(currentElement, level + 1))
 				if i < len(obj) - 1:
-					append(u',<br />\n')
-			append(u'</div>')
-		append(u']')
+					append(',<br />\n')
+			append('</div>')
+		append(']')
 	elif isinstance(obj, dict):
-		append(u'{')
+		append('{')
 		if len(obj) > 0:
-			append(u'<div style="padding-left: 3em;">')
+			append('<div style="padding-left: 3em;">')
 			for i, (key, value) in enumerate(obj.items()):
-				append(u'<font class="json_key">')
+				append('<font class="json_key">')
 				append(objectToHtml(key))
-				append(u'</font>: ')
+				append('</font>: ')
 				append(objectToHtml(value, level + 1))
 				if i < len(obj) - 1:
-					append(u',<br />\n')
-			append(u'</div>')
-		append(u'}')
+					append(',<br />\n')
+			append('</div>')
+		append('}')
 	elif isinstance(obj, bool):
 		append(str(obj).lower())
 	elif obj is None:
 		append('null')
 	else:
-		if isinstance(obj, (str, unicode)):  # TODO: watch out for Python 3
-			append(replaceSpecialHTMLCharacters(obj).join((u'"', u'"')))
+		if isinstance(obj, str):
+			append(replaceSpecialHTMLCharacters(obj).join(('"', '"')))
 		else:
 			append(replaceSpecialHTMLCharacters(obj))
 
-	return u''.join(html)
+	return ''.join(html)
 
 
 def replaceSpecialHTMLCharacters(text):
-	return forceUnicode(text)\
-		.replace(u'\r', u'')\
-		.replace(u'\t', u'   ')\
-		.replace(u'&', u'&amp;')\
-		.replace(u'"', u'&quot;')\
-		.replace(u"'", u'&apos;')\
-		.replace(u' ', u'&nbsp;')\
-		.replace(u'<', u'&lt;')\
-		.replace(u'>', u'&gt;')\
-		.replace(u'\n', u'<br />\n')
+	return str(text) \
+		.replace('\r', '')\
+		.replace('\t', '   ')\
+		.replace('&', '&amp;')\
+		.replace('"', '&quot;')\
+		.replace("'", '&apos;')\
+		.replace(' ', '&nbsp;')\
+		.replace('<', '&lt;')\
+		.replace('>', '&gt;')\
+		.replace('\n', '<br />\n')
 
 
 def combineVersions(obj):
@@ -449,121 +366,62 @@ def combineVersions(obj):
 	return '{0.productVersion}-{0.packageVersion}'.format(obj)
 
 
-def compareVersions(v1, condition, v2):
+def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many-locals
 	"""
 	Compare the versions `v1` and `v2` with the given `condition`.
 
 	`condition` may be one of `==`, `<`, `<=`, `>`, `>=`.
 
-	Versions will be made the same length by appending '.0' until they
-	match.
-	If `1.0.0` and `2` are compared the latter will be viewed as `2.0.0`.
-	If a version contains a `~` that character and everything following
-	it will not be taken into account.
-
 	:raises ValueError: If invalid value for version or condition if given.
 	:rtype: bool
 	:return: If the comparison matches this will return True.
 	"""
+	# Kept removePartAfterWave to not break current behaviour
 	def removePartAfterWave(versionString):
 		if "~" in versionString:
 			return versionString[:versionString.find("~")]
-		else:
-			return versionString
+		return versionString
 
-	def splitProductAndPackageVersion(versionString):
-		productVersion = packageVersion = u'0'
+	first = removePartAfterWave(v1)
+	second = removePartAfterWave(v2)
+	for version in (first, second):
+		parts = version.split("-")
+		if (
+			not _PRODUCT_VERSION_REGEX.search(parts[0]) or
+			(len(parts) == 2 and not _PACKAGE_VERSION_REGEX.search(parts[1])) or
+			len(parts) > 2
+		):
+			raise ValueError(f"Bad package version provided: '{version}'")
 
-		match = re.search(r'^\s*([\w.]+)-*([\w.]*)\s*$', versionString)
-		if not match:
-			raise ValueError(u"Bad version string '%s'" % versionString)
+	try:
+		#dont use packver.parse() here as it produces LegacyVersions if some letters are contained (else Versions)
+		#in comparisson, LegacyVersion is always smaller than Version (Problem for 20.09 and 21.h1)
+		first = packver.LegacyVersion(first)
+		second = packver.LegacyVersion(second)
+	except packver.InvalidVersion as version_error:
+		raise ValueError("Invalid version provided to compareVersions") from version_error
 
-		productVersion = match.group(1)
-		if match.group(2):
-			packageVersion = match.group(2)
+	if condition in ("==", "=") or not condition:
+		result = first == second
+	elif condition == "<":
+		result = first < second
+	elif condition == "<=":
+		result = first <= second
+	elif condition == ">":
+		result = first > second
+	elif condition == ">=":
+		result = first >= second
+	else:
+		raise ValueError(f"Bad condition {condition} provided to compareVersions")
 
-		return Version(productVersion, packageVersion)
-
-	def makeEqualLength(first, second):
-		while len(first) < len(second):
-			first.append(u'0')
-
-		while len(second) < len(first):
-			second.append(u'0')
-
-	def splitValue(value):
-		match = re.search(r'^(\d+)(\D*.*)$', value)
-		if match:
-			return int(match.group(1)), match.group(2)
-		else:
-			match = re.search(r'^(\D+)(\d*.*)$', value)
-			if match:
-				return match.group(1), match.group(2)
-
-		return u'', value
-
-	if not condition:
-		condition = u'=='
-	if condition not in (u'==', u'=', u'<', u'<=', u'>', u'>='):
-		raise ValueError(u"Bad condition '%s'" % condition)
-	if condition == u'=':
-		condition = u'=='
-
-	v1 = removePartAfterWave(forceUnicode(v1))
-	v2 = removePartAfterWave(forceUnicode(v2))
-
-	version = splitProductAndPackageVersion(v1)
-	otherVersion = splitProductAndPackageVersion(v2)
-	logger.debug2("Versions: {0!r}, {1!r}", version, otherVersion)
-
-	comparisons = (
-		(version.product, otherVersion.product),
-		(version.package, otherVersion.package)
-	)
-
-	for first, second in comparisons:
-		logger.debug2("Comparing {0!r} with {1!r}...", first, second)
-		firstParts = first.split(u'.')
-		secondParts = second.split(u'.')
-		makeEqualLength(firstParts, secondParts)
-
-		for value, otherValue in zip(firstParts, secondParts):
-			while value or otherValue:
-				cv1, value = splitValue(value)
-				cv2, otherValue = splitValue(otherValue)
-
-				if cv1 == u'':
-					cv1 = chr(1)
-				if cv2 == u'':
-					cv2 = chr(1)
-
-				if cv1 == cv2:
-					logger.debug2(u"{0!r} == {1!r} => continue", cv1, cv2)
-					continue
-
-				if not isinstance(cv1, int):
-					cv1 = u"'%s'" % cv1
-				if not isinstance(cv2, int):
-					cv2 = u"'%s'" % cv2
-
-				logger.debug2(u"Is {0!r} {1} {2!r}?", cv1, condition, cv2)
-				conditionFulfilled = eval(u"%s %s %s" % (cv1, condition, cv2))
-				if not conditionFulfilled:
-					logger.debug(u"Unfulfilled condition: {0} {1} {2}", version, condition, otherVersion)
-					return False
-
-				logger.debug(u"Fulfilled condition: {0} {1} {2}", version, condition, otherVersion)
-				return True
-
-	if u'=' not in condition:
-		logger.debug(u"Unfulfilled condition: {0} {1} {2}", version, condition, otherVersion)
-		return False
-
-	logger.debug(u"Fulfilled condition: {0} {1} {2}", version, condition, otherVersion)
-	return True
+	if result:
+		logger.debug("Fulfilled condition: %s %s %s", v1, condition, v2)
+	else:
+		logger.debug("Unfulfilled condition: %s %s %s", v1, condition, v2)
+	return result
 
 
-def removeUnit(x):
+def removeUnit(x):  # pylint: disable=invalid-name,too-many-return-statements
 	'''
 	Take a string representing a byte-based size and return the
 	value in bytes.
@@ -572,12 +430,12 @@ def removeUnit(x):
 	:returns: `x` in bytes.
 	:rtype: int or float
 	'''
-	x = forceUnicode(x)
+	x = str(x)
 	match = UNIT_REGEX.search(x)
 	if not match:
 		return x
 
-	if u'.' in match.group(1):
+	if '.' in match.group(1):
 		value = float(match.group(1))
 	else:
 		value = int(match.group(1))
@@ -598,13 +456,13 @@ def removeUnit(x):
 
 	if unit.endswith('n'):
 		return float(value) / (mult * mult)
-	elif unit.endswith('m'):
+	if unit.endswith('m'):
 		return float(value) / mult
-	elif unit.lower().endswith('k'):
+	if unit.lower().endswith('k'):
 		return value * mult
-	elif unit.endswith('M'):
+	if unit.endswith('M'):
 		return value * mult * mult
-	elif unit.endswith('G'):
+	if unit.endswith('G'):
 		return value * mult * mult * mult
 
 	return value
@@ -615,29 +473,29 @@ def blowfishEncrypt(key, cleartext):
 	Takes `cleartext` string, returns hex-encoded,
 	blowfish-encrypted string.
 
+	:type key: str
+	:type cleartext: str
 	:raises BlowfishError: In case things go wrong.
-	:rtype: unicode
+	:rtype: str
 	"""
-	cleartext = forceUnicode(cleartext).encode('utf-8')
-	key = forceUnicode(key)
+	if not key:
+		raise BlowfishError("Missing key")
+
+	key = _prepareBlowfishKey(key)
+	cleartext = forceUnicode(cleartext)
 
 	while len(cleartext) % 8 != 0:
 		# Fill up with \0 until length is a mutiple of 8
 		cleartext += chr(0)
 
-	try:
-		key = key.decode("hex")
-	except TypeError:
-		raise BlowfishError(u"Failed to hex decode key '%s'" % key)
-
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
 	try:
-		crypt = blowfish.encrypt(cleartext)
-	except Exception as encryptError:
-		logger.logException(encryptError, LOG_DEBUG)
-		raise BlowfishError(u"Failed to encrypt")
+		crypt = blowfish.encrypt(cleartext.encode("utf-8"))
+	except Exception as err:
+		logger.debug(err, exc_info=True)
+		raise BlowfishError("Failed to encrypt") from err
 
-	return unicode(crypt.encode("hex"))
+	return crypt.hex()
 
 
 def blowfishDecrypt(key, crypt):
@@ -645,69 +503,50 @@ def blowfishDecrypt(key, crypt):
 	Takes hex-encoded, blowfish-encrypted string,
 	returns cleartext string.
 
+	:type key: str
+	:param crypt: The encrypted text as hex.
+	:type crypt: str
 	:raises BlowfishError: In case things go wrong.
-	:rtype: unicode
+	:rtype: str
 	"""
+	if not key:
+		raise BlowfishError("Missing key")
 
-	key = forceUnicode(key)
-	crypt = forceUnicode(crypt)
-	try:
-		key = key.decode("hex")
-	except TypeError as e:
-		raise BlowfishError(u"Failed to hex decode key '%s'" % key)
+	key = _prepareBlowfishKey(key)
+	crypt = bytes.fromhex(crypt)
 
-	crypt = crypt.decode("hex")
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
 	try:
 		cleartext = blowfish.decrypt(crypt)
-	except Exception as decryptError:
-		logger.logException(decryptError, LOG_DEBUG)
-		raise BlowfishError(u"Failed to decrypt")
+	except Exception as err:
+		logger.debug(err, exc_info=True)
+		raise BlowfishError("Failed to decrypt") from err
 
 	# Remove possible \0-chars
-	if cleartext.find('\0') != -1:
-		cleartext = cleartext[:cleartext.find('\0')]
+	cleartext = cleartext.rstrip(b'\0')
 
 	try:
-		return unicode(cleartext, 'utf-8')
-	except Exception as e:
-		logger.error(e)
-		raise BlowfishError(u"Failed to convert decrypted text to unicode.")
+		return cleartext.decode("utf-8")
+	except Exception as err:
+		logger.error(err)
+		raise BlowfishError("Failed to convert decrypted text to unicode.") from err
 
 
-def encryptWithPublicKeyFromX509CertificatePEMFile(data, filename):
-	import M2Crypto
-
-	cert = M2Crypto.X509.load_cert(filename)
-	rsa = cert.get_pubkey().get_rsa()
-	padding = M2Crypto.RSA.pkcs1_oaep_padding
-
-	def encrypt():
-		for parts in chunk(data, size=32):
-			yield rsa.public_encrypt(data=''.join(parts), padding=padding)
-
-	return ''.join(encrypt())
+def _prepareBlowfishKey(key: str) -> bytes:
+	"Transform the key into hex."
+	try:
+		key = forceUnicode(key).encode()
+		return codecs.decode(key, "hex")
+	except (binascii.Error, Exception) as err:
+		raise BlowfishError(f"Unable to prepare key: {err}") from err
 
 
-def decryptWithPrivateKeyFromPEMFile(data, filename):
-	import M2Crypto
-
-	privateKey = M2Crypto.RSA.load_key(filename)
-	padding = M2Crypto.RSA.pkcs1_oaep_padding
-
-	def decrypt():
-		for parts in chunk(data, size=256):
-			decr = privateKey.private_decrypt(data=''.join(parts), padding=padding)
-
-			for x in decr:
-				if x not in ('\x00', '\0'):
-					# Avoid any nullbytes
-					yield x
-
-	return ''.join(decrypt())
-
-
-def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeDir=None, includeFile=None, returnDirs=True, returnLinks=True, followLinks=False, repository=None):
+def findFilesGenerator(  # pylint: disable=too-many-branches,too-many-locals,too-many-arguments,too-many-statements
+	directory, prefix='',
+	excludeDir=None, excludeFile=None, includeDir=None, includeFile=None,
+	returnDirs=True, returnLinks=True, followLinks=False,
+	repository=None
+):
 	directory = forceFilename(directory)
 	prefix = forceUnicode(prefix)
 
@@ -748,11 +587,7 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 		isdir = os.path.isdir
 		listdir = os.listdir
 
-	files = []
 	for entry in listdir(directory):
-		if isinstance(entry, str):  # TODO how to handle this with Python 3?
-			logger.error(u"Bad filename '%s' found in directory '%s', skipping entry!" % (unicode(entry, 'ascii', 'replace'), directory))
-			continue
 		pp = os.path.join(prefix, entry)
 		dp = os.path.join(directory, entry)
 		isLink = False
@@ -762,50 +597,65 @@ def findFiles(directory, prefix=u'', excludeDir=None, excludeFile=None, includeD
 				continue
 		if isdir(dp) and (not isLink or followLinks):
 			if excludeDir and re.search(excludeDir, entry):
-				logger.debug(u"Excluding dir '%s' and containing files" % entry)
+				logger.debug("Excluding dir '%s' and containing files", entry)
 				continue
 			if includeDir:
 				if not re.search(includeDir, entry):
 					continue
-				logger.debug(u"Including dir '%s' and containing files" % entry)
+				logger.debug("Including dir '%s' and containing files", entry)
 			if returnDirs:
-				files.append(pp)
-			files.extend(
-				findFiles(
-					directory=dp,
-					prefix=pp,
-					excludeDir=excludeDir,
-					excludeFile=excludeFile,
-					includeDir=includeDir,
-					includeFile=includeFile,
-					returnDirs=returnDirs,
-					returnLinks=returnLinks,
-					followLinks=followLinks,
-					repository=repository
-				)
+				yield pp
+			yield from findFilesGenerator(
+				directory=dp,
+				prefix=pp,
+				excludeDir=excludeDir,
+				excludeFile=excludeFile,
+				includeDir=includeDir,
+				includeFile=includeFile,
+				returnDirs=returnDirs,
+				returnLinks=returnLinks,
+				followLinks=followLinks,
+				repository=repository
 			)
 			continue
 
 		if excludeFile and re.search(excludeFile, entry):
 			if isLink:
-				logger.debug(u"Excluding link '%s'" % entry)
+				logger.debug("Excluding link '%s'", entry)
 			else:
-				logger.debug(u"Excluding file '%s'" % entry)
+				logger.debug("Excluding file '%s'", entry)
 			continue
 
 		if includeFile:
 			if not re.search(includeFile, entry):
 				continue
 			if isLink:
-				logger.debug(u"Including link '%s'" % entry)
+				logger.debug("Including link '%s'", entry)
 			else:
-				logger.debug(u"Including file '%s'" % entry)
-		files.append(pp)
-	return files
+				logger.debug("Including file '%s'", entry)
+		yield pp
 
+def findFiles(  # pylint: disable=too-many-arguments
+	directory, prefix='',
+	excludeDir=None, excludeFile=None, includeDir=None, includeFile=None,
+	returnDirs=True, returnLinks=True, followLinks=False,
+	repository=None
+):
+	return list(
+		findFilesGenerator(
+			directory, prefix,
+			excludeDir, excludeFile, includeDir, includeFile,
+			returnDirs, returnLinks, followLinks,
+			repository
+		)
+	)
 
-def isRegularExpressionPattern(object):
-	return "SRE_Pattern" in str(type(object))
+if sys.version_info >= (3, 7):
+	def isRegularExpressionPattern(object):  # pylint: disable=redefined-builtin
+		return isinstance(object, re.Pattern)
+else:
+	def isRegularExpressionPattern(object):  # pylint: disable=redefined-builtin
+		return "SRE_Pattern" in str(type(object))
 
 
 def ipAddressInNetwork(ipAddress, networkAddress):
@@ -819,41 +669,15 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 	:param networkAddress: The network address written with slash notation.
 	:type networkAddress: str
 	"""
-	def createBytemaskFromAddress(address):
-		"Returns an int representation of an bytemask of an ipAddress."
-		num = [forceInt(part) for part in address.split('.')]
-		return (num[0] << 24) + (num[1] << 16) + (num[2] << 8) + num[3]
+	if not isinstance(ipAddress, (ipaddress.IPv4Address, ipaddress.IPv6Address)):
+		ipAddress = ipaddress.ip_address(ipAddress)
+	if isinstance(ipAddress, ipaddress.IPv6Address) and ipAddress.ipv4_mapped:
+		ipAddress = ipAddress.ipv4_mapped
 
-	ipAddress = forceIPAddress(ipAddress)
-	networkAddress = forceNetworkAddress(networkAddress)
+	if not isinstance(networkAddress, (ipaddress.IPv4Network, ipaddress.IPv6Network)):
+		networkAddress = ipaddress.ip_network(networkAddress)
 
-	ip = createBytemaskFromAddress(ipAddress)
-
-	network, netmask = networkAddress.split(u'/')
-
-	if '.' not in netmask:
-		netmask = forceUnicode(socket.inet_ntoa(struct.pack('>I', 0xffffffff ^ (1 << 32 - forceInt(netmask)) - 1)))
-
-	while netmask.count('.') < 3:
-		netmask = netmask + u'.0'
-
-	logger.debug(
-		u"Testing if ip {ipAddress} is part of network "
-		u"{network}/{netmask}".format(
-			ipAddress=ipAddress,
-			network=network,
-			netmask=netmask
-		)
-	)
-
-	network = createBytemaskFromAddress(network)
-	netmask = createBytemaskFromAddress(netmask)
-
-	wildcard = netmask ^ 0xFFFFFFFF
-	if wildcard | ip == wildcard | network:
-		return True
-
-	return False
+	return ipAddress in networkAddress
 
 
 def getfqdn(name='', conf=None):
@@ -869,11 +693,14 @@ def getfqdn(name='', conf=None):
 		try:
 			return forceFqdn(os.environ["OPSI_HOSTNAME"])
 		except KeyError:
-			# not set in environment.
+			# Not set in environment.
+			pass
+		except ValueError:
+			# Not a fqdn
 			pass
 
 		# lazy import to avoid circular dependency
-		from OPSI.Util.Config import getGlobalConfig
+		from OPSI.Util.Config import getGlobalConfig  # pylint: disable=import-outside-toplevel
 
 		if conf is not None:
 			hostname = getGlobalConfig('hostname', conf)
@@ -898,17 +725,18 @@ def removeDirectory(directory):
 	:param directory: Path to the directory
 	:tye directory: str
 	"""
-	logger.debug('Removing directory: {0}'.format(directory))
+	logger.debug('Removing directory: %s', directory)
 	try:
 		shutil.rmtree(directory)
 	except UnicodeDecodeError:
 		# See http://bugs.python.org/issue3616
 		logger.info(
-			u'Client data directory seems to contain filenames '
-			u'with unicode characters. Trying fallback.'
+			'Client data directory seems to contain filenames '
+			'with unicode characters. Trying fallback.'
 		)
 
-		import OPSI.System  # late import to avoid circular dependency
+		# late import to avoid circular dependency
+		import OPSI.System  # pylint: disable=import-outside-toplevel
 		OPSI.System.execute('rm -rf {dir}'.format(dir=directory))
 
 
@@ -926,6 +754,7 @@ def chunk(iterable, size):
 	return iter(lambda: tuple(islice(it, size)), ())
 
 
+@lru_cache(maxsize=4)
 def getPublicKey(data):
 	# Key type can be found in 4:11.
 	rest = data[11:]

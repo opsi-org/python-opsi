@@ -1,33 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# This file is part of python-opsi.
-# Copyright (C) 2010-2019 uib GmbH <info@uib.de>
-# All rights reserved.
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 OpsiPXEConfd-Backend
-
-:copyright:	uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
-import codecs
+import os
 import json
-import os.path
+import codecs
 import socket
 import tempfile
 import threading
@@ -35,23 +16,22 @@ import time
 from contextlib import closing, contextmanager
 from pipes import quote
 
-from OPSI.Backend.Backend import ConfigDataBackend
+from opsicommon.logging import logger, secret_filter
+from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
-from OPSI.Exceptions import (BackendMissingDataError,
-	BackendUnableToConnectError, BackendUnaccomplishableError)
-from OPSI.Logger import LOG_DEBUG, Logger
+from OPSI.Exceptions import (
+	BackendMissingDataError, BackendUnableToConnectError, BackendUnaccomplishableError
+)
 from OPSI.Object import ConfigState, OpsiClient, ProductPropertyState
 from OPSI.Types import forceHostId, forceInt, forceUnicode, forceUnicodeList
 from OPSI.Util import getfqdn, serialize
 
 __all__ = ('ServerConnection', 'OpsiPXEConfdBackend', 'createUnixSocket')
 
-ERROR_MARKER = u'(ERROR)'
-
-logger = Logger()
+ERROR_MARKER = '(ERROR)'
 
 
-class ServerConnection:
+class ServerConnection:  # pylint: disable=too-few-public-methods
 	def __init__(self, port, timeout=10):
 		self.port = port
 		self.timeout = forceInt(timeout)
@@ -60,31 +40,31 @@ class ServerConnection:
 		with createUnixSocket(self.port, timeout=self.timeout) as unixSocket:
 			unixSocket.send(forceUnicode(cmd).encode('utf-8'))
 
-			result = ''
+			result = ""
 			try:
-				for part in iter(lambda: unixSocket.recv(4096), ''):
-					logger.debug2("Received {!r}", part)
+				for part in iter(lambda: unixSocket.recv(4096), b''):
+					logger.trace("Received %s", part)
 					result += forceUnicode(part)
-			except Exception as error:
-				raise RuntimeError(u"Failed to receive: %s" % error)
+			except Exception as err:  # pylint: disable=broad-except
+				raise RuntimeError(f"Failed to receive: {err}") from err
 
 		if result.startswith(ERROR_MARKER):
-			raise RuntimeError(u"Command '%s' failed: %s" % (cmd, result))
+			raise RuntimeError(f"Command '{cmd}' failed: {result}")
 
 		return result
 
 
 @contextmanager
 def createUnixSocket(port, timeout=5.0):
-	logger.notice(u"Creating unix socket {!r}", port)
+	logger.notice("Creating unix socket %s", port)
 	_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 	_socket.settimeout(timeout)
 	try:
 		with closing(_socket) as unixSocket:
 			unixSocket.connect(port)
 			yield unixSocket
-	except Exception as error:
-		raise RuntimeError(u"Failed to connect to socket '%s': %s" % (port, error))
+	except Exception as err:
+		raise RuntimeError(f"Failed to connect to socket '{port}': {err}") from err
 
 
 def getClientCacheFilePath(clientId):
@@ -100,13 +80,13 @@ def getClientCacheFilePath(clientId):
 	return os.path.join(directory, clientId + '.json')
 
 
-class OpsiPXEConfdBackend(ConfigDataBackend):
+class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attributes
 
 	def __init__(self, **kwargs):
 		ConfigDataBackend.__init__(self, **kwargs)
 
 		self._name = 'opsipxeconfd'
-		self._port = u'/var/run/opsipxeconfd/opsipxeconfd.socket'
+		self._port = '/var/run/opsipxeconfd/opsipxeconfd.socket'
 		self._timeout = 10
 		self._depotId = forceHostId(getfqdn())
 		self._opsiHostKey = None
@@ -114,6 +94,22 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		self._updateThreads = {}
 		self._updateThreadsLock = threading.Lock()
 		self._parseArguments(kwargs)
+
+	def _get_opsi_host_key(self, backend=None):
+		if backend is None:
+			backend = self._context
+		depots = backend.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
+		if not depots or not depots[0].getOpsiHostKey():
+			raise BackendMissingDataError(f"Failed to get opsi host key for depot '{self._depotId}'")
+		self._opsiHostKey = depots[0].getOpsiHostKey()
+		secret_filter.add_secrets(self._opsiHostKey)
+
+	def _init_backend(self, config_data_backend):
+		try:
+			self._get_opsi_host_key(config_data_backend)
+		except BackendMissingDataError as err:
+			# This can fail if backend is not yet initialized, continue!
+			logger.info(err)
 
 	def _parseArguments(self, kwargs):
 		for (option, value) in kwargs.items():
@@ -123,81 +119,58 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			elif option == 'timeout':
 				self._timeout = forceInt(value)
 
-	def _getDepotConnection(self, depotId):
-		depotId = forceHostId(depotId)
-		if depotId == self._depotId:
+	def _getDepotConnection(self, depot: str, port: int = 4447) -> None:
+		depot = depot.lower()
+		if depot == self._depotId:
 			return self
 
-		try:
-			return self._depotConnections[depotId]
-		except KeyError:
+		if depot not in self._depotConnections:
 			if not self._opsiHostKey:
-				depots = self._context.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
-				if not depots or not depots[0].getOpsiHostKey():
-					raise BackendMissingDataError(u"Failed to get opsi host key for depot '%s'" % self._depotId)
-				self._opsiHostKey = depots[0].getOpsiHostKey()
-
-			self._depotConnections[depotId] = self._getExternalBackendConnection(
-				depotId,
-				self._depotId,
-				self._opsiHostKey
-			)
-			return self._depotConnections[depotId]
-
-	def _getScalabilityDepotConnection(self, depot, port):
-		try:
-			return self._depotConnections[depot]
-		except KeyError:
-			if not self._opsiHostKey:
-				depots = self._context.host_getObjects(type="OpsiConfigserver")  # pylint: disable=maybe-no-member
-				if not depots or not depots[0].getOpsiHostKey():
-					raise BackendMissingDataError(u"Failed to get opsi host key for depot '%s'" % self._depotId)
-				self._opsiHostKey = depots[0].getOpsiHostKey()
-
+				self._get_opsi_host_key()
 			self._depotConnections[depot] = self._getExternalBackendConnection(
-				depot,
-				self._depotId,
-				self._opsiHostKey,
-				port=port
+				depot, self._depotId, self._opsiHostKey, port=port
 			)
-			return self._depotConnections[depot]
+		return self._depotConnections[depot]
 
-	def _getExternalBackendConnection(self, address, username, password, port=4447):
+	def _getExternalBackendConnection(self, address: str, username: str, password: str, port: int = 4447):
+		secret_filter.add_secrets(password)
 		try:
 			return JSONRPCBackend(
-				address=u'https://%s:%s/rpc/backend/%s' % (address, port, self._name),
+				address=f"https://{address}:{port}/rpc/backend/{self._name}",
 				username=username,
 				password=password
 			)
-		except Exception as error:
-			raise BackendUnableToConnectError(u"Failed to connect to depot '%s': %s" % (address, error))
+		except Exception as err:
+			raise BackendUnableToConnectError(f"Failed to connect to depot '{address}': {err}") from err
 
 	def _getResponsibleDepotId(self, clientId):
-		configStates = self._context.configState_getObjects(configId=u'clientconfig.depot.id', objectId=clientId)  # pylint: disable=maybe-no-member
+		configStates = self._context.configState_getObjects(configId='clientconfig.depot.id', objectId=clientId)  # pylint: disable=maybe-no-member
 		if configStates and configStates[0].values:
 			depotId = configStates[0].values[0]
 		else:
-			configs = self._context.config_getObjects(id=u'clientconfig.depot.id')  # pylint: disable=maybe-no-member
+			configs = self._context.config_getObjects(id='clientconfig.depot.id')  # pylint: disable=maybe-no-member
 			if not configs or not configs[0].defaultValues:
-				raise BackendUnaccomplishableError(u"Failed to get depotserver for client '%s', config 'clientconfig.depot.id' not set and no defaults found" % clientId)
+				raise BackendUnaccomplishableError(
+					f"Failed to get depotserver for client '{clientId}', config 'clientconfig.depot.id' not set and no defaults found"
+				)
 			depotId = configs[0].defaultValues[0]
 		return depotId
 
-	def _pxeBootConfigurationUpdateNeeded(self, productOnClient):
+	def _pxeBootConfigurationUpdateNeeded(self, productOnClient):  # pylint: disable=no-self-use
 		if productOnClient.productType != 'NetbootProduct':
-			logger.debug(u"Not a netboot product: {0!r}, nothing to do", productOnClient.productId)
+			logger.debug("Not a netboot product: %s, nothing to do", productOnClient.productId)
 			return False
 
 		if not productOnClient.actionRequest:
-			logger.debug(u"No action request update for product {0!r}, client {1!r}, nothing to do", productOnClient.productId, productOnClient.clientId)
+			logger.debug("No action request update for product %s, client %s, nothing to do", productOnClient.productId, productOnClient.clientId)
 			return False
 
 		return True
 
-	def _collectDataForUpdate(self, clientId, depotId):
+	def _collectDataForUpdate(self, clientId, depotId):  # pylint: disable=too-many-locals,too-many-branches
 		logger.debug("Collecting data for opsipxeconfd...")
 
-		try:
+		try:  # pylint: disable=too-many-nested-blocks
 			try:
 				host = self._context.host_getObjects(
 					attributes=["hardwareAddress", "opsiHostKey", "ipAddress"],
@@ -208,7 +181,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				return serialize({"host": None, "productOnClient": []})
 
 			productOnClients = self._context.productOnClient_getObjects(
-				productType=u'NetbootProduct',
+				productType='NetbootProduct',
 				clientId=clientId,
 				actionRequest=['setup', 'uninstall', 'update', 'always', 'once', 'custom']
 			)
@@ -220,7 +193,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 			try:
 				productOnDepot = self._context.productOnDepot_getObjects(
-					productType=u'NetbootProduct',
+					productType='NetbootProduct',
 					productId=productOnClient.productId,
 					depotId=depotId
 				)[0]
@@ -236,19 +209,21 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			# the depot.
 			product = self._context.product_getObjects(
 				attributes=['id', 'pxeConfigTemplate'],
-				type=u'NetbootProduct',
+				type='NetbootProduct',
 				id=productOnClient.productId,
 				productVersion=productOnDepot.productVersion,
 				packageVersion=productOnDepot.packageVersion
 			)[0]
 
 			eliloMode = None
+			serviceAddress = None
+			bootimageAppend = ""
 			for configState in self._collectConfigStates(clientId):
-				if configState.configId == u"clientconfig.configserver.url":
+				if configState.configId == "clientconfig.configserver.url":
 					serviceAddress = configState.getValues()[0]
-				elif configState.configId == u'opsi-linux-bootimage.append':
+				elif configState.configId == 'opsi-linux-bootimage.append':
 					bootimageAppend = configState
-				elif configState.configId == u"clientconfig.dhcpd.filename":
+				elif configState.configId == "clientconfig.dhcpd.filename":
 					try:
 						value = configState.getValues()[0]
 						if (('elilo' in value) or ('shim' in value)):
@@ -260,15 +235,15 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 						# If we land here there is no default value set
 						# and no items are present.
 						pass
-					except Exception as eliloError:
-						logger.debug("Failed to detect elilo setting for {}: {}", clientId, eliloError)
+					except Exception as err:  # pylint: disable=broad-except
+						logger.debug("Failed to detect elilo setting for %s: %s", clientId, err)
 
 			productPropertyStates = self._collectProductPropertyStates(
 				clientId,
 				productOnClient.productId,
 				depotId
 			)
-			logger.debug("Collected product property states: {}", productPropertyStates)
+			logger.debug("Collected product property states: %s", productPropertyStates)
 
 			backendinfo = self._context.backend_info()
 			backendinfo["hostCount"] = len(self._context.host_getObjects(attributes=['id'], type='OpsiClient'))
@@ -287,10 +262,10 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			}
 
 			data = serialize(data)
-			logger.debug("Collected data of for opsipxeconfd: {!r}", clientId, data)
-		except Exception as collectError:
-			logger.logException(collectError)
-			logger.warning("Failed to collect data of {} for opsipxeconfd: {}", clientId, collectError)
+			logger.debug("Collected data of for opsipxeconfd: %s, %s", clientId, data)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.error(err, exc_info=True)
+			logger.warning("Failed to collect data of %s for opsipxeconfd: %s", clientId, err)
 			data = {}
 
 		return data
@@ -316,7 +291,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 
 		# Create missing config states
 		for config in self._context.config_getObjects(id=missingConfigStateIds):
-			logger.debug(u"Got default values for {0!r}: {1}", config.id, config.defaultValues)
+			logger.debug("Got default values for %s: %s", config.id, config.defaultValues)
 			# Config state does not exist for client => create default
 			cf = ConfigState(
 				configId=config.id,
@@ -334,11 +309,11 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			productId=productId
 		)
 
-		existingPropertyStatePropertyIds = set(pps.propertyId for pps in productPropertyStates)
+		propertyStatePropertyIds = set(pps.propertyId for pps in productPropertyStates)
 
 		# Create missing product property states
 		for pps in self._context.productPropertyState_getObjects(productId=productId, objectId=depotId):
-			if pps.propertyId not in existingPropertyStatePropertyIds:
+			if pps.propertyId not in propertyStatePropertyIds:
 				# Product property for client does not exist => add default (values of depot)
 				productPropertyStates.append(
 					ProductPropertyState(
@@ -350,7 +325,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 				)
 
 		return {
-			pps.propertyId: u','.join(forceUnicodeList(pps.getValues()))
+			pps.propertyId: ','.join(forceUnicodeList(pps.getValues()))
 			for pps
 			in productPropertyStates
 		}
@@ -366,7 +341,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			for method in destination.backend_getInterface():
 				if method['name'] == 'opsipxeconfd_updatePXEBootConfiguration':
 					if len(method['params']) < 2:
-						logger.debug("Depot {} does not support receiving cached data.", responsibleDepot)
+						logger.debug("Depot %s does not support receiving cached data.", responsibleDepot)
 						return False
 
 					break
@@ -379,9 +354,9 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 			# Prefer connections to addr:port over all others.
 			# They are used in scaled setups.
 			depot, port = self._port.split(":")
-			destination = self._getScalabilityDepotConnection(depot, port)
+			destination = self._getDepotConnection(depot, port)
 		elif responsibleDepot != self._depotId:
-			logger.info(u"Not responsible for client '{}', forwarding request to depot {!r}", productOnClient.clientId, responsibleDepot)
+			logger.info("Not responsible for client '%s', forwarding request to depot %s", productOnClient.clientId, responsibleDepot)
 			destination = self._getDepotConnection(responsibleDepot)
 		else:
 			destination = self
@@ -403,7 +378,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		:type data: dict
 		"""
 		clientId = forceHostId(clientId)
-		logger.debug("Updating PXE boot config of {!r}", clientId)
+		logger.debug("Updating PXE boot config of %s", clientId)
 
 		command = 'update {}'.format(clientId)
 		if data:
@@ -432,21 +407,22 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		:returns: The path of the cache file. None if no file could be written.
 		"""
 		destinationFile = getClientCacheFilePath(clientId)
-		logger.debug2("Writing data to {}: {!r}", destinationFile, data)
+		logger.trace("Writing data to %s: %s", destinationFile, data)
 		try:
 			with codecs.open(destinationFile, "w", 'utf-8') as outfile:
 				json.dump(serialize(data), outfile)
 			os.chmod(destinationFile, 0o640)
 			return destinationFile
 		except (OSError, IOError) as dataFileError:
-			logger.logException(dataFileError, logLevel=LOG_DEBUG)
-			logger.debug("Writing cache file {!r} failed: {!r}", destinationFile, dataFileError)
+			logger.debug(dataFileError, exc_info=True)
+			logger.debug("Writing cache file %s failed: %s", destinationFile, dataFileError)
+		return None
 
 	def backend_exit(self):
 		for connection in self._depotConnections.values():
 			try:
 				connection.backend_exit()
-			except Exception:
+			except Exception:  # pylint: disable=broad-except
 				pass
 
 		with self._updateThreadsLock:
@@ -474,11 +450,12 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		for productOnClient in productOnClients:
 			try:
 				self._updateByProductOnClient(productOnClient)
-			except Exception as error:
-				errors.append(forceUnicode(error))
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error("_updateByProductOnClient failed: %s", err, exc_info=True)
+				errors.append(str(err))
 
 		if errors:
-			raise RuntimeError(u', '.join(errors))
+			raise RuntimeError(', '.join(errors))
 
 	def configState_insertObject(self, configState):
 		if configState.configId != 'clientconfig.depot.id':
@@ -501,11 +478,11 @@ class OpsiPXEConfdBackend(ConfigDataBackend):
 		for host in hosts:
 			try:
 				self.opsipxeconfd_updatePXEBootConfiguration(host)
-			except Exception as error:
-				errors.append(forceUnicode(error))
+			except Exception as err:  # pylint: disable=broad-except
+				errors.append(str(err))
 
 		if errors:
-			raise RuntimeError(u', '.join(errors))
+			raise RuntimeError(', '.join(errors))
 
 
 class UpdateThread(threading.Thread):
@@ -519,24 +496,24 @@ class UpdateThread(threading.Thread):
 		self._delay = self._DEFAULT_DELAY
 
 	def run(self):
-		logger.debug("UpdateThread {} waiting until delay is done...", self.name)
+		logger.debug("UpdateThread %s waiting until delay is done...", self.name)
 		delayReduction = 0.2
 		while self._delay > 0:
 			time.sleep(delayReduction)
 			self._delay -= delayReduction
 
-		with self._opsiPXEConfdBackend._updateThreadsLock:
+		with self._opsiPXEConfdBackend._updateThreadsLock:  # pylint: disable=protected-access
 			try:
-				logger.info(u"Updating pxe boot configuration for client '{}'", self._clientId)
-				sc = ServerConnection(self._opsiPXEConfdBackend._port, self._opsiPXEConfdBackend._timeout)
-				logger.debug(u"Sending command {!r}", self._command)
+				logger.info("Updating pxe boot configuration for client '%s'", self._clientId)
+				sc = ServerConnection(self._opsiPXEConfdBackend._port, self._opsiPXEConfdBackend._timeout)  # pylint: disable=protected-access
+				logger.debug("Sending command %s", self._command)
 				result = sc.sendCommand(self._command)
-				logger.debug(u"Got result {!r}", result)
-			except Exception as error:
-				logger.critical(u"Failed to update PXE boot configuration for client '{}': {}", self._clientId, error)
+				logger.debug("Got result %s", result)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.critical("Failed to update PXE boot configuration for client '%s': %s", self._clientId, err)
 			finally:
-				del self._opsiPXEConfdBackend._updateThreads[self._clientId]
+				del self._opsiPXEConfdBackend._updateThreads[self._clientId]  # pylint: disable=protected-access
 
 	def delay(self):
 		self._delay = self._DEFAULT_DELAY
-		logger.debug("Resetted delay for UpdateThread {}", self.name)
+		logger.debug("Resetted delay for UpdateThread %s", self.name)

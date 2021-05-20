@@ -1,34 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# This module is part of the desktop management solution opsi
-# (open pc server integration) http://www.opsi.org
-
-# Copyright (C) 2010-2019 uib GmbH <info@uib.de>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 JSONRPC backend.
 
 This backend executes the calls on a remote backend via JSONRPC.
-
-:copyright: uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:author: Erol Ueluekmen <e.ueluekmen@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
+import re
 import base64
 import json
 import socket
@@ -36,38 +16,53 @@ import time
 import threading
 import types
 from hashlib import md5
-from Queue import Queue, Empty
-from sys import version_info
+from queue import Queue, Empty
+
+import lz4.frame
+try:
+	# pyright: reportMissingImports=false
+	# python3-pycryptodome installs into Cryptodome
+	from Cryptodome.Hash import MD5
+	from Cryptodome.Signature import pkcs1_15
+except ImportError:
+	# PyCryptodome from pypi installs into Crypto
+	from Crypto.Hash import MD5
+	from Crypto.Signature import pkcs1_15
 
 from OPSI import __version__
+from OPSI.Backend import no_export
+from OPSI.Backend.Base import Backend
+from OPSI.Backend.Backend import DeferredCall
 from OPSI.Exceptions import (
 	OpsiAuthenticationError, OpsiConnectionError, OpsiError,
 	OpsiServiceVerificationError, OpsiRpcError, OpsiTimeoutError)
-from OPSI.Logger import Logger, LOG_INFO
+from OPSI.Logger import Logger
 from OPSI.Types import (
-	forceBool, forceFilename, forceFloat, forceInt, forceList, forceUnicode)
-from OPSI.Backend.Backend import Backend, DeferredCall
+	forceBool, forceFilename, forceFloat, forceInt, forceList, forceUnicode
+)
 from OPSI.Util import serialize, deserialize
-from OPSI.Util.HTTP import getSharedConnectionPool, urlsplit
-from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipEncode, gzipDecode
+from OPSI.Util.HTTP import (
+	createBasicAuthHeader, getSharedConnectionPool, urlsplit
+)
+from OPSI.Util.HTTP import deflateDecode, gzipEncode, gzipDecode
 from OPSI.Util import getPublicKey
 
 __all__ = ('JSONRPC', 'JSONRPCThread', 'RpcQueue', 'JSONRPCBackend')
 
-_DEFLATE_COMPRESSION = 'deflate'
 _GZIP_COMPRESSION = 'gzip'
+_LZ4_COMPRESSION = 'lz4'
 
 logger = Logger()
 
 
-class JSONRPC(DeferredCall):
-	def __init__(self, jsonrpcBackend, baseUrl, method, params=None, retry=True, callback=None):
+class JSONRPC(DeferredCall):  # pylint: disable=too-many-instance-attributes
+	def __init__(self, jsonrpcBackend, baseUrl, method, params=None, retry=True, callback=None):  # pylint: disable=too-many-arguments
 		if params is None:
 			params = []
 		DeferredCall.__init__(self, callback=callback)
 		self.jsonrpcBackend = jsonrpcBackend
 		self.baseUrl = baseUrl
-		self.id = self.jsonrpcBackend._getRpcId()
+		self.id = self.jsonrpcBackend._getRpcId()  # pylint: disable=invalid-name
 		self.method = method
 		self.params = params
 		self.retry = retry
@@ -92,45 +87,49 @@ class JSONRPC(DeferredCall):
 					message = error['message']
 
 					try:
-						exceptionClass = eval(error.get('class', 'Exception'))
-						index = message.find(':')
-						if index != -1 and len(message) > index:
-							message = message[index + 1:].lstrip()
-						exception = exceptionClass(u'%s (error on server)' % message)
-					except Exception:
+						exceptionClass = eval(error.get('class', 'Exception'))  # pylint: disable=eval-used
+						# This seems to cut of more than wanted
+						#index = message.find(':')
+						#if index != -1 and len(message) > index:
+						#	message = message[index + 1:].lstrip()
+						exception = exceptionClass(f"{message} (error on server)")
+					except Exception:  # pylint: disable=broad-except
 						exception = OpsiRpcError(message)
 
 					raise exception
 
-				raise OpsiRpcError(u'{0} (error on server)'.format(error))
+				raise OpsiRpcError(f'{error} (error on server)')
 
 			self.result = deserialize(
 				result.get('result'),
 				preventObjectCreation=self.method.endswith('_getHashes')
 			)
-		except Exception as error:
-			logger.logException(error)
-			self.error = error
+		except Exception as err:  # pylint: disable=broad-except
+			logger.error(err, exc_info=True)
+			self.error = err
 
 	def process(self):
-		logger.debug(u"Executing jsonrpc method {0!r} on host {1!r}", self.method, self.jsonrpcBackend._host)
+		logger.debug("Executing jsonrpc method %s on host %s", self.method, self.jsonrpcBackend._host)  # pylint: disable=protected-access
 
 		try:
 			rpc = json.dumps(self.getRpc())
-			logger.debug2(u"jsonrpc: {0!r}", rpc)
-
-			response = self.jsonrpcBackend._request(baseUrl=self.baseUrl, data=rpc, retry=self.retry)
+			logger.trace("jsonrpc request: %s", rpc)
+			response = self.jsonrpcBackend._request(baseUrl=self.baseUrl, data=rpc, retry=self.retry)  # pylint: disable=protected-access
+			if isinstance(response, bytes):
+				response = response.decode()
+			logger.trace("jsonrpc response: %s", response)
 			self.processResult(json.loads(response))
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			if self.method not in ('backend_exit', 'exit'):
-				logger.logException("Failed to process method '%s': %s" % (self.method, forceUnicode(error)), LOG_INFO)
-				self.error = error
+				logger.debug("Failed to process method '%s': %s", self.method, err, exc_info=True)
+				logger.info("Failed to process method '%s': %s", self.method, err)
+				self.error = err
 		finally:
 			self._gotResult()
 
 
 class JSONRPCThread(JSONRPC, threading.Thread):
-	def __init__(self, jsonrpcBackend, baseUrl, method, params=None, retry=True, callback=None):
+	def __init__(self, jsonrpcBackend, baseUrl, method, params=None, retry=True, callback=None):  # pylint: disable=too-many-arguments
 		if params is None:
 			params = []
 		threading.Thread.__init__(self)
@@ -164,15 +163,15 @@ class RpcQueue(threading.Thread):
 		self.idle = threading.Event()
 
 	def add(self, jsonrpc):
-		logger.debug(u'Adding jsonrpc %s to queue (current queue size: %d)' % (jsonrpc, self.queue.qsize()))
+		logger.debug('Adding jsonrpc %s to queue (current queue size: %s)', jsonrpc, self.queue.qsize())
 		self.queue.put(jsonrpc, block=True)
-		logger.debug2(u'Added jsonrpc %s to queue' % jsonrpc)
+		logger.trace('Added jsonrpc %s to queue', jsonrpc)
 
 	def stop(self):
 		self.stopped = True
 
 	def run(self):
-		logger.debug(u"RpcQueue started")
+		logger.debug("RpcQueue started")
 		self.idle.set()
 		while not self.stopped or not self.queue.empty():
 			self.idle.wait()
@@ -182,7 +181,7 @@ class RpcQueue(threading.Thread):
 				try:
 					jsonrpc = self.queue.get(block=False)
 					if jsonrpc:
-						logger.debug(u'Got jsonrpc %s from queue' % jsonrpc)
+						logger.debug('Got jsonrpc %s from queue', jsonrpc)
 						jsonrpcs.append(jsonrpc)
 						if len(jsonrpcs) >= self.size:
 							break
@@ -191,15 +190,15 @@ class RpcQueue(threading.Thread):
 			if jsonrpcs:
 				self.process(jsonrpcs=jsonrpcs)
 			time.sleep(self.poll)
-		logger.debug(u"RpcQueue stopped (empty: %s, stopped: %s)" % (self.queue.empty(), self.stopped))
+		logger.debug("RpcQueue stopped (empty: %s, stopped: %s)", self.queue.empty(), self.stopped)
 
-	def process(self, jsonrpcs):
+	def process(self, jsonrpcs):  # pylint: disable=too-many-branches
 		self.jsonrpcs = {}
 		for jsonrpc in forceList(jsonrpcs):
 			self.jsonrpcs[jsonrpc.id] = jsonrpc
 		if not self.jsonrpcs:
 			return
-		logger.info("Executing bunched jsonrpcs: %s" % self.jsonrpcs)
+		logger.info("Executing bunched jsonrpcs: %s", self.jsonrpcs)
 		isExit = False
 		try:
 			retry = False
@@ -214,60 +213,64 @@ class RpcQueue(threading.Thread):
 				if not baseUrl:
 					baseUrl = jsonrpc.baseUrl
 				elif baseUrl != jsonrpc.baseUrl:
-					raise OpsiRpcError(u"Can't execute jsonrpcs with different base urls at once: (%s != %s)" % (baseUrl, jsonrpc.baseUrl))
+					raise OpsiRpcError(
+						f"Can't execute jsonrpcs with different base urls at once: ({baseUrl} != {jsonrpc.baseUrl})"
+					)
 				rpc.append(jsonrpc.getRpc())
 			rpc = json.dumps(rpc)
-			logger.debug2(u"jsonrpc: %s" % rpc)
+			logger.trace("jsonrpc: %s", rpc)
 
-			response = self.jsonrpcBackend._request(baseUrl=baseUrl, data=rpc, retry=retry)
-			logger.debug(u"Got response from host %s" % self.jsonrpcBackend._host)
+			response = self.jsonrpcBackend._request(baseUrl=baseUrl, data=rpc, retry=retry)  # pylint: disable=protected-access
+			logger.debug("Got response from host %s", self.jsonrpcBackend._host)  # pylint: disable=protected-access
 			try:
 				response = forceList(json.loads(response))
-			except Exception as error:
-				raise OpsiRpcError(u"Failed to json decode response %s: %s" % (response, error))
+			except Exception as err:  # pylint: disable=broad-except
+				raise OpsiRpcError("Failed to json decode response {response}: {err}") from err
 
 			for resp in response:
 				try:
 					responseId = resp['id']
-				except KeyError as error:
-					raise KeyError(u"Failed to get id from: %s (%s): %s" % (resp, response, error))
+				except KeyError as err:
+					raise KeyError(
+						f"Failed to get id from: {resp} ({response}): {err}"
+					) from err
 
 				try:
 					jsonrpc = self.jsonrpcs[responseId]
-				except KeyError as error:
-					raise KeyError(u"Failed to get jsonrpc with id %s: %s" % (responseId, error))
+				except KeyError as err:
+					raise KeyError(
+						f"Failed to get jsonrpc with id {responseId}: {err}"
+					) from err
 
 				try:
 					jsonrpc.processResult(resp)
-				except Exception as error:
-					raise RuntimeError(u"Failed to process response %s with jsonrpc %s: %s" % (resp, jsonrpc, error))
-		except Exception as error:
+				except Exception as err:  # pylint: disable=broad-except
+					raise RuntimeError(
+						f"Failed to process response {resp} with jsonrpc {jsonrpc}: {err}"
+					) from err
+		except Exception as err:  # pylint: disable=broad-except
 			if not isExit:
-				logger.logException(error)
+				logger.error(err)
 
 			for jsonrpc in self.jsonrpcs.values():
-				jsonrpc.error = error
-				jsonrpc._gotResult()
+				jsonrpc.error = err
+				jsonrpc._gotResult()  # pylint: disable=protected-access
 
 		self.jsonrpcs = {}
 		self.idle.set()
 
 
-class JSONRPCBackend(Backend):
+class JSONRPCBackend(Backend):  # pylint: disable=too-many-instance-attributes
 
 	_DEFAULT_HTTP_PORT = 4444
 	_DEFAULT_HTTPS_PORT = 4447
 
-	def __init__(self, address, **kwargs):
+	def __init__(self, address, **kwargs):  # pylint: disable=too-many-branches,too-many-statements
 		"""
 		Backend for JSON-RPC access to another opsi service.
 
-		:param compression: Specify compression usage. Can be a boolean \
-or the strings 'gzip' or 'deflate' in case a specific compression is desired.
-		:type compression: bool or str
-		:param deflate: Specify if deflate compression should be used for requests. \
-Deprecated: Use keyword 'compression' instead.
-		:type deflate: bool
+		:param compression: Should requests be compressed?
+		:type compression: bool
 		"""
 
 		self._name = 'jsonrpc'
@@ -282,10 +285,11 @@ Deprecated: Use keyword 'compression' instead.
 		self._retryTime = 5
 		self._host = None
 		self._port = None
-		self._baseUrl = u'/rpc'
+		self._baseUrl = '/rpc'
 		self._protocol = 'https'
 		self._socketTimeout = None
 		self._connectTimeout = 30
+		self._connectionPool = None
 		self._connectionPoolSize = 2
 		self._interface = None
 		self._rpcId = 0
@@ -294,17 +298,15 @@ Deprecated: Use keyword 'compression' instead.
 		self._rpcQueue = None
 		self._rpcQueuePollingTime = 0.01
 		self._rpcQueueSize = 10
-		self._serverCertFile = None
 		self._caCertFile = None
 		self._verifyServerCert = False
-		self._verifyServerCertByCa = False
-		self._verifyByCaCertsFile = None
 		self._proxyURL = None
+		self.serverName = None
 
 		if not self._username:
-			self._username = u''
+			self._username = ''
 		if not self._password:
-			self._password = u''
+			self._password = ''
 
 		retry = True
 		for (option, value) in kwargs.items():
@@ -313,20 +315,15 @@ Deprecated: Use keyword 'compression' instead.
 				self._application = str(value)
 			elif option == 'sessionid':
 				self._sessionId = str(value)
-			elif option == 'deflate':
-				if forceBool(value):
-					self.setCompression('deflate')
-				else:
-					self.setCompression(False)
 			elif option == 'compression':
 				self._compression = self._parseCompressionValue(value)
 			elif option == 'connectoninit':
 				self._connectOnInit = forceBool(value)
-			elif option == 'connecttimeout' and value is not None:
+			elif option == 'connecttimeout' and value not in (None, ""):
 				self._connectTimeout = forceInt(value)
-			elif option == 'connectionpoolsize' and value is not None:
+			elif option == 'connectionpoolsize' and value not in (None, ""):
 				self._connectionPoolSize = forceInt(value)
-			elif option in ('timeout', 'sockettimeout') and value is not None:
+			elif option in ('timeout', 'sockettimeout') and value not in (None, ""):
 				self._socketTimeout = forceInt(value)
 			elif option == 'retry':
 				retry = forceBool(value)
@@ -336,16 +333,12 @@ Deprecated: Use keyword 'compression' instead.
 				self._rpcQueuePollingTime = forceFloat(value)
 			elif option == 'rpcqueuesize':
 				self._rpcQueueSize = forceInt(value)
-			elif option == 'servercertfile' and value is not None:
-				self._serverCertFile = forceFilename(value)
 			elif option == 'verifyservercert':
 				self._verifyServerCert = forceBool(value)
-			elif option == 'cacertfile' and value is not None:
+			elif option == 'cacertfile' and value not in (None, ""):
 				self._caCertFile = forceFilename(value)
-			elif option == 'verifyservercertbyca':
-				self._verifyServerCertByCa = forceBool(value)
-			elif option == 'proxyurl' and value is not None:
-				logger.debug(u"ProxyURL detected: '%s'" % value)
+			elif option == 'proxyurl' and value not in (None, ""):
+				logger.debug("ProxyURL detected: '%s'", value)
 				self._proxyURL = forceUnicode(value)
 
 		if not retry:
@@ -365,34 +358,44 @@ Deprecated: Use keyword 'compression' instead.
 			maxsize=self._connectionPoolSize,
 			block=True,
 			verifyServerCert=self._verifyServerCert,
-			serverCertFile=self._serverCertFile,
 			caCertFile=self._caCertFile,
-			verifyServerCertByCa=self._verifyServerCertByCa,
 			proxyURL=self._proxyURL
 		)
 
 		if self._connectOnInit:
 			self.connect()
 
-	def stopRpcQueue(self):
+	@property
+	def serverVersion(self):
+		try:
+			if self.serverName:
+				match = re.search(r"^opsi\D+(\d+\.\d+\.\d+\.\d+)", self.serverName)
+				if match:
+					return [int(v) for v in match.group(1).split('.')]
+		except Exception as err:  # pylint: disable=broad-except
+			logger.warning("Failed to parse server version '%s': %s", self.serverName, err)
+		return None
+
+	def _stopRpcQueue(self):
 		if self._rpcQueue:
 			self._rpcQueue.stop()
-			self._rpcQueue.join(20)
 
-	def startRpcQueue(self):
+	def _startRpcQueue(self):
 		if not self._rpcQueue or not self._rpcQueue.is_alive():
 			self._rpcQueue = RpcQueue(
 				jsonrpcBackend=self,
 				size=self._rpcQueueSize,
 				poll=self._rpcQueuePollingTime
 			)
+			self._rpcQueue.setDaemon(True)
 			self._rpcQueue.start()
 
 	def __del__(self):
-		self.stopRpcQueue()
+		self._stopRpcQueue()
 		if self._connectionPool:
 			self._connectionPool.free()
 
+	@no_export
 	def getPeerCertificate(self, asPem=False):
 		return self._connectionPool.getPeerCertificate(asPem)
 
@@ -400,28 +403,30 @@ Deprecated: Use keyword 'compression' instead.
 		if self._connected:
 			try:
 				self._jsonRPC('backend_exit', retry=False)
-			except Exception:
+			except Exception:  # pylint: disable=broad-except
 				pass
 
-		self.stopRpcQueue()
+		self._stopRpcQueue()
 
+	@no_export
 	def setAsync(self, enableAsync):
 		if not self._connected:
-			raise OpsiConnectionError(u'Not connected')
+			raise OpsiConnectionError('Not connected')
 
 		if enableAsync:
-			self.startRpcQueue()
+			self._startRpcQueue()
 			self._async = True
 		else:
 			self._async = False
-			self.stopRpcQueue()
+			self._stopRpcQueue()
 
+	@no_export
 	def setCompression(self, compression):
 		"""
 		Set the compression to use.
 
-		:param compression: `True` to enable compression, `False` to disable. \
-To specify the use of a specific compression supply either 'gzip' or 'deflate'.
+		:param compression: `True` to enable compression, `False` to disable.
+		:type compression: bool
 		"""
 		self._compression = self._parseCompressionValue(compression)
 
@@ -429,20 +434,17 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 	def _parseCompressionValue(compression):
 		if isinstance(compression, bool):
 			return compression
-		else:
-			value = forceUnicode(compression)
-			value = value.strip()
-			value = value.lower()
 
-			if value in ('true', 'false'):
-				return forceBool(value)
-			elif value == 'gzip':
-				return _GZIP_COMPRESSION
-			elif value == 'deflate':
-				return _DEFLATE_COMPRESSION
-			else:
-				return False
+		value = forceUnicode(compression).strip().lower()
+		if value in ('true', 'false'):
+			return forceBool(value)
+		if value == _GZIP_COMPRESSION:
+			return _GZIP_COMPRESSION
+		if value == _LZ4_COMPRESSION:
+			return _LZ4_COMPRESSION
+		return False
 
+	@no_export
 	def isCompressionUsed(self):
 		"""
 		Is compression used?
@@ -451,30 +453,11 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 		"""
 		return bool(self._compression)
 
-	def setDeflate(self, deflate):
-		if not self._connected:
-			raise OpsiConnectionError(u'Not connected')
-
-		logger.warning(
-			"Call to deprecated method 'setDeflate'. "
-			"This method will be removed in the future. "
-			"Please use the method 'setCompression' instead."
-		)
-
-		if forceBool(deflate):
-			self.setCompression('deflate')
-		else:
-			self.setCompression(False)
-
-	def getDeflate(self):
-		if isinstance(self._compression, bool):
-			return False
-
-		return _DEFLATE_COMPRESSION == self._compression
-
+	@no_export
 	def isConnected(self):
 		return self._connected
 
+	@no_export
 	def connect(self):
 		modules = None
 		realmodules = {}
@@ -483,36 +466,36 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 		asyncStatus = self._async
 		self._async = False
 
-		try:
+		try:  # pylint: disable=too-many-nested-blocks
 			try:
-				self._interface = self._jsonRPC(u'backend_getInterface')
+				self._interface = self._jsonRPC('backend_getInterface')
 				if 'opsiclientd' in self._application:
 					try:
-						backendInfo = self._jsonRPC(u'backend_info')
+						backendInfo = self._jsonRPC('backend_info')
 						modules = backendInfo.get('modules', None)
 						realmodules = backendInfo.get('realmodules', None)
 						if modules:
-							logger.confidential(u"Modules: %s" % modules)
+							logger.confidential("Modules: %s", modules)
 						else:
 							modules = {'customer': None}
 
-						for m in self._interface:
-							if m.get('name') == 'dispatcher_getConfig':
-								for entry in self._jsonRPC(u'dispatcher_getConfig'):
+						for meth in self._interface:
+							if meth.get('name') == 'dispatcher_getConfig':
+								for entry in self._jsonRPC('dispatcher_getConfig'):
 									for bn in entry[1]:
 										if "sql" in bn.lower() and len(entry[0]) <= 4 and '*' in entry[0]:
 											mysqlBackend = True
 								break
-					except Exception as error:
-						logger.info(forceUnicode(error))
-			except (OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError, socket.error) as connectionError:
-				logger.debug(u"Failed to connect: {0}", connectionError)
+					except Exception as err:  # pylint: disable=broad-except
+						logger.info(str(err))
+			except (OpsiAuthenticationError, OpsiTimeoutError, OpsiServiceVerificationError, socket.error) as err:
+				logger.debug("Failed to connect: %s", err)
 				raise
 
 			self._createInstanceMethods(modules, realmodules, mysqlBackend)
 
 			self._connected = True
-			logger.info(u"{0}: Connected to service", self)
+			logger.info("%s: Connected to service", self)
 		finally:
 			self._async = asyncStatus
 
@@ -523,11 +506,12 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 		return self._rpcId
 
 	def _processAddress(self, address):
+		logger.debug("Processing address: %s", address)
 		self._protocol = 'https'
 		(scheme, host, port, baseurl, username, password) = urlsplit(address)
 		if scheme:
 			if scheme not in ('http', 'https'):
-				raise ValueError(u"Protocol %s not supported" % scheme)
+				raise ValueError("Protocol %s not supported" % scheme)
 			self._protocol = scheme
 
 		self._host = host
@@ -549,57 +533,79 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 	def jsonrpc_getSessionId(self):
 		return self._sessionId
 
-	def _createInstanceMethods(self, modules=None, realmodules={}, mysqlBackend=False):
+	def _createInstanceMethods(self, modules=None, realmodules={}, mysqlBackend=False):  # pylint: disable=dangerous-default-value,too-many-locals,too-many-branches,too-many-statements
 		licenseManagementModule = True
 		if modules:
 			licenseManagementModule = False
 			if not modules.get('customer'):
-				logger.notice(u"Disabling mysql backend and license management module: no customer in modules file")
+				logger.notice("Disabling mysql backend and license management module: no customer in modules file")
 				if mysqlBackend:
-					raise OpsiError(u"MySQL backend in use but not licensed")
+					raise OpsiError("MySQL backend in use but not licensed")
 
 			elif not modules.get('valid'):
-				logger.notice(u"Disabling mysql backend and license management module: modules file invalid")
+				logger.notice("Disabling mysql backend and license management module: modules file invalid")
 				if mysqlBackend:
-					raise OpsiError(u"MySQL backend in use but not licensed")
+					raise OpsiError("MySQL backend in use but not licensed")
 
-			elif (modules.get('expires', '') != 'never') and (time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0):
-				logger.notice(u"Disabling mysql backend and license management module: modules file expired")
+			elif (
+				modules.get('expires', '') != 'never' and
+				time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0
+			):
+				logger.notice("Disabling mysql backend and license management module: modules file expired")
 				if mysqlBackend:
-					raise OpsiError(u"MySQL backend in use but not licensed")
+					raise OpsiError("MySQL backend in use but not licensed")
 			else:
-				logger.info(u"Verifying modules file signature")
-				publicKey = getPublicKey(data=base64.decodestring('AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDojY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDUlk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP'))
-				data = u''
-				mks = modules.keys()
+				logger.info("Verifying modules file signature")
+				publicKey = getPublicKey(
+					data=base64.decodebytes(
+						b"AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDo"
+						b"jY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8"
+						b"S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDU"
+						b"lk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP"
+					)
+				)
+				data = ""
+				mks = list(modules.keys())
 				mks.sort()
 				for module in mks:
-					if module in ('valid', 'signature'):
+					if module in ("valid", "signature"):
 						continue
-
 					if module in realmodules:
 						val = realmodules[module]
 						if int(val) > 0:
 							modules[module] = True
 					else:
 						val = modules[module]
-						if val is False:
-							val = 'no'
-						if val is True:
-							val = 'yes'
-					data += u'%s = %s\r\n' % (module.lower().strip(), val)
-				if not bool(publicKey.verify(md5(data).digest(), [long(modules['signature'])])):
-					logger.error(u"Disabling mysql backend and license management module: modules file invalid")
-					if mysqlBackend:
-						raise OpsiError(u"MySQL backend in use but not licensed")
-				else:
-					logger.info(u"Modules file signature verified (customer: %s)" % modules.get('customer'))
+						if isinstance(val, bool):
+							val = "yes" if val else "no"
+					data += "%s = %s\r\n" % (module.lower().strip(), val)
 
-					if modules.get('license_management'):
+				verified = False
+				if modules["signature"].startswith("{"):
+					s_bytes = int(modules['signature'].split("}", 1)[-1]).to_bytes(256, "big")
+					try:
+						pkcs1_15.new(publicKey).verify(MD5.new(data.encode()), s_bytes)
+						verified = True
+					except ValueError:
+						# Invalid signature
+						pass
+				else:
+					h_int = int.from_bytes(md5(data.encode()).digest(), "big")
+					s_int = publicKey._encrypt(int(modules["signature"]))  # pylint: disable=protected-access
+					verified = h_int == s_int
+
+				if not verified:
+					logger.error("Disabling mysql backend and license management module: modules file invalid")
+					if mysqlBackend:
+						raise OpsiError("MySQL backend in use but not licensed")
+				else:
+					logger.debug("Modules file signature verified (customer: %s)", modules.get("customer"))
+
+					if modules.get("license_management"):
 						licenseManagementModule = True
 
-					if mysqlBackend and not modules.get('mysql_backend'):
-						raise OpsiError(u"MySQL backend in use but not licensed")
+					if mysqlBackend and not modules.get("mysql_backend"):
+						raise OpsiError("MySQL backend in use but not licensed")
 
 		for method in self._interface:
 			try:
@@ -621,101 +627,112 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 
 					if isinstance(defaults, (tuple, list)) and len(defaults) + i >= len(args):
 						default = defaults[len(defaults) - len(args) + i]
-						# TODO: watch out for Python 3
-						if isinstance(default, (str, unicode)):
-							default = u"{0!r}".format(default).replace('"', "'")
-						argString.append(u'{0}={1}'.format(argument, unicode(default)))
+						if isinstance(default, str):
+							default = "{0!r}".format(default).replace('"', "'")
+						argString.append(f'{argument}={default}')
 					else:
 						argString.append(argument)
 					callString.append(argument)
 
 				if varargs:
 					for vararg in varargs:
-						argString.append(u'*{0}'.format(vararg))
+						argString.append(f'*{vararg}')
 						callString.append(vararg)
 
 				if keywords:
-					argString.append(u'**{0}'.format(keywords))
+					argString.append(f'**{keywords}')
 					callString.append(keywords)
 
-				argString = u', '.join(argString)
-				callString = u', '.join(callString)
+				argString = ', '.join(argString)
+				callString = ', '.join(callString)
 
-				logger.debug2(u"{1}: arg string is: {0!r}", argString, methodName)
-				logger.debug2(u"{1}: call string is: {0!r}", callString, methodName)
+				logger.trace("%s: arg string is: %s", argString, methodName)
+				logger.trace("%s: call string is: %s", callString, methodName)
 				# This would result in not overwriting Backend methods like log_read, log_write, ...
 				# if getattr(self, methodName, None) is None:
 				if not licenseManagementModule and "license" in methodName:
-					exec(u'def %s(self, %s): return' % (methodName, argString))
+					exec(f'def {methodName}(self, {argString}): return')  # pylint: disable=exec-used
 				else:
-					exec(u'def %s(self, %s): return self._jsonRPC("%s", [%s])' % (methodName, argString, methodName, callString))
-				setattr(self, methodName, types.MethodType(eval(methodName), self))
-			except Exception as error:
-				logger.critical(u"Failed to create instance method '%s': %s" % (method, error))
+					exec(f'def {methodName}(self, {argString}): return self._jsonRPC("{methodName}", [{callString}])')  # pylint: disable=exec-used
+				setattr(self, methodName, types.MethodType(eval(methodName), self))  # pylint: disable=eval-used
+			except Exception as err:  # pylint: disable=broad-except
+				logger.critical("Failed to create instance method '%s': %s", method, err)
 
-	def _jsonRPC(self, method, params=[], retry=True):
+	def _jsonRPC(self, method, params=[], retry=True):  # pylint: disable=dangerous-default-value
 		if self._async:
-			self.startRpcQueue()
+			self._startRpcQueue()
 			jsonrpc = JSONRPC(jsonrpcBackend=self, baseUrl=self._baseUrl, method=method, params=params, retry=retry)
 			self._rpcQueue.add(jsonrpc)
 			return jsonrpc
-		else:
-			jsonrpc = JSONRPCThread(jsonrpcBackend=self, baseUrl=self._baseUrl, method=method, params=params, retry=retry)
-			return jsonrpc.execute()
+
+		jsonrpc = JSONRPCThread(jsonrpcBackend=self, baseUrl=self._baseUrl, method=method, params=params, retry=retry)
+		return jsonrpc.execute()
+
+	@no_export
+	def httpRequest(self, method, url, data=None, headers={}, retry=True):  # pylint: disable=dangerous-default-value,too-many-arguments,too-many-branches
+		if 'User-Agent' not in headers:
+			headers['User-Agent'] = self._application
+		if 'Cookie' not in headers and self._sessionId:
+			headers['Cookie'] = self._sessionId
+		if 'Authorization' not in headers:
+			headers['Authorization'] = createBasicAuthHeader(
+				self._username,
+				self._password
+			)
+
+		if method == "POST":
+			if data:
+				if not isinstance(data, bytes):
+					data = data.encode("utf-8")
+			else:
+				data = b""
+
+			if data and self._compression:
+				compression = self._compression
+				if compression is True:
+					# Auto choose later by server version
+					# opsiconfd 4.2.0.96 (uvicorn)
+					compression = _GZIP_COMPRESSION
+					sv = self.serverVersion
+					if sv and (sv[0] > 4 or (sv[0] == 4 and sv[1] > 1)):
+						compression = _LZ4_COMPRESSION
+
+				if compression == _LZ4_COMPRESSION:
+					logger.trace("Compressing data with lz4")
+					headers['Content-Encoding'] = 'lz4'
+					data = lz4.frame.compress(data, compression_level=0, block_linked=True)
+					logger.trace("Data compressed.")
+				else:
+					logger.trace("Compressing data with gzip")
+					headers['Content-Encoding'] = 'gzip'
+					data = gzipEncode(data)
+					logger.trace("Data compressed.")
+
+			headers['Content-Length'] = str(len(data))
+
+		response = self._connectionPool.urlopen(method=method, url=url, body=data, headers=headers, retry=retry)
+		if 'server' in response.headers:
+			self.serverName = response.headers.get('server')
+		return response
 
 	def _request(self, baseUrl, data, retry=True):
 		headers = {
-			'user-agent': self._application,
 			'Accept': 'application/json, text/plain',
 			'Accept-Encoding': 'deflate, gzip',
-			'content-type': 'application/json',
+			'Content-Type': 'application/json',
 		}
-		if isinstance(data, str):
-			data = unicode(data, 'utf-8')
-		data = data.encode('utf-8')
 
-		logger.debug2(u"Request to host {0!r}, baseUrl: {1!r}, query: {2!r}".format(self._host, baseUrl, data))
-
-		if self._compression is True or self._compression == _GZIP_COMPRESSION:
-			logger.debug2(u"Compressing data with gzip")
-			headers['Content-Encoding'] = 'gzip'
-
-			data = gzipEncode(data)
-			# Fix for python 2.7
-			# http://bugs.python.org/issue12398
-			if version_info >= (2, 7):
-				data = bytearray(data)
-			logger.debug2(u"Data compressed.")
-		elif self._compression == _DEFLATE_COMPRESSION:
-			logger.debug2(u"Compressing data with deflate")
-			headers['Content-Encoding'] = 'deflate'
-
-			data = deflateEncode(data)
-			# Fix for python 2.7
-			# http://bugs.python.org/issue12398
-			if version_info >= (2, 7):
-				data = bytearray(data)
-			logger.debug2(u"Data compressed.")
-
-		headers['content-length'] = len(data)
-
-		auth = (self._username + u':' + self._password).encode('latin-1')
-		headers['Authorization'] = 'Basic ' + base64.b64encode(auth)
-
-		if self._sessionId:
-			headers['Cookie'] = self._sessionId
-
+		logger.trace("Request to host %s, url: %s, query: %s", self._host, baseUrl, data)
 		logger.debug("Posting request...")
-		response = self._connectionPool.urlopen(method='POST', url=baseUrl, body=data, headers=headers, retry=retry)
-
+		response = self.httpRequest(method='POST', url=baseUrl, data=data, headers=headers, retry=retry)
 		return self._processResponse(response)
 
 	def _processResponse(self, response):
-		logger.debug2("Processing response...")
+		logger.trace("Processing response...")
 		self._readSessionId(response)
 
 		response = self._decompressResponse(response)
-		logger.debug2(u"Response is: {0!r}", response)
+		logger.trace("Response is: %s", response)
 		return response
 
 	def _readSessionId(self, response):
@@ -736,17 +753,20 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 		Decompress the body of the response based on it's encoding.
 		"""
 		contentEncoding = response.getheader('Content-Encoding', '').lower()
-		logger.debug2(u"Content-Encoding: {}", contentEncoding)
+		logger.trace("Content-Encoding: %s", contentEncoding)
 
 		response = response.data
 		if contentEncoding == 'gzip':
-			logger.debug(u"Expecting gzip'ed data from server")
+			logger.debug("Expecting gzip compressed data from server")
 			response = gzipDecode(response)
 		elif contentEncoding == "deflate":
-			logger.debug(u"Expecting deflated data from server")
+			logger.debug("Expecting deflate compressed data from server")
 			response = deflateDecode(response)
+		elif contentEncoding == "lz4":
+			logger.debug("Expecting lz4 compressed data from server")
+			response = lz4.frame.decompress(response)
 
-		logger.debug2(u"Response is: {0}", response)
+		logger.trace("Response is: %s", response)
 		return response
 
 	def getInterface(self):
@@ -757,6 +777,5 @@ To specify the use of a specific compression supply either 'gzip' or 'deflate'.
 
 	def __repr__(self):
 		if self._name:
-			return u'<{0}(address={1!r}, host={2!r}, compression={3!r})>'.format(self.__class__.__name__, self._name, self._host, self._compression)
-		else:
-			return u'<{0}(host={1!r}, compression={2!r})>'.format(self.__class__.__name__, self._host, self._compression)
+			return f'<{self.__class__.__name__}(address={self._name}, host={self._host}, compression={self._compression})>'
+		return f'<{self.__class__.__name__}(host={self._host}, compression={self._compression})>'

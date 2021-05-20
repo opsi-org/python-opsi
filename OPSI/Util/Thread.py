@@ -1,36 +1,15 @@
 # -*- coding: utf-8 -*-
 
-# This module is part of the desktop management solution opsi
-# (open pc server integration) http://www.opsi.org
-
-# Copyright (C) 2010-2019 uib GmbH - http://www.uib.de/
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 opsi python library - Thread
-
-:copyright:  uib GmbH <info@uib.de>
-:author: Christian Kampka <c.kampka@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
 import threading
 import inspect
 import ctypes
-from Queue import Queue, Empty
+from queue import Queue, Empty
 
 from OPSI.Logger import Logger
 
@@ -62,7 +41,7 @@ def _async_raise(tid, exctype):
 
 	res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), ctypes.py_object(exctype))
 	if res == 0:
-		logger.warning("Invalid thread id {0}".format(tid))
+		logger.warning("Invalid thread id %s", tid)
 		return
 	elif res != 1:
 		# if it returns a number greater than one, you're in trouble,
@@ -99,7 +78,7 @@ class KillableThread(threading.Thread):
 		self.raise_exc(SystemExit)
 
 
-class ThreadPool(object):
+class ThreadPool:
 
 	def __init__(self, size=20, autostart=True):
 		self.size = int(size)
@@ -139,7 +118,7 @@ class ThreadPool(object):
 					self.__createWorkers(num=self.size - len(self.worker))
 
 	def __deleteWorkers(self, num, wait=False):
-		logger.debug(u"Deleting %d workers" % num)
+		logger.debug(u"Deleting %d workers", num)
 		deleteWorkers = set()
 
 		for worker in self.worker:
@@ -166,13 +145,13 @@ class ThreadPool(object):
 				worker.join(60)
 
 	def __createWorkers(self, num):
-		logger.debug(u"Creating {n} new workers", n=num)
+		logger.debug(u"Creating %s new workers", num)
 		while num > 0:
 			self.worker.append(Worker(self, len(self.worker) + 1))
 			num -= 1
 
 	def addJob(self, function, callback=None, *args, **kwargs):
-		logger.debug(u"New job added: {0}({1}, {2})", callback, args, kwargs)
+		logger.debug(u"New job added: %s(%s, %s)", callback, args, kwargs)
 		if not self.started:
 			raise ThreadPoolException(u"Pool is not running.")
 		self.jobQueue.put((function, callback, args, kwargs))
@@ -209,7 +188,7 @@ class Worker(threading.Thread):
 						success = True
 						errors = None
 					except Exception as error:
-						logger.debug(u"Problem running function: {0!r}", error)
+						logger.debug(u"Problem running function: '%s'", error)
 						result = None
 						errors = error
 

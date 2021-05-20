@@ -1,30 +1,9 @@
 # -*- coding: utf-8 -*-
-#
-# This module is part of the desktop management solution opsi
-# (open pc server integration) http://www.opsi.org
-#
-# Copyright (C) 2006-2010, 2013-2019 uib GmbH <info@uib.de>
-# All rights reserved.
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 Functions to work with Windows drivers.
-
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Erol Ueluekmen <e.ueluekmen@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
 import os
@@ -36,7 +15,7 @@ from OPSI.Logger import Logger
 from OPSI.Object import AuditHardware, AuditHardwareOnHost
 from OPSI.Types import (forceFilename, forceInt, forceList,
 	forceObjectClassList, forceUnicode, forceUnicodeList)
-from OPSI.Util import findFiles
+from OPSI.Util import findFilesGenerator
 from OPSI.Util.File import InfFile, TxtSetupOemFile
 from OPSI.Util.Repository import Repository
 
@@ -176,13 +155,13 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 				driverNumber = forceInt(filename)
 
 	integratedDrivers = {}
-	infFiles = findFiles(
+	infFiles = list(findFilesGenerator(
 		directory=driverDestinationDirectory,
 		prefix=driverDestinationDirectory,
 		includeFile=re.compile(r'\.inf$', re.IGNORECASE),
 		returnDirs=False,
 		followLinks=True
-	)
+	))
 	logger.debug(u"Found inf files: %s in dir '%s'" % (infFiles, driverDestinationDirectory))
 	for infFile in infFiles:
 		infFile = InfFile(infFile)
@@ -209,13 +188,13 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 			continue
 		driverNeeded = True
 		newDriversTmp = []
-		infFiles = findFiles(
+		infFiles = list(findFilesGenerator(
 			directory=driverSourceDirectory,
 			prefix=driverSourceDirectory,
 			includeFile=re.compile(r'\.inf$', re.IGNORECASE),
 			returnDirs=False,
 			followLinks=True,
-			repository=srcRepository)
+			repository=srcRepository))
 
 		for infFile in infFiles:
 			tempInfFile = None
@@ -326,7 +305,7 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 		messageSubject.setMessage(u"Integrating textmode drivers")
 
 	logger.info(u"Searching for txtsetup.oem in '%s'" % driverDirectory)
-	txtSetupOems = findFiles(directory=driverDirectory, prefix=driverDirectory, includeFile=re.compile(r'^txtsetup\.oem$', re.IGNORECASE), returnDirs=False)
+	txtSetupOems = list(findFilesGenerator(directory=driverDirectory, prefix=driverDirectory, includeFile=re.compile(r'^txtsetup\.oem$', re.IGNORECASE), returnDirs=False))
 	if not txtSetupOems:
 		logger.info(u"No txtsetup.oem found in '%s'" % driverDirectory)
 		return
@@ -476,7 +455,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 					vendorFromHost = "%s_" % vendorFromHost[:-1]
 
 			for vendordirectory in vendordirectories:
-				logger.info("Checking Vendor directory: %s" % vendordirectory)
+				logger.info("ByAudit: Checking Vendor directory: %s" % vendordirectory)
 				if vendordirectory.lower() == vendorFromHost.lower():
 					modeldirectories = listdir(os.path.join(rulesdir, vendordirectory))
 					if skuFromHost and skuFromHost in modelFromHost:
@@ -485,9 +464,9 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 						if modelFromHost.endswith((".", " ")):
 							modelFromHost = "%s_" % modelFromHost[:-1]
 					for modeldirectory in modeldirectories:
-						logger.info("Checking Model directory %s" % modeldirectory)
+						logger.info("ByAudit: Checking Model directory: %s" % vendordirectory)
 						if modeldirectory.lower() == modelFromHost.lower():
-							logger.info("ByAudit: Exact match found in Vendor directory: %s" % vendordirectory)
+							logger.info("ByAudit: Exact match found.")
 							additionalDrivers.append(os.path.join("byAudit", vendordirectory, modeldirectory))
 							byAuditIntegrated = True
 							break
@@ -506,7 +485,7 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		productFromHost = invalidCharactersRegex.sub("_", auditHardwareOnHost.product or "")
 
 		if vendorFromHost and productFromHost:
-			logger.notice(u"Additional drivers for integration found using byAudit (Motherboard) for vendor: '%s' model : '%s' Check if drivers are available." % (vendorFromHost, modelFromHost))
+			logger.notice(u"Additional drivers for integration found using byAudit (Board) for vendor: '%s' model : '%s' Check if drivers are available." % (vendorFromHost, modelFromHost))
 
 			vendordirectories = listdir(rulesdir)
 			if vendorFromHost not in vendordirectories:
@@ -534,13 +513,13 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 			if messageSubject:
 				messageSubject.setMessage(u"Additional drivers dir '%s' not found" % additionalDriverDir)
 			continue
-		infFiles = findFiles(
+		infFiles = list(findFilesGenerator(
 				directory=additionalDriverDir,
 				prefix=additionalDriverDir,
 				includeFile=re.compile(r'\.inf$', re.IGNORECASE),
 				returnDirs=False,
 				followLinks=True,
-				repository=srcRepository)
+				repository=srcRepository))
 		logger.info(u"Found inf files: %s in dir '%s'" % (infFiles, additionalDriverDir))
 		if not infFiles:
 			logger.error(u"No drivers found in dir '%s'" % additionalDriverDir)

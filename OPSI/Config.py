@@ -1,20 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# This file is part of python-opsi.
-# Copyright (C) 2017-2019 uib GmbH <info@uib.de>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 Various important configuration values.
 
@@ -26,26 +13,38 @@ functional independen of the current underlying system.
 
 These values are not intended to be changed on-the-fly!
 Doing so might result in unforseen problems and is strongly discouraged!
-
-:copyright:	uib GmbH <info@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
+
 # Group used to identify members whits administrative rights in opsi
-OPSI_ADMIN_GROUP = u'opsiadmin'
+OPSI_ADMIN_GROUP = "opsiadmin"
 
 # Default user when accessing the opsi depot
-DEFAULT_DEPOT_USER = u'pcpatch'
+DEFAULT_DEPOT_USER = "pcpatch"
+
+# Default home dir of depot user
+DEFAULT_DEPOT_USER_HOME = "/var/lib/opsi"
 
 # Path to global opsi configuration file
-OPSI_GLOBAL_CONF = u'/etc/opsi/global.conf'
-
-# User that is running opsiconfd.
-OPSICONFD_USER = u'opsiconfd'
+OPSI_GLOBAL_CONF = "/etc/opsi/global.conf"
 
 try:
-    from OPSI.Util.File.Opsi import OpsiConfFile
-    FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
-except Exception:
-    FILE_ADMIN_GROUP = u'pcpatch'
+	from OPSI.Util.File.Opsi import OpsiConfFile
+	OPSI_ADMIN_GROUP = OpsiConfFile().getOpsiAdminGroup()
+	FILE_ADMIN_GROUP = OpsiConfFile().getOpsiFileAdminGroup()
+except Exception:  # pylint: disable=broad-except
+	# Use "pcpatch" if group exists otherwise use the new default "opsifileadmins"
+	try:
+		import grp
+		grp.getgrnam("pcpatch")
+		FILE_ADMIN_GROUP = "pcpatch"
+	except (KeyError, ImportError):
+		FILE_ADMIN_GROUP = "opsifileadmins"
+
+# User that is running opsiconfd.
+try:
+	# pyright: reportMissingImports=false
+	from opsiconfd.config import config  # pylint: disable=import-error
+	OPSICONFD_USER = config.run_as_user
+except Exception:  # pylint: disable=broad-except
+	OPSICONFD_USER = "opsiconfd"

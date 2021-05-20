@@ -1,30 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# This module is part of the desktop management solution opsi
-# (open pc server integration) http://www.opsi.org
-
-# Copyright (C) 2017-2019 uib GmbH - http://www.uib.de/
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 Updating backend data.
 
 This holds backend-independent migrations.
-
-:copyright: uib GmbH <info@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
 from OPSI.Logger import Logger
@@ -63,14 +44,14 @@ def setDefaultWorkbenchLocation(backend):
 	changedServers = set()
 	for server in servers:
 		if server.getWorkbenchLocalUrl() is None:
-			LOGGER.notice("Setting missing value for workbenchLocalUrl on {} to {}", server.id, localWorkbenchPath)
+			LOGGER.notice("Setting missing value for workbenchLocalUrl on %s to %s", server.id, localWorkbenchPath)
 			server.setWorkbenchLocalUrl(localWorkbenchPath)
 			changedServers.add(server)
 
 		if server.getWorkbenchRemoteUrl() is None:
 			depotAddress = getServerAddress(server.depotRemoteUrl)
 			remoteWorkbenchPath = u'smb://{}/opsi_workbench'.format(depotAddress)
-			LOGGER.notice("Setting missing value for workbenchRemoteUrl on {} to {}", server.id, remoteWorkbenchPath)
+			LOGGER.notice("Setting missing value for workbenchRemoteUrl on %s to %s", server.id, remoteWorkbenchPath)
 			server.setWorkbenchRemoteUrl(remoteWorkbenchPath)
 			changedServers.add(server)
 

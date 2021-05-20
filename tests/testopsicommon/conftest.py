@@ -1,0 +1,14 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
+"""
+This file is part of opsi - https://www.opsi.org
+"""
+
+import os
+import pytest
+
+@pytest.fixture
+def onWindows():
+	return bool(os.name == 'nt')

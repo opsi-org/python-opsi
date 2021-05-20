@@ -1,20 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# This file is part of python-opsi.
-# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 System library.
 
@@ -23,75 +10,76 @@ systems. For the every day use you should import the method / class you
 want to use directly from this module.
 Because most functions are implemented for Windows and POSIX systems you
 should end up with runnable commands.
-
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
 from __future__ import absolute_import
 
 import os
+import platform
 import shutil
+import psutil
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceFilename
 
-if os.name == 'posix':
-	from .Posix import *
-elif os.name == 'nt':
-	from .Windows import *
-
 logger = Logger()
 
+if platform.system().lower() == 'linux':
+	from .Linux import *
+elif platform.system().lower() == 'windows':
+	from .Windows import *
+elif platform.system().lower() == 'darwin':
+	from .Darwin import *
+else:
+	logger.error("Unable to import System library for system %s", platform.system().lower())
 
 class SystemHook(SystemSpecificHook):
-	def __init__(self):
+	def __init__(self):  # pylint: disable=super-init-not-called
 		pass
 
-	def pre_getDirectorySize(self, path):
+	def pre_getDirectorySize(self, path):  # pylint: disable=no-self-use
 		return path
 
-	def post_getDirectorySize(self, path, result):
+	def post_getDirectorySize(self, path, result):  # pylint: disable=no-self-use,unused-argument
 		return result
 
-	def error_getDirectorySize(self, path, result, exception):
+	def error_getDirectorySize(self, path, result, exception):  # pylint: disable=no-self-use
 		pass
 
-	def pre_getSize(self, path):
+	def pre_getSize(self, path):  # pylint: disable=no-self-use
 		return path
 
-	def post_getSize(self, path, result):
+	def post_getSize(self, path, result):  # pylint: disable=no-self-use,unused-argument
 		return result
 
-	def error_getSize(self, path, result, exception):
+	def error_getSize(self, path, result, exception):  # pylint: disable=no-self-use
 		pass
 
-	def pre_countFiles(self, path):
+	def pre_countFiles(self, path):  # pylint: disable=no-self-use
 		return path
 
-	def post_countFiles(self, path, result):
+	def post_countFiles(self, path, result):  # pylint: disable=no-self-use,unused-argument
 		return result
 
-	def error_countFiles(self, path, result, exception):
+	def error_countFiles(self, path, result, exception):  # pylint: disable=no-self-use
 		pass
 
-	def pre_getCountAndSize(self, path):
+	def pre_getCountAndSize(self, path):  # pylint: disable=no-self-use
 		return path
 
-	def post_getCountAndSize(self, path, result):
+	def post_getCountAndSize(self, path, result):  # pylint: disable=no-self-use,unused-argument
 		return result
 
-	def error_getCountAndSize(self, path, result, exception):
+	def error_getCountAndSize(self, path, result, exception):  # pylint: disable=no-self-use
 		pass
 
-	def pre_copy(self, src, dst, progressSubject):
+	def pre_copy(self, src, dst, progressSubject):  # pylint: disable=no-self-use
 		return (src, dst, progressSubject)
 
-	def post_copy(self, src, dst, progressSubject):
+	def post_copy(self, src, dst, progressSubject):  # pylint: disable=no-self-use,unused-argument
 		return None
 
-	def error_copy(self, src, dst, progressSubject, exception):
+	def error_copy(self, src, dst, progressSubject, exception):  # pylint: disable=no-self-use,unused-argument
 		pass
 
 
@@ -106,7 +94,7 @@ def getDirectorySize(path):
 			absolutePath = os.path.join(path, element)
 			if os.path.islink(absolutePath):
 				continue
-			elif os.path.isfile(absolutePath):
+			if os.path.isfile(absolutePath):
 				size += os.path.getsize(absolutePath)
 			elif os.path.isdir(absolutePath):
 				size += getDirectorySize(absolutePath)
@@ -133,7 +121,7 @@ def getSize(path):
 		elif os.path.isfile(path):
 			size = os.path.getsize(path)
 		elif os.path.isdir(path):
-			logger.debug(u"Getting size of files in dir '%s'" % path)
+			logger.debug(u"Getting size of files in dir '%s'", path)
 			for element in os.listdir(path):
 				size += getSize(os.path.join(path, element))
 	except Exception as error:
@@ -159,7 +147,7 @@ def countFiles(path):
 		elif os.path.isfile(path):
 			count = 1
 		elif os.path.isdir(path):
-			logger.debug(u"Counting files in dir '%s'" % path)
+			logger.debug(u"Counting files in dir '%s'", path)
 			for element in os.listdir(path):
 				count += countFiles(os.path.join(path, element))
 	except Exception as error:
@@ -182,11 +170,11 @@ def getCountAndSize(path):
 	(count, size) = (0, 0)
 	try:
 		if os.path.isfile(path):
-			logger.debug2(u"Is file: {0}", path)
+			logger.debug2(u"Is file: %s", path)
 			(count, size) = (1, os.path.getsize(path))
 		elif os.path.isdir(path):
-			logger.debug2(u"Is dir: {0}", path)
-			logger.debug(u"Counting and getting sizes of files in dir {0!r}", path)
+			logger.debug2(u"Is dir: %s", path)
+			logger.debug(u"Counting and getting sizes of files in dir %s", path)
 			for element in os.listdir(path):
 				(elementCount, elementSize) = getCountAndSize(os.path.join(path, element))
 				count += elementCount
@@ -260,7 +248,7 @@ def copy(src, dst, progressSubject=None):
 		if copySrcContent and not os.path.isdir(src):
 			raise IOError(u"Source directory '%s' not found" % src)
 
-		logger.info(u"Copying from '%s' to '%s'" % (src, dst))
+		logger.info(u"Copying from '%s' to '%s'", src, dst)
 		(count, size) = (0, 0)
 		if progressSubject:
 			progressSubject.reset()
@@ -271,16 +259,16 @@ def copy(src, dst, progressSubject=None):
 		logger.info(u'Copy done')
 		if progressSubject:
 			progressSubject.setState(size)
-	except Exception as e:
+	except Exception as err:
 		for hook in hooks:
-			hook.error_copy(src, dst, progressSubject, e)
+			hook.error_copy(src, dst, progressSubject, err)
 		raise
 
 	for hook in hooks:
 		hook.post_copy(src, dst, progressSubject)
 
 
-def _copy(src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0, progressSubject=None):
+def _copy(src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0, progressSubject=None):  # pylint: disable=too-many-arguments,too-many-branches
 	src = forceFilename(src)
 	dst = forceFilename(dst)
 

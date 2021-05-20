@@ -1,39 +1,22 @@
 # -*- coding: utf-8 -*-
 
-# This file is part of python-opsi.
-# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 SQLite backend.
-
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Erol Ueluekmen <e.ueluekmen@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero GPL version 3
 """
 
-from itertools import izip
+import os
+import sqlite3
+import threading
 
-from apsw import (
-	SQLITE_OPEN_CREATE, SQLITE_CONFIG_MULTITHREAD, SQLITE_OPEN_READWRITE,
-	Connection)
+from sqlalchemy import create_engine
+from sqlalchemy.event import listen
+from sqlalchemy.orm import scoped_session, sessionmaker
 
-from OPSI.Exceptions import BackendBadValueError
-from OPSI.Logger import Logger
-from OPSI.Types import forceBool, forceFilename, forceUnicode
 from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
+from OPSI.Logger import Logger
+from OPSI.Types import forceFilename
 
 __all__ = ('SQLite', 'SQLiteBackend', 'SQLiteObjectBackendModificationTracker')
 
@@ -46,187 +29,72 @@ class SQLite(SQL):
 	ESCAPED_BACKSLASH = "\\"
 	ESCAPED_APOSTROPHE = "''"
 	ESCAPED_ASTERISK = "**"
+	_WRITE_LOCK = threading.Lock()
 
 	def __init__(self, **kwargs):
+		super().__init__(**kwargs)
+
 		self._database = ":memory:"
-		self._synchronous = True
 		self._databaseCharset = 'utf8'
+
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if option == 'database':
 				self._database = forceFilename(value)
-			elif option == 'synchronous':
-				self._synchronous = forceBool(value)
 			elif option == 'databasecharset':
 				self._databaseCharset = str(value)
 
-		self._connection = None
-		self._cursor = None
-		logger.debug(u'SQLite created: %s' % self)
-
-	def connect(self):
 		try:
-			logger.debug2(u"Connecting to sqlite db '%s'" % self._database)
-			if not self._connection:
-				self._connection = Connection(
-					filename=self._database,
-					flags=SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_CONFIG_MULTITHREAD,
-					vfs=None,
-					statementcachesize=100
-				)
-			if not self._cursor:
-				def rowtrace(cursor, row):
-					valueSet = {}
-					for rowDescription, current in izip(cursor.getdescription(), row):
-						valueSet[rowDescription[0]] = current
+			self.init_connection()
+		except (sqlite3.DatabaseError, sqlite3.OperationalError) as dbError:
+			logger.error("SQLite database '%s' is defective: %s, recreating", self._database, dbError)
+			self.delete_db()
+			self.init_connection()
+		except Exception as err:  # pylint: disable=broad-except
+			logger.error("Problem connecting to SQLite database: %s, recreating", err)
+			self.delete_db()
+			self.init_connection()
 
-					return valueSet
-
-				self._cursor = self._connection.cursor()
-				if not self._synchronous:
-					self._cursor.execute('PRAGMA synchronous=OFF')
-					self._cursor.execute('PRAGMA temp_store=MEMORY')
-					self._cursor.execute('PRAGMA cache_size=5000')
-				if self._databaseCharset.lower() in ('utf8', 'utf-8'):
-					self._cursor.execute('PRAGMA encoding="UTF-8"')
-				self._cursor.setrowtrace(rowtrace)
-			return (self._connection, self._cursor)
-		except Exception as connectionError:
-			logger.warning("Problem connecting to SQLite databse: {!r}", connectionError)
-			raise connectionError
-
-	def close(self, conn, cursor):
+	@staticmethod
+	def on_engine_connect(conn, branch):  # pylint: disable=unused-argument
+		#conn.execute('PRAGMA synchronous=OFF')
+		#conn.execute('PRAGMA temp_store=MEMORY')
+		#conn.execute('PRAGMA cache_size=5000')
+		#conn.execute('PRAGMA encoding="UTF-8"')
 		pass
 
-	def getSet(self, query):
-		logger.debug2(u"getSet: %s" % query)
-		(conn, cursor) = self.connect()
-		valueSet = []
-		try:
-			self.execute(query, conn, cursor)
-			valueSet = cursor.fetchall()
-			if not valueSet:
-				logger.debug(u"No result for query '%s'" % query)
-				valueSet = []
-		finally:
-			self.close(conn, cursor)
-		return valueSet
+	def init_connection(self):
+		uri = f'sqlite:///{self._database}'
+		logger.info("Connecting to %s", uri)
 
-	def getRow(self, query):
-		logger.debug2(u"getRow: %s" % query)
-		(conn, cursor) = self.connect()
-		row = {}
-		try:
-			self.execute(query, conn, cursor)
-			try:
-				row = cursor.next()
-			except Exception:
-				pass
+		self.engine = create_engine(
+			uri,
+			encoding=self._databaseCharset
+		)
 
-			if not row:
-				logger.debug(u"No result for query '%s'" % query)
-				row = {}
-			else:
-				logger.debug2(u"Result: '%s'" % row)
-		finally:
-			self.close(conn, cursor)
-		return row
+		listen(self.engine, 'engine_connect', self.on_engine_connect)
 
-	def insert(self, table, valueHash):
-		(conn, cursor) = self.connect()
-		result = -1
-		try:
-			colNames = []
-			values = []
-			for (key, value) in valueHash.items():
-				colNames.append(u"`{0}`".format(key))
-				if value is None:
-					values.append(u"NULL")
-				elif isinstance(value, bool):
-					if value:
-						values.append(u"1")
-					else:
-						values.append(u"0")
-				elif isinstance(value, (float, long, int)):
-					values.append(u"{0}".format(value))
-				elif isinstance(value, str):
-					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8")))))
-				else:
-					values.append(u"\'{0}\'".format(self.escapeApostrophe(self.escapeBackslash(value))))
+		self.session_factory = sessionmaker(
+			bind=self.engine,
+			autocommit=False,
+			autoflush=False
+		)
+		self.Session = scoped_session(self.session_factory)  # pylint: disable=invalid-name
 
-			query = u'INSERT INTO `{table}` ({columns}) VALUES ({values});'.format(columns=', '.join(colNames), values=', '.join(values), table=table)
-			logger.debug2(u"insert: %s" % query)
+		# Test connection
+		with self.session() as session:
+			self.getTables(session)
+		logger.debug('SQLite connected: %s', self)
 
-			self.execute(query, conn, cursor)
-			result = conn.last_insert_rowid()
-		finally:
-			self.close(conn, cursor)
+	def __repr__(self):
+		return f"<{self.__class__.__name__}(database={self._database})>"
 
-		return result
+	def delete_db(self):
+		self.disconnect()
+		if os.path.exists(self._database):
+			os.remove(self._database)
 
-	def update(self, table, where, valueHash, updateWhereNone=False):
-		(conn, cursor) = self.connect()
-		result = 0
-		try:
-			if not valueHash:
-				raise BackendBadValueError(u"No values given")
-
-			values = []
-			for (key, value) in valueHash.items():
-				if value is None and not updateWhereNone:
-					continue
-
-				if value is None:
-					values.append(u"`{0}` = NULL".format(key))
-				elif isinstance(value, bool):
-					if value:
-						values.append(u"`{0}` = 1".format(key))
-					else:
-						values.append(u"`{0}` = 0".format(key))
-				elif isinstance(value, (float, long, int)):
-					values.append(u"`{0}` = {1}".format(key, value))
-				elif isinstance(value, str):
-					values.append(u"`{0}` = \'{1}\'".format(key, self.escapeApostrophe(self.escapeBackslash(value.decode("utf-8")))))
-				else:
-					values.append(u"`{0}` = \'{1}\'".format(key, self.escapeApostrophe(self.escapeBackslash(value))))
-
-			query = u"UPDATE `{table}` SET {values} WHERE {condition};".format(table=table, values=', '.join(values), condition=where)
-			logger.debug2(u"update: %s" % query)
-			self.execute(query, conn, cursor)
-			result = conn.changes()
-		finally:
-			self.close(conn, cursor)
-		return result
-
-	def delete(self, table, where):
-		(conn, cursor) = self.connect()
-		result = 0
-		try:
-			query = u"DELETE FROM `%s` WHERE %s;" % (table, where)
-			logger.debug2(u"delete: %s" % query)
-			self.execute(query, conn, cursor)
-			result = conn.changes()
-		finally:
-			self.close(conn, cursor)
-		return result
-
-	def execute(self, query, conn=None, cursor=None):
-		res = None
-		needClose = False
-		if not conn or not cursor:
-			(conn, cursor) = self.connect()
-			needClose = True
-
-		try:
-			logger.debug2(u"SQL query: %s" % forceUnicode(query))
-			res = cursor.execute(query)
-		finally:
-			if needClose:
-				self.close(conn, cursor)
-
-		return res
-
-	def getTables(self):
+	def getTables(self, session):
 		"""
 		Get what tables are present in the database.
 
@@ -236,18 +104,18 @@ class SQLite(SQL):
 		:rtype: dict
 		"""
 		tables = {}
-		logger.debug2(u"Current tables:")
-		for i in self.getSet('SELECT name FROM sqlite_master WHERE type = "table";'):
-			tableName = i.values()[0].upper()
-			logger.debug2(u" [ %s ]" % tableName)
-			fields = [j['name'] for j in self.getSet('PRAGMA table_info(`%s`);' % tableName)]
+		logger.trace("Current tables:")
+		for i in self.getSet(session, 'SELECT name FROM sqlite_master WHERE type = "table";'):
+			tableName = tuple(i.values())[0].upper()
+			logger.trace(" [ %s ]", tableName)
+			fields = [j['name'] for j in self.getSet(session, 'PRAGMA table_info(`%s`);' % tableName)]
 			tables[tableName] = fields
-			logger.debug2("Fields in {0}: {1}", tableName, fields)
+			logger.trace("Fields in %s: %s", tableName, fields)
 
 		return tables
 
 	def getTableCreationOptions(self, table):
-		return u''
+		return ''
 
 
 class SQLiteBackend(SQLBackend):
@@ -262,9 +130,18 @@ class SQLiteBackend(SQLBackend):
 		self._licenseManagementEnabled = True
 		self._licenseManagementModule = True
 		self._sqlBackendModule = True
-		logger.debug(u'SQLiteBackend created: %s' % self)
+		logger.debug('SQLiteBackend created: %s', self)
 
-	def _createAuditHardwareTables(self):
+	def backend_createBase(self):
+		try:
+			return SQLBackend.backend_createBase(self)
+		except sqlite3.DatabaseError as dbError:
+			logger.error("SQLite database %s is defective: %s, recreating", self._sql, dbError)
+			self._sql.delete_db()
+			self._sql.connect()
+			return SQLBackend.backend_createBase(self)
+
+	def _createAuditHardwareTables(self):  # pylint: disable=too-many-statements
 		"""
 		Creating tables for hardware audit data.
 
@@ -272,144 +149,118 @@ class SQLiteBackend(SQLBackend):
 		multiple columns to alter but instead has to alter one column
 		after another.
 		"""
-		tables = self._sql.getTables()
-		existingTables = set(tables.keys())
+		with self._sql.session() as session:
+			tables = self._sql.getTables(session)
+			existingTables = set(tables.keys())
 
-		def removeTrailingComma(query):
-			if query.endswith(u','):
-				return query[:-1]
+			def removeTrailingComma(query):
+				if query.endswith(','):
+					return query[:-1]
 
-			return query
+				return query
 
-		def finishSQLQuery(tableExists, tableName):
-			if tableExists:
-				return u' ;\n'
-			else:
-				return u'\n) %s;\n' % self._sql.getTableCreationOptions(tableName)
+			def finishSQLQuery(tableExists, tableName):
+				if tableExists:
+					return ' ;\n'
+				return '\n) %s;\n' % self._sql.getTableCreationOptions(tableName)
 
-		def getSQLStatements():
-			for (hwClass, values) in self._auditHardwareConfig.items():
-				logger.debug(u"Processing hardware class '%s'" % hwClass)
-				hardwareDeviceTableName = u'HARDWARE_DEVICE_{0}'.format(hwClass)
-				hardwareConfigTableName = u'HARDWARE_CONFIG_{0}'.format(hwClass)
+			def getSQLStatements():  # pylint: disable=too-many-branches,too-many-statements
+				for (hwClass, values) in self._auditHardwareConfig.items():  # pylint: disable=too-many-nested-blocks
+					logger.debug("Processing hardware class '%s'", hwClass)
+					hardwareDeviceTableName = f"HARDWARE_DEVICE_{hwClass}"
+					hardwareConfigTableName = f"HARDWARE_CONFIG_{hwClass}"
 
-				hardwareDeviceTableExists = hardwareDeviceTableName in existingTables
-				hardwareConfigTableExists = hardwareConfigTableName in existingTables
+					hardwareDeviceTableExists = hardwareDeviceTableName in existingTables
+					hardwareConfigTableExists = hardwareConfigTableName in existingTables
 
-				if hardwareDeviceTableExists:
-					hardwareDeviceTable = u'ALTER TABLE `{name}`\n'.format(
-						name=hardwareDeviceTableName
-					)
-				else:
-					hardwareDeviceTable = (
-						u'CREATE TABLE `{name}` (\n'
-						u'`hardware_id` INTEGER NOT NULL {autoincrement},\n'.format(
-							name=hardwareDeviceTableName,
-							autoincrement=self._sql.AUTOINCREMENT
+					if hardwareDeviceTableExists:
+						hardwareDeviceTable = f"ALTER TABLE `{hardwareDeviceTableName}`\n"
+					else:
+						hardwareDeviceTable = (
+							f"CREATE TABLE `{hardwareDeviceTableName}` (\n"
+							f"`hardware_id` INTEGER NOT NULL {self._sql.AUTOINCREMENT},\n"
 						)
-					)
 
-				avoidProcessingFurtherHardwareDevice = False
-				hardwareDeviceValuesProcessed = 0
-				for (value, valueInfo) in values.items():
-					logger.debug(u"  Processing value '%s'" % value)
-					if valueInfo['Scope'] == 'g':
-						if hardwareDeviceTableExists:
-							if value in tables[hardwareDeviceTableName]:
-								# Column exists => change
-								if not self._sql.ALTER_TABLE_CHANGE_SUPPORTED:
-									continue
-
-								hardwareDeviceTable += u'CHANGE `{column}` `{column}` {type} NULL,\n'.format(
-									column=value,
-									type=valueInfo['Type']
-								)
+					avoid_process_further_hw_dev = False
+					hardwareDeviceValuesProcessed = 0
+					for (value, valueInfo) in values.items():
+						logger.debug("  Processing value '%s'", value)
+						if valueInfo['Scope'] == 'g':
+							if hardwareDeviceTableExists:
+								if value in tables[hardwareDeviceTableName]:
+									# Column exists => change
+									if not self._sql.ALTER_TABLE_CHANGE_SUPPORTED:
+										continue
+									hardwareDeviceTable += f"CHANGE `{value}` `{value}` {valueInfo['Type']} NULL,\n"
+								else:
+									# Column does not exist => add
+									yield f"{hardwareDeviceTable} ADD COLUMN `{value}` {valueInfo['Type']} NULL;"
+									avoid_process_further_hw_dev = True
 							else:
-								# Column does not exist => add
-								yield hardwareDeviceTable + u'ADD COLUMN `{column}` {type} NULL;'.format(
-									column=value,
-									type=valueInfo["Type"]
-								)
-								avoidProcessingFurtherHardwareDevice = True
-						else:
-							hardwareDeviceTable += u'`{column}` {type} NULL,\n'.format(
-								column=value,
-								type=valueInfo["Type"]
-							)
-						hardwareDeviceValuesProcessed += 1
+								hardwareDeviceTable += f"`{value}` {valueInfo['Type']} NULL,\n"
+							hardwareDeviceValuesProcessed += 1
 
-				if hardwareConfigTableExists:
-					hardwareConfigTable = u'ALTER TABLE `{name}`\n'.format(
-						name=hardwareConfigTableName
-					)
-				else:
-					hardwareConfigTable = (
-						u'CREATE TABLE `{name}` (\n'
-						u'`config_id` INTEGER NOT NULL {autoincrement},\n'
-						u'`hostId` varchar(255) NOT NULL,\n'
-						u'`hardware_id` INTEGER NOT NULL,\n'
-						u"`firstseen` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01',\n"
-						u"`lastseen` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01',\n"
-						u'`state` TINYINT NOT NULL,\n'.format(
-							name=hardwareConfigTableName,
-							autoincrement=self._sql.AUTOINCREMENT
+					if hardwareConfigTableExists:
+						hardwareConfigTable = f"ALTER TABLE `{hardwareConfigTableName}`\n"
+					else:
+						hardwareConfigTable = (
+							f"CREATE TABLE `{hardwareConfigTableName}` (\n"
+							f"`config_id` INTEGER NOT NULL {self._sql.AUTOINCREMENT},\n"
+							"`hostId` varchar(255) NOT NULL,\n"
+							"`hardware_id` INTEGER NOT NULL,\n"
+							"`firstseen` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01',\n"
+							"`lastseen` TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01',\n"
+							"`state` TINYINT NOT NULL,\n"
 						)
-					)
 
-				avoidProcessingFurtherHardwareConfig = False
-				hardwareConfigValuesProcessed = 0
-				for (value, valueInfo) in values.items():
-					logger.debug(u"  Processing value '%s'" % value)
-					if valueInfo['Scope'] == 'i':
-						if hardwareConfigTableExists:
-							if value in tables[hardwareConfigTableName]:
-								# Column exists => change
-								if not self._sql.ALTER_TABLE_CHANGE_SUPPORTED:
-									continue
+					avoid_process_further_hw_cnf = False
+					hardwareConfigValuesProcessed = 0
+					for (value, valueInfo) in values.items():
+						logger.debug("  Processing value '%s'", value)
+						if valueInfo['Scope'] == 'i':
+							if hardwareConfigTableExists:
+								if value in tables[hardwareConfigTableName]:
+									# Column exists => change
+									if not self._sql.ALTER_TABLE_CHANGE_SUPPORTED:
+										continue
 
-								hardwareConfigTable += u'CHANGE `{column}` `{column}` {type} NULL,\n'.format(
-									column=value,
-									type=valueInfo['Type']
-								)
+									hardwareConfigTable += f"CHANGE `{value}` `{value}` {valueInfo['Type']} NULL,\n"
+								else:
+									# Column does not exist => add
+									yield f"{hardwareConfigTable} ADD COLUMN `{value}` {valueInfo['Type']} NULL;"
+									avoid_process_further_hw_cnf = True
 							else:
-								# Column does not exist => add
-								yield hardwareConfigTable + u' ADD COLUMN `{column}` {type} NULL;'.format(
-									column=value,
-									type=valueInfo['Type']
-								)
-								avoidProcessingFurtherHardwareConfig = True
-						else:
-							hardwareConfigTable += u'`%s` %s NULL,\n' % (value, valueInfo['Type'])
-						hardwareConfigValuesProcessed += 1
+								hardwareConfigTable += f"`{value}` {valueInfo['Type']} NULL,\n"
+							hardwareConfigValuesProcessed += 1
 
-				if avoidProcessingFurtherHardwareConfig or avoidProcessingFurtherHardwareDevice:
-					continue
+					if avoid_process_further_hw_cnf or avoid_process_further_hw_dev:
+						continue
 
-				if not hardwareDeviceTableExists:
-					hardwareDeviceTable += u'PRIMARY KEY (`hardware_id`)\n'
-				if not hardwareConfigTableExists:
-					hardwareConfigTable += u'PRIMARY KEY (`config_id`)\n'
+					if not hardwareDeviceTableExists:
+						hardwareDeviceTable += 'PRIMARY KEY (`hardware_id`)\n'
+					if not hardwareConfigTableExists:
+						hardwareConfigTable += 'PRIMARY KEY (`config_id`)\n'
 
-				# Remove leading and trailing whitespace
-				hardwareDeviceTable = hardwareDeviceTable.strip()
-				hardwareConfigTable = hardwareConfigTable.strip()
+					# Remove leading and trailing whitespace
+					hardwareDeviceTable = hardwareDeviceTable.strip()
+					hardwareConfigTable = hardwareConfigTable.strip()
 
-				hardwareDeviceTable = removeTrailingComma(hardwareDeviceTable)
-				hardwareConfigTable = removeTrailingComma(hardwareConfigTable)
+					hardwareDeviceTable = removeTrailingComma(hardwareDeviceTable)
+					hardwareConfigTable = removeTrailingComma(hardwareConfigTable)
 
-				hardwareDeviceTable += finishSQLQuery(hardwareDeviceTableExists, hardwareDeviceTableName)
-				hardwareConfigTable += finishSQLQuery(hardwareConfigTableExists, hardwareConfigTableName)
+					hardwareDeviceTable += finishSQLQuery(hardwareDeviceTableExists, hardwareDeviceTableName)
+					hardwareConfigTable += finishSQLQuery(hardwareConfigTableExists, hardwareConfigTableName)
 
-				if hardwareDeviceValuesProcessed or not hardwareDeviceTableExists:
-					yield hardwareDeviceTable
+					if hardwareDeviceValuesProcessed or not hardwareDeviceTableExists:
+						yield hardwareDeviceTable
 
-				if hardwareConfigValuesProcessed or not hardwareConfigTableExists:
-					yield hardwareConfigTable
+					if hardwareConfigValuesProcessed or not hardwareConfigTableExists:
+						yield hardwareConfigTable
 
-		for statement in getSQLStatements():
-			logger.debug2("Processing statement {0!r}", statement)
-			self._sql.execute(statement)
-			logger.debug2("Done with statement.")
+			for statement in getSQLStatements():
+				logger.trace("Processing statement %s", statement)
+				self._sql.execute(session, statement)
+				logger.trace("Done with statement.")
 
 
 class SQLiteObjectBackendModificationTracker(SQLBackendObjectModificationTracker):

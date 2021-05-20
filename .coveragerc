@@ -1,4 +1,0 @@
-[report]
-omit =
-	OPSI/web2/*
-	OPSI/ldaptor/*

@@ -1,28 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# This file is part of python-opsi.
-# Copyright (C) 2014-2019 uib GmbH <info@uib.de>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 Configuration data for the backend.
 
 .. versionadded:: 4.0.6.1
-
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:author: Erol Ueluekmen <e.ueluekmen@uib.de>
-:license: GNU Affero General Public License version 3
 """
 import codecs
 import os
@@ -109,7 +92,7 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):
 			if depotdomain:
 				depotuser = u'\\'.join((depotdomain, depotuser))
 
-			LOGGER.debug(u"Using {0!r} as clientconfig.depot.user.", depotuser)
+			LOGGER.debug(u"Using '%s' as clientconfig.depot.user.", depotuser)
 
 			yield UnicodeConfig(
 				id=u'clientconfig.depot.user',
@@ -309,7 +292,7 @@ def readWindowsDomainFromUCR():
 				domain = output.strip().upper()
 				break
 	except Posix.CommandNotFoundException as missingCommandError:
-		LOGGER.info('Could not find ucr: {0}', missingCommandError)
+		LOGGER.info('Could not find ucr: %s', missingCommandError)
 
 	return domain
 
@@ -348,7 +331,7 @@ def _createBooleanConfigsIfMissing(backend, configs):
 	availableConfigs = set(backend.config_getIdents())
 	for config in configs:
 		if config.id not in availableConfigs:
-			LOGGER.debug(u"Adding missing config {0!r}", config.id)
+			LOGGER.debug(u"Adding missing config '%s", config.id)
 			backend.config_createBool(config.id, config.description, config.value)
 
 
@@ -374,7 +357,7 @@ def createUserProfileManagementDefaults(backend):
 	)
 
 	if actionProcressorCommand.id not in set(backend.config_getIdents()):
-		LOGGER.debug(u"Adding missing config {0!r}", actionProcressorCommand.id)
+		LOGGER.debug(u"Adding missing config '%s'", actionProcressorCommand.id)
 		backend.config_createUnicode(
 			actionProcressorCommand.id,
 			actionProcressorCommand.description,

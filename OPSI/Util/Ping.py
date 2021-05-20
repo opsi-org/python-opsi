@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 A pure python ping implementation using raw socket.
 
@@ -91,20 +95,20 @@ import time
 ICMP_ECHO_REQUEST = 8  # Seems to be the same on Solaris.
 
 
-def checksum(source_string):
+def checksum(source_bytes):
 	# I'm not too confident that this is right but testing seems
 	# to suggest that it gives the same answers as in_cksum in ping.c
 	sum = 0
-	countTo = (len(source_string) / 2) * 2
+	countTo = (len(source_bytes) / 2) * 2
 	count = 0
 	while count < countTo:
-		thisVal = ord(source_string[count + 1]) * 256 + ord(source_string[count])
+		thisVal = source_bytes[count + 1] * 256 + source_bytes[count]
 		sum = sum + thisVal
 		sum = sum & 0xffffffff  # Necessary?
 		count = count + 2
 
-	if countTo < len(source_string):
-		sum = sum + ord(source_string[len(source_string) - 1])
+	if countTo < len(source_bytes):
+		sum = sum + source_bytes[len(source_bytes) - 1]
 		sum = sum & 0xffffffff  # Necessary?
 
 	sum = (sum >> 16) + (sum & 0xffff)
@@ -172,7 +176,7 @@ def send_one_ping(my_socket, dest_addr, ID):
 	# Make a dummy heder with a 0 checksum.
 	header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, my_checksum, ID, 1)
 	bytesInDouble = struct.calcsize("d")
-	data = (192 - bytesInDouble) * "Q"
+	data = (192 - bytesInDouble) * b"Q"
 	if os.name == 'nt':
 		data = struct.pack("d", time.clock()) + data
 	else:
@@ -222,17 +226,17 @@ def verbose_ping(dest_addr, timeout=2, count=4):
 	Send >count< ping to >dest_addr< with the given >timeout< and display
 	the result.
 	"""
-	for i in xrange(count):
-		print "ping %s..." % dest_addr,
+	for i in range(count):
+		print("ping %s..." % dest_addr, end=' ')
 		try:
 			delay = ping(dest_addr, timeout)
 		except socket.gaierror as e:
-			print "failed. (socket error: '%s')" % e[1]
+			print("failed. (socket error: '%s')" % e[1])
 			break
 
 		if delay is None:
-			print "failed. (timeout within %ssec.)" % timeout
+			print("failed. (timeout within %ssec.)" % timeout)
 		else:
 			delay = delay * 1000
-			print "get ping in %0.4fms" % delay
-	print
+			print("get ping in %0.4fms" % delay)
+	print()

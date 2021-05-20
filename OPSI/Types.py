@@ -1,33 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# This file is part of python-opsi.
-# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 Type forcing features.
 
 This module contains various methods to ensure force a special type
 on an object.
-
-:copyright:	uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
 import datetime
+import ipaddress
 import os
 import re
 import sys
@@ -69,14 +52,12 @@ _HARDWARE_ID_REGEX = re.compile(r'^[a-fA-F0-9]{4}$')
 _OPSI_TIMESTAMP_REGEX = re.compile(r'^(\d{4})-?(\d{2})-?(\d{2})\s?(\d{2}):?(\d{2}):?(\d{2})\.?\d*$')
 _OPSI_DATE_REGEX = re.compile(r'^(\d{4})-?(\d{2})-?(\d{2})$')
 _FQDN_REGEX = re.compile(r'^[a-z0-9][a-z0-9\-]{,63}\.((\w+\-+)|(\w+\.))*\w{1,63}\.\w{2,16}\.?$')
-_HARDWARE_ADDRESS_REGEX = re.compile(r'^([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})$')
-_IP_ADDRESS_REGEX = re.compile(r'^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
-_NETMASK_REGEX = re.compile(r'^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
-_NETWORK_ADDRESS_REGEX = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/([0-3]?[0-9]|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
-_URL_REGEX = re.compile(r'^[a-z0-9]+://[/a-zA-Z0-9]')
+_HARDWARE_ADDRESS_REGEX = re.compile(r'^([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})[:-]?([0-9a-f]{2})$')  # pylint: disable=line-too-long
+_NETMASK_REGEX = re.compile(r'^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')  # pylint: disable=line-too-long
+_URL_REGEX = re.compile(r'^[a-z0-9]+:\/\/[/a-zA-Z0-9@:%._\+~#?&=\[\]]+')
 _OPSI_HOST_KEY_REGEX = re.compile(r'^[0-9a-f]{32}$')
-_PRODUCT_VERSION_REGEX = re.compile(r'^[a-z0-9.]{1,32}$')
-_PACKAGE_VERSION_REGEX = re.compile(r'^[a-z0-9.]{1,16}$')
+_PRODUCT_VERSION_REGEX = re.compile(r'^[a-zA-Z0-9.]{1,32}$')
+_PACKAGE_VERSION_REGEX = re.compile(r'^[a-zA-Z0-9.]{1,16}$')
 _PRODUCT_ID_REGEX = re.compile(r'^[a-z0-9-_\.]{1,128}$')
 _PACKAGE_CUSTOM_NAME_REGEX = re.compile(r'^[a-zA-Z0-9]+$')
 _PRODUCT_PROPERTY_ID_REGEX = re.compile(r'^\S+$')
@@ -92,18 +73,6 @@ _LICENSE_POOL_ID_REGEX = re.compile(r'^[a-z0-9][a-z0-9-_. :]*$')
 _LANGUAGE_CODE_REGEX = re.compile(r'^([a-z]{2,3})[-_]?([a-z]{4})?[-_]?([a-z]{2})?$')
 _ARCHITECTURE_REGEX = re.compile(r'^(x86|x64)$')
 
-if sys.version_info > (3, ):
-	# Python 3
-	unicode = str
-	_STRING_TYPE = str
-	_UNICODE_TYPE = str
-	_STRING_TYPES = (str, )
-else:
-	# Python 2
-	_STRING_TYPE = str
-	_UNICODE_TYPE = unicode
-	_STRING_TYPES = (str, unicode)
-
 
 def forceList(var):
 	if not isinstance(var, (set, list, tuple, types.GeneratorType)):
@@ -112,33 +81,29 @@ def forceList(var):
 	return list(var)
 
 
-def forceUnicode(var):
-	if isinstance(var, _UNICODE_TYPE):
+def forceUnicode(var):  # pylint: disable=too-many-return-statements
+	if isinstance(var, str):
 		return var
-	elif isinstance(var, _STRING_TYPE):
-		return unicode(var, 'utf-8', 'replace')
-	elif (os.name == 'nt') and isinstance(var, WindowsError):
-		return u"[Error %s] %s" % (var.args[0], var.args[1].decode(encoding))
-
+	if (os.name == 'nt') and isinstance(var, WindowsError):  # pylint: disable=undefined-variable
+		try:
+			return f"[Error {var.args[0]}] {var.args[1]}"
+		except Exception:  # pylint: disable=broad-except
+			return str(var)
 	try:
-		return var.__unicode__()
-	except Exception:
-		pass
-
-	try:
-		return unicode(var)
-	except Exception:
+		if isinstance(var, bytes):
+			return var.decode()
+	except Exception:  # pylint: disable=broad-except
 		pass
 
 	try:
 		var = var.__repr__()
-		if isinstance(var, _UNICODE_TYPE):
+		if isinstance(var, str):
 			return var
-		return unicode(var, 'utf-8', 'replace')
-	except Exception:
+		return str(var, 'utf-8', 'replace')
+	except Exception:  # pylint: disable=broad-except
 		pass
 
-	return unicode(var)
+	return str(var)
 
 
 def forceUnicodeLower(var):
@@ -164,12 +129,12 @@ def forceUnicodeLowerList(var):
 def forceBool(var):
 	if isinstance(var, bool):
 		return var
-	elif isinstance(var, _STRING_TYPES):
+	if isinstance(var, str):
 		if len(var) <= 5:  # longest word is 5 characters ("false")
 			lowValue = var.lower()
 			if lowValue in ('true', 'yes', 'on', '1'):
 				return True
-			elif lowValue in ('false', 'no', 'off', '0'):
+			if lowValue in ('false', 'no', 'off', '0'):
 				return False
 
 	return bool(var)
@@ -184,8 +149,8 @@ def forceInt(var):
 		return var
 	try:
 		return int(var)
-	except Exception as e:
-		raise ValueError(u"Bad int value '%s': %s" % (var, e))
+	except Exception as err:
+		raise ValueError(f"Bad int value '{var}': {err}") from err
 
 
 def forceIntList(var):
@@ -205,17 +170,18 @@ def forceOct(var):
 
 	try:
 		octValue = ''
-		for i, x in enumerate(forceUnicode(var)):
-			x = forceInt(x)
-			if x > 7:
-				raise ValueError(u'{0!r} is too big'.format(x))
-			elif i == 0 and x != '0':
+		for idx, val in enumerate(forceUnicode(var)):
+			val = forceInt(val)
+			if val > 7:
+				raise ValueError(f"{val} is too big")
+			if idx == 0 and val != '0':
 				octValue += '0'
-			octValue += str(x)
-		octValue = eval(octValue)
+			octValue += str(val)
+
+		octValue = int(octValue, 8)
 		return octValue
-	except Exception as error:
-		raise ValueError(u"Bad oct value {0!r}: {1}".format(var, error))
+	except Exception as err:  # pylint: disable=broad-except
+		raise ValueError(f"Bad oct value {var}: {err}") from err
 
 
 def forceFloat(var):
@@ -224,17 +190,16 @@ def forceFloat(var):
 
 	try:
 		return float(var)
-	except Exception as e:
-		raise ValueError(u"Bad float value '%s': %s" % (var, e))
+	except Exception as err:  # pylint: disable=broad-except
+		raise ValueError(f"Bad float value '{var}': {err}") from err
 
 
 def forceDict(var):
 	if var is None:
 		return {}
-	elif isinstance(var, dict):
+	if isinstance(var, dict):
 		return var
-
-	raise ValueError(u"Not a dict '%s'" % var)
+	raise ValueError(f"Not a dict '{var}'")
 
 
 def forceTime(var):
@@ -245,26 +210,26 @@ def forceTime(var):
 	"""
 	if isinstance(var, time.struct_time):
 		return var
-	elif isinstance(var, datetime.datetime):
+	if isinstance(var, datetime.datetime):
 		var = time.mktime(var.timetuple()) + var.microsecond / 1E6
 
 	if isinstance(var, (int, float)):
 		return time.localtime(var)
 
-	raise ValueError(u"Not a time {0!r}".format(var))
+	raise ValueError(f"Not a time {var}")
 
 
 def forceHardwareVendorId(var):
 	var = forceUnicodeUpper(var)
 	if not re.search(_HARDWARE_ID_REGEX, var):
-		raise ValueError(u"Bad hardware vendor id '%s'" % var)
+		raise ValueError(f"Bad hardware vendor id '{var}'")
 	return var
 
 
 def forceHardwareDeviceId(var):
 	var = forceUnicodeUpper(var)
 	if not re.search(_HARDWARE_ID_REGEX, var):
-		raise ValueError(u"Bad hardware device id '%s'" % var)
+		raise ValueError(f"Bad hardware device id '{var}'")
 	return var
 
 
@@ -277,8 +242,8 @@ def forceOpsiTimestamp(var):
 	If a conversion is not possible a `ValueError` will be raised.
 	"""
 	if not var:
-		return u'0000-00-00 00:00:00'
-	elif isinstance(var, datetime.datetime):
+		return '0000-00-00 00:00:00'
+	if isinstance(var, datetime.datetime):
 		return forceUnicode(var.strftime('%Y-%m-%d %H:%M:%S'))
 
 	var = forceUnicode(var)
@@ -286,21 +251,21 @@ def forceOpsiTimestamp(var):
 	if not match:
 		match = re.search(_OPSI_DATE_REGEX, var)
 		if not match:
-			raise ValueError(u"Bad opsi timestamp: {0!r}".format(var))
-
-		return u'%s-%s-%s 00:00:00' % (match.group(1), match.group(2), match.group(3))
-
-	return u'%s-%s-%s %s:%s:%s' % (match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6))
+			raise ValueError(f"Bad opsi timestamp: {var}")
+		return f"{match.group(1)}-{match.group(2)}-{match.group(3)} 00:00:00"
+	return (
+		f"{match.group(1)}-{match.group(2)}-{match.group(3)}"
+		f" {match.group(4)}:{match.group(5)}:{match.group(6)}"
+	)
 
 
 def forceFqdn(var):
 	var = forceObjectId(var)
 	if not _FQDN_REGEX.search(var):
-		raise ValueError(u"Bad fqdn: '%s'" % var)
+		raise ValueError(f"Bad fqdn: '{var}'")
 	if var.endswith('.'):
 		var = var[:-1]
 	return var
-
 
 forceHostId = forceFqdn
 
@@ -316,17 +281,20 @@ def forceHardwareAddress(var):
 
 	match = re.search(_HARDWARE_ADDRESS_REGEX, var)
 	if not match:
-		raise ValueError(u"Bad hardware address: %s" % var)
+		raise ValueError(f"Invalid hardware address: {var}")
 
-	return u'%s:%s:%s:%s:%s:%s' % (match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6))
-
+	return (
+		f"{match.group(1)}:{match.group(2)}:{match.group(3)}:"
+		f"{match.group(4)}:{match.group(5)}:{match.group(6)}"
+	).lower()
 
 def forceIPAddress(var):
-	var = forceUnicodeLower(var)
-	if not re.search(_IP_ADDRESS_REGEX, var):
-		raise ValueError(u"Bad ip address: '%s'" % var)
-	return var
-
+	if not isinstance(var, (ipaddress.IPv4Address, ipaddress.IPv6Address, str)):
+		raise ValueError(f"Invalid ip address: '{var}'")
+	var = ipaddress.ip_address(var)
+	if isinstance(var, ipaddress.IPv6Address) and var.ipv4_mapped:
+		return var.ipv4_mapped.compressed
+	return var.compressed
 
 forceIpAddress = forceIPAddress
 
@@ -337,52 +305,51 @@ def forceHostAddress(var):
 		try:
 			try:
 				var = forceIpAddress(var)
-			except Exception:
+			except Exception:  # pylint: disable=broad-except
 				var = forceFqdn(var)
-		except Exception:
+		except Exception:  # pylint: disable=broad-except
 			var = forceHostname(var)
-	except Exception:
-		raise ValueError(u"Bad host address: '%s'" % var)
+	except Exception as err:  # pylint: disable=broad-except
+		raise ValueError(f"Invalid host address: '{var}'") from err
 	return var
 
 
 def forceNetmask(var):
 	var = forceUnicodeLower(var)
 	if not re.search(_NETMASK_REGEX, var):
-		raise ValueError(u"Bad netmask: '%s'" % var)
+		raise ValueError(f"Invalid netmask: '{var}'")
 	return var
 
 
 def forceNetworkAddress(var):
-	var = forceUnicodeLower(var)
-	if not re.search(_NETWORK_ADDRESS_REGEX, var):
-		raise ValueError(u"Bad network address: '%s'" % var)
-	return var
+	if not isinstance(var, (ipaddress.IPv4Network, ipaddress.IPv6Network, str)):
+		raise ValueError(f"Invalid network address: '{var}'")
+	return ipaddress.ip_network(var).compressed
 
 
 def forceUrl(var):
 	"""
 	Forces ``var`` to be an valid URL.
 
-	:rtype: unicode
+	:rtype: str
 	"""
 	var = forceUnicode(var)
 	if not _URL_REGEX.search(var):
-		raise ValueError(u"Bad url: '{0}'".format(var))
+		raise ValueError(f"Bad url: '{var}'")
 	return var
 
 
 def forceOpsiHostKey(var):
 	var = forceUnicodeLower(var)
 	if not re.search(_OPSI_HOST_KEY_REGEX, var):
-		raise ValueError(u"Bad opsi host key: '%s'" % var)
+		raise ValueError(f"Bad opsi host key: {var}")
 	return var
 
 
 def forceProductVersion(var):
 	var = forceUnicode(var)
 	if not _PRODUCT_VERSION_REGEX.search(var):
-		raise ValueError(u"Bad product version: '%s'" % var)
+		raise ValueError(f"Bad product version: '{var}'")
 	return var
 
 
@@ -393,7 +360,7 @@ def forceProductVersionList(var):
 def forcePackageVersion(var):
 	var = forceUnicode(var)
 	if not _PACKAGE_VERSION_REGEX.search(var):
-		raise ValueError(u"Bad package version: '%s'" % var)
+		raise ValueError(f"Bad package version: '{var}'")
 	return var
 
 
@@ -404,7 +371,7 @@ def forcePackageVersionList(var):
 def forceProductId(var):
 	var = forceObjectId(var)
 	if not _PRODUCT_ID_REGEX.search(var):
-		raise ValueError(u"Bad product id: '%s'" % var)
+		raise ValueError(f"Bad product id: '{var}'")
 	return var
 
 
@@ -415,51 +382,48 @@ def forceProductIdList(var):
 def forcePackageCustomName(var):
 	var = forceUnicodeLower(var)
 	if not _PACKAGE_CUSTOM_NAME_REGEX.search(var):
-		raise ValueError(u"Bad package custom name: '%s'" % var)
+		raise ValueError(f"Bad package custom name: '{var}'")
 	return var
 
 
 def forceProductType(var):
 	lowercaseVar = forceUnicodeLower(var)
 	if lowercaseVar in ('localboot', 'localbootproduct'):
-		return u'LocalbootProduct'
-	elif lowercaseVar in ('netboot', 'netbootproduct'):
-		return u'NetbootProduct'
-	else:
-		raise ValueError(u"Unknown product type: '%s'" % var)
+		return 'LocalbootProduct'
+	if lowercaseVar in ('netboot', 'netbootproduct'):
+		return 'NetbootProduct'
+	raise ValueError(f"Unknown product type: '{var}'")
 
 
 def forceProductPropertyId(var):
 	var = forceUnicodeLower(var)
 	if not _PRODUCT_PROPERTY_ID_REGEX.search(var):
-		raise ValueError(u"Bad product property id: '%s'" % var)
+		raise ValueError(f"Bad product property id: '{var}'")
 	return var
 
 
 def forceConfigId(var):
 	var = forceUnicodeLower(var)
 	if not _CONFIG_ID_REGEX.search(var):
-		raise ValueError(u"Bad config id: '%s'" % var)
+		raise ValueError(f"Bad config id: '{var}'")
 	return var
 
 
 def forceProductPropertyType(var):
-	v = forceUnicodeLower(var)
-	if v in ('unicode', 'unicodeproductproperty'):
-		return u'UnicodeProductProperty'
-	elif v in ('bool', 'boolproductproperty'):
-		return u'BoolProductProperty'
-	else:
-		raise ValueError(u"Unknown product property type: '%s'" % var)
+	value = forceUnicodeLower(var)
+	if value in ('unicode', 'unicodeproductproperty'):
+		return 'UnicodeProductProperty'
+	if value in ('bool', 'boolproductproperty'):
+		return 'BoolProductProperty'
+	raise ValueError(f"Unknown product property type: '{var}'")
 
 
 def forceProductPriority(var):
 	var = forceInt(var)
 	if var < -100:
-		var = -100
-	elif var > 100:
-		var = 100
-
+		return -100
+	if var > 100:
+		return 100
 	return var
 
 
@@ -470,14 +434,14 @@ def forceFilename(var):
 def forceProductTargetConfiguration(var):
 	var = forceUnicodeLower(var)
 	if var and var not in ('installed', 'always', 'forbidden', 'undefined'):
-		raise ValueError(u"Bad product target configuration: '%s'" % var)
+		raise ValueError(f"Bad product target configuration: '{var}'")
 	return var
 
 
 def forceInstallationStatus(var):
 	var = forceUnicodeLower(var)
 	if var and var not in ('installed', 'not_installed', 'unknown'):
-		raise ValueError(u"Bad installation status: '%s'" % var)
+		raise ValueError(f"Bad installation status: '{var}'")
 	return var
 
 
@@ -487,8 +451,7 @@ def forceActionRequest(var):
 		if var == 'undefined':
 			var = None
 		elif var not in ('setup', 'uninstall', 'update', 'always', 'once', 'custom', 'none'):
-			raise ValueError(u"Bad action request: '%s'" % var)
-
+			raise ValueError(f"Bad action request: '{var}'")
 	return var
 
 
@@ -503,7 +466,7 @@ def forceActionProgress(var):
 def forceActionResult(var):
 	var = forceUnicodeLower(var)
 	if var and var not in ('failed', 'successful', 'none'):
-		raise ValueError(u"Bad action result: '%s'" % var)
+		raise ValueError(f"Bad action result: '{var}'")
 	return var
 
 
@@ -511,8 +474,8 @@ def forceRequirementType(var):
 	var = forceUnicodeLower(var)
 	if not var:
 		return None
-	elif var not in ('before', 'after'):
-		raise ValueError(u"Bad requirement type: '%s'" % var)
+	if var not in ('before', 'after'):
+		raise ValueError(f"Bad requirement type: '{var}'")
 	return var
 
 
@@ -521,39 +484,37 @@ def forceObjectClass(var, objectClass):
 		return var
 
 	exception = None
-	if isinstance(var, _STRING_TYPES) and var.lstrip().startswith('{'):
-		from OPSI.Util import fromJson
-
+	if isinstance(var, str) and var.lstrip().startswith('{'):
+		from OPSI.Util import fromJson  # pylint: disable=import-outside-toplevel
 		try:
 			var = fromJson(var)
-		except Exception as error:
-			exception = error
-			logger.debug(u"Failed to get object from json {0!r}: {1!r}", var, error)
+		except Exception as err:  # pylint: disable=broad-except
+			exception = err
+			logger.debug("Failed to get object from json %s: %s", var, err)
 
 	if isinstance(var, dict):
 		if 'type' not in var:
-			raise ValueError(u"Key 'type' missing in hash {0!r}".format(var))
+			raise ValueError(f"Key 'type' missing in hash {var}")
 
-		import OPSI.Object
+		import OPSI.Object  # pylint: disable=import-outside-toplevel,unused-import
 		try:
-			c = eval('OPSI.Object.%s' % var['type'])
-			if issubclass(c, objectClass):
-				var = c.fromHash(var)
-		except AttributeError as error:
-			if "'module' object has no attribute " in str(error):
-				error = ValueError("Invalild object type: {0}".format(var['type']))
+			_class = eval('OPSI.Object.%s' % var['type'])  # pylint: disable=eval-used
+			if issubclass(_class, objectClass):
+				var = _class.fromHash(var)
+		except AttributeError as err:
+			if "module 'OPSI.Object' has no attribute" in str(err):
+				err = ValueError(f"Invalild object type: {var['type']}")
 
-			exception = error
-			logger.debug(u"Failed to get object from dict {0!r}: {1!r}", var, error)
-		except Exception as error:
-			exception = error
-			logger.debug(u"Failed to get object from dict {0!r}: {1!r}", var, error)
+			exception = err
+			logger.debug("Failed to get object from dict %s: %s", var, err)
+		except Exception as err:  # pylint: disable=broad-except
+			exception = err
+			logger.debug("Failed to get object from dict %s: %s", var, err)
 
 	if not isinstance(var, objectClass):
-		if exception is not None:
-			raise ValueError(u"Not a %s: '%s': %s" % (objectClass, var, exception))
-		else:
-			raise ValueError(u"Not a %s: '%s'" % (objectClass, var))
+		if exception is None:
+			raise ValueError(f"'{var}' is not a {objectClass}")
+		raise ValueError(f"'{var}' is not a {objectClass}: {exception}")
 
 	return var
 
@@ -565,7 +526,7 @@ def forceObjectClassList(var, objectClass):
 def forceGroupId(var):
 	var = forceObjectId(var)
 	if not _GROUP_ID_REGEX.search(var):
-		raise ValueError(u"Bad group id: '%s'" % var)
+		raise ValueError(f"Bad group id: '{var}'")
 	return var
 
 
@@ -573,11 +534,10 @@ def forceGroupType(var):
 	lowercaseValue = forceUnicodeLower(var)
 
 	if lowercaseValue == 'hostgroup':
-		return u'HostGroup'
-	elif lowercaseValue == 'productgroup':
-		return u'ProductGroup'
-	else:
-		raise ValueError(u"Unknown group type: '%s'" % var)
+		return 'HostGroup'
+	if lowercaseValue == 'productgroup':
+		return 'ProductGroup'
+	raise ValueError(f"Unknown group type: '{var}'")
 
 
 def forceGroupTypeList(var):
@@ -591,7 +551,7 @@ def forceGroupIdList(var):
 def forceObjectId(var):
 	var = forceUnicodeLower(var).strip()
 	if not _OBJECT_ID_REGEX.search(var):
-		raise ValueError(u"Bad object id: '%s'" % var)
+		raise ValueError(f"Bad object id: '{var}'")
 	return var
 
 
@@ -602,28 +562,28 @@ def forceObjectIdList(var):
 def forceEmailAddress(var):
 	var = forceUnicodeLower(var)
 	if not _EMAIL_REGEX.search(var):
-		raise ValueError(u"Bad email address: '%s'" % var)
+		raise ValueError(f"Bad email address: '{var}'")
 	return var
 
 
 def forceDomain(var):
 	var = forceUnicodeLower(var)
 	if not _DOMAIN_REGEX.search(var):
-		raise ValueError(u"Bad domain: '%s'" % var)
+		raise ValueError(f"Bad domain: '{var}'")
 	return var
 
 
 def forceHostname(var):
 	var = forceUnicodeLower(var)
 	if not _HOSTNAME_REGEX.search(var):
-		raise ValueError(u"Bad hostname: '%s'" % var)
+		raise ValueError(f"Bad hostname: '{var}'")
 	return var
 
 
 def forceLicenseContractId(var):
 	var = forceUnicodeLower(var)
 	if not _LICENSE_CONTRACT_ID_REGEX.search(var):
-		raise ValueError(u"Bad license contract id: '%s'" % var)
+		raise ValueError(f"Bad license contract id: '{var}'")
 	return var
 
 
@@ -634,7 +594,7 @@ def forceLicenseContractIdList(var):
 def forceSoftwareLicenseId(var):
 	var = forceUnicodeLower(var)
 	if not _SOFTWARE_LICENSE_ID_REGEX.search(var):
-		raise ValueError(u"Bad software license id: '%s'" % var)
+		raise ValueError(f"Bad software license id: '{var}'")
 	return var
 
 
@@ -645,7 +605,7 @@ def forceSoftwareLicenseIdList(var):
 def forceLicensePoolId(var):
 	var = forceUnicodeLower(var)
 	if not _LICENSE_POOL_ID_REGEX.search(var):
-		raise ValueError(u"Bad license pool id: '%s'" % var)
+		raise ValueError(f"Bad license pool id: '{var}'")
 	return var
 
 
@@ -656,7 +616,7 @@ def forceLicensePoolIdList(var):
 def forceAuditState(var):
 	var = forceInt(var)
 	if var not in (0, 1):
-		raise ValueError(u"Bad audit state value: {0}".format(var))
+		raise ValueError(f"Bad audit state value: {var}")
 	return var
 
 
@@ -664,12 +624,12 @@ def forceLanguageCode(var):
 	var = forceUnicodeLower(var)
 	match = _LANGUAGE_CODE_REGEX.search(var)
 	if not match:
-		raise ValueError(u"Bad language code: '%s'" % var)
+		raise ValueError(f"Bad language code: '{var}'")
 	var = match.group(1)
 	if match.group(2):
-		var += u'-' + match.group(2)[0].upper() + match.group(2)[1:]
+		var = f"{var}-{match.group(2).capitalize()}"
 	if match.group(3):
-		var += u'-' + match.group(3).upper()
+		var = f"{var}-{match.group(3).upper()}"
 	return var
 
 
@@ -680,7 +640,7 @@ def forceLanguageCodeList(var):
 def forceArchitecture(var):
 	var = forceUnicodeLower(var)
 	if not _ARCHITECTURE_REGEX.search(var):
-		raise ValueError(u"Bad architecture: '%s'" % var)
+		raise ValueError(f"Bad architecture: '{var}'")
 	return var
 
 
@@ -696,7 +656,7 @@ def forceUniqueList(_list):
 	return cleanedList
 
 
-def args(*vars, **typeVars):
+def args(*vars, **typeVars):  # pylint: disable=redefined-builtin
 	"""Function to populate an object with passed on keyword args.
 	This is intended to be used as a decorator.
 	Classes using this decorator must explicitly inherit from object or a subclass of object.
@@ -722,13 +682,13 @@ def args(*vars, **typeVars):
 	vars = list(vars)
 
 	def wrapper(cls):
-		def new(typ, *args, **kwargs):
+		def new(typ, *args, **kwargs):  # pylint: disable=redefined-builtin,redefined-outer-name
 			if getattr(cls, "__base__", None) in (object, None):
 				obj = object.__new__(typ)  # Suppress deprecation warning
 			else:
 				obj = cls.__base__.__new__(typ, *args, **kwargs)
 
-			vars.extend(typeVars.keys())
+			vars.extend(list(typeVars.keys()))
 			ka = kwargs.copy()
 
 			for var in vars:
@@ -742,7 +702,7 @@ def args(*vars, **typeVars):
 				else:
 					ka[var] = None
 
-			for key, value in ka.iteritems():
+			for key, value in ka.items():
 				if getattr(obj, key, None) is None:
 					setattr(obj, key, value)
 

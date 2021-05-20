@@ -1,21 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# This module is part of the desktop management solution opsi
-# (open pc server integration) http://www.opsi.org
-# Copyright (C) 2019 uib GmbH <info@uib.de>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 Handling an .opsirc file.
 
@@ -39,10 +25,6 @@ to reference a file with the secret as follows::
 
 
 The files should be encoded as utf-8.
-
-:copyright: uib GmbH <info@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
 import codecs
@@ -72,7 +54,7 @@ the result from `getOpsircPath`.
 		filename = getOpsircPath()
 
 	if not os.path.exists(filename):
-		logger.debug(u".opsirc file {} does not exist.".format(filename))
+		logger.debug(u".opsirc file %s does not exist.", filename)
 		return {}
 
 	return _parseConfig(filename)
@@ -100,7 +82,7 @@ def _parseConfig(filename):
 			try:
 				key, value = line.split('=', 1)
 			except ValueError:
-				logger.debug2(u"Unable to split line {!r}".format(line))
+				logger.debug2(u"Unable to split line %s", line)
 				continue
 
 			key = key.strip()
@@ -108,7 +90,7 @@ def _parseConfig(filename):
 
 			if not value:
 				logger.warning(
-					"There is no value for {} in opsirc file {!r}, skipping.",
+					"There is no value for %s in opsirc file %s, skipping.",
 					key, filename
 				)
 				continue
@@ -127,11 +109,11 @@ def _parseConfig(filename):
 				logger.addConfidentialString(value)
 				config['password'] = value
 			else:
-				logger.debug(u"Ignoring unknown key {}", key)
+				logger.debug(u"Ignoring unknown key %s", key)
 
 	logger.debug(
-		"Found the following usable keys in {!r}: {}",
-		filename, ", ".join(config.keys())
+		"Found the following usable keys in %s: %s",
+		filename, ", ".join(list(config.keys()))
 	)
 	return config
 

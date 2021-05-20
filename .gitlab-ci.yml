@@ -1,70 +1,102 @@
-image: ubuntu:18.04
+image: ubuntu:focal
 
 stages:
   - test
+  # - build
   - package
+  - publish
 
+.install_tools: &install_tools |
+  export DEBIAN_FRONTEND=noninteractive
+  apt update
+  apt -y install python3-pip python3-venv debhelper osc
+  pip3 install --trusted-host pypi.uib.gmbh --index-url http://pypi.uib.gmbh:8080/simple opsi-dev-tools
+  pip3 install poetry
 
-run unittests:
-  image: docker.uib.gmbh/py-test-image
+test:pylint-pytest:
+  #when: manual
+  image: ubuntu:focal
+  services:
+    - mysql:latest
+  variables:
+    MYSQL_ROOT_PASSWORD: "opsi"
+    MYSQL_DATABASE: "opsi"
   stage: test
-  before_script:
-#    - hostname test.uib.local
-#    - apt update
-#    - apt -y install build-essential python-dev librsync-dev lsb-release python-apsw python-crypto python-ldaptor python-m2crypto python-magic python-mysqldb python-newt python-openssl python-pam python-pip python-sqlalchemy python-twisted-web
-    - apt -y install cpio iproute2
-    - pip install -r requirements-qa.txt
-#    - pip install https://launchpad.net/duplicity/0.6-series/0.6.24/+download/duplicity-0.6.24.tar.gz
-  script:
-    - ./run_qa.sh
+  script: |
+    # Installing opsi testmodules file
+    mkdir -p /etc/opsi
+    mkdir -p /var/log/opsi
+    echo "${OPSI_TEST_MODULES}" > /etc/opsi/modules
+    cat /etc/opsi/modules
+    export DEBIAN_FRONTEND=noninteractive
+    apt update
+    apt -y install python3-all python3-pip dh-python python3-venv python3-newt curl libmysqlclient-dev mysql-client cpio iproute2 lsb-release git librsync2
+    # bionic pip fix for extra pip urls, not needed for focal
+    #apt -y install software-properties-common
+    #add-apt-repository ppa:ci-train-ppa-service/3690
+    #apt -y install python-pip=9.0.1-2.3~ubuntu1.18.04.2~ubuntu18.04.1~ppa202002141134
+    # cloning opsi-server for data directory
+    rm -rf ../opsi-server
+    rm -rf data
+    git clone -b master https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.uib.gmbh/uib/opsi-server.git ../opsi-server
+    ln -s ../opsi-server/opsi-server_data/etc data
+    pip3 install poetry
+    cp tests/testOPSI/Backends/config.py.gitlabci tests/testOPSI/Backends/config.py
+    poetry install
+    # Deactivate mysql strict mode
+    mysql --host=mysql --user=root --password=${MYSQL_ROOT_PASSWORD} -e "SET GLOBAL sql_mode = 'NO_ENGINE_SUBSTITUTION';"
+    poetry run pylint --disable=R,C,fixme opsicommon
+    poetry run ./run_tests.sh
+    #poetry run ./run_qa.sh
+  coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+)%/'
   artifacts:
-    name: 'python-opsi_QA'
+    name: 'python-opsi_test'
     paths:
-      - pylint.txt
-      - pep8.txt
+      #- pylint.txt
+      #- pep8.txt
       - coverage.xml
-    reports:
-      junit: testreport.xml
-    expire_in: 1 day
+      - testreport-OPSI.xml
+      - testreport-opsicommon.xml
+#    reports:
+#        junit: testreport.xml
+    expire_in: 14 days
+
+#build:documentation:
+#  stage: build
+#  script:
+#    - apt update
+#    - apt -y install build-essential default-libmysqlclient-dev libssl-dev python3-apsw python3-pip
+#    - pip3 install .
+#    - pip3 install sphinx
+#    - sphinx-apidoc --force --separate -o doc/src OPSI/
+#    - sphinx-build -b html -d doc/_build/doctrees -D latex_paper_size=a4 -D latex_paper_size=letter doc/src/ doc/python-opsi/
+#  after_script:
+#    - mv doc/python-opsi/ .
+#  artifacts:
+#    name: 'python-opsi_documentation'
+#    paths:
+#      - python-opsi/
+#    expire_in: 1 day
 
 
-build documentation:
-  stage: package
-  before_script:
-    - apt update
-    - apt -y install python-pip
-    - pip install -r requirements-qa.txt
-    - pip install 'sphinx<1.5'
+#package:obs_int:
+#  stage: package
+#  script:
+#    - *install_tools
+#    - python3 -m opsidevtools -l info --obs-update-package https://obs.uib.gmbh home:uibmz:opsi:4.2:development
+
+#package:obs_ext:
+#  stage: package
+#  script:
+#    - *install_tools
+#    - python3 -m opsidevtools -l debug --obs-update-package https://build.opensuse.org home:uibmz:opsi:4.2:development
+
+publish:uibpypi:
+  stage: publish
   script:
-    - sphinx-apidoc --force --separate -o doc/src OPSI/
-    - sphinx-build -b html -d doc/_build/doctrees -D latex_paper_size=a4 -D latex_paper_size=letter doc/src/ doc/python-opsi/
-  after_script:
-    - mv doc/python-opsi/ .
-  artifacts:
-    name: 'python-opsi_documentation'
-    paths:
-      - python-opsi/
-    expire_in: 1 day
-
-
-package for OBS:
-  stage: package
-  before_script:
-    - apt update
-    - apt install -y devscripts debhelper dh-python gettext lsb-release python-all python-setuptools
-  script:
-    - ./create_source.sh
-    - test -f python-opsi_*.dsc
-    - test -f python-opsi_*.tar.gz
-    - test -f python-opsi.spec
-  artifacts:
-    name: 'python-opsi_OBS'
-    paths:
-      - python-opsi_*.dsc
-      - python-opsi_*.tar.gz
-      - python-opsi.spec
-    expire_in: 2 days
+    - *install_tools
+    - apt -y install python3-all python3-pip dh-python libmysqlclient-dev
+    - poetry install
+    - poetry run opsi-dev-tool -l info --uib-pypi-publish
   only:
-      - /^release/.*$/i
-      - tags
-      - web
+    - tags

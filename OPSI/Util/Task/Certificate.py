@@ -1,20 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# This file is part of python-opsi.
-# Copyright (C) 2013-2019 uib GmbH <info@uib.de>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 opsi python library - Util - Task - Certificate
 
@@ -23,11 +10,6 @@ Certificates play an important role in the encrypted communication
 between servers and clients.
 
 .. versionadded:: 4.0.4
-
-
-
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
 import os
@@ -38,9 +20,14 @@ from tempfile import NamedTemporaryFile
 from OpenSSL import crypto
 
 from OPSI.Logger import Logger
-from OPSI.System import which, execute
+from OPSI.System import isUCS, which, execute
 from OPSI.Types import forceHostId, forceInt
 from OPSI.Util import getfqdn
+
+try:
+	import secrets
+except ImportError:
+	secrets = None
 
 OPSICONFD_CERTFILE = u'/etc/opsi/opsiconfd.pem'
 DEFAULT_CERTIFICATE_PARAMETERS = {
@@ -129,12 +116,9 @@ If not given will use a default.
 	:type config: dict
 	:raises CertificateCreationError: If errors exist in configuration.
 	"""
-	try:
-		which("ucr")
+	if isUCS():
 		LOGGER.notice(u"Don't use certificate creation method on UCS-Systems")
 		return
-	except Exception:
-		pass
 
 	if path is None:
 		path = OPSICONFD_CERTFILE
@@ -214,9 +198,9 @@ If not given will use a default.
 	cert.set_version(2)
 
 	LOGGER.notice(u"Signing Certificate")
-	cert.sign(k, str('sha512'))
+	cert.sign(k, 'sha512')
 
-	certcontext = "".join(
+	certcontext = b"".join(
 		(
 			crypto.dump_certificate(crypto.FILETYPE_PEM, cert),
 			crypto.dump_privatekey(crypto.FILETYPE_PEM, k)
@@ -225,12 +209,11 @@ If not given will use a default.
 
 	LOGGER.notice(u"Beginning to write certificate.")
 	with open(path, "wt") as certfile:
-		certfile.write(certcontext)
+		certfile.write(certcontext.decode())
 
-	with NamedTemporaryFile(mode="wt") as randfile:
+	with NamedTemporaryFile(mode="wb") as randfile:
 		LOGGER.notice(u"Generating and filling new randomize string")
-		randomBytes = os.urandom(512)
-		randfile.write(randomBytes)
+		randfile.write(randomBytes(512))
 
 		execute(
 			u"{command} dhparam -rand {tempfile} 512 >> {target}".format(
@@ -239,6 +222,18 @@ If not given will use a default.
 		)
 
 	LOGGER.notice(u'Certificate creation done.')
+
+
+def randomBytes(length):
+	"""
+	Return _length_ random bytes.
+
+	:rtype: bytes
+	"""
+	if secrets:
+		return secrets.token_bytes(512)
+	else:
+		return os.urandom(512)
 
 
 def loadConfigurationFromCertificate(path=None):

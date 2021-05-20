@@ -1,22 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# This module is part of the desktop management solution opsi
-# (open pc server integration) http://www.opsi.org
-
-# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 Working with archives.
 
@@ -25,11 +10,6 @@ This include functionality for using Tar-Files and their compression.
 
 .. versionadded:: 4.0.5.1
 	Control the usage of pigz via ``PIGZ_ENABLED``
-
-:copyright: uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
 import locale
@@ -37,17 +17,16 @@ import os
 import re
 import subprocess
 import time
-from contextlib import closing
+if os.name == 'posix':
+	import fcntl
 
 import OPSI.Util.File.Opsi
 from OPSI.Logger import Logger
 from OPSI import System
 from OPSI.Types import forceBool, forceFilename, forceUnicodeList, forceUnicodeLower
 from OPSI.Util import compareVersions
+from OPSI.Util.Path import cd
 
-if os.name == 'posix':
-	import fcntl
-	import magic
 
 logger = Logger()
 
@@ -58,16 +37,22 @@ except IOError:
 
 
 def getFileType(filename):
-	if os.name == 'nt':
-		raise NotImplementedError(u"getFileType() not implemented on windows")
-
 	filename = forceFilename(filename)
-	with closing(magic.open(magic.MAGIC_SYMLINK)) as ms:
-		ms.load()
-		return ms.file(filename)
+	with open(filename, "rb") as f:
+		head = f.read(257+5)
+
+	if head[:3] == b"\x1f\x8b\x08" or head[:8] == b"\x5c\x30\x33\x37\x5c\x32\x31\x33":
+		return ".gz"
+	if head[:3] == b"\x42\x5a\x68":
+		return ".bzip2"
+	if head[:5] == b"\x30\x37\x30\x37\x30":
+		return ".cpio"
+	if head[257:257+5] == b"\x75\x73\x74\x61\x72":
+		return ".tar"
+	raise NotImplementedError("getFileType only accepts .gz .bzip2 .cpio .tar archive types.")
 
 
-class BaseArchive(object):
+class BaseArchive:
 	def __init__(self, filename, compression=None, progressSubject=None):
 		self._filename = forceFilename(filename)
 		self._progressSubject = progressSubject
@@ -79,27 +64,25 @@ class BaseArchive(object):
 			self._compression = compression
 		elif os.path.exists(self._filename):
 			fileType = getFileType(self._filename)
-			if fileType.lower().startswith('gzip compressed data'):
+			logger.debug("Identified fileType %s for file %s", fileType, self._filename)
+			if "gz" in fileType.lower():
 				self._compression = u'gzip'
-			elif fileType.lower().startswith('bzip2 compressed data'):
+			elif "bzip2" in fileType.lower():
 				self._compression = u'bzip2'
 			else:
 				self._compression = None
+
 
 	def getFilename(self):
 		return self._filename
 
 	def _extract(self, command, fileCount):
 		try:
-			logger.info(u"Executing: %s" % command)
+			logger.info(u"Executing: %s", command)
 			proc = subprocess.Popen(
 				command,
 				shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
 			)
-
-			encoding = proc.stdout.encoding
-			if not encoding:
-				encoding = locale.getpreferredencoding()
 
 			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
 			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
@@ -134,36 +117,29 @@ class BaseArchive(object):
 					time.sleep(0.001)
 				ret = proc.poll()
 
-			logger.info(u"Exit code: %s" % ret)
+			logger.info(u"Exit code: %s", ret)
 
 			if ret != 0:
-				error = error.decode(encoding, 'replace')
 				logger.error(error)
 				raise RuntimeError(u"Command '%s' failed with code %s: %s" % (command, ret, error))
 
 			if self._progressSubject:
 				self._progressSubject.setState(fileCount)
-		except Exception as e:
-			logger.logException(e)
+		except Exception as err:
+			logger.error(err, exc_info=True)
 			raise
 
 	def _create(self, fileList, baseDir, command):
-		curDir = os.path.abspath(os.getcwd())
-		try:
-			baseDir = os.path.abspath(forceFilename(baseDir))
-			if not os.path.isdir(baseDir):
-				raise IOError(u"Base dir '%s' not found" % baseDir)
-			os.chdir(baseDir)
+		baseDir = os.path.abspath(forceFilename(baseDir))
+		if not os.path.isdir(baseDir):
+			raise IOError(u"Base dir '%s' not found" % baseDir)
 
-			logger.info(u"Executing: %s" % command)
+		with cd(baseDir):
+			logger.info(u"Executing: %s", command)
 			proc = subprocess.Popen(command,
 				shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
 				stderr=subprocess.PIPE
 			)
-
-			encoding = proc.stdin.encoding
-			if not encoding:
-				encoding = locale.getpreferredencoding()
 
 			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
 			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
@@ -174,6 +150,7 @@ class BaseArchive(object):
 				self._progressSubject.setEnd(len(fileList))
 				self._progressSubject.setState(0)
 
+			encoding = locale.getpreferredencoding()
 			error = ''
 			ret = None
 			for filename in fileList:
@@ -187,8 +164,8 @@ class BaseArchive(object):
 					filename = filename[len(baseDir):]
 					while filename.startswith('/'):
 						filename = filename[1:]
-				logger.info(u"Adding file '%s'" % filename)
-				proc.stdin.write("%s\n" % filename.encode(encoding))
+				logger.info(u"Adding file '%s'", filename)
+				proc.stdin.write(("%s\n" % filename).encode())
 
 				try:
 					chunk = proc.stdout.read()
@@ -229,19 +206,17 @@ class BaseArchive(object):
 				except Exception:
 					pass
 
-			logger.info(u"Exit code: %s" % ret)
+			logger.info(u"Exit code: %s", ret)
 
 			if ret != 0:
-				error = error.decode(encoding, 'replace')
+				error = error.decode()
 				logger.error(error)
 				raise RuntimeError(u"Command '%s' failed with code %s: %s" % (command, ret, error))
 			if self._progressSubject:
 				self._progressSubject.setState(len(fileList))
-		finally:
-			os.chdir(curDir)
 
 
-class PigzMixin(object):
+class PigzMixin:
 	@property
 	def pigz_detected(self):
 		if not hasattr(self, '_pigz_detected'):
@@ -254,9 +229,9 @@ class PigzMixin(object):
 		def is_correct_pigz_version():
 			ver = System.execute('pigz --version')[0][5:]
 
-			logger.debug('Detected pigz version: %s' % (ver, ))
+			logger.debug('Detected pigz version: %s', ver)
 			versionMatches = compareVersions(ver, '>=', '2.2.3')
-			logger.debug('pigz version is compatible? %s' % (versionMatches))
+			logger.debug('pigz version is compatible? %s', versionMatches)
 			return versionMatches
 
 		if not PIGZ_ENABLED:
@@ -292,7 +267,7 @@ class TarArchive(BaseArchive, PigzMixin):
 
 			for line in System.execute(u'%s %s --list --file "%s"' % (System.which('tar'), options, self._filename)):
 				if line:
-					names.append(unicode(line))
+					names.append(line)
 
 			return names
 		except Exception as e:
@@ -387,7 +362,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			elif self._compression == 'bzip2':
 				cat = System.which('bzcat')
 
-			return [unicode(line) for line in
+			return [line for line in
 					System.execute(u'{cat} "{filename}" | {cpio} --quiet --extract --list'.format(cat=cat, filename=self._filename, cpio=System.which('cpio')))
 					if line]
 		except Exception as e:
@@ -432,13 +407,9 @@ class CpioArchive(BaseArchive, PigzMixin):
 
 			include = ' '.join('"%s"' % pattern for pattern in patterns)
 
-			curDir = os.path.abspath(os.getcwd())
-			os.chdir(targetPath)
-			try:
+			with cd(targetPath):
 				command = u'%s "%s" | %s --quiet --extract --make-directories --unconditional --preserve-modification-time --verbose --no-preserve-owner %s' % (cat, self._filename, System.which('cpio'), include)
 				self._extract(command, fileCount)
-			finally:
-				os.chdir(curDir)
 		except Exception as e:
 			raise RuntimeError(u"Failed to extract archive '%s': %s" % (self._filename, e))
 
@@ -482,9 +453,10 @@ def Archive(filename, format=None, compression=None, progressSubject=None):
 
 	elif os.path.exists(filename):
 		fileType = getFileType(filename)
-		if 'tar archive' in fileType.lower():
+		logger.debug("Identified fileType %s for file %s", fileType, filename)
+		if 'tar' in fileType.lower():
 			Class = TarArchive
-		elif 'cpio archive' in fileType.lower():
+		elif 'cpio' in fileType.lower():
 			Class = CpioArchive
 		elif filename.lower().endswith(('tar', 'tar.gz')):
 			Class = TarArchive

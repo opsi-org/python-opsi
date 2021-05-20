@@ -1,33 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# This file is part of python-opsi.
-# Copyright (C) 2010-2019 uib GmbH <info@uib.de>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 Backend-Replicator.
 
 The replicator allows replication from one backend into another.
-
-
-:copyright: uib GmbH <info@uib.de>
-:author: Jan Schneider <j.schneider@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
-from OPSI.Backend.Backend import ExtendedConfigDataBackend
+from OPSI.Backend.Base import ExtendedConfigDataBackend
 from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Object import *
 from OPSI.Types import forceBool, forceHostId, forceList
@@ -38,7 +19,7 @@ __all__ = ('BackendReplicator', )
 logger = Logger()
 
 
-class BackendReplicator(object):
+class BackendReplicator:
 	OBJECT_CLASSES = [
 		'Host',
 		'Product',
@@ -104,7 +85,7 @@ class BackendReplicator(object):
 		return self.__overallProgressSubject
 
 	def replicate(self, serverIds=[], depotIds=[], clientIds=[], groupIds=[],
-			productIds=[], productTypes=[], audit=True, license=True):
+			productIds=[], productTypes=[], audit=True, licenses=True):
 		'''
 		Replicate (a part) of a opsi configuration database
 		An empty list passed as a param means: replicate all known
@@ -117,13 +98,13 @@ class BackendReplicator(object):
 		productIds = forceList(productIds)
 		productTypes = forceList(productTypes)
 		audit = forceBool(audit)
-		license = forceBool(license)
+		licenses = forceBool(licenses)
 
 		logger.info(
 			u"Replicating: serverIds={serverIds}, depotIds={depotIds}, "
 			u"clientIds={clientIds}, groupIds={groupIds}, "
 			u"productIds={productIds}, productTypes={productTypes}, "
-			u"audit: {audit}, license: {license}".format(**locals())
+			u"audit: {audit}, license: {licenses}".format(**locals())
 		)
 
 		rb = self._extendedReadBackend
@@ -154,7 +135,7 @@ class BackendReplicator(object):
 				hostIds.add(clientId)
 
 			self.__overallProgressSubject.reset()
-			end = self._getNumberOfObjectClassesToProcess(audit, license)
+			end = self._getNumberOfObjectClassesToProcess(audit, licenses)
 			if self.__cleanupFirst:
 				end += 1
 			if self.__newServerId:
@@ -204,7 +185,7 @@ class BackendReplicator(object):
 			for objClass in self.OBJECT_CLASSES:
 				if not audit and objClass in auditClasses:
 					continue
-				if not license and objClass in licenseClasses:
+				if not licenses and objClass in licenseClasses:
 					continue
 
 				subClasses = [None]
@@ -326,9 +307,9 @@ class BackendReplicator(object):
 						for obj in objs:
 							try:
 								meth(obj)
-							except Exception as e:
-								logger.logException(e, LOG_DEBUG)
-								logger.error(u"Failed to replicate object %s: %s" % (obj, e))
+							except Exception as err:
+								logger.debug(err, exc_info=True)
+								logger.error("Failed to replicate object %s: %s" % (obj, err))
 							self.__currentProgressSubject.addToState(1)
 					self.__currentProgressSubject.setState(len(objs))
 
@@ -375,7 +356,7 @@ class BackendReplicator(object):
 			wb.backend_setOptions({'additionalReferentialIntegrityChecks': aric})
 
 	@classmethod
-	def _getNumberOfObjectClassesToProcess(cls, audit=True, license=True):
+	def _getNumberOfObjectClassesToProcess(cls, audit=True, licenses=True):
 		auditClasses = set([
 			'AuditHardware', 'AuditSoftware', 'AuditHardwareOnHost',
 			'AuditSoftwareOnClient'
@@ -389,7 +370,7 @@ class BackendReplicator(object):
 		classesToProgress = set(cls.OBJECT_CLASSES)
 		if not audit:
 			classesToProgress = classesToProgress - auditClasses
-		if not license:
+		if not licenses:
 			classesToProgress = classesToProgress - licenseManagementClasses
 
 		return len(classesToProgress)

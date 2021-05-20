@@ -1,3 +1,11 @@
+/.venv
+/build
+/dist
+/data
+/python-opsi_*.dsc
+/python-opsi_*.tar.gz
+/python-opsi_*.deb
+pip-wheel-metadata
 *~
 *.pyc
 *.pyo
@@ -7,7 +15,6 @@
 *.egg-info
 *.sublime-*
 *.idea/
-*.venv/
 tests/Backends/config.py
 
 # QA files:

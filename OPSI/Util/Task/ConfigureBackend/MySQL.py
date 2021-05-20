@@ -1,27 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# This file is part of python-opsi.
-# Copyright (C) 2014-2019 uib GmbH <info@uib.de>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 Functionality to automatically configure an OPSI MySQL backend.
 
 .. versionadded:: 4.0.4.6
-
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
 from contextlib import closing, contextmanager
@@ -113,7 +97,7 @@ on to. Defaults to ``Logger.error``.
 	try:
 		backend.backend_createBase()
 	except MySQLdb.OperationalError as exc:
-		if exc[0] == INVALID_DEFAULT_VALUE:
+		if exc.args[0] == INVALID_DEFAULT_VALUE:
 			errorFunction(
 				u"It seems you have the MySQL strict mode enabled. "
 				u"Please read the opsi handbook.\n"
@@ -143,26 +127,32 @@ def initializeDatabase(
 			with closing(MySQLdb.connect(**conConfig)) as db:
 				yield db
 		except Exception as error:
-			raise DatabaseConnectionFailedException(error)
+			if  config['address'] == "127.0.0.1":
+				LOGGER.info("Failed to connect with tcp/ip (%s), retrying with socket", error)
+				try:
+					conConfig["host"] = "localhost"
+					with closing(MySQLdb.connect(**conConfig)) as db:
+						yield db
+				except Exception as error:
+					raise DatabaseConnectionFailedException(error)
+			else:
+				raise DatabaseConnectionFailedException(error)
 
 	def createUser(host):
-		notificationFunction(
-			u"Creating user '{username}' and granting"
-			u" all rights on '{database}'".format(**config)
-		)
-		db.query(u'USE {database};'.format(**config))
-		db.query(
-			(
-				u"GRANT ALL ON {1[database]}.* TO '{1[username]}'@'{0}' "
-				u"IDENTIFIED BY '{1[password]}'").format(
-					host,
-					config,
-			)
-		)
-		db.query(u'FLUSH PRIVILEGES;')
-		notificationFunction(
-			u"User '{username}' created and privileges set".format(**config)
-		)
+		notificationFunction(f"Creating user '{config['username']}' and granting all rights on '{config['database']}'")
+		db.query(f"CREATE USER IF NOT EXISTS '{config['username']}'@'{host}'")
+		try:
+			db.query(f"ALTER USER '{config['username']}'@'{host}' IDENTIFIED WITH mysql_native_password BY '{config['password']}'")
+		except Exception as e:
+			LOGGER.debug(e)
+			try:
+				db.query(f"ALTER USER '{config['username']}'@'{host}' IDENTIFIED BY '{config['password']}'")
+			except Exception as e:
+				LOGGER.debug(e)
+				db.query(f"SET PASSWORD FOR'{config['username']}'@'{host}' = PASSWORD('{config['password']}')")
+		db.query(f"GRANT ALL ON {config['database']}.* TO '{config['username']}'@'{host}'")
+		db.query("FLUSH PRIVILEGES")
+		notificationFunction(f"User '{config['username']}' created and privileges set")
 
 	if notificationFunction is None:
 		notificationFunction = LOGGER.notice
@@ -190,11 +180,11 @@ def initializeDatabase(
 		try:
 			db.query(u'CREATE DATABASE {database} DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_bin;'.format(**config))
 		except MySQLdb.OperationalError as error:
-			if error[0] == ACCESS_DENIED_ERROR_CODE:
-				raise DatabaseConnectionFailedException(error)
+			if error.args[0] == ACCESS_DENIED_ERROR_CODE:
+				raise DatabaseConnectionFailedException(str(error))
 			raise error
 		except MySQLdb.ProgrammingError as error:
-			if error[0] != DATABASE_EXISTS_ERROR_CODE:
+			if error.args[0] != DATABASE_EXISTS_ERROR_CODE:
 				raise error
 		notificationFunction(u"Database '{database}' created".format(**config))
 

@@ -1,38 +1,17 @@
 # -*- coding: utf-8 -*-
 
-# This module is part of the desktop management solution opsi
-# (open pc server integration) http://www.opsi.org
-
-# Copyright (C) 2018-2019 uib GmbH - http://www.uib.de/
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 Configuration.
 
 Attention: socket.defaulttimeout may be changed per config file setting.
-
-:copyright: uib GmbH <info@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
-
-from __future__ import absolute_import
 
 import os
 import os.path
-import socket
 import re
+import socket
 
 from .Exceptions import (ConfigurationError, MissingConfigurationValueError,
 	RequiringBackendError)
@@ -100,7 +79,7 @@ def splitAndStrip(string, sep):
 			yield singleValue
 
 
-class ConfigurationParser(object):
+class ConfigurationParser:
 
 	TIME_REGEX = re.compile(r'^\d{1,2}:\d{1,2}$')
 
@@ -118,7 +97,7 @@ class ConfigurationParser(object):
 overriden based on values in configuration file.
 		:rtype: dict
 		"""
-		logger.info(u"Reading config file '%s'" % self.configFile)
+		logger.info(u"Reading config file '%s'", self.configFile)
 		if not os.path.isfile(self.configFile):
 			raise OSError(u"Configuration file {!r} not found".format(self.configFile))
 
@@ -215,13 +194,13 @@ overriden based on values in configuration file.
 						repository = self._getRepository(configIni, section, config['forceRepositoryActivation'], config['repositoryName'], config['installAllAvailable'], config['proxy'])
 						config['repositories'].append(repository)
 					except MissingConfigurationValueError as mcverr:
-						logger.debug(u"Configuration for {section} incomplete: {error}", error=mcverr, section=section)
+						logger.debug(u"Configuration for %s incomplete: %s", section, mcverr)
 					except ConfigurationError as cerr:
-						logger.error(u"Configuration problem in {section}: {error}", error=cerr, section=section)
+						logger.error(u"Configuration problem in %s: %s", section, cerr)
 					except Exception as err:
-						logger.error(u"Can't load repository from {section}: {error}", error=err, section=section)
+						logger.error(u"Can't load repository from %s: %s", section, err)
 				else:
-					logger.error(u"Unhandled section '%s'" % section)
+					logger.error(u"Unhandled section '%s'", section)
 		except Exception as exclude:
 			raise RuntimeError(u"Failed to read config file '%s': %s" % (self.configFile, exclude))
 
@@ -238,18 +217,19 @@ overriden based on values in configuration file.
 						repository = self._getRepository(repoConfig, section, config['forceRepositoryActivation'], config['repositoryName'], config['installAllAvailable'], proxy=config['proxy'])
 						config['repositories'].append(repository)
 					except MissingConfigurationValueError as mcverr:
-						logger.debug(u"Configuration for {section} in {filename} incomplete: {error}", error=mcverr, section=section, filename=configFile)
+						logger.debug(u"Configuration for %s in %s incomplete: %s", section, configFile, mcverr)
 					except ConfigurationError as cerr:
-						logger.error(u"Configuration problem in {section} in {filename}: {error}", error=cerr, section=section, filename=configFile)
+						logger.error(u"Configuration problem in %s in %s: %s", section, configFile, cerr)
 					except Exception as err:
-						logger.error(u"Can't load repository from {section} in {filename}: {error}", error=err, section=section, filename=configFile)
+						logger.error(u"Can't load repository from %s in %s: %s", section, configFile, err)
 			except Exception as error:
-				logger.error("Unable to load repositories from {filename}: {error}", filename=configFile, error=error)
+				logger.error("Unable to load repositories from %s: %s", configFile, error)
 
 		return config
 
 	def _getRepository(self, config, section, forceRepositoryActivation=False, repositoryName=None, installAllAvailable=False, proxy=None):
 		active = False
+		verifyCert = False
 		baseUrl = None
 		opsiDepotId = None
 		for (option, value) in config.items(section):
@@ -266,12 +246,15 @@ overriden based on values in configuration file.
 			elif option == 'proxy':
 				if value:
 					proxy = forceUrl(value)
+			elif option == 'verifycert':
+				verifyCert = forceBool(value)
+
 
 		repoName = section.replace('repository_', '', 1)
 
 		if forceRepositoryActivation:
 			if repoName == repositoryName:
-				logger.debug("Activation for repository {0} forced.", repoName)
+				logger.debug("Activation for repository %s forced.", repoName)
 				active = True
 			else:
 				active = False
@@ -294,18 +277,20 @@ overriden based on values in configuration file.
 				username=self.depotId,
 				password=self.depotKey,
 				opsiDepotId=opsiDepotId,
-				active=active
+				active=active,
+				verifyCert=verifyCert
 			)
 
 		elif baseUrl:
 			if proxy:
-				logger.info(u"Repository {} is using proxy {}", repoName, proxy)
+				logger.info(u"Repository %s is using proxy %s", repoName, proxy)
 
 			repository = ProductRepositoryInfo(
 				name=repoName,
 				baseUrl=baseUrl,
 				proxy=proxy,
-				active=active
+				active=active,
+				verifyCert=verifyCert
 			)
 		else:
 			raise MissingConfigurationValueError(u"Repository section '{0}': neither baseUrl nor opsiDepotId set".format(section))
@@ -351,7 +336,7 @@ overriden based on values in configuration file.
 					for include in splitAndStrip(value, ',')
 				]
 			elif option.lower() == 'autosetupexcludes':
-				repository.autosetupexcludes = [
+				repository.autoSetupExcludes = [
 					re.compile(exclude)
 					for exclude in splitAndStrip(value, ',')
 				]

@@ -1,29 +1,10 @@
 # -*- coding: utf-8 -*-
 
-# This file is part of python-opsi.
-# Copyright (C) 2017-2019 uib GmbH <info@uib.de>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 OPSI Exceptions.
-
-:copyright:	uib GmbH <info@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
-
-import sys
 
 from OPSI.Types import forceUnicode
 
@@ -48,39 +29,24 @@ class OpsiError(Exception):
 	""" Base class for OPSI Backend exceptions. """
 
 	ExceptionShortDescription = "Opsi error"
-	_message = None
 
 	def __init__(self, message=''):
-		self._message = forceUnicode(message)
+		super().__init__(message)
+		self.message = forceUnicode(message)
 
-	def __unicode__(self):
-		if self._message:
-			return u"%s: %s" % (self.ExceptionShortDescription, self._message)
+	def __str__(self):
+		if self.message:
+			return u"%s: %s" % (self.ExceptionShortDescription, self.message)
 		else:
 			return u"%s" % self.ExceptionShortDescription
 
 	def __repr__(self):
-		if self._message and self._message != u'None':
-			text = u"<{0}({1!r})>".format(self.__class__.__name__, self._message)
+		if self.message:
+			text = u"<{0}({1!r})>".format(self.__class__.__name__, self.message)
 		else:
 			text = u"<{0}()>".format(self.__class__.__name__)
 
-		if sys.version_info > (3, ):
-			return text
-		else:
-			return text.encode('utf-8')
-
-	__str__ = __repr__
-	complete_message = __unicode__
-
-	def message():
-		def get(self):
-			return self._message
-
-		def set(self, message):
-			self._message = forceUnicode(message)
-
-		return property(get, set)
+		return text
 
 
 class OpsiBackupFileError(OpsiError):
@@ -123,28 +89,24 @@ class OpsiProductOrderingError(OpsiError):
 	ExceptionShortDescription = u"A condition for ordering cannot be fulfilled"
 
 	def __init__(self, message='', problematicRequirements=None):
-		problematicRequirements = problematicRequirements or []
+		super().__init__(message)
 
-		self._message = forceUnicode(message)
-		self.problematicRequirements = problematicRequirements
+		self.problematicRequirements = problematicRequirements or []
 
 	def __repr__(self):
-		if self._message and self._message != u'None':
-			text = u"<{0}({1!r}, {2!r})>".format(self.__class__.__name__, self._message, self.problematicRequirements)
+		if self.message:
+			text = u"<{0}({1!r}, {2!r})>".format(self.__class__.__name__, self.message, self.problematicRequirements)
 		else:
 			text = u"<{0}()>".format(self.__class__.__name__)
 
-		if sys.version_info > (3, ):
-			return text
-		else:
-			return text.encode('utf-8')
+		return text
 
-	def __unicode__(self):
-		if self._message:
+	def __str__(self):
+		if self.message:
 			if self.problematicRequirements:
-				return u"{0}: {1} ({2})".format(self.ExceptionShortDescription, self._message, self.problematicRequirements)
+				return u"{0}: {1} ({2})".format(self.ExceptionShortDescription, self.message, self.problematicRequirements)
 			else:
-				return u"{0}: {1}".format(self.ExceptionShortDescription, self._message)
+				return u"{0}: {1}".format(self.ExceptionShortDescription, self.message)
 		else:
 			return forceUnicode(self.ExceptionShortDescription)
 

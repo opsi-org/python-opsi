@@ -1,26 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# This file is part of python-opsi.
-# Copyright (C) 2015-2019 uib GmbH <info@uib.de>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 Configuration of Samba for the use with opsi.
-
-:author: Mathias Radtke <m.radtke@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
 import codecs
@@ -108,7 +91,7 @@ def _processConfig(lines):
 		newlines.append(u"   writeable = no\n")
 		newlines.append(u"   invalid users = root\n")
 		if samba4:
-			newlines.append(u"   admin users = @%s\n" % FILE_ADMIN_GROUP)
+			newlines.append(u"   acl allow execute always = true\n")
 		newlines.append(u"\n")
 
 		depotDir = '/var/lib/opsi/depot'
@@ -118,35 +101,34 @@ def _processConfig(lines):
 				if os.path.exists("/opt/pcbin/install"):
 					logger.warning(u"You have an old depot configuration. Using /opt/pcbin/install is deprecated, please use /var/lib/opsi/depot instead.")
 			except Exception as error:
-				logger.warning(u"Failed to create depot directory '%s': %s" % (depotDir, error))
+				logger.warning(u"Failed to create depot directory '%s': %s", depotDir, error)
 	elif samba4:
-		logger.notice(u"   Share opsi_depot found and samba 4 is detected. Trying to detect the executablefix for opsi_depot-Share")
-		endpos = 0
-		found = False
-		sectionFound = False
+		logger.notice(u"   Share opsi_depot found and samba 4 is detected. Setting executable fix on opsi_depot share")
+		tmp_lines = []
+		in_opsi_depot_section = False
 		for i, line in enumerate(newlines):
+			last_line_of_file = (i + 1 == len(newlines))
 			if line.lower().strip() == '[opsi_depot]':
-				startpos = endpos = i + 1
-				sectionFound = True
-				slicedList = newlines[startpos:]
-				for element in slicedList:
-					lines = element.lower().strip()
-					if lines == "admin users = @%s" % FILE_ADMIN_GROUP:
-						logger.notice(u"   fix found, nothing to do")
-						found = True
-						break
-					elif lines.startswith("[") or not lines:
-						logger.notice(u"   End of section detected")
-						break
-					else:
-						endpos += 1
-			if sectionFound:
-				break
-
-		if not found:
-			logger.notice(u"   Section found but don't inherits samba4 fix, trying to set the fix.")
-			newlines.insert(endpos, u"   admin users = @%s\n" % FILE_ADMIN_GROUP)
-
+				in_opsi_depot_section = True
+			elif in_opsi_depot_section:
+				if line.lower().strip().startswith('[') or last_line_of_file:
+					# next section or last line of file
+					logger.notice("   Adding 'acl allow execute always = true'")
+					tmp_lines.append("   acl allow execute always = true\n")
+					in_opsi_depot_section = False
+				if not line.strip():
+					# remove empty line
+					continue
+				if line.lower().find("admin users") != -1:
+					logger.notice("   Removing old executable fix (%s)", line.strip())
+					continue
+				if line.lower().find("acl allow execute always") != -1:
+					# remove, will be re-inserted add the end of the section
+					logger.info("   Removing (%s)", line.strip())
+					continue
+			tmp_lines.append(line)
+		newlines = tmp_lines
+	
 	if not depotShareRWFound:
 		logger.notice(u"   Adding share [opsi_depot_rw]")
 		newlines.append(u"[opsi_depot_rw]\n")
@@ -175,7 +157,7 @@ def _processConfig(lines):
 		try:
 			workbenchDirectory = getWorkbenchDirectory()
 		except Exception as error:
-			logger.warning("Failed to read the location of the workbench: {0}", error)
+			logger.warning("Failed to read the location of the workbench: %s", error)
 			workbenchDirectory = None
 
 		if workbenchDirectory:
@@ -185,9 +167,9 @@ def _processConfig(lines):
 
 			try:
 				os.mkdir(workbenchDirectory)
-				logger.notice(u"Created missing workbench directory {0}", workbenchDirectory)
+				logger.notice(u"Created missing workbench directory %s", workbenchDirectory)
 			except OSError as mkdirErr:
-				logger.debug2(u"Did not create workbench {}: {!r}", workbenchDirectory, mkdirErr)
+				logger.debug2(u"Did not create workbench %s: '%s", workbenchDirectory, mkdirErr)
 
 			logger.notice(u"   Adding share [opsi_workbench]")
 			newlines.append(u"[opsi_workbench]\n")
@@ -247,13 +229,13 @@ def isSamba4():
 			if line.lower().startswith("version"):
 				samba4 = line.split()[1].startswith('4')
 	except Exception as error:
-		logger.debug('Getting Samba Version failed due to: {0}', error)
+		logger.debug('Getting Samba Version failed due to: %s', error)
 
 	return samba4
 
 
 def _writeConfig(newlines, config):
-	logger.notice(u"   Creating backup of %s" % config)
+	logger.notice(u"   Creating backup of %s", config)
 	shutil.copy(config, config + u'.' + time.strftime("%Y-%m-%d_%H:%M"))
 
 	logger.notice(u"   Writing new smb.conf")

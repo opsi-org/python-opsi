@@ -1,70 +1,54 @@
 # -*- coding: utf-8 -*-
 
-# This module is part of the desktop management solution opsi
-# (open pc server integration) http://www.opsi.org
-
-# Copyright (C) 2006-2019 uib GmbH <info@uib.de>
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (c) uib GmbH <info@uib.de>
+# License: AGPL-3.0
 """
 Utilites to backup configuration of an opsi system.
-
-:copyright: uib GmbH <info@uib.de>
-:author: Christian Kampka <c.kampka@uib.de>
-:author: Niko Wenselowski <n.wenselowski@uib.de>
-:license: GNU Affero General Public License version 3
 """
 
 import bz2
-import fcntl
 import gettext
 import gzip
 import os
 import shutil
 import sys
-import termios
 
 from OPSI.Exceptions import (
 	BackendConfigurationError, OpsiBackupFileError,
-	OpsiBackupBackendNotFound, OpsiError)
+	OpsiBackupBackendNotFound, OpsiError
+)
 from OPSI.Logger import Logger, LOG_DEBUG
-from OPSI.Types import forceList, forceUnicode
+from OPSI.Types import forceList, forceUnicode, forceHostId
 from OPSI.Util.File.Opsi import OpsiBackupArchive
+from OPSI.Util.Task.CleanupBackend import cleanupBackend
 
 logger = Logger()
 
 try:
-	translation = gettext.translation('opsi-utils', '/usr/share/locale')
-	_ = translation.ugettext
-except Exception as error:
-	logger.error(u"Locale not found: {0}", error)
+	sp = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+	if os.path.exists(os.path.join(sp, "site-packages")):
+		sp = os.path.join(sp, "site-packages")
+	sp = os.path.join(sp, 'python-opsi_data', 'locale')
+	translation = gettext.translation('python-opsi', sp)
+	_ = translation.gettext
+except Exception as err:  # pylint: disable=broad-except
+	logger.debug("Failed to load locale from %s: %s", sp, err)
 
 	def _(string):
-		""" Function for translating text. """
+		""" Fallback function """
 		return string
 
 
-WARNING_DIFF = _(u"""WARNING: Your system config is different from the one recorded with this backup.
+WARNING_DIFF = _("""WARNING: Your system config is different from the one recorded with this backup.
 This means the backup was probably taken for another machine and restoring it might leave this opsi installation unusable.
-Do you wish to continue? [y/n]""")
+Do you wish to continue? [y/N] """)
 
-WARNING_SYSCONFIG = _(u"""WARNING: A problem occurred while reading the sysconfig: %s
+WARNING_SYSCONFIG = _("""WARNING: A problem occurred while reading the sysconfig: %s
 This means the backup was probably taken for another machine and restoring it might leave this opsi installation unusable.
-Do you wish to continue? [y/n]""")
+Do you wish to continue? [y/N] """)
 
 
-class OpsiBackup(object):
+class OpsiBackup:
 
 	SUPPORTED_BACKENDS = set(['auto', 'all', 'file', 'mysql', 'dhcp'])
 
@@ -74,7 +58,7 @@ class OpsiBackup(object):
 		else:
 			self.stdout = stdout
 
-	def _getArchive(self, mode, file=None, compression=None):
+	def _getArchive(self, mode, file=None, compression=None):  # pylint: disable=no-self-use
 		fileobj = None
 		if file and os.path.exists(file):
 			try:
@@ -98,7 +82,7 @@ class OpsiBackup(object):
 
 		return OpsiBackupArchive(name=file, mode=mode, fileobj=fileobj)
 
-	def create(self, destination=None, mode="raw", backends=["auto"], noConfiguration=False, compression="bz2", flushLogs=False, **kwargs):
+	def create(self, destination=None, mode="raw", backends=["auto"], noConfiguration=False, compression="bz2", flushLogs=False, **kwargs):  # pylint: disable=unused-argument,dangerous-default-value,too-many-arguments,too-many-branches
 		if "all" in backends:
 			backends = ["all"]
 
@@ -117,22 +101,22 @@ class OpsiBackup(object):
 				name = archive.name.split(os.sep)[-1]
 			else:
 				name = archive.name
-			logger.notice(u"Creating backup archive {0}", name)
+			logger.notice("Creating backup archive %s", name)
 
 			if mode == "raw":
 				for backend in backends:
 					if backend in ("file", "all", "auto"):
-						logger.debug(u"Backing up file backend.")
+						logger.debug("Backing up file backend.")
 						archive.backupFileBackend(auto=("auto" in backends))
 					if backend in ("mysql", "all", "auto"):
-						logger.debug(u"Backing up mysql backend.")
+						logger.debug("Backing up mysql backend.")
 						archive.backupMySQLBackend(flushLogs=flushLogs, auto=("auto" in backends))
 					if backend in ("dhcp", "all", "auto"):
-						logger.debug(u"Backing up dhcp configuration.")
+						logger.debug("Backing up dhcp configuration.")
 						archive.backupDHCPBackend(auto=("auto" in backends))
 
 			if not noConfiguration:
-				logger.debug(u"Backing up opsi configuration.")
+				logger.debug("Backing up opsi configuration.")
 				archive.backupConfiguration()
 
 			archive.close()
@@ -141,17 +125,17 @@ class OpsiBackup(object):
 
 			filename = archive.name.split(os.sep)[-1]
 			if not destination:
-				destination = os.getcwdu()
+				destination = os.getcwd()
 
 			if os.path.isdir(destination):
 				destination = os.path.join(destination, filename)
 
 			shutil.move(archive.name, destination)
 
-			logger.notice(u"Backup complete")
+			logger.notice("Backup complete")
 		except Exception as error:
 			os.remove(archive.name)
-			logger.logException(error, LOG_DEBUG)
+			logger.debug(error, exc_info=True)
 			raise error
 
 	def list(self, files):
@@ -169,14 +153,14 @@ class OpsiBackup(object):
 					"configuration": archive.hasConfiguration(),
 					"dhcp": archive.hasDHCPBackend(),
 					"file": archive.hasFileBackend(),
-					"mysql": archive.hasMySQLBackend(),
+					"mysql": archive.hasMySQLBackend()
 				}
 				existingData = [btype for btype, exists in data.items() if exists]
 				existingData.sort()
 
-				logger.notice("{} contains: {}", archive.name, ', '.join(existingData))
+				logger.notice("%s contains: %s", archive.name, ', '.join(existingData))
 
-	def verify(self, file, **kwargs):
+	def verify(self, file, **kwargs):  # pylint: disable=unused-argument
 		"""
 		Verify a backup.
 
@@ -189,10 +173,10 @@ class OpsiBackup(object):
 
 		for fileName in files:
 			with self._getArchive(mode="r", file=fileName) as archive:
-				logger.info(u"Verifying archive {0}", fileName)
+				logger.info("Verifying archive %s", fileName)
 				try:
 					archive.verify()
-					logger.notice(u"Archive {} is OK.", fileName)
+					logger.notice("Archive %s is OK.", fileName)
 				except OpsiBackupFileError as error:
 					logger.error(error)
 					result = 1
@@ -206,34 +190,18 @@ class OpsiBackup(object):
 
 			Returns ``True`` if the answer is ``Yes``, false otherwise.
 			"""
-			fd = sys.stdin.fileno()
-
-			oldterm = termios.tcgetattr(fd)
-			newattr = termios.tcgetattr(fd)
-			newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
-			termios.tcsetattr(fd, termios.TCSANOW, newattr)
-
-			oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
-			fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
-
-			self.stdout.write(question)
 
 			try:
-				while True:
-					try:
-						firstCharacter = sys.stdin.read(1)
-						return forceUnicode(firstCharacter) in (u"y", u"Y")
-					except IOError:
-						pass
-			finally:
-				termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
-				fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
+				firstCharacter = input(question)
+				return forceUnicode(firstCharacter) in ("y", "Y")
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error("Error while reading user input: %s", err)
 
 		try:
 			if self.getDifferencesInSysConfig(archive.sysinfo):
 				return ask(WARNING_DIFF)
 		except OpsiError as error:
-			return ask(WARNING_SYSCONFIG % unicode(error))
+			return ask(WARNING_SYSCONFIG % str(error))
 
 		return True
 
@@ -257,23 +225,24 @@ If this is `None` information will be read from the current system.
 			try:
 				sysValue = str(sysInfo[key])
 			except KeyError:
-				logger.debug('Missing value for {key!r} in system!', key=key)
+				logger.debug("Missing value for %s in system", key)
 				differences[key] = value
 				continue
 
-			logger.debug("Comparing {0!r} (archive) with {1!r} (system)...", value, sysValue)
+			logger.debug("Comparing '%s' (archive) with '%s (system)...", value, sysValue)
 			if sysValue.strip() != value.strip():
 				logger.debug(
-					'Found difference (System != Archive) at {key!r}: {0!r} vs. {1!r}',
-					sysValue,
-					value,
-					key=key
+					"Found difference (System != Archive) at %s: %s vs. %s",
+					key, sysValue, value
 				)
 				differences[key] = value
 
 		return differences
 
-	def restore(self, file, mode="raw", backends=[], configuration=True, force=False, **kwargs):
+	def restore(self, file, mode="raw", backends=[], configuration=True, force=False, new_server_id=None, **kwargs):  # pylint: disable=unused-argument,dangerous-default-value,too-many-arguments,too-many-locals,too-many-branches,too-many-statements
+		if new_server_id:
+			new_server_id = forceHostId(new_server_id)
+
 		if not backends:
 			backends = []
 
@@ -283,34 +252,34 @@ If this is `None` information will be read from the current system.
 		auto = "auto" in backends
 		backends = [backend.lower() for backend in backends]
 
-		logger.debug("Backends to restore: {}", backends)
+		logger.debug("Backends to restore: %s", backends)
 
 		if not force:
 			for backend in backends:
 				if backend not in self.SUPPORTED_BACKENDS:
-					raise ValueError("{!r} is not a valid backend.".format(backend))
+					raise ValueError(f"'{backend}' is not a valid backend.")
 
 		configuredBackends = getConfiguredBackends()
 
 		with self._getArchive(file=file[0], mode="r") as archive:
 			self.verify(archive.name)
 
-			if force or self._verifySysconfig(archive):
-				logger.notice(u"Restoring data from backup archive {0}.", archive.name)
+			if force or self._verifySysconfig(archive):  # pylint: disable=too-many-nested-blocks
+				logger.notice("Restoring data from backup archive %s.", archive.name)
 
 				functions = []
 				if configuration:
 					if not archive.hasConfiguration() and not force:
-						raise OpsiBackupFileError(u"Backup file does not contain configuration data.")
+						raise OpsiBackupFileError("Backup file does not contain configuration data.")
 
-					logger.debug(u"Adding restore of opsi configuration.")
+					logger.debug("Adding restore of opsi configuration.")
 					functions.append(lambda x: archive.restoreConfiguration())
 
 				if mode == "raw":
 					backendMapping = {
 						"file": (archive.hasFileBackend, archive.restoreFileBackend),
 						"mysql": (archive.hasMySQLBackend, archive.restoreMySQLBackend),
-						"dhcp": (archive.hasDHCPBackend, archive.restoreDHCPBackend),
+						"dhcp": (archive.hasDHCPBackend, archive.restoreDHCPBackend)
 					}
 
 					for backend in backends:
@@ -320,36 +289,64 @@ If this is `None` information will be read from the current system.
 
 								if not dataExists() and not force:
 									if auto:
-										logger.debug(u"No backend data for {0} - skipping.", name)
+										logger.debug("No backend data for %s - skipping.", name)
 										continue  # Don't attempt to restore.
-									else:
-										raise OpsiBackupFileError(u"Backup file does not contain {0} backend data.".format(name))
+									raise OpsiBackupFileError(f"Backup file does not contain {name} backend data.")
 
-								logger.debug(u"Adding restore of {0} backend.", name)
+								logger.debug("Adding restore of %s backend.", name)
 								functions.append(restoreData)
 
 								if configuredBackends and (not configuration) and (backend not in configuredBackends and backend != 'auto'):
-									logger.warning("Backend {} is currently not in use!", backend)
+									logger.warning("Backend %s is currently not in use!", backend)
 
 				if not functions:
 					raise RuntimeError("Neither possible backend given nor configuration selected for restore.")
 
 				try:
 					for restoreFunction in functions:
-						logger.debug2(u"Running restoration function {0!r}", restoreFunction)
+						logger.trace("Running restoration function '%s'", restoreFunction)
 						restoreFunction(auto)
-				except OpsiBackupBackendNotFound as error:
-					logger.logException(error, LOG_DEBUG)
-					logger.debug("Restoring with {0!r} failed: {1}", restoreFunction, error)
+				except OpsiBackupBackendNotFound as err:
+					logger.debug(err, exc_info=True)
+					logger.debug("Restoring with '%s' failed: %s", restoreFunction, err)
 
 					if not auto:
-						raise error
-				except Exception as error:
-					logger.logException(error, LOG_DEBUG)
-					logger.error(u"Failed to restore data from archive {0}: {1}. Aborting.", archive.name, error)
-					raise error
+						raise err
+				except Exception as err:
+					logger.debug(err, exc_info=True)
+					logger.error("Failed to restore data from archive %s: %s. Aborting.", archive.name, err)
+					raise err
 
-				logger.notice(u"Restoration complete")
+				logger.notice("Restoration complete")
+
+				if new_server_id:
+					logger.info("Cleanup backend...")
+					cleanupBackend()
+					logger.notice("Renaming config server to '%s'", new_server_id)
+					try:
+						from OPSI.Backend.BackendManager import BackendManager  # pylint: disable=import-outside-toplevel
+						managerConfig = {
+							"dispatchConfigFile": '/etc/opsi/backendManager/dispatch.conf',
+							"backendConfigDir": '/etc/opsi/backends',
+							"extensionConfigDir": '/etc/opsi/backendManager/extend.d',
+							"depotbackend": False,
+							"dispatchIgnoreModules": ["OpsiPXEConfd", "DHCPD", "HostControl"]
+						}
+						with BackendManager(**managerConfig) as backend:
+							backend.backend_createBase()
+							configserver = backend.host_getObjects(type='OpsiConfigserver')
+							if len(configserver) == 0:
+								depotserver = backend.host_getObjects(type='OpsiDepotserver')
+								if len(depotserver) == 1:
+									configserver = depotserver
+							host = backend.host_getObjects(id=new_server_id)
+							if not configserver:
+								raise RuntimeError("No config server found in backend")
+							if host and host != configserver:
+								backend.host_deleteObjects(host)
+							backend.host_renameOpsiDepotserver(oldId=configserver[0].id, newId=new_server_id)
+					except Exception as err:
+						raise RuntimeError(f"Failed to rename config server to '{new_server_id}': {err}") from err
 
 
 def getConfiguredBackends():
@@ -361,9 +358,9 @@ None if reading the configuration failed.
 	:rtype: set or None
 	"""
 	try:
-		from OPSI.Backend.BackendManager import BackendDispatcher
-	except ImportError as impError:
-		logger.debug("Import failed: {}", impError)
+		from OPSI.Backend.BackendManager import BackendDispatcher  # pylint: disable=import-outside-toplevel
+	except ImportError as err:
+		logger.debug("Import failed: %s", err)
 		return None
 
 	try:
@@ -371,8 +368,8 @@ None if reading the configuration failed.
 			dispatchConfigFile='/etc/opsi/backendManager/dispatch.conf',
 			backendconfigdir='/etc/opsi/backends/',
 		)
-	except BackendConfigurationError as bcerror:
-		logger.debug("Unable to read backends: {}", bcerror)
+	except BackendConfigurationError as err:
+		logger.debug("Unable to read backends: %s", err)
 		return None
 
 	names = [name.lower() for name in dispatcher.dispatcher_getBackendNames()]
