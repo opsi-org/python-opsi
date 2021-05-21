@@ -66,7 +66,6 @@ logger = Logger()
 
 BLOWFISH_IV = b"OPSI1234"
 RANDOM_DEVICE = "/dev/urandom"
-UNIT_REGEX = re.compile(r'^(\d+\.*\d*)\s*([\w]{0,4})$')
 UNIT_REGEX = re.compile(r'^(\d+\.*\d*)\s*(\w{0,4})$')
 _ACCEPTED_CHARACTERS = (
 	"abcdefghijklmnopqrstuvwxyz"
