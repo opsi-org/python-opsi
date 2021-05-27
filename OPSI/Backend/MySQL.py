@@ -123,6 +123,7 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 				)
 			);
 		""")
+		conn.execute("SET SESSION group_concat_max_len = 1000000;")
 		#conn.execute("SHOW VARIABLES LIKE 'sql_mode';").fetchone()
 
 	def init_connection(self):
