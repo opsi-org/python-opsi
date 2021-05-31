@@ -6,6 +6,7 @@
 This file is part of opsi - https://www.opsi.org
 """
 
+import os
 import re
 import types
 import socket
@@ -146,11 +147,14 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 			self._session.cookies.set(
 				cookie_name, cookie_value, domain=self.hostname
 			)
-		if self._proxy_url:
-			self._session.proxies.update({
-				'http': self._proxy_url,
-				'https': self._proxy_url,
-			})
+
+		# requests / urllib3 will use system proxies if not set to None
+		self._session.proxies.update({
+			"http": self._proxy_url,
+			"https": self._proxy_url,
+		})
+		os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
+
 		if self._verify_server_cert:
 			self._session.verify = self._ca_cert_file or True
 		else:
