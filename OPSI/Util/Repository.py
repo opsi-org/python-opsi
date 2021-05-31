@@ -972,9 +972,12 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 		return socket.AF_INET
 
 	def _set_url(self, url):
-		url = urlparse(url)
+		url_str = str(url)
+		url = urlparse(url_str)
 		if url.scheme not in ('http', 'https', 'webdav', 'webdavs'):
 			raise ValueError(f"Protocol {url.scheme} not supported")
+		if not url.hostname:
+			raise ValueError(f"Invalid url '{url_str}', hostname missing")
 
 		self._path = url.path
 
