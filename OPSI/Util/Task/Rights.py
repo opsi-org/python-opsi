@@ -162,6 +162,7 @@ class PermissionRegistry(metaclass=Singleton):
 		)
 		depot_dirs = getDepotDirectories()
 		self.register_permission(
+			DirPermission(depot_dirs["public"], OPSICONFD_USER, FILE_ADMIN_GROUP, 0o664, 0o2775, modify_file_exe=False),
 			DirPermission(depot_dirs["depot"], OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o2770, modify_file_exe=False),
 			DirPermission(depot_dirs["repository"], OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o2770),
 			DirPermission(depot_dirs["workbench"], OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o2770, modify_file_exe=False)
@@ -280,7 +281,8 @@ def getDepotDirectories():
 		CACHED_DEPOT_DIRS = {
 			"depot": "/var/lib/opsi/depot",
 			"repository": "/var/lib/opsi/repository",
-			"workbench": "/var/lib/opsi/workbench"
+			"workbench": "/var/lib/opsi/workbench",
+			"public": "/var/lib/opsi/public"
 		}
 		try:
 			from OPSI.Backend.BackendManager import BackendManager  # pylint: disable=import-outside-toplevel
