@@ -235,7 +235,7 @@ def test_set_rights_file_in_dir(tempDir):
 	assert os.stat(fil2).st_mode & 0o7777 == 0o600
 
 
-@pytest.mark.xfail("until /var/lib/opsi/public directory is set up")
+@pytest.mark.xfail(strict=False)
 @pytest.mark.parametrize("slesSupport, tftpdir", [
 	(False, '/tftpboot/linux'),
 	(True, '/var/lib/tftpboot/opsi')
@@ -254,7 +254,7 @@ def testGetDirectoriesToProcess(depotDirectories, patchUserInfo, slesSupport, tf
 	assert '/path/to/apache' in directories
 
 
-@pytest.mark.xfail("until /var/lib/opsi/public directory is set up")
+@pytest.mark.xfail(strict=False)
 @pytest.mark.parametrize("slesSupport, tftpdir", [
 	(False, '/tftpboot/linux'),
 	(True, '/var/lib/tftpboot/opsi')
@@ -273,7 +273,7 @@ def testGetDirectoriesToProcessOpenSUSE(depotDirectories, patchUserInfo, slesSup
 	assert '/path/to/apache' in directories
 
 
-@pytest.mark.xfail("until /var/lib/opsi/public directory is set up")
+@pytest.mark.xfail(strict=False)
 def testGettingDirectories(patchUserInfo, depotDirectories):
 	registry = PermissionRegistry()
 	registry.reinit()
