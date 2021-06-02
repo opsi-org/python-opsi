@@ -17,7 +17,7 @@ from OPSI.Util.Task.Rights import (
 	PermissionRegistry, DirPermission, FilePermission,
 	set_rights,
 	getWebserverRepositoryPath, getWebserverUsernameAndGroupname,
-	setRightsOnSSHDirectory
+	setRightsOnSSHDirectory, CACHED_DEPOT_DIRS
 )
 
 from .helpers import mock
@@ -28,11 +28,12 @@ OS_CHECK_FUNCTIONS = ['isRHEL', 'isCentOS', 'isSLES', 'isOpenSUSE', 'isUCS']
 def depotDirectories():
 	'Returning fixed dirs'
 	_dirs = {
-		"depot": "/var/lib/opsi/depot",
-		"repository": "/var/lib/opsi/repository",
-		"workbench": "/var/lib/opsi/workbench"
-	}
-	with mock.patch('OPSI.Util.Task.Rights.getDepotDirectories', lambda: _dirs):
+			"depot": "/var/lib/opsi/depot",
+			"repository": "/var/lib/opsi/repository",
+			"workbench": "/var/lib/opsi/workbench",
+			"public": "/var/lib/opsi/public"
+		}
+	with mock.patch('OPSI.Util.Task.Rights.getDepotDirectories', lambda: CACHED_DEPOT_DIRS):
 		yield _dirs
 
 @pytest.fixture
