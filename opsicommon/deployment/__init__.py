@@ -18,7 +18,7 @@ from OPSI.Backend.BackendManager import BackendManager
 from OPSI.System import which
 from OPSI.Types import forceUnicode, forceUnicodeLower
 
-from opsicommon.logging import logger, LOG_WARNING, LOG_DEBUG, logging_config
+from opsicommon.logging import logger, LOG_WARNING, LOG_DEBUG, logging_config, secret_filter
 from opsicommon.deployment.common import SKIP_MARKER
 from opsicommon.deployment.posix import PosixDeployThread, paramiko, WARNING_POLICY
 from opsicommon.deployment.windows import WindowsDeployThread
@@ -83,7 +83,7 @@ def deploy_client_agent(  # pylint: disable=too-many-arguments,too-many-locals,t
 				"in incorrect behaviour."
 			)
 			break
-	logger.addConfidentialString(password)
+	secret_filter.add_secrets(password)
 
 	maxThreads = int(maxThreads)
 
