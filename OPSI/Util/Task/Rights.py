@@ -143,18 +143,11 @@ class PermissionRegistry(metaclass=Singleton):
 	def permissions(self):
 		return self._permissions
 
-	#def get_permissions(self, start_path="/"):
-	#	for path in sorted(self._permissions):
-	#		if path.startswith(start_path):
-	#			yield self._permissions[path]
-
 	def register_default_permissions(self):
 		self.register_permission(
 			DirPermission("/etc/opsi", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o660, 0o770),
-			#FilePermission("/etc/opsi/modules", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o660),
 			DirPermission("/var/log/opsi", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o660, 0o770),
-			DirPermission("/var/lib/opsi", OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o770),
-			#FilePermission(OPSI_PASSWD_FILE, OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o660),
+			DirPermission("/var/lib/opsi", OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o770)
 		)
 		self.register_permission(
 			DirPermission("/etc/opsi/ssl", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o600, 0o750),

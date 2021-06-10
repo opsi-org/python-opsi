@@ -17,7 +17,7 @@ from OPSI.Util.Task.Rights import (
 	PermissionRegistry, DirPermission, FilePermission,
 	set_rights,
 	getWebserverRepositoryPath, getWebserverUsernameAndGroupname,
-	setRightsOnSSHDirectory, CACHED_DEPOT_DIRS
+	setRightsOnSSHDirectory
 )
 
 from .helpers import mock
@@ -26,22 +26,14 @@ OS_CHECK_FUNCTIONS = ['isRHEL', 'isCentOS', 'isSLES', 'isOpenSUSE', 'isUCS']
 
 @pytest.fixture
 def depotDirectories():
-	'Returning fixed dirs'
-	_dirs = {
+	"""Returning fixed dirs"""
+	with mock.patch('OPSI.Util.Task.Rights.getDepotDirectories', return_value={
 			"depot": "/var/lib/opsi/depot",
 			"repository": "/var/lib/opsi/repository",
 			"workbench": "/var/lib/opsi/workbench",
 			"public": "/var/lib/opsi/public"
-		}
-	with mock.patch('OPSI.Util.Task.Rights.getDepotDirectories', lambda: CACHED_DEPOT_DIRS):
-		yield _dirs
-
-@pytest.fixture
-def emptyDepotDirectoriesCache():
-	'Making sure to clear cached.'
-	with mock.patch('OPSI.Util.Task.Rights.CACHED_DEPOT_DIRS', None):
-		yield
-
+		}):
+			yield
 
 @pytest.fixture
 def patchUserInfo():
@@ -235,7 +227,6 @@ def test_set_rights_file_in_dir(tempDir):
 	assert os.stat(fil2).st_mode & 0o7777 == 0o600
 
 
-@pytest.mark.xfail(strict=False)
 @pytest.mark.parametrize("slesSupport, tftpdir", [
 	(False, '/tftpboot/linux'),
 	(True, '/var/lib/tftpboot/opsi')
@@ -247,6 +238,7 @@ def testGetDirectoriesToProcess(depotDirectories, patchUserInfo, slesSupport, tf
 			registry.reinit()
 			directories = list(registry.permissions)
 
+	print(directories)
 	assert '/etc/opsi' in directories
 	assert '/var/lib/opsi' in directories
 	assert '/var/log/opsi' in directories
@@ -254,7 +246,6 @@ def testGetDirectoriesToProcess(depotDirectories, patchUserInfo, slesSupport, tf
 	assert '/path/to/apache' in directories
 
 
-@pytest.mark.xfail(strict=False)
 @pytest.mark.parametrize("slesSupport, tftpdir", [
 	(False, '/tftpboot/linux'),
 	(True, '/var/lib/tftpboot/opsi')
@@ -273,7 +264,6 @@ def testGetDirectoriesToProcessOpenSUSE(depotDirectories, patchUserInfo, slesSup
 	assert '/path/to/apache' in directories
 
 
-@pytest.mark.xfail(strict=False)
 def testGettingDirectories(patchUserInfo, depotDirectories):
 	registry = PermissionRegistry()
 	registry.reinit()
