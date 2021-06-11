@@ -96,7 +96,7 @@ class WindowsDeployThread(DeployThread):
 			)
 		else:
 			cmd = (
-				f"{path}\\files\\opsi\\opsi-script\\opsi-script.exe"
+				f"{path}\\files\\opsi\\opsi-winst\\winst32.exe"
 				f" /batch {path}\\files\\opsi\\setup.opsiscript"
 				" c:\\tmp\\opsi-client-agent.log /PARAMETER REMOTEDEPLOY"
 			)
