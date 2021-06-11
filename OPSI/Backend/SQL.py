@@ -93,6 +93,8 @@ class SQL:
 	ESCAPED_UNDERSCORE = "\\_"
 	ESCAPED_PERCENT = "\\%"
 	ESCAPED_ASTERISK = "\\*"
+	ESCAPED_COLON = "\\:"
+
 
 	def __init__(self, **kwargs):  # pylint: disable=unused-argument
 		self.Session = lambda : None  # pylint: disable=invalid-name
@@ -217,6 +219,9 @@ class SQL:
 	def escapeAsterisk(self, string):
 		return string.replace('*', self.ESCAPED_ASTERISK)
 
+	def escapeColon(self, string):
+		return string.replace(':', self.ESCAPED_COLON)
+
 
 class SQLBackendObjectModificationTracker(BackendModificationListener):
 	def __init__(self, **kwargs):
@@ -263,7 +268,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 		with self._sql.session() as session:
 			if self._lastModificationOnly:
 				objectClass = data['objectClass']
-				ident = self._sql.escapeApostrophe(self._sql.escapeBackslash(data['ident']))
+				ident = self._sql.escapeApostrophe(self._sql.escapeBackslash(self._sql.escapeColon(data['ident'])))
 				self._sql.delete(session, 'OBJECT_MODIFICATION_TRACKER', "`objectClass` = '%s' AND `ident` = '%s'" % (objectClass, ident))
 			start = time.time()
 			self._sql.insert(session, 'OBJECT_MODIFICATION_TRACKER', data)
@@ -367,8 +372,7 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 					yield "{0}`{1}` is NULL".format(table, key)
 				else:
 					value = value.replace(self._sql.ESCAPED_ASTERISK, '\uffff')
-					value = self._sql.escapeApostrophe(self._sql.escapeBackslash(value))
-					value = value.replace(":", "\\:")
+					value = self._sql.escapeApostrophe(self._sql.escapeBackslash(self._sql.escapeColon(value)))
 					match = self._OPERATOR_IN_CONDITION_PATTERN.search(value)
 					if match:
 						operator = match.group(1)
@@ -548,7 +552,7 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 				elif isinstance(value, (float, int)):
 					yield "`{0}` = {1}".format(arg, value)
 				else:
-					yield "`{0}` = '{1}'".format(arg, self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
+					yield "`{0}` = '{1}'".format(arg, self._sql.escapeApostrophe(self._sql.escapeBackslash(self._sql.escapeColon(value))))
 
 			if isinstance(object, (HostGroup, ProductGroup)):
 				yield "`type` = '{0}'".format(object.getType())
@@ -2446,7 +2450,7 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 				elif isinstance(value, (float, int, bool)):
 					yield "`{0}` = {1}".format(attribute, value)
 				else:
-					yield "`{0}` = '{1}'".format(attribute, self._sql.escapeApostrophe(self._sql.escapeBackslash(value)))
+					yield "`{0}` = '{1}'".format(attribute, self._sql.escapeApostrophe(self._sql.escapeBackslash(self._sql.escapeColon(value))))
 
 		return ' and '.join(createCondition())
 
