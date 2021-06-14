@@ -98,7 +98,7 @@ class WindowsDeployThread(DeployThread):
 			cmd = (
 				f"{path}\\files\\opsi\\opsi-winst\\winst32.exe"
 				f" /batch {path}\\files\\opsi\\setup.opsiscript"
-				" c:\\tmp\\opsi-client-agent.log /PARAMETER REMOTEDEPLOY"
+				" c:\\opsi.org\\log\\opsi-client-agent.log /PARAMETER REMOTEDEPLOY"
 			)
 
 		for trynum in (1, 2):
@@ -151,12 +151,20 @@ class WindowsDeployThread(DeployThread):
 				logger.notice("Copying installation files")
 				credentials=self.username + '%' + self.password.replace("'", "'\"'\"'")
 				debug_param = " -d 9" if logger.isEnabledFor(logging.DEBUG) else ""
-				cmd = (
-					f"{which('smbclient')} -m SMB3{debug_param} //{self.networkAddress}/c$ -U '{credentials}'"
-					" -c 'prompt; recurse;"
-					" md opsi.org; cd opsi.org; md log; md tmp; cd tmp; md opsi-client-agent_inst;"
-					" cd opsi-client-agent_inst; mput files; mput setup.opsiscript; exit;'"
-				)
+				if os.path.exists("./setup.opsiscript"):
+					cmd = (
+						f"{which('smbclient')} -m SMB3{debug_param} //{self.networkAddress}/c$ -U '{credentials}'"
+						" -c 'prompt; recurse;"
+						" md opsi.org; cd opsi.org; md log; md tmp; cd tmp; md opsi-client-agent_inst;"
+						" cd opsi-client-agent_inst; mput files; mput setup.opsiscript; exit;'"
+					)
+				else:
+					cmd = (
+						f"{which('smbclient')} -m SMB3{debug_param} //{self.networkAddress}/c$ -U '{credentials}'"
+						" -c 'prompt; recurse;"
+						" md opsi.org; cd opsi.org; md log; md tmp; cd tmp; md opsi-client-agent_inst;"
+						" cd opsi-client-agent_inst; mput files; exit;'"
+					)
 				execute(cmd)
 
 				self.install_from_path(r"c:\\opsi.org\\tmp\\opsi-client-agent_inst", hostObj)
