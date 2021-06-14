@@ -123,7 +123,7 @@ class ExtendedBackend(Backend):
 		return meth(**kwargs)
 
 	def _get_backend_dispatcher(self):
-		from OPSI.Backend.Manager.Dispatcher import BackendDispatcher)  # pylint: disable=import-outside-toplevel
+		from OPSI.Backend.Manager.Dispatcher import BackendDispatcher  # pylint: disable=import-outside-toplevel
 		backend = self
 		while backend:
 			if isinstance(backend, BackendDispatcher):
