@@ -102,7 +102,9 @@ def writeImageInformation(backend, productId, imagenames, languages=None, defaul
 	"""
 	if hasattr(backend, "_get_backend_dispatcher"):
 		# Use unprotected backend dispatcher if available
-		backend = backend._get_backend_dispatcher()
+		backend_dispatcher = backend._get_backend_dispatcher()  # pylint: disable=protected-access
+		if backend_dispatcher:
+			backend = backend_dispatcher
 
 	if not productId:
 		raise ValueError("Not a valid productId: {0!r}".format(productId))
