@@ -1034,7 +1034,9 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 				progressSubject.setEnd(size)
 
 			with open(destination, 'wb') as dst:
-				response.raw.decode_content = True
+				# Do not decompress files, otherwise files stored compressed on the
+				# server side will be stored uncompressed on the client side.
+				response.raw.decode_content = False
 				self._transferDown(response.raw, dst, size, progressSubject)
 
 		except Exception as err: # pylint: disable=broad-except
