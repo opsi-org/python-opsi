@@ -69,11 +69,8 @@ class WindowsDeployThread(DeployThread):
 		else:
 			self._installWithServersideMount()
 
-	def install_from_path(self, path, hostObj):
-		if os.path.exists(f"{path}\\setup.opsiscript"):
-			oca_major = "4.2"
-		else:
-			oca_major = "4.1"
+	def install_from_path(self, path, hostObj, oca_major="4.2"):
+		logger.info(f"deploying major {oca_major} from path {path}")
 		service_address = self._getServiceAddress(hostObj.id)
 		finalize = "noreboot"
 		if self.reboot:
@@ -111,7 +108,7 @@ class WindowsDeployThread(DeployThread):
 				logger.info("Winexe failure %s, retrying", err)
 				time.sleep(2)
 
-		if oca_major == 4.1:	#finalize
+		if oca_major == "4.1":	#finalize
 			if self.reboot or self.shutdown:
 				if self.reboot:
 					logger.notice("Rebooting machine %s", self.networkAddress)
@@ -152,6 +149,7 @@ class WindowsDeployThread(DeployThread):
 				credentials=self.username + '%' + self.password.replace("'", "'\"'\"'")
 				debug_param = " -d 9" if logger.isEnabledFor(logging.DEBUG) else ""
 				if os.path.exists("./setup.opsiscript"):
+					oca_major = "4.2"
 					cmd = (
 						f"{which('smbclient')} -m SMB3{debug_param} //{self.networkAddress}/c$ -U '{credentials}'"
 						" -c 'prompt; recurse;"
@@ -159,6 +157,7 @@ class WindowsDeployThread(DeployThread):
 						" cd opsi-client-agent_inst; mput files; mput setup.opsiscript; exit;'"
 					)
 				else:
+					oca_major = "4.1"
 					cmd = (
 						f"{which('smbclient')} -m SMB3{debug_param} //{self.networkAddress}/c$ -U '{credentials}'"
 						" -c 'prompt; recurse;"
@@ -167,7 +166,7 @@ class WindowsDeployThread(DeployThread):
 					)
 				execute(cmd)
 
-				self.install_from_path(r"c:\\opsi.org\\tmp\\opsi-client-agent_inst", hostObj)
+				self.install_from_path(r"c:\\opsi.org\\tmp\\opsi-client-agent_inst", hostObj, oca_major)
 			finally:
 				try:
 					cmd = (
@@ -279,6 +278,11 @@ class WindowsDeployThread(DeployThread):
 			mountDir = os.path.join('/tmp', 'mnt_' + randomString(10))
 			os.makedirs(mountDir)
 
+			if os.path.exists("./setup.opsiscript"):
+				oca_major = "4.2"
+			else:
+				oca_major = "4.1"
+
 			logger.notice("Mounting c$ share")
 			try:
 				password = self.password.replace("'", "'\"'\"'")
@@ -318,7 +322,7 @@ class WindowsDeployThread(DeployThread):
 			config.set('general', 'dnsdomain', '.'.join(hostObj.id.split('.')[1:]))
 			configFile.generate(config)
 
-			self.install_from_path(f"c:\\{instDirName}", hostObj)
+			self.install_from_path(f"c:\\{instDirName}", hostObj, oca_major)
 			logger.notice("opsi-client-agent successfully installed on %s", hostId)
 			self.success = True
 			self._setOpsiClientAgentToInstalled(hostId)

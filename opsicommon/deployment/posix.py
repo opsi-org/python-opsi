@@ -108,6 +108,7 @@ class PosixDeployThread(DeployThread):
 				)
 				if self.username != 'root':
 					credentialsfile = os.path.join(remoteFolder, '.credentials')
+					logger.notice(f"Writing credentialsfile {credentialsfile}")
 					self._executeViaSSH(f"touch {credentialsfile}")
 					self._executeViaSSH(f"chmod 600 {credentialsfile}")
 					self._executeViaSSH(f"echo '{self.password}' > {credentialsfile}")
@@ -125,9 +126,9 @@ class PosixDeployThread(DeployThread):
 
 				logger.debug("Testing if executable was found...")
 				if self.target_os == "linux":
-					self._executeViaSSH("test -e /usr/bin/opsiclientd -o -e /usr/bin/opsi-script-nogui")
+					self._executeViaSSH("test -e /usr/bin/opsiclientd -a -e /usr/bin/opsi-script")
 				elif self.target_os == "macos":
-					self._executeViaSSH("test -e /usr/local/bin/opsiclientd -o -e /usr/local/bin/opsi-script-nogui")
+					self._executeViaSSH("test -e /usr/local/bin/opsiclientd -a -e /usr/local/bin/opsi-script")
 				else:
 					raise ValueError(f"invalid target os {self.target_os}")
 			finally:
