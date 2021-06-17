@@ -513,7 +513,10 @@ def logging_config( # pylint: disable=too-many-arguments,too-many-branches
 		handler.name = "opsi_file_handler"
 		logging.root.addHandler(handler)
 	if file_level is not None:
-		for handler in get_all_handlers(logging.FileHandler):
+		for handler in (
+			get_all_handlers(logging.FileHandler) +
+			get_all_handlers(RotatingFileHandler)
+		):
 			handler.setLevel(file_level)
 	if stderr_level is not None:
 		if remove_handlers:
