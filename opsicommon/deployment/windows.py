@@ -70,7 +70,7 @@ class WindowsDeployThread(DeployThread):
 			self._installWithServersideMount()
 
 	def install_from_path(self, path, hostObj, oca_major="4.2"):
-		logger.info(f"deploying major {oca_major} from path {path}")
+		logger.info("deploying major %s from path %s", oca_major, path)
 		service_address = self._getServiceAddress(hostObj.id)
 		finalize = "noreboot"
 		if self.reboot:
