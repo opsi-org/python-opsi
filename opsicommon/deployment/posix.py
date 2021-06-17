@@ -108,7 +108,7 @@ class PosixDeployThread(DeployThread):
 				)
 				if self.username != 'root':
 					credentialsfile = os.path.join(remoteFolder, '.credentials')
-					logger.notice(f"Writing credentialsfile {credentialsfile}")
+					logger.notice("Writing credentialsfile %s", credentialsfile)
 					self._executeViaSSH(f"touch {credentialsfile}")
 					self._executeViaSSH(f"chmod 600 {credentialsfile}")
 					self._executeViaSSH(f"echo '{self.password}' > {credentialsfile}")
