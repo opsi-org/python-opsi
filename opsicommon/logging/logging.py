@@ -11,6 +11,7 @@ import sys
 import codecs
 import traceback
 import logging
+from logging.handlers import RotatingFileHandler
 import tempfile
 import warnings
 import contextvars
@@ -445,6 +446,8 @@ def logging_config( # pylint: disable=too-many-arguments,too-many-branches
 	log_file: str = None,
 	file_level: int = None,
 	file_format: str = None,
+	file_rotate_max_bytes: int = 0,
+	file_rotate_backup_count: int = 0,
 	remove_handlers: bool = False,
 	stderr_file: IO = sys.stderr
 ):
@@ -457,12 +460,20 @@ def logging_config( # pylint: disable=too-many-arguments,too-many-branches
 	:type stderr_level: int
 	:param stderr_format: Format to set for the stderr logging stream.
 	:type stderr_format: str
+	:param stderr_file: File handle for stderr stream.
+	:type stderr_file: IO
 	:param log_file: Name of the file to write logging stream to.
 	:type log_file: str
 	:param file_level: Loglevel to set for the file logging stream.
 	:type file_level: int
 	:param file_format: Format to set for the file logging stream.
 	:type file_format: str
+	:param file_rotate_max_bytes: Rotate log file if size exceeds file_rotate_max_bytes
+	:type file_rotate_max_bytes: int
+	:param file_rotate_backup_count: Keep this number of backups when rotating
+	:type file_rotate_backup_count: int
+	:param remove_handlers: Remove all current handlers
+	:type remove_handlers: bool
 	"""
 	add_context_filter_to_loggers()
 
@@ -486,9 +497,19 @@ def logging_config( # pylint: disable=too-many-arguments,too-many-branches
 	if log_file:
 		if remove_handlers:
 			remove_all_handlers(handler_type=logging.FileHandler)
+			remove_all_handlers(handler_type=RotatingFileHandler)
 		else:
 			remove_all_handlers(handler_name="opsi_file_handler")
-		handler = logging.FileHandler(log_file, encoding="utf-8")
+		handler = None
+		if file_rotate_max_bytes and file_rotate_max_bytes > 0:
+			handler = RotatingFileHandler(
+				log_file,
+				encoding="utf-8",
+				maxBytes=file_rotate_max_bytes,
+				backupCount=file_rotate_backup_count
+			)
+		else:
+			handler = logging.FileHandler(log_file, encoding="utf-8")
 		handler.name = "opsi_file_handler"
 		logging.root.addHandler(handler)
 	if file_level is not None:
@@ -551,7 +572,7 @@ def set_format(
 		If omitted, a default Color dictionary is used.
 	:type log_colors: Dict
 	"""
-	for handler_type in (logging.StreamHandler, logging.FileHandler):
+	for handler_type in (logging.StreamHandler, logging.FileHandler, RotatingFileHandler):
 		for handler in get_all_handlers(handler_type):
 			fmt = stderr_format if handler_type is logging.StreamHandler else file_format
 			formatter = None
