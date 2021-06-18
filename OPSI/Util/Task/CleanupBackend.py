@@ -237,24 +237,24 @@ used MySQL backend.
 		config["database"], config["address"], config["username"]
 	)
 	mysql = MySQL(**config)
+	with mysql.session() as session:
+		logger.notice("Cleaning up defaultValues in productProperties")
+		deleteIds = []
+		found = []
+		for res in mysql.getSet("SELECT * FROM PRODUCT_PROPERTY_VALUE WHERE isDefault like '1'"):
+			ident = ';'.join([res['propertyId'], res['productId'],
+				res['productVersion'], res['productVersion'], res['value']]
+			)
+			if ident not in found:
+				found.append(ident)
+			elif res['value'] in ('0', '1') and res['product_property_id'] not in deleteIds:
+				deleteIds.append(res['product_property_id'])
 
-	logger.notice("Cleaning up defaultValues in productProperties")
-	deleteIds = []
-	found = []
-	for res in mysql.getSet("SELECT * FROM PRODUCT_PROPERTY_VALUE WHERE isDefault like '1'"):
-		ident = ';'.join([res['propertyId'], res['productId'],
-			res['productVersion'], res['productVersion'], res['value']]
-		)
-		if ident not in found:
-			found.append(ident)
-		elif res['value'] in ('0', '1') and res['product_property_id'] not in deleteIds:
-			deleteIds.append(res['product_property_id'])
-
-	for ID in deleteIds:
-		logger.notice("Deleting PropertyValue id: %s", ID)
-		mysql.execute(
-			f"DELETE FROM `PRODUCT_PROPERTY_VALUE` where `product_property_id` = '{ID}'"
-		)
+		for ID in deleteIds:
+			logger.notice("Deleting PropertyValue id: %s", ID)
+			mysql.execute(
+				f"DELETE FROM `PRODUCT_PROPERTY_VALUE` where `product_property_id` = '{ID}'"
+			)
 
 
 def cleanUpGroups(backend):
