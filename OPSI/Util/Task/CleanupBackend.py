@@ -241,7 +241,10 @@ used MySQL backend.
 		logger.notice("Cleaning up defaultValues in productProperties")
 		deleteIds = []
 		found = []
-		for res in mysql.getSet("SELECT * FROM PRODUCT_PROPERTY_VALUE WHERE isDefault like '1'"):
+		for res in mysql.getSet(
+			session,
+			"SELECT * FROM PRODUCT_PROPERTY_VALUE WHERE isDefault like '1'"
+		):
 			ident = ';'.join([res['propertyId'], res['productId'],
 				res['productVersion'], res['productVersion'], res['value']]
 			)
@@ -253,6 +256,7 @@ used MySQL backend.
 		for ID in deleteIds:
 			logger.notice("Deleting PropertyValue id: %s", ID)
 			mysql.execute(
+				session,
 				f"DELETE FROM `PRODUCT_PROPERTY_VALUE` where `product_property_id` = '{ID}'"
 			)
 
