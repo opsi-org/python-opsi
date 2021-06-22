@@ -412,7 +412,7 @@ class OpsiPackageUpdater:
 							)
 							continue
 						if package['productId'].startswith((
-							'opsi-local-image-', 'opsi-uefi-', 'opsi-vhd-', 'opsi-wim-', 'windows10-upgrade', 'opsi-auto-update'
+							'opsi-local-image-', 'opsi-uefi-', 'opsi-vhd-', 'opsi-wim-', 'windows10-upgrade', 'opsi-auto-update', 'windomain'
 						)):
 							logger.info(
 								"Not setting action 'setup' for product '%s' where installation status 'installed' "
