@@ -1007,7 +1007,7 @@ class OpsiPackageUpdater:
 			return packages
 
 	@contextmanager
-	def makeSession(self, repository):
+	def makeSession(self, repository):  # pylint: disable=no-self-use
 		try:
 			session = requests.session()
 			if repository.proxy:
