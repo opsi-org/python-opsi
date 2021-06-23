@@ -62,8 +62,7 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 		backend.backend_createBase()  # pylint: disable=no-member
 
 	logger.notice('Setting up default values.')
-	backend.config_createObjects(getDefaultConfigs(backend, configServer, pathToSMBConf))  # pylint: disable=maybe-no-member
-
+	create_default_configs(backend, configServer, pathToSMBConf)
 	addDynamicDepotDriveSelection(backend)
 	createWANconfigs(backend)
 	createInstallByShutdownConfig(backend)
@@ -74,9 +73,10 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 		backend.backend_exit()
 
 
-def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):  # pylint: disable=too-many-branches,too-many-statements
+def create_default_configs(backend, configServer=None, pathToSMBConf=SMB_CONF):  # pylint: disable=too-many-branches,too-many-statements
 	configIdents = set(backend.config_getIdents(returnType='unicode'))  # pylint: disable=maybe-no-member
-
+	configs = []
+	config_states = []
 	if Posix.isUCS():
 		# We have a domain present and people might want to change this.
 		if 'clientconfig.depot.user' not in configIdents:
@@ -96,13 +96,15 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):  # py
 
 			logger.debug("Using '%s' as clientconfig.depot.user.", depotuser)
 
-			yield UnicodeConfig(
-				id='clientconfig.depot.user',
-				description='User for depot share',
-				possibleValues=[],
-				defaultValues=[depotuser],
-				editable=True,
-				multiValue=False
+			configs.append(
+				UnicodeConfig(
+					id='clientconfig.depot.user',
+					description='User for depot share',
+					possibleValues=[],
+					defaultValues=[depotuser],
+					editable=True,
+					multiValue=False
+				)
 			)
 
 	if configServer and 'clientconfig.configserver.url' not in configIdents:
@@ -113,155 +115,194 @@ def getDefaultConfigs(backend, configServer=None, pathToSMBConf=SMB_CONF):  # py
 				f"No IP address configured for the configserver {configServer.id}"
 			)
 
-		yield UnicodeConfig(
-			id='clientconfig.configserver.url',
-			description='URL(s) of opsi config service(s) to use',
-			possibleValues=[f'https://{ipAddress}:4447/rpc'],
-			defaultValues=[f'https://{ipAddress}:4447/rpc'],
-			editable=True,
-			multiValue=True
+		configs.append(
+			UnicodeConfig(
+				id='clientconfig.configserver.url',
+				description='URL(s) of opsi config service(s) to use',
+				possibleValues=[f'https://{ipAddress}:4447/rpc'],
+				defaultValues=[f'https://{ipAddress}:4447/rpc'],
+				editable=True,
+				multiValue=True
+			)
 		)
 
 	if configServer and 'clientconfig.depot.id' not in configIdents:
 		logger.debug("Missing clientconfig.depot.id - adding it.")
-		yield UnicodeConfig(
-			id='clientconfig.depot.id',
-			description='ID of the opsi depot to use',
-			possibleValues=[configServer.getId()],
-			defaultValues=[configServer.getId()],
-			editable=True,
-			multiValue=False
+		configs.append(
+			UnicodeConfig(
+				id='clientconfig.depot.id',
+				description='ID of the opsi depot to use',
+				possibleValues=[configServer.getId()],
+				defaultValues=[configServer.getId()],
+				editable=True,
+				multiValue=False
+			)
 		)
 
 	if 'clientconfig.depot.dynamic' not in configIdents:
 		logger.debug("Missing clientconfig.depot.dynamic - adding it.")
-		yield BoolConfig(
-			id='clientconfig.depot.dynamic',
-			description='Use dynamic depot selection',
-			defaultValues=[False]
+		configs.append(
+			BoolConfig(
+				id='clientconfig.depot.dynamic',
+				description='Use dynamic depot selection',
+				defaultValues=[False]
+			)
 		)
 
 	if 'clientconfig.depot.drive' not in configIdents:
 		logger.debug("Missing clientconfig.depot.drive - adding it.")
-
-		yield UnicodeConfig(
-			id='clientconfig.depot.drive',
-			description='Drive letter for depot share',
-			possibleValues=[
-				'a:', 'b:', 'c:', 'd:', 'e:', 'f:', 'g:', 'h:',
-				'i:', 'j:', 'k:', 'l:', 'm:', 'n:', 'o:', 'p:',
-				'q:', 'r:', 's:', 't:', 'u:', 'v:', 'w:', 'x:',
-				'y:', 'z:',
-				'dynamic'
-			],
-			defaultValues=['p:'],
-			editable=False,
-			multiValue=False
+		configs.append(
+			UnicodeConfig(
+				id='clientconfig.depot.drive',
+				description='Drive letter for depot share',
+				possibleValues=[
+					'a:', 'b:', 'c:', 'd:', 'e:', 'f:', 'g:', 'h:',
+					'i:', 'j:', 'k:', 'l:', 'm:', 'n:', 'o:', 'p:',
+					'q:', 'r:', 's:', 't:', 'u:', 'v:', 'w:', 'x:',
+					'y:', 'z:',
+					'dynamic'
+				],
+				defaultValues=['p:'],
+				editable=False,
+				multiValue=False
+			)
 		)
 
 	if 'clientconfig.depot.protocol' not in configIdents:
 		logger.debug("Missing clientconfig.depot.protocol - adding it.")
-		yield UnicodeConfig(
-			id='clientconfig.depot.protocol',
-			description='Protocol for file transfer',
-			possibleValues=['cifs', 'webdav'],
-			defaultValues=['cifs'],
-			editable=False,
-			multiValue=False
+		configs.append(
+			UnicodeConfig(
+				id='clientconfig.depot.protocol',
+				description='Protocol for file transfer',
+				possibleValues=['cifs', 'webdav'],
+				defaultValues=['cifs'],
+				editable=False,
+				multiValue=False
+			)
 		)
 
 	if 'clientconfig.depot.sync_protocol' not in configIdents:
 		logger.debug("Missing clientconfig.depot.sync_protocol - adding it.")
-		yield UnicodeConfig(
-			id='clientconfig.depot.sync_protocol',
-			description='Protocol to use when caching package files on the client',
-			possibleValues=['cifs', 'webdav'],
-			defaultValues=['cifs'],
-			editable=False,
-			multiValue=False
+		default_values = ['cifs']
+		depot_protocol = backend.config_getObjects(id="clientconfig.depot.protocol")
+		if depot_protocol and depot_protocol[0] and depot_protocol[0].defaultValues:
+			default_values = depot_protocol[0].defaultValues
+
+		configs.append(
+			UnicodeConfig(
+				id='clientconfig.depot.sync_protocol',
+				description='Protocol to use when caching package files on the client',
+				possibleValues=['cifs', 'webdav'],
+				defaultValues=default_values,
+				editable=False,
+				multiValue=False
+			)
 		)
+
+		# Copy ConfigStates to keep current behaviour
+		for config_state in backend.configState_getObjects(configId="clientconfig.depot.protocol"):
+			config_state.configId = 'clientconfig.depot.sync_protocol'
+			config_states.append(config_state)
 
 	if 'clientconfig.windows.domain' not in configIdents:
 		logger.debug("Missing clientconfig.windows.domain - adding it.")
-		yield UnicodeConfig(
-			id='clientconfig.windows.domain',
-			description='Windows domain',
-			possibleValues=[],
-			defaultValues=[readWindowsDomainFromSambaConfig(pathToSMBConf)],
-			editable=True,
-			multiValue=False
+		configs.append(
+			UnicodeConfig(
+				id='clientconfig.windows.domain',
+				description='Windows domain',
+				possibleValues=[],
+				defaultValues=[readWindowsDomainFromSambaConfig(pathToSMBConf)],
+				editable=True,
+				multiValue=False
+			)
 		)
 
 	if 'opsi-linux-bootimage.append' not in configIdents:
 		logger.debug("Missing opsi-linux-bootimage.append - adding it.")
-		yield UnicodeConfig(
-			id='opsi-linux-bootimage.append',
-			description='Extra options to append to kernel command line',
-			possibleValues=[
-				'acpi=off', 'irqpoll', 'noapic', 'pci=nomsi',
-				'vga=normal', 'reboot=b', 'mem=2G', 'nomodeset',
-				'ramdisk_size=2097152', 'dhclienttimeout=N'
-			],
-			defaultValues=[''],
-			editable=True,
-			multiValue=True
+		configs.append(
+			UnicodeConfig(
+				id='opsi-linux-bootimage.append',
+				description='Extra options to append to kernel command line',
+				possibleValues=[
+					'acpi=off', 'irqpoll', 'noapic', 'pci=nomsi',
+					'vga=normal', 'reboot=b', 'mem=2G', 'nomodeset',
+					'ramdisk_size=2097152', 'dhclienttimeout=N'
+				],
+				defaultValues=[''],
+				editable=True,
+				multiValue=True
+			)
 		)
 
 	if 'license-management.use' not in configIdents:
 		logger.debug("Missing license-management.use - adding it.")
-		yield BoolConfig(
-			id='license-management.use',
-			description='Activate license management',
-			defaultValues=[False]
+		configs.append(
+			BoolConfig(
+				id='license-management.use',
+				description='Activate license management',
+				defaultValues=[False]
+			)
 		)
 
 	if 'software-on-demand.active' not in configIdents:
 		logger.debug("Missing software-on-demand.active - adding it.")
-		yield BoolConfig(
-			id='software-on-demand.active',
-			description='Activate software-on-demand',
-			defaultValues=[False]
+		configs.append(
+			BoolConfig(
+				id='software-on-demand.active',
+				description='Activate software-on-demand',
+				defaultValues=[False]
+			)
 		)
 
 	if 'software-on-demand.product-group-ids' not in configIdents:
 		logger.debug("Missing software-on-demand.product-group-ids - adding it.")
-		yield UnicodeConfig(
-			id='software-on-demand.product-group-ids',
-			description=(
-				'Product group ids containing products which are '
-				'allowed to be installed on demand'
-			),
-			possibleValues=['software-on-demand'],
-			defaultValues=['software-on-demand'],
-			editable=True,
-			multiValue=True
+		configs.append(
+			UnicodeConfig(
+				id='software-on-demand.product-group-ids',
+				description=(
+					'Product group ids containing products which are '
+					'allowed to be installed on demand'
+				),
+				possibleValues=['software-on-demand'],
+				defaultValues=['software-on-demand'],
+				editable=True,
+				multiValue=True
+			)
 		)
 
 	if 'product_sort_algorithm' not in configIdents:
 		logger.debug("Missing product_sort_algorithm - adding it.")
-		yield UnicodeConfig(
-			id='product_sort_algorithm',
-			description='Product sorting algorithm',
-			possibleValues=['algorithm1', 'algorithm2'],
-			defaultValues=['algorithm1'],
-			editable=False,
-			multiValue=False
+		configs.append(
+			UnicodeConfig(
+				id='product_sort_algorithm',
+				description='Product sorting algorithm',
+				possibleValues=['algorithm1', 'algorithm2'],
+				defaultValues=['algorithm1'],
+				editable=False,
+				multiValue=False
+			)
 		)
 
 	if 'clientconfig.dhcpd.filename' not in configIdents:
 		logger.debug("Missing clientconfig.dhcpd.filename - adding it.")
-		yield UnicodeConfig(
-			id='clientconfig.dhcpd.filename',
-			description=(
-				"The name of the file that will be presented to the "
-				"client on an TFTP request. For an client that should "
-				"boot via UEFI this must include the term 'elilo'."
-			),
-			possibleValues=['elilo'],
-			defaultValues=[''],
-			editable=True,
-			multiValue=False
+		configs.append(
+			UnicodeConfig(
+				id='clientconfig.dhcpd.filename',
+				description=(
+					"The name of the file that will be presented to the "
+					"client on an TFTP request. For an client that should "
+					"boot via UEFI this must include the term 'elilo'."
+				),
+				possibleValues=['elilo'],
+				defaultValues=[''],
+				editable=True,
+				multiValue=False
+			)
 		)
+
+	backend.config_createObjects(configs)
+	if config_states:
+		backend.configState_createObjects(config_states)
 
 
 def readWindowsDomainFromSambaConfig(pathToConfig=SMB_CONF):
