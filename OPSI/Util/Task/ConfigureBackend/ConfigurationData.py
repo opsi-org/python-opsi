@@ -173,7 +173,7 @@ def create_default_configs(backend, configServer=None, pathToSMBConf=SMB_CONF): 
 		configs.append(
 			UnicodeConfig(
 				id='clientconfig.depot.protocol',
-				description='Protocol for file transfer',
+				description='Protocol to use when mounting an depot share on the client',
 				possibleValues=['cifs', 'webdav'],
 				defaultValues=['cifs'],
 				editable=False,
