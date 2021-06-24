@@ -181,29 +181,6 @@ def create_default_configs(backend, configServer=None, pathToSMBConf=SMB_CONF): 
 			)
 		)
 
-	if 'clientconfig.depot.sync_protocol' not in configIdents:
-		logger.debug("Missing clientconfig.depot.sync_protocol - adding it.")
-		default_values = ['cifs']
-		depot_protocol = backend.config_getObjects(id="clientconfig.depot.protocol")
-		if depot_protocol and depot_protocol[0] and depot_protocol[0].defaultValues:
-			default_values = depot_protocol[0].defaultValues
-
-		configs.append(
-			UnicodeConfig(
-				id='clientconfig.depot.sync_protocol',
-				description='Protocol to use when caching package files on the client',
-				possibleValues=['cifs', 'webdav'],
-				defaultValues=default_values,
-				editable=False,
-				multiValue=False
-			)
-		)
-
-		# Copy ConfigStates to keep current behaviour
-		for config_state in backend.configState_getObjects(configId="clientconfig.depot.protocol"):
-			config_state.configId = 'clientconfig.depot.sync_protocol'
-			config_states.append(config_state)
-
 	if 'clientconfig.windows.domain' not in configIdents:
 		logger.debug("Missing clientconfig.windows.domain - adding it.")
 		configs.append(
