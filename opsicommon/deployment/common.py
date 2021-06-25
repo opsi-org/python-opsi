@@ -272,13 +272,24 @@ class DeployThread(threading.Thread):  # pylint: disable=too-many-instance-attri
 		else:
 			self._networkAddress = ipAddress
 
-	def _setOpsiClientAgentToInstalled(self, hostId):
+	def _setClientAgentToInstalled(self, hostId, productId):
 		poc = ProductOnClient(
 			productType='LocalbootProduct',
 			clientId=hostId,
-			productId='opsi-client-agent',
+			productId=productId,
 			installationStatus='installed',
 			actionResult='successful'
+		)
+		self.backend.productOnClient_updateObjects([poc])
+
+	def _setClientAgentToInstalling(self, hostId, productId):
+		poc = ProductOnClient(
+			productType='LocalbootProduct',
+			clientId=hostId,
+			productId=productId,
+			installationStatus='unknown',
+			actionRequest='none',
+			actionProgress='installing'
 		)
 		self.backend.productOnClient_updateObjects([poc])
 
