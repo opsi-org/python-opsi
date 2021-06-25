@@ -82,7 +82,7 @@ class WindowsDeployThread(DeployThread):
 		if oca_major == "4.2":
 			cmd = (
 				f"{path}\\files\\opsi-script\\opsi-script.exe"
-				f" /batch {path}\\setup.opsiscript"
+				f" /servicebatch {path}\\setup.opsiscript"
 				" c:\\opsi.org\\log\\opsi-client-agent.log"
 				" /productid opsi-client-agent"
 				f" /opsiservice {service_address}"
