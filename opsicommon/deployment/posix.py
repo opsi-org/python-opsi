@@ -68,9 +68,11 @@ class PosixDeployThread(DeployThread):
 			else:
 				localFolder = os.path.dirname(os.path.abspath(__file__))			# for running from python
 
+			prod_id = self._getProductId()
 			credentialsfile=None
 			try:
 				logger.notice("Copying installation scripts...")
+				self._executeViaSSH(f"rm -rf /tmp/opsi-client-agent")				# clean up previous run
 				self._copyDirectoryOverSSH(os.path.join(localFolder, 'files'), remoteFolder)
 				if not os.path.exists(os.path.join(localFolder, 'custom')):
 					os.makedirs(os.path.join(localFolder, 'custom'))
@@ -114,6 +116,7 @@ class PosixDeployThread(DeployThread):
 					self._executeViaSSH(f"echo '{self.password}' > {credentialsfile}")
 					self._executeViaSSH(f'echo "\n" >> {credentialsfile}')
 
+				self._setClientAgentToInstalling(hostObj.id, prod_id)
 				logger.notice('Running installation script...')
 				logger.info('Executing %s', installCommand)
 				self._executeViaSSH(installCommand, credentialsfile=credentialsfile)
@@ -140,7 +143,7 @@ class PosixDeployThread(DeployThread):
 
 			logger.notice("opsi-client-agent successfully installed on %s", hostId)
 			self.success = True
-			self._setOpsiClientAgentToInstalled(hostId)
+			self._setClientAgentToInstalled(hostId, prod_id)
 		except SkipClientException:
 			logger.notice("Skipping host %s", hostId)
 			self.success = SKIP_MARKER
@@ -288,15 +291,3 @@ class PosixDeployThread(DeployThread):
 		if self.target_os == "macos":
 			return "opsi-mac-client-agent"
 		raise ValueError(f"invalid target os {self.target_os}")
-
-
-	def _setOpsiClientAgentToInstalled(self, hostId):
-		prod_id = self._getProductId()
-		poc = ProductOnClient(
-			productType='LocalbootProduct',
-			clientId=hostId,
-			productId=prod_id,
-			installationStatus='installed',
-			actionResult='successful'
-		)
-		self.backend.productOnClient_updateObjects([poc])

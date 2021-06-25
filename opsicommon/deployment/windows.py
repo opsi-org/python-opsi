@@ -71,6 +71,7 @@ class WindowsDeployThread(DeployThread):
 
 	def install_from_path(self, path, hostObj, oca_major="4.2"):
 		logger.info("deploying major %s from path %s", oca_major, path)
+		self._setClientAgentToInstalling(hostObj.id, "opsi-client-agent")
 		service_address = self._getServiceAddress(hostObj.id)
 		finalize = "noreboot"
 		if self.reboot:
@@ -153,7 +154,7 @@ class WindowsDeployThread(DeployThread):
 					cmd = (
 						f"{which('smbclient')} -m SMB3{debug_param} //{self.networkAddress}/c$ -U '{credentials}'"
 						" -c 'prompt; recurse;"
-						" md opsi.org; cd opsi.org; md log; md tmp; cd tmp; md opsi-client-agent_inst;"
+						" md opsi.org; cd opsi.org; md log; md tmp; cd tmp; deltree opsi-client-agent_inst; md opsi-client-agent_inst;"
 						" cd opsi-client-agent_inst; mput files; mput setup.opsiscript; exit;'"
 					)
 				else:
@@ -161,7 +162,7 @@ class WindowsDeployThread(DeployThread):
 					cmd = (
 						f"{which('smbclient')} -m SMB3{debug_param} //{self.networkAddress}/c$ -U '{credentials}'"
 						" -c 'prompt; recurse;"
-						" md opsi.org; cd opsi.org; md log; md tmp; cd tmp; md opsi-client-agent_inst;"
+						" md opsi.org; cd opsi.org; md log; md tmp; cd tmp; deltree opsi-client-agent_inst; md opsi-client-agent_inst;"
 						" cd opsi-client-agent_inst; mput files; exit;'"
 					)
 				execute(cmd)
@@ -179,7 +180,7 @@ class WindowsDeployThread(DeployThread):
 
 			logger.notice("opsi-client-agent successfully installed on %s", hostId)
 			self.success = True
-			self._setOpsiClientAgentToInstalled(hostId)
+			self._setClientAgentToInstalled(hostId, "opsi-client-agent")
 		except SkipClientException:
 			logger.notice("Skipping host %s", hostId)
 			self.success = SKIP_MARKER
@@ -325,7 +326,7 @@ class WindowsDeployThread(DeployThread):
 			self.install_from_path(f"c:\\{instDirName}", hostObj, oca_major)
 			logger.notice("opsi-client-agent successfully installed on %s", hostId)
 			self.success = True
-			self._setOpsiClientAgentToInstalled(hostId)
+			self._setClientAgentToInstalled(hostId, "opsi-client-agent")
 		except SkipClientException:
 			logger.notice("Skipping host %s", hostId)
 			self.success = SKIP_MARKER
