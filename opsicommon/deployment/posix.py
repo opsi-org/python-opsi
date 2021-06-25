@@ -10,7 +10,6 @@ import socket
 from contextlib import closing, contextmanager
 
 from OPSI.Types import forceUnicodeLower
-from OPSI.Object import ProductOnClient
 
 from opsicommon.logging import logger, secret_filter
 from opsicommon.deployment.common import DeployThread, SkipClientException, SKIP_MARKER
@@ -72,7 +71,7 @@ class PosixDeployThread(DeployThread):
 			credentialsfile=None
 			try:
 				logger.notice("Copying installation scripts...")
-				self._executeViaSSH(f"rm -rf /tmp/opsi-client-agent")				# clean up previous run
+				self._executeViaSSH("rm -rf /tmp/opsi-client-agent")				# clean up previous run
 				self._copyDirectoryOverSSH(os.path.join(localFolder, 'files'), remoteFolder)
 				if not os.path.exists(os.path.join(localFolder, 'custom')):
 					os.makedirs(os.path.join(localFolder, 'custom'))
