@@ -8,10 +8,10 @@ Applications for the use of opsi in an twisted-application context.
 
 from OPSI.Logger import Logger
 
-LOGGER = Logger()
+logger = Logger()
 
 
-class AppRunner(object):
+class AppRunner:  # pylint: disable=too-few-public-methods
 
 	def __init__(self, app, config):
 		self._app = app
@@ -21,14 +21,14 @@ class AppRunner(object):
 		self._app.run()
 
 
-class _BaseProfiler(AppRunner):
+class _BaseProfiler(AppRunner):  # pylint: disable=too-few-public-methods
 
 	def _getProfiler(self):
-		raise NotImplementedError(u"Subclass must implement this.")
+		raise NotImplementedError("Subclass must implement this.")
 
 	def run(self):
 		try:
-			import pstats
+			import pstats  # pylint: disable=import-outside-toplevel
 			profiler = self._getProfiler()
 			profiler.runcall(self._app.run)
 
@@ -41,31 +41,28 @@ class _BaseProfiler(AppRunner):
 				statistics.print_stats()
 
 		except ImportError as error:
-			LOGGER.error(
-				u"Failed to load profiler {name}. Make sure the profiler "
-				u"module is installed on your system. ({error})".format(
-					name=self._config.get("profiler"),
-					error=error
-				)
+			logger.error(
+				"Failed to load profiler %s. Make sure the profiler module is installed on your system. (%s)",
+				self._config.get("profiler"), error
 			)
 			raise error
 
 
-class ProfileRunner(_BaseProfiler):
+class ProfileRunner(_BaseProfiler):  # pylint: disable=too-few-public-methods
 
 	def _getProfiler(self):
-		import profile
+		import profile  # pylint: disable=import-outside-toplevel
 		return profile.Profile()
 
 
-class CProfileRunner(_BaseProfiler):
+class CProfileRunner(_BaseProfiler):  # pylint: disable=too-few-public-methods
 
 	def _getProfiler(self):
-		import cProfile
+		import cProfile  # pylint: disable=import-outside-toplevel
 		return cProfile.Profile()
 
 
-class Application(object):
+class Application:  # pylint: disable=too-few-public-methods
 
 	profiler = {
 		"profiler": ProfileRunner,
@@ -78,7 +75,7 @@ class Application(object):
 		self._runner = self._getRunner()
 
 	def _getApplication(self):
-		raise NotImplementedError(u"Subclass must implement this function.")
+		raise NotImplementedError("Subclass must implement this function.")
 
 	def _getRunner(self):
 		if self._config.get("profile", False):
@@ -86,9 +83,7 @@ class Application(object):
 			if profiler in self.profiler:
 				return self.profiler[profiler](self._app, self._config)
 
-			raise NotImplementedError(
-				u"Profiler {0} is not supported.".format(profiler)
-			)
+			raise NotImplementedError(f"Profiler {profiler} is not supported.")
 
 		return AppRunner(self._app, self._config)
 
