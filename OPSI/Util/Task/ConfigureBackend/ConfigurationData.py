@@ -77,35 +77,36 @@ def create_default_configs(backend, configServer=None, pathToSMBConf=SMB_CONF): 
 	configIdents = set(backend.config_getIdents(returnType='unicode'))  # pylint: disable=maybe-no-member
 	configs = []
 	config_states = []
-	if Posix.isUCS():
-		# We have a domain present and people might want to change this.
-		if 'clientconfig.depot.user' not in configIdents:
-			logger.debug("Missing clientconfig.depot.user - adding it.")
 
-			depotuser = 'pcpatch'
+	if 'clientconfig.depot.user' not in configIdents:
+		logger.debug("Missing clientconfig.depot.user - adding it.")
+
+		depotuser = 'pcpatch'
+		depotdomain = None
+		if Posix.isUCS():
+			logger.info("Reading domain from UCR")
 			depotdomain = readWindowsDomainFromUCR()
 			if not depotdomain:
-				logger.info(
-					"Reading domain from UCR returned no result. "
-					"Trying to read from samba config."
-				)
-				depotdomain = readWindowsDomainFromSambaConfig(pathToSMBConf)
+				logger.info("Reading domain from UCR returned no result")
+		if not depotdomain:
+			logger.info("Trying to read domain from samba config")
+			depotdomain = readWindowsDomainFromSambaConfig(pathToSMBConf)
 
-			if depotdomain:
-				depotuser = '\\'.join((depotdomain, depotuser))
+		if depotdomain:
+			depotuser = '\\'.join((depotdomain, depotuser))
 
-			logger.debug("Using '%s' as clientconfig.depot.user.", depotuser)
+		logger.debug("Using '%s' as clientconfig.depot.user", depotuser)
 
-			configs.append(
-				UnicodeConfig(
-					id='clientconfig.depot.user',
-					description='User for depot share',
-					possibleValues=[],
-					defaultValues=[depotuser],
-					editable=True,
-					multiValue=False
-				)
+		configs.append(
+			UnicodeConfig(
+				id='clientconfig.depot.user',
+				description='User for depot share',
+				possibleValues=[],
+				defaultValues=[depotuser],
+				editable=True,
+				multiValue=False
 			)
+		)
 
 	if configServer and 'clientconfig.configserver.url' not in configIdents:
 		logger.debug("Missing clientconfig.configserver.url - adding it.")
