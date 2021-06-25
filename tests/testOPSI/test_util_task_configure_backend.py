@@ -187,23 +187,23 @@ def testAddingInstallByShutdownConfig(extendedConfigDataBackend):
 		assert ident in identsInBackend, "Missing config id {0}".format(ident)
 
 
-@pytest.mark.parametrize("runningOnUCS", [True, False])
-def testAddingUCSSpecificConfigs(extendedConfigDataBackend, runningOnUCS):
-	sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
-	with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.isUCS', lambda: runningOnUCS):
-		confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
+@pytest.mark.parametrize("useSamba", [True, False])
+def testAddingClientconfigDepotUser(extendedConfigDataBackend, useSamba):
+	sambaTestConfig = "/none"
+	if useSamba:
+		sambaTestConfig = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'task', 'smb.conf')
 
-	configIdents = set(extendedConfigDataBackend.config_getIdents(returnType='unicode'))
+	confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
-	assert ('clientconfig.depot.user' in configIdents) == runningOnUCS
+	configs = extendedConfigDataBackend.config_getHashes(id='clientconfig.depot.user')
+	assert len(configs) == 1
+	config = configs[0]
 
-	if runningOnUCS:
-		configs = extendedConfigDataBackend.config_getHashes(id='clientconfig.depot.user')
-		assert len(configs) == 1
-		config = configs[0]
-
-		assert len(config['defaultValues']) == 1
-		defaultValues = config['defaultValues'][0]
+	assert len(config['defaultValues']) == 1
+	defaultValues = config['defaultValues'][0]
+	if useSamba:
+		assert 'WWWORK\\pcpatch' in defaultValues
+	else:
 		assert 'pcpatch' in defaultValues
 
 
