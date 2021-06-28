@@ -324,25 +324,26 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 			headers['Accept'] = headers['Content-Type'] = 'application/json'
 			data = json.dumps(data)
 
+		if not isinstance(data, bytes):
+			data = data.encode("utf-8")
+
 		if self._compression:
 			compression = self._compression
 			if compression is True:
 				# Auto choose later by server version
+				# Do not compress if opsi server version < 4.2
 				# opsiconfd 4.2.0.96 (uvicorn)
-				compression = _GZIP_COMPRESSION
+				compression = None
 				sv = self.server_version
 				if sv and (sv[0] > 4 or (sv[0] == 4 and sv[1] > 1)):
 					compression = _LZ4_COMPRESSION
-
-			if not isinstance(data, bytes):
-				data = data.encode("utf-8")
 
 			if compression == _LZ4_COMPRESSION:
 				logger.trace("Compressing data with lz4")
 				headers['Content-Encoding'] = 'lz4'
 				headers['Accept-Encoding'] = 'lz4'
 				data = lz4.frame.compress(data, compression_level=0, block_linked=True)
-			else:
+			elif compression == _GZIP_COMPRESSION:
 				logger.trace("Compressing data with gzip")
 				headers['Content-Encoding'] = 'gzip'
 				headers['Accept-Encoding'] = 'gzip'
