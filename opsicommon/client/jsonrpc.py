@@ -330,7 +330,7 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		if self._compression:
 			compression = self._compression
 			if compression is True:
-				# Auto choose later by server version
+				# Auto choose by server version
 				# Do not compress if opsi server version < 4.2
 				# opsiconfd 4.2.0.96 (uvicorn)
 				compression = None
