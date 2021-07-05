@@ -8,6 +8,5 @@ py.test -v --log-level=WARNING \
 	tests/testOPSI
 py.test -v --log-level=WARNING \
 	-o junit_family=xunit2 --junitxml=testreport-opsicommon.xml \
-	--cov-append --cov opsicommon --cov-report term --cov-report xml\
-	--ignore tests/testopsicommon/test_logging.py \
+	--cov-append --cov opsicommon --cov-report term --cov-report xml \
 	tests/testopsicommon
