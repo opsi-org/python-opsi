@@ -196,7 +196,9 @@ class DepotserverPackageManager:
 				if productOnDepots[0].getLocked():
 					logger.notice("Product '%s' currently locked on depot '%s'", productId, depotId)
 					if not forceInstallation:
-						raise BackendTemporaryError("Product '{}' currently locked on depot '{}'".format(productId, depotId))
+						raise BackendTemporaryError(
+							f"Product '{productId}' currently locked on depot '{depotId}'. Use argument 'force' to ignore."
+						)
 					logger.warning("Installation of locked product forced")
 			except IndexError:
 				pass
@@ -511,6 +513,29 @@ class DepotserverPackageManager:
 
 			dataBackend = self._depotBackend._context  # pylint: disable=protected-access
 			depot = dataBackend.host_getObjects(type='OpsiDepotserver', id=depotId)[0]
+
+
+			allow_remove_installed = True
+			try:
+				allow_remove_installed = forceBool(
+					dataBackend.config_getObjects(id="allow_to_remove_package_installed_on_client")[0].getDefaultValues()[0]  # pylint: disable=maybe-no-member
+				)
+			except IndexError:
+				pass
+
+			if not allow_remove_installed:
+				productOnClients = dataBackend.productOnClient_getObjects(productId=productId, installationStatus=["installed"])
+				if productOnClients:
+					logger.notice("Product '%s' currently installed on %d clients", productId, len(productOnClients))
+					if not force:
+						raise BackendTemporaryError(
+							f"Product '{productId}' currently installed on {len(productOnClients)} clients"
+						)
+					logger.warning(
+						"Uninstall of product '%s' forced which is installed on %d clients. Use argument 'force' to ignore.",
+						productId, len(productOnClients)
+					)
+
 			productOnDepots = dataBackend.productOnDepot_getObjects(depotId=depotId, productId=productId)
 			try:
 				productOnDepot = productOnDepots[0]
@@ -522,8 +547,10 @@ class DepotserverPackageManager:
 			if productOnDepot.getLocked():
 				logger.notice("Product '%s' currently locked on depot '%s'", productId, depotId)
 				if not force:
-					raise BackendTemporaryError("Product '%s' currently locked on depot '%s'" % (productId, depotId))
-				logger.warning("Uninstallation of locked product forced")
+					raise BackendTemporaryError(
+						f"Product '{productId}' currently locked on depot '{depotId}'. Use argument 'force' to ignore."
+					)
+				logger.warning("Uninstall of locked product '%s' forced", productId)
 
 			logger.notice("Locking product '%s' on depot '%s'", productId, depotId)
 			productOnDepot.setLocked(True)
