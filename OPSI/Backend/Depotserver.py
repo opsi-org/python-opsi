@@ -532,7 +532,7 @@ class DepotserverPackageManager:
 				]
 				if client_ids:
 					productOnClients = dataBackend.productOnClient_getObjects(
-						productId=productId, clientId=[client_ids]
+						productId=productId, clientId=client_ids
 					)
 					if productOnClients:
 						installed = 0
