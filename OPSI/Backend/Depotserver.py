@@ -504,7 +504,7 @@ class DepotserverPackageManager:
 				f"Failed to install package '{filename}' on depot '{depotId}': {err}"
 			) from err
 
-	def uninstallPackage(self, productId, force=False, deleteFiles=True):
+	def uninstallPackage(self, productId, force=False, deleteFiles=True): # pylint: disable=too-many-branches
 		depotId = self._depotBackend._depotId  # pylint: disable=protected-access
 		logger.info("=================================================================================================")
 		logger.notice("Uninstalling product '%s' on depot '%s'", productId, depotId)
@@ -526,17 +526,24 @@ class DepotserverPackageManager:
 				pass
 
 			if not allow_remove_installed:
-				productOnClients = dataBackend.productOnClient_getObjects(productId=productId, installationStatus=["installed"])
-				if productOnClients:
-					logger.notice("Product '%s' currently installed on %d clients", productId, len(productOnClients))
-					if not force:
-						raise BackendReferentialIntegrityError(
-							f"Product '{productId}' currently installed on {len(productOnClients)} clients, use argument 'force' to ignore"
-						)
-					logger.warning(
-						"Uninstall of product '%s' forced which is installed on %d clients",
-						productId, len(productOnClients)
+				client_ids = [
+					clientToDepot['clientId']
+					for clientToDepot in dataBackend.configState_getClientToDepotserver(depotIds=[depotId])
+				]
+				if client_ids:
+					productOnClients = dataBackend.productOnClient_getObjects(
+						productId=productId, clientId=[client_ids], installationStatus=["installed"]
 					)
+					if productOnClients:
+						logger.notice("Product '%s' currently installed on %d clients", productId, len(productOnClients))
+						if not force:
+							raise BackendReferentialIntegrityError(
+								f"Product '{productId}' currently installed on {len(productOnClients)} clients, use argument 'force' to ignore"
+							)
+						logger.warning(
+							"Uninstall of product '%s' forced which is installed on %d clients",
+							productId, len(productOnClients)
+						)
 
 			productOnDepots = dataBackend.productOnDepot_getObjects(depotId=depotId, productId=productId)
 			try:
