@@ -935,7 +935,7 @@ output will be returned.
 		proc = subprocess.Popen(
 			cmd,
 			shell=shell,
-			stdin=subprocess.PIPE,
+			stdin=subprocess.PIPE if stdin_data else None,
 			stdout=subprocess.PIPE,
 			stderr=stderr,
 			env=sp_env
