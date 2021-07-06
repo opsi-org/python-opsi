@@ -517,33 +517,45 @@ class DepotserverPackageManager:
 			depot = dataBackend.host_getObjects(type='OpsiDepotserver', id=depotId)[0]
 
 
-			allow_remove_installed = True
+			allow_remove_used = True
 			try:
-				allow_remove_installed = forceBool(
-					dataBackend.config_getObjects(id="allow_to_remove_package_installed_on_client")[0].getDefaultValues()[0]  # pylint: disable=maybe-no-member
+				allow_remove_used = forceBool(
+					dataBackend.config_getObjects(id="allow_to_remove_used_package")[0].getDefaultValues()[0]  # pylint: disable=maybe-no-member
 				)
 			except IndexError:
 				pass
 
-			if not allow_remove_installed:
+			if not allow_remove_used:
 				client_ids = [
 					clientToDepot['clientId']
 					for clientToDepot in dataBackend.configState_getClientToDepotserver(depotIds=[depotId])
 				]
 				if client_ids:
 					productOnClients = dataBackend.productOnClient_getObjects(
-						productId=productId, clientId=[client_ids], installationStatus=["installed"]
+						productId=productId, clientId=[client_ids]
 					)
 					if productOnClients:
-						logger.notice("Product '%s' currently installed on %d clients", productId, len(productOnClients))
-						if not force:
-							raise BackendReferentialIntegrityError(
-								f"Product '{productId}' currently installed on {len(productOnClients)} clients, use argument 'force' to ignore"
+						installed = 0
+						action_requests = 0
+						for poc in productOnClients:
+							if poc.installationStatus == "installed":
+								installed += 1
+							if poc.actionRequest and poc.actionRequest != "none":
+								action_requests += 1
+						if installed > 0 or action_requests > 0:
+							logger.notice(
+								"Product '%s' currently installed on %d clients, action requests set on %d clients",
+								productId, installed, action_requests
 							)
-						logger.warning(
-							"Uninstall of product '%s' forced which is installed on %d clients",
-							productId, len(productOnClients)
-						)
+							if not force:
+								raise BackendReferentialIntegrityError(
+									f"Product '{productId}' currently installed on {installed} clients "
+									f"action requests set on {action_requests} clients, use argument 'force' to ignore"
+								)
+							logger.warning(
+								"Uninstall of product '%s' forced which is installed on %d clients, action requests set on %d clients",
+								productId, installed, action_requests
+							)
 
 			productOnDepots = dataBackend.productOnDepot_getObjects(depotId=depotId, productId=productId)
 			try:
