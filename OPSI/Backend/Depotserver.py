@@ -13,7 +13,9 @@ from OPSI.Backend.Base import ExtendedBackend
 from OPSI.Exceptions import (
 	BackendBadValueError, BackendConfigurationError,
 	BackendError, BackendIOError, BackendMissingDataError,
-	BackendTemporaryError, BackendUnaccomplishableError)
+	BackendTemporaryError, BackendUnaccomplishableError,
+	BackendReferentialIntegrityError
+)
 from OPSI.Logger import Logger
 from OPSI.Types import (
 	forceBool, forceDict, forceFilename, forceHostId,
@@ -197,7 +199,7 @@ class DepotserverPackageManager:
 					logger.notice("Product '%s' currently locked on depot '%s'", productId, depotId)
 					if not forceInstallation:
 						raise BackendTemporaryError(
-							f"Product '{productId}' currently locked on depot '{depotId}'. Use argument 'force' to ignore."
+							f"Product '{productId}' currently locked on depot '{depotId}', use argument 'force' to ignore"
 						)
 					logger.warning("Installation of locked product forced")
 			except IndexError:
@@ -528,11 +530,11 @@ class DepotserverPackageManager:
 				if productOnClients:
 					logger.notice("Product '%s' currently installed on %d clients", productId, len(productOnClients))
 					if not force:
-						raise BackendTemporaryError(
-							f"Product '{productId}' currently installed on {len(productOnClients)} clients"
+						raise BackendReferentialIntegrityError(
+							f"Product '{productId}' currently installed on {len(productOnClients)} clients, use argument 'force' to ignore"
 						)
 					logger.warning(
-						"Uninstall of product '%s' forced which is installed on %d clients. Use argument 'force' to ignore.",
+						"Uninstall of product '%s' forced which is installed on %d clients",
 						productId, len(productOnClients)
 					)
 
@@ -548,7 +550,7 @@ class DepotserverPackageManager:
 				logger.notice("Product '%s' currently locked on depot '%s'", productId, depotId)
 				if not force:
 					raise BackendTemporaryError(
-						f"Product '{productId}' currently locked on depot '{depotId}'. Use argument 'force' to ignore."
+						f"Product '{productId}' currently locked on depot '{depotId}', use argument 'force' to ignore"
 					)
 				logger.warning("Uninstall of locked product '%s' forced", productId)
 
