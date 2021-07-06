@@ -520,7 +520,7 @@ class DepotserverPackageManager:
 			allow_remove_used = True
 			try:
 				allow_remove_used = forceBool(
-					dataBackend.config_getObjects(id="allow_to_remove_used_package")[0].getDefaultValues()[0]  # pylint: disable=maybe-no-member
+					dataBackend.config_getObjects(id="allow_to_remove_package_in_use")[0].getDefaultValues()[0]  # pylint: disable=maybe-no-member
 				)
 			except IndexError:
 				pass
