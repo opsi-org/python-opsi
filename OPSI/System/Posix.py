@@ -929,15 +929,12 @@ output will be returned.
 			).stdout
 
 		data = b''
-		stderr = None
-		if captureStderr:
-			stderr = subprocess.PIPE
 		proc = subprocess.Popen(
 			cmd,
 			shell=shell,
 			stdin=subprocess.PIPE if stdin_data else None,
 			stdout=subprocess.PIPE,
-			stderr=stderr,
+			stderr=subprocess.PIPE if captureStderr else None,
 			env=sp_env
 		)
 
