@@ -8,10 +8,12 @@ Testing the work with repositories.
 
 import os
 import pytest
+import time
 
 from OPSI.Exceptions import RepositoryError
 from OPSI.Util.Repository import FileRepository, getRepository, getFileInfosFromDavXML
 
+from .helpers import http_file_server
 
 def testGettingFileRepository():
 	repo = getRepository("file:///not-here")
@@ -24,14 +26,14 @@ def testGettingRepositoryFailsOnUnsupportedURL():
 
 
 def testListingRepository(tempDir):
-	repo = FileRepository(url=u'file://{path}'.format(path=tempDir))
+	repo = FileRepository(url='file://{path}'.format(path=tempDir))
 	assert not repo.content('', recursive=True)
 
 	os.mkdir(os.path.join(tempDir, "foobar"))
 
 	assert 1 == len(repo.content('', recursive=True))
 	for content in repo.content('', recursive=True):
-		assert content == {'path': u'foobar', 'type': 'dir', 'name': u'foobar', 'size': 0}
+		assert content == {'path': 'foobar', 'type': 'dir', 'name': 'foobar', 'size': 0}
 
 	with open(os.path.join(tempDir, "bar"), "w"):
 		pass
@@ -45,7 +47,7 @@ def testListingRepository(tempDir):
 
 def testFileRepositoryFailsWithWrongURL():
 	with pytest.raises(RepositoryError):
-		FileRepository(u'nofile://nada')
+		FileRepository('nofile://nada')
 
 
 @pytest.fixture
@@ -104,4 +106,64 @@ def test_file_repo_start_end(tmpdir):
 
 	repo.download("test.txt", str(dst), startByteNumber=5, endByteNumber=9)
 	assert dst.read() == "6789"
+
+
+@pytest.mark.parametrize("repo_type", ["file", "http"])
+def test_limit_download(tmpdir, repo_type):
+	data = "o" * 1_000_000
+	limit = 100_000
+	seconds = len(data) / limit
+
+	src_dir = tmpdir.mkdir("src")
+	src = src_dir.join("test.txt")
+	src.write(data)
+	dst_dir = tmpdir.mkdir("dst")
+	dst = dst_dir.join("test.txt")
+
+	def download(repo_url):
+		start = time.time()
+		repo = getRepository(repo_url, maxBandwidth=limit)
+		repo.download("test.txt", str(dst))
+		end = time.time()
+
+		assert dst.read() == data
+		assert round(end - start) == round(seconds)
+
+	if repo_type.startswith(("http", "webdav")):
+		with http_file_server(src_dir) as server:
+			download(f"{repo_type}://localhost:{server.port}")
+	else:
+		download(f"{repo_type}://{src_dir}")
+
+
+
+@pytest.mark.parametrize("repo_type", ["webdav"])
+def test_limit_upload(tmpdir, repo_type):
+	from opsicommon.logging import logging_config
+	logging_config(stderr_level=9)
+
+	data = "o" * 1_000_000
+	limit = 100_000
+	seconds = len(data) / limit
+
+	src_dir = tmpdir.mkdir("src")
+	src = src_dir.join("test.txt")
+	src.write(data)
+	dst_dir = tmpdir.mkdir("dst")
+	dst = dst_dir.join("test.txt")
+
+	def upload(repo_url):
+		start = time.time()
+		repo = getRepository(repo_url, maxBandwidth=limit)
+		repo.upload(str(src), "test.txt")
+		end = time.time()
+
+		assert dst.read() == data
+		assert round(end - start) == round(seconds)
+
+	if repo_type.startswith(("http", "webdav")):
+		with http_file_server(src_dir) as server:
+			upload(f"{repo_type}://localhost:{server.port}")
+	else:
+		upload(f"{repo_type}://{src_dir}")
 

@@ -9,11 +9,51 @@ Helpers for testing opsi.
 import os
 import shutil
 import tempfile
-from contextlib import contextmanager
+import threading
+import socket
+from contextlib import closing, contextmanager
+import http.server
+import socketserver
 
 import unittest.mock as mock
 
 from OPSI.Util.Path import cd
+
+
+class HTTPFileServer(threading.Thread):
+	def __init__(self, directory):
+		super().__init__()
+		self.directory = directory
+		# Auto select free port
+		with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+			sock.bind(('', 0))
+			sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+			self.port = sock.getsockname()[1]
+		self.server = None
+
+	def run(self):
+		directory = self.directory
+		class Handler(http.server.SimpleHTTPRequestHandler):
+			def __init__(self, *args, **kwargs):
+				super().__init__(*args, directory=directory, **kwargs)
+		self.server = socketserver.TCPServer(("", self.port), Handler)
+		#print("Server started at localhost:" + str(self.port))
+		self.server.serve_forever()
+
+	def stop(self):
+		if self.server:
+			self.server.shutdown()
+
+
+@contextmanager
+def http_file_server(directory):
+	server = HTTPFileServer(directory)
+	server.daemon = True
+	server.start()
+	try:
+		yield server
+	finally:
+		server.stop()
 
 
 @contextmanager
