@@ -1218,16 +1218,12 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 				return (subprocess.Popen(cmd, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None, env=sp_env)).stdout
 		else:
 			data = b""
-			stderr = None
-			if captureStderr:
-				stderr = subprocess.PIPE
-
 			proc = subprocess.Popen(
 				cmd,
 				shell=shell,
-				stdin=subprocess.PIPE,
+				stdin=subprocess.PIPE if stdin_data else None,
 				stdout=subprocess.PIPE,
-				stderr=stderr,
+				stderr=subprocess.PIPE if captureStderr else None,
 				env=sp_env
 			)
 
