@@ -1054,7 +1054,8 @@ class FileProgessWrapper:  # pylint: disable=too-few-public-methods
 	def read(self, size):  # pylint: disable=unused-argument
 		# Read block_size to speed up transfer
 		data = self.file.read(self.block_size)
-		self.progress_subject.addToState(len(data))
+		if self.progress_subject:
+			self.progress_subject.addToState(len(data))
 		return data
 
 
@@ -1458,7 +1459,8 @@ class DepotToLocalDirectorySychronizer:  # pylint: disable=too-few-public-method
 					os.unlink(packageContentFile)
 				raise
 
-			overallProgressSubject.addToState(1)
+			if overallProgressSubject:
+				overallProgressSubject.addToState(1)
 
 			if productProgressObserver:
 				productProgressSubject.detachObserver(productProgressObserver)
