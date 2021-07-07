@@ -150,9 +150,7 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 	def setBandwidth(self, dynamicBandwidth=False, maxBandwidth=0):
 		''' maxBandwidth in byte/s'''
 		self._dynamicBandwidth = forceBool(dynamicBandwidth)
-		self._maxBandwidth = forceInt(maxBandwidth)
-		if self._maxBandwidth < 0:
-			self._maxBandwidth = 0
+		self._maxBandwidth = max(forceInt(maxBandwidth), 0)
 
 		if self._dynamicBandwidth:
 			if not self._networkPerformanceCounter:
@@ -280,8 +278,7 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 					self._networkBandwidth = totalNetworkUsage
 
 				usage = (float(self._averageSpeed) / float(totalNetworkUsage)) * 1.03
-				if usage > 1:
-					usage = 1.0
+				usage = min(usage, 1.0)
 
 				self._networkUsageData.append([now, usage])
 
