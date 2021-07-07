@@ -7,8 +7,10 @@ Testing the work with repositories.
 """
 
 import os
-import pytest
 import time
+
+import pytest
+import unittest.mock as mock
 
 from OPSI.Exceptions import RepositoryError
 from OPSI.Util.Repository import FileRepository, getRepository, getFileInfosFromDavXML
@@ -108,8 +110,13 @@ def test_file_repo_start_end(tmpdir):
 	assert dst.read() == "6789"
 
 
-@pytest.mark.parametrize("repo_type", ["file", "http"])
-def test_limit_download(tmpdir, repo_type):
+#@pytest.mark.parametrize("repo_type,dynamic", [("file", False), ("http", False), ("http", True)])
+@pytest.mark.parametrize("repo_type,dynamic", [("http", True)])
+def test_limit_download(tmpdir, repo_type, dynamic):
+	from opsicommon.logging import logging_config
+	logging_config(stderr_level=9)
+
+
 	data = "o" * 1_000_000
 	limit = 100_000
 	seconds = len(data) / limit
@@ -122,7 +129,7 @@ def test_limit_download(tmpdir, repo_type):
 
 	def download(repo_url):
 		start = time.time()
-		repo = getRepository(repo_url, maxBandwidth=limit)
+		repo = getRepository(repo_url, maxBandwidth=limit, dynamicBandwidth=dynamic)
 		repo.download("test.txt", str(dst))
 		end = time.time()
 
@@ -130,18 +137,15 @@ def test_limit_download(tmpdir, repo_type):
 		assert round(end - start) == round(seconds)
 
 	if repo_type.startswith(("http", "webdav")):
-		with http_file_server(src_dir) as server:
-			download(f"{repo_type}://localhost:{server.port}")
+		with mock.patch('OPSI.Util.Repository.SpeedLimiter._get_network_usage', lambda x: 10_000_000):
+			with http_file_server(src_dir) as server:
+				download(f"{repo_type}://localhost:{server.port}")
 	else:
 		download(f"{repo_type}://{src_dir}")
 
 
-
-@pytest.mark.parametrize("repo_type", ["webdav"])
+@pytest.mark.parametrize("repo_type", ["file", "webdav"])
 def test_limit_upload(tmpdir, repo_type):
-	from opsicommon.logging import logging_config
-	logging_config(stderr_level=9)
-
 	data = "o" * 1_000_000
 	limit = 100_000
 	seconds = len(data) / limit
@@ -162,8 +166,7 @@ def test_limit_upload(tmpdir, repo_type):
 		assert round(end - start) == round(seconds)
 
 	if repo_type.startswith(("http", "webdav")):
-		with http_file_server(src_dir) as server:
+		with http_file_server(dst_dir) as server:
 			upload(f"{repo_type}://localhost:{server.port}")
 	else:
-		upload(f"{repo_type}://{src_dir}")
-
+		upload(f"{repo_type}://{dst_dir}")

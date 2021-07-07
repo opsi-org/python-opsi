@@ -20,6 +20,18 @@ import unittest.mock as mock
 from OPSI.Util.Path import cd
 
 
+
+class HTTPFileServerRequestHandler(http.server.SimpleHTTPRequestHandler):
+	def do_PUT(self):
+		"""Serve a PUT request."""
+		path = self.translate_path(self.path)
+		length = int(self.headers['Content-Length'])
+		with open(path, 'wb') as file:
+			file.write(self.rfile.read(length))
+		self.send_response(201, "Created")
+		self.end_headers()
+
+
 class HTTPFileServer(threading.Thread):
 	def __init__(self, directory):
 		super().__init__()
@@ -33,7 +45,7 @@ class HTTPFileServer(threading.Thread):
 
 	def run(self):
 		directory = self.directory
-		class Handler(http.server.SimpleHTTPRequestHandler):
+		class Handler(HTTPFileServerRequestHandler):
 			def __init__(self, *args, **kwargs):
 				super().__init__(*args, directory=directory, **kwargs)
 		self.server = socketserver.TCPServer(("", self.port), Handler)
