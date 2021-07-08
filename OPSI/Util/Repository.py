@@ -11,6 +11,7 @@ import time
 import shutil
 import socket
 import ipaddress
+import statistics
 from urllib.parse import urlparse, quote, unquote
 import xml.etree.ElementTree as ET
 import requests
@@ -107,8 +108,14 @@ class RepositoryHook:
 	def error_Repository_copy(self, source, destination, overallProgressSubject, currentProgressSubject, exception):  # pylint: disable=unused-argument,too-many-arguments
 		pass
 
-class SpeedLimiter():
-	def __init__(self, min_buffer_size: int = 1, max_buffer_size: int = 262144):
+class SpeedLimiter():  # pylint: disable=too-many-instance-attributes
+	_dynamic_bandwidth_threshold_limit = 0.75  # pylint: disable=invalid-name
+	_dynamic_bandwidth_threshold_no_limit = 0.95  # pylint: disable=invalid-name
+	_dynamic_bandwidth_limit_rate = 0.2
+	_default_min_buffer_size = 1
+	_default_max_buffer_size = 256 * 1024
+
+	def __init__(self, min_buffer_size: int = _default_min_buffer_size, max_buffer_size: int = _default_max_buffer_size):
 		self._dynamic = False
 		self._max_bandwidth = 0
 		self._network_performance_counter = None
@@ -117,19 +124,13 @@ class SpeedLimiter():
 
 		self._transfer_direction = "out"
 
+		self._speed_data = []
 		self._current_speed = 0.0
-		self._last_current_speed_calc_time = None
-		self._last_current_speed_calc_bytes = 0
 		self._average_speed = 0.0
-		self._last_average_speed_calc_time = None
-		self._last_average_speed_calc_bytes = 0
 
-		self._network_usage_data = []
+		self._network_usage_data = {}
 		self._network_bandwidth = 0.0
 		self._dynamic_bandwidth_limit = 0.0
-		self._dynamic_bandwidth_threshold_limit = 0.75  # pylint: disable=invalid-name
-		self._dynamic_bandwidth_threshold_no_limit = 0.95  # pylint: disable=invalid-name
-		self._dynamic_bandwidth_limit_rate = 0.2
 		self._bandwidth_sleep_time = 0.0
 
 	def __del__(self):
@@ -139,19 +140,13 @@ class SpeedLimiter():
 	def _reset(self):
 		self._transfer_direction = "out"
 
+		self._speed_data = []
 		self._current_speed = 0.0
-		self._last_current_speed_calc_time = None
-		self._last_current_speed_calc_bytes = 0
 		self._average_speed = 0.0
-		self._last_average_speed_calc_time = None
-		self._last_average_speed_calc_bytes = 0
 
-		self._network_usage_data = []
+		self._network_usage_data = {}
 		self._network_bandwidth = 0.0
 		self._dynamic_bandwidth_limit = 0.0
-		self._dynamic_bandwidth_threshold_limit = 0.75  # pylint: disable=invalid-name
-		self._dynamic_bandwidth_threshold_no_limit = 0.95  # pylint: disable=invalid-name
-		self._dynamic_bandwidth_limit_rate = 0.2
 		self._bandwidth_sleep_time = 0.0
 
 	def _start_network_performance_counter(self):
@@ -191,103 +186,84 @@ class SpeedLimiter():
 
 	def _calc_speed(self, num_bytes: int):
 		now = time.time()
-		self._last_current_speed_calc_bytes += num_bytes
+		max_age = 5
 
-		if self._last_current_speed_calc_time is not None:
-			delta = now - self._last_current_speed_calc_time
-			if delta > 0:
-				self._current_speed = float(self._last_current_speed_calc_bytes) / float(delta)
-				self._last_current_speed_calc_bytes = 0
-		self._last_current_speed_calc_time = now
+		speed_data = []
+		total_bytes = 0
+		for timestamp, byte_count in self._speed_data:
+			if now - timestamp < max_age:
+				speed_data.append((timestamp, byte_count))
+				total_bytes += byte_count
+		speed_data.append((now, num_bytes))
 
-		self._last_average_speed_calc_bytes += num_bytes
-		if not self._last_average_speed_calc_time:
-			self._last_average_speed_calc_time = now
-			self._average_speed = self._current_speed
-		else:
-			delta = now - self._last_average_speed_calc_time
-			if delta > 1:
-				self._average_speed = float(self._last_average_speed_calc_bytes) / float(delta)
-				self._last_average_speed_calc_bytes = 0
-				self._last_average_speed_calc_time = now
+		self._speed_data = speed_data
+
+		min_time = self._speed_data[0][0]
+		max_time = self._speed_data[-1][0]
+		if min_time == max_time:
+			min_time -= 0.5
+		self._average_speed = float(total_bytes) / (max_time - min_time)
+
+		last_time = now - 0.5
+		if len(self._speed_data) > 1:
+			last_time = self._speed_data[-2][0]
+		self._current_speed = float(num_bytes) / (now - last_time)
 
 	def _get_dynamic_limit(self):
 		total_network_usage = self._get_network_usage()
-		logger.trace("Total network usage: %d", total_network_usage)
-		if total_network_usage == 0:
-			# No usage, no limit
+		logger.trace("Total network usage: %d bytes/s", total_network_usage)
+		if total_network_usage <= 0:
+			logger.trace("No network usage, no limit")
 			self._dynamic_bandwidth_limit = 0.0
 			return self._dynamic_bandwidth_limit
 
 		now = time.time()
 
-		if not self._dynamic_bandwidth_limit:
-			self._network_bandwidth = total_network_usage
+		# Add current usage (our part of the total nework usage) to usage data
+		usage = min((float(self._average_speed) / float(total_network_usage)), 1.0)
+		self._network_usage_data[now] = {"total": total_network_usage, "usage": usage}
 
-		# Add current usage to usage data
-		usage = (float(self._average_speed) / float(total_network_usage)) * 1.03
-		usage = min(usage, 1.0)
-		self._network_usage_data.append([now, usage])
+		max_age = 5
+		for timestamp in list(self._network_usage_data):
+			if now - timestamp > max_age:
+				del self._network_usage_data[timestamp]
 
-		if self._network_usage_data and (now - self._network_usage_data[0][0]) < 5:
-			return self._dynamic_bandwidth_limit
-
-		usage = 0.0
-		count = 0.0
-		index = -1
-
-		for idx, element in enumerate(self._network_usage_data):
-			if now - element[0] <= 5:
-				if index == -1:
-					index = idx
-
-			if now - element[0] <= 2.0:
-				usage += element[1]
-				count += 1.0
-
-		if count <= 0:
-			return self._dynamic_bandwidth_limit
-
-		usage = float(usage) / float(count)
-		logger.debug(
-			"Current network usage %0.2f kByte/s, last measured network bandwidth %0.2f kByte/s, "
-			"usage: %0.5f, dynamic limit: %0.2f kByte/s",
-			float(total_network_usage) / 1024, float(self._network_bandwidth) / 1024,
-			usage, float(self._dynamic_bandwidth_limit) / 1024
+		avg_total = statistics.mean([val["total"] for val in self._network_usage_data.values()])
+		avg_usage = statistics.mean([val["usage"] for val in self._network_usage_data.values()])
+		logger.trace(
+			"Average usage: %0.1f%%, average total: %0.2fkByte/s, average speed: %0.2fkByte/s",
+			avg_usage * 100, float(avg_total) / 1000, float(self._average_speed) / 1000
 		)
 
-		if index > 1:
-			self._network_usage_data = self._network_usage_data[index - 1:]
-
-		if self._dynamic_bandwidth_limit:
-			if usage >= self._dynamic_bandwidth_threshold_no_limit:
-				logger.info("No other traffic detected, resetting dynamically limited bandwidth, using 100%")
-				self._dynamic_bandwidth_limit = 0.0
-				self._network_usage_data = []
-				return self._dynamic_bandwidth_limit
-
-		if usage <= self._dynamic_bandwidth_threshold_limit:
-			if self._average_speed < 20000:
-				self._dynamic_bandwidth_limit = 0.0
+		if self._average_speed < 20_000:
+			if self._dynamic_bandwidth_limit:
 				logger.debug(
-					"Other traffic detected, not limiting traffic because average speed is only %0.2f kByte/s",
-					float(self._average_speed) / 1024
+					"Average usage %0.1f%%, average total: %0.2fkByte/s, not limiting traffic because average speed is only %0.2fkByte/s",
+					avg_usage * 100, float(avg_total) / 1000, float(self._average_speed) / 1000
 				)
+				self._dynamic_bandwidth_limit = 0.0
+			return self._dynamic_bandwidth_limit
+
+		if avg_usage >= self._dynamic_bandwidth_threshold_no_limit:
+			if self._dynamic_bandwidth_limit:
+				logger.debug(
+					"Average usage %0.1f%%, average total: %0.2fkByte/s, no other traffic detected, resetting dynamic limit (no limit)",
+					avg_usage * 100, float(avg_total) / 1000
+				)
+				self._dynamic_bandwidth_limit = 0.0
+			return self._dynamic_bandwidth_limit
+
+		if avg_usage <= self._dynamic_bandwidth_threshold_limit:
+			limit = max(avg_total * self._dynamic_bandwidth_limit_rate, 20_000)
+			if self._max_bandwidth and self._max_bandwidth < limit:
+				logger.debug("Not setting dynamic limit, which would be higher than the hard limit")
 			else:
-				self._dynamic_bandwidth_limit = self._average_speed * self._dynamic_bandwidth_limit_rate
-				if self._dynamic_bandwidth_limit < 10000:
-					self._dynamic_bandwidth_limit = 10000
-					logger.info(
-						"Other traffic detected, dynamically limiting bandwidth to minimum of %0.2f kByte/s",
-						float(self._dynamic_bandwidth_limit) / 1024
-					)
-				else:
-					logger.info(
-						"Other traffic detected, dynamically limiting bandwidth to %0.1f%% of last average to %0.2f kByte/s",
-						float(self._dynamic_bandwidth_limit_rate) * 100,
-						float(self._dynamic_bandwidth_limit) / 1024
-					)
-			self._network_usage_data = []
+				self._dynamic_bandwidth_limit = limit
+				logger.debug(
+					"Average usage %0.1f%%, average total: %0.2fkByte/s, other traffic detected, dynamically limiting bandwidth to %0.2fkByte/s",
+					avg_usage * 100, float(avg_total) / 1000,
+					float(self._dynamic_bandwidth_limit) / 1000,
+				)
 
 		return self._dynamic_bandwidth_limit
 
@@ -306,14 +282,18 @@ class SpeedLimiter():
 
 		bwlimit = float(bwlimit)
 		speed = float(self._current_speed)
+		logger.trace(
+			"Transfer speed %0.2fkByte/s, limit: %0.2fkByte/s",
+			speed / 1000, bwlimit / 1000
+		)
 		if bwlimit > 0 and speed > 0:
 			factor = 1.0
 			if speed > bwlimit:
 				# Too fast
 				factor = float(speed) / float(bwlimit)
 				logger.debug(
-					"Transfer speed %0.2f kByte/s is to fast, limit: %0.2f kByte/s, factor: %0.5f",
-					speed / 1024, bwlimit / 1024, factor
+					"Transfer speed %0.2fkByte/s is to fast, limit: %0.2fkByte/s, factor: %0.5f",
+					speed / 1000, bwlimit / 1000, factor
 				)
 
 				if factor < 1.001:
@@ -327,8 +307,8 @@ class SpeedLimiter():
 				# Too slow
 				factor = float(bwlimit) / float(speed)
 				logger.debug(
-					"Transfer speed %0.2f kByte/s is to slow, limit: %0.2f kByte/s, factor: %0.5f",
-					speed / 1024, bwlimit / 1024, factor
+					"Transfer speed %0.2fkByte/s is to slow, limit: %0.2fkByte/s, factor: %0.5f",
+					speed / 1000, bwlimit / 1000, factor
 				)
 
 				if factor < 1.001:
@@ -339,28 +319,23 @@ class SpeedLimiter():
 					bandwidthSleepTime = self._bandwidth_sleep_time - (0.006 * factor)
 				self._bandwidth_sleep_time = (bandwidthSleepTime + self._bandwidth_sleep_time) / 2
 
-			if factor > 2:
-				self._network_usage_data = []
-
 			if self._bandwidth_sleep_time <= 0.0:
 				self._bandwidth_sleep_time = 0.000001
 
 			if self._bandwidth_sleep_time <= 0.2:
 				buffer_size = int(float(buffer_size) * 1.03)
-				self._network_usage_data = []
 			elif self._bandwidth_sleep_time > 0.3:
 				buffer_size = int(float(buffer_size) / 1.1)
 				self._bandwidth_sleep_time = 0.3
-				self._network_usage_data = []
 
 			if buffer_size > self._max_buffer_size:
 				buffer_size = self._max_buffer_size
 			elif buffer_size < self._min_buffer_size:
-			 	buffer_size = self._min_buffer_size
+				buffer_size = self._min_buffer_size
 
 			logger.debug(
-				"Transfer speed %0.2f kByte/s, limit: %0.2f kByte/s, sleep time: %0.6f, buffer size: %d",
-				speed / 1024, bwlimit / 1024, self._bandwidth_sleep_time, buffer_size
+				"Transfer speed %0.2fkByte/s, limit: %0.2fkByte/s, sleep time: %0.6f, buffer size: %d",
+				speed / 1000, bwlimit / 1000, self._bandwidth_sleep_time, buffer_size
 			)
 		else:
 			self._bandwidth_sleep_time = 0.000001
@@ -391,12 +366,12 @@ class SpeedLimiter():
 	def limit(self, num_bytes_received: int):
 		new_buffer_size = num_bytes_received
 		self._calc_speed(num_bytes_received)
-		if (self._dynamic and self._network_performance_counter) or self._max_bandwidth:
+		if self._dynamic or self._max_bandwidth:
 			new_buffer_size = self._limit(buffer_size=num_bytes_received)
 		return new_buffer_size
 
 class Repository:  # pylint: disable=too-many-instance-attributes
-	DEFAULT_BUFFER_SIZE = 32 * 1024
+	DEFAULT_BUFFER_SIZE = 32 * 1000
 
 	def __init__(self, url, **kwargs):
 		'''
@@ -512,10 +487,10 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 				transferTime = 0.0000001
 			self.speed_limiter.transfer_ended()
 			logger.info(
-				"Transfered %0.2f kByte in %0.2f minutes, average speed was %0.2f kByte/s",
-				float(self._bytesTransfered) / 1024,
+				"Transfered %0.2fkByte in %0.2f minutes, average speed was %0.2fkByte/s",
+				float(self._bytesTransfered) / 1000,
 				float(transferTime) / 60,
-				(float(self._bytesTransfered) / transferTime) / 1024
+				(float(self._bytesTransfered) / transferTime) / 1000
 			)
 			return self._bytesTransfered
 		except Exception as error:
@@ -660,10 +635,10 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 
 				if overallProgressSubject:
 					sizeString = f"{info['size']} Byte"
-					if info['size'] > 1024 * 1024:
-						sizeString = "%0.2f MByte" % (float(info['size']) / (1024 * 1024))
-					elif info['size'] > 1024:
-						sizeString = "%0.2f kByte" % (float(info['size']) / 1024)
+					if info['size'] > 1000 * 1000:
+						sizeString = "%0.2f MByte" % (float(info['size']) / (1000 * 1000))
+					elif info['size'] > 1000:
+						sizeString = "%0.2fkByte" % (float(info['size']) / 1000)
 					overallProgressSubject.setMessage(f"[1/1] {info['name']} ({sizeString})")
 
 				try:
@@ -702,10 +677,10 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 							countLen = len(str(totalFiles))
 							countLenFormat = '%' + str(countLen) + 's'
 							sizeString = "%d Byte" % item['size']
-							if item['size'] > 1024 * 1024:
-								sizeString = "%0.2f MByte" % (float(item['size']) / (1024 * 1024))
-							elif item['size'] > 1024:
-								sizeString = "%0.2f kByte" % (float(item['size']) / 1024)
+							if item['size'] > 1000 * 1000:
+								sizeString = "%0.2f MByte" % (float(item['size']) / (1000 * 1000))
+							elif item['size'] > 1000:
+								sizeString = "%0.2fkByte" % (float(item['size']) / 1000)
 
 							overallProgressSubject.setMessage(
 								"[%s/%s] %s (%s)" % (
@@ -1468,7 +1443,7 @@ class DepotToLocalDirectorySychronizer:  # pylint: disable=too-few-public-method
 					except KeyError:
 						pass
 
-				productProgressSubject.setMessage(_("Synchronizing product %s (%.2f kByte)") % (self._productId, (size / 1024)))
+				productProgressSubject.setMessage(_("Synchronizing product %s (%.2fkByte)") % (self._productId, (size / 1000)))
 				productProgressSubject.setEnd(size)
 				productProgressSubject.setEndChangable(False)
 

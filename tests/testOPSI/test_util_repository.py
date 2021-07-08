@@ -110,16 +110,14 @@ def test_file_repo_start_end(tmpdir):
 	assert dst.read() == "6789"
 
 
-#@pytest.mark.parametrize("repo_type,dynamic", [("file", False), ("http", False), ("http", True)])
-@pytest.mark.parametrize("repo_type,dynamic", [("http", True)])
-def test_limit_download(tmpdir, repo_type, dynamic):
-	from opsicommon.logging import logging_config
-	logging_config(stderr_level=9)
 
+@pytest.mark.parametrize("repo_type,dynamic", [("file", False), ("http", False), ("http", True)])
+def test_limit_download(tmpdir, repo_type, dynamic):
+	#from opsicommon.logging import logging_config
+	#logging_config(stderr_level=8)
 
 	data = "o" * 1_000_000
 	limit = 100_000
-	seconds = len(data) / limit
 
 	src_dir = tmpdir.mkdir("src")
 	src = src_dir.join("test.txt")
@@ -127,21 +125,46 @@ def test_limit_download(tmpdir, repo_type, dynamic):
 	dst_dir = tmpdir.mkdir("dst")
 	dst = dst_dir.join("test.txt")
 
-	def download(repo_url):
+	repo = None
+	simulate_other_traffic = False
+
+	def download():
 		start = time.time()
-		repo = getRepository(repo_url, maxBandwidth=limit, dynamicBandwidth=dynamic)
 		repo.download("test.txt", str(dst))
 		end = time.time()
 
 		assert dst.read() == data
-		assert round(end - start) == round(seconds)
+		if not dynamic:
+			assert round(end - start) == round(len(data) / limit)
 
-	if repo_type.startswith(("http", "webdav")):
-		with mock.patch('OPSI.Util.Repository.SpeedLimiter._get_network_usage', lambda x: 10_000_000):
+	def get_network_usage(self):
+		traffic_ratio = repo.speed_limiter._dynamic_bandwidth_threshold_no_limit
+		if simulate_other_traffic:
+			traffic_ratio = repo.speed_limiter._dynamic_bandwidth_limit_rate
+
+		bandwidth = int(repo.speed_limiter._average_speed / traffic_ratio)
+		if repo._bytesTransfered >= len(data) * 0.8:
+			if simulate_other_traffic:
+				assert (repo.speed_limiter._dynamic_bandwidth_limit / bandwidth) <= repo.speed_limiter._dynamic_bandwidth_limit_rate
+			else:
+				assert repo.speed_limiter._dynamic_bandwidth_limit  == 0
+		return bandwidth
+
+	# Setting DEFAULT_BUFFER_SIZE to slow down transfer
+	with mock.patch('OPSI.Util.Repository.Repository.DEFAULT_BUFFER_SIZE', 1000 if dynamic else 32 * 1000):
+		if repo_type.startswith(("http", "webdav")):
 			with http_file_server(src_dir) as server:
-				download(f"{repo_type}://localhost:{server.port}")
-	else:
-		download(f"{repo_type}://{src_dir}")
+				repo_url = f"{repo_type}://localhost:{server.port}"
+				repo = getRepository(repo_url, maxBandwidth=0 if dynamic else limit, dynamicBandwidth=dynamic)
+				with mock.patch('OPSI.Util.Repository.SpeedLimiter._get_network_usage', get_network_usage):
+					download()
+					if dynamic:
+						simulate_other_traffic = True
+						download()
+		else:
+			repo_url = f"{repo_type}://{src_dir}"
+			repo = getRepository(repo_url, maxBandwidth=limit, dynamicBandwidth=dynamic)
+			download()
 
 
 @pytest.mark.parametrize("repo_type", ["file", "webdav"])
