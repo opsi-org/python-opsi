@@ -116,7 +116,7 @@ def test_limit_download(tmpdir, repo_type, dynamic):
 	#from opsicommon.logging import logging_config
 	#logging_config(stderr_level=8)
 
-	data = "o" * 1_000_000
+	data = "o" * 2_000_000
 	limit = 100_000
 
 	src_dir = tmpdir.mkdir("src")
