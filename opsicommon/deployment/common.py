@@ -7,6 +7,7 @@ import time
 import threading
 import socket
 import re
+import subprocess
 
 from OPSI.System import execute, getFQDN
 from OPSI.Object import OpsiClient, ProductOnClient
@@ -165,10 +166,8 @@ class DeployThread(threading.Thread):  # pylint: disable=too-many-instance-attri
 		logger.notice("Pinging host %s ...", ipAddress)
 		alive = False
 		try:
-			for line in execute(f"ping -q -c2 {ipAddress}"):
-				match = re.search(r"\s+(\d+)%\s+packet\s+loss", line)
-				if match and (forceInt(match.group(1)) < 100):
-					alive = True
+			subprocess.check_call(["ping", "-q", "-c2", ipAddress])
+			alive = True
 		except Exception as err:  # pylint: disable=broad-except
 			logger.error(err)
 
