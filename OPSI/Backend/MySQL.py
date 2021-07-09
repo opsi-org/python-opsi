@@ -9,6 +9,7 @@ MySQL-Backend
 import re
 import base64
 import time
+from urllib.parse import urlencode
 from hashlib import md5
 try:
 	# pyright: reportMissingImports=false
@@ -127,7 +128,9 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 		#conn.execute("SHOW VARIABLES LIKE 'sql_mode';").fetchone()
 
 	def init_connection(self):
-		uri = f'mysql://{self._username}:{self._password}@{self._address}/{self._database}'
+		password = urlencode(self._password)
+		secret_filter.add_secrets(password)
+		uri = f'mysql://{urlencode(self._username)}:{password}@{self._address}/{self._database}'
 		logger.info("Connecting to %s", uri)
 
 		self.engine = create_engine(
