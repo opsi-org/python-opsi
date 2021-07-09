@@ -11,7 +11,7 @@ import subprocess
 
 from OPSI.System import execute, getFQDN
 from OPSI.Object import OpsiClient, ProductOnClient
-from OPSI.Types import forceHostId, forceIPAddress, forceUnicodeLower, forceInt
+from OPSI.Types import forceHostId, forceIPAddress, forceUnicodeLower
 from opsicommon.logging import logger
 
 
