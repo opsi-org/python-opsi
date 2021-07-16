@@ -89,11 +89,6 @@ class PosixDeployThread(DeployThread):
 				self._executeViaSSH(f"chmod +x {opsiscript}")
 
 				service_address = self._getServiceAddress(hostObj.id)
-				finalize = "noreboot"
-				if self.reboot:
-					finalize = "reboot"
-				elif self.shutdown:
-					finalize = "shutdown"
 				product = self._getProductId()
 
 				secret_filter.add_secrets(hostObj.opsiHostKey)
@@ -105,7 +100,7 @@ class PosixDeployThread(DeployThread):
 					f" -clientid {hostObj.id}"
 					f" -username {hostObj.id}"
 					f" -password {hostObj.opsiHostKey}"
-					f" -parameter {finalize}"
+					f" -parameter noreboot"
 				)
 				if self.username != 'root':
 					credentialsfile = os.path.join(remoteFolder, '.credentials')
@@ -120,19 +115,8 @@ class PosixDeployThread(DeployThread):
 				logger.info('Executing %s', installCommand)
 				self._executeViaSSH(installCommand, credentialsfile=credentialsfile)
 
-				logger.debug("Testing if folder was created...")
-				self._executeViaSSH("test -d /etc/opsi-client-agent/")
-				logger.debug("Testing if config can be found...")
-				checkCommand = "test -e /etc/opsi-client-agent/opsiclientd.conf"
-				self._executeViaSSH(checkCommand, credentialsfile=credentialsfile)
-
-				logger.debug("Testing if executable was found...")
-				if self.target_os == "linux":
-					self._executeViaSSH("test -e /usr/bin/opsiclientd -a -e /usr/bin/opsi-script")
-				elif self.target_os == "macos":
-					self._executeViaSSH("test -e /usr/local/bin/opsiclientd -a -e /usr/local/bin/opsi-script")
-				else:
-					raise ValueError(f"invalid target os {self.target_os}")
+				self.evaluate_success(credentialsfile=credentialsfile)
+				self.finalize(credentialsfile=credentialsfile)
 			finally:
 				try:
 					if credentialsfile:
@@ -166,6 +150,55 @@ class PosixDeployThread(DeployThread):
 				self._executeViaSSH(f"rm -rf {remoteFolder}")
 			except (Exception, paramiko.SSHException) as err:  # pylint: disable=broad-except
 				logger.error(err)
+
+
+	def evaluate_success(self, credentialsfile=None):
+		# these commands throw exceptions if exitcode != 0
+		logger.debug("Testing if folder was created...")
+		self._executeViaSSH("test -d /etc/opsi-client-agent/")
+		logger.debug("Testing if config can be found...")
+		checkCommand = "test -e /etc/opsi-client-agent/opsiclientd.conf"
+		self._executeViaSSH(checkCommand, credentialsfile=credentialsfile)
+
+		logger.debug("Testing if executable was found...")
+		if self.target_os == "linux":
+			self._executeViaSSH("test -e /usr/bin/opsiclientd -a -e /usr/bin/opsi-script")
+		elif self.target_os == "macos":
+			self._executeViaSSH("test -e /usr/local/bin/opsiclientd -a -e /usr/local/bin/opsi-script")
+		else:
+			raise ValueError(f"invalid target os {self.target_os}")
+		#TODO: check productonclient?
+
+
+	def finalize(self, credentialsfile=None):
+		if self.reboot or self.shutdown:
+			#TODO: shutdown blocks on macos until it is concluded -> error
+			if self.reboot:
+				logger.notice("Rebooting machine %s", self.networkAddress)
+				cmd = r'shutdown -r +1 & disown'
+			else:	# self.shutdown must be set
+				logger.notice("Shutting down machine %s", self.networkAddress)
+				cmd = r'shutdown -h +1 & disown'
+			try:
+				self._executeViaSSH(cmd, credentialsfile=credentialsfile)
+			except Exception as err:  # pylint: disable=broad-except
+				if self.reboot:
+					logger.error("Failed to reboot computer: %s", err)
+				else:
+					logger.error("Failed to shutdown computer: %s", err)
+		elif self.startService:
+			try:
+				logger.notice("Starting opsiclientd on machine %s", self.networkAddress)
+				if self.target_os == "linux":
+					self._executeViaSSH("systemctl start opsiclientd", credentialsfile=credentialsfile)
+				elif self.target_os == "macos":
+					self._executeViaSSH("launchctl load /Library/LaunchDaemons/org.opsi.opsiclientd.plist", credentialsfile=credentialsfile)
+				else:
+					raise ValueError(f"invalid target os {self.target_os}")
+
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error("Failed to start opsiclientd on %s: %s", self.networkAddress, err)
+
 
 	def _getHostId(self, host):
 		hostId = None
