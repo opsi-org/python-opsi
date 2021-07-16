@@ -90,7 +90,7 @@ class WindowsDeployThread(DeployThread):
 				f" /clientid {hostObj.id}"
 				f" /username {hostObj.id}"
 				f" /password {hostObj.opsiHostKey}"
-				f" /parameter {finalize}"
+				f" /parameter noreboot"
 			)
 		else:
 			cmd = (
@@ -108,28 +108,31 @@ class WindowsDeployThread(DeployThread):
 					raise Exception(f"Failed to install opsi-client-agent: {err}") from err
 				logger.info("Winexe failure %s, retrying", err)
 				time.sleep(2)
+		self.finalize()
 
-		if oca_major == "4.1":	#finalize
-			if self.reboot or self.shutdown:
+
+	def finalize(self):
+		if self.reboot or self.shutdown:
+			if self.reboot:
+				logger.notice("Rebooting machine %s", self.networkAddress)
+				cmd = r'"shutdown.exe" /r /t 20 /c "opsi-client-agent installed - reboot"'
+			else:	# self.shutdown must be set
+				logger.notice("Shutting down machine %s", self.networkAddress)
+				cmd = r'"shutdown.exe" /s /t 20 /c "opsi-client-agent installed - shutdown"'
+
+			try:
+				winexe(cmd, self.networkAddress, self.username, self.password)
+			except Exception as err:  # pylint: disable=broad-except
 				if self.reboot:
-					logger.notice("Rebooting machine %s", self.networkAddress)
-					cmd = r'"shutdown.exe" /L /R /T:20 "opsi-client-agent installed - reboot" /Y /C'
-				else:	# self.shutdown must be set
-					logger.notice("Shutting down machine %s", self.networkAddress)
-					cmd = r'"shutdown.exe" /L /T:20 "opsi-client-agent installed - shutdown" /Y /C'
-
-				try:
-					winexe(cmd, self.networkAddress, self.username, self.password)
-				except Exception as err:  # pylint: disable=broad-except
-					if self.reboot:
-						logger.error("Failed to reboot computer: %s", err)
-					else:
-						logger.error("Failed to shutdown computer: %s", err)
-			elif self.startService:
-				try:
-					winexe('net start opsiclientd', self.networkAddress, self.username, self.password)
-				except Exception as err:  # pylint: disable=broad-except
-					logger.error("Failed to start opsiclientd on %s: %s", self.networkAddress, err)
+					logger.error("Failed to reboot computer: %s", err)
+				else:
+					logger.error("Failed to shutdown computer: %s", err)
+		elif self.startService:
+			try:
+				logger.notice("Starting opsiclientd on computer %s", self.networkAddress)
+				winexe('net start opsiclientd', self.networkAddress, self.username, self.password)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error("Failed to start opsiclientd on %s: %s", self.networkAddress, err)
 
 
 	def _installWithSmbclient(self):  # pylint: disable=too-many-branches,too-many-statements
@@ -326,6 +329,7 @@ class WindowsDeployThread(DeployThread):
 			self.install_from_path(f"c:\\{instDirName}", hostObj, oca_major)
 			logger.notice("opsi-client-agent successfully installed on %s", hostId)
 			self.success = True
+			#TODO: remove for 4.2 only
 			self._setClientAgentToInstalled(hostId, "opsi-client-agent")
 		except SkipClientException:
 			logger.notice("Skipping host %s", hostId)
