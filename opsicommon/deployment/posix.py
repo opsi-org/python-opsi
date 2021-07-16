@@ -89,11 +89,6 @@ class PosixDeployThread(DeployThread):
 				self._executeViaSSH(f"chmod +x {opsiscript}")
 
 				service_address = self._getServiceAddress(hostObj.id)
-				finalize = "noreboot"
-				if self.reboot:
-					finalize = "reboot"
-				elif self.shutdown:
-					finalize = "shutdown"
 				product = self._getProductId()
 
 				secret_filter.add_secrets(hostObj.opsiHostKey)

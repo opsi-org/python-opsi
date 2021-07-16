@@ -73,11 +73,6 @@ class WindowsDeployThread(DeployThread):
 		logger.info("deploying major %s from path %s", oca_major, path)
 		self._setClientAgentToInstalling(hostObj.id, "opsi-client-agent")
 		service_address = self._getServiceAddress(hostObj.id)
-		finalize = "noreboot"
-		if self.reboot:
-			finalize = "reboot"
-		elif self.shutdown:
-			finalize = "shutdown"
 		logger.notice("Installing opsi-client-agent")
 		secret_filter.add_secrets(hostObj.opsiHostKey)
 		if oca_major == "4.2":
