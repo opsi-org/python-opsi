@@ -2496,7 +2496,7 @@ into the IDs of these depots are to be found in the list behind \
 
 		if not softwareLicenseId:
 			raise LicenseMissingError(
-				f"No license available for pool '{licensePoolId}' and client '{clientId}'"
+				f"No license available for pool '{licensePoolId}' and client '{clientId}', or all remaining licenses are bound to a different host."
 			)
 
 		licenseKeys = []
