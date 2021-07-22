@@ -512,7 +512,7 @@ class OpsiPackageUpdater:
 				availablePackage['productId']
 			)
 
-	def get_installed_package(self, availablePackage, installedProducts):
+	def get_installed_package(self, availablePackage, installedProducts):  # pylint: disable=no-self-use
 		logger.info("Testing if download/installation of package '%s' is needed", availablePackage["filename"])
 		for product in installedProducts:
 			if product['productId'] == availablePackage['productId']:
@@ -526,7 +526,7 @@ class OpsiPackageUpdater:
 				return product
 		return None
 
-	def get_local_package(self, availablePackage, localPackages):
+	def get_local_package(self, availablePackage, localPackages):  # pylint: disable=no-self-use
 		for localPackage in localPackages:
 			if localPackage['productId'] == availablePackage['productId']:
 				logger.debug("Found local package file '%s'", localPackage['filename'])
@@ -561,7 +561,7 @@ class OpsiPackageUpdater:
 			notifier.appendLine(message)
 		return True
 
-	def is_install_needed(self, availablePackage, product):
+	def is_install_needed(self, availablePackage, product):  # pylint: disable=no-self-use
 		if not product:
 			if availablePackage['repository'].autoInstall:
 				logger.notice(
@@ -971,6 +971,7 @@ class OpsiPackageUpdater:
 
 	@contextmanager
 	def makeSession(self, repository):  # pylint: disable=no-self-use
+		logger.info("opening session for repository %s", repository)
 		try:
 			session = requests.session()
 			if repository.proxy:
@@ -978,7 +979,14 @@ class OpsiPackageUpdater:
 					'http': repository.proxy,
 					'https': repository.proxy,
 				}
+				logger.devel(os.environ.get("no_proxy"))
+				if os.environ.get("no_proxy"):
+					logger.info("setting no proxy for addresses %s", os.environ.get("no_proxy"))
+					for no_proxy in os.environ.get("no_proxy").split(","):
+						proxies[no_proxy.strip()] = ""		# Emptystring means no proxy
+				logger.devel("setting proxies %s", proxies)
 				session.proxies.update(proxies)
+
 			if os.path.exists(repository.authcertfile) and os.path.exists(repository.authkeyfile):
 				logger.debug("setting session.cert to %s %s", repository.authcertfile, repository.authkeyfile)
 				session.cert = (repository.authcertfile, repository.authkeyfile)
