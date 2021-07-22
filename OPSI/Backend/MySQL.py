@@ -130,7 +130,10 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 	def init_connection(self):
 		password = quote(self._password)
 		secret_filter.add_secrets(password)
-		uri = f'mysql://{quote(self._username)}:{password}@{self._address}/{self._database}'
+		if self._databaseCharset == "utf8":
+			uri = f'mysql://{quote(self._username)}:{password}@{self._address}/{self._database}?charset=utf8mb4'
+		else:
+			uri = f'mysql://{quote(self._username)}:{password}@{self._address}/{self._database}'
 		logger.info("Connecting to %s", uri)
 
 		self.engine = create_engine(
