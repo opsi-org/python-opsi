@@ -157,11 +157,25 @@ class WindowsDeployThread(DeployThread):
 					)
 				else:
 					oca_major = "4.1"
-					cmd = (
-						f"{which('smbclient')} -m SMB3{debug_param} //{self.networkAddress}/c$ -U '{credentials}'"
-						" -c 'prompt; recurse;"
-						" md opsi.org; cd opsi.org; md log; md tmp; cd tmp; deltree opsi-client-agent_inst; md opsi-client-agent_inst;"
-						" cd opsi-client-agent_inst; mput files; exit;'"
+
+					logger.notice("Patching config.ini")
+					configIniName = f'{randomString(10)}_config.ini'
+					copy(os.path.join('files', 'opsi', 'cfg', 'config.ini'), f'/tmp/{configIniName}')
+					configFile = IniFile(f'/tmp/{configIniName}')
+					config = configFile.parse()
+					if not config.has_section('shareinfo'):
+						config.add_section('shareinfo')
+					config.set('shareinfo', 'pckey', hostObj.opsiHostKey)
+					if not config.has_section('general'):
+						config.add_section('general')
+					config.set('general', 'dnsdomain', '.'.join(hostObj.id.split('.')[1:]))
+					configFile.generate(config)
+
+					cmd = u"{smbclient} -m SMB3 //{address}/c$ -U '{credentials}' -c 'prompt; recurse; md opsi.org; cd opsi.org; md tmp; cd tmp; md opsi-client-agent_inst; cd opsi-client-agent_inst; mput files; mput utils; cd files\\opsi\\cfg; lcd /tmp; put {config} config.ini; exit;'".format(
+						smbclient=which('smbclient'),
+						address=self.networkAddress,
+						credentials=self.username + '%' + self.password,
+						config=configIniName
 					)
 				execute(cmd)
 
