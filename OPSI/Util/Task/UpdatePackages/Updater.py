@@ -979,12 +979,15 @@ class OpsiPackageUpdater:
 					'http': repository.proxy,
 					'https': repository.proxy,
 				}
-				logger.devel(os.environ.get("no_proxy"))
 				if os.environ.get("no_proxy"):
 					logger.info("setting no proxy for addresses %s", os.environ.get("no_proxy"))
 					for no_proxy in os.environ.get("no_proxy").split(","):
-						proxies[no_proxy.strip()] = ""		# Emptystring means no proxy
-				logger.devel("setting proxies %s", proxies)
+						if no_proxy.startswith("http"):		# also covers https
+							proxies[no_proxy.strip()] = ""		# Emptystring means no proxy
+						else:
+							proxies[f"http://{no_proxy.strip()}"] = ""
+							proxies[f"https://{no_proxy.strip()}"] = ""
+				logger.debug("setting proxies %s", proxies)
 				session.proxies.update(proxies)
 
 			if os.path.exists(repository.authcertfile) and os.path.exists(repository.authkeyfile):
