@@ -178,7 +178,7 @@ class OpsiPackageUpdater:
 							zsync = availablePackage['repository'].baseUrl.split(':')[0].lower().endswith('s')
 							packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 							if self.is_download_needed(localPackageFound, availablePackage, notifier=None):
-								self.get_package(availablePackage, localPackageFound, session,  zsync=zsync, notifier=notifier)
+								self.get_package(availablePackage, localPackageFound, session,  zsync=zsync, notifier=None)
 							self._verifyDownloadedPackage(packageFile, availablePackage, session, zsync, notifier)
 							newPackages.append(availablePackage)
 						except Exception as exc: # pylint: disable=broad-except
@@ -627,7 +627,6 @@ class OpsiPackageUpdater:
 		else:
 			self.downloadPackage(availablePackage, session, notifier=notifier)
 		self.cleanupPackages(availablePackage)
-
 
 	def downloadPackages(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		if not any(self.getActiveRepositories()):
