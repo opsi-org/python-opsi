@@ -174,9 +174,10 @@ class OpsiPackageUpdater:
 							continue
 
 						localPackageFound = self.get_local_package(availablePackage, localPackages)
+						zsync = availablePackage['repository'].baseUrl.split(':')[0].lower().endswith('s')
+						packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 						if self.is_download_needed(localPackageFound, availablePackage, notifier=None):
-							zsync = availablePackage['repository'].baseUrl.split(':')[0].lower().endswith('s')
-						packageFile = self.get_package(availablePackage, localPackageFound, session,  zsync=zsync, notifier=notifier)
+							self.get_package(availablePackage, localPackageFound, session,  zsync=zsync, notifier=notifier)
 						self._verifyDownloadedPackage(packageFile, availablePackage, session, zsync, notifier)
 						newPackages.append(availablePackage)
 
@@ -598,7 +599,6 @@ class OpsiPackageUpdater:
 		return False
 
 	def get_package(self, availablePackage, localPackageFound, session, notifier=None, zsync=True):
-		packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 		if self.config["zsyncCommand"] and availablePackage['zsyncFile'] and localPackageFound:
 			if not zsync:
 				logger.warning("Cannot use zsync, because zsync does not support https")
@@ -611,8 +611,6 @@ class OpsiPackageUpdater:
 		else:
 			self.downloadPackage(availablePackage, session, notifier=notifier)
 		self.cleanupPackages(availablePackage)
-		return packageFile
-
 
 	def downloadPackages(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		if not any(self.getActiveRepositories()):
@@ -636,9 +634,10 @@ class OpsiPackageUpdater:
 						#This ís called to keep the logs consistent
 						_ = self.get_installed_package(availablePackage, installedProducts)
 						localPackageFound = self.get_local_package(availablePackage, localPackages)
+						zsync = availablePackage['repository'].baseUrl.split(':')[0].lower().endswith('s')
+						packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 						if self.is_download_needed(localPackageFound, availablePackage, notifier=notifier):
-							zsync = availablePackage['repository'].baseUrl.split(':')[0].lower().endswith('s')
-						packageFile = self.get_package(availablePackage, localPackageFound, session, zsync=zsync, notifier=notifier)
+							self.get_package(availablePackage, localPackageFound, session,  zsync=zsync, notifier=notifier)
 						self._verifyDownloadedPackage(packageFile, availablePackage, session, zsync, notifier)
 						newPackages.append(availablePackage)
 
