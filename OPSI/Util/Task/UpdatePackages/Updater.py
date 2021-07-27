@@ -421,6 +421,7 @@ class OpsiPackageUpdater:
 						logger.error("Failed to power on client '%s': %s", clientId, err)
 		except Exception as err:  # pylint: disable=broad-except
 			notifier.appendLine(f"Error occurred: {err}")
+			notifier.setSubject(f"ERROR {self.config['subject']}")
 			raise
 		finally:
 			if notifier and notifier.hasMessage():
@@ -646,6 +647,7 @@ class OpsiPackageUpdater:
 				return
 		except Exception as err:  # pylint: disable=broad-except
 			notifier.appendLine(f"Error occurred: {err}")
+			notifier.setSubject(f"ERROR {self.config['subject']}")
 			raise
 		finally:
 			if notifier and notifier.hasMessage():

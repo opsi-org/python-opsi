@@ -72,6 +72,10 @@ class EmailNotifier(BaseNotifier):
 		self.password = None
 		self.useStarttls = False
 
+	def setSubject(self, new_subject):
+		logger.info(u"Setting new subject %s", new_subject)
+		self.subject = forceUnicode(new_subject)
+
 	def notify(self):
 		logger.notice(u"Sending mail notification")
 		mail = u'From: %s\n' % self.sender
