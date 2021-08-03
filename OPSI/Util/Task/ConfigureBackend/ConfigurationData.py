@@ -182,6 +182,19 @@ def create_default_configs(backend, configServer=None, pathToSMBConf=SMB_CONF): 
 			)
 		)
 
+	if 'clientconfig.depot.protocol.netboot' not in configIdents:
+		logger.debug("Missing clientconfig.depot.protocol.netboot - adding it.")
+		configs.append(
+			UnicodeConfig(
+				id='clientconfig.depot.protocol.netboot',
+				description='Protocol to use when mounting an depot share in netboot environment',
+				possibleValues=['cifs', 'webdav'],
+				defaultValues=['cifs'],
+				editable=False,
+				multiValue=False
+			)
+		)
+
 	if 'clientconfig.windows.domain' not in configIdents:
 		logger.debug("Missing clientconfig.windows.domain - adding it.")
 		configs.append(
@@ -192,6 +205,26 @@ def create_default_configs(backend, configServer=None, pathToSMBConf=SMB_CONF): 
 				defaultValues=[readWindowsDomainFromSambaConfig(pathToSMBConf)],
 				editable=True,
 				multiValue=False
+			)
+		)
+
+	if 'opsiclientd.global.verify_server_cert' not in configIdents:
+		logger.debug("Missing opsiclientd.global.verify_server_cert - adding it.")
+		configs.append(
+			BoolConfig(
+				id='opsiclientd.global.verify_server_cert',
+				description='Verify opsi server TLS certificates',
+				defaultValues=[False]
+			)
+		)
+
+	if 'opsiclientd.global.install_opsi_ca_into_os_store' not in configIdents:
+		logger.debug("Missing opsiclientd.global.install_opsi_ca_into_os_store - adding it.")
+		configs.append(
+			BoolConfig(
+				id='opsiclientd.global.install_opsi_ca_into_os_store',
+				description='Automatically install opsi CA into operating systems certificate store',
+				defaultValues=[False]
 			)
 		)
 
