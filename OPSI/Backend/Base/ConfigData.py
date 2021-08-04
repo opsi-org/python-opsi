@@ -17,8 +17,9 @@ import os
 import re
 import shutil
 
+from opsicommon.logging import logger, secret_filter
+
 from OPSI.Config import OPSI_ADMIN_GROUP
-from OPSI.Logger import Logger
 from OPSI.Exceptions import (
 	BackendBadValueError, BackendMissingDataError, BackendReferentialIntegrityError
 )
@@ -42,6 +43,7 @@ from OPSI.Util.Log import truncateLogData
 
 from .Backend import Backend
 
+
 __all__ = ('ConfigDataBackend', )
 
 OPSI_PASSWD_FILE = '/etc/opsi/passwd'
@@ -57,8 +59,6 @@ LOG_TYPES = {  # key = logtype, value = requires objectId for read
 _PASSWD_LINE_REGEX = re.compile(r'^\s*([^:]+)\s*:\s*(\S+)\s*$')
 OPSI_HARDWARE_CLASSES = []
 
-logger = Logger()
-
 DEFAULT_MAX_LOGFILE_SIZE = 5000000
 if platform.system().lower() == 'linux':
 	try:
@@ -72,8 +72,8 @@ if platform.system().lower() == 'linux':
 					break
 			else:
 				raise ValueError("No custom setting found.")
-	except Exception as err:  # pylint: disable=broad-except
-		logger.debug("Failed to set MAX LOG SIZE from config: %s", err)
+	except Exception as max_log_err:  # pylint: disable=broad-except
+		logger.debug("Failed to set MAX LOG SIZE from config: %s", max_log_err)
 
 
 class ConfigDataBackend(Backend):  # pylint: disable=too-many-public-methods
@@ -222,9 +222,7 @@ overwrite the log.
 			logWriteMode = "a"
 			if limitFileSize and os.path.exists(logFile):
 				currentLogSize = os.stat(logFile).st_size
-				amountToReadFromLog = self._maxLogfileSize - len(data)
-				if amountToReadFromLog < 0:
-					amountToReadFromLog = 0
+				amountToReadFromLog = max(self._maxLogfileSize - len(data), 0)
 				if 0 <= amountToReadFromLog < currentLogSize:
 					logWriteMode = "w"
 					with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
@@ -362,6 +360,10 @@ depot where the method is.
 		"""
 		username = forceUnicodeLower(username)
 		password = forceUnicode(password)
+		secret_filter.add_secrets(password)
+
+		if '"' in password:
+			raise ValueError("Character '\"' not allowed in password")
 
 		try:
 			depot = self._context.host_getObjects(id=self._depotId)
@@ -376,12 +378,12 @@ depot where the method is.
 		try:
 			for line in cf.readlines():
 				match = _PASSWD_LINE_REGEX.search(line)
-				if not match or (match.group(1) != username):
+				if not match or match.group(1) != username:
 					lines.append(line.rstrip())
 		except FileNotFoundError:
 			pass
 
-		lines.append('%s:%s' % (username, encodedPassword))
+		lines.append(f'{username}:{encodedPassword}')
 		cf.open('w')
 		cf.writelines(lines)
 		cf.close()
@@ -458,7 +460,7 @@ depot where the method is.
 					softwareLicense.boundToHost = None
 					self._context.softwareLicense_insertObject(softwareLicense)
 
-	def host_getTLSCertificate(self, hostId: str) -> str:  # pylint: disable=invalid-name
+	def host_getTLSCertificate(self, hostId: str) -> str:  # pylint: disable=invalid-name,unused-argument,no-self-use
 		return None
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1071,7 +1073,7 @@ depot where the method is.
 		except Exception as err:  # pylint: disable=broad-except
 			logger.error("Failed to read translation file for language %s: %s", language, err)
 
-		def __inheritFromSuperClasses(classes, _class, scname=None):
+		def __inheritFromSuperClasses(classes, _class, scname=None):  # pylint: disable=unused-private-member
 			if not scname:  # pylint: disable=too-many-nested-blocks
 				for _scname in _class['Class'].get('Super', []):
 					__inheritFromSuperClasses(classes, _class, _scname)
