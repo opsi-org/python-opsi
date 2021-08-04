@@ -168,19 +168,25 @@ class OpsiPackageUpdater:
 			for repository, downloadablePackages in packages_per_repository.items():
 				with self.makeSession(repository) as session:
 					for availablePackage in downloadablePackages:
-						product = self.get_installed_package(availablePackage, installedProducts)
+						try:
+							product = self.get_installed_package(availablePackage, installedProducts)
 
-						if not self.is_install_needed(availablePackage, product):
-							continue
+							if not self.is_install_needed(availablePackage, product):
+								continue
 
-						localPackageFound = self.get_local_package(availablePackage, localPackages)
-						zsync = availablePackage['repository'].baseUrl.split(':')[0].lower().endswith('s')
-						packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
-						if self.is_download_needed(localPackageFound, availablePackage, notifier=None):
-							self.get_package(availablePackage, localPackageFound, session,  zsync=zsync, notifier=notifier)
-						self._verifyDownloadedPackage(packageFile, availablePackage, session, zsync, notifier)
-						newPackages.append(availablePackage)
-
+							localPackageFound = self.get_local_package(availablePackage, localPackages)
+							zsync = availablePackage['repository'].baseUrl.split(':')[0].lower().endswith('s')
+							packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
+							if self.is_download_needed(localPackageFound, availablePackage, notifier=None):
+								self.get_package(availablePackage, localPackageFound, session,  zsync=zsync, notifier=None)
+							self._verifyDownloadedPackage(packageFile, availablePackage, session, zsync, notifier)
+							newPackages.append(availablePackage)
+						except Exception as exc: # pylint: disable=broad-except
+							if self.config.get("ignoreErrors"):
+								logger.error("Ignoring Error for package %s: %s", availablePackage["productId"], exc, exc_info=True)
+								notifier.appendLine(f"Ignoring Error for package {availablePackage['productId']}: {exc}")
+							else:
+								raise exc
 			if not newPackages:
 				logger.notice("No new packages available")
 				return
@@ -260,50 +266,60 @@ class OpsiPackageUpdater:
 				if package['repository'].onlyDownload:
 					continue
 
-				propertyDefaultValues = {}
 				try:
-					if package['repository'].inheritProductProperties and package['repository'].opsiDepotId:
-						logger.info("Trying to get product property defaults from repository")
-						productPropertyStates = backend.productPropertyState_getObjects(  # pylint: disable=no-member
-							productId=package['productId'],
-							objectId=package['repository'].opsiDepotId
-						)
-					else:
-						productPropertyStates = backend.productPropertyState_getObjects(  # pylint: disable=no-member
-							productId=package['productId'],
-							objectId=self.depotId
-						)
-					if productPropertyStates:
-						for pps in productPropertyStates:
-							propertyDefaultValues[pps.propertyId] = pps.values
-					logger.notice("Using product property defaults: %s", propertyDefaultValues)
-				except Exception as err:  # pylint: disable=broad-except
-					logger.warning("Failed to get product property defaults: %s", err)
+					propertyDefaultValues = {}
+					try:
+						if package['repository'].inheritProductProperties and package['repository'].opsiDepotId:
+							logger.info("Trying to get product property defaults from repository")
+							productPropertyStates = backend.productPropertyState_getObjects(  # pylint: disable=no-member
+								productId=package['productId'],
+								objectId=package['repository'].opsiDepotId
+							)
+						else:
+							productPropertyStates = backend.productPropertyState_getObjects(  # pylint: disable=no-member
+								productId=package['productId'],
+								objectId=self.depotId
+							)
+						if productPropertyStates:
+							for pps in productPropertyStates:
+								propertyDefaultValues[pps.propertyId] = pps.values
+						logger.notice("Using product property defaults: %s", propertyDefaultValues)
+					except Exception as err:  # pylint: disable=broad-except
+						logger.warning("Failed to get product property defaults: %s", err)
 
-				logger.info("Installing package '%s'", packageFile)
-				backend.depot_installPackage(  # pylint: disable=no-member
-					filename=packageFile,
-					propertyDefaultValues=propertyDefaultValues,
-					tempDir=self.config.get('tempdir', '/tmp')
-				)
-				productOnDepots = backend.productOnDepot_getObjects(  # pylint: disable=no-member
-					depotId=self.depotId,
-					productId=package['productId']
-				)
-				if not productOnDepots:
-					raise ValueError(
-						f"Product '{package['productId']}' not found on depot '{self.depotId}' after installation"
+					logger.info("Installing package '%s'", packageFile)
+					backend.depot_installPackage(  # pylint: disable=no-member
+						filename=packageFile,
+						propertyDefaultValues=propertyDefaultValues,
+						tempDir=self.config.get('tempdir', '/tmp')
 					)
-				package['product'] = backend.product_getObjects(  # pylint: disable=no-member
-					id=productOnDepots[0].productId,
-					productVersion=productOnDepots[0].productVersion,
-					packageVersion=productOnDepots[0].packageVersion
-				)[0]
+					productOnDepots = backend.productOnDepot_getObjects(  # pylint: disable=no-member
+						depotId=self.depotId,
+						productId=package['productId']
+					)
+					if not productOnDepots:
+						raise ValueError(
+							f"Product '{package['productId']}' not found on depot '{self.depotId}' after installation"
+						)
+					package['product'] = backend.product_getObjects(  # pylint: disable=no-member
+						id=productOnDepots[0].productId,
+						productVersion=productOnDepots[0].productVersion,
+						packageVersion=productOnDepots[0].packageVersion
+					)[0]
 
-				message = f"Package '{packageFile}' successfully installed"
-				notifier.appendLine(message, pre='\n')
-				logger.notice(message)
-				installedPackages.append(package)
+					message = f"Package '{packageFile}' successfully installed"
+					notifier.appendLine(message, pre='\n')
+					logger.notice(message)
+					installedPackages.append(package)
+
+				except Exception as exc: # pylint: disable=broad-except
+					logger.devel("ignoreErrors = %s", self.config.get("ignoreErrors"))
+					if self.config.get("ignoreErrors"):
+						logger.error("Ignoring Error for package %s: %s", availablePackage["productId"], exc, exc_info=True)
+						notifier.appendLine(f"Ignoring Error for package {availablePackage['productId']}: {exc}")
+					else:
+						raise exc
+
 
 			if not installedPackages:
 				logger.notice("No new packages installed")
@@ -631,15 +647,22 @@ class OpsiPackageUpdater:
 			for repository, downloadablePackages in packages_per_repository.items():
 				with self.makeSession(repository) as session:
 					for availablePackage in downloadablePackages:
-						#This ís called to keep the logs consistent
-						_ = self.get_installed_package(availablePackage, installedProducts)
-						localPackageFound = self.get_local_package(availablePackage, localPackages)
-						zsync = availablePackage['repository'].baseUrl.split(':')[0].lower().endswith('s')
-						packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
-						if self.is_download_needed(localPackageFound, availablePackage, notifier=notifier):
-							self.get_package(availablePackage, localPackageFound, session,  zsync=zsync, notifier=notifier)
-						self._verifyDownloadedPackage(packageFile, availablePackage, session, zsync, notifier)
-						newPackages.append(availablePackage)
+						try:
+							#This ís called to keep the logs consistent
+							_ = self.get_installed_package(availablePackage, installedProducts)
+							localPackageFound = self.get_local_package(availablePackage, localPackages)
+							zsync = availablePackage['repository'].baseUrl.split(':')[0].lower().endswith('s')
+							packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
+							if self.is_download_needed(localPackageFound, availablePackage, notifier=notifier):
+								self.get_package(availablePackage, localPackageFound, session, zsync=zsync, notifier=notifier)
+							self._verifyDownloadedPackage(packageFile, availablePackage, session, zsync, notifier)
+							newPackages.append(availablePackage)
+						except Exception as exc: # pylint: disable=broad-except
+							if self.config.get("ignoreErrors"):
+								logger.error("Ignoring Error for package %s: %s", availablePackage["productId"], exc, exc_info=True)
+								notifier.appendLine(f"Ignoring Error for package {availablePackage['productId']}: {exc}")
+							else:
+								raise exc
 
 			if not newPackages:
 				logger.notice("No new packages downloaded")

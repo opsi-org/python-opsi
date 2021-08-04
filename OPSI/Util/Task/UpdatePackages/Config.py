@@ -57,6 +57,7 @@ DEFAULT_CONFIG = {
 	"forceChecksumCalculation": False,
 	"forceDownload": False,
 	"proxy": None,
+	"ignoreErrors" : False
 }
 
 logger = Logger()
@@ -129,6 +130,8 @@ overriden based on values in configuration file.
 							config["repositoryConfigDir"] = value.strip()
 						elif option.lower() == 'proxy' and value.strip():
 							config["proxy"] = forceUrl(value.strip())
+						elif option.lower() == 'ignoreerrors' and value.strip():
+							config["ignoreErrors"] = forceBool(value.strip())
 
 				elif section.lower() == 'notification':
 					for (option, value) in configIni.items(section):
