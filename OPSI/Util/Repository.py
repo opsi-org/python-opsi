@@ -386,7 +386,6 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 		self._bytesTransfered = 0
 
 		self._hooks = []
-		self._observers = []
 		self._transferDirection = None
 		self.speed_limiter = SpeedLimiter()
 		self.speed_limiter.set_bandwidth(self._maxBandwidth, self._dynamicBandwidth)
@@ -416,22 +415,6 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 			self._hooks.remove(hook)
 		except ValueError:  # element not in list
 			pass
-
-	def attachObserver(self, observer):
-		if observer not in self._observers:
-			self._observers.append(observer)
-
-	def detachObserver(self, observer):
-		if observer in self._observers:
-			self._observers.remove(observer)
-
-	def _fireEvent(self, event, *args):
-		for obs in self._observers:
-			try:
-				meth = getattr(obs, event)
-				meth(self, *args)
-			except Exception as err:  # pylint: disable=broad-except
-				logger.error(err)
 
 	def _transferDown(self, src, dst, size, progressSubject=None):  # pylint: disable=redefined-builtin
 		return self._transfer('in', src, dst, size, progressSubject)
