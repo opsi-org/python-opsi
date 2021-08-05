@@ -52,9 +52,12 @@ def start_httpserver():
 	Handler = http.server.SimpleHTTPRequestHandler
 
 	httpd = socketserver.TCPServer(("", PORT), Handler)
-	httpd.socket = ssl.wrap_socket (httpd.socket,
-        keyfile="tests/testopsicommon/data/ssl/test-server.key",
-        certfile="tests/testopsicommon/data/ssl/test-server.crt", server_side=True)
+	httpd.socket = ssl.wrap_socket(
+		httpd.socket,
+		keyfile="tests/testopsicommon/data/ssl/test-server.key",
+		certfile="tests/testopsicommon/data/ssl/test-server.crt",
+		server_side=True
+	)
 	thread = threading.Thread(target = httpd.serve_forever)
 	thread.daemon = True
 	thread.start()
@@ -63,10 +66,7 @@ def start_httpserver():
 	httpd.shutdown()
 
 
-
-
 def test_curl(start_httpserver):
-
 	time.sleep(5)
 
 	with open("tests/testopsicommon/data/ssl/ca.crt", "rb") as file:
