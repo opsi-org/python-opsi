@@ -6,11 +6,18 @@
 This file is part of opsi - https://www.opsi.org
 """
 
+import codecs
 import json
-from datetime import date
+from datetime import date, timedelta
 import pytest
 
-from opsicommon.license import OpsiLicense, read_license_files
+from opsicommon.license import (
+	OpsiLicense, OpsiModulesFile, read_license_files,
+	OPSI_LICENSE_VALIDITY_VALID,
+	#OPSI_LICENSE_VALIDITY_INVALID,
+	OPSI_LICENSE_VALIDITY_EXPIRED,
+	OPSI_LICENSE_VALIDITY_NOT_YET_VALID
+)
 
 LIC1 = {
 	"id": "1bf8e14c-1faf-4288-a468-d92e1ee2dd8b",
@@ -30,6 +37,7 @@ LIC1 = {
 		"cc4e2986-d28d-4bef-807b-a74ba9a8df04"
 	],
 	"note": "Some notes",
+	"additional_data": None,
 	"signature": "0102030405060708090a0b0c0d0e"
 }
 
@@ -109,10 +117,11 @@ def test_opsi_license_to_json():
 
 def test_opsi_license_hash():
 	lic = OpsiLicense(**LIC1)
-	assert lic.get_hash() == (
-		"a6d230ccff32d3f1aba8f934d47ea3b2c66134e1f9b3753b6eacbd629ee8f3fb"
-		"f3a96f1473870d7e0432b7b6f1881d3d729660880ab3dc3e8ba69355428d503f"
+	assert lic.get_hash(hex_digest=True) == (
+		"b6866801918a96788ab9735bef2ef8894a666786ee1318484f6db23c4da9b8c5"
+		"4f8a35bdcedff9e1fe32c070a314f7ba691b7081aba6e7b85927483dc2a3d3e6"
 	)
+
 
 def test_read_license_files():
 	licenses = list(read_license_files("tests/testopsicommon/data/license/test1.opsilic"))
@@ -125,3 +134,52 @@ def test_read_license_files():
 	assert "e7f707a7-c184-45e2-a477-27dbf5516b1c" in [lic.id for lic in licenses]
 	assert "707ef1b7-6139-4ec4-b60d-8480ce6dae34" in [lic.id for lic in licenses]
 	assert "7cf9ef7e-6e6f-43f5-8b52-7c4e582ff6f1" in [lic.id for lic in licenses]
+
+
+def test_license_validity():
+	########lic = OpsiLicense(**LIC1)
+
+	omf = OpsiModulesFile("tests/testopsicommon/data/license/modules")
+	omf.read()
+	lic = omf.licenses[0]
+
+	lic.valid_from = date.today() - timedelta(days=10)
+
+	lic.valid_until = date.today()
+	assert lic.get_validity() == OPSI_LICENSE_VALIDITY_VALID
+
+	lic.valid_until = date.today() - timedelta(days=1)
+	assert lic.get_validity() == OPSI_LICENSE_VALIDITY_VALID
+
+	lic.valid_until = date.today() + timedelta(days=1)
+	assert lic.get_validity() == OPSI_LICENSE_VALIDITY_EXPIRED
+
+	lic.valid_from = date.today() + timedelta(days=1)
+	assert lic.get_validity() == OPSI_LICENSE_VALIDITY_NOT_YET_VALID
+
+
+def test_opsi_modules_file():
+	modules_file = "tests/testopsicommon/data/license/modules"
+
+	modules = {}
+	expires = None
+	with codecs.open(modules_file, "r", "utf-8") as file:
+		for line in file:
+			key, val = line.lower().split("=", 1)
+			key = key.strip()
+			val = val.strip()
+			if key == "expires":
+				expires = date.fromisoformat(val)
+			elif key not in ("signature", "customer") and val != "no":
+				modules[key] = val
+
+	omf = OpsiModulesFile(modules_file)
+	omf.read()
+	assert len(modules) == len(omf.licenses)
+	for lic in omf.licenses:
+		assert lic.module_id in modules
+		assert lic.valid_until == expires
+		client_number = 999999999
+		if modules[lic.module_id] != "yes":
+			client_number = int(modules[lic.module_id])
+		assert lic.client_number == client_number

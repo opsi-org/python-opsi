@@ -11,15 +11,38 @@ import os
 import ast
 import glob
 import json
-import typing
 import uuid
-import hashlib
+import typing
+import struct
+import base64
+import codecs
 import configparser
+from functools import lru_cache
 from datetime import date
 import attr
+try:
+	# pyright: reportMissingImports=false
+	# python3-pycryptodome installs into Cryptodome
+	from Cryptodome.Hash import MD5, SHA3_512
+	from Cryptodome.PublicKey import RSA
+	from Cryptodome.Util.number import bytes_to_long
+	from Cryptodome.Signature import pkcs1_15
+except ImportError:
+	# PyCryptodome from pypi installs into Crypto
+	from Crypto.Hash import MD5, SHA3_512
+	from Crypto.PublicKey import RSA
+	from Crypto.Util.number import bytes_to_long
+	from Crypto.Signature import pkcs1_15
 
-OPSI_LICENSE_TYPES = ("core", "standard")
 OPSI_LICENCE_ID_REGEX = re.compile(r"[a-zA-Z0-9\-_]{10,}")
+
+OPSI_LICENSE_TYPE_CORE = "core"
+OPSI_LICENSE_TYPE_STANDARD = "standard"
+
+OPSI_LICENSE_VALIDITY_VALID = "valid"
+OPSI_LICENSE_VALIDITY_INVALID = "invalid"
+OPSI_LICENSE_VALIDITY_EXPIRED = "expired"
+OPSI_LICENSE_VALIDITY_NOT_YET_VALID = "not_yet_valid"
 
 
 def _str2date(value) -> date:
@@ -33,6 +56,26 @@ def _hexstr2bytes(value) -> bytes:
 		return bytes.fromhex(value)
 	return value
 
+@lru_cache
+def get_signature_public_key():
+	data = base64.decodebytes(
+		b"AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDo"
+		b"jY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8"
+		b"S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDU"
+		b"lk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP"
+	)
+
+	# Key type can be found in 4:11.
+	rest = data[11:]
+	count = 0
+	mp = []
+	for _ in range(2):
+		length = struct.unpack('>L', rest[count:count + 4])[0]
+		mp.append(bytes_to_long(rest[count + 4:count + 4 + length]))
+		count += 4 + length
+
+	return RSA.construct((mp[1], mp[0]))
+
 @attr.s(slots=True, auto_attribs=True, kw_only=True)
 class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-attributes
 	id: str = attr.ib( # pylint: disable=invalid-name
@@ -41,8 +84,8 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 	)
 
 	type: str = attr.ib(
-		default="standard",
-		validator=attr.validators.in_(OPSI_LICENSE_TYPES)
+		default=OPSI_LICENSE_TYPE_STANDARD,
+		validator=attr.validators.in_((OPSI_LICENSE_TYPE_CORE, OPSI_LICENSE_TYPE_STANDARD))
 	)
 
 	schema_version: int = attr.ib(
@@ -59,7 +102,9 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 		validator=attr.validators.matches_re(r"\d+\.\d+")
 	)
 
-	customer_id: str = attr.ib()
+	customer_id: str = attr.ib(
+		default=None
+	)
 	@customer_id.validator
 	def validate_customer_id(self, attribute, value):
 		if self.schema_version > 1 and not re.match(r"[a-zA-Z0-9\-_]{5,}", value):
@@ -69,7 +114,9 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 		validator=attr.validators.matches_re(r"\S.*\S")
 	)
 
-	customer_address: str = attr.ib()
+	customer_address: str = attr.ib(
+		default=None
+	)
 	@customer_address.validator
 	def validate_customer_address(self, attribute, value):
 		if self.schema_version > 1 and not re.match(r"\S.*\S", value):
@@ -127,6 +174,10 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 		converter=_hexstr2bytes,
 	)
 
+	additional_data: str = attr.ib(
+		default=None
+	)
+
 	def to_json(self):
 		res = attr.asdict(self)
 		res["issued_at"] = str(res["issued_at"])
@@ -136,8 +187,36 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 			res["signature"] = res["signature"].hex()
 		return json.dumps(res)
 
-	def get_hash(self):
-		return hashlib.sha512(self.to_json().encode("utf-8")).hexdigest()
+	def get_hash(self, digest: bool = False, hex_digest: bool = False):
+		_hash = None
+		if self.schema_version == 1:
+			_hash = MD5.new(self.additional_data.encode("utf-8"))
+		else:
+			_hash = SHA3_512.new(self.to_json().encode("utf-8"))
+
+		if hex_digest:
+			return _hash.hexdigest()
+		if digest:
+			return _hash.digest()
+		return _hash
+
+	def get_validity(self):
+		public_key = get_signature_public_key()
+		_hash = self.get_hash()
+		if self.schema_version == 1:
+			h_int = int.from_bytes(_hash.digest(), "big")
+			s_int = public_key._encrypt(int(self.signature.hex()))  # pylint: disable=protected-access
+			if h_int != s_int:
+				return OPSI_LICENSE_VALIDITY_INVALID
+		else:
+			#s_bytes = int(modules['signature'].split("}", 1)[-1]).to_bytes(256, "big")
+			pkcs1_15.new(public_key).verify(_hash, self.signature)
+
+		if (date.today() - self.valid_from).days < 0:
+			return OPSI_LICENSE_VALIDITY_NOT_YET_VALID
+		if (date.today() - self.valid_until).days < 0:
+			return OPSI_LICENSE_VALIDITY_EXPIRED
+		return OPSI_LICENSE_VALIDITY_VALID
 
 class OpsiLicenseFile:
 	def __init__(self, filename: str) -> None:
@@ -162,12 +241,87 @@ class OpsiLicenseFile:
 			self.add_license(OpsiLicense(**kwargs))
 
 
-def read_license_files(path: str) -> None:
+def read_license_files(path: str) -> typing.List[OpsiLicense]:
 	license_files = [path]
 	if os.path.isdir(path):
 		license_files = glob.glob(os.path.join(path, "*.opsilic"))
+
+	licenses = []
 	for license_file in license_files:
 		olf = OpsiLicenseFile(license_file)
 		olf.read()
 		for lic in olf.licenses:
-			yield lic
+			licenses.append(lic)
+	return licenses
+
+class OpsiModulesFile:  # pylint: disable=too-few-public-methods
+	def __init__(self, filename: str) -> None:
+		self.filename: str = filename
+		self._licenses: typing.Dict[str, OpsiLicense] = {}
+
+	@property
+	def licenses(self):
+		return list(self._licenses.values())
+
+	def add_license(self, opsi_license: OpsiLicense) -> None:
+		self._licenses[opsi_license.id] = opsi_license
+
+	def _read_raw_data(self):
+		data = {}
+		with codecs.open(self.filename, 'r', 'utf-8') as file:
+			for line in file:
+				line = line.strip()
+				if '=' not in line:
+					continue
+				(attribute, value) = line.split('=', 1)
+				attribute = attribute.strip().lower()
+				value = value.strip()
+				if attribute != "customer":
+					value = value.lower()
+				data[attribute] = value
+		return data
+
+	def read(self):
+		data = self._read_raw_data()
+		common_lic = {
+			"type": OPSI_LICENSE_TYPE_STANDARD,
+			"schema_version": 1,
+			"opsi_version": "4.1",
+			"additional_data": ""
+		}
+		modules = {}
+		for attribute in sorted(data):
+			value = data[attribute]
+			if attribute != "signature":
+				common_lic["additional_data"] += f"{attribute} = {value}\r\n"
+
+			if attribute == "signature":
+				common_lic["signature"] = value
+			elif attribute == "customer":
+				common_lic["customer_name"] = value
+			elif attribute == "expires":
+				if value == 'never':
+					value = "2999-12-31"
+				common_lic["valid_until"] = value
+			else:
+				module_id = attribute.lower()
+				client_number = 0
+				try:
+					client_number = int(value)
+				except ValueError:
+					if value == "yes":
+						client_number = 999999999
+				if client_number > 0:
+					modules[module_id] = client_number
+
+		for module_id, client_number in modules.items():
+			kwargs = dict(common_lic)
+			kwargs["module_id"] = module_id
+			kwargs["client_number"] = client_number
+			self.add_license(OpsiLicense(**kwargs))
+
+
+def read_modules_file(filename: str) -> typing.List[OpsiLicense]:
+	omf = OpsiModulesFile(filename)
+	omf.read()
+	return omf.licenses
