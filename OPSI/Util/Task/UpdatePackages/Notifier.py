@@ -31,8 +31,8 @@ class BaseNotifier(object):
 		:param pre: Prefix that will be added before the timestampt and text.
 		:type pre: str
 		"""
-		now = time.strftime(u"%b %d %H:%M:%S", time.localtime())
-		self.message += u'%s%s %s\n' % (pre, now, forceUnicode(line))
+		now = time.strftime("%b %d %H:%M:%S", time.localtime())
+		self.message += '%s%s %s\n' % (pre, now, forceUnicode(line))
 
 	def hasMessage(self):
 		"""
@@ -58,12 +58,12 @@ class EmailNotifier(BaseNotifier):
 	"""
 	Notify by sending an email.
 	"""
-	def __init__(self, smtphost=u'localhost', smtpport=25, subject=u'opsi product updater', sender=u'', receivers=[]):
+	def __init__(self, smtphost='localhost', smtpport=25, subject='opsi product updater', sender='', receivers=[]):
 		super(EmailNotifier, self).__init__()
 
 		self.receivers = forceUnicodeList(receivers)
 		if not self.receivers:
-			raise ValueError(u"List of mail recipients empty")
+			raise ValueError("List of mail recipients empty")
 		self.smtphost = forceUnicode(smtphost)
 		self.smtpport = forceInt(smtpport)
 		self.sender = forceUnicode(sender)
@@ -72,14 +72,18 @@ class EmailNotifier(BaseNotifier):
 		self.password = None
 		self.useStarttls = False
 
+	def setSubject(self, new_subject):
+		logger.info("Setting new subject %s", new_subject)
+		self.subject = forceUnicode(new_subject)
+
 	def notify(self):
-		logger.notice(u"Sending mail notification")
-		mail = u'From: %s\n' % self.sender
-		mail += u'To: %s\n' % u','.join(self.receivers)
-		mail += u'Date: {0}\n'.format(email.utils.formatdate(localtime=True))
-		mail += u'Subject: %s\n' % self.subject
-		mail += u'\n'
-		# mail += _(u"opsi product updater carried out the following actions:") + u"\n"
+		logger.notice("Sending mail notification")
+		mail = f'From: {self.sender}\n'
+		mail += f'To: {",".join(self.receivers)}\n'
+		mail += f'Date: {email.utils.formatdate(localtime=True)}\n'
+		mail += f'Subject: {self.subject}\n'
+		mail += '\n'
+		# mail += _("opsi product updater carried out the following actions:") + "\n"
 		mail += self.message
 		smtpObj = None
 		try:
@@ -95,28 +99,26 @@ class EmailNotifier(BaseNotifier):
 
 			if self.username and self.password is not None:
 				logger.debug(
-					'Trying to authenticate against SMTP server '
-					'{host}:{port} as user "{username}"'.format(
-						host=self.smtphost,
-						port=self.smtpport,
-						username=self.username
-					)
+					'Trying to authenticate against SMTP server %s:%s as user "%s"',
+					self.smtphost,
+					self.smtpport,
+					self.username
 				)
 				smtpObj.login(self.username, self.password)
 				smtpObj.ehlo_or_helo_if_needed()
 
 			smtpObj.sendmail(self.sender, self.receivers, mail)
-			logger.debug(u"SMTP-Host: '%s' SMTP-Port: '%s'" % (self.smtphost, self.smtpport))
-			logger.debug(u"Sender: '%s' Reveivers: '%s' Message: '%s'" % (self.sender, self.receivers, mail))
-			logger.notice(u"Email successfully sent")
+			logger.debug("SMTP-Host: '%s' SMTP-Port: '%s'", self.smtphost, self.smtpport)
+			logger.debug("Sender: '%s' Reveivers: '%s' Message: '%s'", self.sender, self.receivers, mail)
+			logger.notice("Email successfully sent")
 			smtpObj.quit()
 		except Exception as error:
 			if smtpObj is not None:
-				logger.debug('SMTP Server does esmtp: {0}'.format(smtpObj.does_esmtp))
+				logger.debug('SMTP Server does esmtp: %s', smtpObj.does_esmtp)
 				if hasattr(smtpObj, 'ehlo_resp'):
-					logger.debug('SMTP EHLO response: {0}'.format(smtpObj.ehlo_resp))
+					logger.debug('SMTP EHLO response: %s', smtpObj.ehlo_resp)
 
 				if hasattr(smtpObj, 'esmtp_features'):
-					logger.debug('ESMTP Features: {0}'.format(smtpObj.esmtp_features))
+					logger.debug('ESMTP Features: %s', smtpObj.esmtp_features)
 
-			raise RuntimeError(u"Failed to send email using smtp server '%s': %s" % (self.smtphost, error))
+			raise RuntimeError(f"Failed to send email using smtp server '{self.smtphost}': {error}")
