@@ -47,6 +47,8 @@ OPSI_LICENSE_STATE_NOT_YET_VALID = "not_yet_valid"
 OPSI_LICENSE_STATE_REVOKED = "revoked"
 OPSI_LICENSE_STATE_REPLACED_BY_NON_CORE = "replaced_by_non_core"
 
+OPSI_LICENSE_DATE_UNLIMITED = date.fromisoformat("9999-12-31")
+OPSI_LICENSE_CLIENT_NUMBER_UNLIMITED = 999999999
 
 def _str2date(value) -> date:
 	if isinstance(value, str):
@@ -153,7 +155,6 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 		validator=attr.validators.matches_re(r"[a-z0-9\-_]+")
 	)
 
-	# client_number: 999999999 = unlimited
 	client_number: int = attr.ib(
 		converter=int,
 		validator=attr.validators.instance_of(int)
@@ -169,7 +170,6 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 		validator=attr.validators.instance_of(date)
 	)
 
-	# valid_from: 9999-12-31 = unlimited
 	valid_from: date = attr.ib(
 		factory=date.today,
 		converter=_str2date,
@@ -375,7 +375,7 @@ class OpsiModulesFile:  # pylint: disable=too-few-public-methods
 					client_number = int(value)
 				except ValueError:
 					if value == "yes":
-						client_number = 999999999
+						client_number = OPSI_LICENSE_CLIENT_NUMBER_UNLIMITED
 				if client_number > 0:
 					modules[module_id] = client_number
 
@@ -417,6 +417,16 @@ class OpsiLicensePool:
 					revoked_ids.add(revoked_id)
 		return revoked_ids
 
+	def get_dates(self) -> typing.Set[date]:
+		dates = set()
+		for lic in self.get_licenses():
+			if lic.get_state() != OPSI_LICENSE_STATE_INVALID_SIGNATURE:
+				if lic.valid_from != OPSI_LICENSE_DATE_UNLIMITED:
+					dates.add(lic.valid_from)
+				if lic.valid_until != OPSI_LICENSE_DATE_UNLIMITED:
+					dates.add(lic.valid_until)
+		return sorted(dates)
+
 	def _read_license_files(self) -> None:
 		license_files = [self.license_file_path]
 		if os.path.isdir(self.license_file_path):
@@ -441,4 +451,3 @@ class OpsiLicensePool:
 
 
 default_opsi_license_pool = OpsiLicensePool()
-
