@@ -10,10 +10,13 @@ import codecs
 import json
 import pathlib
 from datetime import date, timedelta
+from unittest import mock
 import pytest
 
 from opsicommon.license import (
-	OPSI_LICENSE_STATE_REPLACED_BY_NON_CORE, OpsiLicense, OpsiModulesFile, OpsiLicensePool,
+	generate_key_pair,
+	OpsiLicense, OpsiModulesFile, OpsiLicensePool,
+	OPSI_LICENSE_STATE_REPLACED_BY_NON_CORE,
 	OPSI_LICENSE_STATE_VALID,
 	OPSI_LICENSE_STATE_INVALID_SIGNATURE,
 	OPSI_LICENSE_STATE_EXPIRED,
@@ -57,6 +60,27 @@ def _read_modules_file(modules_file):
 			elif key not in ("signature", "customer") and val != "no":
 				modules[key] = val
 	return modules, expires
+
+
+def test_generate_key_pair():
+	private_key, public_key = generate_key_pair(return_pem=False)
+	assert private_key.has_private()
+	assert not public_key.has_private()
+
+	private_key, public_key = generate_key_pair(return_pem=True)
+	assert "-----BEGIN RSA PRIVATE KEY-----" in private_key
+	assert "-----BEGIN PUBLIC KEY-----" in public_key
+
+
+def test_sign_opsi_license():
+	private_key, public_key = generate_key_pair(return_pem=False)
+	with mock.patch('opsicommon.license.get_signature_public_key', lambda x: public_key):
+		lic = OpsiLicense(**LIC1)
+		lic.valid_from = lic.valid_until = date.today()
+		assert lic.get_state() == OPSI_LICENSE_STATE_INVALID_SIGNATURE
+		lic.sign(private_key)
+		assert lic.get_state() == OPSI_LICENSE_STATE_VALID
+
 
 def test_opsi_license_defaults():
 	lic = OpsiLicense(
@@ -139,8 +163,8 @@ def test_opsi_license_to_from_json():
 def test_opsi_license_hash():
 	lic = OpsiLicense(**LIC1)
 	assert lic.get_hash(hex_digest=True) == (
-		"b6866801918a96788ab9735bef2ef8894a666786ee1318484f6db23c4da9b8c5"
-		"4f8a35bdcedff9e1fe32c070a314f7ba691b7081aba6e7b85927483dc2a3d3e6"
+		"0fcaaf45f961fedded227d9776bc597e253cb07640e1de9300f9c1c7d981c80e"
+		"9685cd32e86fb7aabbb35334dfda6d01787056cec5114a13a7c8fb2ea9b87f78"
 	)
 
 
@@ -222,9 +246,12 @@ def test_license_state_replaced_by_non_core():
 		license_file_path="tests/testopsicommon/data/license"
 	)
 	olp.load()
-	for lic in olp.licenses:
-		if lic.type == OPSI_LICENSE_TYPE_CORE:
-			assert lic.get_state() == OPSI_LICENSE_STATE_REPLACED_BY_NON_CORE
+	private_key, public_key = generate_key_pair(return_pem=False)
+	with mock.patch('opsicommon.license.get_signature_public_key', lambda x: public_key):
+		for lic in olp.licenses:
+			lic.sign(private_key)
+			if lic.type == OPSI_LICENSE_TYPE_CORE:
+				assert lic.get_state() == OPSI_LICENSE_STATE_REPLACED_BY_NON_CORE
 
 
 def test_license_state_revoked():
@@ -232,9 +259,12 @@ def test_license_state_revoked():
 		license_file_path="tests/testopsicommon/data/license"
 	)
 	olp.load()
-	for lic in olp.licenses:
-		if lic.id == "c6af25cf-62e4-4b90-8f4b-21c542d8b74b":
-			assert lic.get_state() == OPSI_LICENSE_STATE_REVOKED
+	private_key, public_key = generate_key_pair(return_pem=False)
+	with mock.patch('opsicommon.license.get_signature_public_key', lambda x: public_key):
+		for lic in olp.licenses:
+			lic.sign(private_key)
+			if lic.id == "c6af25cf-62e4-4b90-8f4b-21c542d8b74b":
+				assert lic.get_state() == OPSI_LICENSE_STATE_REVOKED
 
 
 def test_opsi_modules_file():

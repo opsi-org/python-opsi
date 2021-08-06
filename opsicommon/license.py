@@ -26,13 +26,13 @@ try:
 	from Cryptodome.Hash import MD5, SHA3_512
 	from Cryptodome.PublicKey import RSA
 	from Cryptodome.Util.number import bytes_to_long
-	from Cryptodome.Signature import pkcs1_15
+	from Cryptodome.Signature import pss
 except ImportError:
 	# PyCryptodome from pypi installs into Crypto
 	from Crypto.Hash import MD5, SHA3_512
 	from Crypto.PublicKey import RSA
 	from Crypto.Util.number import bytes_to_long
-	from Crypto.Signature import pkcs1_15
+	from Crypto.Signature import pss
 
 
 OPSI_LICENCE_ID_REGEX = re.compile(r"[a-zA-Z0-9\-_]{10,}")
@@ -59,25 +59,49 @@ def _hexstr2bytes(value) -> bytes:
 		return bytes.fromhex(value)
 	return value
 
+
+def generate_key_pair(bits: int = 2048, return_pem: int = False) -> typing.List[str]:
+	key = RSA.generate(bits=bits)
+	if not return_pem:
+		return key, key.publickey()
+
+	private_key = key.export_key()
+	public_key = key.publickey().export_key()
+	return private_key.decode(), public_key.decode()
+
+
 @lru_cache
-def get_signature_public_key():
-	data = base64.decodebytes(
-		b"AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDo"
-		b"jY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8"
-		b"S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDU"
-		b"lk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP"
+def get_signature_public_key(schema_version: int):
+	if schema_version < 2:
+		data = base64.decodebytes(
+			b"AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDo"
+			b"jY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8"
+			b"S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDU"
+			b"lk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP"
+		)
+
+		# Key type can be found in 4:11.
+		rest = data[11:]
+		count = 0
+		mp = []
+		for _ in range(2):
+			length = struct.unpack('>L', rest[count:count + 4])[0]
+			mp.append(bytes_to_long(rest[count + 4:count + 4 + length]))
+			count += 4 + length
+
+		return RSA.construct((mp[1], mp[0]))
+
+	return RSA.import_key(
+		"-----BEGIN PUBLIC KEY-----\n"
+		"MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr6FLWzpAyZP43Y6VeDKu\n"
+		"vmxg3OWCXxG0sAV9dXQ/o6cSq5xQyIv+aFbivtYmNjcH370bYjK7+sQ69fPH3x9t\n"
+		"73t6c5ntpxQoIDDhgcnjp22TfNYEJDhH9YPXdJDdPJUjUBML+9vWq7YTgx7gCK3f\n"
+		"EBjGC3UsZ4oDWdkoO65JO2cqBRDz8gvfpQuqne7XU3FwUfVTh5hrADbf7lZ/VMQU\n"
+		"UQnqE2RwMvL43jSGZvZiIMfDua/l0oXLrpxqOLS9qS33zhwmx9sVt5dkbZQH/cRV\n"
+		"yqkdwMLbYmg9jMaYrF7/UWUG757c/fZyaY2yCESUXN3obiCXza6DNEOSqa49Hb9A\n"
+		"DQIDAQAB\n"
+		"-----END PUBLIC KEY-----\n"
 	)
-
-	# Key type can be found in 4:11.
-	rest = data[11:]
-	count = 0
-	mp = []
-	for _ in range(2):
-		length = struct.unpack('>L', rest[count:count + 4])[0]
-		mp.append(bytes_to_long(rest[count + 4:count + 4 + length]))
-		count += 4 + length
-
-	return RSA.construct((mp[1], mp[0]))
 
 @attr.s(slots=True, auto_attribs=True, kw_only=True)
 class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-attributes
@@ -215,7 +239,16 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 		if self.schema_version == 1:
 			_hash = MD5.new(self.additional_data.encode("utf-8"))
 		else:
-			_hash = SHA3_512.new(self.to_json().encode("utf-8"))
+			string = ""
+			data = self.to_dict(serializable=True)
+			for attribute in sorted(data):
+				if attribute == "signature":
+					continue
+				value = data[attribute]
+				if isinstance(value, list):
+					value = ",".join(sorted(value))
+				string += f"{attribute}={json.dumps(value)}\n"
+			_hash = SHA3_512.new(string.encode("utf-8"))
 
 		if hex_digest:
 			return _hash.hexdigest()
@@ -223,18 +256,19 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 			return _hash.digest()
 		return _hash
 
-	def get_state(self, test_revoked: bool = True) -> str:
-		public_key = get_signature_public_key()
+	def get_state(self, test_revoked: bool = True) -> str:  # pylint: disable=too-many-return-statements
 		_hash = self.get_hash()
+		public_key = get_signature_public_key(self.schema_version)
 		if self.schema_version == 1:
 			h_int = int.from_bytes(_hash.digest(), "big")
 			s_int = public_key._encrypt(int(self.signature.hex()))  # pylint: disable=protected-access
 			if h_int != s_int:
 				return OPSI_LICENSE_STATE_INVALID_SIGNATURE
 		else:
-			#s_bytes = int(modules['signature'].split("}", 1)[-1]).to_bytes(256, "big")
-			############pkcs1_15.new(public_key).verify(_hash, self.signature)
-			pass
+			try:
+				pss.new(public_key).verify(_hash, self.signature)
+			except (ValueError, TypeError):
+				return OPSI_LICENSE_STATE_INVALID_SIGNATURE
 
 		if self.type == OPSI_LICENSE_TYPE_CORE and self._license_pool:
 			for lic in self._license_pool.get_licenses(exclude_ids=[self.id], valid_only=True, test_revoked=False):
@@ -247,6 +281,13 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 		if (self.valid_until - date.today()).days < 0:
 			return OPSI_LICENSE_STATE_EXPIRED
 		return OPSI_LICENSE_STATE_VALID
+
+	def sign(self, private_key: typing.Union[RSA.RsaKey, str]):
+		if self.schema_version < 2:
+			raise NotImplementedError("Signing for schema_version < 2 not implemented")
+		if isinstance(private_key, str):
+			private_key = RSA.import_key(str.encode("ascii"))
+		self.signature = pss.new(private_key).sign(self.get_hash())
 
 class OpsiLicenseFile:
 	def __init__(self, filename: str) -> None:
