@@ -186,7 +186,7 @@ def test_limit_upload(tmpdir, repo_type):
 		end = time.time()
 
 		assert dst.read() == data
-		assert round(end - start) == round(seconds)
+		assert abs(round(end - start) - round(seconds)) <= 1
 
 	if repo_type.startswith(("http", "webdav")):
 		with http_file_server(dst_dir) as server:

@@ -8,15 +8,16 @@ This file is part of opsi - https://www.opsi.org
 
 import codecs
 import json
+import pathlib
 from datetime import date, timedelta
 import pytest
 
 from opsicommon.license import (
 	OpsiLicense, OpsiModulesFile, read_license_files,
-	OPSI_LICENSE_VALIDITY_VALID,
-	#OPSI_LICENSE_VALIDITY_INVALID,
-	OPSI_LICENSE_VALIDITY_EXPIRED,
-	OPSI_LICENSE_VALIDITY_NOT_YET_VALID
+	OPSI_LICENSE_STATE_VALID,
+	OPSI_LICENSE_STATE_INVALID_SIGNATURE,
+	OPSI_LICENSE_STATE_EXPIRED,
+	OPSI_LICENSE_STATE_NOT_YET_VALID
 )
 
 LIC1 = {
@@ -136,26 +137,36 @@ def test_read_license_files():
 	assert "7cf9ef7e-6e6f-43f5-8b52-7c4e582ff6f1" in [lic.id for lic in licenses]
 
 
-def test_license_validity():
+def test_license_state(tmp_path):
+	modules = pathlib.Path("tests/testopsicommon/data/license/modules").read_text()
 	########lic = OpsiLicense(**LIC1)
+	modules_file = tmp_path / "modules"
+	modules_file.write_text(modules)
 
-	omf = OpsiModulesFile("tests/testopsicommon/data/license/modules")
+	omf = OpsiModulesFile(str(modules_file))
 	omf.read()
 	lic = omf.licenses[0]
 
 	lic.valid_from = date.today() - timedelta(days=10)
 
 	lic.valid_until = date.today()
-	assert lic.get_validity() == OPSI_LICENSE_VALIDITY_VALID
+	assert lic.get_state() == OPSI_LICENSE_STATE_VALID
 
 	lic.valid_until = date.today() - timedelta(days=1)
-	assert lic.get_validity() == OPSI_LICENSE_VALIDITY_VALID
+	assert lic.get_state() == OPSI_LICENSE_STATE_VALID
 
 	lic.valid_until = date.today() + timedelta(days=1)
-	assert lic.get_validity() == OPSI_LICENSE_VALIDITY_EXPIRED
+	assert lic.get_state() == OPSI_LICENSE_STATE_EXPIRED
 
 	lic.valid_from = date.today() + timedelta(days=1)
-	assert lic.get_validity() == OPSI_LICENSE_VALIDITY_NOT_YET_VALID
+	assert lic.get_state() == OPSI_LICENSE_STATE_NOT_YET_VALID
+
+	modules = modules.replace("secureboot = 50", "secureboot = 100")
+	modules_file.write_text(modules)
+	omf.read()
+	lic = omf.licenses[0]
+
+	assert lic.get_state() == OPSI_LICENSE_STATE_INVALID_SIGNATURE
 
 
 def test_opsi_modules_file():

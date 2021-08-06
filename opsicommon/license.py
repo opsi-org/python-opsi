@@ -39,10 +39,10 @@ OPSI_LICENCE_ID_REGEX = re.compile(r"[a-zA-Z0-9\-_]{10,}")
 OPSI_LICENSE_TYPE_CORE = "core"
 OPSI_LICENSE_TYPE_STANDARD = "standard"
 
-OPSI_LICENSE_VALIDITY_VALID = "valid"
-OPSI_LICENSE_VALIDITY_INVALID = "invalid"
-OPSI_LICENSE_VALIDITY_EXPIRED = "expired"
-OPSI_LICENSE_VALIDITY_NOT_YET_VALID = "not_yet_valid"
+OPSI_LICENSE_STATE_VALID = "valid"
+OPSI_LICENSE_STATE_INVALID_SIGNATURE = "invalid_signature"
+OPSI_LICENSE_STATE_EXPIRED = "expired"
+OPSI_LICENSE_STATE_NOT_YET_VALID = "not_yet_valid"
 
 
 def _str2date(value) -> date:
@@ -200,23 +200,23 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 			return _hash.digest()
 		return _hash
 
-	def get_validity(self):
+	def get_state(self):
 		public_key = get_signature_public_key()
 		_hash = self.get_hash()
 		if self.schema_version == 1:
 			h_int = int.from_bytes(_hash.digest(), "big")
 			s_int = public_key._encrypt(int(self.signature.hex()))  # pylint: disable=protected-access
 			if h_int != s_int:
-				return OPSI_LICENSE_VALIDITY_INVALID
+				return OPSI_LICENSE_STATE_INVALID_SIGNATURE
 		else:
 			#s_bytes = int(modules['signature'].split("}", 1)[-1]).to_bytes(256, "big")
 			pkcs1_15.new(public_key).verify(_hash, self.signature)
 
 		if (date.today() - self.valid_from).days < 0:
-			return OPSI_LICENSE_VALIDITY_NOT_YET_VALID
+			return OPSI_LICENSE_STATE_NOT_YET_VALID
 		if (date.today() - self.valid_until).days < 0:
-			return OPSI_LICENSE_VALIDITY_EXPIRED
-		return OPSI_LICENSE_VALIDITY_VALID
+			return OPSI_LICENSE_STATE_EXPIRED
+		return OPSI_LICENSE_STATE_VALID
 
 class OpsiLicenseFile:
 	def __init__(self, filename: str) -> None:
@@ -316,6 +316,7 @@ class OpsiModulesFile:  # pylint: disable=too-few-public-methods
 
 		for module_id, client_number in modules.items():
 			kwargs = dict(common_lic)
+			kwargs["id"] = f"legacy-{module_id}"
 			kwargs["module_id"] = module_id
 			kwargs["client_number"] = client_number
 			self.add_license(OpsiLicense(**kwargs))
