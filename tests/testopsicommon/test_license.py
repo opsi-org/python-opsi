@@ -13,11 +13,13 @@ from datetime import date, timedelta
 import pytest
 
 from opsicommon.license import (
-	OpsiLicense, OpsiModulesFile, OpsiLicensePool,
+	OPSI_LICENSE_STATE_REPLACED_BY_NON_CORE, OpsiLicense, OpsiModulesFile, OpsiLicensePool,
 	OPSI_LICENSE_STATE_VALID,
 	OPSI_LICENSE_STATE_INVALID_SIGNATURE,
 	OPSI_LICENSE_STATE_EXPIRED,
-	OPSI_LICENSE_STATE_NOT_YET_VALID
+	OPSI_LICENSE_STATE_NOT_YET_VALID,
+	OPSI_LICENSE_STATE_REVOKED,
+	OPSI_LICENSE_TYPE_CORE
 )
 
 LIC1 = {
@@ -149,15 +151,17 @@ def test_load_opsi_license_pool():
 	)
 	olp.load()
 
-	assert len(olp.licenses) == 2
-	assert "e7f707a7-c184-45e2-a477-27dbf5516b1c" in [lic.id for lic in olp.licenses]
-	assert "707ef1b7-6139-4ec4-b60d-8480ce6dae34" in [lic.id for lic in olp.licenses]
-
-	olp.license_file_path = "tests/testopsicommon/data/license"
-	olp.load()
 	assert len(olp.licenses) == 3
 	assert "e7f707a7-c184-45e2-a477-27dbf5516b1c" in [lic.id for lic in olp.licenses]
 	assert "707ef1b7-6139-4ec4-b60d-8480ce6dae34" in [lic.id for lic in olp.licenses]
+	assert "c6af25cf-62e4-4b90-8f4b-21c542d8b74b" in [lic.id for lic in olp.licenses]
+
+	olp.license_file_path = "tests/testopsicommon/data/license"
+	olp.load()
+	assert len(olp.licenses) == 4
+	assert "e7f707a7-c184-45e2-a477-27dbf5516b1c" in [lic.id for lic in olp.licenses]
+	assert "707ef1b7-6139-4ec4-b60d-8480ce6dae34" in [lic.id for lic in olp.licenses]
+	assert "c6af25cf-62e4-4b90-8f4b-21c542d8b74b" in [lic.id for lic in olp.licenses]
 	assert "7cf9ef7e-6e6f-43f5-8b52-7c4e582ff6f1" in [lic.id for lic in olp.licenses]
 
 	olp.license_file_path = None
@@ -187,17 +191,23 @@ def test_license_state(tmp_path):
 
 	lic.valid_from = date.today() - timedelta(days=10)
 
+	lic.valid_until = date.today() - timedelta(days=1)
+	assert lic.get_state() == OPSI_LICENSE_STATE_EXPIRED
+
 	lic.valid_until = date.today()
 	assert lic.get_state() == OPSI_LICENSE_STATE_VALID
 
-	lic.valid_until = date.today() - timedelta(days=1)
-	assert lic.get_state() == OPSI_LICENSE_STATE_VALID
-
 	lic.valid_until = date.today() + timedelta(days=1)
-	assert lic.get_state() == OPSI_LICENSE_STATE_EXPIRED
+	assert lic.get_state() == OPSI_LICENSE_STATE_VALID
 
 	lic.valid_from = date.today() + timedelta(days=1)
 	assert lic.get_state() == OPSI_LICENSE_STATE_NOT_YET_VALID
+
+	lic.valid_from = date.today()
+	assert lic.get_state() == OPSI_LICENSE_STATE_VALID
+
+	lic.valid_from = date.today() - timedelta(days=1)
+	assert lic.get_state() == OPSI_LICENSE_STATE_VALID
 
 	modules = modules.replace("secureboot = 50", "secureboot = 100")
 	modules_file.write_text(modules)
@@ -205,6 +215,26 @@ def test_license_state(tmp_path):
 	lic = omf.licenses[0]
 
 	assert lic.get_state() == OPSI_LICENSE_STATE_INVALID_SIGNATURE
+
+
+def test_license_state_replaced_by_non_core():
+	olp = OpsiLicensePool(
+		license_file_path="tests/testopsicommon/data/license"
+	)
+	olp.load()
+	for lic in olp.licenses:
+		if lic.type == OPSI_LICENSE_TYPE_CORE:
+			assert lic.get_state() == OPSI_LICENSE_STATE_REPLACED_BY_NON_CORE
+
+
+def test_license_state_revoked():
+	olp = OpsiLicensePool(
+		license_file_path="tests/testopsicommon/data/license"
+	)
+	olp.load()
+	for lic in olp.licenses:
+		if lic.id == "c6af25cf-62e4-4b90-8f4b-21c542d8b74b":
+			assert lic.get_state() == OPSI_LICENSE_STATE_REVOKED
 
 
 def test_opsi_modules_file():

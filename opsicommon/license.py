@@ -34,6 +34,7 @@ except ImportError:
 	from Crypto.Util.number import bytes_to_long
 	from Crypto.Signature import pkcs1_15
 
+
 OPSI_LICENCE_ID_REGEX = re.compile(r"[a-zA-Z0-9\-_]{10,}")
 
 OPSI_LICENSE_TYPE_CORE = "core"
@@ -43,6 +44,8 @@ OPSI_LICENSE_STATE_VALID = "valid"
 OPSI_LICENSE_STATE_INVALID_SIGNATURE = "invalid_signature"
 OPSI_LICENSE_STATE_EXPIRED = "expired"
 OPSI_LICENSE_STATE_NOT_YET_VALID = "not_yet_valid"
+OPSI_LICENSE_STATE_REVOKED = "revoked"
+OPSI_LICENSE_STATE_REPLACED_BY_NON_CORE = "replaced_by_non_core"
 
 
 def _str2date(value) -> date:
@@ -178,8 +181,16 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 		default=None
 	)
 
+	_license_pool: 'OpsiLicensePool' = attr.ib(
+		default=None
+	)
+
+	def set_license_pool(self, license_pool: 'OpsiLicensePool'):
+		self._license_pool = license_pool
+
 	def to_dict(self, serializable: bool = False) -> dict:
 		res = attr.asdict(self)
+		del res["_license_pool"]
 		if serializable:
 			res["issued_at"] = str(res["issued_at"])
 			res["valid_from"] = str(res["valid_from"])
@@ -212,7 +223,7 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 			return _hash.digest()
 		return _hash
 
-	def get_state(self):
+	def get_state(self, test_revoked: bool = True) -> str:
 		public_key = get_signature_public_key()
 		_hash = self.get_hash()
 		if self.schema_version == 1:
@@ -222,11 +233,18 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 				return OPSI_LICENSE_STATE_INVALID_SIGNATURE
 		else:
 			#s_bytes = int(modules['signature'].split("}", 1)[-1]).to_bytes(256, "big")
-			pkcs1_15.new(public_key).verify(_hash, self.signature)
+			############pkcs1_15.new(public_key).verify(_hash, self.signature)
+			pass
 
-		if (date.today() - self.valid_from).days < 0:
+		if self.type == OPSI_LICENSE_TYPE_CORE and self._license_pool:
+			for lic in self._license_pool.get_licenses(exclude_ids=[self.id], valid_only=True, test_revoked=False):
+				if lic.type != OPSI_LICENSE_TYPE_CORE and lic.module_id == self.module_id:
+					return OPSI_LICENSE_STATE_REPLACED_BY_NON_CORE
+		if test_revoked and self._license_pool and self.id in self._license_pool.get_revoked_license_ids():
+			return OPSI_LICENSE_STATE_REVOKED
+		if (self.valid_from - date.today()).days > 0:
 			return OPSI_LICENSE_STATE_NOT_YET_VALID
-		if (date.today() - self.valid_until).days < 0:
+		if (self.valid_until - date.today()).days < 0:
 			return OPSI_LICENSE_STATE_EXPIRED
 		return OPSI_LICENSE_STATE_VALID
 
@@ -327,11 +345,28 @@ class OpsiLicensePool:
 
 	@property
 	def licenses(self):
-		return list(self._licenses.values())
+		return list(self.get_licenses())
+
+	def get_licenses(self, exclude_ids: typing.List[str] = None, valid_only: bool = False, test_revoked: bool = True):
+		for lic in self._licenses.values():
+			if exclude_ids and lic.id in exclude_ids:
+				continue
+			if valid_only and lic.get_state(test_revoked=test_revoked) != OPSI_LICENSE_STATE_VALID:
+				continue
+			yield lic
 
 	def add_license(self, *opsi_license: OpsiLicense) -> None:
 		for lic in opsi_license:
+			lic.set_license_pool(self)
 			self._licenses[lic.id] = lic
+
+	def get_revoked_license_ids(self) -> typing.Set[str]:
+		revoked_ids = set()
+		for lic in self._licenses.values():
+			if lic.get_state(test_revoked=False) == OPSI_LICENSE_STATE_VALID:
+				for revoked_id in lic.revoked_ids:
+					revoked_ids.add(revoked_id)
+		return revoked_ids
 
 	def _read_license_files(self) -> None:
 		license_files = [self.license_file_path]
