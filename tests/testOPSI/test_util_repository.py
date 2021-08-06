@@ -135,7 +135,7 @@ def test_limit_download(tmpdir, repo_type, dynamic):
 
 		assert dst.read() == data
 		if not dynamic:
-			assert round(end - start) == round(len(data) / limit)
+			assert abs(round(end - start) - round(len(data) / limit)) <= 1
 
 	def get_network_usage(self):
 		traffic_ratio = repo.speed_limiter._dynamic_bandwidth_threshold_no_limit
@@ -147,7 +147,7 @@ def test_limit_download(tmpdir, repo_type, dynamic):
 			if simulate_other_traffic:
 				assert (repo.speed_limiter._dynamic_bandwidth_limit / bandwidth) <= repo.speed_limiter._dynamic_bandwidth_limit_rate * 1.05
 			else:
-				assert repo.speed_limiter._dynamic_bandwidth_limit  == 0
+				assert repo.speed_limiter._dynamic_bandwidth_limit == 0
 		return bandwidth
 
 	# Setting DEFAULT_BUFFER_SIZE to slow down transfer
