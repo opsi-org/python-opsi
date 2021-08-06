@@ -206,7 +206,7 @@ def test_load_opsi_license_pool():
 		assert module_id in module_ids
 
 
-def test_opsi_license_pool_dates():
+def test_opsi_license_pool_relevant_dates():
 	olp = OpsiLicensePool(
 		license_file_path="tests/testopsicommon/data/license"
 	)
@@ -215,8 +215,12 @@ def test_opsi_license_pool_dates():
 	with mock.patch('opsicommon.license.get_signature_public_key', lambda x: public_key):
 		for lic in olp.licenses:
 			lic.sign(private_key)
-		dates = olp.get_dates()
-		print(dates)
+		dates = olp.get_relevant_dates()
+		assert len(dates) == 5
+
+		for at_date in dates:
+			modules = olp.get_modules(at_date=at_date)
+			print(at_date, modules)
 
 def test_license_state(tmp_path):
 	modules = pathlib.Path("tests/testopsicommon/data/license/modules").read_text()

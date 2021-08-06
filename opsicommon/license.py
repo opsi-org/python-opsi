@@ -18,7 +18,7 @@ import base64
 import codecs
 import configparser
 from functools import lru_cache
-from datetime import date
+from datetime import date, timedelta
 import attr
 try:
 	# pyright: reportMissingImports=false
@@ -49,6 +49,9 @@ OPSI_LICENSE_STATE_REPLACED_BY_NON_CORE = "replaced_by_non_core"
 
 OPSI_LICENSE_DATE_UNLIMITED = date.fromisoformat("9999-12-31")
 OPSI_LICENSE_CLIENT_NUMBER_UNLIMITED = 999999999
+
+OPSI_MODULE_STATE_LICENSED = "licensed"
+
 
 def _str2date(value) -> date:
 	if isinstance(value, str):
@@ -279,7 +282,12 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 				return OPSI_LICENSE_STATE_INVALID_SIGNATURE
 
 		if self.type == OPSI_LICENSE_TYPE_CORE and self._license_pool:
-			for lic in self._license_pool.get_licenses(exclude_ids=[self.id], valid_only=True, test_revoked=False):
+			for lic in self._license_pool.get_licenses(
+				exclude_ids=[self.id],
+				valid_only=True,
+				test_revoked=False,
+				at_date=at_date
+			):
 				if lic.type != OPSI_LICENSE_TYPE_CORE and lic.module_id == self.module_id:
 					return OPSI_LICENSE_STATE_REPLACED_BY_NON_CORE
 		if test_revoked and self._license_pool and self.id in self._license_pool.get_revoked_license_ids():
@@ -396,11 +404,23 @@ class OpsiLicensePool:
 	def licenses(self):
 		return list(self.get_licenses())
 
-	def get_licenses(self, exclude_ids: typing.List[str] = None, valid_only: bool = False, test_revoked: bool = True):
+	def get_licenses(
+		self,
+		exclude_ids: typing.List[str] = None,
+		valid_only: bool = False,
+		test_revoked: bool = True,
+		at_date: date = None
+	):
+		if not at_date:
+			at_date = date.today()
+
 		for lic in self._licenses.values():
 			if exclude_ids and lic.id in exclude_ids:
 				continue
-			if valid_only and lic.get_state(test_revoked=test_revoked) != OPSI_LICENSE_STATE_VALID:
+			if (
+				valid_only and
+				lic.get_state(test_revoked=test_revoked, at_date=at_date) != OPSI_LICENSE_STATE_VALID
+			):
 				continue
 			yield lic
 
@@ -409,23 +429,44 @@ class OpsiLicensePool:
 			lic.set_license_pool(self)
 			self._licenses[lic.id] = lic
 
-	def get_revoked_license_ids(self) -> typing.Set[str]:
+	def get_revoked_license_ids(self, at_date: date = None) -> typing.Set[str]:
+		if not at_date:
+			at_date = date.today()
 		revoked_ids = set()
 		for lic in self._licenses.values():
-			if lic.get_state(test_revoked=False) == OPSI_LICENSE_STATE_VALID:
+			if lic.get_state(test_revoked=False, at_date=at_date) == OPSI_LICENSE_STATE_VALID:
 				for revoked_id in lic.revoked_ids:
 					revoked_ids.add(revoked_id)
 		return revoked_ids
 
-	def get_dates(self) -> typing.Set[date]:
+	def get_relevant_dates(self) -> typing.Set[date]:
 		dates = set()
 		for lic in self.get_licenses():
 			if lic.get_state() != OPSI_LICENSE_STATE_INVALID_SIGNATURE:
 				if lic.valid_from != OPSI_LICENSE_DATE_UNLIMITED:
 					dates.add(lic.valid_from)
 				if lic.valid_until != OPSI_LICENSE_DATE_UNLIMITED:
-					dates.add(lic.valid_until)
+					dates.add(lic.valid_until + timedelta(days=1))
 		return sorted(dates)
+
+	def get_modules(self, at_date: date = None):
+		modules = {}
+		if not at_date:
+			at_date = date.today()
+		for lic in self.get_licenses(valid_only=True, at_date=at_date):
+			if lic.module_id not in modules:
+				modules[lic.module_id] = {
+					"available": True,
+					"state": OPSI_MODULE_STATE_LICENSED,
+					"license_ids": [lic.id],
+					"client_number": 0
+				}
+			modules[lic.module_id]["client_number"] += lic.client_number
+			modules[lic.module_id]["client_number"] = min(
+				modules[lic.module_id]["client_number"],
+				OPSI_LICENSE_CLIENT_NUMBER_UNLIMITED
+			)
+		return modules
 
 	def _read_license_files(self) -> None:
 		license_files = [self.license_file_path]
