@@ -159,6 +159,9 @@ def test_opsi_license_to_from_json():
 	json_data = lic.to_json()
 	assert LIC1 == json.loads(json_data)
 
+	data = json.loads(lic.to_json(with_state=True))
+	assert data["_state"] == OPSI_LICENSE_STATE_INVALID_SIGNATURE
+
 
 def test_opsi_license_hash():
 	lic = OpsiLicense(**LIC1)

@@ -212,9 +212,11 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 	def set_license_pool(self, license_pool: 'OpsiLicensePool'):
 		self._license_pool = license_pool
 
-	def to_dict(self, serializable: bool = False) -> dict:
+	def to_dict(self, serializable: bool = False, with_state: bool = False) -> dict:
 		res = attr.asdict(self)
 		del res["_license_pool"]
+		if with_state:
+			res["_state"] = self.get_state()
 		if serializable:
 			res["issued_at"] = str(res["issued_at"])
 			res["valid_from"] = str(res["valid_from"])
@@ -225,10 +227,14 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 
 	@classmethod
 	def from_dict(cls, data_dict: dict) -> 'OpsiLicense':
+		data_dict = dict(data_dict)
+		for attribute in list(data_dict):
+			if attribute.startswith("_"):
+				del data_dict[attribute]
 		return OpsiLicense(**data_dict)
 
-	def to_json(self) -> str:
-		return json.dumps(self.to_dict(serializable=True))
+	def to_json(self, with_state: bool = False) -> str:
+		return json.dumps(self.to_dict(serializable=True, with_state=with_state))
 
 	@classmethod
 	def from_json(cls, json_data: str) -> 'OpsiLicense':
@@ -240,9 +246,9 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 			_hash = MD5.new(self.additional_data.encode("utf-8"))
 		else:
 			string = ""
-			data = self.to_dict(serializable=True)
+			data = self.to_dict(serializable=True, with_state=False)
 			for attribute in sorted(data):
-				if attribute == "signature":
+				if attribute == "signature" or attribute.startswith("_"):
 					continue
 				value = data[attribute]
 				if isinstance(value, list):
