@@ -178,14 +178,26 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 		default=None
 	)
 
-	def to_json(self):
+	def to_dict(self, serializable: bool = False) -> dict:
 		res = attr.asdict(self)
-		res["issued_at"] = str(res["issued_at"])
-		res["valid_from"] = str(res["valid_from"])
-		res["valid_until"] = str(res["valid_until"])
-		if res["signature"]:
-			res["signature"] = res["signature"].hex()
-		return json.dumps(res)
+		if serializable:
+			res["issued_at"] = str(res["issued_at"])
+			res["valid_from"] = str(res["valid_from"])
+			res["valid_until"] = str(res["valid_until"])
+			if res["signature"]:
+				res["signature"] = res["signature"].hex()
+		return res
+
+	@classmethod
+	def from_dict(cls, data_dict: dict) -> 'OpsiLicense':
+		return OpsiLicense(**data_dict)
+
+	def to_json(self) -> str:
+		return json.dumps(self.to_dict(serializable=True))
+
+	@classmethod
+	def from_json(cls, json_data: str) -> 'OpsiLicense':
+		return OpsiLicense.from_dict(json.loads(json_data))
 
 	def get_hash(self, digest: bool = False, hex_digest: bool = False):
 		_hash = None

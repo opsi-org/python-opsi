@@ -111,9 +111,14 @@ def test_opsi_license_validation(attribute, value, exception):
 		OpsiLicense(**kwargs)
 
 
-def test_opsi_license_to_json():
+def test_opsi_license_to_from_json():
 	lic = OpsiLicense(**LIC1)
-	assert LIC1 == json.loads(lic.to_json())
+	json_data = lic.to_json()
+	assert LIC1 == json.loads(json_data)
+
+	lic = OpsiLicense.from_json(json_data)
+	json_data = lic.to_json()
+	assert LIC1 == json.loads(json_data)
 
 
 def test_opsi_license_hash():
