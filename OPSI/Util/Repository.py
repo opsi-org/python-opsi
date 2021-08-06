@@ -390,8 +390,16 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 		self.speed_limiter = SpeedLimiter()
 		self.speed_limiter.set_bandwidth(self._maxBandwidth, self._dynamicBandwidth)
 
+	def setBandwidth(self, dynamicBandwidth, maxBandwidth):
+		self.setDynamicBandwidth(dynamicBandwidth)
+		self.setMaxBandwidth(maxBandwidth)
+
 	def setMaxBandwidth(self, maxBandwidth):
 		self._maxBandwidth = maxBandwidth
+		self.speed_limiter.set_bandwidth(self._dynamicBandwidth, self._maxBandwidth)
+
+	def setDynamicBandwidth(self, dynamicBandwidth):
+		self._dynamicBandwidth = dynamicBandwidth
 		self.speed_limiter.set_bandwidth(self._dynamicBandwidth, self._maxBandwidth)
 
 	def __str__(self):
