@@ -236,6 +236,12 @@ def test_license_state(tmp_path):
 	lic.valid_from = date.today() - timedelta(days=1)
 	assert lic.get_state() == OPSI_LICENSE_STATE_VALID
 
+	lic.valid_from = date.today()
+	lic.valid_until = date.today()
+	assert lic.get_state() == OPSI_LICENSE_STATE_VALID
+	assert lic.get_state(at_date=date.today() + timedelta(days=1)) == OPSI_LICENSE_STATE_EXPIRED
+	assert lic.get_state(at_date=date.today() - timedelta(days=1)) == OPSI_LICENSE_STATE_NOT_YET_VALID
+
 	modules = modules.replace("secureboot = 50", "secureboot = 100")
 	modules_file.write_text(modules)
 	omf.read()

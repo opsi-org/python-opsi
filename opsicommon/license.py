@@ -262,7 +262,9 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 			return _hash.digest()
 		return _hash
 
-	def get_state(self, test_revoked: bool = True) -> str:  # pylint: disable=too-many-return-statements
+	def get_state(self, test_revoked: bool = True, at_date: date = None) -> str:  # pylint: disable=too-many-return-statements
+		if not at_date:
+			at_date = date.today()
 		_hash = self.get_hash()
 		public_key = get_signature_public_key(self.schema_version)
 		if self.schema_version == 1:
@@ -282,9 +284,9 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 					return OPSI_LICENSE_STATE_REPLACED_BY_NON_CORE
 		if test_revoked and self._license_pool and self.id in self._license_pool.get_revoked_license_ids():
 			return OPSI_LICENSE_STATE_REVOKED
-		if (self.valid_from - date.today()).days > 0:
+		if (self.valid_from - at_date).days > 0:
 			return OPSI_LICENSE_STATE_NOT_YET_VALID
-		if (self.valid_until - date.today()).days < 0:
+		if (self.valid_until - at_date).days < 0:
 			return OPSI_LICENSE_STATE_EXPIRED
 		return OPSI_LICENSE_STATE_VALID
 
