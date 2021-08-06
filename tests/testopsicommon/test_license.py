@@ -13,7 +13,7 @@ from datetime import date, timedelta
 import pytest
 
 from opsicommon.license import (
-	OpsiLicense, OpsiModulesFile, read_license_files,
+	OpsiLicense, OpsiModulesFile, OpsiLicensePool,
 	OPSI_LICENSE_STATE_VALID,
 	OPSI_LICENSE_STATE_INVALID_SIGNATURE,
 	OPSI_LICENSE_STATE_EXPIRED,
@@ -42,6 +42,19 @@ LIC1 = {
 	"signature": "0102030405060708090a0b0c0d0e"
 }
 
+def _read_modules_file(modules_file):
+	modules = {}
+	expires = None
+	with codecs.open(modules_file, "r", "utf-8") as file:
+		for line in file:
+			key, val = line.lower().split("=", 1)
+			key = key.strip()
+			val = val.strip()
+			if key == "expires":
+				expires = date.fromisoformat(val)
+			elif key not in ("signature", "customer") and val != "no":
+				modules[key] = val
+	return modules, expires
 
 def test_opsi_license_defaults():
 	lic = OpsiLicense(
@@ -129,17 +142,37 @@ def test_opsi_license_hash():
 	)
 
 
-def test_read_license_files():
-	licenses = list(read_license_files("tests/testopsicommon/data/license/test1.opsilic"))
-	assert len(licenses) == 2
-	assert "e7f707a7-c184-45e2-a477-27dbf5516b1c" in [lic.id for lic in licenses]
-	assert "707ef1b7-6139-4ec4-b60d-8480ce6dae34" in [lic.id for lic in licenses]
+def test_load_opsi_license_pool():
+	modules_file = "tests/testopsicommon/data/license/modules"
+	olp = OpsiLicensePool(
+		license_file_path="tests/testopsicommon/data/license/test1.opsilic"
+	)
+	olp.load()
 
-	licenses = list(read_license_files("tests/testopsicommon/data/license"))
-	assert len(licenses) == 3
-	assert "e7f707a7-c184-45e2-a477-27dbf5516b1c" in [lic.id for lic in licenses]
-	assert "707ef1b7-6139-4ec4-b60d-8480ce6dae34" in [lic.id for lic in licenses]
-	assert "7cf9ef7e-6e6f-43f5-8b52-7c4e582ff6f1" in [lic.id for lic in licenses]
+	assert len(olp.licenses) == 2
+	assert "e7f707a7-c184-45e2-a477-27dbf5516b1c" in [lic.id for lic in olp.licenses]
+	assert "707ef1b7-6139-4ec4-b60d-8480ce6dae34" in [lic.id for lic in olp.licenses]
+
+	olp.license_file_path = "tests/testopsicommon/data/license"
+	olp.load()
+	assert len(olp.licenses) == 3
+	assert "e7f707a7-c184-45e2-a477-27dbf5516b1c" in [lic.id for lic in olp.licenses]
+	assert "707ef1b7-6139-4ec4-b60d-8480ce6dae34" in [lic.id for lic in olp.licenses]
+	assert "7cf9ef7e-6e6f-43f5-8b52-7c4e582ff6f1" in [lic.id for lic in olp.licenses]
+
+	olp.license_file_path = None
+	olp.modules_file_path = modules_file
+	olp.load()
+
+	modules, _expires = _read_modules_file(modules_file)
+	module_ids = [ m for m in modules if modules[m] != "no" ]
+	assert len(module_ids) == len(olp.licenses)
+
+	for lic in olp.licenses:
+		assert lic.module_id in module_ids
+		_prefix, module_id = lic.id.split("-", 1)
+		assert _prefix == "legacy"
+		assert module_id in module_ids
 
 
 def test_license_state(tmp_path):
@@ -177,18 +210,7 @@ def test_license_state(tmp_path):
 def test_opsi_modules_file():
 	modules_file = "tests/testopsicommon/data/license/modules"
 
-	modules = {}
-	expires = None
-	with codecs.open(modules_file, "r", "utf-8") as file:
-		for line in file:
-			key, val = line.lower().split("=", 1)
-			key = key.strip()
-			val = val.strip()
-			if key == "expires":
-				expires = date.fromisoformat(val)
-			elif key not in ("signature", "customer") and val != "no":
-				modules[key] = val
-
+	modules, expires = _read_modules_file(modules_file)
 	omf = OpsiModulesFile(modules_file)
 	omf.read()
 	assert len(modules) == len(omf.licenses)

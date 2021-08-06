@@ -252,20 +252,6 @@ class OpsiLicenseFile:
 			kwargs["id"] = section
 			self.add_license(OpsiLicense(**kwargs))
 
-
-def read_license_files(path: str) -> typing.List[OpsiLicense]:
-	license_files = [path]
-	if os.path.isdir(path):
-		license_files = glob.glob(os.path.join(path, "*.opsilic"))
-
-	licenses = []
-	for license_file in license_files:
-		olf = OpsiLicenseFile(license_file)
-		olf.read()
-		for lic in olf.licenses:
-			licenses.append(lic)
-	return licenses
-
 class OpsiModulesFile:  # pylint: disable=too-few-public-methods
 	def __init__(self, filename: str) -> None:
 		self.filename: str = filename
@@ -333,8 +319,42 @@ class OpsiModulesFile:  # pylint: disable=too-few-public-methods
 			kwargs["client_number"] = client_number
 			self.add_license(OpsiLicense(**kwargs))
 
+class OpsiLicensePool:
+	def __init__(self, license_file_path: str = None, modules_file_path: str = None) -> None:
+		self.license_file_path: str = license_file_path
+		self.modules_file_path: str = modules_file_path
+		self._licenses: typing.Dict[str, OpsiLicense] = {}
 
-def read_modules_file(filename: str) -> typing.List[OpsiLicense]:
-	omf = OpsiModulesFile(filename)
-	omf.read()
-	return omf.licenses
+	@property
+	def licenses(self):
+		return list(self._licenses.values())
+
+	def add_license(self, *opsi_license: OpsiLicense) -> None:
+		for lic in opsi_license:
+			self._licenses[lic.id] = lic
+
+	def _read_license_files(self) -> None:
+		license_files = [self.license_file_path]
+		if os.path.isdir(self.license_file_path):
+			license_files = glob.glob(os.path.join(self.license_file_path, "*.opsilic"))
+
+		for license_file in license_files:
+			olf = OpsiLicenseFile(license_file)
+			olf.read()
+			self.add_license(*olf.licenses)
+
+	def _read_modules_file(self) -> None:
+		omf = OpsiModulesFile(self.modules_file_path)
+		omf.read()
+		self.add_license(*omf.licenses)
+
+	def load(self):
+		self._licenses = {}
+		if self.license_file_path:
+			self._read_license_files()
+		if self.modules_file_path:
+			self._read_modules_file()
+
+
+default_opsi_license_pool = OpsiLicensePool()
+
