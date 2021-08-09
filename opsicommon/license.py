@@ -513,11 +513,12 @@ class OpsiLicensePool:
 		return revoked_ids
 
 	def get_licenses_checksum(self) -> str:
-		return str(zlib.crc32(
+		data = zlib.crc32(
 			b"".join([
 				lic.get_hash(digest=True) for lic in self.get_licenses(valid_only=True)
 			])
-		))
+		)
+		return f"{data:x}"
 
 	def get_relevant_dates(self) -> typing.Set[date]:
 		dates = set()
