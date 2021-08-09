@@ -198,6 +198,14 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 		):
 			raise ValueError(f"Invalid value for {attribute}", value)
 
+	service_id: str = attr.ib(
+		default=None,
+	)
+	@service_id.validator
+	def validate_service_id(self, attribute, value):
+		if value is not None and not re.match(r"[a-z0-9\-\.]+", value):
+			raise ValueError(f"Invalid value for {attribute}", value)
+
 	module_id: str = attr.ib(
 		validator=attr.validators.matches_re(r"[a-z0-9\-_]+")
 	)

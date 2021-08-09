@@ -42,6 +42,7 @@ LIC1 = {
 	"customer_id": "12345",
 	"customer_name": "Test GmbH",
 	"customer_address": "香港",
+	"service_id": "opsi.test.gmbh",
 	"module_id": "scalability1",
 	"client_number": 1000,
 	"issued_at": "2021-08-05",
@@ -183,8 +184,8 @@ def test_opsi_license_to_from_json():
 def test_opsi_license_hash():
 	lic = OpsiLicense(**LIC1)
 	assert lic.get_hash(hex_digest=True) == (
-		"6af9a87e5fb2d67a135f77e56cfef7929aa943ca05e71184c53f4400e6e2dfca"
-		"605baea87c1b49119b058b9084658ebce5e855459e01df63caf239ce4db30e76"
+		"f61ffa3f740cf95a3794bc6e3987e81f8af590cc3d7aa26419d27849dab202b3"
+		"9c7414d74c575c3721bb4b6e4b1964cd416a455c83e1d6699cc8ead5640eb4da"
 	)
 
 
