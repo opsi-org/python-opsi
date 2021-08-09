@@ -22,7 +22,11 @@ from opsicommon.license import (
 	OPSI_LICENSE_STATE_EXPIRED,
 	OPSI_LICENSE_STATE_NOT_YET_VALID,
 	OPSI_LICENSE_STATE_REVOKED,
-	OPSI_LICENSE_TYPE_CORE
+	OPSI_LICENSE_TYPE_CORE,
+	OPSI_MODULE_STATE_FREE,
+	OPSI_MODULE_STATE_LICENSED,
+	OPSI_MODULE_STATE_UNLICENSED,
+	OPSI_MODULE_IDS
 )
 
 LIC1 = {
@@ -31,9 +35,9 @@ LIC1 = {
 	"schema_version": 2,
 	"opsi_version": "4.2",
 	"customer_id": "12345",
-	"customer_name": "uib GmbH",
-	"customer_address": "Mainz",
-	"module_id": "scalibility1",
+	"customer_name": "Test GmbH",
+	"customer_address": "香港",
+	"module_id": "scalability1",
 	"client_number": 1000,
 	"issued_at": "2021-08-05",
 	"valid_from": "2021-09-01",
@@ -50,6 +54,8 @@ LIC1 = {
 def _read_modules_file(modules_file):
 	modules = {}
 	expires = None
+	customer = None
+	signature = None
 	with codecs.open(modules_file, "r", "utf-8") as file:
 		for line in file:
 			key, val = line.lower().split("=", 1)
@@ -57,9 +63,13 @@ def _read_modules_file(modules_file):
 			val = val.strip()
 			if key == "expires":
 				expires = date.fromisoformat(val)
-			elif key not in ("signature", "customer") and val != "no":
+			elif key == "customer":
+				customer = val
+			elif key == "signature":
+				signature = val
+			else:
 				modules[key] = val
-	return modules, expires
+	return modules, expires, customer, signature
 
 
 def test_generate_key_pair():
@@ -87,7 +97,7 @@ def test_opsi_license_defaults():
 		customer_id="12345",
 		customer_name="uib GmbH",
 		customer_address="Mainz",
-		module_id="scalibility1",
+		module_id="scalability1",
 		client_number=1000,
 		valid_until="2099-12-31"
 	)
@@ -138,7 +148,7 @@ def test_opsi_license_validation(attribute, value, exception):
 		"customer_id": "12345",
 		"customer_name": "uib GmbH",
 		"customer_address": "Mainz",
-		"module_id": "scalibility1",
+		"module_id": "scalability1",
 		"client_number": 1000,
 		"valid_until": "2099-12-31"
 	}
@@ -166,8 +176,8 @@ def test_opsi_license_to_from_json():
 def test_opsi_license_hash():
 	lic = OpsiLicense(**LIC1)
 	assert lic.get_hash(hex_digest=True) == (
-		"0fcaaf45f961fedded227d9776bc597e253cb07640e1de9300f9c1c7d981c80e"
-		"9685cd32e86fb7aabbb35334dfda6d01787056cec5114a13a7c8fb2ea9b87f78"
+		"6af9a87e5fb2d67a135f77e56cfef7929aa943ca05e71184c53f4400e6e2dfca"
+		"605baea87c1b49119b058b9084658ebce5e855459e01df63caf239ce4db30e76"
 	)
 
 
@@ -195,7 +205,7 @@ def test_load_opsi_license_pool():
 	olp.modules_file_path = modules_file
 	olp.load()
 
-	modules, _expires = _read_modules_file(modules_file)
+	modules, _expires, _customer, _signature = _read_modules_file(modules_file)
 	module_ids = [ m for m in modules if modules[m] != "no" ]
 	assert len(module_ids) == len(olp.licenses)
 
@@ -220,11 +230,76 @@ def test_opsi_license_pool_relevant_dates():
 
 		for at_date in dates:
 			modules = olp.get_modules(at_date=at_date)
-			print(at_date, modules)
+			assert sorted(OPSI_MODULE_IDS) == sorted(modules)
 
-def test_license_state(tmp_path):
+			assert modules["treeview"]["available"]
+			assert modules["treeview"]["state"] == OPSI_MODULE_STATE_FREE
+
+			assert modules["vista"]["available"]
+			assert modules["vista"]["state"] == OPSI_MODULE_STATE_FREE
+
+			assert not modules["secureboot"]["available"]
+			assert modules["secureboot"]["state"] == OPSI_MODULE_STATE_UNLICENSED
+
+			if at_date >= date.fromisoformat("2019-08-01"):
+				assert modules["vpn"]["available"]
+				assert modules["vpn"]["state"] == OPSI_MODULE_STATE_LICENSED
+			else:
+				assert not modules["vpn"]["available"]
+				assert modules["vpn"]["state"] == OPSI_MODULE_STATE_UNLICENSED
+
+			if date.fromisoformat("2020-01-01") <= at_date <= date.fromisoformat("2031-12-31"):
+				assert modules["scalability1"]["available"]
+				assert modules["scalability1"]["state"] == OPSI_MODULE_STATE_LICENSED
+			else:
+				assert not modules["scalability1"]["available"]
+				assert modules["scalability1"]["state"] == OPSI_MODULE_STATE_UNLICENSED
+
+
+def test_license_state():
+	private_key, public_key = generate_key_pair(return_pem=False)
+	with mock.patch('opsicommon.license.get_signature_public_key', lambda x: public_key):
+		lic = OpsiLicense(**LIC1)
+		lic.sign(private_key)
+
+		lic.valid_from = date.today() - timedelta(days=10)
+		lic.valid_until = date.today() - timedelta(days=1)
+		lic.sign(private_key)
+		assert lic.get_state() == OPSI_LICENSE_STATE_EXPIRED
+
+		lic.valid_until = date.today()
+		lic.sign(private_key)
+		assert lic.get_state() == OPSI_LICENSE_STATE_VALID
+
+		lic.valid_until = date.today() + timedelta(days=1)
+		lic.sign(private_key)
+		assert lic.get_state() == OPSI_LICENSE_STATE_VALID
+
+		lic.valid_from = date.today() + timedelta(days=1)
+		lic.sign(private_key)
+		assert lic.get_state() == OPSI_LICENSE_STATE_NOT_YET_VALID
+
+		lic.valid_from = date.today()
+		lic.sign(private_key)
+		assert lic.get_state() == OPSI_LICENSE_STATE_VALID
+
+		lic.valid_from = date.today() - timedelta(days=1)
+		lic.sign(private_key)
+		assert lic.get_state() == OPSI_LICENSE_STATE_VALID
+
+		lic.valid_from = date.today()
+		lic.valid_until = date.today()
+		lic.sign(private_key)
+		assert lic.get_state() == OPSI_LICENSE_STATE_VALID
+		assert lic.get_state(at_date=date.today() + timedelta(days=1)) == OPSI_LICENSE_STATE_EXPIRED
+		assert lic.get_state(at_date=date.today() - timedelta(days=1)) == OPSI_LICENSE_STATE_NOT_YET_VALID
+
+		lic.client_number = 1234567
+		assert lic.get_state() == OPSI_LICENSE_STATE_INVALID_SIGNATURE
+
+
+def test_license_state_modules(tmp_path):
 	modules = pathlib.Path("tests/testopsicommon/data/license/modules").read_text()
-	########lic = OpsiLicense(**LIC1)
 	modules_file = tmp_path / "modules"
 	modules_file.write_text(modules)
 
@@ -294,8 +369,8 @@ def test_license_state_revoked():
 
 def test_opsi_modules_file():
 	modules_file = "tests/testopsicommon/data/license/modules"
-
-	modules, expires = _read_modules_file(modules_file)
+	raw_data = pathlib.Path(modules_file).read_text()
+	modules, expires, customer, signature = _read_modules_file(modules_file)
 	omf = OpsiModulesFile(modules_file)
 	omf.read()
 	assert len(modules) == len(omf.licenses)
@@ -303,6 +378,10 @@ def test_opsi_modules_file():
 		assert lic.module_id in modules
 		assert lic.valid_until == expires
 		client_number = 999999999
-		if modules[lic.module_id] != "yes":
+		if modules[lic.module_id] not in ("yes", "no"):
 			client_number = int(modules[lic.module_id])
 		assert lic.client_number == client_number
+		assert lic.signature.hex() == signature
+		assert \
+			sorted([x for x in raw_data.replace("\r","").split("\n") if x and not x.startswith("signature")]) == \
+			sorted([x for x in lic.additional_data.replace("\r","").split("\n") if x])

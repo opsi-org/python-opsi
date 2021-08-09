@@ -50,7 +50,33 @@ OPSI_LICENSE_STATE_REPLACED_BY_NON_CORE = "replaced_by_non_core"
 OPSI_LICENSE_DATE_UNLIMITED = date.fromisoformat("9999-12-31")
 OPSI_LICENSE_CLIENT_NUMBER_UNLIMITED = 999999999
 
+OPSI_MODULE_STATE_FREE = "free"
 OPSI_MODULE_STATE_LICENSED = "licensed"
+OPSI_MODULE_STATE_UNLICENSED = "unlicensed"
+
+OPSI_MODULE_IDS = (
+	"directory-connector",
+	"dynamic_depot",
+	"install_by_shutdown",
+	"license_management",
+	"linux_agent",
+	"local_imaging",
+	"macos_agent",
+	"monitoring",
+	"mysql_backend",
+	"os_install_by_wlan",
+	"roaming_profiles",
+	"scalability1",
+	"secureboot",
+	"swondemand",
+	"treeview",
+	"uefi",
+	"userroles",
+	"vista",
+	"wim-capture",
+	"win-vhd",
+	"vpn"
+)
 
 
 def _str2date(value) -> date:
@@ -139,19 +165,32 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 	)
 	@customer_id.validator
 	def validate_customer_id(self, attribute, value):
-		if self.schema_version > 1 and not re.match(r"[a-zA-Z0-9\-_]{5,}", value):
+		if (
+			self.schema_version > 1 and
+			self.type != OPSI_LICENSE_TYPE_CORE and
+			not re.match(r"[a-zA-Z0-9\-_]{5,}", value)
+		):
 			raise ValueError(f"Invalid value for {attribute}", value)
 
-	customer_name: str = attr.ib(
-		validator=attr.validators.matches_re(r"\S.*\S")
-	)
+	customer_name: str = attr.ib()
+	@customer_name.validator
+	def validate_customer_name(self, attribute, value):
+		if (
+			self.type != OPSI_LICENSE_TYPE_CORE and
+			not re.match(r"\S.*\S", value)
+		):
+			raise ValueError(f"Invalid value for {attribute}", value)
 
 	customer_address: str = attr.ib(
 		default=None
 	)
 	@customer_address.validator
 	def validate_customer_address(self, attribute, value):
-		if self.schema_version > 1 and not re.match(r"\S.*\S", value):
+		if (
+			self.schema_version > 1 and
+			self.type != OPSI_LICENSE_TYPE_CORE and
+			not re.match(r"\S.*\S", value)
+		):
 			raise ValueError(f"Invalid value for {attribute}", value)
 
 	module_id: str = attr.ib(
@@ -450,17 +489,35 @@ class OpsiLicensePool:
 		return sorted(dates)
 
 	def get_modules(self, at_date: date = None):
-		modules = {}
 		if not at_date:
 			at_date = date.today()
+
+		modules = {}
+		for module_id in OPSI_MODULE_IDS:
+			if module_id in ("treeview", "vista"):
+				modules[module_id] = {
+					"available": True,
+					"state": OPSI_MODULE_STATE_FREE,
+					"license_ids": [],
+					"client_number": 999999999
+				}
+			else:
+				modules[module_id] = {
+					"available": False,
+					"state": OPSI_MODULE_STATE_UNLICENSED,
+					"license_ids": [],
+					"client_number": 0
+				}
 		for lic in self.get_licenses(valid_only=True, at_date=at_date):
 			if lic.module_id not in modules:
 				modules[lic.module_id] = {
-					"available": True,
-					"state": OPSI_MODULE_STATE_LICENSED,
-					"license_ids": [lic.id],
-					"client_number": 0
+					"client_number": 0,
+					"license_ids": []
 				}
+			modules[lic.module_id]["available"] = True
+			modules[lic.module_id]["state"] = OPSI_MODULE_STATE_LICENSED
+			modules[lic.module_id]["license_ids"].append(lic.id)
+			modules[lic.module_id]["license_ids"].sort()
 			modules[lic.module_id]["client_number"] += lic.client_number
 			modules[lic.module_id]["client_number"] = min(
 				modules[lic.module_id]["client_number"],

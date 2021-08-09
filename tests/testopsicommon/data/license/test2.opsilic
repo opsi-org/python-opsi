@@ -2,10 +2,10 @@
 type = core
 schema_version = 2
 opsi_version = 4.2
-customer_id = 12345
-customer_name = uib GmbH
-customer_address = Mainz
-module_id = scalibility1
+customer_id =
+customer_name =
+customer_address =
+module_id = scalability1
 client_number = 10
 issued_at = 2021-01-01
 valid_from = 2021-01-01
