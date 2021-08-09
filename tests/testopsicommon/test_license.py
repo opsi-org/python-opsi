@@ -297,10 +297,7 @@ def test_license_state_client_number_thresholds():
 			"linux": 0,
 			"windows": 0
 		}
-		for lic in olp.get_licenses():
-			print(lic.to_json(with_state=True))
 		modules = olp.get_modules()
-		print(modules["scalability1"])
 		assert modules["scalability1"]["available"]
 		assert modules["scalability1"]["client_number"] == 100
 		assert modules["scalability1"]["state"] == OPSI_MODULE_STATE_LICENSED
@@ -436,7 +433,7 @@ def test_license_state_replaced_by_non_core():
 	with mock.patch('opsicommon.license.get_signature_public_key', lambda x: public_key):
 		for lic in olp.licenses:
 			lic.sign(private_key)
-			if lic.type == OPSI_LICENSE_TYPE_CORE:
+			if lic.id == "7cf9ef7e-6e6f-43f5-8b52-7c4e582ff6f1":
 				assert lic.get_state() == OPSI_LICENSE_STATE_REPLACED_BY_NON_CORE
 
 
