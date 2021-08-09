@@ -14,6 +14,8 @@ from unittest import mock
 import pytest
 
 from opsicommon.license import (
+	OPSI_MODULE_STATE_CLOSE_TO_LIMIT,
+	OPSI_MODULE_STATE_OVER_LIMIT,
 	generate_key_pair,
 	OpsiLicense, OpsiModulesFile, OpsiLicensePool,
 	OPSI_LICENSE_STATE_REPLACED_BY_NON_CORE,
@@ -23,10 +25,13 @@ from opsicommon.license import (
 	OPSI_LICENSE_STATE_NOT_YET_VALID,
 	OPSI_LICENSE_STATE_REVOKED,
 	OPSI_LICENSE_TYPE_CORE,
+	OPSI_LICENSE_TYPE_STANDARD,
 	OPSI_MODULE_STATE_FREE,
 	OPSI_MODULE_STATE_LICENSED,
 	OPSI_MODULE_STATE_UNLICENSED,
-	OPSI_MODULE_IDS
+	OPSI_MODULE_IDS,
+	CLIENT_LIMIT_THRESHOLD_PERCENT,
+	CLIENT_LIMIT_THRESHOLD_PERCENT_WARNING
 )
 
 LIC1 = {
@@ -254,6 +259,87 @@ def test_opsi_license_pool_relevant_dates():
 			else:
 				assert not modules["scalability1"]["available"]
 				assert modules["scalability1"]["state"] == OPSI_MODULE_STATE_UNLICENSED
+
+
+def test_license_state_client_number_thresholds():
+	private_key, public_key = generate_key_pair(return_pem=False)
+	client_numbers = {}
+
+	def client_info():
+		return client_numbers
+
+	with mock.patch('opsicommon.license.get_signature_public_key', lambda x: public_key):
+		lic = dict(LIC1)
+		del lic["id"]
+		lic["module_id"] = "scalability1"
+		lic["type"] = OPSI_LICENSE_TYPE_STANDARD
+		lic["valid_from"] = "2000-01-01"
+		lic["valid_until"] = "9999-12-31"
+
+		lic1 = OpsiLicense(**lic)
+		lic1.client_number = 90
+		lic1.sign(private_key)
+
+		lic2 = OpsiLicense(**lic)
+		lic2.client_number = 10
+		lic2.sign(private_key)
+
+		lic3 = OpsiLicense(**lic)
+		lic3.type = OPSI_LICENSE_TYPE_CORE
+		lic3.client_number = 50
+		lic3.sign(private_key)
+
+		olp = OpsiLicensePool(client_info=client_info)
+		olp.add_license(lic1, lic2, lic3)
+
+		client_numbers = {
+			"macos": 0,
+			"linux": 0,
+			"windows": 0
+		}
+		for lic in olp.get_licenses():
+			print(lic.to_json(with_state=True))
+		modules = olp.get_modules()
+		print(modules["scalability1"])
+		assert modules["scalability1"]["available"]
+		assert modules["scalability1"]["client_number"] == 100
+		assert modules["scalability1"]["state"] == OPSI_MODULE_STATE_LICENSED
+
+		client_numbers = {
+			"macos": 5,
+			"linux": 10,
+			"windows": 85 - CLIENT_LIMIT_THRESHOLD_PERCENT_WARNING
+		}
+		modules = olp.get_modules()
+		assert modules["scalability1"]["available"]
+		assert modules["scalability1"]["state"] == OPSI_MODULE_STATE_LICENSED
+
+		client_numbers = {
+			"macos": 5,
+			"linux": 10,
+			"windows": 85 - CLIENT_LIMIT_THRESHOLD_PERCENT_WARNING + 1
+		}
+		modules = olp.get_modules()
+		assert modules["scalability1"]["available"]
+		assert modules["scalability1"]["state"] == OPSI_MODULE_STATE_CLOSE_TO_LIMIT
+
+		client_numbers = {
+			"macos": 5,
+			"linux": 10,
+			"windows": 85 + CLIENT_LIMIT_THRESHOLD_PERCENT
+		}
+		modules = olp.get_modules()
+		assert modules["scalability1"]["available"]
+		assert modules["scalability1"]["state"] == OPSI_MODULE_STATE_OVER_LIMIT
+
+		client_numbers = {
+			"macos": 5,
+			"linux": 10,
+			"windows": 85 + CLIENT_LIMIT_THRESHOLD_PERCENT + 1
+		}
+		modules = olp.get_modules()
+		assert not modules["scalability1"]["available"]
+		assert modules["scalability1"]["state"] == OPSI_MODULE_STATE_OVER_LIMIT
 
 
 def test_license_state():

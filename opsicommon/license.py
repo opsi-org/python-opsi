@@ -53,6 +53,11 @@ OPSI_LICENSE_CLIENT_NUMBER_UNLIMITED = 999999999
 OPSI_MODULE_STATE_FREE = "free"
 OPSI_MODULE_STATE_LICENSED = "licensed"
 OPSI_MODULE_STATE_UNLICENSED = "unlicensed"
+OPSI_MODULE_STATE_OVER_LIMIT = "over_limit"
+OPSI_MODULE_STATE_CLOSE_TO_LIMIT = "close_to_limit"
+
+CLIENT_LIMIT_THRESHOLD_PERCENT = 5
+CLIENT_LIMIT_THRESHOLD_PERCENT_WARNING = 5
 
 OPSI_MODULE_IDS = (
 	"directory-connector",
@@ -413,7 +418,7 @@ class OpsiModulesFile:  # pylint: disable=too-few-public-methods
 				common_lic["customer_name"] = value
 			elif attribute == "expires":
 				if value == 'never':
-					value = "2999-12-31"
+					value = OPSI_LICENSE_DATE_UNLIMITED
 				common_lic["valid_until"] = value
 			else:
 				module_id = attribute.lower()
@@ -434,14 +439,34 @@ class OpsiModulesFile:  # pylint: disable=too-few-public-methods
 			self.add_license(OpsiLicense(**kwargs))
 
 class OpsiLicensePool:
-	def __init__(self, license_file_path: str = None, modules_file_path: str = None) -> None:
+	def __init__(
+		self,
+		license_file_path: str = None,
+		modules_file_path: str = None,
+		client_info: typing.Union[dict, typing.Callable] = None
+	) -> None:
 		self.license_file_path: str = license_file_path
 		self.modules_file_path: str = modules_file_path
+		self._client_info: typing.Union[dict, typing.Callable] = client_info
 		self._licenses: typing.Dict[str, OpsiLicense] = {}
 
 	@property
 	def licenses(self):
 		return list(self.get_licenses())
+
+	@property
+	def client_numbers(self):
+		client_numbers = {}
+		if callable(self._client_info):
+			client_numbers = self._client_info()
+		elif self._client_info:
+			client_numbers = dict(self._client_info)
+		client_numbers["all"] = 0
+		for client_type in ("windows", "linux", "macos"):
+			if not client_type in client_numbers:
+				client_numbers[client_type] = 0
+			client_numbers["all"] += client_numbers[client_type]
+		return client_numbers
 
 	def get_licenses(
 		self,
@@ -492,6 +517,7 @@ class OpsiLicensePool:
 		if not at_date:
 			at_date = date.today()
 
+		client_numbers = self.client_numbers
 		modules = {}
 		for module_id in OPSI_MODULE_IDS:
 			if module_id in ("treeview", "vista"):
@@ -508,6 +534,7 @@ class OpsiLicensePool:
 					"license_ids": [],
 					"client_number": 0
 				}
+
 		for lic in self.get_licenses(valid_only=True, at_date=at_date):
 			if lic.module_id not in modules:
 				modules[lic.module_id] = {
@@ -523,7 +550,49 @@ class OpsiLicensePool:
 				modules[lic.module_id]["client_number"],
 				OPSI_LICENSE_CLIENT_NUMBER_UNLIMITED
 			)
+
+		for module_id, info in modules.items():
+			if info["state"] != OPSI_MODULE_STATE_LICENSED:
+				continue
+
+			client_number = client_numbers["all"]
+			if module_id == "linux_agent":
+				client_number = client_numbers["linux"]
+			elif module_id == "macos_agent":
+				client_number = client_numbers["macos"]
+			#elif module_id == "vpn":
+			#	client_number = client_numbers["vpn"]
+
+			usage_percent = client_number * 100 / info["client_number"]
+			if usage_percent > 100 + CLIENT_LIMIT_THRESHOLD_PERCENT:
+				info["state"] = OPSI_MODULE_STATE_OVER_LIMIT
+				info["available"] = False
+			elif usage_percent > 100:
+				info["state"] = OPSI_MODULE_STATE_OVER_LIMIT
+			elif usage_percent > 100 - CLIENT_LIMIT_THRESHOLD_PERCENT_WARNING:
+				info["state"] = OPSI_MODULE_STATE_CLOSE_TO_LIMIT
+
 		return modules
+
+	def get_legacy_modules(self):
+		for lic in self.get_licenses():
+			if lic.schema_version == 1:
+				modules = {
+					"signature": lic.signature.hex()
+				}
+				for line in lic.additional_data.split("\r\n"):
+					if line.strip():
+						attribute, value = line.split('=', 1)
+						attribute = attribute.strip()
+						value = value.strip()
+						if attribute != "customer":
+							try:
+								value = int(value)
+							except ValueError:
+								pass
+						modules[attribute] = value
+				return modules
+		return None
 
 	def _read_license_files(self) -> None:
 		license_files = [self.license_file_path]
@@ -548,4 +617,18 @@ class OpsiLicensePool:
 			self._read_modules_file()
 
 
-default_opsi_license_pool = OpsiLicensePool()
+default_opsi_license_pool = None  # pylint: disable=invalid-name
+def get_default_opsi_license_pool(
+	license_file_path: str = None,
+	modules_file_path: str = None,
+	client_info: typing.Union[dict, typing.Callable] = None
+):
+	global default_opsi_license_pool  # pylint: disable=invalid-name,global-statement
+	if not default_opsi_license_pool:
+		default_opsi_license_pool = OpsiLicensePool(
+			license_file_path=license_file_path,
+			modules_file_path=modules_file_path,
+			client_info=client_info
+		)
+		default_opsi_license_pool.load()
+	return default_opsi_license_pool

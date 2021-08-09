@@ -18,6 +18,7 @@ import re
 import shutil
 
 from opsicommon.logging import logger, secret_filter
+from opsicommon.license import get_default_opsi_license_pool
 
 from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Exceptions import (
@@ -185,6 +186,46 @@ containing the localisation of the hardware audit.
 
 	def getOpsiCACert(self) -> str:  # pylint: disable=invalid-name,no-self-use
 		return None
+
+	def _get_client_info(self):
+		return {
+			"macos": 0,
+			"linux": 0,
+			"windows": len(self.host_getObjects(attributes=['id'], type='OpsiClient'))
+		}
+
+	def getOpsiLicensingInfo(
+		self,
+		licenses: bool = False,
+		legacy_modules: bool = False,
+		dates: bool = False
+	):
+		"""
+		Returns opsi licensing information.
+		"""
+		pool = get_default_opsi_license_pool(
+			license_file_path=self._opsi_license_path,
+			modules_file_path=self._opsiModulesFile,
+			client_info=self._get_client_info
+		)
+		info = {
+			"client_numbers": pool.client_numbers,
+			"available_modules": [
+				module_id for module_id, info in pool.get_modules().items() if info["available"]
+			]
+		}
+		if licenses:
+			licenses = pool.get_licenses()
+			info["licenses"] = [ lic.to_dict(serializable=True, with_state=True) for lic in licenses ]
+		if legacy_modules:
+			info["legacy_modules"] = pool.get_legacy_modules()
+		if dates:
+			info["dates"] = {}
+			for at_date in pool.get_relevant_dates():
+				info["dates"][str(at_date)] = {
+					"modules": pool.get_modules(at_date=at_date)
+				}
+		return info
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Logs                                                                                      -

@@ -40,6 +40,7 @@ from OPSI.Util import compareVersions, getPublicKey
 __all__ = ('describeInterface', 'Backend')
 
 OPSI_MODULES_FILE = '/etc/opsi/modules'
+OPSI_LICENSE_PATH = '/etc/opsi/license'
 
 logger = Logger()
 
@@ -161,6 +162,7 @@ This defaults to ``self``.
 		self._context = self
 		self._opsiVersion = LIBRARY_VERSION
 		self._opsiModulesFile = OPSI_MODULES_FILE
+		self._opsi_license_path = OPSI_LICENSE_PATH
 		option_store = {}
 
 		for (option, value) in kwargs.items():
