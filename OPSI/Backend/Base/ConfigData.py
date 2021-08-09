@@ -194,7 +194,7 @@ containing the localisation of the hardware audit.
 			"windows": len(self.host_getObjects(attributes=['id'], type='OpsiClient'))
 		}
 
-	def getOpsiLicensingInfo(
+	def backend_getOpsiLicensingInfo(
 		self,
 		licenses: bool = False,
 		legacy_modules: bool = False,
