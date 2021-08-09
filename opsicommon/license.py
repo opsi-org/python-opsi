@@ -9,6 +9,7 @@ License handling
 import re
 import os
 import ast
+import zlib
 import glob
 import json
 import uuid
@@ -510,6 +511,13 @@ class OpsiLicensePool:
 				for revoked_id in lic.revoked_ids:
 					revoked_ids.add(revoked_id)
 		return revoked_ids
+
+	def get_licenses_checksum(self) -> str:
+		return str(zlib.crc32(
+			b"".join([
+				lic.get_hash(digest=True) for lic in self.get_licenses(valid_only=True)
+			])
+		))
 
 	def get_relevant_dates(self) -> typing.Set[date]:
 		dates = set()

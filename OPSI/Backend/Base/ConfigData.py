@@ -212,7 +212,8 @@ containing the localisation of the hardware audit.
 			"client_numbers": pool.client_numbers,
 			"available_modules": [
 				module_id for module_id, info in pool.get_modules().items() if info["available"]
-			]
+			],
+			"licenses_checksum": pool.get_licenses_checksum()
 		}
 		if licenses:
 			licenses = pool.get_licenses()

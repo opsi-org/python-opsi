@@ -224,6 +224,18 @@ def test_load_opsi_license_pool():
 		assert module_id in module_ids
 
 
+def test_opsi_license_pool_licenses_checksum():
+	olp = OpsiLicensePool(
+		license_file_path="tests/testopsicommon/data/license"
+	)
+	olp.load()
+	private_key, public_key = generate_key_pair(return_pem=False)
+	with mock.patch('opsicommon.license.get_signature_public_key', lambda x: public_key):
+		for lic in olp.licenses:
+			lic.sign(private_key)
+		checksum = olp.get_licenses_checksum()
+		assert checksum == "3193184139"
+
 def test_opsi_license_pool_relevant_dates():
 	olp = OpsiLicensePool(
 		license_file_path="tests/testopsicommon/data/license"
