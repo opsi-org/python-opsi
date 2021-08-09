@@ -433,6 +433,7 @@ def test_license_state_replaced_by_non_core():
 	with mock.patch('opsicommon.license.get_signature_public_key', lambda x: public_key):
 		for lic in olp.licenses:
 			lic.sign(private_key)
+		for lic in olp.licenses:
 			if lic.id == "7cf9ef7e-6e6f-43f5-8b52-7c4e582ff6f1":
 				assert lic.get_state() == OPSI_LICENSE_STATE_REPLACED_BY_NON_CORE
 
@@ -446,6 +447,7 @@ def test_license_state_revoked():
 	with mock.patch('opsicommon.license.get_signature_public_key', lambda x: public_key):
 		for lic in olp.licenses:
 			lic.sign(private_key)
+		for lic in olp.licenses:
 			if lic.id == "c6af25cf-62e4-4b90-8f4b-21c542d8b74b":
 				assert lic.get_state() == OPSI_LICENSE_STATE_REVOKED
 
