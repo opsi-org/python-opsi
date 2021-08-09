@@ -129,13 +129,13 @@ def get_signature_public_key(schema_version: int):
 
 	return RSA.import_key(
 		"-----BEGIN PUBLIC KEY-----\n"
-		"MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr6FLWzpAyZP43Y6VeDKu\n"
-		"vmxg3OWCXxG0sAV9dXQ/o6cSq5xQyIv+aFbivtYmNjcH370bYjK7+sQ69fPH3x9t\n"
-		"73t6c5ntpxQoIDDhgcnjp22TfNYEJDhH9YPXdJDdPJUjUBML+9vWq7YTgx7gCK3f\n"
-		"EBjGC3UsZ4oDWdkoO65JO2cqBRDz8gvfpQuqne7XU3FwUfVTh5hrADbf7lZ/VMQU\n"
-		"UQnqE2RwMvL43jSGZvZiIMfDua/l0oXLrpxqOLS9qS33zhwmx9sVt5dkbZQH/cRV\n"
-		"yqkdwMLbYmg9jMaYrF7/UWUG757c/fZyaY2yCESUXN3obiCXza6DNEOSqa49Hb9A\n"
-		"DQIDAQAB\n"
+		"MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqTWmFj6m6O3gO676GStL\n"
+		"Kk388kPxRRvQ7uoieSyafmwmsxxGiRQ6ifM+I2m8o3Gk5wEVBI+UU2jIZONTvNOP\n"
+		"RbSmm96NEfHMUbnwwNwn5J5j8a9NpT6/sthEzptevgm6inCIpGlnhD03/Qaqx5qn\n"
+		"81kczHMIcfYjpzgIRK7xBdG7XEpgVzsdwVI5EgBoX651n6TgJ5nHIYlOwhmF6L3W\n"
+		"y/LEF4vQ5amESMTQ5eOR9xEfZoUgeyt15JLl9TUBQqoSx8nkS+O2o+qYF9wiFaFm\n"
+		"ZqmPuNFbk1fM1BrsqrBMFVrzx6mRFdDfAdpqtxfFaOWTLwGGFaOEi2k39EVgnc6Z\n"
+		"8QIDAQAB\n"
 		"-----END PUBLIC KEY-----\n"
 	)
 

@@ -83,6 +83,8 @@ def test_generate_key_pair():
 	assert not public_key.has_private()
 
 	private_key, public_key = generate_key_pair(return_pem=True)
+	print(private_key)
+	print(public_key)
 	assert "-----BEGIN RSA PRIVATE KEY-----" in private_key
 	assert "-----BEGIN PUBLIC KEY-----" in public_key
 
