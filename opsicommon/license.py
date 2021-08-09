@@ -106,7 +106,7 @@ def generate_key_pair(bits: int = 2048, return_pem: int = False) -> typing.List[
 	return private_key.decode(), public_key.decode()
 
 
-@lru_cache
+@lru_cache(maxsize=None)
 def get_signature_public_key(schema_version: int):
 	if schema_version < 2:
 		data = base64.decodebytes(
