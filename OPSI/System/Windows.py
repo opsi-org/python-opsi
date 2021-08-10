@@ -1317,10 +1317,10 @@ def getPids(process, sessionId=None):
 			sid = win32ts.ProcessIdToSessionId(pid)
 		except Exception:
 			pass
-
-		logger.debug2("   got process %s with pid %d in session %s", pe32.szExeFile.decode(), pid, sid)
-		if pe32.szExeFile.decode().lower() == process.lower():
-			logger.info("Found process %s with matching name (pid %d, session %s)", pe32.szExeFile.decode().lower(), pid, sid)
+		processName = pe32.szExeFile.decode("utf-16")
+		logger.debug2("   got process %s with pid %d in session %s", processName, pid, sid)
+		if processName.lower() == process.lower():
+			logger.info("Found process %s with matching name (pid %d, session %s)", processName.lower(), pid, sid)
 			if sessionId is None or (sid == sessionId):
 				processIds.append(forceInt(pid))
 
