@@ -1367,7 +1367,7 @@ def getProcessName(processId):
 	while True:
 		pid = pe32.th32ProcessID
 		if pid == processId:
-			processName = forceUnicode(pe32.szExeFile)
+			processName = pe32.szExeFile.decode("utf-16")
 			break
 
 		if Process32Next(hProcessSnap, byref(pe32)) == win32con.FALSE:
