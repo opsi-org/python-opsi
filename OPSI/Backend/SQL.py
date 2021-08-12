@@ -114,13 +114,15 @@ class SQL:
 
 	@contextmanager
 	def session(self, commit=True):
-		session = None
+		session = self.Session()
 		try:
-			session = self.Session()
 			yield session
-		finally:
 			if commit:
 				session.commit()
+		except:
+			session.rollback()
+			raise
+		finally:
 			self.Session.remove()
 
 	def connect(self, cursorType=None):  # pylint: disable=no-self-use,unused-argument
