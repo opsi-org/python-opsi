@@ -202,12 +202,14 @@ class SpeedLimiter():  # pylint: disable=too-many-instance-attributes
 		max_time = self._speed_data[-1][0]
 		if min_time == max_time:
 			min_time -= 0.5
-		self._average_speed = float(total_bytes) / (max_time - min_time)
+		if max_time - min_time != 0:
+			self._average_speed = float(total_bytes) / (max_time - min_time)
 
 		last_time = now - 0.5
 		if len(self._speed_data) > 1:
 			last_time = self._speed_data[-2][0]
-		self._current_speed = float(num_bytes) / (now - last_time)
+		if now - last_time != 0:
+			self._current_speed = float(num_bytes) / (now - last_time)
 
 	def _get_dynamic_limit(self):
 		total_network_usage = self._get_network_usage()
