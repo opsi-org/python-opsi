@@ -278,13 +278,13 @@ class SpeedLimiter():  # pylint: disable=too-many-instance-attributes
 					bwlimit = self._max_bandwidth
 
 		if bwlimit <= 0:
-			return buffer_size
+			return self._max_buffer_size
 
 		bwlimit = float(bwlimit)
 		speed = float(self._current_speed)
 		logger.trace(
-			"Transfer speed %0.2fkByte/s, limit: %0.2fkByte/s",
-			speed / 1000, bwlimit / 1000
+			"Transfer speed %f kByte/s, limit: %f kByte/s, max: %f kByte/s, dynamic: %f kByte/s",
+			speed / 1000, bwlimit / 1000, self._max_bandwidth / 1000, self._dynamic_bandwidth_limit / 1000
 		)
 		if bwlimit > 0 and speed > 0:
 			factor = 1.0
