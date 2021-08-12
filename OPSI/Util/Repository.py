@@ -345,6 +345,10 @@ class SpeedLimiter():  # pylint: disable=too-many-instance-attributes
 
 	def set_bandwidth(self, max_bandwidth: int = 0, dynamic: bool = False):
 		''' maxBandwidth in byte/s'''
+		logger.info(
+			"Setting bandwidth limits to: max=%f kByte/s, dynamic=%s",
+			max_bandwidth / 1000, dynamic
+		)
 		self._dynamic = forceBool(dynamic)
 		self._max_bandwidth = max(forceInt(max_bandwidth), 0)
 
@@ -379,8 +383,8 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 		'''
 		self._url = forceUnicode(url)
 		self._path = ''
-		self._maxBandwidth = kwargs.get('maxBandwidth', 0)
-		self._dynamicBandwidth = kwargs.get('dynamicBandwidth', False)
+		self._maxBandwidth = 0
+		self._dynamicBandwidth = False
 
 		self.bufferSize = self.DEFAULT_BUFFER_SIZE
 		self._bytesTransfered = 0
@@ -388,19 +392,33 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 		self._hooks = []
 		self._transferDirection = None
 		self.speed_limiter = SpeedLimiter()
-		self.speed_limiter.set_bandwidth(self._maxBandwidth, self._dynamicBandwidth)
+
+		self.setBandwidth(
+			dynamicBandwidth=kwargs.get('dynamicBandwidth', self._dynamicBandwidth),
+			maxBandwidth=kwargs.get('maxBandwidth', self._maxBandwidth)
+		)
 
 	def setBandwidth(self, dynamicBandwidth, maxBandwidth):
-		self.setDynamicBandwidth(dynamicBandwidth)
-		self.setMaxBandwidth(maxBandwidth)
+		self._dynamicBandwidth = dynamicBandwidth
+		self._maxBandwidth = maxBandwidth
+		self.speed_limiter.set_bandwidth(
+			max_bandwidth=self._maxBandwidth,
+			dynamic=self._dynamicBandwidth
+		)
 
 	def setMaxBandwidth(self, maxBandwidth):
 		self._maxBandwidth = maxBandwidth
-		self.speed_limiter.set_bandwidth(self._dynamicBandwidth, self._maxBandwidth)
+		self.speed_limiter.set_bandwidth(
+			max_bandwidth=self._maxBandwidth,
+			dynamic=self._dynamicBandwidth
+		)
 
 	def setDynamicBandwidth(self, dynamicBandwidth):
 		self._dynamicBandwidth = dynamicBandwidth
-		self.speed_limiter.set_bandwidth(self._dynamicBandwidth, self._maxBandwidth)
+		self.speed_limiter.set_bandwidth(
+			max_bandwidth=self._maxBandwidth,
+			dynamic=self._dynamicBandwidth
+		)
 
 	def __str__(self):
 		return f"<{self.__class__.__name__}({self._url})>"
