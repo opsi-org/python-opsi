@@ -16,6 +16,7 @@ import pytest
 from opsicommon.license import (
 	OPSI_MODULE_STATE_CLOSE_TO_LIMIT,
 	OPSI_MODULE_STATE_OVER_LIMIT,
+	OpsiLicenseFile,
 	generate_key_pair,
 	OpsiLicense, OpsiModulesFile, OpsiLicensePool,
 	OPSI_LICENSE_STATE_REPLACED_BY_NON_CORE,
@@ -84,8 +85,6 @@ def test_generate_key_pair():
 	assert not public_key.has_private()
 
 	private_key, public_key = generate_key_pair(return_pem=True)
-	print(private_key)
-	print(public_key)
 	assert "-----BEGIN RSA PRIVATE KEY-----" in private_key
 	assert "-----BEGIN PUBLIC KEY-----" in public_key
 
@@ -214,7 +213,7 @@ def test_load_opsi_license_pool():
 	olp.load()
 
 	modules, _expires, _customer, _signature = _read_modules_file(modules_file)
-	module_ids = [ m for m in modules if modules[m] != "no" ]
+	module_ids = [ m for m, v in modules.items() if v != "no" ]
 	assert len(module_ids) == len(olp.licenses)
 
 	for lic in olp.licenses:
@@ -470,7 +469,7 @@ def test_license_state_revoked():
 def test_opsi_modules_file():
 	modules_file = "tests/testopsicommon/data/license/modules"
 	raw_data = pathlib.Path(modules_file).read_text()
-	modules, expires, customer, signature = _read_modules_file(modules_file)
+	modules, expires, _customer, signature = _read_modules_file(modules_file)
 	omf = OpsiModulesFile(modules_file)
 	omf.read()
 	assert len(modules) == len(omf.licenses)
@@ -485,3 +484,35 @@ def test_opsi_modules_file():
 		assert \
 			sorted([x for x in raw_data.replace("\r","").split("\n") if x and not x.startswith("signature")]) == \
 			sorted([x for x in lic.additional_data.replace("\r","").split("\n") if x])
+
+def test_write_license_file(tmp_path):
+	license_file = str(tmp_path / "test.opsilic")
+	private_key, public_key = generate_key_pair(return_pem=False)
+	with mock.patch('opsicommon.license.get_signature_public_key', lambda x: public_key):
+		lic1 = dict(LIC1)
+		del lic1["id"]
+		lic1["module_id"] = "scalability1"
+		lic1["note"] = "Line1\nLine2"
+		lic1 = OpsiLicense(**lic1)
+		lic1.sign(private_key)
+
+		lic2 = dict(LIC1)
+		del lic2["id"]
+		lic2["module_id"] = "vpn"
+		lic2["revoked_ids"] = ["legacy-vpn", "7cf9ef7e-6e6f-43f5-8b52-7c4e582ff6f1"]
+		lic2 = OpsiLicense(**lic2)
+		lic2.sign(private_key)
+
+		file = OpsiLicenseFile(license_file)
+		file.add_license(lic1)
+		file.add_license(lic2)
+		file.write()
+
+		file = OpsiLicenseFile(license_file)
+		file.read()
+		assert len(file.licenses) == 2
+		for lic in file.licenses:
+			if lic.id == lic1.id:
+				assert lic.to_dict() == lic1.to_dict()
+			elif lic.id == lic2.id:
+				assert lic.to_dict() == lic2.to_dict()

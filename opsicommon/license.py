@@ -203,7 +203,7 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 		default=None,
 	)
 	@service_id.validator
-	def validate_service_id(self, attribute, value):
+	def validate_service_id(self, attribute, value): # pylint: disable=no-self-use
 		if value is not None and not re.match(r"[a-z0-9\-\.]+", value):
 			raise ValueError(f"Invalid value for {attribute}", value)
 
@@ -378,7 +378,31 @@ class OpsiLicenseFile:
 			kwargs["revoked_ids"] = [x.strip() for x in kwargs.get("revoked_ids", "").split(",") if x]
 			kwargs["note"] = ast.literal_eval(f'"{kwargs.get("note")}"') or None
 			kwargs["id"] = section
+			for key, val in kwargs.items():
+				if val == "":
+					kwargs[key] = None
 			self.add_license(OpsiLicense(**kwargs))
+
+	def write(self):
+		if not self._licenses:
+			raise RuntimeError("No licenses to write")
+		with codecs.open(self.filename, "w", "utf-8") as file:
+			for license_id in sorted(self._licenses):
+				file.write(f"[{license_id}]\n")
+				data = self._licenses[license_id].to_dict(serializable=True)
+				for field in attr.fields(OpsiLicense):
+					value = data.get(field.name)
+					if field.name.startswith("_") or field.name == "id":
+						continue
+					if value in (None, ""):
+						value = ""
+					elif field.name == "revoked_ids":
+						value = ",".join(value)
+					elif field.name == "note":
+						value = repr(value)[1:-1]
+					file.write(f"{field.name} = {value}\n")
+				file.write("\n")
+
 
 class OpsiModulesFile:  # pylint: disable=too-few-public-methods
 	def __init__(self, filename: str) -> None:
@@ -532,7 +556,7 @@ class OpsiLicensePool:
 					dates.add(lic.valid_until + timedelta(days=1))
 		return sorted(dates)
 
-	def get_modules(self, at_date: date = None):
+	def get_modules(self, at_date: date = None):  # pylint: disable=too-many-branches
 		if not at_date:
 			at_date = date.today()
 
@@ -594,7 +618,7 @@ class OpsiLicensePool:
 		return modules
 
 	def get_legacy_modules(self):
-		for lic in self.get_licenses():
+		for lic in self.get_licenses():  # pylint: disable=too-many-nested-blocks
 			if lic.schema_version == 1:
 				modules = {
 					"signature": lic.signature.hex()
