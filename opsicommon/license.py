@@ -413,6 +413,8 @@ class OpsiModulesFile:  # pylint: disable=too-few-public-methods
 			"type": OPSI_LICENSE_TYPE_STANDARD,
 			"schema_version": 1,
 			"opsi_version": "4.1",
+			"issued_at": "2010-01-01",
+			"valid_from": "2010-01-01",
 			"additional_data": ""
 		}
 		modules = {}
