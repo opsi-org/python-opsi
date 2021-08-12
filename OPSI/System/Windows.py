@@ -256,7 +256,7 @@ def getFileVersionInfo(filename):
 		logger.warning("File %s is not a valid PE file", filename)
 		return info
 	if not hasattr(pe, 'VS_VERSIONINFO'):
-		logger.warning(u"Could not find file version info in file %s", filename)
+		logger.warning("Could not find file version info in file %s", filename)
 		return info
 	for idx in range(len(pe.VS_VERSIONINFO)):
 		if not hasattr(pe, 'FileInfo') or len(pe.FileInfo) <= idx:
@@ -268,7 +268,7 @@ def getFileVersionInfo(filename):
 				for key, value in st_entry.entries.items():
 					info[key.decode('utf-8', 'backslashreplace')] = value.decode('utf-8', 'backslashreplace')
 
-	logger.debug(u"File version info for '%s': %s", filename, info)
+	logger.debug("File version info for '%s': %s", filename, info)
 	return info
 
 
@@ -369,11 +369,11 @@ class NetworkPerformanceCounter(threading.Thread):
 		windll.iphlpapi.GetIfTable(byref(iftable), byref(iftable_size), 0)
 		bestRatio = 0.0
 		if iftable.dwNumEntries <= 0:
-			raise RuntimeError(u"No network interfaces found while searching for interface '%s'" % interface)
+			raise RuntimeError("No network interfaces found while searching for interface '%s'" % interface)
 
 		for i in range(iftable.dwNumEntries):
 			ratio = difflib.SequenceMatcher(None, iftable.table[i].bDescr, interface).ratio()
-			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s",
+			logger.info("NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s",
 				interface, iftable.table[i].bDescr, ratio
 			)
 			if ratio > bestRatio:
@@ -381,9 +381,9 @@ class NetworkPerformanceCounter(threading.Thread):
 				self.interface = iftable.table[i].bDescr
 
 		if not self.interface:
-			raise ValueError(u"Network interface '%s' not found" % interface)
+			raise ValueError("Network interface '%s' not found" % interface)
 
-		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s)", self.interface, bestRatio)
+		logger.info("NetworkPerformanceCounter: using interface '%s' match ratio (%s)", self.interface, bestRatio)
 		self.start()
 
 	def __del__(self):
@@ -540,11 +540,11 @@ class NetworkPerformanceCounterPDH(threading.Thread):
 		bestRatio = 0.0
 		for instance in instances:
 			ratio = difflib.SequenceMatcher(None, instance, interface).ratio()
-			logger.info(u"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s", interface, instance, ratio)
+			logger.info("NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s", interface, instance, ratio)
 			if ratio > bestRatio:
 				bestRatio = ratio
 				self.interface = instance
-		logger.info(u"NetworkPerformanceCounter: using interface '%s' match ratio (%s) with available counters: %s", self.interface, bestRatio, items)
+		logger.info("NetworkPerformanceCounter: using interface '%s' match ratio (%s) with available counters: %s", self.interface, bestRatio, items)
 
 		# For correct translations (find_pdh_counter_localized_name) see:
 		# HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib
@@ -573,7 +573,7 @@ class NetworkPerformanceCounterPDH(threading.Thread):
 		try:
 			self._inCounterHandle = win32pdh.AddCounter(self._queryHandle, self.bytesInPerSecondCounter)
 		except Exception as error:
-			raise RuntimeError(u"Failed to add inCounterHandle %s->%s: %s" % (
+			raise RuntimeError("Failed to add inCounterHandle %s->%s: %s" % (
 				win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
 				win32pdhutil.find_pdh_counter_localized_name('Bytes In/sec'),
 				error
@@ -581,7 +581,7 @@ class NetworkPerformanceCounterPDH(threading.Thread):
 		try:
 			self._outCounterHandle = win32pdh.AddCounter(self._queryHandle, self.bytesOutPerSecondCounter)
 		except Exception as error:
-			raise RuntimeError(u"Failed to add outCounterHandle %s->%s: %s" % (
+			raise RuntimeError("Failed to add outCounterHandle %s->%s: %s" % (
 				win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
 				win32pdhutil.find_pdh_counter_localized_name('Bytes Sent/sec'),
 				error
@@ -632,11 +632,11 @@ class NetworkPerformanceCounterPDH(threading.Thread):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def copyACL(src, dest):
 	revision = src.GetAclRevision()
-	logger.debug2(u"copyACL: ace count is %s", src.GetAceCount())
+	logger.trace("copyACL: ace count is %s", src.GetAceCount())
 	for i in range(src.GetAceCount()):
-		logger.debug2(u"copyACL: processing ace #%s", i)
+		logger.trace("copyACL: processing ace #%s", i)
 		ace = src.GetAce(i)
-		logger.debug2(u"copyACL: ace: %s", ace)
+		logger.trace("copyACL: ace: %s", ace)
 		# XXX: Not sure if these are actually correct.
 		# See http://aspn.activestate.com/ASPN/docs/ActivePython/2.4/pywin32/PyACL__GetAce_meth.html
 		if ace[0][0] == win32con.ACCESS_ALLOWED_ACE_TYPE:
@@ -737,7 +737,7 @@ def getDiskSpaceUsage(path):
 		'used': capacity - available,
 		'usage': (capacity - available) / capacity
 	}
-	logger.info(u"Disk space usage for path '%s': %s", path, info)
+	logger.info("Disk space usage for path '%s': %s", path, info)
 	return info
 
 
@@ -1002,21 +1002,21 @@ def lockSession(session_id = None, username = None):
 lockWorkstation = lockSession
 
 def reboot(wait=10):
-	logger.notice(u"Rebooting in %s seconds", wait)
+	logger.notice("Rebooting in %s seconds", wait)
 	wait = forceInt(wait)
 	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
 	win32api.InitiateSystemShutdown(None, "Opsi reboot", wait, True, True)
 
 
 def shutdown(wait=10):
-	logger.notice(u"Shutting down in %s seconds", wait)
+	logger.notice("Shutting down in %s seconds", wait)
 	wait = forceInt(wait)
 	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
 	win32api.InitiateSystemShutdown(None, "Opsi shutdown", wait, True, False)
 
 
 def abortShutdown():
-	logger.notice(u"Aborting system shutdown")
+	logger.notice("Aborting system shutdown")
 	adjustPrivilege(ntsecuritycon.SE_SHUTDOWN_NAME)
 	win32api.AbortSystemShutdown(None)
 
@@ -1030,7 +1030,7 @@ def createWindowStation(name):
 	try:
 		return win32service.CreateWindowStation(name, 0, win32con.MAXIMUM_ALLOWED, sa)
 	except win32service.error as e:
-		logger.error(u"Failed to create window station '%s': %s", name, forceUnicode(e))
+		logger.error("Failed to create window station '%s': %s", name, forceUnicode(e))
 
 
 def createDesktop(name, runCommand=None):
@@ -1051,7 +1051,7 @@ def createDesktop(name, runCommand=None):
 	try:
 		hdesk = win32service.CreateDesktop(name, 0, win32con.MAXIMUM_ALLOWED, sa)
 	except win32service.error as error:
-		logger.error(u"Failed to create desktop '%s': %s", name, forceUnicode(error))
+		logger.error("Failed to create desktop '%s': %s", name, forceUnicode(error))
 
 	if runCommand:
 		s = win32process.STARTUPINFO()
@@ -1305,7 +1305,7 @@ def getPids(process, sessionId=None):
 	hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
 	pe32 = PROCESSENTRY32()
 	pe32.dwSize = sizeof(PROCESSENTRY32)
-	logger.debug2("Getting first process")
+	logger.trace("Getting first process")
 	if Process32First(hProcessSnap, byref(pe32)) == win32con.FALSE:
 		logger.error("Failed to get first process")
 		return
@@ -1317,8 +1317,8 @@ def getPids(process, sessionId=None):
 			sid = win32ts.ProcessIdToSessionId(pid)
 		except Exception:
 			pass
-		processName = pe32.szExeFile.decode("utf-16-be")
-		logger.debug2("   got process %s with pid %d in session %s", processName, pid, sid)
+		processName = pe32.szExeFile.decode("Windows-1252")
+		logger.trace("   got process %s with pid %d in session %s", processName, pid, sid)
 		if processName.lower() == process.lower():
 			logger.info("Found process %s with matching name (pid %d, session %s)", processName.lower(), pid, sid)
 			if sessionId is None or (sid == sessionId):
@@ -1367,7 +1367,7 @@ def getProcessName(processId):
 	while True:
 		pid = pe32.th32ProcessID
 		if pid == processId:
-			processName = pe32.szExeFile.decode("utf-16")
+			processName = pe32.szExeFile.decode("Windows-1252")
 			break
 
 		if Process32Next(hProcessSnap, byref(pe32)) == win32con.FALSE:
