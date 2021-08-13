@@ -274,6 +274,33 @@ def test_opsi_license_pool_relevant_dates():
 				assert not modules["scalability1"]["available"]
 				assert modules["scalability1"]["state"] == OPSI_MODULE_STATE_UNLICENSED
 
+def test_licensing_info():
+	olp = OpsiLicensePool(
+		license_file_path="tests/testopsicommon/data/license",
+		modules_file_path="tests/testopsicommon/data/license/modules"
+	)
+	olp.load()
+	private_key, public_key = generate_key_pair(return_pem=False)
+	with mock.patch('opsicommon.license.get_signature_public_key', lambda x: public_key):
+		for lic in olp.licenses:
+			if lic.schema_version > 1:
+				lic.sign(private_key)
+
+		info = {
+			"client_numbers": olp.client_numbers,
+			"available_modules": [
+				module_id for module_id, info in olp.get_modules().items() if info["available"]
+			],
+			"licenses_checksum": olp.get_licenses_checksum()
+		}
+		licenses = olp.get_licenses()
+		info["licenses"] = [ lic.to_dict(serializable=True, with_state=True) for lic in licenses ]
+		info["legacy_modules"] = olp.get_legacy_modules()
+		info["dates"] = {}
+		for at_date in olp.get_relevant_dates():
+			info["dates"][str(at_date)] = {
+				"modules": olp.get_modules(at_date=at_date)
+			}
 
 def test_license_state_client_number_thresholds():
 	private_key, public_key = generate_key_pair(return_pem=False)
@@ -516,3 +543,4 @@ def test_write_license_file(tmp_path):
 				assert lic.to_dict() == lic1.to_dict()
 			elif lic.id == lic2.id:
 				assert lic.to_dict() == lic2.to_dict()
+

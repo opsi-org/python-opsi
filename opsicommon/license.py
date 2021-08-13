@@ -339,6 +339,7 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 				exclude_ids=[self.id],
 				valid_only=True,
 				test_revoked=False,
+				types=[OPSI_LICENSE_TYPE_STANDARD],
 				at_date=at_date
 			):
 				if lic.type != OPSI_LICENSE_TYPE_CORE and lic.module_id == self.module_id:
@@ -509,6 +510,7 @@ class OpsiLicensePool:
 		exclude_ids: typing.List[str] = None,
 		valid_only: bool = False,
 		test_revoked: bool = True,
+		types: typing.List[str] = None,
 		at_date: date = None
 	):
 		if not at_date:
@@ -516,6 +518,8 @@ class OpsiLicensePool:
 
 		for lic in self._licenses.values():
 			if exclude_ids and lic.id in exclude_ids:
+				continue
+			if types and lic.type not in types:
 				continue
 			if (
 				valid_only and
