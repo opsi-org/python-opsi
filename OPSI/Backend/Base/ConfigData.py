@@ -195,7 +195,7 @@ containing the localisation of the hardware audit.
 			"windows": len(self.host_getObjects(attributes=['id'], type='OpsiClient'))
 		}
 
-	@lru_cache(maxsize=None)
+	@lru_cache(maxsize=3)
 	def _get_licensing_info(
 		self,
 		licenses: bool = False,
