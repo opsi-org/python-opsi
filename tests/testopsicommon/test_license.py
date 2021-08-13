@@ -6,10 +6,14 @@
 This file is part of opsi - https://www.opsi.org
 """
 
+import os
+import glob
+import shutil
 import codecs
 import json
 import pathlib
 from datetime import date, timedelta
+from sys import path
 from unittest import mock
 import pytest
 
@@ -221,6 +225,35 @@ def test_load_opsi_license_pool():
 		_prefix, module_id = lic.id.split("-", 1)
 		assert _prefix == "legacy"
 		assert module_id in module_ids
+
+
+def test_opsi_license_pool_modified(tmp_path):
+	license_file_path = tmp_path / "licenses"
+	modules_file_path = tmp_path / "licenses" / "modules"
+	shutil.copytree("tests/testopsicommon/data/license", str(license_file_path))
+	olp = OpsiLicensePool(
+		license_file_path=str(license_file_path),
+		modules_file_path=str(modules_file_path)
+	)
+	olp.load()
+	assert olp.get_licenses()
+	assert not olp.modified()
+
+	modules_file_path.touch()
+	assert olp.modified()
+	olp.load()
+	assert not olp.modified()
+
+	lic_file = license_file_path / "test1.opsilic"
+	lic_file.rename(lic_file.with_suffix(".hide"))
+	assert olp.modified()
+	olp.load()
+	assert not olp.modified()
+
+	lic_file.with_suffix(".hide").rename(lic_file)
+	assert olp.modified()
+	olp.load()
+	assert not olp.modified()
 
 
 def test_opsi_license_pool_licenses_checksum():

@@ -8,6 +8,7 @@ Configuration data holding backend.
 
 # pylint: disable=too-many-lines
 
+from functools import lru_cache
 import platform
 import codecs
 import collections
@@ -194,7 +195,8 @@ containing the localisation of the hardware audit.
 			"windows": len(self.host_getObjects(attributes=['id'], type='OpsiClient'))
 		}
 
-	def backend_getLicensingInfo(
+	@lru_cache(maxsize=None)
+	def _get_licensing_info(
 		self,
 		licenses: bool = False,
 		legacy_modules: bool = False,
@@ -227,6 +229,27 @@ containing the localisation of the hardware audit.
 					"modules": pool.get_modules(at_date=at_date)
 				}
 		return info
+
+	def backend_getLicensingInfo(
+		self,
+		licenses: bool = False,
+		legacy_modules: bool = False,
+		dates: bool = False
+	):
+		pool = get_default_opsi_license_pool(
+			license_file_path=self._opsi_license_path,
+			modules_file_path=self._opsiModulesFile,
+			client_info=self._get_client_info
+		)
+		if pool.modified():
+			pool.load()
+			self._get_licensing_info.cache_clear()
+
+		return self._get_licensing_info(
+			licenses=licenses,
+			legacy_modules=legacy_modules,
+			dates=dates
+		)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Logs                                                                                      -

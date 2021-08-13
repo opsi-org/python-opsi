@@ -486,6 +486,21 @@ class OpsiLicensePool:
 		self.modules_file_path: str = modules_file_path
 		self._client_info: typing.Union[dict, typing.Callable] = client_info
 		self._licenses: typing.Dict[str, OpsiLicense] = {}
+		self._file_modification_dates: typing.Dict[str, int] = {}
+
+	@property
+	def license_files(self) -> typing.List[str]:
+		license_files = []
+		if self.license_file_path and os.path.exists(self.license_file_path):
+			license_files = [self.license_file_path]
+			if os.path.isdir(self.license_file_path):
+				license_files = glob.glob(os.path.join(self.license_file_path, "*.opsilic"))
+		return license_files
+
+	@property
+	def modules_file(self) -> str:
+		if self.modules_file_path and os.path.exists(self.modules_file_path):
+			return self.modules_file_path
 
 	@property
 	def licenses(self):
@@ -505,7 +520,7 @@ class OpsiLicensePool:
 			client_numbers["all"] += client_numbers[client_type]
 		return client_numbers
 
-	def get_licenses(
+	def get_licenses(  # pylint: disable=too-many-arguments
 		self,
 		exclude_ids: typing.List[str] = None,
 		valid_only: bool = False,
@@ -532,6 +547,11 @@ class OpsiLicensePool:
 		for lic in opsi_license:
 			lic.set_license_pool(self)
 			self._licenses[lic.id] = lic
+
+	def remove_license(self, *opsi_license: OpsiLicense) -> None:
+		for lic in opsi_license:
+			if lic.id in self._licenses:
+				del self._licenses[lic.id]
 
 	def get_revoked_license_ids(self, at_date: date = None) -> typing.Set[str]:
 		if not at_date:
@@ -643,25 +663,37 @@ class OpsiLicensePool:
 		return None
 
 	def _read_license_files(self) -> None:
-		license_files = [self.license_file_path]
-		if os.path.isdir(self.license_file_path):
-			license_files = glob.glob(os.path.join(self.license_file_path, "*.opsilic"))
-
-		for license_file in license_files:
+		for license_file in self.license_files:
 			olf = OpsiLicenseFile(license_file)
 			olf.read()
 			self.add_license(*olf.licenses)
+			self._file_modification_dates[license_file] = os.path.getmtime(license_file)
 
 	def _read_modules_file(self) -> None:
-		omf = OpsiModulesFile(self.modules_file_path)
+		omf = OpsiModulesFile(self.modules_file)
 		omf.read()
 		self.add_license(*omf.licenses)
+		self._file_modification_dates[self.modules_file] = os.path.getmtime(self.modules_file)
+
+	def modified(self):
+		files = self.license_files
+		if self.modules_file:
+			files.append(self.modules_file)
+		if len(files) != len(self._file_modification_dates):
+			return True
+		for file in files:
+			if not file in self._file_modification_dates:
+				return True
+			if os.path.getmtime(file) != self._file_modification_dates[file]:
+				return True
+		return False
 
 	def load(self):
 		self._licenses = {}
-		if self.license_file_path:
+		self._file_modification_dates = {}
+		if self.license_files:
 			self._read_license_files()
-		if self.modules_file_path:
+		if self.modules_file:
 			self._read_modules_file()
 
 
