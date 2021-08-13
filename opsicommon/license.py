@@ -306,24 +306,27 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 	def from_json(cls, json_data: str) -> 'OpsiLicense':
 		return OpsiLicense.from_dict(json.loads(json_data))
 
-	def get_checksum(self):
-		return zlib.crc32(self.to_json(with_state=False).encode("utf-8"))
+	def _hash_base(self, with_signature: bool = True) -> bytes:
+		string = ""
+		data = self.to_dict(serializable=True, with_state=False)
+		for attribute in sorted(data):
+			if attribute.startswith("_") or (attribute == "signature" and not with_signature):
+				continue
+			value = data[attribute]
+			if isinstance(value, list):
+				value = ",".join(sorted(value))
+			string += f"{attribute}={json.dumps(value)}\n"
+		return string.encode("utf-8")
+
+	def get_checksum(self, with_signature: bool = True) -> str:
+		return f"{zlib.crc32(self._hash_base(with_signature)):x}"
 
 	def get_hash(self, digest: bool = False, hex_digest: bool = False):
 		_hash = None
 		if self.schema_version == 1:
 			_hash = MD5.new(self.additional_data.encode("utf-8"))
 		else:
-			string = ""
-			data = self.to_dict(serializable=True, with_state=False)
-			for attribute in sorted(data):
-				if attribute == "signature" or attribute.startswith("_"):
-					continue
-				value = data[attribute]
-				if isinstance(value, list):
-					value = ",".join(sorted(value))
-				string += f"{attribute}={json.dumps(value)}\n"
-			_hash = SHA3_512.new(string.encode("utf-8"))
+			_hash = SHA3_512.new(self._hash_base(with_signature=False))
 
 		if hex_digest:
 			return _hash.hexdigest()
@@ -335,7 +338,7 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 		self._cached_state = {}
 
 	def get_state(self, test_revoked: bool = True, at_date: date = None) -> str:
-		checksum = self.get_checksum()
+		checksum = self.get_checksum(with_signature=True)
 		if checksum != self._checksum:
 			self.clear_state_cache()
 		self._checksum = checksum
@@ -604,9 +607,10 @@ class OpsiLicensePool:
 
 	def get_licenses_checksum(self) -> str:
 		data = zlib.crc32(
-			b"".join([
-				lic.get_hash(digest=True) for lic in self.get_licenses(valid_only=True)
-			])
+			b"".join(sorted([
+				lic.get_checksum(with_signature=False).encode("utf-8")
+				for lic in self.get_licenses(valid_only=True)
+			]))
 		)
 		return f"{data:x}"
 
