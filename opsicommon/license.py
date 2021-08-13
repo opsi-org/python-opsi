@@ -265,12 +265,22 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 		default=None
 	)
 
+	_checksum: str = attr.ib(
+		default=None
+	)
+
+	_cached_state: typing.Dict[str, str] = attr.ib(
+		default={}
+	)
+
 	def set_license_pool(self, license_pool: 'OpsiLicensePool'):
 		self._license_pool = license_pool
 
 	def to_dict(self, serializable: bool = False, with_state: bool = False) -> dict:
 		res = attr.asdict(self)
 		del res["_license_pool"]
+		del res["_checksum"]
+		del res["_cached_state"]
 		if with_state:
 			res["_state"] = self.get_state()
 		if serializable:
@@ -296,6 +306,9 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 	def from_json(cls, json_data: str) -> 'OpsiLicense':
 		return OpsiLicense.from_dict(json.loads(json_data))
 
+	def get_checksum(self):
+		return zlib.crc32(self.to_json(with_state=False).encode("utf-8"))
+
 	def get_hash(self, digest: bool = False, hex_digest: bool = False):
 		_hash = None
 		if self.schema_version == 1:
@@ -318,7 +331,27 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 			return _hash.digest()
 		return _hash
 
-	def get_state(self, test_revoked: bool = True, at_date: date = None) -> str:  # pylint: disable=too-many-return-statements
+	def clear_state_cache(self):
+		self._cached_state = {}
+
+	def get_state(self, test_revoked: bool = True, at_date: date = None) -> str:
+		checksum = self.get_checksum()
+		if checksum != self._checksum:
+			self.clear_state_cache()
+		self._checksum = checksum
+
+		if len(self._cached_state) > 64:
+			self.clear_state_cache()
+
+		cache_key = f"{test_revoked}{at_date}"
+		if cache_key not in self._cached_state:
+			self._cached_state[cache_key] = self._get_state(
+				test_revoked = test_revoked,
+				at_date = at_date
+			)
+		return self._cached_state[cache_key]
+
+	def _get_state(self, test_revoked: bool = True, at_date: date = None) -> str:  # pylint: disable=too-many-return-statements
 		if not at_date:
 			at_date = date.today()
 		_hash = self.get_hash()
@@ -543,15 +576,21 @@ class OpsiLicensePool:
 				continue
 			yield lic
 
+	def clear_license_state_cache(self):
+		for lic in self._licenses.values():
+			lic.clear_state_cache()
+
 	def add_license(self, *opsi_license: OpsiLicense) -> None:
 		for lic in opsi_license:
 			lic.set_license_pool(self)
 			self._licenses[lic.id] = lic
+		self.clear_license_state_cache()
 
 	def remove_license(self, *opsi_license: OpsiLicense) -> None:
 		for lic in opsi_license:
 			if lic.id in self._licenses:
 				del self._licenses[lic.id]
+		self.clear_license_state_cache()
 
 	def get_revoked_license_ids(self, at_date: date = None) -> typing.Set[str]:
 		if not at_date:

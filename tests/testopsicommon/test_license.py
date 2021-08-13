@@ -6,14 +6,12 @@
 This file is part of opsi - https://www.opsi.org
 """
 
-import os
-import glob
+import time
 import shutil
 import codecs
 import json
 import pathlib
 from datetime import date, timedelta
-from sys import path
 from unittest import mock
 import pytest
 
@@ -268,6 +266,7 @@ def test_opsi_license_pool_licenses_checksum():
 		checksum = olp.get_licenses_checksum()
 		assert checksum == "be541f8b"
 
+
 def test_opsi_license_pool_relevant_dates():
 	olp = OpsiLicensePool(
 		license_file_path="tests/testopsicommon/data/license"
@@ -307,7 +306,8 @@ def test_opsi_license_pool_relevant_dates():
 				assert not modules["scalability1"]["available"]
 				assert modules["scalability1"]["state"] == OPSI_MODULE_STATE_UNLICENSED
 
-def test_licensing_info():
+
+def test_licensing_info_and_cache():
 	olp = OpsiLicensePool(
 		license_file_path="tests/testopsicommon/data/license",
 		modules_file_path="tests/testopsicommon/data/license/modules"
@@ -319,21 +319,33 @@ def test_licensing_info():
 			if lic.schema_version > 1:
 				lic.sign(private_key)
 
-		info = {
-			"client_numbers": olp.client_numbers,
-			"available_modules": [
-				module_id for module_id, info in olp.get_modules().items() if info["available"]
-			],
-			"licenses_checksum": olp.get_licenses_checksum()
-		}
-		licenses = olp.get_licenses()
-		info["licenses"] = [ lic.to_dict(serializable=True, with_state=True) for lic in licenses ]
-		info["legacy_modules"] = olp.get_legacy_modules()
-		info["dates"] = {}
-		for at_date in olp.get_relevant_dates():
-			info["dates"][str(at_date)] = {
-				"modules": olp.get_modules(at_date=at_date)
+		timings = []
+		for num in range(3):
+			start = time.time()
+			info = {
+				"client_numbers": olp.client_numbers,
+				"available_modules": [
+					module_id for module_id, info in olp.get_modules().items() if info["available"]
+				],
+				"licenses_checksum": olp.get_licenses_checksum()
 			}
+			licenses = olp.get_licenses()
+			info["licenses"] = [ lic.to_dict(serializable=True, with_state=True) for lic in licenses ]
+			info["legacy_modules"] = olp.get_legacy_modules()
+			info["dates"] = {}
+			for at_date in olp.get_relevant_dates():
+				info["dates"][str(at_date)] = {
+					"modules": olp.get_modules(at_date=at_date)
+				}
+			timings.append(time.time() - start)
+			if num == 1:
+				# Cached should be faster
+				assert timings[1] < timings[0]
+				# Clear cache
+				olp.clear_license_state_cache()
+			if num == 2:
+				# Cached should be faster
+				assert timings[2] > timings[1]
 
 def test_license_state_client_number_thresholds():
 	private_key, public_key = generate_key_pair(return_pem=False)
