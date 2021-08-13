@@ -40,7 +40,7 @@ from OPSI.Util import compareVersions, getPublicKey
 __all__ = ('describeInterface', 'Backend')
 
 OPSI_MODULES_FILE = '/etc/opsi/modules'
-OPSI_LICENSE_PATH = '/etc/opsi/license'
+OPSI_LICENSE_PATH = '/etc/opsi/licenses'
 
 logger = Logger()
 

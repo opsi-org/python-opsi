@@ -375,9 +375,10 @@ class OpsiLicenseFile:
 		ini.read(self.filename, encoding="utf-8")
 		for section in ini.sections():
 			kwargs = dict(ini.items(section=section, raw=True))
-			kwargs["revoked_ids"] = [x.strip() for x in kwargs.get("revoked_ids", "").split(",") if x]
-			kwargs["note"] = ast.literal_eval(f'"{kwargs.get("note")}"') or None
 			kwargs["id"] = section
+			for key in ("customer_name", "customer_address", "note"):
+				kwargs[key] = ast.literal_eval(f'"{kwargs.get(key)}"') or None
+			kwargs["revoked_ids"] = [x.strip() for x in kwargs.get("revoked_ids", "").split(",") if x]
 			for key, val in kwargs.items():
 				if val == "":
 					kwargs[key] = None
@@ -398,7 +399,7 @@ class OpsiLicenseFile:
 						value = ""
 					elif field.name == "revoked_ids":
 						value = ",".join(value)
-					elif field.name == "note":
+					elif field.name in ("customer_name", "customer_address", "note"):
 						value = repr(value)[1:-1]
 					file.write(f"{field.name} = {value}\n")
 				file.write("\n")
