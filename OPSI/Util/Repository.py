@@ -374,6 +374,8 @@ class SpeedLimiter():  # pylint: disable=too-many-instance-attributes
 		self._calc_speed(num_bytes_received)
 		if self._dynamic or self._max_bandwidth:
 			new_buffer_size = self._limit(buffer_size=num_bytes_received)
+		else:
+			new_buffer_size = self._max_buffer_size
 		return new_buffer_size
 
 class Repository:  # pylint: disable=too-many-instance-attributes
