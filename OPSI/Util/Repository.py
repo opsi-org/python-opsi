@@ -471,12 +471,12 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 			buf = True
 
 			while buf and self._bytesTransfered < size:
-				logger.trace("self.bufferSize: %d", self.bufferSize)
-				logger.trace("self._bytesTransfered: %d", self._bytesTransfered)
-				logger.trace("size: %d", size)
-
 				remainingBytes = size - self._bytesTransfered
-				logger.trace("remainingBytes: %d", remainingBytes)
+				logger.trace(
+					"self.bufferSize: %d, self._bytesTransfered: %d, size: %d, remainingBytes: %d, dynamic bandwidth=%s, max bandwidth=%s",
+					self.bufferSize, self._bytesTransfered, size, remainingBytes, self._dynamicBandwidth, self._maxBandwidth
+				)
+
 				if 0 < remainingBytes < self.bufferSize:
 					buf = src.read(remainingBytes)
 				elif remainingBytes > 0:
