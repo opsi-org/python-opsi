@@ -176,13 +176,18 @@ class SpeedLimiter():  # pylint: disable=too-many-instance-attributes
 			self._network_performance_counter.stop()
 		except Exception as err:  # pylint: disable=broad-except
 			logger.warning("Failed to stop NetworkPerformanceCounter: %s", err)
+		self._network_performance_counter = None
 
 	def _get_network_usage(self):
 		if not self._network_performance_counter:
 			return 0.0
-		if self._transfer_direction == 'out':
-			return self._network_performance_counter.getBytesOutPerSecond()
-		return self._network_performance_counter.getBytesInPerSecond()
+		try:
+			if self._transfer_direction == 'out':
+				return self._network_performance_counter.getBytesOutPerSecond()
+			return self._network_performance_counter.getBytesInPerSecond()
+		except Exception as err:  # pylint: disable=broad-except
+			logger.warning("NetworkPerformanceCounter failing: %s", err)
+			return 0.0
 
 	def _calc_speed(self, num_bytes: int):
 		now = time.time()
@@ -357,9 +362,11 @@ class SpeedLimiter():  # pylint: disable=too-many-instance-attributes
 	def transfer_started(self, transfer_direction: str):
 		self._transfer_direction = transfer_direction
 		if self._dynamic:
-			self._start_network_performance_counter()
-		elif self._network_performance_counter:
-			self._stop_network_performance_counter()
+			if not self._network_performance_counter:
+				self._start_network_performance_counter()
+		else:
+			if self._network_performance_counter:
+				self._stop_network_performance_counter()
 
 	def transfer_ended(self):
 		pass
