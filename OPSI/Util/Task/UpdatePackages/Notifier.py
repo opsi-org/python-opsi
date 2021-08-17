@@ -53,6 +53,9 @@ class DummyNotifier(BaseNotifier):
 	def notify(self):
 		pass  # Doing nothing
 
+	def setSubject(self, new_subject):
+		pass  # Doing nothing
+
 
 class EmailNotifier(BaseNotifier):
 	"""
