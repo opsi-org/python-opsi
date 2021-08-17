@@ -112,7 +112,7 @@ class SpeedLimiter():  # pylint: disable=too-many-instance-attributes
 	_dynamic_bandwidth_threshold_limit = 0.75  # pylint: disable=invalid-name
 	_dynamic_bandwidth_threshold_no_limit = 0.95  # pylint: disable=invalid-name
 	_dynamic_bandwidth_limit_rate = 0.2
-	_default_min_buffer_size = 1
+	_default_min_buffer_size = 16
 	_default_max_buffer_size = 256 * 1024
 
 	def __init__(self, min_buffer_size: int = _default_min_buffer_size, max_buffer_size: int = _default_max_buffer_size):
