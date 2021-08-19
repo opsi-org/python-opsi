@@ -1007,6 +1007,9 @@ class OpsiPackageUpdater:
 						"http": repository.proxy,
 						"https": repository.proxy,
 					})
+					for key in ("http_proxy", "https_proxy"):
+						if key in os.environ:
+							del os.environ[key]
 				os.environ["no_proxy"] = "localhost,127.0.0.1,ip6-localhost,::1"
 			else:
 				# Do not use a proxy
