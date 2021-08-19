@@ -313,7 +313,6 @@ class OpsiPackageUpdater:
 					installedPackages.append(package)
 
 				except Exception as exc: # pylint: disable=broad-except
-					logger.devel("ignoreErrors = %s", self.config.get("ignoreErrors"))
 					if self.config.get("ignoreErrors"):
 						logger.error("Ignoring Error for package %s: %s", availablePackage["productId"], exc, exc_info=True)
 						notifier.appendLine(f"Ignoring Error for package {availablePackage['productId']}: {exc}")
@@ -956,6 +955,9 @@ class OpsiPackageUpdater:
 						for link in htmlParser.getLinks():
 							isMd5 = link.endswith('.opsi.md5')
 							isZsync = link.endswith('.opsi.zsync')
+
+							# stripping directory part from link
+							link = link.split("/")[-1]
 
 							filename = None
 							if isMd5:
