@@ -999,20 +999,16 @@ class OpsiPackageUpdater:
 		try:
 			session = requests.session()
 			if repository.proxy:
-				proxies = {
-					'http': repository.proxy,
-					'https': repository.proxy,
-				}
-				if os.environ.get("no_proxy"):
-					logger.info("setting no proxy for addresses %s", os.environ.get("no_proxy"))
-					for no_proxy in os.environ.get("no_proxy").split(","):
-						if no_proxy.startswith("http"):		# also covers https
-							proxies[no_proxy.strip()] = ""		# Emptystring means no proxy
-						else:
-							proxies[f"http://{no_proxy.strip()}"] = ""
-							proxies[f"https://{no_proxy.strip()}"] = ""
-				logger.debug("setting proxies %s", proxies)
-				session.proxies.update(proxies)
+				# Use a proxy
+				if repository.proxy.lower() != "system":
+					session.proxies.update({
+						"http": repository.proxy,
+						"https": repository.proxy,
+					})
+				os.environ["no_proxy"] = "localhost,127.0.0.1,ip6-localhost,::1"
+			else:
+				# Do not use a proxy
+				os.environ['no_proxy'] = '*'
 
 			if os.path.exists(repository.authcertfile) and os.path.exists(repository.authkeyfile):
 				logger.debug("setting session.cert to %s %s", repository.authcertfile, repository.authkeyfile)

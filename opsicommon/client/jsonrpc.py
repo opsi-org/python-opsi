@@ -79,7 +79,7 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		self._rpc_id_lock = threading.Lock()
 		self._ca_cert_file = None
 		self._verify_server_cert = False
-		self._proxy_url = None
+		self._proxy_url = "system" # Use system proxy by default
 		self._username = None
 		self._password = None
 		self._serialization = "auto"
@@ -119,8 +119,8 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 				self._verify_server_cert = bool(value)
 			elif option == 'cacertfile' and value not in (None, ""):
 				self._ca_cert_file = str(value)
-			elif option == 'proxyurl' and value not in (None, ""):
-				self._proxy_url = str(value)
+			elif option == 'proxyurl':
+				self._proxy_url = str(value) if value else None
 			elif option == 'ipversion' and value not in (None, ""):
 				if str(value) in ("auto", "4", "6"):
 					self._ip_version = str(value)
@@ -148,12 +148,17 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 				cookie_name, cookie_value, domain=self.hostname
 			)
 
-		# requests / urllib3 will use system proxies if not set to None
-		self._session.proxies.update({
-			"http": self._proxy_url,
-			"https": self._proxy_url,
-		})
-		os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
+		if self._proxy_url:
+			# Use a proxy
+			if self._proxy_url.lower() != "system":
+				self._session.proxies.update({
+					"http": self._proxy_url,
+					"https": self._proxy_url,
+				})
+			os.environ["no_proxy"] = "localhost,127.0.0.1,ip6-localhost,::1"
+		else:
+			# Do not use a proxy
+			os.environ['no_proxy'] = '*'
 
 		if self._verify_server_cert:
 			self._session.verify = self._ca_cert_file or True
