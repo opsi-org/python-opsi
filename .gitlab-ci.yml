@@ -23,8 +23,8 @@ test:pylint-pytest:
     MYSQL_DATABASE: "opsi"
   stage: test
   script: |
-    which python
-    ls -lah /usr/bin/pyt*
+    # linking python3 as python for compatibility
+    ln -s /usr/bin/python3 /usr/bin/python2
     # Installing opsi testmodules file
     mkdir -p /etc/opsi
     mkdir -p /var/log/opsi
