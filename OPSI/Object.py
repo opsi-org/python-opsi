@@ -3244,7 +3244,8 @@ class AuditHardware(Entity):
 
 	def __init__(self, hardwareClass, **kwargs):  # pylint: disable=too-many-branches,too-many-statements
 		self.setHardwareClass(hardwareClass)
-		for attribute in self.hardwareAttributes.get(hardwareClass, {}):
+		attributes = self.hardwareAttributes.get(hardwareClass, {})
+		for attribute in attributes:
 			if attribute not in kwargs:
 				lowAttr = attribute.lower()
 				try:
@@ -3253,10 +3254,10 @@ class AuditHardware(Entity):
 				except KeyError:
 					kwargs[attribute] = None
 
-		if self.hardwareAttributes.get(hardwareClass):
+		if attributes:
 			attributeToDelete = set()
 			for (attribute, value) in kwargs.items():
-				attrType = self.hardwareAttributes[hardwareClass].get(attribute)
+				attrType = attributes.get(attribute)
 				if not attrType:
 					attributeToDelete.add(attribute)
 					continue
@@ -3269,7 +3270,10 @@ class AuditHardware(Entity):
 						size = int(attrType.split('(')[1].split(')')[0].strip())
 
 						if len(kwargs[attribute]) > size:
-							logger.warning('Truncating value of attribute %s of hardware class %s to length %d', attribute, hardwareClass, size)
+							logger.warning(
+								"Truncating value of attribute %s of hardware class %s to length %d",
+								attribute, hardwareClass, size
+							)
 							kwargs[attribute] = kwargs[attribute][:size].strip()
 					except (ValueError, IndexError):
 						pass

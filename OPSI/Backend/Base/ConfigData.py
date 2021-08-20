@@ -1090,12 +1090,19 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwares                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def _checkHardwareClass(self, auditHardwareOrauditHardwareOnHost):  # pylint: disable=no-self-use
+		hardwareClass = auditHardwareOrauditHardwareOnHost.getHardwareClass()
+		if not AuditHardware.hardwareAttributes.get(hardwareClass):
+			raise ValueError(f"Attributes for hardware class '{hardwareClass}' not found, please check hwaudit.conf")
+
 	def auditHardware_insertObject(self, auditHardware):  # pylint: disable=no-self-use
 		auditHardware = forceObjectClass(auditHardware, AuditHardware)
 		auditHardware.setDefaults()
+		self._checkHardwareClass(auditHardware)
 
 	def auditHardware_updateObject(self, auditHardware):  # pylint: disable=no-self-use
 		auditHardware = forceObjectClass(auditHardware, AuditHardware)
+		self._checkHardwareClass(auditHardware)
 
 	def auditHardware_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
 		return [obj.toHash() for obj in self.auditHardware_getObjects(attributes, **filter)]
@@ -1219,10 +1226,12 @@ depot where the method is.
 	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
 		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
 		auditHardwareOnHost.setDefaults()
+		self._checkHardwareClass(auditHardwareOnHost)
 		self._context.auditHardware_insertObject(AuditHardware.fromHash(auditHardwareOnHost.toHash()))
 
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):  # pylint: disable=no-self-use
 		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
+		self._checkHardwareClass(auditHardwareOnHost)
 
 	def auditHardwareOnHost_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
 		return [obj.toHash() for obj in self.auditHardwareOnHost_getObjects(attributes, **filter)]
