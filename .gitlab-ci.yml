@@ -24,7 +24,7 @@ test:pylint-pytest:
   stage: test
   script: |
     # linking python3 as python for compatibility
-    ln -s /usr/bin/python3 /usr/bin/python2
+    ln -s /usr/bin/python3 /usr/bin/python
     # Installing opsi testmodules file
     mkdir -p /etc/opsi
     mkdir -p /var/log/opsi
