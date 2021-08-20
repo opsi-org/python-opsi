@@ -1,4 +1,4 @@
-image: docker.uib.gmbh/opsi/dev/pybuilder:uib-python-default
+image: ubuntu:focal
 
 stages:
   - test
@@ -15,7 +15,7 @@ stages:
 
 test:pylint-pytest:
   #when: manual
-  image: docker.uib.gmbh/opsi/dev/pybuilder:uib-python-default
+  image: ubuntu:focal
   services:
     - mysql:latest
   variables:
@@ -23,6 +23,8 @@ test:pylint-pytest:
     MYSQL_DATABASE: "opsi"
   stage: test
   script: |
+    which python
+    ls -lah /usr/bin/pyt*
     # Installing opsi testmodules file
     mkdir -p /etc/opsi
     mkdir -p /var/log/opsi
@@ -30,8 +32,7 @@ test:pylint-pytest:
     cat /etc/opsi/modules
     export DEBIAN_FRONTEND=noninteractive
     apt update
-    apt -y install python3-all python3-pip dh-python python3-venv python3-newt curl default-libmysqlclient-dev mysql-client cpio iproute2 lsb-release git librsync-dev
-    #apt -y install python3-all python3-pip dh-python python3-venv python3-newt curl libmysqlclient-dev mysql-client cpio iproute2 lsb-release git librsync2
+    apt -y install python3-all python3-pip dh-python python3-venv python3-newt curl libmysqlclient-dev mysql-client cpio iproute2 lsb-release git librsync2
     # bionic pip fix for extra pip urls, not needed for focal
     #apt -y install software-properties-common
     #add-apt-repository ppa:ci-train-ppa-service/3690
