@@ -98,6 +98,8 @@ publish:uibpypi:
   script:
     - *install_tools
     - apt -y install python3-all python3-pip dh-python libmysqlclient-dev
+    # linking python3 as python for compatibility
+    - ln -s /usr/bin/python3 /usr/bin/python
     - poetry install
     - poetry run opsi-dev-tool -l info --uib-pypi-publish
   only:
