@@ -19,10 +19,10 @@ from functools import lru_cache
 from contextlib import contextmanager
 
 from opsicommon.logging import logger, secret_filter
+from opsicommon.client.jsonrpc import JSONRPCBackend
 
-import OPSI.System as System
+from OPSI import System
 from OPSI.Backend.Base import ConfigDataBackend
-from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import (
 	BackendIOError, BackendBadValueError, BackendMissingDataError,
 	BackendUnableToConnectError, BackendUnaccomplishableError)
@@ -30,6 +30,7 @@ from OPSI.Object import OpsiClient, Host
 from OPSI.Types import forceBool, forceDict, forceHostId, forceObjectClass
 from OPSI.Util.File import DHCPDConfFile
 from OPSI.Util import getfqdn
+
 
 __all__ = ('DHCPDBackend', )
 

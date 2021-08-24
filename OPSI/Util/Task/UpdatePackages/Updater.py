@@ -18,9 +18,11 @@ from urllib.parse import quote
 import requests
 from requests.packages import urllib3
 
+from opsicommon.logging import logger
+from opsicommon.client.jsonrpc import JSONRPCBackend
+
 from OPSI import System
 from OPSI.Backend.BackendManager import BackendManager
-from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Logger import Logger
 from OPSI.Object import NetbootProduct, ProductOnClient
 from OPSI.Types import forceHostId, forceProductId
