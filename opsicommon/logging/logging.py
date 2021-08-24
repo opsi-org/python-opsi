@@ -586,6 +586,8 @@ def set_format(
 			csformatter = ContextSecretFormatter(formatter)
 			if handler.level == logging.SECRET:
 				csformatter.disable_filter()
+			else:
+				csformatter.enable_filter()
 			handler.setFormatter(csformatter)
 
 @contextmanager
