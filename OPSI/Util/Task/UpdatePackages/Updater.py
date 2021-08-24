@@ -178,9 +178,9 @@ class OpsiPackageUpdater:
 
 							localPackageFound = self.get_local_package(availablePackage, localPackages)
 							zsync = availablePackage['repository'].baseUrl.split(':')[0].lower().endswith('s')
-							packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 							if self.is_download_needed(localPackageFound, availablePackage, notifier=None):
 								self.get_package(availablePackage, localPackageFound, session,  zsync=zsync, notifier=None)
+							packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 							self._verifyDownloadedPackage(packageFile, availablePackage, session, zsync, notifier)
 							newPackages.append(availablePackage)
 						except Exception as exc: # pylint: disable=broad-except
@@ -617,6 +617,7 @@ class OpsiPackageUpdater:
 		return False
 
 	def get_package(self, availablePackage, localPackageFound, session, notifier=None, zsync=True):
+		packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 		if self.config["zsyncCommand"] and availablePackage['zsyncFile'] and localPackageFound:
 			if not zsync:
 				logger.warning("Cannot use zsync, because zsync does not support https")
@@ -654,9 +655,9 @@ class OpsiPackageUpdater:
 							_ = self.get_installed_package(availablePackage, installedProducts)
 							localPackageFound = self.get_local_package(availablePackage, localPackages)
 							zsync = availablePackage['repository'].baseUrl.split(':')[0].lower().endswith('s')
-							packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 							if self.is_download_needed(localPackageFound, availablePackage, notifier=notifier):
 								self.get_package(availablePackage, localPackageFound, session, zsync=zsync, notifier=notifier)
+							packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 							self._verifyDownloadedPackage(packageFile, availablePackage, session, zsync, notifier)
 							newPackages.append(availablePackage)
 						except Exception as exc: # pylint: disable=broad-except
