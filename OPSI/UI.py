@@ -39,7 +39,7 @@ import gettext
 import locale
 import signal as ui_signal
 
-from snack import (
+from snack import (		#pylint: disable=import-error
 	Button, CheckboxTree, Entry, Grid, GridForm, Label, Listbox, Scale,
 	SnackScreen, Textbox)
 

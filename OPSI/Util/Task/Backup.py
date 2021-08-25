@@ -333,18 +333,18 @@ If this is `None` information will be read from the current system.
 							"dispatchIgnoreModules": ["OpsiPXEConfd", "DHCPD", "HostControl"]
 						}
 						with BackendManager(**managerConfig) as backend:
-							backend.backend_createBase()
-							configserver = backend.host_getObjects(type='OpsiConfigserver')
+							backend.backend_createBase()										#pylint: disable=no-member
+							configserver = backend.host_getObjects(type='OpsiConfigserver')		#pylint: disable=no-member
 							if len(configserver) == 0:
-								depotserver = backend.host_getObjects(type='OpsiDepotserver')
+								depotserver = backend.host_getObjects(type='OpsiDepotserver')	#pylint: disable=no-member
 								if len(depotserver) == 1:
 									configserver = depotserver
-							host = backend.host_getObjects(id=new_server_id)
+							host = backend.host_getObjects(id=new_server_id)					#pylint: disable=no-member
 							if not configserver:
 								raise RuntimeError("No config server found in backend")
 							if host and host != configserver:
-								backend.host_deleteObjects(host)
-							backend.host_renameOpsiDepotserver(oldId=configserver[0].id, newId=new_server_id)
+								backend.host_deleteObjects(host)								#pylint: disable=no-member
+							backend.host_renameOpsiDepotserver(oldId=configserver[0].id, newId=new_server_id)#pylint: disable=no-member
 					except Exception as err:
 						raise RuntimeError(f"Failed to rename config server to '{new_server_id}': {err}") from err
 

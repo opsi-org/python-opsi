@@ -58,7 +58,7 @@ class ResourceOpsiJsonRpc(ResourceOpsi):
 		ResourceOpsi.__init__(self, service)
 
 	def locateChild(self, request, segments):
-		return self, server.StopTraversal
+		return self, server.StopTraversal			#pylint: disable=no-member
 
 
 class ResourceOpsiJsonInterface(ResourceOpsiJsonRpc):

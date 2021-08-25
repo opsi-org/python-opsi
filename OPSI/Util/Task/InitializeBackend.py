@@ -47,38 +47,38 @@ def initializeBackends(ipAddress=None):
 	}
 
 	with BackendManager(**managerConfig) as backend:
-		backend.backend_createBase()
+		backend.backend_createBase()											#pylint: disable=no-member
 
 		networkConfig = getNetworkConfiguration(ipAddress)
 		fqdn = getLocalFqdn()
 
 		logger.info("Trying to find a Configserver...")
-		configServer = backend.host_getObjects(type='OpsiConfigserver')
-		if not configServer and not backend.host_getIdents(type='OpsiConfigserver', id=fqdn):
-			depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)
+		configServer = backend.host_getObjects(type='OpsiConfigserver')			#pylint: disable=no-member
+		if not configServer and not backend.host_getIdents(type='OpsiConfigserver', id=fqdn):#pylint: disable=no-member
+			depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)	#pylint: disable=no-member
 			if not depot:
 				logger.notice("Creating config server '%s'", fqdn)
 				serverConfig = _getServerConfig(fqdn, networkConfig)
-				backend.host_createOpsiConfigserver(**serverConfig)
-				configServer = backend.host_getObjects(type='OpsiConfigserver', id=fqdn)
+				backend.host_createOpsiConfigserver(**serverConfig)				#pylint: disable=no-member
+				configServer = backend.host_getObjects(type='OpsiConfigserver', id=fqdn)#pylint: disable=no-member
 			else:
 				logger.notice("Converting depot server '%s' to config server", fqdn)
 				configServer = OpsiConfigserver.fromHash(depot[0].toHash())
-				backend.host_createObjects(configServer)
+				backend.host_createObjects(configServer)						#pylint: disable=no-member
 
 				# list expected in further processing
 				configServer = [configServer]
 		else:
-			depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)
+			depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)	#pylint: disable=no-member
 			if not depot:
 				logger.notice("Creating depot server '%s'", fqdn)
 				serverConfig = _getServerConfig(fqdn, networkConfig)
-				backend.host_createOpsiDepotserver(**serverConfig)
+				backend.host_createOpsiDepotserver(**serverConfig)				#pylint: disable=no-member
 
 		if configServer:
 			if configServer[0].id == fqdn:
 				try:
-					configServer = backend.host_getObjects(type='OpsiConfigserver')[0]
+					configServer = backend.host_getObjects(type='OpsiConfigserver')[0]#pylint: disable=no-member
 				except IndexError as err:
 					raise Exception(f"Config server '{fqdn}' not found") from err
 
@@ -88,7 +88,7 @@ def initializeBackends(ipAddress=None):
 					configServer.setHardwareAddress(networkConfig['hardwareAddress'])
 
 				# make sure the config server is present in all backends or we get reference error later on
-				backend.host_insertObject(configServer)
+				backend.host_insertObject(configServer)							#pylint: disable=no-member
 
 			# initializeConfigs does only handle a single object
 			configServer = forceList(configServer)[0]

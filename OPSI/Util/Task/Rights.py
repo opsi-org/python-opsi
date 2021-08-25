@@ -278,9 +278,9 @@ def getDepotDirectories():
 			"public": "/var/lib/opsi/public"
 		}
 		try:
-			from OPSI.Backend.BackendManager import BackendManager  # pylint: disable=import-outside-toplevel
+			from OPSI.Backend.BackendManager import BackendManager  							# pylint: disable=import-outside-toplevel
 			with BackendManager() as backend:
-				depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFqdn())[0]
+				depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFqdn())[0]	#pylint: disable=no-member
 				for name, url in (
 					("depot", depot.getDepotLocalUrl()),
 					("repository", depot.getRepositoryLocalUrl()),

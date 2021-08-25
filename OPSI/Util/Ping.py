@@ -84,7 +84,6 @@ $Rev: $
 $Author: $
 """
 
-import os
 import socket
 import struct
 import select
@@ -128,26 +127,17 @@ def receive_one_ping(my_socket, ID, timeout):
 	"""
 	timeLeft = timeout
 	while True:
-		if os.name == 'nt':
-			startedSelect = time.clock()
-		else:
-			startedSelect = time.time()
+		startedSelect = time.perf_counter()
 
 		whatReady = select.select([my_socket], [], [], timeLeft)
 		howLongInSelect = None
 
-		if os.name == 'nt':
-			howLongInSelect = (time.clock() - startedSelect)
-		else:
-			howLongInSelect = (time.time() - startedSelect)
+		howLongInSelect = (	time.perf_counter() - startedSelect)
 
 		if whatReady[0] == []:  # Timeout
 			return
 
-		if os.name == 'nt':
-			timeReceived = time.clock()
-		else:
-			timeReceived = time.time()
+		timeReceived = time.perf_counter()
 
 		recPacket, addr = my_socket.recvfrom(1024)
 		icmpHeader = recPacket[20:28]
@@ -177,10 +167,7 @@ def send_one_ping(my_socket, dest_addr, ID):
 	header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, my_checksum, ID, 1)
 	bytesInDouble = struct.calcsize("d")
 	data = (192 - bytesInDouble) * b"Q"
-	if os.name == 'nt':
-		data = struct.pack("d", time.clock()) + data
-	else:
-		data = struct.pack("d", time.time()) + data
+	data = struct.pack("d", time.perf_counter()) + data
 
 	# Calculate the checksum on the data and the dummy header.
 	my_checksum = checksum(header + data)
@@ -201,15 +188,14 @@ def ping(dest_addr, timeout=2):
 	icmp = socket.getprotobyname("icmp")
 	try:
 		my_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, icmp)
-	except socket.error as error:
-		(errno, msg) = error
-		if errno == 1:
+	except OSError as error:		#Exception type changed from socket.error to OSError in python3.3
+		if error.errno == 1:
 			# Operation not permitted
-			msg = msg + (
+			msg = (
 				" - Note that ICMP messages can only be sent from processes"
 				" running as root."
 			)
-			raise socket.error(msg)
+			raise OSError(1, msg) from error
 		raise  # raise the original error
 
 	my_ID = int(time.time() * 100000) & 0xFFFF

@@ -150,7 +150,7 @@ class BackendReplicator:
 
 			productOnDepots = []
 			if depotIds:
-				productOnDepots = rb.productOnDepot_getObjects(depotId=depotIds, productId=productIds, productType=productTypes)
+				productOnDepots = rb.productOnDepot_getObjects(depotId=depotIds, productId=productIds, productType=productTypes)#pylint: disable=no-member
 				productIdsOnDepot = set()
 				for productOnDepot in productOnDepots:
 					productIdsOnDepot.add(productOnDepot.productId)
