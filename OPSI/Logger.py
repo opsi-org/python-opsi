@@ -15,7 +15,7 @@ from opsicommon.logging import (  # pylint: disable=unused-import
 	DEFAULT_FORMAT, DEFAULT_COLORED_FORMAT,
 	LOG_SECRET, LOG_CONFIDENTIAL, LOG_TRACE, LOG_DEBUG2, LOG_DEBUG,
 	LOG_INFO, LOG_NOTICE, LOG_WARNING, LOG_WARN, LOG_ERROR, LOG_CRITICAL,
-	LOG_ESSENTIAL, LOG_NONE, LOG_NOTSET, LOG_COMMENT
+	LOG_ESSENTIAL, LOG_NONE, LOG_NOTSET, LOG_COMMENT, OPSI_LEVEL_TO_LEVEL
 )
 
 if os.name == 'posix':
@@ -241,7 +241,7 @@ def setMessageSubjectLevel(level=LOG_NONE):
 		DeprecationWarning
 	)
 	for handler in get_all_handlers(ObservableHandler):
-		handler.setLevel(logging.opsi_level_to_level[level])  # pylint: disable=protected-access
+		handler.setLevel(OPSI_LEVEL_TO_LEVEL[level])  # pylint: disable=protected-access
 logger.setMessageSubjectLevel = setMessageSubjectLevel
 
 def setConsoleLevel(logLevel, object=None):  # pylint: disable=unused-argument,redefined-builtin
@@ -250,7 +250,7 @@ def setConsoleLevel(logLevel, object=None):  # pylint: disable=unused-argument,r
 		DeprecationWarning
 	)
 	if logLevel is not None:
-		logging_config(stderr_level=logging.opsi_level_to_level[logLevel])
+		logging_config(stderr_level=OPSI_LEVEL_TO_LEVEL[logLevel])
 logger.setConsoleLevel = setConsoleLevel
 
 @staticmethod
@@ -298,7 +298,7 @@ def setFileLevel(logLevel, object=None):  # pylint: disable=unused-argument,rede
 		"OPSI.Logger.setFileLevel is deprecated, instead modify the FileHandler loglevel.",
 		DeprecationWarning
 	)
-	logging_config(file_level=logging.opsi_level_to_level[logLevel])
+	logging_config(file_level=OPSI_LEVEL_TO_LEVEL[logLevel])
 logger.setFileLevel = setFileLevel
 
 def exit(object=None):  # pylint: disable=unused-argument,redefined-builtin

@@ -19,24 +19,24 @@ from datetime import datetime
 import pefile
 
 # Win32 imports
-import winreg
-import ntsecuritycon
-import pywintypes
-import win32api
-import win32con
-import win32event
-import win32file
-import win32gui
-import win32net
-import win32netcon
-import win32pdh
-import win32pdhutil
-import win32process
-import win32profile
-import win32security
-import win32service
-import win32ts
-import win32wnet
+import winreg			#pylint: disable=import-error
+import ntsecuritycon	#pylint: disable=import-error
+import pywintypes		#pylint: disable=import-error
+import win32api			#pylint: disable=import-error
+import win32con			#pylint: disable=import-error
+import win32event		#pylint: disable=import-error
+import win32file		#pylint: disable=import-error
+import win32gui			#pylint: disable=import-error
+import win32net			#pylint: disable=import-error
+import win32netcon		#pylint: disable=import-error
+import win32pdh			#pylint: disable=import-error
+import win32pdhutil		#pylint: disable=import-error
+import win32process		#pylint: disable=import-error
+import win32profile		#pylint: disable=import-error
+import win32security	#pylint: disable=import-error
+import win32service		#pylint: disable=import-error
+import win32ts			#pylint: disable=import-error
+import win32wnet		#pylint: disable=import-error
 from ctypes import *
 
 from OPSI.Logger import Logger
@@ -154,17 +154,16 @@ def getArchitecture():
 	try:
 		if win32process.IsWow64Process():
 			return 'x64'
-		else:
-			return 'x86'
-	except Exception as e:
-		logger.error("Error determining OS-Architecture: '%s'; returning default: 'x86'", e)
+		return 'x86'
+	except Exception as error:
+		logger.error("Error determining OS-Architecture: '%s'; returning default: 'x86'", error)
 		return 'x86'
 
 
 def getOpsiHotfixName(helper=None):
 	arch = getArchitecture()
-	major = sys.getwindowsversion().major
-	minor = sys.getwindowsversion().minor
+	major = sys.getwindowsversion().major			#pylint: disable=no-member
+	minor = sys.getwindowsversion().minor			#pylint: disable=no-member
 	loc = locale.getdefaultlocale()[0].split('_')[0]
 	os = 'unknown'
 	lang = 'unknown'
@@ -459,8 +458,8 @@ class NetworkPerformanceCounterWMI(threading.Thread):
 		try:
 			interface = self.interface
 			self._running = True
-			import pythoncom
-			import wmi
+			import pythoncom			#pylint: disable=import-error
+			import wmi					#pylint: disable=import-error
 			pythoncom.CoInitialize()
 			self.wmi = wmi.WMI()
 			bestRatio = 0.0
@@ -482,7 +481,7 @@ class NetworkPerformanceCounterWMI(threading.Thread):
 				time.sleep(1)
 		finally:
 			try:
-				import pythoncom
+				import pythoncom		#pylint: disable=import-error
 				pythoncom.CoUninitialize()
 			except Exception:
 				pass

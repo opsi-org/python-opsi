@@ -650,15 +650,15 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 			try:
 				logger.debug("Notification server - attempt %d, trying port %d" % (trynum, port))
 				if self._address == '0.0.0.0':
-					self._server = reactor.listenTCP(port, self._factory)
+					self._server = reactor.listenTCP(port, self._factory)		#pylint: disable=no-member
 				else:
-					self._server = reactor.listenTCP(port, self._factory, interface=self._address)
+					self._server = reactor.listenTCP(port, self._factory, interface=self._address)		#pylint: disable=no-member
 				self._port = port
 				self._listening = True
 				logger.info("Notification server is now listening on port %d after %d attempts" % (port, trynum))
-				if not reactor.running:
+				if not reactor.running:						#pylint: disable=no-member
 					logger.info("Starting reactor")
-					reactor.run(installSignalHandlers=0)
+					reactor.run(installSignalHandlers=0)	#pylint: disable=no-member
 				break
 			except Exception as error:
 				logger.debug("Notification server - attempt %d, failed to listen on port %d: %s" % (trynum, port, error))
@@ -679,7 +679,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 
 	def stop(self, stopReactor=True):
 		self.requestEndConnections()
-		reactor.callLater(3.0, self._stopServer, stopReactor)
+		reactor.callLater(3.0, self._stopServer, stopReactor)	#pylint: disable=no-member
 
 	def _stopServer(self, stopReactor=True):
 		if self._server:
@@ -689,13 +689,13 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 			else:
 				self._listening = False
 		if stopReactor:
-			reactor.callLater(3.0, self._stopReactor)
+			reactor.callLater(3.0, self._stopReactor)			#pylint: disable=no-member
 		logger.info("Notification server stopped")
 
 	def _stopReactor(self):
-		if reactor and reactor.running:
+		if reactor and reactor.running:							#pylint: disable=no-member
 			try:
-				reactor.stop()
+				reactor.stop()									#pylint: disable=no-member
 			except Exception as error:
 				logger.error("Failed to stop reactor: %s", error)
 
@@ -813,17 +813,17 @@ class NotificationClient(threading.Thread):
 		logger.info("Notification client starting")
 		try:
 			logger.info("Connecting to %s:%s", self._address, self._port)
-			reactor.connectTCP(self._address, self._port, self._factory)
-			if not reactor.running:
-				reactor.run(installSignalHandlers=0)
+			reactor.connectTCP(self._address, self._port, self._factory)	#pylint: disable=no-member
+			if not reactor.running:											#pylint: disable=no-member
+				reactor.run(installSignalHandlers=0)						#pylint: disable=no-member
 		except Exception as error:
 			logger.error(error, exc_info=True)
 
 	def stop(self, stopReactor=True):
 		if self._client:
 			self._client.disconnect()
-		if stopReactor and reactor and reactor.running:
-			reactor.stop()
+		if stopReactor and reactor and reactor.running:						#pylint: disable=no-member
+			reactor.stop()													#pylint: disable=no-member
 
 	def setSelectedIndexes(self, subjectId, selectedIndexes):
 		self._factory.execute(method='setSelectedIndexes', params=[subjectId, selectedIndexes])

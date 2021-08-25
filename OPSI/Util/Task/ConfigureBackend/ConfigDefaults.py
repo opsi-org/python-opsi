@@ -30,7 +30,7 @@ def editConfigDefaults():
 	)
 
 	with BackendManager(**bmconfig) as backend:
-		configs = backend.config_getObjects()
+		configs = backend.config_getObjects()					#pylint: disable=no-member
 		configs = [
 			config for config in configs
 			if not config.id.startswith(u'configed.saved_search.')
@@ -117,7 +117,7 @@ def editConfigDefaults():
 						configs[selectedConfig].setPossibleValues(possibleValues)
 					configs[selectedConfig].setDefaultValues(value)
 
-				backend.config_updateObjects([configs[selectedConfig]])
+				backend.config_updateObjects([configs[selectedConfig]])		#pylint: disable=no-member
 
 
 @contextmanager

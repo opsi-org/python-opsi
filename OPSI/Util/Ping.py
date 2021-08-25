@@ -201,15 +201,14 @@ def ping(dest_addr, timeout=2):
 	icmp = socket.getprotobyname("icmp")
 	try:
 		my_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, icmp)
-	except socket.error as error:
-		(errno, msg) = error
-		if errno == 1:
+	except OSError as error:		#Exception type changed from socket.error to OSError in python3.3
+		if error.errno == 1:
 			# Operation not permitted
-			msg = msg + (
+			msg = (
 				" - Note that ICMP messages can only be sent from processes"
 				" running as root."
 			)
-			raise socket.error(msg)
+			raise OSError(1, msg) from error
 		raise  # raise the original error
 
 	my_ID = int(time.time() * 100000) & 0xFFFF
