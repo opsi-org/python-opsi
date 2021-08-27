@@ -215,8 +215,8 @@ def set_rights(start_path='/'):  # pylint: disable=too-many-branches
 			if not parent or len(parent.path) < len(path):
 				parent = permissions[path]
 
-	if not permissions_to_process and parent:
-		permissions_to_process = [parent]
+	if parent:
+		permissions_to_process.append(parent)
 
 	for permission in permissions_to_process:
 		path = start_path
