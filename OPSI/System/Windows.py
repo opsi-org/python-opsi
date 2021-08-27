@@ -690,7 +690,7 @@ def setRegistryValue(key, subKey, valueName, value):
 	winreg.CreateKey(key, subKey)
 	hkey = winreg.OpenKey(key, subKey, 0, winreg.KEY_WRITE)
 	if isinstance(value, int):
-		winreg.SetValueEx(hkey, valueName, 0, winreg.REG_DWORD, value)
+		winreg.SetValueEx(hkey, valueName, 0, winreg.REG_QWORD if value > 0xffffffff else winreg.REG_DWORD, value)
 	else:
 		winreg.SetValueEx(hkey, valueName, 0, winreg.REG_SZ, value)
 
