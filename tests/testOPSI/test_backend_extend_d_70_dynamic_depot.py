@@ -102,11 +102,10 @@ def testDepotSelectionAlgorithmByRandom(depotSelectionAlgorithmByRandom):
 	result_counts = [0] * NUM_DEPOTS
 	for _ in range(NUM_RUNS):
 		result = selectDepot({}, masterDepot, alternativeDepots)
-		index = alternativeDepots.index(result)
-		if index == -1:
+		try:
+			result_counts[alternativeDepots.index(result)] += 1
+		except ValueError:	# in case of master depot
 			result_counts[-1] += 1
-		else:
-			result_counts[index] += 1
 	print("random depot selection distribution:", result_counts)
 	for count in result_counts:
 		assert count >= EXPECTATION_MARGIN * NUM_RUNS / NUM_DEPOTS
