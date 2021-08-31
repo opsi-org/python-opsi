@@ -675,28 +675,34 @@ def adjustPrivilege(priv, enable=1):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 def getRegistryValue(key, subKey, valueName, reflection=True):
 	hkey = winreg.OpenKey(key, subKey)
-	if not reflection and (getArchitecture() == 'x64'):
-		winreg.DisableReflectionKey(hkey)
+	try:
+		if not reflection and (getArchitecture() == 'x64'):
+			winreg.DisableReflectionKey(hkey)
 
-	(value, type) = winreg.QueryValueEx(hkey, valueName)
-	if (getArchitecture() == 'x64') and not reflection:
-		if winreg.QueryReflectionKey(hkey):
-			winreg.EnableReflectionKey(hkey)
-
+		(value, _type) = winreg.QueryValueEx(hkey, valueName)
+		if (getArchitecture() == 'x64') and not reflection:
+			if winreg.QueryReflectionKey(hkey):
+				winreg.EnableReflectionKey(hkey)
+	finally:
+		winreg.CloseKey(hkey)
 	return value
 
 
 def setRegistryValue(key, subKey, valueName, value):
 	winreg.CreateKey(key, subKey)
 	hkey = winreg.OpenKey(key, subKey, 0, winreg.KEY_WRITE)
-	if isinstance(value, int):
-		winreg.SetValueEx(hkey, valueName, 0, winreg.REG_QWORD if value > 0xffffffff else winreg.REG_DWORD, value)
-	else:
-		winreg.SetValueEx(hkey, valueName, 0, winreg.REG_SZ, value)
+	try:
+		if isinstance(value, int):
+			winreg.SetValueEx(hkey, valueName, 0, winreg.REG_QWORD if value > 0xffffffff else winreg.REG_DWORD, value)
+		else:
+			winreg.SetValueEx(hkey, valueName, 0, winreg.REG_SZ, value)
+	finally:
+		winreg.CloseKey(hkey)
 
 
 def createRegistryKey(key, subKey):
-	winreg.CreateKey(key, subKey)
+	hkey = winreg.CreateKey(key, subKey)
+	winreg.CloseKey(hkey)
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
