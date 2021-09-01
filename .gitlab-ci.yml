@@ -42,7 +42,6 @@ test:pylint-pytest:
     rm -rf data
     git clone -b master https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.uib.gmbh/uib/opsi-server.git ../opsi-server
     ln -s ../opsi-server/opsi-server_data/etc data
-    cp 70_dynamic_depot.conf data/backendManager/extend.d/
     pip3 install poetry
     cp tests/testOPSI/Backends/config.py.gitlabci tests/testOPSI/Backends/config.py
     poetry install
