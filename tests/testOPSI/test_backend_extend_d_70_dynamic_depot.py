@@ -88,11 +88,35 @@ def testDepotSelectionAlgorithmByMasterDepotAndLatency(depotSelectionAlgorithmBy
 	assert wantedRepo == selectDepot({}, masterDepot, alternativeDepots)
 
 
+def testDepotSelectionAlgorithmByRandom(depotSelectionAlgorithmByRandom):
+	EXPECTATION_MARGIN = 0.7
+	NUM_DEPOTS = 3		# at least 2
+	NUM_RUNS = 300
+
+	currentLocals = locals()
+	exec(depotSelectionAlgorithmByRandom, None, currentLocals)
+	selectDepot = currentLocals['selectDepot']
+
+	masterDepot = FakeDepot('clients.master.depot')
+	alternativeDepots = [FakeDepot(f'depot{num}') for num in range(NUM_DEPOTS-1)]
+	result_counts = [0] * NUM_DEPOTS
+	for _ in range(NUM_RUNS):
+		result = selectDepot({}, masterDepot, alternativeDepots)
+		try:
+			result_counts[alternativeDepots.index(result)] += 1
+		except ValueError:	# in case of master depot
+			result_counts[-1] += 1
+	print("random depot selection distribution:", result_counts)
+	for count in result_counts:
+		assert count >= EXPECTATION_MARGIN * NUM_RUNS / NUM_DEPOTS
+
+
 @pytest.fixture(params=[
 	'getDepotSelectionAlgorithm',  # must always return a working algo
 	'getDepotSelectionAlgorithmByLatency',
 	'getDepotSelectionAlgorithmByMasterDepotAndLatency',
-	'getDepotSelectionAlgorithmByNetworkAddress'
+	'getDepotSelectionAlgorithmByNetworkAddress',
+	'getDepotSelectionAlgorithmByRandom'
 ])
 def depotSelectionAlgorythm(request, backendManager):
 	"""
@@ -116,6 +140,17 @@ def depotSelectionAlgorithmByLatency(backendManager):
 @pytest.fixture
 def depotSelectionAlgorithmByMasterDepotAndLatency(backendManager):
 	algo = backendManager.getDepotSelectionAlgorithmByMasterDepotAndLatency()
+	algo = patchPingFunctionalityInAlgorythm(algo)
+
+	try:
+		yield algo
+	except Exception:
+		showAlgoWithLineNumbers(algo)
+
+
+@pytest.fixture
+def depotSelectionAlgorithmByRandom(backendManager):
+	algo = backendManager.getDepotSelectionAlgorithmByRandom()
 	algo = patchPingFunctionalityInAlgorythm(algo)
 
 	try:
