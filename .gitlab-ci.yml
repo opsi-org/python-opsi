@@ -6,16 +6,8 @@ stages:
   - package
   - publish
 
-.install_tools: &install_tools |
-  export DEBIAN_FRONTEND=noninteractive
-  apt update
-  apt -y install python3-pip python3-venv debhelper osc
-  pip3 install --trusted-host pypi.uib.gmbh --index-url http://pypi.uib.gmbh:8080/simple opsi-dev-tools
-  pip3 install poetry
-
 test:pylint-pytest:
   #when: manual
-  image: ubuntu:focal
   services:
     - mysql:latest
   variables:
@@ -23,26 +15,16 @@ test:pylint-pytest:
     MYSQL_DATABASE: "opsi"
   stage: test
   script: |
-    # linking python3 as python for compatibility
-    ln -s /usr/bin/python3 /usr/bin/python
     # Installing opsi testmodules file
     mkdir -p /etc/opsi
     mkdir -p /var/log/opsi
     echo "${OPSI_TEST_MODULES}" > /etc/opsi/modules
     cat /etc/opsi/modules
-    export DEBIAN_FRONTEND=noninteractive
-    apt update
-    apt -y install python3-all python3-pip dh-python python3-venv python3-newt curl libmysqlclient-dev mysql-client cpio iproute2 lsb-release git librsync2
-    # bionic pip fix for extra pip urls, not needed for focal
-    #apt -y install software-properties-common
-    #add-apt-repository ppa:ci-train-ppa-service/3690
-    #apt -y install python-pip=9.0.1-2.3~ubuntu1.18.04.2~ubuntu18.04.1~ppa202002141134
     # cloning opsi-server for data directory
     rm -rf ../opsi-server
     rm -rf data
     git clone -b master https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.uib.gmbh/uib/opsi-server.git ../opsi-server
     ln -s ../opsi-server/opsi-server_data/etc data
-    pip3 install poetry
     cp tests/testOPSI/Backends/config.py.gitlabci tests/testOPSI/Backends/config.py
     poetry install
     # Deactivate mysql strict mode
@@ -55,8 +37,6 @@ test:pylint-pytest:
   artifacts:
     name: 'python-opsi_test'
     paths:
-      #- pylint.txt
-      #- pep8.txt
       - coverage.xml
       - testreport-OPSI.xml
       - testreport-opsicommon.xml
@@ -85,22 +65,16 @@ test:pylint-pytest:
 #package:obs_int:
 #  stage: package
 #  script:
-#    - *install_tools
 #    - python3 -m opsidevtools -l info --obs-update-package https://obs.uib.gmbh home:uibmz:opsi:4.2:development
 
 #package:obs_ext:
 #  stage: package
 #  script:
-#    - *install_tools
 #    - python3 -m opsidevtools -l debug --obs-update-package https://build.opensuse.org home:uibmz:opsi:4.2:development
 
 publish:uibpypi:
   stage: publish
   script:
-    - *install_tools
-    - apt -y install python3-all python3-pip dh-python libmysqlclient-dev
-    # linking python3 as python for compatibility
-    - ln -s /usr/bin/python3 /usr/bin/python
     - poetry install
     - poetry run opsi-dev-tool -l info --uib-pypi-publish
   only:
