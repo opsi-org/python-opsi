@@ -189,10 +189,13 @@ containing the localisation of the hardware audit.
 		return None
 
 	def _get_client_info(self):
+		_all = len(self.host_getObjects(attributes=['id'], type='OpsiClient'))
+		macos = len(self.host_getObjects(attributes=['id'], installationStatus="installed", productId="opsi-mac-client-agent"))  # pylint: disable=no-member
+		linux = len(self.host_getObjects(attributes=['id'], installationStatus="installed", productId="opsi-linux-client-agent"))  # pylint: disable=no-member
 		return {
-			"macos": 0,
-			"linux": 0,
-			"windows": len(self.host_getObjects(attributes=['id'], type='OpsiClient'))
+			"macos": macos,
+			"linux": linux,
+			"windows": _all - macos - linux
 		}
 
 	@lru_cache(maxsize=10)
