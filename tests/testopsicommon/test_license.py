@@ -46,6 +46,7 @@ LIC1 = {
 	"customer_name": "Test Holding",
 	"customer_address": "香港",
 	"customer_unit": "Test GmbH",
+	"contract_id": "XY82378342343323",
 	"service_id": "opsi.test.gmbh",
 	"module_id": "scalability1",
 	"client_number": 1000,
@@ -186,8 +187,8 @@ def test_opsi_license_to_from_json():
 def test_opsi_license_hash():
 	lic = OpsiLicense(**LIC1)
 	assert lic.get_hash(hex_digest=True) == (
-		"0e3f0eb04db6452c312409a88724bfa4b515e6aa7920007202b087d5e4022e4d"
-		"887a02fb8d114184c170a59a6af93328a45f31666f2506e62f6904ed18aa0471"
+		"137cd167b2b1104cdbdd5190e12bd9a6cf5bb2726218c966d136c80c271f262c"
+		"4766a3d9ff31d1f0e2790d00aab733b3aea12da3ec41e7e93c13b7ae687aa564"
 	)
 
 
@@ -265,7 +266,7 @@ def test_opsi_license_pool_licenses_checksum():
 		for lic in olp.licenses:
 			lic.sign(private_key)
 		checksum = olp.get_licenses_checksum()
-		assert checksum == "d65a12d8"
+		assert checksum == "372ac8d6"
 
 
 def test_opsi_license_pool_relevant_dates():

@@ -203,6 +203,10 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 		default=None
 	)
 
+	contract_id: str = attr.ib(
+		default=None
+	)
+
 	service_id: str = attr.ib(
 		default=None,
 	)
