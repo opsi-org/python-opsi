@@ -5,6 +5,7 @@ opsi_version = 4.2
 customer_id =
 customer_name =
 customer_address =
+customer_unit =
 module_id = scalability1
 client_number = 10
 issued_at = 2021-01-01

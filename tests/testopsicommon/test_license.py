@@ -265,7 +265,7 @@ def test_opsi_license_pool_licenses_checksum():
 		for lic in olp.licenses:
 			lic.sign(private_key)
 		checksum = olp.get_licenses_checksum()
-		assert checksum == "b71bf150"
+		assert checksum == "d65a12d8"
 
 
 def test_opsi_license_pool_relevant_dates():
