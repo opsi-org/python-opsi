@@ -15,7 +15,7 @@ stages:
 
 test:pylint-pytest:
   #when: manual
-  image: ubuntu:focal
+  image: docker.uib.gmbh/opsi/dev/pybuilder:latest
   services:
     - mysql:latest
   variables:
@@ -32,7 +32,7 @@ test:pylint-pytest:
     cat /etc/opsi/modules
     export DEBIAN_FRONTEND=noninteractive
     apt update
-    apt -y install python3-all python3-pip dh-python python3-venv python3-newt curl libmysqlclient-dev mysql-client cpio iproute2 lsb-release git librsync2
+    apt -y install python3-all python3-pip dh-python python3-venv python3-newt curl default-libmysqlclient-dev mysql-client cpio iproute2 lsb-release git librsync2
     # bionic pip fix for extra pip urls, not needed for focal
     #apt -y install software-properties-common
     #add-apt-repository ppa:ci-train-ppa-service/3690
@@ -98,7 +98,7 @@ publish:uibpypi:
   stage: publish
   script:
     - *install_tools
-    - apt -y install python3-all python3-pip dh-python libmysqlclient-dev
+    - apt -y install python3-all python3-pip dh-python default-libmysqlclient-dev
     # linking python3 as python for compatibility
     - ln -s /usr/bin/python3 /usr/bin/python
     - poetry install
