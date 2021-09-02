@@ -589,4 +589,3 @@ def test_write_license_file(tmp_path):
 				assert lic.to_dict() == lic1.to_dict()
 			elif lic.id == lic2.id:
 				assert lic.to_dict() == lic2.to_dict()
-

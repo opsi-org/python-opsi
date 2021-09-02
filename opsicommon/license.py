@@ -541,6 +541,7 @@ class OpsiLicensePool:
 	def modules_file(self) -> str:
 		if self.modules_file_path and os.path.exists(self.modules_file_path):
 			return self.modules_file_path
+		return None
 
 	@property
 	def licenses(self):

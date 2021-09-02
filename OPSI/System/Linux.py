@@ -191,7 +191,7 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 				options['username'] = re.sub(r"\\+", r"\\", options['username'])
 				(options['domain'], options['username']) = options['username'].split('\\', 1)
 
-			tf = tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="iso-8859-15")
+			tf = tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="iso-8859-15")  # pylint: disable=consider-using-with
 			tf.write(f"username={options['username']}\npassword={options['password']}\n")
 			tf.close()
 			tmpFiles.append(tf.name)
@@ -222,7 +222,7 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 		if 'password' not in options:
 			options['password'] = ""
 
-		tf = tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8")
+		tf = tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8")  # pylint: disable=consider-using-with
 		tf.write("n_cookies 1\ncache_size 0\ntable_size 16384\nuse_locks 0\n")
 		tf.close()
 		tmpFiles.append(tf.name)
