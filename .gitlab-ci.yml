@@ -15,7 +15,6 @@ stages:
 
 test:pylint-pytest:
   #when: manual
-  image: docker.uib.gmbh/opsi/dev/pybuilder:latest
   services:
     - mysql:latest
   variables:
@@ -23,8 +22,6 @@ test:pylint-pytest:
     MYSQL_DATABASE: "opsi"
   stage: test
   script: |
-    # linking python3 as python for compatibility
-    ln -s /usr/bin/python3 /usr/bin/python
     # Installing opsi testmodules file
     mkdir -p /etc/opsi
     mkdir -p /var/log/opsi
@@ -99,8 +96,6 @@ publish:uibpypi:
   script:
     - *install_tools
     - apt -y install python3-all python3-pip dh-python default-libmysqlclient-dev
-    # linking python3 as python for compatibility
-    - ln -s /usr/bin/python3 /usr/bin/python
     - poetry install
     - poetry run opsi-dev-tool -l info --uib-pypi-publish
   only:
