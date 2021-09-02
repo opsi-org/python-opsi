@@ -7,11 +7,11 @@ stages:
   - publish
 
 .install_tools: &install_tools |
+  echo "deb http://deb.debian.org/debian unstable main" >> /etc/apt/sources.list
   export DEBIAN_FRONTEND=noninteractive
   apt update
-  apt -y install python3-pip python3-venv debhelper osc
-  pip3 install --trusted-host pypi.uib.gmbh --index-url http://pypi.uib.gmbh:8080/simple opsi-dev-tools
-  pip3 install poetry
+  apt -y install debhelper osc libmysqlclient-dev
+
 
 test:pylint-pytest:
   #when: manual
@@ -27,13 +27,10 @@ test:pylint-pytest:
     mkdir -p /var/log/opsi
     echo "${OPSI_TEST_MODULES}" > /etc/opsi/modules
     cat /etc/opsi/modules
+    echo "deb http://deb.debian.org/debian unstable main" >> /etc/apt/sources.list
     export DEBIAN_FRONTEND=noninteractive
     apt update
-    apt -y install dh-python python3-venv python3-newt curl libmariadb-dev mysql-client cpio iproute2 lsb-release git librsync-dev
-    # bionic pip fix for extra pip urls, not needed for focal
-    #apt -y install software-properties-common
-    #add-apt-repository ppa:ci-train-ppa-service/3690
-    #apt -y install python-pip=9.0.1-2.3~ubuntu1.18.04.2~ubuntu18.04.1~ppa202002141134
+    apt -y install dh-python python3-newt curl libmysqlclient-dev mysql-client cpio iproute2 lsb-release git librsync2
     # cloning opsi-server for data directory
     rm -rf ../opsi-server
     rm -rf data
