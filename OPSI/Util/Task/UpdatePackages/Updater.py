@@ -168,8 +168,10 @@ class OpsiPackageUpdater:
 
 			newPackages = []
 			for repository, downloadablePackages in packages_per_repository.items():
+				logger.debug("Processing downloadable packages on repository %s", repository)
 				with self.makeSession(repository) as session:
 					for availablePackage in downloadablePackages:
+						logger.debug("Processing available package %s", availablePackage)
 						try:
 							product = self.get_installed_package(availablePackage, installedProducts)
 
@@ -192,6 +194,8 @@ class OpsiPackageUpdater:
 			if not newPackages:
 				logger.notice("No new packages available")
 				return
+
+			logger.info("New packages available: %s", ", ".join([sorted(np["productId"]) for np in newPackages]))
 
 			def in_installation_window(start_str, end_str):
 				now = datetime.datetime.now().time()
@@ -266,6 +270,7 @@ class OpsiPackageUpdater:
 				packageFile = os.path.join(self.config["packageDir"], package["filename"])
 
 				if package['repository'].onlyDownload:
+					logger.debug("Download only is set for repository, not installing package '%s'", packageFile)
 					continue
 
 				try:
@@ -314,19 +319,17 @@ class OpsiPackageUpdater:
 					logger.notice(message)
 					installedPackages.append(package)
 
-				except Exception as exc: # pylint: disable=broad-except
-					if self.config.get("ignoreErrors"):
-						logger.error("Ignoring Error for package %s: %s", availablePackage["productId"], exc, exc_info=True)
-						notifier.appendLine(f"Ignoring Error for package {availablePackage['productId']}: {exc}")
-					else:
-						raise exc
-
+				except Exception as err: # pylint: disable=broad-except
+					if not self.config.get("ignoreErrors"):
+						raise
+					logger.error("Ignoring error for package %s: %s", package["productId"], err, exc_info=True)
+					notifier.appendLine(f"Ignoring error for package {package['productId']}: {err}")
 
 			if not installedPackages:
 				logger.notice("No new packages installed")
 				return
 
-			logger.debug("mark redis product cache as dirty for debot: %s", self.depotId)
+			logger.debug("Mark redis product cache as dirty for depot: %s", self.depotId)
 			config_id = f"opsiconfd.{self.depotId}.product.cache.outdated"
 			backend.config_createBool(id=config_id, description="", defaultValues=[True])  # pylint: disable=no-member
 
