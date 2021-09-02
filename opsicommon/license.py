@@ -199,6 +199,10 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 		):
 			raise ValueError(f"Invalid value for {attribute}", value)
 
+	customer_unit: str = attr.ib(
+		default=None
+	)
+
 	service_id: str = attr.ib(
 		default=None,
 	)
@@ -413,7 +417,7 @@ class OpsiLicenseFile:
 		for section in ini.sections():
 			kwargs = dict(ini.items(section=section, raw=True))
 			kwargs["id"] = section
-			for key in ("customer_name", "customer_address", "note"):
+			for key in ("customer_name", "customer_address", "customer_unit", "note"):
 				kwargs[key] = ast.literal_eval(f'"{kwargs.get(key)}"') or None
 			kwargs["revoked_ids"] = [x.strip() for x in kwargs.get("revoked_ids", "").split(",") if x]
 			for key, val in kwargs.items():
@@ -436,7 +440,7 @@ class OpsiLicenseFile:
 						value = ""
 					elif field.name == "revoked_ids":
 						value = ",".join(value)
-					elif field.name in ("customer_name", "customer_address", "note"):
+					elif field.name in ("customer_name", "customer_address", "customer_unit", "note"):
 						value = repr(value)[1:-1]
 					file.write(f"{field.name} = {value}\n")
 				file.write("\n")
