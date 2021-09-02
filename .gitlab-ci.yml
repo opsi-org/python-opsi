@@ -6,13 +6,6 @@ stages:
   - package
   - publish
 
-.install_tools: &install_tools |
-  echo "deb http://deb.debian.org/debian unstable main" >> /etc/apt/sources.list
-  export DEBIAN_FRONTEND=noninteractive
-  apt update
-  apt -y install debhelper osc libmysqlclient-dev
-
-
 test:pylint-pytest:
   #when: manual
   services:
@@ -27,16 +20,11 @@ test:pylint-pytest:
     mkdir -p /var/log/opsi
     echo "${OPSI_TEST_MODULES}" > /etc/opsi/modules
     cat /etc/opsi/modules
-    echo "deb http://deb.debian.org/debian unstable main" >> /etc/apt/sources.list
-    export DEBIAN_FRONTEND=noninteractive
-    apt update
-    apt -y install dh-python python3-newt curl libmysqlclient-dev mysql-client cpio iproute2 lsb-release git librsync2
     # cloning opsi-server for data directory
     rm -rf ../opsi-server
     rm -rf data
     git clone -b master https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.uib.gmbh/uib/opsi-server.git ../opsi-server
     ln -s ../opsi-server/opsi-server_data/etc data
-    pip3 install poetry
     cp tests/testOPSI/Backends/config.py.gitlabci tests/testOPSI/Backends/config.py
     poetry install
     # Deactivate mysql strict mode
@@ -49,8 +37,6 @@ test:pylint-pytest:
   artifacts:
     name: 'python-opsi_test'
     paths:
-      #- pylint.txt
-      #- pep8.txt
       - coverage.xml
       - testreport-OPSI.xml
       - testreport-opsicommon.xml
@@ -79,20 +65,16 @@ test:pylint-pytest:
 #package:obs_int:
 #  stage: package
 #  script:
-#    - *install_tools
 #    - python3 -m opsidevtools -l info --obs-update-package https://obs.uib.gmbh home:uibmz:opsi:4.2:development
 
 #package:obs_ext:
 #  stage: package
 #  script:
-#    - *install_tools
 #    - python3 -m opsidevtools -l debug --obs-update-package https://build.opensuse.org home:uibmz:opsi:4.2:development
 
 publish:uibpypi:
   stage: publish
   script:
-    - *install_tools
-    - apt -y install libmariadb-dev
     - poetry install
     - poetry run opsi-dev-tool -l info --uib-pypi-publish
   only:
