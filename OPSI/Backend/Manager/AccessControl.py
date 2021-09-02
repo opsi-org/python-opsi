@@ -471,6 +471,12 @@ class BackendAccessControl:
 					f"Access to method '{methodName}' denied for user '{self.user_store.username}': {err}"
 				) from err
 
+		if methodName == "backend_getLicensingInfo" and not self.user_store.isAdmin:
+			if newKwargs.get("licenses") or newKwargs.get("legacy_modules") or newKwargs.get("dates"):
+				raise BackendPermissionDeniedError(
+					f"Access to method '{methodName}' with params {newKwargs} denied for user '{self.user_store.username}'"
+				)
+
 		logger.trace("newKwargs: %s", newKwargs)
 
 		meth = getattr(self._backend, methodName)
