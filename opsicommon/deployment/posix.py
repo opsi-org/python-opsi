@@ -94,7 +94,7 @@ class PosixDeployThread(DeployThread):
 				secret_filter.add_secrets(hostObj.opsiHostKey)
 				installCommand = (
 					f"{opsiscript} /tmp/opsi-client-agent/setup.opsiscript"
-					" /var/log/opsi-client-agent/opsi-script/opsi-client-agent.log -servicebatch"
+					" /var/log/opsi-script/opsi-client-agent.log -servicebatch"
 					f" -productid {product}"
 					f" -opsiservice {service_address}"
 					f" -clientid {hostObj.id}"
