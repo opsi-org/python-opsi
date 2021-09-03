@@ -3,6 +3,9 @@
 # Copyright (c) uib GmbH <info@uib.de>
 # License: AGPL-3.0
 # pylint: disable=too-many-lines
+"""
+OPSI.Util.Repository
+"""
 
 import os
 import re
@@ -63,7 +66,7 @@ def getFileInfosFromDavXML(davxmldata, encoding='utf-8'):  # pylint: disable=unu
 
 		if child[0].tag == "{DAV:}href":
 			info['path'] = unquote(child[0].text)
-			info['name'] = info['path'].rstrip('/').split('/')[-1]
+			info['name'] = info['path'].rstrip('/').rsplit('/', maxsplit=1)[-1]
 
 		if child[1].tag == "{DAV:}propstat":
 			for node in child[1]:

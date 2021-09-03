@@ -2,6 +2,7 @@
 
 # Copyright (c) uib GmbH <info@uib.de>
 # License: AGPL-3.0
+# pylint: disable=too-many-lines
 """
 opsi python library - Windows
 """
@@ -16,33 +17,39 @@ import sys
 import threading
 import time
 from datetime import datetime
-import pefile
+from ctypes import (
+	c_ulong, c_char, c_wchar, c_uint, c_ubyte,
+	sizeof, byref, POINTER, Structure, windll,
+)
 
 # Win32 imports
-import winreg			#pylint: disable=import-error
-import ntsecuritycon	#pylint: disable=import-error
-import pywintypes		#pylint: disable=import-error
-import win32api			#pylint: disable=import-error
-import win32con			#pylint: disable=import-error
-import win32event		#pylint: disable=import-error
-import win32file		#pylint: disable=import-error
-import win32gui			#pylint: disable=import-error
-import win32net			#pylint: disable=import-error
-import win32netcon		#pylint: disable=import-error
-import win32pdh			#pylint: disable=import-error
-import win32pdhutil		#pylint: disable=import-error
-import win32process		#pylint: disable=import-error
-import win32profile		#pylint: disable=import-error
-import win32security	#pylint: disable=import-error
-import win32service		#pylint: disable=import-error
-import win32ts			#pylint: disable=import-error
-import win32wnet		#pylint: disable=import-error
-from ctypes import *
+# pyright: reportMissingImports=false
+import winreg			# pylint: disable=import-error
+import ntsecuritycon	# pylint: disable=import-error
+import pywintypes		# pylint: disable=import-error
+import win32api			# pylint: disable=import-error
+import win32con			# pylint: disable=import-error
+import win32event		# pylint: disable=import-error
+import win32file		# pylint: disable=import-error
+import win32gui			# pylint: disable=import-error
+import win32net			# pylint: disable=import-error
+import win32netcon		# pylint: disable=import-error
+import win32pdh			# pylint: disable=import-error
+import win32pdhutil		# pylint: disable=import-error
+import win32process		# pylint: disable=import-error
+import win32profile		# pylint: disable=import-error
+import win32security	# pylint: disable=import-error
+import win32service		# pylint: disable=import-error
+import win32ts			# pylint: disable=import-error
+import win32wnet		# pylint: disable=import-error
+
+import pefile
 
 from OPSI.Logger import Logger
 from OPSI.Types import (
-	forceBool, forceDict, forceInt, forceUnicode, forceUnicodeList,
-	forceUnicodeLower, forceFilename, forceList)
+	forceBool, forceInt, forceUnicode, forceUnicodeList,
+	forceUnicodeLower, forceFilename
+)
 
 __all__ = (
 	'HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE', 'hooks', 'SystemSpecificHook',
@@ -79,7 +86,7 @@ MAXLEN_PHYSADDR = 8
 MAX_INTERFACES = 32
 
 
-class PROCESSENTRY32(Structure):
+class PROCESSENTRY32(Structure):  # pylint: disable=too-few-public-methods
 	_fields_ = [
 		("dwSize", c_ulong),
 		("cntUsage", c_ulong),
@@ -94,7 +101,7 @@ class PROCESSENTRY32(Structure):
 	]
 
 
-class MIB_IFROW(Structure):
+class MIB_IFROW(Structure):  # pylint: disable=too-few-public-methods,invalid-name
 	_fields_ = [
 		("wszName", c_wchar * MAX_INTERFACE_NAME_LEN),
 		("dwIndex", c_uint),
@@ -123,26 +130,26 @@ class MIB_IFROW(Structure):
 	]
 
 
-class MIB_IFTABLE(Structure):
+class MIB_IFTABLE(Structure):  # pylint: disable=too-few-public-methods,invalid-name
 	_fields_ = [
 		("dwNumEntries", c_uint),
 		("table", MIB_IFROW * MAX_INTERFACES),
 	]
 
 
-class SystemSpecificHook:
+class SystemSpecificHook:  # pylint: disable=too-few-public-methods
 	def __init__(self):
 		pass
 
 
 def addSystemHook(hook):
-	global hooks
+	global hooks  # pylint: disable=global-statement,invalid-name
 	if hook not in hooks:
 		hooks.append(hook)
 
 
 def removeSystemHook(hook):
-	global hooks
+	global hooks  # pylint: disable=global-statement,invalid-name
 	if hook in hooks:
 		hooks.remove(hook)
 
@@ -155,17 +162,17 @@ def getArchitecture():
 		if win32process.IsWow64Process():
 			return 'x64'
 		return 'x86'
-	except Exception as error:
-		logger.error("Error determining OS-Architecture: '%s'; returning default: 'x86'", error)
+	except Exception as err:  # pylint: disable=broad-except
+		logger.error("Error determining OS-Architecture: '%s'; returning default: 'x86'", err)
 		return 'x86'
 
 
-def getOpsiHotfixName(helper=None):
+def getOpsiHotfixName(helper=None):  #pylint: disable=too-many-branches,too-many-statements
 	arch = getArchitecture()
-	major = sys.getwindowsversion().major			#pylint: disable=no-member
-	minor = sys.getwindowsversion().minor			#pylint: disable=no-member
+	major = sys.getwindowsversion().major  #pylint: disable=no-member
+	minor = sys.getwindowsversion().minor  #pylint: disable=no-member
 	loc = locale.getdefaultlocale()[0].split('_')[0]
-	os = 'unknown'
+	_os = 'unknown'
 	lang = 'unknown'
 
 	if helper:
@@ -174,8 +181,8 @@ def getOpsiHotfixName(helper=None):
 			result = execute(helper, shell=False)
 			minor = int(result[0].split(".")[1])
 			major = int(result[0].split(".")[0])
-		except Exception as e:
-			logger.warning("Version helper failed: %s, using getwindowsversion()", e)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.warning("Version helper failed: %s, using getwindowsversion()", err)
 
 	if major == 5:
 		if loc == 'en':
@@ -190,41 +197,41 @@ def getOpsiHotfixName(helper=None):
 			lang = 'chs'
 
 		if minor == 1:
-			os = 'winxp'
+			_os = 'winxp'
 		elif minor == 2:
 			if arch == 'x86':
-				os = 'win2003'
+				_os = 'win2003'
 			else:
-				os = 'win2003-winxp'
+				_os = 'win2003-winxp'
 
 	elif major == 6:
 		lang = 'glb'
 		if minor == 0:
-			os = 'vista-win2008'
+			_os = 'vista-win2008'
 		elif minor == 1:
 			if arch == 'x86':
-				os = 'win7'
+				_os = 'win7'
 			else:
-				os = 'win7-win2008r2'
+				_os = 'win7-win2008r2'
 		elif minor == 2:
 			if arch == 'x86':
-				os = 'win8'
+				_os = 'win8'
 			else:
-				os = 'win8-win2012'
+				_os = 'win8-win2012'
 		elif minor == 3:
 			if arch == 'x86':
-				os = 'win81'
+				_os = 'win81'
 			else:
-				os = 'win81-win2012r2'
+				_os = 'win81-win2012r2'
 
 	elif major == 10:
 		lang = 'glb'
 		if arch == 'x86':
-			os = 'win10'
+			_os = 'win10'
 		else:
-			os = 'win10-win2016'
+			_os = 'win10-win2016'
 
-	return 'mshotfix-%s-%s-%s' % (os, arch, lang)
+	return 'mshotfix-%s-%s-%s' % (_os, arch, lang)
 
 
 def getHostname():
@@ -290,21 +297,21 @@ def getNetworkInterfaces():
 		MAX_ADAPTER_NAME_LENGTH = 256
 		MAX_ADAPTER_ADDRESS_LENGTH = 8
 
-		class IP_ADDR_STRING(Structure):
+		class IP_ADDR_STRING(Structure):  # pylint: disable=too-few-public-methods,invalid-name
 			pass
 
 		LP_IP_ADDR_STRING = POINTER(IP_ADDR_STRING)
-		IP_ADDR_STRING._fields_ = [
+		IP_ADDR_STRING._fields_ = [  # pylint: disable=protected-access
 			("next",      LP_IP_ADDR_STRING),
 			("ipAddress", c_char * 16),
 			("ipMask",    c_char * 16),
 			("context",   c_ulong)]
 
-		class IP_ADAPTER_INFO(Structure):
+		class IP_ADAPTER_INFO(Structure):  # pylint: disable=too-few-public-methods,invalid-name
 			pass
 
 		LP_IP_ADAPTER_INFO = POINTER(IP_ADAPTER_INFO)
-		IP_ADAPTER_INFO._fields_ = [
+		IP_ADAPTER_INFO._fields_ = [  # pylint: disable=protected-access
 			("next", LP_IP_ADAPTER_INFO),
 			("comboIndex", c_ulong),
 			("adapterName", c_char * (MAX_ADAPTER_NAME_LENGTH + 4)),
@@ -350,7 +357,7 @@ def getSystemProxySetting():
 	return None
 
 
-class NetworkPerformanceCounter(threading.Thread):
+class NetworkPerformanceCounter(threading.Thread):  # pylint: disable=too-many-instance-attributes
 	def __init__(self, interface):
 		threading.Thread.__init__(self)
 		self.interface = None
@@ -416,13 +423,11 @@ class NetworkPerformanceCounter(threading.Thread):
 
 		if self._lastBytesIn:
 			self._bytesInPerSecond = (bytesIn - self._lastBytesIn) / timeDiff
-			if self._bytesInPerSecond < 0:
-				self._bytesInPerSecond = 0
+			self._bytesInPerSecond = max(self._bytesInPerSecond, 0)
 
 		if self._lastBytesOut:
 			self._bytesOutPerSecond = (bytesOut - self._lastBytesOut) / timeDiff
-			if self._bytesOutPerSecond < 0:
-				self._bytesOutPerSecond = 0
+			self._bytesOutPerSecond = max(self._bytesOutPerSecond, 0)
 
 		self._lastBytesIn = bytesIn
 		self._lastBytesOut = bytesOut
@@ -435,7 +440,7 @@ class NetworkPerformanceCounter(threading.Thread):
 		return self._bytesOutPerSecond
 
 
-class NetworkPerformanceCounterWMI(threading.Thread):
+class NetworkPerformanceCounterWMI(threading.Thread):  # pylint: disable=too-many-instance-attributes
 	def __init__(self, interface):
 		threading.Thread.__init__(self)
 		self.interface = interface
@@ -446,6 +451,7 @@ class NetworkPerformanceCounterWMI(threading.Thread):
 		self._bytesOutPerSecond = 0
 		self._running = False
 		self._stopped = False
+		self.wmi = None
 		self.start()
 
 	def __del__(self):
@@ -458,8 +464,8 @@ class NetworkPerformanceCounterWMI(threading.Thread):
 		try:
 			interface = self.interface
 			self._running = True
-			import pythoncom			#pylint: disable=import-error
-			import wmi					#pylint: disable=import-error
+			import pythoncom  #pylint: disable=import-error,import-outside-toplevel
+			import wmi  #pylint: disable=import-error,import-outside-toplevel
 			pythoncom.CoInitialize()
 			self.wmi = wmi.WMI()
 			bestRatio = 0.0
@@ -472,7 +478,7 @@ class NetworkPerformanceCounterWMI(threading.Thread):
 					bestRatio = ratio
 					self.interface = instance.Name
 			logger.info("NetworkPerformanceCounter: using interface '%s' match ratio (%s)", self.interface, bestRatio)
-		except Exception as err:
+		except Exception as err:  # pylint: disable=broad-except
 			logger.error(err, exc_info=True)
 
 		try:
@@ -481,9 +487,9 @@ class NetworkPerformanceCounterWMI(threading.Thread):
 				time.sleep(1)
 		finally:
 			try:
-				import pythoncom		#pylint: disable=import-error
+				import pythoncom  #pylint: disable=import-error,import-outside-toplevel
 				pythoncom.CoUninitialize()
-			except Exception:
+			except Exception:  # pylint: disable=broad-except
 				pass
 
 	def _getStatistics(self):
@@ -498,13 +504,11 @@ class NetworkPerformanceCounterWMI(threading.Thread):
 
 		if self._lastBytesIn:
 			self._bytesInPerSecond = (bytesIn - self._lastBytesIn) / timeDiff
-			if self._bytesInPerSecond < 0:
-				self._bytesInPerSecond = 0
+			self._bytesInPerSecond = max(self._bytesInPerSecond, 0)
 
 		if self._lastBytesOut:
 			self._bytesOutPerSecond = (bytesOut - self._lastBytesOut) / timeDiff
-			if self._bytesOutPerSecond < 0:
-				self._bytesOutPerSecond = 0
+			self._bytesOutPerSecond = max(self._bytesOutPerSecond, 0)
 
 		self._lastBytesIn = bytesIn
 		self._lastBytesOut = bytesOut
@@ -517,7 +521,7 @@ class NetworkPerformanceCounterWMI(threading.Thread):
 		return self._bytesOutPerSecond
 
 
-class NetworkPerformanceCounterPDH(threading.Thread):
+class NetworkPerformanceCounterPDH(threading.Thread):  # pylint: disable=too-many-instance-attributes
 	def __init__(self, interface):
 		threading.Thread.__init__(self)
 		self.interface = None
@@ -539,11 +543,17 @@ class NetworkPerformanceCounterPDH(threading.Thread):
 		bestRatio = 0.0
 		for instance in instances:
 			ratio = difflib.SequenceMatcher(None, instance, interface).ratio()
-			logger.info("NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s", interface, instance, ratio)
+			logger.info(
+				"NetworkPerformanceCounter: searching for interface '%s', got interface '%s', match ratio: %s",
+				interface, instance, ratio
+			)
 			if ratio > bestRatio:
 				bestRatio = ratio
 				self.interface = instance
-		logger.info("NetworkPerformanceCounter: using interface '%s' match ratio (%s) with available counters: %s", self.interface, bestRatio, items)
+		logger.info(
+			"NetworkPerformanceCounter: using interface '%s' match ratio (%s) with available counters: %s",
+			self.interface, bestRatio, items
+		)
 
 		# For correct translations (find_pdh_counter_localized_name) see:
 		# HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib
@@ -571,20 +581,20 @@ class NetworkPerformanceCounterPDH(threading.Thread):
 
 		try:
 			self._inCounterHandle = win32pdh.AddCounter(self._queryHandle, self.bytesInPerSecondCounter)
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			raise RuntimeError("Failed to add inCounterHandle %s->%s: %s" % (
 				win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
 				win32pdhutil.find_pdh_counter_localized_name('Bytes In/sec'),
-				error
-			))
+				err
+			)) from err
 		try:
 			self._outCounterHandle = win32pdh.AddCounter(self._queryHandle, self.bytesOutPerSecondCounter)
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			raise RuntimeError("Failed to add outCounterHandle %s->%s: %s" % (
 				win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
 				win32pdhutil.find_pdh_counter_localized_name('Bytes Sent/sec'),
-				error
-			))
+				err
+			)) from err
 		self.start()
 
 	def __del__(self):
@@ -599,11 +609,11 @@ class NetworkPerformanceCounterPDH(threading.Thread):
 		while not self._stopped:
 			inbytes = 0.0
 			outbytes = 0.0
-			for i in range(10):
+			for _i in range(10):
 				win32pdh.CollectQueryData(self._queryHandle)
-				(tp, val) = win32pdh.GetFormattedCounterValue(self._inCounterHandle, win32pdh.PDH_FMT_LONG)
+				(_tp, val) = win32pdh.GetFormattedCounterValue(self._inCounterHandle, win32pdh.PDH_FMT_LONG)
 				inbytes += val
-				(tp, val) = win32pdh.GetFormattedCounterValue(self._outCounterHandle, win32pdh.PDH_FMT_LONG)
+				(_tp, val) = win32pdh.GetFormattedCounterValue(self._outCounterHandle, win32pdh.PDH_FMT_LONG)
 				outbytes += val
 				time.sleep(0.1)
 
@@ -659,13 +669,13 @@ def adjustPrivilege(priv, enable=1):
 	flags = ntsecuritycon.TOKEN_ADJUST_PRIVILEGES | ntsecuritycon.TOKEN_QUERY
 	htoken = win32security.OpenProcessToken(win32api.GetCurrentProcess(), flags)
 	# Get the ID for the system shutdown privilege.
-	id = win32security.LookupPrivilegeValue(None, priv)
+	_id = win32security.LookupPrivilegeValue(None, priv)
 	# Now obtain the privilege for this process.
 	# Create a list of the privileges to be added.
 	if enable:
-		newPrivileges = [(id, win32security.SE_PRIVILEGE_ENABLED)]
+		newPrivileges = [(_id, win32security.SE_PRIVILEGE_ENABLED)]
 	else:
-		newPrivileges = [(id, 0)]
+		newPrivileges = [(_id, 0)]
 	# and make the adjustment.
 	win32security.AdjustTokenPrivileges(htoken, 0, newPrivileges)
 
@@ -746,7 +756,7 @@ def getDiskSpaceUsage(path):
 	return info
 
 
-def mount(dev, mountpoint, **options):
+def mount(dev, mountpoint, **options):  # pylint: disable=too-many-branches,too-many-statements
 	"""
 	Mount *dev* to the given *mountpoint*.
 
@@ -864,8 +874,8 @@ def getActiveConsoleSessionId():
 	"""
 	try:
 		return int(win32ts.WTSGetActiveConsoleSessionId())
-	except Exception as error:
-		logger.warning("Failed to get WTSGetActiveConsoleSessionId: %s, returning 1", error)
+	except Exception as err:  # pylint: disable=broad-except
+		logger.warning("Failed to get WTSGetActiveConsoleSessionId: %s, returning 1", err)
 		return 1
 
 def getActiveDesktopName():
@@ -883,7 +893,7 @@ WTS_STATES = {
 	win32ts.WTSDisconnected: "disconnected"
 }
 
-def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):
+def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):  # pylint: disable=dangerous-default-value,too-many-branches
 	"""
 	Retrieves ids of all active user sessions.
 
@@ -901,14 +911,14 @@ def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):
 	if states is None:
 		states = ["active", "disconnected"]
 	if states:
-		for i in range(len(states)):
-			if states[i] not in WTS_STATES:
+		for idx, value in enumerate(states):
+			if value not in WTS_STATES:
 				for state, name in WTS_STATES.items():
-					if name == states[i]:
-						states[i] = state
+					if name == value:
+						states[idx] = state
 						break
-				if states[i] not in WTS_STATES:
-					raise ValueError(f"Invalid session state '{states[i]}'")
+				if value not in WTS_STATES:
+					raise ValueError(f"Invalid session state '{value}'")
 
 	if protocol is not None:
 		if not protocol in WTS_PROTOCOLS:
@@ -972,9 +982,7 @@ def getUserSessionIds(username):
 	if not username:
 		return sessionIds
 
-	domain = None
 	if '\\' in username:
-		domain = username.split('\\')[0]
 		username = username.split('\\')[-1]
 
 	for session in getActiveSessionInformation():
@@ -1034,8 +1042,9 @@ def createWindowStation(name):
 
 	try:
 		return win32service.CreateWindowStation(name, 0, win32con.MAXIMUM_ALLOWED, sa)
-	except win32service.error as e:
-		logger.error("Failed to create window station '%s': %s", name, forceUnicode(e))
+	except win32service.error as err:
+		logger.error("Failed to create window station '%s': %s", name, err)
+	return None
 
 
 def createDesktop(name, runCommand=None):
@@ -1048,8 +1057,8 @@ def createDesktop(name, runCommand=None):
 	try:
 		sa.SECURITY_DESCRIPTOR = win32security.GetUserObjectSecurity(
 			win32service.OpenDesktop('default', 0, 0, win32con.MAXIMUM_ALLOWED), win32con.DACL_SECURITY_INFORMATION)
-	except Exception as error:
-		logger.error(error)
+	except Exception as err:  # pylint: disable=broad-except
+		logger.error(err)
 		sa.SECURITY_DESCRIPTOR = None
 
 	hdesk = None
@@ -1059,9 +1068,9 @@ def createDesktop(name, runCommand=None):
 		logger.error("Failed to create desktop '%s': %s", name, forceUnicode(error))
 
 	if runCommand:
-		s = win32process.STARTUPINFO()
-		s.lpDesktop = name
-		prc_info = win32process.CreateProcess(None, runCommand, None, None, True, win32con.CREATE_NEW_CONSOLE, None, 'c:\\', s)
+		sti = win32process.STARTUPINFO()
+		sti.lpDesktop = name
+		win32process.CreateProcess(None, runCommand, None, None, True, win32con.CREATE_NEW_CONSOLE, None, 'c:\\', sti)
 
 	return hdesk
 
@@ -1198,7 +1207,19 @@ def which(cmd):
 def get_subprocess_environment():
 	return os.environ.copy()
 
-def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnStderr=False, captureStderr=True, encoding=None, timeout=0, shell=True, env={}, stdin_data=b""):
+def execute(  # pylint: disable=dangerous-default-value,too-many-branches,too-many-statements,too-many-arguments,too-many-locals
+	cmd,
+	waitForEnding=True,
+	getHandle=False,
+	ignoreExitCode=[],
+	exitOnStderr=False,
+	captureStderr=True,
+	encoding=None,  # pylint: disable=unused-argument
+	timeout=0,
+	shell=True,
+	env={},
+	stdin_data=b""
+):
 	if not isinstance(cmd, list):
 		cmd = forceUnicode(cmd)
 	waitForEnding = forceBool(waitForEnding)
@@ -1217,26 +1238,26 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 	try:
 		logger.info("Executing: %s", cmd)
 		if getHandle:
-			if captureStderr:
-				return (subprocess.Popen(cmd, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=sp_env)).stdout
-			else:
-				return (subprocess.Popen(cmd, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None, env=sp_env)).stdout
-		else:
-			data = b""
-			proc = subprocess.Popen(
-				cmd,
-				shell=shell,
-				stdin=subprocess.PIPE if stdin_data else None,
-				stdout=subprocess.PIPE,
-				stderr=subprocess.PIPE if captureStderr else None,
-				env=sp_env
-			)
+			stderr = subprocess.STDOUT if captureStderr else None
+			with subprocess.Popen(cmd, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=stderr, env=sp_env) as proc:
+				return proc.stdout
+
+		data = b""
+		ret = None
+
+		with subprocess.Popen(
+			cmd,
+			shell=shell,
+			stdin=subprocess.PIPE if stdin_data else None,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.PIPE if captureStderr else None,
+			env=sp_env
+		) as proc:
 
 			if stdin_data:
 				proc.stdin.write(stdin_data)
 				proc.stdin.flush()
 
-			ret = None
 			while ret is None:
 				ret = proc.poll()
 				try:
@@ -1258,27 +1279,27 @@ def execute(cmd, waitForEnding=True, getHandle=False, ignoreExitCode=[], exitOnS
 						if error.errno != 11:
 							raise
 
-				if timeout > 0 and (time.time() - startTime >= timeout):
+				if time.time() - startTime >= timeout > 0:
 					try:
 						proc.kill()
-					except Exception:
+					except Exception:  # pylint: disable=broad-except
 						pass
 
 					raise IOError(exitCode, f"Command '{cmd}' timed out atfer {(time.time() - startTime)} seconds")
 
 				time.sleep(0.001)
 
-			exitCode = ret
-			if data:
-				lines = data.split(b'\n')
-				lineCount = len(lines)
-				for i, origLine in enumerate(lines):
-					line = origLine.decode("cp850", 'replace').replace('\r', '')
-					if (i == lineCount - 1) and not line:
-						break
+		exitCode = ret
+		if data:
+			lines = data.split(b'\n')
+			lineCount = len(lines)
+			for i, origLine in enumerate(lines):
+				line = origLine.decode("cp850", 'replace').replace('\r', '')
+				if (i == lineCount - 1) and not line:
+					break
 
-					logger.debug(">>> %s", line)
-					result.append(line)
+				logger.debug(">>> %s", line)
+				result.append(line)
 	except (os.error, IOError) as err:
 		# Some error occurred during execution
 		raise IOError(error.errno, f"Command '{cmd}' failed:\n{err}") from err
@@ -1309,18 +1330,18 @@ def getPids(process, sessionId=None):
 	CloseHandle = windll.kernel32.CloseHandle
 	hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
 	pe32 = PROCESSENTRY32()
-	pe32.dwSize = sizeof(PROCESSENTRY32)
+	pe32.dwSize = sizeof(PROCESSENTRY32)  # pylint: disable=attribute-defined-outside-init
 	logger.trace("Getting first process")
 	if Process32First(hProcessSnap, byref(pe32)) == win32con.FALSE:
 		logger.error("Failed to get first process")
-		return
+		return None
 
 	while True:
 		pid = pe32.th32ProcessID
 		sid = 'unknown'
 		try:
 			sid = win32ts.ProcessIdToSessionId(pid)
-		except Exception:
+		except Exception:  # pylint: disable=broad-except
 			pass
 		processName = pe32.szExeFile.decode("Windows-1252")
 		logger.trace("   got process %s with pid %d in session %s", processName, pid, sid)
@@ -1363,11 +1384,11 @@ def getProcessName(processId):
 	CloseHandle = windll.kernel32.CloseHandle
 	hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
 	pe32 = PROCESSENTRY32()
-	pe32.dwSize = sizeof(PROCESSENTRY32)
+	pe32.dwSize = sizeof(PROCESSENTRY32)  # pylint: disable=attribute-defined-outside-init
 	logger.info("Getting first process")
 	if Process32First(hProcessSnap, byref(pe32)) == win32con.FALSE:
 		logger.error("Failed getting first process")
-		return
+		return None
 
 	while True:
 		pid = pe32.th32ProcessID
@@ -1447,9 +1468,9 @@ def getUserToken(sessionId=None, duplicateFrom="winlogon.exe"):
 		win32con.TOKEN_READ | win32con.TOKEN_WRITE
 	)
 
-	id = win32security.LookupPrivilegeValue(None, win32security.SE_DEBUG_NAME)
+	_id = win32security.LookupPrivilegeValue(None, win32security.SE_DEBUG_NAME)
 
-	newPrivileges = [(id, win32security.SE_PRIVILEGE_ENABLED)]
+	newPrivileges = [(_id, win32security.SE_PRIVILEGE_ENABLED)]
 
 	hUserTokenDup = win32security.DuplicateTokenEx(
 		ExistingToken=hPToken,
@@ -1466,7 +1487,15 @@ def getUserToken(sessionId=None, duplicateFrom="winlogon.exe"):
 	return hUserTokenDup
 
 
-def runCommandInSession(command, sessionId=None, desktop="default", duplicateFrom="winlogon.exe", waitForProcessEnding=True, timeoutSeconds=0, noWindow=False):
+def runCommandInSession(  # pylint: disable=too-many-arguments,too-many-locals
+	command,
+	sessionId=None,
+	desktop="default",
+	duplicateFrom="winlogon.exe",
+	waitForProcessEnding=True,
+	timeoutSeconds=0,
+	noWindow=False
+):
 	"""
 	put command arguments in double, not single, quotes.
 	"""
@@ -1491,8 +1520,8 @@ def runCommandInSession(command, sessionId=None, desktop="default", duplicateFro
 		logger.info("Creating new desktop '%s'", desktop.split('\\')[-1])
 		try:
 			createDesktop(desktop.split('\\')[-1])
-		except Exception as error:
-			logger.warning(error)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.warning(err)
 
 	userToken = getUserToken(sessionId, duplicateFrom)
 
@@ -1500,38 +1529,40 @@ def runCommandInSession(command, sessionId=None, desktop="default", duplicateFro
 	if noWindow:
 		dwCreationFlags |= win32con.CREATE_NO_WINDOW
 
-	s = win32process.STARTUPINFO()
-	s.lpDesktop = desktop
+	sti = win32process.STARTUPINFO()
+	sti.lpDesktop = desktop
 
 	logger.notice("Executing: '%s' in session '%s' on desktop '%s'", command, sessionId, desktop)
-	(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(userToken, None, command, None, None, 1, dwCreationFlags, None, None, s)
+	(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(
+		userToken, None, command, None, None, 1, dwCreationFlags, None, None, sti
+	)
 
 	logger.info("Process startet, pid: %d", dwProcessId)
 	if not waitForProcessEnding:
 		return (hProcess, hThread, dwProcessId, dwThreadId)
 
 	logger.info("Waiting for process ending: %d (timeout: %d seconds)", dwProcessId, timeoutSeconds)
-	t = 0.0
+	sec = 0.0
 	while win32event.WaitForSingleObject(hProcess, timeoutSeconds):
 		if timeoutSeconds > 0:
-			if t >= timeoutSeconds:
+			if sec >= timeoutSeconds:
 				terminateProcess(processId=dwProcessId)
-				raise RuntimeError("Timed out after %s seconds while waiting for process %d" % (t, dwProcessId))
-			t += 0.1
+				raise RuntimeError(f"Timed out after {sec} seconds while waiting for process {dwProcessId}")
+			sec += 0.1
 		time.sleep(0.1)
 
 	exitCode = win32process.GetExitCodeProcess(hProcess)
 	log = logger.notice
 	if exitCode != 0:
 		log = logger.warning
-	log("Process %d ended with exit code %d" % (dwProcessId, exitCode))
+	log("Process %d ended with exit code %d", dwProcessId, exitCode)
 	return (None, None, None, None)
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                     USER / GROUP HANDLING                                         -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def createUser(username, password, groups=[]):
+def createUser(username, password, groups=[]):  # pylint: disable=dangerous-default-value
 	username = forceUnicode(username)
 	password = forceUnicode(password)
 	groups = forceUnicodeList(groups)
@@ -1562,10 +1593,10 @@ def createUser(username, password, groups=[]):
 	if not groups:
 		return
 
-	u = {'domainandname': domain + '\\' + username}
+	usr = {'domainandname': domain + '\\' + username}
 	for group in groups:
 		logger.info("Adding user '%s' to group '%s'", username, group)
-		win32net.NetLocalGroupAddMembers("\\\\" + domain, group, 3, [u])
+		win32net.NetLocalGroupAddMembers("\\\\" + domain, group, 3, [usr])
 
 
 def deleteUser(username, deleteProfile=True):
@@ -1585,9 +1616,9 @@ def deleteUser(username, deleteProfile=True):
 			if sid:
 				try:
 					win32profile.DeleteProfile(sid)
-				except Exception as error:
-					logger.info("Failed to delete user profile '%s' (sid %s): %s", username, sid, forceUnicode(error))
-		except Exception as error:
+				except Exception as err:  # pylint: disable=broad-except
+					logger.info("Failed to delete user profile '%s' (sid %s): %s", username, sid, err)
+		except Exception:  # pylint: disable=broad-except
 			pass
 	try:
 		win32net.NetUserDel("\\\\" + domain, username)
@@ -1618,6 +1649,7 @@ def getUserSidFromHandle(userHandle):
 	for (sid, flags) in tic:
 		if flags & win32con.SE_GROUP_LOGON_ID:
 			return sid
+	return None
 
 
 def getUserSid(username):
@@ -1668,11 +1700,11 @@ def setLocalSystemTime(timestring):
 		dt = datetime.strptime(timestring, '%Y-%m-%d %H:%M:%S.%f')
 		logger.info("Setting Systemtime Time to %s", timestring)
 		win32api.SetSystemTime(dt.year, dt.month, 0, dt.day, dt.hour, dt.minute, dt.second, 0)
-	except Exception as error:
-		logger.error("Failed to set System Time: '%s'", error)
+	except Exception as err:  # pylint: disable=broad-except
+		logger.error("Failed to set System Time: '%s'", err)
 
 
-class Impersonate:
+class Impersonate:  # pylint: disable=too-many-instance-attributes
 	def __init__(self, username="", password="", userToken=None, desktop="default"):
 		self.userProfile = None
 		self.userEnvironment = None
@@ -1704,7 +1736,7 @@ class Impersonate:
 		self.desktop = forceUnicodeLower(self.desktop)
 		self.userToken = userToken
 
-	def start(self, logonType='INTERACTIVE', newDesktop=False, createEnvironment=False):
+	def start(self, logonType='INTERACTIVE', newDesktop=False, createEnvironment=False):  # pylint: disable=too-many-branches,too-many-statements
 		try:
 			logonType = forceUnicode(logonType)
 			winLogonType = None
@@ -1750,8 +1782,8 @@ class Impersonate:
 					logger.info("Creating new desktop '%s'", self.desktop)
 					try:
 						self.newDesktop = createDesktop(self.desktop)
-					except Exception as error:
-						logger.warning(error)
+					except Exception as err:  # pylint: disable=broad-except
+						logger.warning(err)
 
 				if not self.newDesktop:
 					self.newDesktop = win32service.OpenDesktop(
@@ -1780,10 +1812,10 @@ class Impersonate:
 				else:
 					logger.debug("Got sid of user '%s'", self.username)
 
-					winstaAceIndices = addUserToWindowStation(self.newWindowStation, userSid)
+					addUserToWindowStation(self.newWindowStation, userSid)
 					logger.debug("Added user to window station")
 
-					desktopAceIndices = addUserToDesktop(self.newDesktop, userSid)
+					addUserToDesktop(self.newDesktop, userSid)
 					logger.debug("Added user to desktop")
 
 			elif logonType == 'INTERACTIVE':
@@ -1793,10 +1825,10 @@ class Impersonate:
 				else:
 					logger.debug("Got sid of user '%s'", self.username)
 
-					winstaAceIndices = addUserToWindowStation(win32service.GetProcessWindowStation(), userSid)
+					addUserToWindowStation(win32service.GetProcessWindowStation(), userSid)
 					logger.debug("Added user to window station")
 
-					desktopAceIndices = addUserToDesktop(win32service.GetThreadDesktop(win32api.GetCurrentThreadId()), userSid)
+					addUserToDesktop(win32service.GetThreadDesktop(win32api.GetCurrentThreadId()), userSid)
 					logger.debug("Added user to desktop")
 
 			if createEnvironment:
@@ -1821,10 +1853,10 @@ class Impersonate:
 			environment = self.userEnvironment
 
 		dwCreationFlags = win32process.CREATE_NEW_CONSOLE
-		s = win32process.STARTUPINFO()
-		s.dwFlags = win32process.STARTF_USESHOWWINDOW ^ win32con.STARTF_USESTDHANDLES
-		s.wShowWindow = win32con.SW_NORMAL
-		s.lpDesktop = self.winsta + '\\' + self.desktop
+		sti = win32process.STARTUPINFO()
+		sti.dwFlags = win32process.STARTF_USESHOWWINDOW ^ win32con.STARTF_USESTDHANDLES
+		sti.wShowWindow = win32con.SW_NORMAL
+		sti.lpDesktop = self.winsta + '\\' + self.desktop
 
 		if self.logonType == 'INTERACTIVE':
 			logger.notice(
@@ -1846,7 +1878,7 @@ class Impersonate:
 			dwCreationFlags,
 			environment,
 			None,
-			s
+			sti
 		)
 
 		logger.info("Process startet, pid: %s", dwProcessId)
@@ -1854,62 +1886,62 @@ class Impersonate:
 			return (hProcess, hThread, dwProcessId, dwThreadId)
 
 		logger.info("Waiting for process ending: %s (timeout: %s seconds)", dwProcessId, timeoutSeconds)
-		t = 0.0
+		sec = 0.0
 		while win32event.WaitForSingleObject(hProcess, timeoutSeconds):
 			if timeoutSeconds > 0:
-				if t >= timeoutSeconds:
+				if sec >= timeoutSeconds:
 					terminateProcess(processId=dwProcessId)
-					raise RuntimeError("Timed out after %s seconds while waiting for process %s" % (t, dwProcessId))
-				t += 0.1
+					raise RuntimeError(f"Timed out after {sec} seconds while waiting for process {dwProcessId}")
+				sec += 0.1
 			time.sleep(0.1)
 
 		exitCode = win32process.GetExitCodeProcess(hProcess)
 		logger.notice("Process %s ended with exit code %s", dwProcessId, exitCode)
 		return (None, None, None, None)
 
-	def end(self):
+	def end(self):  #pylint: disable=too-many-branches
 		try:
 			try:
 				win32security.RevertToSelf()
-			except:
+			except Exception:  # pylint: disable=broad-except
 				pass
 			if self.saveWindowStation:
 				try:
 					self.saveWindowStation.SetProcessWindowStation()
-				except Exception as error:
-					logger.debug("Failed to set process WindowStation: %s", error)
+				except Exception as err:  # pylint: disable=broad-except
+					logger.debug("Failed to set process WindowStation: %s", err)
 
 			if self.saveDesktop:
 				try:
 					self.saveDesktop.SetThreadDesktop()
-				except Exception as error:
-					logger.debug("Failed to set thread Desktop: %s", error)
+				except Exception as err:  # pylint: disable=broad-except
+					logger.debug("Failed to set thread Desktop: %s", err)
 
 			if self.newDesktop:
 				try:
 					self.newWindowStation.CloseDesktop()
-				except Exception as error:
-					logger.debug("Failed to close Desktop: %s", error)
+				except Exception as err:  # pylint: disable=broad-except
+					logger.debug("Failed to close Desktop: %s", err)
 
 			if self.newWindowStation:
 				try:
 					self.newWindowStation.CloseWindowStation()
-				except Exception as error:
-					logger.debug("Failed to close WindowStation: %s", error)
+				except Exception as err:  # pylint: disable=broad-except
+					logger.debug("Failed to close WindowStation: %s", err)
 
 			if self.userProfile:
 				logger.debug("Unloading user profile")
 				try:
 					win32profile.UnloadUserProfile(self.userToken, self.userProfile)
-				except Exception as error:
-					logger.debug("Failed to unload user profile: %s", error)
+				except Exception as err:  # pylint: disable=broad-except
+					logger.debug("Failed to unload user profile: %s", err)
 
 			if self.userToken:
 				try:
 					self.userToken.Close()
-				except Exception as error:
-					logger.debug("Failed to close user token: %s", error)
-		except Exception as err:
+				except Exception as err:  # pylint: disable=broad-except
+					logger.debug("Failed to close user token: %s", err)
+		except Exception as err:  # pylint: disable=broad-except
 			logger.error(err, exc_info=True)
 
 	def __del__(self):

@@ -17,7 +17,7 @@ from typing import Dict, List, Any
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceUnicode, forceFilename
-from OPSI.Object import *
+#from OPSI.Object import *
 from OPSI.Util import  objectToBeautifiedText, removeUnit
 from OPSI.System import Posix
 from OPSI.System.Posix import (
@@ -193,21 +193,21 @@ def parse_ioreg_output(lines : List) -> Dict:
 		indent = line.find("+-o ")
 		parts = [x.strip() for x in line.split("=", 1)]
 
-		if indent == -1:		# fill in leafs
+		if indent == -1: # fill in leafs
 			if len(parts) == 2:
 				value = removeUnit(parts[1])
 				set_tree_value(hwdata, key_list, parts[0], value)
 			continue
 
-		while indent <= indent_list[-1]:	# walk up tree
+		while indent <= indent_list[-1]: # walk up tree
 			indent_list.pop()
 			key_list.pop()
-		indent_list.append(indent)		# branch new subtree
+		indent_list.append(indent) # branch new subtree
 		key = parts[0][indent+3:].split("<")[0]
 		key_list.append(key.strip())
 	return hwdata
 
-def hardwareInventory(config, progressSubject=None):
+def hardwareInventory(config, progressSubject=None):  # pylint: disable=unused-argument, too-many-locals, too-many-branches, too-many-statements
 	"""
 	Collect hardware information on OSX.
 
@@ -235,13 +235,13 @@ def hardwareInventory(config, progressSubject=None):
 			SPNetworkDataType SPParallelSCSIDataType SPPowerDataType SPSASDataType SPSerialATADataType \
 			SPStorageDataType SPThunderboltDataType SPUSBDataType SPSoftwareDataType"
 	cmd = "{}".format(getHardwareCommand)
-	proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-	logger.debug("reading stdout stream from system_profiler")
-	while True:
-		line = proc.stdout.readline()
-		if not line:
-			break
-		hardwareList.append(forceUnicode(line))
+	with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE) as proc:
+		logger.debug("reading stdout stream from system_profiler")
+		while True:
+			line = proc.stdout.readline()
+			if not line:
+				break
+			hardwareList.append(forceUnicode(line))
 	profiler = parse_profiler_output(hardwareList)
 	logger.debug("Parsed system_profiler info:")
 	logger.debug(objectToBeautifiedText(profiler))
@@ -251,13 +251,13 @@ def hardwareInventory(config, progressSubject=None):
 	logger.debug("calling sysctl command")
 	getHardwareCommand = "sysctl -a"
 	cmd = "{}".format(getHardwareCommand)
-	proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-	logger.debug("reading stdout stream from sysctl")
-	while True:
-		line = proc.stdout.readline()
-		if not line:
-			break
-		hardwareList.append(forceUnicode(line))
+	with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE) as proc:
+		logger.debug("reading stdout stream from sysctl")
+		while True:
+			line = proc.stdout.readline()
+			if not line:
+				break
+			hardwareList.append(forceUnicode(line))
 	systcl = parse_sysctl_output(hardwareList)
 	logger.debug("Parsed sysctl info:")
 	logger.debug(objectToBeautifiedText(systcl))
@@ -267,19 +267,19 @@ def hardwareInventory(config, progressSubject=None):
 	logger.debug("calling ioreg command")
 	getHardwareCommand = "ioreg -l"
 	cmd = "{}".format(getHardwareCommand)
-	proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-	logger.debug("reading stdout stream from sysctl")
-	while True:
-		line = proc.stdout.readline()
-		if not line:
-			break
-		hardwareList.append(forceUnicode(line))
+	with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE) as proc:
+		logger.debug("reading stdout stream from sysctl")
+		while True:
+			line = proc.stdout.readline()
+			if not line:
+				break
+			hardwareList.append(forceUnicode(line))
 	ioreg = parse_ioreg_output(hardwareList)
 	logger.debug("Parsed ioreg info:")
 	logger.debug(objectToBeautifiedText(ioreg))
 
 	# Build hw info structure
-	for hwClass in config:
+	for hwClass in config:  # pylint: disable=too-many-nested-blocks
 		if not hwClass.get('Class'):
 			continue
 		opsiClass = hwClass['Class'].get('Opsi')
@@ -316,7 +316,7 @@ def hardwareInventory(config, progressSubject=None):
 				if not isinstance(dev, dict):
 					continue
 				logger.debug("found device %s for singleclass %s", key, singleclass)
-				if filterAttr and dev.get(filterAttr) and not eval("str(dev.get(filterAttr)).%s" % filterExp):
+				if filterAttr and dev.get(filterAttr) and not eval(f"str(dev.get(filterAttr)).{filterExp}"):  # pylint: disable=eval-used
 					continue
 				device = {}
 				for attribute in hwClass['Values']:
@@ -332,10 +332,10 @@ def hardwareInventory(config, progressSubject=None):
 						if method:
 							try:
 								logger.debug("Eval: %s.%s", value, method)
-								device[attribute['Opsi']] = eval("value.%s" % method)
-							except Exception as e:
-								device[attribute['Opsi']] = u''
-								logger.warning("Class %s: Failed to excecute '%s.%s': %s", opsiClass, value, method, e)
+								device[attribute['Opsi']] = eval(f"value.{method}")  # pylint: disable=eval-used
+							except Exception as err:  # pylint: disable=broad-except
+								device[attribute['Opsi']] = ''
+								logger.warning("Class %s: Failed to excecute '%s.%s': %s", opsiClass, value, method, err)
 						else:
 							device[attribute['Opsi']] = value
 						if device[attribute['Opsi']]:
@@ -350,7 +350,7 @@ def hardwareInventory(config, progressSubject=None):
 	return opsiValues
 Posix.hardwareInventory = hardwareInventory
 
-def getActiveSessionIds(winApiBugCommand=None, data=None):
+def getActiveSessionIds():
 	"""
 	Getting the IDs of the currently active sessions.
 
@@ -367,7 +367,7 @@ Posix.getActiveSessionIds = getActiveSessionIds
 def is_mounted(devOrMountpoint):
 	for line in execute("mount"):
 		line = line.strip().lower()
-		match = re.search("^(.*)\s+on\s+(.*)\s\(.*$", line)
+		match = re.search(r"^(.*)\s+on\s+(.*)\s\(.*$", line)
 		if match and devOrMountpoint.lower() in (match.group(1), match.group(2)):
 			return True
 	return False
