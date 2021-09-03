@@ -179,7 +179,12 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 								continue
 
 							localPackageFound = self.get_local_package(availablePackage, localPackages)
-							zsync = availablePackage['repository'].baseUrl.split(':')[0].lower().endswith('s')
+
+							zsync = True
+							if availablePackage['repository'].baseUrl.split(':', 1)[0].lower().endswith('s'):
+								logger.warning("Cannot use zsync, because zsync does not support https")
+								zsync = False
+
 							if self.is_download_needed(localPackageFound, availablePackage, notifier=None):
 								self.get_package(availablePackage, localPackageFound, session,  zsync=zsync, notifier=None)
 							packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
@@ -627,7 +632,6 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 		if self.config["zsyncCommand"] and availablePackage['zsyncFile'] and localPackageFound:
 			if not zsync:
-				logger.warning("Cannot use zsync, because zsync does not support https")
 				self.downloadPackage(availablePackage, session, notifier=notifier)
 			else:
 				if localPackageFound['filename'] != availablePackage['filename']:
