@@ -164,7 +164,7 @@ def patchPingFunctionalityInAlgorythm(algorythm):
 
 	algorythm = algorythm.replace("from OPSI.Util.Ping import ping", testPingFunction)
 
-	for replacedPart in ("from OPSI.Util.Ping import ping"):
+	for replacedPart in ("from OPSI.Util.Ping import ping",):
 		if replacedPart in algorythm:
 			raise RuntimeError("Replacing {0} failed.".format(replacedPart))
 
