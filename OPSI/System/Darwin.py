@@ -403,9 +403,9 @@ def mount(dev, mountpoint, **options):
 
 			try:
 				execute(command)
-			except Exception as e:
-				logger.error("Failed to mount '%s': %s", dev, e)
-				raise RuntimeError("Failed to mount '%s': %s" % (dev, e))
+			except Exception as err:
+				logger.error("Failed to mount '%s': %s", dev, err)
+				raise RuntimeError(f"Failed to mount '{dev}': {err}") from err
 		else:
 			raise ValueError(f"Bad smb/cifs uri '{dev}'")
 	else:

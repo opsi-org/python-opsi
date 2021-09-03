@@ -217,13 +217,6 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 		else:
 			raise ValueError(f"Bad webdav url '{dev}'")
 
-		verify_server_cert = False
-		ca_cert_file = None
-		if 'verify_server_cert' in options:
-			verify_server_cert = bool(options.pop('verify_server_cert'))
-		if 'ca_cert_file' in options:
-			ca_cert_file = options.pop('ca_cert_file')
-
 		if 'username' not in options:
 			options['username'] = ""
 		if 'password' not in options:
@@ -231,19 +224,24 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 
 		tf = tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8")  # pylint: disable=consider-using-with
 		conf = "n_cookies 1\ncache_size 0\ntable_size 16384\nuse_locks 0\n"
-		if ca_cert_file:
-			conf += f"trust_ca_cert {ca_cert_file}\n"
+		if options.get('ca_cert_file'):
+			conf += f"trust_ca_cert {options['ca_cert_file']}\n"
 		tf.write(conf)
 		tf.close()
 		tmpFiles.append(tf.name)
 		options['conf'] = tf.name
 
 		# Username, Password, Accept certificate for this session? [y,N]
-		accept_cert = 'n' if verify_server_cert else 'y'
+		accept_cert = 'n' if options.get("verify_server_cert") else 'y'
 		stdin_data = f"{options['username']}\n{options['password']}\n{accept_cert}\n".encode("utf-8")
 
 		del options['username']
 		del options['password']
+
+	if 'trust_ca_cert' in options:
+		del options['trust_ca_cert']
+	if 'ca_cert_file' in options:
+		del options['ca_cert_file']
 
 	elif dev.lower().startswith("/"):
 		pass
