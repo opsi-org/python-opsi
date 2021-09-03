@@ -178,7 +178,7 @@ def deploy_client_agent(  # pylint: disable=too-many-arguments,too-many-locals,t
 
 		newRunningThreads = []
 		for thread in runningThreads:
-			if thread.isAlive():
+			if thread.is_alive():
 				newRunningThreads.append(thread)
 			else:
 				if thread.success == SKIP_MARKER:

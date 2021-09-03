@@ -210,7 +210,7 @@ class PosixDeployThread(DeployThread):
 				ssh = paramiko.SSHClient()
 				ssh.set_missing_host_key_policy(self._sshPolicy())
 				ssh.connect(host, "22", self.username, self.password)
-				_stdin, stdout, _stderr = ssh.exec_command("hostname -f")
+				_, stdout, _ = ssh.exec_command("hostname -f")
 				hostId = stdout.readlines()[0].encode('ascii','ignore').strip()
 				logger.info("resolved FQDN: %s (type %s)", hostId, type(hostId))
 		if hostId:
