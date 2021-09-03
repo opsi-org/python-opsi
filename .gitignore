@@ -16,6 +16,7 @@ pip-wheel-metadata
 *.sublime-*
 *.idea/
 tests/Backends/config.py
+*.mo
 
 # QA files:
 .coverage
@@ -23,6 +24,8 @@ coverage.xml
 nosetests.xml
 pylint.txt
 pep8.txt
+testreport-OPSI.xml
+
 build/
 data/version
 debian/files
@@ -32,3 +35,15 @@ debian/python-opsi.prerm.debhelper
 debian/python-opsi.substvars
 debian/python-opsi/
 locale/
+
+# Generated test files
+tests/testopsicommon/data/ssl/10.pem
+tests/testopsicommon/data/ssl/ca.crt
+tests/testopsicommon/data/ssl/ca.key
+tests/testopsicommon/data/ssl/certindex.attr
+tests/testopsicommon/data/ssl/certindex.old
+tests/testopsicommon/data/ssl/certserial.old
+tests/testopsicommon/data/ssl/test-server.crt
+tests/testopsicommon/data/ssl/test-server.csr
+tests/testopsicommon/data/ssl/test-server.key
+
