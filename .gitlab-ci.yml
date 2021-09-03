@@ -26,6 +26,9 @@ test:pylint-pytest:
     git clone -b master https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.uib.gmbh/uib/opsi-server.git ../opsi-server
     ln -s ../opsi-server/opsi-server_data/etc data
     cp tests/testOPSI/Backends/config.py.gitlabci tests/testOPSI/Backends/config.py
+    echo "deb http://deb.debian.org/debian unstable main" >> /etc/apt/sources.list
+    apt update
+    apt-get --yes install libmysqlclient-dev mysql-client librsync2 #careful: this bumps glibc to at least 2.31
     poetry install
     # Deactivate mysql strict mode
     mysql --host=mysql --user=root --password=${MYSQL_ROOT_PASSWORD} -e "SET GLOBAL sql_mode = 'NO_ENGINE_SUBSTITUTION';"
@@ -47,6 +50,7 @@ test:pylint-pytest:
 #build:documentation:
 #  stage: build
 #  script:
+#    - echo "deb http://deb.debian.org/debian unstable main" >> /etc/apt/sources.list
 #    - apt update
 #    - apt -y install build-essential default-libmysqlclient-dev libssl-dev python3-apsw python3-pip
 #    - pip3 install .
@@ -75,6 +79,9 @@ test:pylint-pytest:
 publish:uibpypi:
   stage: publish
   script:
+    - echo "deb http://deb.debian.org/debian unstable main" >> /etc/apt/sources.list
+    - apt update
+    - apt-get --yes install libmysqlclient-dev mysql-client librsync2 #careful: this bumps glibc to at least 2.31
     - poetry install
     - poetry run opsi-dev-tool -l info --uib-pypi-publish
   only:
