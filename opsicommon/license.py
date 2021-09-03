@@ -260,13 +260,13 @@ class OpsiLicense: # pylint: disable=too-few-public-methods,too-many-instance-at
 		default=None
 	)
 
+	additional_data: str = attr.ib(
+		default=None
+	)
+
 	signature: bytes = attr.ib(
 		default=None,
 		converter=_hexstr2bytes,
-	)
-
-	additional_data: str = attr.ib(
-		default=None
 	)
 
 	_license_pool: 'OpsiLicensePool' = attr.ib(
