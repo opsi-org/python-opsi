@@ -8,7 +8,7 @@ Testing the JSON-RPC backend.
 import pytest
 import collections
 
-from OPSI.Backend.JSONRPC import _GZIP_COMPRESSION
+from opsicommon.client.jsonrpc import _GZIP_COMPRESSION
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Util.HTTP import deflateEncode, gzipEncode
 from OPSI.Util import randomString
