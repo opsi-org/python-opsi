@@ -6,11 +6,46 @@
 Testing the JSON-RPC backend.
 """
 import pytest
+import collections
 
 from OPSI.Backend.JSONRPC import _GZIP_COMPRESSION
 from OPSI.Backend.JSONRPC import JSONRPCBackend
-from OPSI.Util.HTTP import HTTPHeaders, deflateEncode, gzipEncode
+from OPSI.Util.HTTP import deflateEncode, gzipEncode
 from OPSI.Util import randomString
+
+
+class HTTPHeaders(collections.MutableMapping):
+	"""
+	A dictionary that maintains ``Http-Header-Case`` for all keys.
+
+	Heavily influeced by HTTPHeaders from tornado.
+	"""
+
+	def __init__(self, *args, **kwargs):
+		self._dict = {}
+		self.update(*args, **kwargs)
+
+	def __setitem__(self, name, value):
+		key = self.normalizeKey(name)
+		self._dict[key] = value
+
+	def __getitem__(self, name):
+		key = self.normalizeKey(name)
+		return self._dict[key]
+
+	def __delitem__(self, name):
+		key = self.normalizeKey(name)
+		del self._dict[key]
+
+	def __len__(self):
+		return len(self._dict)
+
+	def __iter__(self):
+		return iter(self._dict)
+
+	@staticmethod
+	def normalizeKey(key):
+		return "-".join([w.capitalize() for w in key.split("-")])
 
 
 class FakeResponse:

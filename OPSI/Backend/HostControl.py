@@ -13,8 +13,8 @@ import struct
 import time
 
 from contextlib import closing
-from http.client import HTTPSConnection
 
+from opsicommon.client.jsonrpc import JSONRPCClient
 from OPSI import __version__
 from OPSI.Backend.Base import ExtendedBackend
 from OPSI.Exceptions import (
@@ -24,10 +24,6 @@ from OPSI.Logger import Logger
 from OPSI.Types import (
 	forceBool, forceDict, forceHostId, forceHostIdList,	forceInt,
 	forceIpAddress, forceList, forceUnicode, forceUnicodeList
-)
-from OPSI.Util import fromJson, toJson
-from OPSI.Util.HTTP import (
-	closingConnection, createBasicAuthHeader, non_blocking_connect_https
 )
 from OPSI.Util.Thread import KillableThread
 
@@ -79,8 +75,7 @@ def _configureHostcontrolBackend(backend, kwargs):
 							in backend._broadcastAddresses.items()}  # pylint: disable=protected-access
 			backend._broadcastAddresses = newAddresses  # pylint: disable=protected-access
 
-	if backend._maxConnections < 1:  # pylint: disable=protected-access
-		backend._maxConnections = 1  # pylint: disable=protected-access
+	backend._maxConnections = max(backend._maxConnections, 1)  # pylint: disable=protected-access
 
 
 class RpcThread(KillableThread):  # pylint: disable=too-many-instance-attributes
@@ -91,9 +86,6 @@ class RpcThread(KillableThread):  # pylint: disable=too-many-instance-attributes
 		KillableThread.__init__(self)
 		self.hostControlBackend = hostControlBackend
 		self.hostId = forceHostId(hostId)
-		self.address = forceIpAddress(address)
-		self.username = forceUnicode(username)
-		self.password = forceUnicode(password)
 		self.method = forceUnicode(method)
 		self.params = forceList(params)
 		self.error = None
@@ -101,74 +93,22 @@ class RpcThread(KillableThread):  # pylint: disable=too-many-instance-attributes
 		self.started = 0
 		self.ended = 0
 		if hostPort:
-			self.hostPort = forceInt(hostPort)
+			hostPort = forceInt(hostPort)
 		else:
-			self.hostPort = self.hostControlBackend._opsiclientdPort
+			hostPort = self.hostControlBackend._opsiclientdPort
+
+		self.jsonrpc = JSONRPCClient(
+			address=f"https://{forceIpAddress(address)}:{hostPort}/opsiclientd",
+			username=forceUnicode(username),
+			password=forceUnicode(password),
+			connect_timeout=max(self.hostControlBackend._hostRpcTimeout, 0),
+			read_timeout=max(self.hostControlBackend._hostRpcTimeout, 0)
+		)
 
 	def run(self):
 		self.started = time.time()
-		timeout = self.hostControlBackend._hostRpcTimeout  # pylint: disable=protected-access
-		if timeout < 0:
-			timeout = 0
-
 		try:
-			query = toJson(
-				{
-					'id': 1,
-					'method': self.method,
-					'params': self.params
-				}
-			).encode('utf-8')
-
-			connection = HTTPSConnection(
-				host=self.address,
-				port=self.hostPort,
-				timeout=timeout
-			)
-			with closingConnection(connection) as connection:
-				non_blocking_connect_https(connection, timeout)
-				connection.putrequest('POST', '/opsiclientd')
-				connection.putheader('User-Agent', self._USER_AGENT)
-				connection.putheader('Content-Type', 'application/json')
-				connection.putheader('Content-Length', str(len(query)))
-				connection.putheader(
-					'Authorization',
-					createBasicAuthHeader(
-						self.username,
-						self.password
-					)
-				)
-				connection.endheaders()
-				connection.send(query)
-				logger.trace("Sending data to client: %s", query)
-
-				response = connection.getresponse()
-				status = response.status
-				response = response.read()
-				logger.trace("Got response from client: %s", response)
-				if isinstance(response, bytes):
-					response = response.decode('utf-8')
-
-				try:
-					response = fromJson(response)
-				except Exception as err:  # pylint: disable=broad-except
-					logger.debug(err)
-
-				if status == 200:
-					if response and isinstance(response, dict):
-						self.error = response.get('error')
-						self.result = response.get('result')
-					else:
-						self.error = f"Bad response from client: {response}"
-				else:
-					if response and isinstance(response, dict) and "error" in response:
-						self.error = response["error"]
-					else:
-						err = status
-						if response:
-							err = f"{err} - {response}"
-						self.error = f"Client error: {err}"
-
+			self.result = self.jsonrpc.execute_rpc(self.method, self.params)
 		except Exception as err:  # pylint: disable=broad-except
 			self.error = str(err)
 		finally:
@@ -187,23 +127,19 @@ class ConnectionThread(KillableThread):
 
 	def run(self):
 		self.started = time.time()
-		timeout = self.hostControlBackend._hostReachableTimeout  # pylint: disable=protected-access
-		if timeout < 0:
-			timeout = 0
+		timeout = max(self.hostControlBackend._hostReachableTimeout, 0)  # pylint: disable=protected-access
 
 		logger.info("Trying connection to '%s:%d'", self.address, self.hostControlBackend._opsiclientdPort)  # pylint: disable=protected-access
 		try:
-			conn = HTTPSConnection(
-				host=self.address,
-				port=self.hostControlBackend._opsiclientdPort,  # pylint: disable=protected-access
-				timeout=timeout
-			)
-			with closingConnection(conn) as conn:
-				non_blocking_connect_https(conn, self.hostControlBackend._hostReachableTimeout)  # pylint: disable=protected-access
-				if conn:
-					self.result = True
+			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			sock.settimeout(timeout)
+			sock.connect((self.address, self.hostControlBackend._opsiclientdPort))  # pylint: disable=protected-access
+			self.result = True
 		except Exception as err:  # pylint: disable=broad-except
 			logger.debug(err, exc_info=True)
+		finally:
+			sock.shutdown(socket.SHUT_RDWR)
+			sock.close()
 		self.ended = time.time()
 
 

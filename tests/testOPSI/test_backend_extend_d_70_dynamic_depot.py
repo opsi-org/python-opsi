@@ -161,12 +161,10 @@ def depotSelectionAlgorithmByRandom(backendManager):
 
 def patchPingFunctionalityInAlgorythm(algorythm):
 	testPingFunction = "ping = lambda host: host.latency"
-	testUrlsplitFunction = "urlsplit = lambda host: (None, host, None, None, None, None)"
 
 	algorythm = algorythm.replace("from OPSI.Util.Ping import ping", testPingFunction)
-	algorythm = algorythm.replace("from OPSI.Util.HTTP import urlsplit", testUrlsplitFunction)
 
-	for replacedPart in ("from OPSI.Util.Ping import ping", "from OPSI.Util.HTTP import urlsplit"):
+	for replacedPart in ("from OPSI.Util.Ping import ping"):
 		if replacedPart in algorythm:
 			raise RuntimeError("Replacing {0} failed.".format(replacedPart))
 
