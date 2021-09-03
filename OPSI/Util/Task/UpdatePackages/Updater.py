@@ -47,7 +47,7 @@ class HashsumMissmatchError(ValueError):
 	pass
 
 
-class OpsiPackageUpdater:
+class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 	def __init__(self, config):
 		self.config = config
 		self.httpHeaders = {"User-Agent": self.config.get("userAgent", DEFAULT_USER_AGENT)}
@@ -490,7 +490,7 @@ class OpsiPackageUpdater:
 
 		return products
 
-	def _verifyDownloadedPackage(self, packageFile, availablePackage, session, zsync, notifier):
+	def _verifyDownloadedPackage(self, packageFile, availablePackage, session, zsync, notifier):  # pylint: disable=too-many-arguments
 		"""
 		Verify the downloaded package.
 
@@ -556,7 +556,11 @@ class OpsiPackageUpdater:
 		return None
 
 	def is_download_needed(self, localPackageFound, availablePackage, notifier=None):
-		if localPackageFound and localPackageFound['filename'] == availablePackage['filename'] and localPackageFound['md5sum'] == availablePackage['md5sum']:
+		if (
+				localPackageFound and
+				localPackageFound['filename'] == availablePackage['filename'] and
+				localPackageFound['md5sum'] == availablePackage['md5sum']
+		):
 			logger.info(
 				"%s - download of package is not required: found local package %s with matching md5sum",
 					availablePackage["filename"],
@@ -619,7 +623,7 @@ class OpsiPackageUpdater:
 		)
 		return False
 
-	def get_package(self, availablePackage, localPackageFound, session, notifier=None, zsync=True):
+	def get_package(self, availablePackage, localPackageFound, session, notifier=None, zsync=True):  # pylint: disable=too-many-arguments
 		packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 		if self.config["zsyncCommand"] and availablePackage['zsyncFile'] and localPackageFound:
 			if not zsync:

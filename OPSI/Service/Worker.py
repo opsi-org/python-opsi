@@ -608,6 +608,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):  # pylint: disable=too-few-public-methods
 
 		logger.trace("Sending response: %s", response)
 		self.request.write(response)
+		return result
 
 	def _renderError(self, failure):
 		self.request.setHeader('content-type', "application/json; charset=utf-8")
@@ -618,7 +619,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):  # pylint: disable=too-few-public-methods
 			error = {'class': err.__class__.__name__, 'message': str(err)}
 			error = toJson({"id": None, "result": None, "error": error})
 		self.request.write(error.encode('utf-8'))
-
+		return failure
 
 class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):  # pylint: disable=too-few-public-methods
 	"""

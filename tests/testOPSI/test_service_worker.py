@@ -8,16 +8,11 @@ Testing the workers.
 
 import gzip
 import zlib
-
-try:
-	from cStringIO import StringIO
-except ImportError:
-	from io import StringIO
+from io import StringIO
 
 import pytest
 
 from OPSI.Service.Worker import WorkerOpsi, WorkerOpsiJsonRpc
-from OPSI.Util.HTTP import gzipEncode, deflateEncode
 
 
 class FakeHeader(object):
@@ -48,7 +43,7 @@ class FakeMediaType(object):
 		return self.mediaType
 
 	def __repr__(self):
-		return "FakeMediaType({})".format(self.type)
+		return "FakeMediaType({})".format(self.mediaType)
 
 
 class FakeRequest(object):
@@ -241,26 +236,4 @@ def testDecodingOldCallQuery():
 	worker = WorkerOpsi(service=None, request=r, resource=None)
 	worker.query = zlib.compress("Test 1234")
 	worker._decodeQuery(None)
-	assert u'Test 1234' == worker.query
-
-
-@pytest.mark.parametrize("contentEncoding, compressor", [
-	["gzip", gzipEncode],
-	["deflate", deflateEncode],
-	[None, lambda x: x],
-])
-@pytest.mark.obsolete
-def testDecodingCallQuery(contentEncoding, compressor):
-	headers = {
-		"content-type": FakeMediaType("application/json"),
-	}
-
-	if contentEncoding:
-		headers['content-encoding'] = [contentEncoding]
-
-	r = FakeRequest(headers=FakeHeader(headers))
-
-	worker = WorkerOpsi(service=None, request=r, resource=None)
-	worker.query = compressor("Test 1234")
-	worker._decodeQuery(None)
-	assert u'Test 1234' == worker.query
+	assert 'Test 1234' == worker.query
