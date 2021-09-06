@@ -13,16 +13,18 @@ import os.path
 import re
 import socket
 
-from .Exceptions import (ConfigurationError, MissingConfigurationValueError,
-	RequiringBackendError)
-from .Repository import ProductRepositoryInfo
-
 from OPSI import __version__
 from OPSI.Logger import Logger
 from OPSI.Util.File import IniFile
 from OPSI.Types import (
 	forceBool, forceEmailAddress, forceFilename, forceHostAddress,
-	forceHostId, forceInt, forceProductId, forceUnicode, forceUrl)
+	forceHostId, forceInt, forceProductId, forceUnicode, forceUrl
+)
+
+from .Exceptions import (
+	ConfigurationError, MissingConfigurationValueError, RequiringBackendError
+)
+from .Repository import ProductRepositoryInfo
 
 __all__ = ('DEFAULT_CONFIG', 'DEFAULT_USER_AGENT', 'ConfigurationParser')
 
@@ -33,13 +35,13 @@ DEFAULT_CONFIG = {
 	"configFile": '/etc/opsi/opsi-package-updater.conf',
 	"repositoryConfigDir": '/etc/opsi/package-updater.repos.d',
 	"notification": False,
-	"smtphost": u'localhost',
+	"smtphost": 'localhost',
 	"smtpport": 25,
 	"smtpuser": None,
 	"smtppassword": None,
-	"subject": u'opsi-package-updater',
+	"subject": 'opsi-package-updater',
 	"use_starttls": False,
-	"sender": u'opsi@localhost',
+	"sender": 'opsi@localhost',
 	"receivers": [],
 	"wolAction": False,
 	"wolActionExcludeProductIds": [],
@@ -70,7 +72,7 @@ def getRepoConfigs(repoDir):
 			if entry.endswith('.repo') and os.path.isfile(filePath):
 				yield filePath
 	except OSError as oserr:
-		logger.warning("Problem listing {0}: {1}".format(repoDir, oserr))
+		logger.warning("Problem listing %s: %s", repoDir, oserr)
 
 
 def splitAndStrip(string, sep):
@@ -80,7 +82,7 @@ def splitAndStrip(string, sep):
 			yield singleValue
 
 
-class ConfigurationParser:
+class ConfigurationParser:  # pylint: disable=too-few-public-methods
 
 	TIME_REGEX = re.compile(r'^\d{1,2}:\d{1,2}$')
 
@@ -90,7 +92,7 @@ class ConfigurationParser:
 		self.depotId = depotId
 		self.depotKey = depotKey
 
-	def parse(self, configuration=None):
+	def parse(self, configuration=None):  # pylint: disable=too-many-branches,too-many-statements
 		"""
 		Parse the configuration file.
 
@@ -98,9 +100,9 @@ class ConfigurationParser:
 overriden based on values in configuration file.
 		:rtype: dict
 		"""
-		logger.info(u"Reading config file '%s'", self.configFile)
+		logger.info("Reading config file '%s'", self.configFile)
 		if not os.path.isfile(self.configFile):
-			raise OSError(u"Configuration file {!r} not found".format(self.configFile))
+			raise OSError("Configuration file {!r} not found".format(self.configFile))
 
 		config = DEFAULT_CONFIG.copy()
 		if configuration:
@@ -108,7 +110,7 @@ overriden based on values in configuration file.
 
 		config['repositories'] = []
 
-		try:
+		try:  # pylint: disable=too-many-nested-blocks
 			iniFile = IniFile(filename=self.configFile, raw=True)
 			configIni = iniFile.parse()
 			for section in configIni.sections():
@@ -154,7 +156,7 @@ overriden based on values in configuration file.
 						elif option.lower() == 'receivers':
 							config["receivers"] = [
 								forceEmailAddress(receiver)
-								for receiver in splitAndStrip(value, u",")
+								for receiver in splitAndStrip(value, ",")
 							]
 
 				elif section.lower() == 'wol':
@@ -164,7 +166,7 @@ overriden based on values in configuration file.
 						elif option.lower() == 'excludeproductids':
 							config['wolActionExcludeProductIds'] = [
 								forceProductId(productId)
-								for productId in splitAndStrip(value, u',')
+								for productId in splitAndStrip(value, ',')
 							]
 						elif option.lower() == 'shutdownwanted':
 							config["wolShutdownWanted"] = forceBool(value.strip())
@@ -179,13 +181,13 @@ overriden based on values in configuration file.
 							if not value.strip():
 								continue
 							if not self.TIME_REGEX.search(value.strip()):
-								raise ValueError(u"Start time '%s' not in needed format 'HH:MM'" % value.strip())
+								raise ValueError("Start time '%s' not in needed format 'HH:MM'" % value.strip())
 							config["installationWindowStartTime"] = value.strip()
 						elif option.lower() == 'windowend':
 							if not value.strip():
 								continue
 							if not self.TIME_REGEX.search(value.strip()):
-								raise ValueError(u"End time '%s' not in needed format 'HH:MM'" % value.strip())
+								raise ValueError("End time '%s' not in needed format 'HH:MM'" % value.strip())
 							config["installationWindowEndTime"] = value.strip()
 						elif option.lower() == 'exceptproductids':
 							config['installationWindowExceptions'] = [
@@ -194,18 +196,25 @@ overriden based on values in configuration file.
 							]
 				elif section.lower().startswith('repository'):
 					try:
-						repository = self._getRepository(configIni, section, config['forceRepositoryActivation'], config['repositoryName'], config['installAllAvailable'], config['proxy'])
+						repository = self._getRepository(
+							config=configIni,
+							section=section,
+							forceRepositoryActivation=config['forceRepositoryActivation'],
+							repositoryName=config['repositoryName'],
+							installAllAvailable=config['installAllAvailable'],
+							proxy=config['proxy']
+						)
 						config['repositories'].append(repository)
 					except MissingConfigurationValueError as mcverr:
-						logger.debug(u"Configuration for %s incomplete: %s", section, mcverr)
+						logger.debug("Configuration for %s incomplete: %s", section, mcverr)
 					except ConfigurationError as cerr:
-						logger.error(u"Configuration problem in %s: %s", section, cerr)
-					except Exception as err:
-						logger.error(u"Can't load repository from %s: %s", section, err)
+						logger.error("Configuration problem in %s: %s", section, cerr)
+					except Exception as err:  # pylint: disable=broad-except
+						logger.error("Can't load repository from %s: %s", section, err)
 				else:
-					logger.error(u"Unhandled section '%s'", section)
-		except Exception as exclude:
-			raise RuntimeError(u"Failed to read config file '%s': %s" % (self.configFile, exclude))
+					logger.error("Unhandled section '%s'", section)
+		except Exception as err:  # pylint: disable=broad-except
+			raise RuntimeError(f"Failed to read config file '{self.configFile}': {err}") from err
 
 		for configFile in getRepoConfigs(config['repositoryConfigDir']):
 			iniFile = IniFile(filename=configFile, raw=True)
@@ -217,20 +226,35 @@ overriden based on values in configuration file.
 						continue
 
 					try:
-						repository = self._getRepository(repoConfig, section, config['forceRepositoryActivation'], config['repositoryName'], config['installAllAvailable'], proxy=config['proxy'])
+						repository = self._getRepository(
+							config=repoConfig,
+							section=section,
+							forceRepositoryActivation=config['forceRepositoryActivation'],
+							repositoryName=config['repositoryName'],
+							installAllAvailable=config['installAllAvailable'],
+							proxy=config['proxy']
+						)
 						config['repositories'].append(repository)
-					except MissingConfigurationValueError as mcverr:
-						logger.debug(u"Configuration for %s in %s incomplete: %s", section, configFile, mcverr)
-					except ConfigurationError as cerr:
-						logger.error(u"Configuration problem in %s in %s: %s", section, configFile, cerr)
-					except Exception as err:
-						logger.error(u"Can't load repository from %s in %s: %s", section, configFile, err)
-			except Exception as error:
-				logger.error("Unable to load repositories from %s: %s", configFile, error)
+					except MissingConfigurationValueError as err:
+						logger.debug("Configuration for %s in %s incomplete: %s", section, configFile, err)
+					except ConfigurationError as err:
+						logger.error("Configuration problem in %s in %s: %s", section, configFile, err)
+					except Exception as err:  # pylint: disable=broad-except
+						logger.error("Can't load repository from %s in %s: %s", section, configFile, err)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error("Unable to load repositories from %s: %s", configFile, err)
 
 		return config
 
-	def _getRepository(self, config, section, forceRepositoryActivation=False, repositoryName=None, installAllAvailable=False, proxy=None):
+	def _getRepository(  # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
+		self,
+		config,
+		section,
+		forceRepositoryActivation=False,
+		repositoryName=None,
+		installAllAvailable=False,
+		proxy=None
+	):
 		active = False
 		verifyCert = False
 		baseUrl = None
@@ -269,9 +293,9 @@ overriden based on values in configuration file.
 
 			depots = self.backend.host_getObjects(type='OpsiDepotserver', id=opsiDepotId)
 			if not depots:
-				raise ConfigurationError(u"Depot '%s' not found in backend" % opsiDepotId)
+				raise ConfigurationError("Depot '%s' not found in backend" % opsiDepotId)
 			if not depots[0].repositoryRemoteUrl:
-				raise ConfigurationError(u"Repository remote url for depot '%s' not found in backend" % opsiDepotId)
+				raise ConfigurationError("Repository remote url for depot '%s' not found in backend" % opsiDepotId)
 
 			repository = ProductRepositoryInfo(
 				name=repoName,
@@ -286,7 +310,7 @@ overriden based on values in configuration file.
 
 		elif baseUrl:
 			if proxy:
-				logger.info(u"Repository %s is using proxy %s", repoName, proxy)
+				logger.info("Repository %s is using proxy %s", repoName, proxy)
 
 			repository = ProductRepositoryInfo(
 				name=repoName,
@@ -296,7 +320,7 @@ overriden based on values in configuration file.
 				verifyCert=verifyCert
 			)
 		else:
-			raise MissingConfigurationValueError(u"Repository section '{0}': neither baseUrl nor opsiDepotId set".format(section))
+			raise MissingConfigurationValueError("Repository section '{0}': neither baseUrl nor opsiDepotId set".format(section))
 
 		for (option, value) in config.items(section):
 			if option.lower() == 'username':
@@ -319,7 +343,7 @@ overriden based on values in configuration file.
 				repository.onlyDownload = forceBool(value.strip())
 			elif option.lower() == 'inheritproductproperties':
 				if not opsiDepotId:
-					logger.warning(u"InheritProductProperties not possible with normal http ressource.")
+					logger.warning("InheritProductProperties not possible with normal http ressource.")
 					repository.inheritProductProperties = False
 				else:
 					repository.inheritProductProperties = forceBool(value.strip())
