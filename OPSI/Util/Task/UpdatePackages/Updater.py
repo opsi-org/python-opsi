@@ -200,7 +200,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				logger.notice("No new packages available")
 				return
 
-			logger.info("New packages available: %s", ", ".join([sorted(np["productId"]) for np in newPackages]))
+			logger.info("New packages available: %s", ", ".join(sorted([np["productId"] for np in newPackages]))
 
 			def in_installation_window(start_str, end_str):
 				now = datetime.datetime.now().time()
