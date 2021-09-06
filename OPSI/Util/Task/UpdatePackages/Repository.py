@@ -16,7 +16,7 @@ __all__ = ('LinksExtractor', 'ProductRepositoryInfo')
 logger = Logger()
 
 
-class ProductRepositoryInfo:
+class ProductRepositoryInfo:  # pylint: disable=dangerous-default-value,too-many-instance-attributes,too-few-public-methods,too-many-arguments,too-many-locals
 	def __init__(
 		self,
 		name,
@@ -76,7 +76,7 @@ class ProductRepositoryInfo:
 		return urls
 
 
-class LinksExtractor(HTMLParser):
+class LinksExtractor(HTMLParser):  # pylint: disable=abstract-method
 	def __init__(self):
 		super().__init__()
 		self.links = set()

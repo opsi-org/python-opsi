@@ -705,14 +705,21 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				availablePackage["zsyncFile"]
 			)
 
+			env = {}
 			if repository.proxy:
-				cmd = f"http_proxy={repository.proxy} {cmd}"
+				if repository.proxy != "system":
+					env = {
+						"http_proxy": repository.proxy,
+						"https_proxy": repository.proxy
+					}
+			else:
+				env['no_proxy'] = '*'
 
 			stateRegex = re.compile(r'\s([\d.]+)%\s+([\d.]+)\skBps(.*)$')
 			data = b''
 			percent = 0.0
 			speed = 0
-			handle = System.execute(cmd, getHandle=True)
+			handle = System.execute(cmd, env=env, getHandle=True)
 			while True:
 				inp = handle.read(16)
 				if not inp:

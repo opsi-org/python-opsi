@@ -131,7 +131,9 @@ overriden based on values in configuration file.
 						elif option.lower() == 'repositoryconfigdir':
 							config["repositoryConfigDir"] = value.strip()
 						elif option.lower() == 'proxy' and value.strip():
-							config["proxy"] = forceUrl(value.strip())
+							config["proxy"] = value.strip()
+							if config["proxy"] != "system":
+								config["proxy"] = forceUrl(value.strip())
 						elif option.lower() == 'ignoreerrors' and value.strip():
 							config["ignoreErrors"] = forceBool(value.strip())
 
