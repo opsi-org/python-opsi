@@ -876,7 +876,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 	def getDownloadablePackages(self):
 		downloadablePackages = []
 		for repository in self.getActiveRepositories():
-			logger.info("Getting package infos from repository '%s'", repository.name)
+			logger.info("Getting package infos from repository '%s' (%s)", repository.name, repository.baseUrl)
 			for package in self.getDownloadablePackagesFromRepository(repository):
 				downloadablePackages.append(package)
 		return downloadablePackages
@@ -956,7 +956,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 
 						try:
 							productId, version = parseFilename(link)
-							packageFile = url + '/' + link
+							packageFile = url.rstrip("/") + "/" + link.lstrip("/")
 							logger.info("Found opsi package: %s", packageFile)
 							packageInfo = {
 								"repository": repository,
@@ -1022,7 +1022,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 
 	@contextmanager
 	def makeSession(self, repository):  # pylint: disable=no-self-use
-		logger.info("opening session for repository %s", repository)
+		logger.info("opening session for repository '%s' (%s)", repository.name, repository.baseUrl)
 		try:
 			session = requests.session()
 			if repository.proxy:
