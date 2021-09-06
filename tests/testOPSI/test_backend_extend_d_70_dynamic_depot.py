@@ -160,15 +160,8 @@ def depotSelectionAlgorithmByRandom(backendManager):
 
 
 def patchPingFunctionalityInAlgorythm(algorythm):
-	testPingFunction = "ping = lambda host: host.latency"
-	testUrlsplitFunction = "urlsplit = lambda host: (None, host, None, None, None, None)"
-
-	algorythm = algorythm.replace("from OPSI.Util.Ping import ping", testPingFunction)
-	algorythm = algorythm.replace("from OPSI.Util.HTTP import urlsplit", testUrlsplitFunction)
-
-	for replacedPart in ("from OPSI.Util.Ping import ping", ):
-		if replacedPart in algorythm:
-			raise RuntimeError("Replacing {0} failed.".format(replacedPart))
+	# very dirty
+	algorythm = algorythm.replace("ping(host)", "depot.latency")
 
 	return algorythm
 
@@ -185,7 +178,7 @@ class FakeDepot:
 	def __init__(self, id, latency=2, masterDepotId=None):
 		self.id = id
 		self.latency = latency
-		self.repositoryRemoteUrl = self
+		self.repositoryRemoteUrl = self.id
 		self.masterDepotId = masterDepotId
 
 	def __repr__(self):
