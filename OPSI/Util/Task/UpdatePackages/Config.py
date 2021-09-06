@@ -272,8 +272,9 @@ overriden based on values in configuration file.
 			elif option == 'opsidepotid':
 				if value:
 					opsiDepotId = forceHostId(value)
-			elif option == 'proxy':
-				if value:
+			elif option == 'proxy' and value:
+				proxy = value
+				if value != "system":
 					proxy = forceUrl(value)
 			elif option == 'verifycert':
 				verifyCert = forceBool(value)
