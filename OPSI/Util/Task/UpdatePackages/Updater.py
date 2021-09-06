@@ -713,7 +713,11 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 						"https_proxy": repository.proxy
 					}
 			else:
-				env['no_proxy'] = '*'
+				env = {
+					"http_proxy": "",
+					"https_proxy": "",
+					"no_proxy": "*"
+				}
 
 			stateRegex = re.compile(r'\s([\d.]+)%\s+([\d.]+)\skBps(.*)$')
 			data = b''
