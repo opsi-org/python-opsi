@@ -19,14 +19,14 @@ from contextlib import contextmanager
 from datetime import datetime
 from hashlib import md5
 try:
+	# PyCryptodome from pypi installs into Crypto
+	from Crypto.Hash import MD5
+	from Crypto.Signature import pkcs1_15
+except (ImportError, OSError):
 	# pyright: reportMissingImports=false
 	# python3-pycryptodome installs into Cryptodome
 	from Cryptodome.Hash import MD5
 	from Cryptodome.Signature import pkcs1_15
-except ImportError:
-	# PyCryptodome from pypi installs into Crypto
-	from Crypto.Hash import MD5
-	from Crypto.Signature import pkcs1_15
 
 from OPSI.Backend.Base import BackendModificationListener, ConfigDataBackend
 from OPSI.Exceptions import (
