@@ -159,7 +159,8 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 					if key in os.environ:
 						del os.environ[key]
 			no_proxy = [x.strip() for x in os.environ.get("no_proxy", "").split(",") if x.strip()]
-			no_proxy.extend(["localhost", "127.0.0.1", "ip6-localhost", "::1"])
+			if no_proxy != ["*"]:
+				no_proxy.extend(["localhost", "127.0.0.1", "ip6-localhost", "::1"])
 			os.environ["no_proxy"] = ",".join(set(no_proxy))
 		else:
 			# Do not use a proxy

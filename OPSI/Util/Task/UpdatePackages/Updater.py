@@ -56,6 +56,9 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		self.depotId = forceHostId(getfqdn(conf="/etc/opsi/global.conf").lower())
 		self.errors = []
 
+		# Proxy is needed for getConfigBackend which is needed for ConfigurationParser.parse
+		self.config["proxy"] = ConfigurationParser.get_proxy(self.config["configFile"])
+
 		depots = self.getConfigBackend().host_getObjects(type='OpsiDepotserver', id=self.depotId)  # pylint: disable=no-member
 		try:
 			self.depotKey = depots[0].opsiHostKey
@@ -115,7 +118,12 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 			yield repo
 
 	def readConfigFile(self):
-		parser = ConfigurationParser(self.config["configFile"], backend=self.getConfigBackend(), depotId=self.depotId, depotKey=self.depotKey)
+		parser = ConfigurationParser(
+			configFile=self.config["configFile"],
+			backend=self.getConfigBackend(),
+			depotId=self.depotId,
+			depotKey=self.depotKey
+		)
 		self.config = parser.parse(self.config)
 
 	def getConfigBackend(self):
@@ -126,7 +134,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				extensionConfigDir='/etc/opsi/backendManager/extend.d',
 				depotbackend=True,
 				hostControlBackend=True,
-				proxyurl=self.config["proxy"]
+				proxy_url=self.config["proxy"]
 			)
 		return self.configBackend
 
@@ -137,7 +145,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				username=username,
 				password=password,
 				application=self.httpHeaders['User-Agent'] + ' (depot connection)',
-				proxyurl=proxy
+				proxy_url=proxy
 			)
 		return self.depotConnections[depotId]
 
@@ -1046,7 +1054,8 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 						if key in os.environ:
 							del os.environ[key]
 				no_proxy = [x.strip() for x in os.environ.get("no_proxy", "").split(",") if x.strip()]
-				no_proxy.extend(["localhost", "127.0.0.1", "ip6-localhost", "::1"])
+				if no_proxy != ["*"]:
+					no_proxy.extend(["localhost", "127.0.0.1", "ip6-localhost", "::1"])
 				os.environ["no_proxy"] = ",".join(set(no_proxy))
 			else:
 				# Do not use a proxy

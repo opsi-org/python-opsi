@@ -92,6 +92,12 @@ class ConfigurationParser:  # pylint: disable=too-few-public-methods
 		self.depotId = depotId
 		self.depotKey = depotKey
 
+	@staticmethod
+	def get_proxy(configFile):
+		iniFile = IniFile(filename=configFile, raw=True)
+		configIni = iniFile.parse()
+		return configIni.get(section="general", option="proxy", fallback=None) or None
+
 	def parse(self, configuration=None):  # pylint: disable=too-many-branches,too-many-statements
 		"""
 		Parse the configuration file.
