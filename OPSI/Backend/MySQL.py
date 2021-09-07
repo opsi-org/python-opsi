@@ -31,7 +31,7 @@ from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.SQL import (
 	SQL, SQLBackend, SQLBackendObjectModificationTracker
 )
-from OPSI.Types import forceInt, forceUnicode
+from OPSI.Types import forceInt, forceUnicode, forceHostIdList
 from OPSI.Util import getPublicKey, compareVersions
 from OPSI.Object import Product, ProductProperty
 
@@ -458,6 +458,28 @@ class MySQLBackend(SQLBackend):
 					productProperty['defaultValues'] = []
 				productProperties.append(ProductProperty.fromHash(productProperty))
 		return productProperties
+
+	def auditSoftwareOnClient_setObsolete(self, clientId):
+		if not clientId:
+			return
+		clientId = forceHostIdList(clientId)
+		with self._sql.session() as session:
+			logger.info("Deleting auditSoftware of clients %s", clientId)
+			session.execute(
+				"DELETE FROM SOFTWARE_CONFIG WHERE clientId IN :clientIds",
+				params={"clientIds": clientId}
+			)
+
+	def auditHardwareOnHost_setObsolete(self, hostId):
+		if not hostId:
+			return
+		hostId = forceHostIdList(hostId)
+		with self._sql.session() as session:
+			for hw_class in self._auditHardwareConfig:
+				session.execute(
+					f"DELETE FROM HARDWARE_CONFIG_{hw_class} WHERE hostId IN :hostIds",
+					params={"hostIds": hostId}
+				)
 
 
 class MySQLBackendObjectModificationTracker(SQLBackendObjectModificationTracker):

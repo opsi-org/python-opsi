@@ -47,7 +47,7 @@ from OPSI.Object import (
 from OPSI.Types import (
 	forceBool, forceUnicodeLower, forceOpsiTimestamp,
 	forceList, forceUnicode, forceUnicodeList, forceDict,
-	forceObjectClassList, forceHostIdList
+	forceObjectClassList
 )
 from OPSI.Util import timestamp, getPublicKey
 
@@ -2349,17 +2349,6 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 				where = self._uniqueCondition(auditSoftware)
 				self._sql.delete(session, 'SOFTWARE', where)
 
-	def auditSoftwareOnClient_setObsolete(self, clientId):
-		if not clientId:
-			return
-		clientId = forceHostIdList(clientId)
-		with self._sql.session() as session:
-			logger.info("Deleting auditSoftware of clients %s", clientId)
-			session.execute(
-				"DELETE FROM SOFTWARE_CONFIG WHERE clientId IN :clientIds",
-				params={"clientIds": clientId}
-			)
-
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwareToLicensePools
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2873,17 +2862,6 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 				logger.info("Deleting auditHardwareOnHost: %s", auditHardwareOnHost)
 				where = self._uniqueAuditHardwareOnHostCondition(auditHardwareOnHost)
 				self._sql.delete(session, 'HARDWARE_CONFIG_{0}'.format(auditHardwareOnHost.getHardwareClass()), where)
-
-	def auditHardwareOnHost_setObsolete(self, hostId):
-		if not hostId:
-			return
-		hostId = forceHostIdList(hostId)
-		with self._sql.session() as session:
-			for hw_class in self._auditHardwareConfig:
-				session.execute(
-					f"DELETE FROM HARDWARE_CONFIG_{hw_class} WHERE hostId IN :hostIds",
-					params={"hostIds": hostId}
-				)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Extension for direct connect to db
