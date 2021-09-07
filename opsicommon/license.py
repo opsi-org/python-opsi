@@ -22,18 +22,18 @@ from functools import lru_cache
 from datetime import date, timedelta
 import attr
 try:
+	# PyCryptodome from pypi installs into Crypto
+	from Crypto.Hash import MD5, SHA3_512
+	from Crypto.PublicKey import RSA
+	from Crypto.Util.number import bytes_to_long
+	from Crypto.Signature import pss
+except (ImportError, OSError):
 	# pyright: reportMissingImports=false
 	# python3-pycryptodome installs into Cryptodome
 	from Cryptodome.Hash import MD5, SHA3_512
 	from Cryptodome.PublicKey import RSA
 	from Cryptodome.Util.number import bytes_to_long
 	from Cryptodome.Signature import pss
-except ImportError:
-	# PyCryptodome from pypi installs into Crypto
-	from Crypto.Hash import MD5, SHA3_512
-	from Crypto.PublicKey import RSA
-	from Crypto.Util.number import bytes_to_long
-	from Crypto.Signature import pss
 
 
 OPSI_LICENCE_ID_REGEX = re.compile(r"[a-zA-Z0-9\-_]{10,}")
