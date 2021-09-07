@@ -981,7 +981,9 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 				for key in ("http_proxy", "https_proxy"):
 					if key in os.environ:
 						del os.environ[key]
-			os.environ["no_proxy"] = "localhost,127.0.0.1,ip6-localhost,::1"
+			no_proxy = [x.strip() for x in os.environ.get("no_proxy", "").split(",") if x.strip()]
+			no_proxy.extend(["localhost", "127.0.0.1", "ip6-localhost", "::1"])
+			os.environ["no_proxy"] = ",".join(set(no_proxy))
 		else:
 			# Do not use a proxy
 			os.environ['no_proxy'] = '*'
