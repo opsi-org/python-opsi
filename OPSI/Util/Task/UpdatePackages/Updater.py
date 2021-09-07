@@ -665,7 +665,10 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 							#This ís called to keep the logs consistent
 							_ = self.get_installed_package(availablePackage, installedProducts)
 							localPackageFound = self.get_local_package(availablePackage, localPackages)
-							zsync = availablePackage['repository'].baseUrl.split(':')[0].lower().endswith('s')
+							zsync = True
+							if availablePackage['repository'].baseUrl.split(':', 1)[0].lower().endswith('s'):
+								logger.warning("Cannot use zsync, because zsync does not support https")
+								zsync = False
 							if self.is_download_needed(localPackageFound, availablePackage, notifier=notifier):
 								self.get_package(availablePackage, localPackageFound, session, zsync=zsync, notifier=notifier)
 							packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
