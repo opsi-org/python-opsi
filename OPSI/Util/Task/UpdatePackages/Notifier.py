@@ -18,7 +18,7 @@ __all__ = ('DummyNotifier', 'EmailNotifier')
 logger = Logger()
 
 
-class BaseNotifier(object):
+class BaseNotifier():
 	def __init__(self):
 		self.message = ''
 
@@ -57,14 +57,14 @@ class DummyNotifier(BaseNotifier):
 		pass  # Doing nothing
 
 
-class EmailNotifier(BaseNotifier):
+class EmailNotifier(BaseNotifier):  # pylint: disable=too-many-instance-attributes
 	"""
 	Notify by sending an email.
 	"""
-	def __init__(self, smtphost='localhost', smtpport=25, subject='opsi product updater', sender='', receivers=[]):
-		super(EmailNotifier, self).__init__()
+	def __init__(self, smtphost='localhost', smtpport=25, subject='opsi product updater', sender='', receivers=None):  # pylint: disable=too-many-arguments
+		super().__init__()
 
-		self.receivers = forceUnicodeList(receivers)
+		self.receivers = forceUnicodeList(receivers or [])
 		if not self.receivers:
 			raise ValueError("List of mail recipients empty")
 		self.smtphost = forceUnicode(smtphost)
@@ -115,7 +115,7 @@ class EmailNotifier(BaseNotifier):
 			logger.debug("Sender: '%s' Reveivers: '%s' Message: '%s'", self.sender, self.receivers, mail)
 			logger.notice("Email successfully sent")
 			smtpObj.quit()
-		except Exception as error:
+		except Exception as err:
 			if smtpObj is not None:
 				logger.debug('SMTP Server does esmtp: %s', smtpObj.does_esmtp)
 				if hasattr(smtpObj, 'ehlo_resp'):
@@ -124,4 +124,4 @@ class EmailNotifier(BaseNotifier):
 				if hasattr(smtpObj, 'esmtp_features'):
 					logger.debug('ESMTP Features: %s', smtpObj.esmtp_features)
 
-			raise RuntimeError(f"Failed to send email using smtp server '{self.smtphost}': {error}")
+			raise RuntimeError(f"Failed to send email using smtp server '{self.smtphost}': {err}") from err
