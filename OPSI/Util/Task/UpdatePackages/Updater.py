@@ -125,17 +125,19 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				backendConfigDir='/etc/opsi/backends',
 				extensionConfigDir='/etc/opsi/backendManager/extend.d',
 				depotbackend=True,
-				hostControlBackend=True
+				hostControlBackend=True,
+				proxyurl=self.config["proxy"]
 			)
 		return self.configBackend
 
-	def getDepotConnection(self, depotId, username, password):
+	def getDepotConnection(self, depotId, username, password, proxy):
 		if depotId not in self.depotConnections:
 			self.depotConnections[depotId] = JSONRPCBackend(
 				address=depotId,
 				username=username,
 				password=password,
 				application=self.httpHeaders['User-Agent'] + ' (depot connection)',
+				proxyurl=proxy
 			)
 		return self.depotConnections[depotId]
 
@@ -888,7 +890,12 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		depotConnection = None
 		depotRepositoryPath = None
 		if repository.opsiDepotId:
-			depotConnection = self.getDepotConnection(repository.opsiDepotId, repository.username, repository.password)
+			depotConnection = self.getDepotConnection(
+				depotId=repository.opsiDepotId,
+				username=repository.username,
+				password=repository.password,
+				proxy=repository.proxy
+			)
 			repositoryLocalUrl = depotConnection.getDepot_hash(repository.opsiDepotId).get("repositoryLocalUrl")
 			logger.info("Got repository local url '%s' for depot '%s'", repositoryLocalUrl, repository.opsiDepotId)
 			if not repositoryLocalUrl or not repositoryLocalUrl.startswith('file://'):
