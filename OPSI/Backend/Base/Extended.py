@@ -2789,12 +2789,16 @@ into the IDs of these depots are to be found in the list behind \
 		)
 
 	def auditSoftwareOnClient_setObsolete(self, clientId):
+		if hasattr(self._backend, "auditSoftwareOnClient_setObsolete"):
+			# Using optimized version
+			return self._backend.auditSoftwareOnClient_setObsolete(clientId)
 		if clientId is None:
 			clientId = []
 		clientId = forceHostIdList(clientId)
 		self._backend.auditSoftwareOnClient_deleteObjects(
 			self._backend.auditSoftwareOnClient_getObjects(clientId=clientId)
 		)
+		return None
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwares                                                                            -
@@ -2911,10 +2915,13 @@ into the IDs of these depots are to be found in the list behind \
 		)
 
 	def auditHardwareOnHost_setObsolete(self, hostId):
+		if hasattr(self._backend, "auditHardwareOnHost_setObsolete"):
+			# Using optimized version
+			return self._backend.auditHardwareOnHost_setObsolete(hostId)
 		if hostId is None:
 			hostId = []
-
 		hostId = forceHostIdList(hostId)
 		for ahoh in self.auditHardwareOnHost_getObjects(hostId=hostId, state=1):  # pylint: disable=no-member
 			ahoh.setState(0)
 			self._backend.auditHardwareOnHost_updateObject(ahoh)
+		return None
