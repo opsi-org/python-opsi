@@ -482,14 +482,14 @@ def blowfishEncrypt(key, cleartext):
 
 	key = _prepareBlowfishKey(key)
 	cleartext = forceUnicode(cleartext)
-
+	cleartext = cleartext.encode("utf-8")
 	while len(cleartext) % 8 != 0:
 		# Fill up with \0 until length is a mutiple of 8
 		cleartext += chr(0)
 
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
 	try:
-		crypt = blowfish.encrypt(cleartext.encode("utf-8"))
+		crypt = blowfish.encrypt(cleartext)
 	except Exception as err:
 		logger.debug(err, exc_info=True)
 		raise BlowfishError("Failed to encrypt") from err

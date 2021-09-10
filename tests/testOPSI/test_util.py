@@ -892,6 +892,9 @@ def blowfishKey(request):
 	return request.param
 
 
+def test_blowfish_encryption():
+	encodedText = blowfishEncrypt('575bf0d0b557dd9184ae41e7ff58ead0', "jksdfjklöasdfjkladfsjkasdfjlkö")
+
 def testBlowfishEncryption(randomText, blowfishKey):
 	encodedText = blowfishEncrypt(blowfishKey, randomText)
 	assert encodedText != randomText
