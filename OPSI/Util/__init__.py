@@ -485,7 +485,7 @@ def blowfishEncrypt(key, cleartext):
 	cleartext = cleartext.encode("utf-8")
 	while len(cleartext) % 8 != 0:
 		# Fill up with \0 until length is a mutiple of 8
-		cleartext += chr(0)
+		cleartext += b"\x00"
 
 	blowfish = Blowfish.new(key, Blowfish.MODE_CBC, BLOWFISH_IV)
 	try:
