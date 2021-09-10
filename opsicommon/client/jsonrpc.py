@@ -64,6 +64,9 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 
 
 class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
+	_rpc_timeouts = {
+		"depot_installPackage": 3600
+	}
 
 	def __init__(self, address, **kwargs):  # pylint: disable=too-many-branches,too-many-statements
 		"""
@@ -360,12 +363,15 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 				headers['Accept-Encoding'] = 'gzip'
 				data = gzip.compress(data)
 
+		timeout = self._rpc_timeouts.get(method, self._read_timeout)
+
 		logger.info(
-			"JSONRPC request to %s: ip_version=%s, id=%d, method=%s, Content-Type=%s, Content-Encoding=%s",
-			self.base_url, self._ip_version, rpc_id, method, headers.get('Content-Type', ''), headers.get('Content-Encoding', '')
+			"JSONRPC request to %s: ip_version=%s, id=%d, method=%s, Content-Type=%s, Content-Encoding=%s, timeout=%d",
+			self.base_url, self._ip_version, rpc_id, method,
+			headers.get('Content-Type', ''), headers.get('Content-Encoding', ''), timeout
 		)
 		try:
-			response = self._session.post(self.base_url, headers=headers, data=data, stream=True)
+			response = self._session.post(self.base_url, headers=headers, data=data, stream=True, timeout=timeout)
 		except SSLError as err:
 			raise OpsiServiceVerificationError(str(err)) from err
 
