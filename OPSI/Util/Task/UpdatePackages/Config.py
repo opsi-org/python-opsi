@@ -54,7 +54,7 @@ DEFAULT_CONFIG = {
 	"repositoryName": None,
 	"forceRepositoryActivation": False,
 	"installAllAvailable": False,
-	"zsyncCommand": None,
+	"useZsync": True,
 	"processProductIds": None,
 	"forceChecksumCalculation": False,
 	"forceDownload": False,

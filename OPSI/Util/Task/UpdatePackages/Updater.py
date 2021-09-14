@@ -56,6 +56,20 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		self.depotId = forceHostId(getfqdn(conf="/etc/opsi/global.conf").lower())
 		self.errors = []
 
+		try:
+			self.config["zsync2Command"] = System.which("zsync2")
+			logger.info("Zsync2 command found: %s", self.config["zsync2Command"])
+		except Exception:  # pylint: disable=broad-except
+			logger.info("Zsync2 command not found")
+			self.config["zsync2Command"] = None
+
+		try:
+			self.config["zsyncCommand"] = System.which("zsync")
+			logger.info("Zsync command found: %s", self.config["zsyncCommand"])
+		except Exception:  # pylint: disable=broad-except
+			logger.warning("Zsync command not found")
+			self.config["zsyncCommand"] = None
+
 		# Proxy is needed for getConfigBackend which is needed for ConfigurationParser.parse
 		self.config["proxy"] = ConfigurationParser.get_proxy(self.config["configFile"])
 
@@ -161,6 +175,21 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				result[package["repository"]] = [package]
 		return result
 
+	def _useZsync(self, availablePackage):
+		if not self.config["useZsync"]:
+			return False
+		if not self.config["zsyncCommand"] and not self.config["zsync2Command"]:
+			logger.info("Cannot use zsync/zsync2, command not found")
+			return False
+
+		if (
+			availablePackage['repository'].baseUrl.split(':', 1)[0].lower().endswith('s') and
+			not self.config["zsync2Command"]
+		):
+			logger.info("Cannot use zsync, because zsync does not support https")
+			return False
+		return True
+
 	def processUpdates(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		if not any(self.getActiveRepositories()):
 			logger.warning("No repositories configured, nothing to do")
@@ -189,12 +218,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 								continue
 
 							localPackageFound = self.get_local_package(availablePackage, localPackages)
-
-							zsync = True
-							if availablePackage['repository'].baseUrl.split(':', 1)[0].lower().endswith('s'):
-								logger.info("Cannot use zsync, because zsync does not support https")
-								zsync = False
-
+							zsync = self._useZsync(availablePackage)
 							if self.is_download_needed(localPackageFound, availablePackage, notifier=None):
 								self.get_package(availablePackage, localPackageFound, session,  zsync=zsync, notifier=None)
 							packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
@@ -640,14 +664,11 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 
 	def get_package(self, availablePackage, localPackageFound, session, notifier=None, zsync=True):  # pylint: disable=too-many-arguments
 		packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
-		if self.config["zsyncCommand"] and availablePackage['zsyncFile'] and localPackageFound:
-			if not zsync:
-				self.downloadPackage(availablePackage, session, notifier=notifier)
-			else:
-				if localPackageFound['filename'] != availablePackage['filename']:
-					os.rename(os.path.join(self.config["packageDir"], localPackageFound["filename"]), packageFile)
-					localPackageFound["filename"] = availablePackage['filename']
-				self.zsyncPackage(availablePackage, notifier=notifier)
+		if zsync and availablePackage['zsyncFile'] and localPackageFound:
+			if localPackageFound['filename'] != availablePackage['filename']:
+				os.rename(os.path.join(self.config["packageDir"], localPackageFound["filename"]), packageFile)
+				localPackageFound["filename"] = availablePackage['filename']
+			self.zsyncPackage(availablePackage, notifier=notifier)
 		else:
 			self.downloadPackage(availablePackage, session, notifier=notifier)
 		self.cleanupPackages(availablePackage)
@@ -675,10 +696,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 							# This ís called to keep the logs consistent
 							_ = self.get_installed_package(availablePackage, installedProducts)
 							localPackageFound = self.get_local_package(availablePackage, localPackages)
-							zsync = True
-							if availablePackage['repository'].baseUrl.split(':', 1)[0].lower().endswith('s'):
-								logger.info("Cannot use zsync, because zsync does not support https")
-								zsync = False
+							zsync = self._useZsync(availablePackage)
 							if self.is_download_needed(localPackageFound, availablePackage, notifier=notifier):
 								self.get_package(availablePackage, localPackageFound, session, zsync=zsync, notifier=notifier)
 							packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
@@ -709,14 +727,23 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		with cd(os.path.dirname(outFile)):
 			logger.info("Zsyncing %s to %s", availablePackage["packageFile"], outFile)
 
-			cmd = "%s -A %s='%s:%s' -o '%s' %s 2>&1" % (
-				self.config["zsyncCommand"],
-				repository.baseUrl.split('/')[2].split(':')[0],
-				repository.username,
-				repository.password,
-				outFile,
-				availablePackage["zsyncFile"]
-			)
+			cmd = None
+			if self.config["zsync2Command"]:
+				url = availablePackage["zsyncFile"]
+				if repository.username:
+					auth = f"{quote(repository.username)}:{quote(repository.password)}"
+					tmp = url.split("://", 1)
+					url = f"{tmp[0]}://{auth}{tmp[1]}"
+				cmd = f"{self.config['zsync2Command']} -o '{outFile}' '{url}' 2>&1"
+			else:
+				cmd = "%s -A %s='%s:%s' -o '%s' '%s' 2>&1" % (
+					self.config["zsyncCommand"],
+					repository.baseUrl.split('/')[2].split(':')[0],
+					repository.username,
+					repository.password,
+					outFile,
+					availablePackage["zsyncFile"]
+				)
 
 			env = {}
 			if repository.proxy:
