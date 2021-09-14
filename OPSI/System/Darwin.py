@@ -14,6 +14,7 @@ import subprocess
 import time
 import urllib.parse
 from typing import Dict, List, Any
+import tempfile
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceUnicode, forceFilename
@@ -387,7 +388,7 @@ def mount(dev, mountpoint, **options):
 		options[key] = forceUnicode(value)
 
 	if dev.lower().startswith(('smb://', 'cifs://')):
-		# mount_smbfs '//<domain>;<username>:<password>@<server>/<share>' /mountpoint
+		# mount_smbfs '//<domain>;<username>[:<password>]@<server>/<share>' /mountpoint
 		match = re.search(r'^(smb|cifs)://([^/]+)/([^/].*)$', dev, re.IGNORECASE)
 		if match:
 			server = match.group(2)
@@ -397,12 +398,20 @@ def mount(dev, mountpoint, **options):
 			if password:
 				password = urllib.parse.quote_plus(password)
 				logger.addConfidentialString(password)
-				password = f":{password}"
-
-			command = f"mount_smbfs -N '//{username}{password}@{server}/{share}' '{mountpoint}'"
 
 			try:
-				execute(command)
+				# mount_smbfs on macos only reads password from stdin -> expect script
+				filename = None
+				with tempfile.NamedTemporaryFile("wt", delete=False) as tempf:
+					filename = tempf.name
+					tempf.write(f"spawn /sbin/mount_smbfs '//{username}@{server}/{share}' '{mountpoint}'\n")
+					if password:
+						tempf.write("expect 'Password*: '\n")
+						tempf.write(f"send '{password}\\n'\n")
+					tempf.write("expect\n")
+					tempf.write("asdf")
+				execute(f"expect -f {filename}")
+				os.remove(filename)
 			except Exception as err:
 				logger.error("Failed to mount '%s': %s", dev, err)
 				raise RuntimeError(f"Failed to mount '{dev}': {err}") from err
