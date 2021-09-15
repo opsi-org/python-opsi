@@ -17,6 +17,7 @@ import datetime
 from urllib.parse import quote
 import requests
 from requests.packages import urllib3
+import subprocess
 
 from opsicommon.logging import logger
 
@@ -175,8 +176,14 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				result[package["repository"]] = [package]
 		return result
 
-	def _useZsync(self, availablePackage):
+	def _useZsync(self, availablePackage, localPackage):
 		if not self.config["useZsync"]:
+			return False
+		if not localPackage:
+			logger.info("Cannot use zsync, no local package found")
+			return False
+		if not availablePackage['zsyncFile']:
+			logger.info("Cannot use zsync, no zsync file on server found")
 			return False
 		if not self.config["zsyncCommand"] and not self.config["zsync2Command"]:
 			logger.info("Cannot use zsync/zsync2, command not found")
@@ -196,40 +203,8 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 			return
 
 		notifier = self._getNotifier()
-
 		try:  # pylint: disable=too-many-nested-blocks
-			installedProducts = self.getInstalledProducts()
-			localPackages = self.getLocalPackages()
-			packages_per_repository = self.get_new_packages_per_repository()
-			if not any(packages_per_repository.values()):
-				logger.warning("No downloadable packages found")
-				return
-
-			newPackages = []
-			for repository, downloadablePackages in packages_per_repository.items():
-				logger.debug("Processing downloadable packages on repository %s", repository)
-				with self.makeSession(repository) as session:
-					for availablePackage in downloadablePackages:
-						logger.debug("Processing available package %s", availablePackage)
-						try:
-							product = self.get_installed_package(availablePackage, installedProducts)
-
-							if not self.is_install_needed(availablePackage, product):
-								continue
-
-							localPackageFound = self.get_local_package(availablePackage, localPackages)
-							zsync = self._useZsync(availablePackage)
-							if self.is_download_needed(localPackageFound, availablePackage, notifier=None):
-								self.get_package(availablePackage, localPackageFound, session,  zsync=zsync, notifier=None)
-							packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
-							self._verifyDownloadedPackage(packageFile, availablePackage, session, zsync, notifier)
-							newPackages.append(availablePackage)
-						except Exception as exc: # pylint: disable=broad-except
-							if self.config.get("ignoreErrors"):
-								logger.error("Ignoring Error for package %s: %s", availablePackage["productId"], exc, exc_info=True)
-								notifier.appendLine(f"Ignoring Error for package {availablePackage['productId']}: {exc}")
-							else:
-								raise exc
+			newPackages = self.get_packages(notifier)
 			if not newPackages:
 				logger.notice("No new packages available")
 				return
@@ -529,49 +504,38 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 
 		return products
 
-	def _verifyDownloadedPackage(self, packageFile, availablePackage, session, zsync, notifier):  # pylint: disable=too-many-arguments
+	def _verifyDownloadedPackage(self, packageFile, availablePackage):  # pylint: disable=no-self-use
 		"""
 		Verify the downloaded package.
 
 		This checks the hashsums of the downloaded package.
-		If the download was done with zsync and the hashes are different
-		we download the package in whole.
 
 		:param packageFile: The path to the package that is checked.
 		:type packageFile: str
 		:param availablePackage: Information about the package.
 		:type availablePackage: dict
-		:param notifier: The notifier to use
-		:raise HashsumMissmatchError: In case the hashsums mismatch
 		"""
-		if availablePackage['md5sum']:
-			logger.info("Verifying download of package '%s'", packageFile)
-			md5 = md5sum(packageFile)
-			if md5 != availablePackage["md5sum"]:
-				if zsync:
-					logger.warning(
-						"%s: zsync Download has failed, trying once to load full package",
-						availablePackage['productId']
-					)
-					self.downloadPackage(availablePackage, session, notifier=notifier)
-					self.cleanupPackages(availablePackage)
 
-					md5 = md5sum(packageFile)
-
-				# Check again in case we re-downloaded the file
-				if md5 != availablePackage["md5sum"]:
-					raise HashsumMissmatchError(
-						f"{availablePackage['productId']}: md5sum mismatch"
-					)
-
-			logger.info(
-				"%s: md5sum match, package download verified",
-				availablePackage['productId']
-			)
-		else:
+		logger.info("Verifying download of package '%s'", packageFile)
+		if not availablePackage['md5sum']:
 			logger.warning("%s: Cannot verify download of package: missing md5sum file",
 				availablePackage['productId']
 			)
+			return True
+
+		md5 = md5sum(packageFile)
+		if md5 != availablePackage["md5sum"]:
+			logger.info(
+				"%s: md5sum mismatch, package download failed",
+				availablePackage['productId']
+			)
+			return False
+
+		logger.info(
+			"%s: md5sum match, package download verified",
+			availablePackage['productId']
+		)
+		return True
 
 	def get_installed_package(self, availablePackage, installedProducts):  # pylint: disable=no-self-use
 		logger.info("Testing if download/installation of package '%s' is needed", availablePackage["filename"])
@@ -600,13 +564,16 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				localPackageFound['filename'] == availablePackage['filename'] and
 				localPackageFound['md5sum'] == availablePackage['md5sum']
 		):
-			logger.info(
-				"%s - download of package is not required: found local package %s with matching md5sum",
-					availablePackage["filename"],
-					localPackageFound["filename"]
-			)
-			# No notifier message as nothing to do
-			return False
+			# Recalculate md5sum
+			localPackageFound['md5sum'] = md5sum(localPackageFound['packageFile'])
+			if localPackageFound['md5sum'] == availablePackage['md5sum']:
+				logger.info(
+					"%s - download of package is not required: found local package %s with matching md5sum",
+						availablePackage["filename"],
+						localPackageFound["filename"]
+				)
+				# No notifier message as nothing to do
+				return False
 
 		if self.config["forceDownload"]:
 			message = f"{availablePackage['filename']} - download of package is forced."
@@ -662,16 +629,73 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		)
 		return False
 
+	def get_packages(self, notifier, all_packages=False):  # pylint: disable=too-many-locals
+		installedProducts = self.getInstalledProducts()
+		localPackages = self.getLocalPackages()
+		packages_per_repository = self.get_new_packages_per_repository()
+		newPackages = []
+		if not any(packages_per_repository.values()):
+			logger.warning("No downloadable packages found")
+			return newPackages
+
+		for repository, downloadablePackages in packages_per_repository.items():
+			logger.debug("Processing downloadable packages on repository %s", repository)
+			with self.makeSession(repository) as session:
+				for availablePackage in downloadablePackages:
+					logger.debug("Processing available package %s", availablePackage)
+					try:
+						# This ís called to keep the logs consistent
+						product = self.get_installed_package(availablePackage, installedProducts)
+						if not all_packages and not self.is_install_needed(availablePackage, product):
+							continue
+
+						localPackageFound = self.get_local_package(availablePackage, localPackages)
+						zsync = self._useZsync(availablePackage, localPackageFound)
+						if self.is_download_needed(localPackageFound, availablePackage, notifier=notifier):
+							self.get_package(availablePackage, localPackageFound, session, zsync=zsync, notifier=notifier)
+						packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
+						verified = self._verifyDownloadedPackage(packageFile, availablePackage)
+						if not verified and zsync:
+							logger.warning(
+								"%s: zsync download has failed, trying full download",
+								availablePackage['productId']
+							)
+							self.get_package(availablePackage, localPackageFound, session, zsync=False, notifier=notifier)
+							verified = self._verifyDownloadedPackage(packageFile, availablePackage)
+						if not verified:
+							raise HashsumMissmatchError(f"{availablePackage['productId']}: md5sum mismatch")
+						self.cleanupPackages(availablePackage)
+						newPackages.append(availablePackage)
+					except Exception as exc: # pylint: disable=broad-except
+						if self.config.get("ignoreErrors"):
+							logger.error("Ignoring Error for package %s: %s", availablePackage["productId"], exc, exc_info=True)
+							notifier.appendLine(f"Ignoring Error for package {availablePackage['productId']}: {exc}")
+						else:
+							raise exc
+		return newPackages
+
+
 	def get_package(self, availablePackage, localPackageFound, session, notifier=None, zsync=True):  # pylint: disable=too-many-arguments
 		packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
-		if zsync and availablePackage['zsyncFile'] and localPackageFound:
+		if zsync:
 			if localPackageFound['filename'] != availablePackage['filename']:
 				os.rename(os.path.join(self.config["packageDir"], localPackageFound["filename"]), packageFile)
 				localPackageFound["filename"] = availablePackage['filename']
-			self.zsyncPackage(availablePackage, notifier=notifier)
+
+			message = None
+			try:
+				self.zsyncPackage(availablePackage, packageFile)
+				message = f"Zsync of '{availablePackage['packageFile']}' completed"
+				logger.info(message)
+			except Exception as err:  # pylint: disable=broad-except
+				message = f"Zsync of '{availablePackage['packageFile']}' failed: {err}"
+				logger.error(message)
+
+			if notifier and message:
+				notifier.appendLine(message)
 		else:
 			self.downloadPackage(availablePackage, session, notifier=notifier)
-		self.cleanupPackages(availablePackage)
+
 
 	def downloadPackages(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		if not any(self.getActiveRepositories()):
@@ -679,36 +703,8 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 			return
 
 		notifier = self._getNotifier()
-
-		try:  # pylint: disable=too-many-nested-blocks
-			installedProducts = self.getInstalledProducts()
-			localPackages = self.getLocalPackages()
-			packages_per_repository = self.get_new_packages_per_repository()
-			if not any(packages_per_repository.values()):
-				logger.warning("No downloadable packages found")
-				return
-
-			newPackages = []
-			for repository, downloadablePackages in packages_per_repository.items():
-				with self.makeSession(repository) as session:
-					for availablePackage in downloadablePackages:
-						try:
-							# This ís called to keep the logs consistent
-							_ = self.get_installed_package(availablePackage, installedProducts)
-							localPackageFound = self.get_local_package(availablePackage, localPackages)
-							zsync = self._useZsync(availablePackage)
-							if self.is_download_needed(localPackageFound, availablePackage, notifier=notifier):
-								self.get_package(availablePackage, localPackageFound, session, zsync=zsync, notifier=notifier)
-							packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
-							self._verifyDownloadedPackage(packageFile, availablePackage, session, zsync, notifier)
-							newPackages.append(availablePackage)
-						except Exception as exc: # pylint: disable=broad-except
-							if self.config.get("ignoreErrors"):
-								logger.error("Ignoring Error for package %s: %s", availablePackage["productId"], exc, exc_info=True)
-								notifier.appendLine(f"Ignoring Error for package {availablePackage['productId']}: {exc}")
-							else:
-								raise exc
-
+		try:
+			newPackages = self.get_packages(notifier, all_packages=True)
 			if not newPackages:
 				logger.notice("No new packages downloaded")
 				return
@@ -720,70 +716,78 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 			if notifier and notifier.hasMessage():
 				notifier.notify()
 
-	def zsyncPackage(self, availablePackage, notifier=None):  # pylint: disable=too-many-locals
-		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
-
+	def zsyncPackage(self, availablePackage, packageFile):  # pylint: disable=too-many-locals
 		repository = availablePackage['repository']
-		with cd(os.path.dirname(outFile)):
-			logger.info("Zsyncing %s to %s", availablePackage["packageFile"], outFile)
+		with cd(os.path.dirname(packageFile)):
+			logger.info("Zsyncing %s to %s", availablePackage["packageFile"], packageFile)
 
-			cmd = None
+			cmd = []
 			if self.config["zsync2Command"]:
 				url = availablePackage["zsyncFile"]
 				if repository.username:
 					auth = f"{quote(repository.username)}:{quote(repository.password)}"
 					tmp = url.split("://", 1)
-					url = f"{tmp[0]}://{auth}{tmp[1]}"
-				cmd = f"{self.config['zsync2Command']} -o '{outFile}' '{url}' 2>&1"
+					url = f"{tmp[0]}://{auth}@{tmp[1]}"
+				cmd = [
+					self.config['zsync2Command'],
+					"-o", packageFile,
+					url
+				]
 			else:
-				cmd = "%s -A %s='%s:%s' -o '%s' '%s' 2>&1" % (
+				hostname = repository.baseUrl.split('/')[2].split(':')[0]
+				cmd = [
 					self.config["zsyncCommand"],
-					repository.baseUrl.split('/')[2].split(':')[0],
-					repository.username,
-					repository.password,
-					outFile,
+					"-A", f"{hostname}='{repository.username}:{repository.password}'"
+					"-o", packageFile,
 					availablePackage["zsyncFile"]
-				)
+				]
 
-			env = {}
+			env = System.get_subprocess_environment()
 			if repository.proxy:
 				if repository.proxy != "system":
-					env = {
+					env.update({
 						"http_proxy": repository.proxy,
 						"https_proxy": repository.proxy
-					}
+					})
 			else:
-				env = {
+				env.update({
 					"http_proxy": "",
 					"https_proxy": "",
 					"no_proxy": "*"
-				}
+				})
 
 			stateRegex = re.compile(r'\s([\d.]+)%\s+([\d.]+)\skBps(.*)$')
-			data = b''
-			percent = 0.0
-			speed = 0
-			handle = System.execute(cmd, env=env, getHandle=True)
-			while True:
-				inp = handle.read(16)
-				if not inp:
-					handle.close()
-					break
-				data += inp
-				match = stateRegex.search(data.decode())
-				if not match:
-					continue
-				data = match.group(3).encode()
-				if (percent == 0) and (float(match.group(1)) == 100):
-					continue
-				percent = float(match.group(1))
-				speed = float(match.group(2)) * 8
-				logger.debug('Zsyncing %s: %d%% (%d kbit/s)', availablePackage["packageFile"], percent, speed)
+			data = b""
+			buffer = b""
+			exit_code = 0
+			percent = 0
+			with subprocess.Popen(
+				cmd,
+				shell=False,
+				stdin=subprocess.PIPE,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.STDOUT,
+				env=env
+			) as proc:
+				while True:
+					inp = proc.stdout.read(16)
+					if inp:
+						data += inp
+						buffer += inp
+						match = stateRegex.search(buffer.decode())
+						if match:
+							buffer = match.group(3).encode()
+							new_percent = float(match.group(1))
+							speed = float(match.group(2)) * 8
+							if percent != new_percent:
+								percent = new_percent
+								logger.info("Zsyncing %s: %d%% (%d kbit/s)", availablePackage["packageFile"], percent, speed)
+					exit_code = proc.poll()
+					if exit_code is not None:
+						break
+			if exit_code != 0:
+				raise RuntimeError(f"Command {cmd} failed with exit code {exit_code}: {data}")
 
-			message = f"Zsync of '{availablePackage['packageFile']}' completed"
-			logger.info(message)
-			if notifier:
-				notifier.appendLine(message)
 
 	def downloadPackage(self, availablePackage, session, notifier=None):  # pylint: disable=too-many-locals
 		url = availablePackage["packageFile"]
@@ -1019,42 +1023,42 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 						except Exception as err:  # pylint: disable=broad-except
 							logger.error("Failed to process link '%s': %s", link, err)
 
-					if not depotConnection:
-						# if checking for md5sum only retrieve first 64 bytes of file
-						md5getHeader = self.httpHeaders.copy().update({"Range": "bytes=0-64"})
-						for link in htmlParser.getLinks():
-							isMd5 = link.endswith('.opsi.md5')
-							isZsync = link.endswith('.opsi.zsync')
 
-							# stripping directory part from link
-							link = link.split("/")[-1]
+					# if checking for md5sum only retrieve first 64 bytes of file
+					#md5getHeader = self.httpHeaders.copy().update({"Range": "bytes=0-64"})
+					for link in htmlParser.getLinks():
+						isMd5 = link.endswith('.opsi.md5')
+						isZsync = link.endswith('.opsi.zsync')
 
-							filename = None
-							if isMd5:
-								filename = link[:-4]
-							elif isZsync:
-								filename = link[:-6]
-							else:
-								continue
+						# stripping directory part from link
+						link = link.split("/")[-1]
 
-							try:
-								for i, package in enumerate(packages):
-									if package.get('filename') == filename:
-										if isMd5:
-											response = session.get(f"{url}/{link}", headers=md5getHeader)
-											match = re.search(r'([a-z\d]{32})', response.content.decode("utf-8"))
-											if match:
-												foundMd5sum = match.group(1)
-												packages[i]["md5sum"] = foundMd5sum
-												logger.debug("Got md5sum for package %s: %s", filename, foundMd5sum)
-										elif isZsync:
-											zsyncFile = url + '/' + link
-											packages[i]["zsyncFile"] = zsyncFile
-											logger.debug("Found zsync file for package '%s': %s", filename, zsyncFile)
+						filename = None
+						if isMd5:
+							filename = link[:-4]
+						elif isZsync:
+							filename = link[:-6]
+						else:
+							continue
 
-										break
-							except Exception as err:  # pylint: disable=broad-except
-								logger.error("Failed to process link '%s': %s", link, err)
+						try:
+							for i, package in enumerate(packages):
+								if package.get('filename') == filename:
+									if isMd5:
+										response = session.get(f"{url}/{link}")#, headers=md5getHeader)
+										match = re.search(r'([a-z\d]{32})', response.content.decode("utf-8"))
+										if match:
+											foundMd5sum = match.group(1)
+											packages[i]["md5sum"] = foundMd5sum
+											logger.debug("Got md5sum for package %s: %s", filename, foundMd5sum)
+									elif isZsync:
+										zsyncFile = url + '/' + link
+										packages[i]["zsyncFile"] = zsyncFile
+										logger.debug("Found zsync file for package '%s': %s", filename, zsyncFile)
+
+									break
+						except Exception as err:  # pylint: disable=broad-except
+							logger.error("Failed to process link '%s': %s", link, err)
 				except Exception as err:  # pylint: disable=broad-except
 					logger.debug(err, exc_info=True)
 					self.errors.append(err)
