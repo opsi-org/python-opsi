@@ -49,19 +49,17 @@ from opsicommon.types import (
 	forceBool, forceFilename, forceFqdn, forceUnicode,
 	_PRODUCT_VERSION_REGEX, _PACKAGE_VERSION_REGEX
 )
-from opsicommon.objects import serialize, deserialize
-
-OPSIObject = None  # pylint: disable=invalid-name
 
 __all__ = (
-	'BLOWFISH_IV', 'PickleString',
-	'RANDOM_DEVICE', 'blowfishDecrypt', 'blowfishEncrypt',
-	'chunk', 'compareVersions', 'deserialize',
-	'findFiles', 'findFilesGenerator', 'formatFileSize', 'fromJson', 'generateOpsiHostKey',
-	'getfqdn', 'ipAddressInNetwork', 'isRegularExpressionPattern',
-	'md5sum', 'objectToBash', 'objectToBeautifiedText', 'objectToHtml',
-	'randomString', 'removeDirectory', 'removeUnit',
-	'replaceSpecialHTMLCharacters', 'serialize', 'timestamp', 'toJson'
+	"BLOWFISH_IV", "PickleString",
+	"RANDOM_DEVICE", "blowfishDecrypt", "blowfishEncrypt",
+	"chunk", "compareVersions", "deserialize",
+	"findFiles", "findFilesGenerator", "formatFileSize", "fromJson", "generateOpsiHostKey",
+	"getfqdn", "ipAddressInNetwork", "isRegularExpressionPattern",
+	"md5sum", "objectToBash", "objectToBeautifiedText", "objectToHtml",
+	"randomString", "removeDirectory", "removeUnit",
+	"replaceSpecialHTMLCharacters", "serialize", "timestamp", "toJson",
+	"getPublicKey", "Singleton"
 )
 
 BLOWFISH_IV = b"OPSI1234"
@@ -103,6 +101,76 @@ def formatFileSize(sizeInBytes):
 	if sizeInBytes < 1099511627776:  # 1024**4
 		return '%iG' % (sizeInBytes / 1073741824)
 	return '%iT' % (sizeInBytes / 1099511627776)
+
+
+OBJECT_CLASSES = None
+BaseObject = None  # pylint: disable=invalid-name
+def deserialize(obj, preventObjectCreation=False):
+	"""
+	Deserialization of `obj`.
+
+	This function will deserialize objects from JSON into opsi compatible objects.
+	In case `obj` is a list contained elements are deserialized.
+	In case `obj` is a dict the values are deserialized.
+
+	In case `obj` is a dict and holds a key *type* and `preventObjectCreation`
+	is `True` it will be tried to create an opsi object instance from it
+
+	:type obj: object
+	:type preventObjectCreation: bool
+	"""
+	if isinstance(obj, list):
+		return [deserialize(element, preventObjectCreation=preventObjectCreation) for element in obj]
+
+	global OBJECT_CLASSES  # pylint: disable=global-statement,invalid-name
+	if OBJECT_CLASSES is None:
+		from opsicommon.objects import OBJECT_CLASSES  # pylint: disable=redefined-outer-name,import-outside-toplevel
+	global BaseObject  # pylint: disable=global-statement,invalid-name
+	if BaseObject is None:
+		from opsicommon.objects import BaseObject  # pylint: disable=redefined-outer-name,import-outside-toplevel
+
+	if isinstance(obj, dict):
+		if (
+			not preventObjectCreation and
+			"type" in obj and
+			obj["type"] in OBJECT_CLASSES and
+			issubclass(OBJECT_CLASSES[obj['type']], BaseObject)
+		):
+			try:
+				return OBJECT_CLASSES[obj['type']].fromHash(obj)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error(err, exc_info=True)
+				raise ValueError(f"Failed to create object from dict {obj}: {err}") from err
+
+		return {
+			key: deserialize(value, preventObjectCreation=preventObjectCreation)
+			for key, value in obj.items()
+		}
+
+	return obj
+
+
+def serialize(obj):
+	"""
+	Serialize `obj`.
+
+	It will turn an object into a JSON-compatible format -
+	consisting of strings, dicts, lists or numbers.
+
+	:return: a JSON-compatible serialisation of the input.
+	"""
+	if isinstance(obj, str):
+		return obj
+
+	try:
+		return obj.serialize()
+	except AttributeError:
+		if isinstance(obj, (list, set, types.GeneratorType)):
+			return [serialize(tempObject) for tempObject in obj]
+		if isinstance(obj, dict):
+			return {key: serialize(value) for key, value in obj.items()}
+
+	return obj
 
 
 def fromJson(obj, objectType=None, preventObjectCreation=False):

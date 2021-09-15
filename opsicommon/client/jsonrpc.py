@@ -36,7 +36,7 @@ from opsicommon.exceptions import (
 	OpsiRpcError, OpsiServiceVerificationError,
 	BackendAuthenticationError, BackendPermissionDeniedError
 )
-from opsicommon.objects import serialize, deserialize
+from opsicommon.utils import serialize, deserialize
 
 urllib3.disable_warnings()
 

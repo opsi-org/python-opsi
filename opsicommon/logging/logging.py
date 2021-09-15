@@ -23,7 +23,6 @@ from .constants import (
 	DEFAULT_COLORED_FORMAT, DEFAULT_FORMAT, DATETIME_FORMAT,
 	LOG_COLORS, SECRET_REPLACEMENT_STRING
 )
-from ..utils import Singleton
 
 logger = logging.getLogger()
 context = contextvars.ContextVar('context', default={})
@@ -159,6 +158,15 @@ def handle_log_exception(exc: Exception, record: logging.LogRecord = None, stder
 
 	except Exception: # pylint: disable=broad-except
 		pass
+
+
+class Singleton(type):
+	_instances = {}
+	def __call__(cls, *args, **kwargs):
+		if cls not in cls._instances:
+			cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+		return cls._instances[cls]
+
 
 class ContextFilter(logging.Filter, metaclass=Singleton):
 	"""
