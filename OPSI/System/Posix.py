@@ -2810,7 +2810,7 @@ def isCentOS():
 	Returns `True` if this is running on CentOS.
 	Returns `False` if otherwise.
 	"""
-	return _checkForDistribution('CentOS')
+	return _checkForDistribution('CentOS') or _checkForDistribution('Rocky Linux') or _checkForDistribution('AlmaLinux')
 
 
 def isDebian():
