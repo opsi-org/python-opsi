@@ -15,11 +15,13 @@ import time
 import json
 import datetime
 from urllib.parse import quote
+import subprocess
 import requests
 from requests.packages import urllib3
-import subprocess
+from OpenSSL.crypto import FILETYPE_PEM, load_certificate
 
 from opsicommon.logging import logger
+from opsicommon.ssl import install_ca
 
 from OPSI import System
 from OPSI.Backend.BackendManager import BackendManager
@@ -151,6 +153,13 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				hostControlBackend=True,
 				proxy_url=self.config["proxy"]
 			)
+			try:
+				jsonrpc = self.configBackend.get_jsonrpc_backend()
+				if jsonrpc:
+					ca_crt = load_certificate(FILETYPE_PEM, jsonrpc.getOpsiCACert())
+					install_ca(ca_crt)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.info("Failed to update opsi CA: %s", err)
 		return self.configBackend
 
 	def getDepotConnection(self, depotId, username, password, proxy):

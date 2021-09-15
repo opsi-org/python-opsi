@@ -201,6 +201,10 @@ class BackendManager(ExtendedBackend):
 
 		self._createInstanceMethods()
 
+	def get_jsonrpc_backend(self):
+		dispatcher = self._get_backend_dispatcher()
+		return dispatcher._backends.get("jsonrpc")  # pylint: disable=protected-access
+
 	def __loadBackendConfig(self, name):
 		if not self._backendConfigDir:
 			raise BackendConfigurationError("Backend config dir not given")
