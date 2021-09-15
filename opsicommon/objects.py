@@ -55,21 +55,19 @@ _MANDATORY_CONSTRUCTOR_ARGS_CACHE = {}
 
 def mandatoryConstructorArgs(_class):
 	cacheKey = _class.__name__
-	try:
-		return _MANDATORY_CONSTRUCTOR_ARGS_CACHE[cacheKey]
-	except KeyError:
+	if not cacheKey in _MANDATORY_CONSTRUCTOR_ARGS_CACHE:
 		spec = inspect.getfullargspec(_class.__init__)
 		args = spec.args
 		defaults = spec.defaults
-		try:
+		mandatory = None
+		if defaults is None:
+			mandatory = args[1:]
+		else:
 			last = len(defaults) * -1
 			mandatory = args[1:][:last]
-		except TypeError:  # Happens if defaults is None
-			mandatory = args[1:]
-
 		logger.trace("mandatoryConstructorArgs for %s: %s", cacheKey, mandatory)
 		_MANDATORY_CONSTRUCTOR_ARGS_CACHE[cacheKey] = mandatory
-		return mandatory
+	return _MANDATORY_CONSTRUCTOR_ARGS_CACHE[cacheKey]
 
 
 def getIdentAttributes(_class):

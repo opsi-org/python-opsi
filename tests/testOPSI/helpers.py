@@ -194,5 +194,5 @@ def showLogs(logLevel=7, color=True):
 
 @contextmanager
 def cleanMandatoryConstructorArgsCache():
-	with mock.patch('OPSI.Object._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
+	with mock.patch('opsicommon.objects._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
 		yield
