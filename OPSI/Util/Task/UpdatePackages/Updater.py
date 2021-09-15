@@ -1071,8 +1071,6 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 			logger.debug("Initiating session with verify=%s", repository.verifyCert)
 			yield session
 		finally:
-			# TODO: Delete session
-			#if repository.opsiDepotId:
 			session.close()
 
 def getLocalPackages(packageDirectory, forceChecksumCalculation=False):
