@@ -55,7 +55,6 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		self.config = config
 		self.httpHeaders = {"User-Agent": self.config.get("userAgent", DEFAULT_USER_AGENT)}
 		self.configBackend = None
-		self.depotConnections = {}
 		self.depotId = forceHostId(getfqdn(conf="/etc/opsi/global.conf").lower())
 		self.errors = []
 
@@ -92,12 +91,6 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		return self
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
-		for con in self.depotConnections.values():
-			try:
-				con.backend_exit()
-			except Exception:  # pylint: disable=broad-except
-				pass
-
 		try:
 			self.configBackend.backend_exit()
 		except Exception:  # pylint: disable=broad-except
@@ -161,17 +154,6 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 			except Exception as err:  # pylint: disable=broad-except
 				logger.info("Failed to update opsi CA: %s", err)
 		return self.configBackend
-
-	def getDepotConnection(self, depotId, username, password, proxy):
-		if depotId not in self.depotConnections:
-			self.depotConnections[depotId] = JSONRPCBackend(
-				address=depotId,
-				username=username,
-				password=password,
-				application=self.httpHeaders['User-Agent'] + ' (depot connection)',
-				proxy_url=proxy
-			)
-		return self.depotConnections[depotId]
 
 	def get_new_packages_per_repository(self):
 		downloadablePackages = self.getDownloadablePackages()
@@ -935,21 +917,6 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		return downloadablePackages
 
 	def getDownloadablePackagesFromRepository(self, repository):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
-		depotConnection = None
-		depotRepositoryPath = None
-		if repository.opsiDepotId:
-			depotConnection = self.getDepotConnection(
-				depotId=repository.opsiDepotId,
-				username=repository.username,
-				password=repository.password,
-				proxy=repository.proxy
-			)
-			repositoryLocalUrl = depotConnection.getDepot_hash(repository.opsiDepotId).get("repositoryLocalUrl")
-			logger.info("Got repository local url '%s' for depot '%s'", repositoryLocalUrl, repository.opsiDepotId)
-			if not repositoryLocalUrl or not repositoryLocalUrl.startswith('file://'):
-				raise ValueError(f"Invalid repository local url for depot '{repository.opsiDepotId}'")
-			depotRepositoryPath = repositoryLocalUrl[7:]
-
 		with self.makeSession(repository) as session:
 			packages = []
 			errors = set()
@@ -1025,16 +992,11 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 								"md5sum": None,
 								"zsyncFile": None
 							}
-							if depotConnection:
-								packageInfo["md5sum"] = depotConnection.getMD5Sum(f"{depotRepositoryPath}/{link}")
 							logger.debug("Repository package info: %s", packageInfo)
 							packages.append(packageInfo)
 						except Exception as err:  # pylint: disable=broad-except
 							logger.error("Failed to process link '%s': %s", link, err)
 
-
-					# if checking for md5sum only retrieve first 64 bytes of file
-					#md5getHeader = self.httpHeaders.copy().update({"Range": "bytes=0-64"})
 					for link in htmlParser.getLinks():
 						isMd5 = link.endswith('.opsi.md5')
 						isZsync = link.endswith('.opsi.zsync')
@@ -1054,7 +1016,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 							for i, package in enumerate(packages):
 								if package.get('filename') == filename:
 									if isMd5:
-										response = session.get(f"{url}/{link}")#, headers=md5getHeader)
+										response = session.get(f"{url}/{link}")
 										match = re.search(r'([a-z\d]{32})', response.content.decode("utf-8"))
 										if match:
 											foundMd5sum = match.group(1)
@@ -1109,6 +1071,8 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 			logger.debug("Initiating session with verify=%s", repository.verifyCert)
 			yield session
 		finally:
+			# TODO: Delete session
+			#if repository.opsiDepotId:
 			session.close()
 
 def getLocalPackages(packageDirectory, forceChecksumCalculation=False):
