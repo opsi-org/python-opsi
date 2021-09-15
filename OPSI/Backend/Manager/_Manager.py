@@ -203,7 +203,7 @@ class BackendManager(ExtendedBackend):
 
 	def get_jsonrpc_backend(self):
 		dispatcher = self._get_backend_dispatcher()
-		return dispatcher._backends.get("jsonrpc")  # pylint: disable=protected-access
+		return dispatcher._backends.get("jsonrpc")  # pylint: disable=no-member,protected-access
 
 	def __loadBackendConfig(self, name):
 		if not self._backendConfigDir:

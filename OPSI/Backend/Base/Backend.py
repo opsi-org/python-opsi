@@ -137,7 +137,7 @@ class BackendOptions:
 	def copy(self):
 		return dict(self.items())
 
-class Backend:
+class Backend:  # pylint: disable=too-many-instance-attributes
 	"""
 	Base backend.
 	"""
@@ -193,7 +193,6 @@ This defaults to ``self``.
 		"""
 		Init backend
 		"""
-		pass
 
 	def _setContext(self, context):
 		"""Setting the context backend."""
