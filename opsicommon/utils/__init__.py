@@ -51,8 +51,9 @@ from opsicommon.types import (
 )
 
 __all__ = (
-	"BLOWFISH_IV", "PickleString",
-	"RANDOM_DEVICE", "blowfishDecrypt", "blowfishEncrypt",
+	"BLOWFISH_IV", "RANDOM_DEVICE", "UNIT_REGEX",
+	"CryptoError", "BlowfishError", "PickleString",
+	"blowfishDecrypt", "blowfishEncrypt",
 	"chunk", "compareVersions", "deserialize",
 	"findFiles", "findFilesGenerator", "formatFileSize", "fromJson", "generateOpsiHostKey",
 	"getfqdn", "ipAddressInNetwork", "isRegularExpressionPattern",
