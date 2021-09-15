@@ -393,23 +393,20 @@ def mount(dev, mountpoint, **options):
 		if match:
 			server = match.group(2)
 			share = match.group(3)
-			username = re.sub(r"\\+", r"\\", options.get("username", "guest")).replace("\\", ";")
-			password = options.get("password", "")
-			if password:
-				password = urllib.parse.quote_plus(password)
-				logger.addConfidentialString(password)
+			username = re.sub(r"\\+", r"\\", options.get("username", "guest")).replace("\\", "\;")
+			password = options.get("password", "")	#no urlencode needed for stdin
 
 			try:
 				# mount_smbfs on macos only reads password from stdin -> expect script
 				filename = None
 				with tempfile.NamedTemporaryFile("wt", delete=False) as tempf:
 					filename = tempf.name
-					tempf.write(f"spawn /sbin/mount_smbfs '//{username}@{server}/{share}' '{mountpoint}'\n")
+					tempf.write("set timeout 20\n")
+					tempf.write(f"spawn /sbin/mount_smbfs //{username}@{server}/{share} {mountpoint}\n")
 					if password:
-						tempf.write("expect 'Password*: '\n")
-						tempf.write(f"send '{password}\\n'\n")
+						tempf.write('expect "Password*: "\n')
+						tempf.write(f'send "{password}\\n"\n')
 					tempf.write("expect\n")
-					tempf.write("asdf")
 				execute(f"expect -f {filename}")
 				os.remove(filename)
 			except Exception as err:
