@@ -19,10 +19,10 @@ from functools import lru_cache
 from contextlib import contextmanager
 
 from opsicommon.logging import logger, secret_filter
-from opsicommon.client.jsonrpc import JSONRPCBackend
 
 from OPSI import System
 from OPSI.Backend.Base import ConfigDataBackend
+from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import (
 	BackendIOError, BackendBadValueError, BackendMissingDataError,
 	BackendUnableToConnectError, BackendUnaccomplishableError)

@@ -30,16 +30,13 @@ except ModuleNotFoundError:
 		import json
 import lz4.frame
 
-from OPSI.Backend import no_export
-from OPSI.Backend.Base import Backend
-from OPSI.Util import serialize, deserialize
-from OPSI.Exceptions import (
+from opsicommon import __version__
+from opsicommon.logging import logger, secret_filter
+from opsicommon.exceptions import (
 	OpsiRpcError, OpsiServiceVerificationError,
 	BackendAuthenticationError, BackendPermissionDeniedError
 )
-
-from opsicommon import __version__
-from opsicommon.logging import logger, secret_filter
+from opsicommon.objects import serialize, deserialize
 
 urllib3.disable_warnings()
 
@@ -48,6 +45,9 @@ _LZ4_COMPRESSION = 'lz4'
 _DEFAULT_HTTP_PORT = 4444
 _DEFAULT_HTTPS_PORT = 4447
 
+def no_export(func):
+	func.no_export = True
+	return func
 
 class TimeoutHTTPAdapter(HTTPAdapter):
 	def __init__(self, *args, **kwargs):
@@ -305,7 +305,7 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		if url.password and not self._password:
 			self._password = url.password
 
-	def execute_rpc(self, method, params=None):  # pylint: disable=too-many-branches,too-many-statements
+	def execute_rpc(self, method, params=None):  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 		params = params or []
 
 		rpc_id = 0
@@ -487,32 +487,3 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 			except Exception:  # pylint: disable=broad-except
 				pass
 			self._connected = False
-
-
-class JSONRPCBackend(Backend, JSONRPCClient):  # pylint: disable=too-many-instance-attributes
-
-	def __init__(self, address, **kwargs):  # pylint: disable=too-many-branches,too-many-statements
-		"""
-		Backend for JSON-RPC access to another opsi service.
-
-		:param compression: Should requests be compressed?
-		:type compression: bool
-		"""
-
-		self._name = 'jsonrpc'
-
-		Backend.__init__(self, **kwargs)
-		JSONRPCClient.__init__(self, address, **kwargs)
-
-		self._application = 'opsi-jsonrpc-backend/%s' % __version__
-
-	def jsonrpc_getSessionId(self):
-		if not self._session.cookies or not self._session.cookies._cookies:  # pylint: disable=protected-access
-			return None
-		for tmp1 in self._session.cookies._cookies.values():  # pylint: disable=protected-access
-			for tmp2 in tmp1.values():
-				for cookie in tmp2.values():
-					return f"{cookie.name}={cookie.value}"
-
-	def backend_exit(self):
-		self.disconnect()

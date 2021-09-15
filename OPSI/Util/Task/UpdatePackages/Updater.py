@@ -19,10 +19,10 @@ import requests
 from requests.packages import urllib3
 
 from opsicommon.logging import logger
-from opsicommon.client.jsonrpc import JSONRPCBackend
 
 from OPSI import System
 from OPSI.Backend.BackendManager import BackendManager
+from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Logger import Logger
 from OPSI.Object import NetbootProduct, ProductOnClient
 from OPSI.Types import forceHostId, forceProductId
@@ -720,7 +720,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 			if notifier and notifier.hasMessage():
 				notifier.notify()
 
-	def zsyncPackage(self, availablePackage, notifier=None):
+	def zsyncPackage(self, availablePackage, notifier=None):  # pylint: disable=too-many-locals
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 
 		repository = availablePackage['repository']

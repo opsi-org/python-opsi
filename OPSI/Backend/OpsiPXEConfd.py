@@ -17,9 +17,9 @@ from contextlib import closing, contextmanager
 from pipes import quote
 
 from opsicommon.logging import logger, secret_filter
-from opsicommon.client.jsonrpc import JSONRPCBackend
 
 from OPSI.Backend.Base import ConfigDataBackend
+from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import (
 	BackendMissingDataError, BackendUnableToConnectError, BackendUnaccomplishableError
 )
