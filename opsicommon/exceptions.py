@@ -6,6 +6,8 @@
 OPSI Exceptions.
 """
 
+from typing import List
+
 __all__ = (
 	"BackendAuthenticationError", "BackendBadValueError",
 	"BackendConfigurationError", "BackendError", "BackendIOError",
@@ -81,7 +83,7 @@ class OpsiTimeoutError(OpsiError):
 class OpsiProductOrderingError(OpsiError):
 	ExceptionShortDescription = "A condition for ordering cannot be fulfilled"
 
-	def __init__(self, message: str = '', problematicRequirements: list[str] = None):
+	def __init__(self, message: str = '', problematicRequirements: List[str] = None):
 		super().__init__(message)
 		self.problematicRequirements = problematicRequirements or []
 
