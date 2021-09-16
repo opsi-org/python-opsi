@@ -14,7 +14,7 @@ import subprocess
 import time
 import urllib.parse
 from typing import Dict, List, Any
-import tempfile
+import pexpect
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceUnicode, forceFilename
@@ -394,24 +394,17 @@ def mount(dev, mountpoint, **options):
 			server = match.group(2)
 			share = match.group(3)
 			username = re.sub(r"\\+", r"\\", options.get("username", "guest")).replace("\\", ";")
-			password = options.get("password", "")
-			if password:
-				password = urllib.parse.quote_plus(password)
-				logger.addConfidentialString(password)
+			password = options.get("password")	#no urlencode needed for stdin
 
 			try:
 				# mount_smbfs on macos only reads password from stdin -> expect script
-				filename = None
-				with tempfile.NamedTemporaryFile("wt", delete=False) as tempf:
-					filename = tempf.name
-					tempf.write(f"spawn /sbin/mount_smbfs '//{username}@{server}/{share}' '{mountpoint}'\n")
-					if password:
-						tempf.write("expect 'Password*: '\n")
-						tempf.write(f"send '{password}\\n'\n")
-					tempf.write("expect\n")
-					tempf.write("asdf")
-				execute(f"expect -f {filename}")
-				os.remove(filename)
+				command = f"/sbin/mount_smbfs //{username}@{server}/{share} {mountpoint}"
+				process = pexpect.spawn(command)
+				if password:
+					process.expect("Password.*: ")
+					process.sendline(password)
+				process.expect(pexpect.EOF)
+				# if expect hits timeout it throws a TIMEOUT exception
 			except Exception as err:
 				logger.error("Failed to mount '%s': %s", dev, err)
 				raise RuntimeError(f"Failed to mount '{dev}': {err}") from err
