@@ -45,6 +45,10 @@ _LZ4_COMPRESSION = 'lz4'
 _DEFAULT_HTTP_PORT = 4444
 _DEFAULT_HTTPS_PORT = 4447
 
+def no_export(func):
+	func.no_export = True
+	return func
+
 class TimeoutHTTPAdapter(HTTPAdapter):
 	def __init__(self, *args, **kwargs):
 		self.timeout = None
@@ -259,6 +263,7 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 	def backend_getInterface(self):
 		return self.interface
 
+	@no_export
 	def set_compression(self, compression):
 		if isinstance(compression, bool):
 			self._compression = compression
@@ -275,6 +280,7 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 
 	setCompression = set_compression
 
+	@no_export
 	def get(self, path, headers=None):
 		url = self.base_url
 		if path.startswith("/"):
@@ -310,6 +316,7 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		if url.password and not self._password:
 			self._password = url.password
 
+	@no_export
 	def execute_rpc(self, method, params=None):  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 		params = params or []
 
@@ -479,6 +486,7 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 			except Exception as err:  # pylint: disable=broad-except
 				logger.critical("Failed to create instance method '%s': %s", method, err)
 
+	@no_export
 	def connect(self):
 		logger.info("Connecting to service %s", self.base_url)
 		self._interface = self.execute_rpc('backend_getInterface')
@@ -487,6 +495,7 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		logger.debug("Connected to service %s", self.base_url)
 		self._connected = True
 
+	@no_export
 	def disconnect(self):
 		if self._connected:
 			try:
