@@ -398,7 +398,7 @@ def mount(dev, mountpoint, **options):
 
 			try:
 				# mount_smbfs on macos only reads password from stdin -> expect script
-				command = f"/sbin/mount_smbfs //{username}@{server}/{share} {mountpoint}"
+				command = f"mount_smbfs '//{username}@{server}/{share}' '{mountpoint}'"
 				process = pexpect.spawn(command)
 				if password:
 					process.expect("Password.*: ")
