@@ -33,12 +33,7 @@ class JSONRPCBackend(Backend, JSONRPCClient):  # pylint: disable=too-many-instan
 		self._application = 'opsi-jsonrpc-backend/%s' % __version__
 
 	def jsonrpc_getSessionId(self):
-		if not self._session.cookies or not self._session.cookies._cookies:  # pylint: disable=protected-access
-			return None
-		for tmp1 in self._session.cookies._cookies.values():  # pylint: disable=protected-access
-			for tmp2 in tmp1.values():
-				for cookie in tmp2.values():
-					return f"{cookie.name}={cookie.value}"
+		return self.session_id
 
 	def backend_exit(self):
 		self.disconnect()

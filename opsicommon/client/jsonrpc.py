@@ -45,10 +45,6 @@ _LZ4_COMPRESSION = 'lz4'
 _DEFAULT_HTTP_PORT = 4444
 _DEFAULT_HTTPS_PORT = 4447
 
-def no_export(func):
-	func.no_export = True
-	return func
-
 class TimeoutHTTPAdapter(HTTPAdapter):
 	def __init__(self, *args, **kwargs):
 		self.timeout = None
@@ -146,10 +142,14 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 			'User-Agent': self._application
 		})
 		if session_id:
-			cookie_name, cookie_value = session_id.split("=")
-			self._session.cookies.set(
-				cookie_name, cookie_value, domain=self.hostname
-			)
+			if "=" in session_id:
+				logger.confidential("Using session id passed: %s", session_id)
+				cookie_name, cookie_value = session_id.split("=")
+				self._session.cookies.set(
+					cookie_name, cookie_value, domain=self.hostname
+				)
+			else:
+				logger.warning("Invalid session id passed: %s", session_id)
 
 		if self._proxy_url:
 			# Use a proxy
@@ -224,6 +224,16 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		return self._session
 
 	@property
+	def session_id(self):
+		if not self._session.cookies or not self._session.cookies._cookies:  # pylint: disable=protected-access
+			return None
+		for tmp1 in self._session.cookies._cookies.values():  # pylint: disable=protected-access
+			for tmp2 in tmp1.values():
+				for cookie in tmp2.values():
+					return f"{cookie.name}={cookie.value}"
+		return None
+
+	@property
 	def server_version(self):
 		try:
 			if self.server_name:
@@ -242,15 +252,13 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 
 	@property
 	def interface(self):
-		if not self._connected:
+		if not self._interface:
 			self.connect()
 		return self._interface
 
-	@no_export
-	def getInterface(self):
+	def backend_getInterface(self):
 		return self.interface
 
-	@no_export
 	def set_compression(self, compression):
 		if isinstance(compression, bool):
 			self._compression = compression
@@ -265,11 +273,8 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 			else:
 				self._compression = False
 
-	@no_export
-	def setCompression(self, compression):
-		return self.set_compression(compression)
+	setCompression = set_compression
 
-	@no_export
 	def get(self, path, headers=None):
 		url = self.base_url
 		if path.startswith("/"):
@@ -430,8 +435,10 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 			try:
 				method_name = method['name']
 
-				if method_name in ('backend_exit', 'backend_getInterface'):
+				if method_name in ('backend_exit', 'backend_getInterface', 'jsonrpc_getSessionId'):
 					continue
+
+				logger.debug("Creating instance method: %s", method_name)
 
 				args = method['args']
 				varargs = method['varargs']
