@@ -890,7 +890,14 @@ WTS_PROTOCOLS = {
 WTS_STATES = {
 	win32ts.WTSActive: "active",
 	win32ts.WTSConnected: "connected",
-	win32ts.WTSDisconnected: "disconnected"
+	win32ts.WTSConnectQuery: "connect_query",
+	win32ts.WTSShadow: "shadow",
+	win32ts.WTSDisconnected: "disconnected",
+	win32ts.WTSIdle: "idle",
+	win32ts.WTSListen: "listen",
+	win32ts.WTSReset: "reset",
+	win32ts.WTSDown: "down",
+	win32ts.WTSInit: "init"
 }
 
 def getActiveSessionIds(protocol = None, states = None):  # pylint: disable=too-many-branches
