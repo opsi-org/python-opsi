@@ -14,6 +14,7 @@ import subprocess
 import time
 import urllib.parse
 from typing import Dict, List, Any
+import pexpect
 
 from OPSI.Logger import Logger
 from OPSI.Types import forceUnicode, forceFilename
@@ -387,22 +388,23 @@ def mount(dev, mountpoint, **options):
 		options[key] = forceUnicode(value)
 
 	if dev.lower().startswith(('smb://', 'cifs://')):
-		# mount_smbfs '//<domain>;<username>:<password>@<server>/<share>' /mountpoint
+		# mount_smbfs '//<domain>;<username>[:<password>]@<server>/<share>' /mountpoint
 		match = re.search(r'^(smb|cifs)://([^/]+)/([^/].*)$', dev, re.IGNORECASE)
 		if match:
 			server = match.group(2)
 			share = match.group(3)
 			username = re.sub(r"\\+", r"\\", options.get("username", "guest")).replace("\\", ";")
-			password = options.get("password", "")
-			if password:
-				password = urllib.parse.quote_plus(password)
-				logger.addConfidentialString(password)
-				password = f":{password}"
-
-			command = f"mount_smbfs -N '//{username}{password}@{server}/{share}' '{mountpoint}'"
+			password = options.get("password")	#no urlencode needed for stdin
 
 			try:
-				execute(command)
+				# mount_smbfs on macos only reads password from stdin -> expect script
+				command = f"mount_smbfs '//{username}@{server}/{share}' '{mountpoint}'"
+				process = pexpect.spawn(command)
+				if password:
+					process.expect("Password.*: ")
+					process.sendline(password)
+				process.expect(pexpect.EOF)
+				# if expect hits timeout it throws a TIMEOUT exception
 			except Exception as err:
 				logger.error("Failed to mount '%s': %s", dev, err)
 				raise RuntimeError(f"Failed to mount '{dev}': {err}") from err
