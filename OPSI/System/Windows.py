@@ -893,7 +893,7 @@ WTS_STATES = {
 	win32ts.WTSDisconnected: "disconnected"
 }
 
-def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):  # pylint: disable=dangerous-default-value,too-many-branches
+def getActiveSessionIds(protocol = None, states = None):  # pylint: disable=too-many-branches
 	"""
 	Retrieves ids of all active user sessions.
 
@@ -911,14 +911,18 @@ def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):  # 
 	if states is None:
 		states = ["active", "disconnected"]
 	if states:
-		for idx, value in enumerate(states):
-			if value not in WTS_STATES:
-				for state, name in WTS_STATES.items():
-					if name == value:
-						states[idx] = state
+		new_states = []
+		for state in states:
+			if state not in WTS_STATES:
+				for _state, _name in WTS_STATES.items():
+					if _name == state:
+						state = _state
 						break
-				if value not in WTS_STATES:
-					raise ValueError(f"Invalid session state '{value}'")
+				if state not in WTS_STATES:
+					logger.warning("Invalid session state '%s'", state)
+					continue
+			new_states.append(state)
+		states = new_states
 
 	if protocol is not None:
 		if not protocol in WTS_PROTOCOLS:
@@ -926,8 +930,9 @@ def getActiveSessionIds(protocol = None, states=["active", "disconnected"]):  # 
 				if name == protocol:
 					protocol = proto
 					break
-		if protocol is None:
-			raise ValueError(f"Invalid session protocol '{protocol}'")
+		if not protocol in WTS_PROTOCOLS:
+			logger.warning("Invalid session protocol '%s'", protocol)
+			protocol = None
 
 	session_ids = []
 	server = win32ts.WTS_CURRENT_SERVER_HANDLE
