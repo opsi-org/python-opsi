@@ -264,6 +264,10 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		return self.interface
 
 	@no_export
+	def getInterface(self):
+		return self.interface
+
+	@no_export
 	def set_compression(self, compression):
 		if isinstance(compression, bool):
 			self._compression = compression
