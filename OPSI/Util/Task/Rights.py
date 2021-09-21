@@ -218,14 +218,16 @@ def set_rights(start_path='/'):  # pylint: disable=too-many-branches
 	if parent:
 		permissions_to_process.append(parent)
 
+	processed_path = set()
 	for permission in permissions_to_process:
 		path = start_path
 		if not os.path.relpath(permission.path, start_path).startswith(".."):
 			# permission.path is sub path of start_path
 			path = permission.path
 
-		if not os.path.lexists(path):
+		if path in processed_path or not os.path.lexists(path):
 			continue
+		processed_path.add(path)
 
 		recursive = os.path.isdir(path) and getattr(permission, "recursive", True)
 
