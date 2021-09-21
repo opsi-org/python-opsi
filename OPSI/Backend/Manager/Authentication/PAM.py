@@ -74,6 +74,9 @@ class PAMAuthentication(AuthenticationModule):
 		logger.debug("Primary group id of user %s is %s", username, primary_gid)
 		groups = set()
 		for gid in os.getgrouplist(username, primary_gid):
-			groups.add(grp.getgrgid(gid).gr_name)
+			try:
+				groups.add(grp.getgrgid(gid).gr_name)
+			except KeyError as err:
+				logger.warning(err)
 		logger.debug("User %s is member of groups: %s", username, groups)
 		return groups
