@@ -238,11 +238,6 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 		del options['username']
 		del options['password']
 
-	if 'trust_ca_cert' in options:
-		del options['trust_ca_cert']
-	if 'ca_cert_file' in options:
-		del options['ca_cert_file']
-
 	elif dev.lower().startswith("/"):
 		pass
 
@@ -251,6 +246,10 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 
 	else:
 		raise ValueError(f"Cannot mount unknown fs type '{dev}'")
+
+	for key in ('trust_ca_cert', 'ca_cert_file', 'verify_server_cert'):
+		if key in options:
+			del options[key]
 
 	mountOptions = []
 	for (key, value) in options.items():
