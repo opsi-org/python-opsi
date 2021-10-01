@@ -699,7 +699,7 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 						if overallProgressSubject:
 							countLen = len(str(totalFiles))
 							countLenFormat = '%' + str(countLen) + 's'
-							sizeString = f"{item['size']:d} Byte"
+							sizeString = f"{item['size']:0.0f} Byte"
 							if item['size'] > 1000 * 1000:
 								sizeString = f"{float(item['size']) / (1000 * 1000):0.2f} MByte"
 							elif item['size'] > 1000:

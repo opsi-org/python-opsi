@@ -94,14 +94,14 @@ class PickleString(str):
 
 def formatFileSize(sizeInBytes):
 	if sizeInBytes < 1024:
-		return f"{sizeInBytes:d}"
+		return f"{sizeInBytes:0.0f}"
 	if sizeInBytes < 1048576:  # 1024**2
-		return f"{sizeInBytes / 1024:d}K"
+		return f"{sizeInBytes / 1024:0.0f}K"
 	if sizeInBytes < 1073741824:  # 1024**3
-		return f"{sizeInBytes / 1048576:d}M"
+		return f"{sizeInBytes / 1048576:0.0f}M"
 	if sizeInBytes < 1099511627776:  # 1024**4
-		return f"{sizeInBytes / 1073741824:d}G"
-	return f"{sizeInBytes / 1099511627776:d}T"
+		return f"{sizeInBytes / 1073741824:0.0f}G"
+	return f"{sizeInBytes / 1099511627776:0.0f}T"
 
 
 OBJECT_CLASSES = None
