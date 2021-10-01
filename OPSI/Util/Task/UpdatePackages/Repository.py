@@ -66,13 +66,11 @@ class ProductRepositoryInfo:  # pylint: disable=dangerous-default-value,too-many
 	def getDownloadUrls(self):
 		urls = set()
 		for directory in self.dirs:
-			if directory in (u'', u'/', u'.'):
+			if directory in ('', '/', '.'):
 				url = self.baseUrl
 			else:
-				url = u'%s/%s' % (self.baseUrl, directory)
-
+				url = f'{self.baseUrl}/{directory}'
 			urls.add(url)
-
 		return urls
 
 

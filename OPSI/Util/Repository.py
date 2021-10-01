@@ -659,9 +659,9 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 				if overallProgressSubject:
 					sizeString = f"{info['size']} Byte"
 					if info['size'] > 1000 * 1000:
-						sizeString = "%0.2f MByte" % (float(info['size']) / (1000 * 1000))
+						sizeString = f"{float(info['size']) / (1000 * 1000):0.2f} MByte"
 					elif info['size'] > 1000:
-						sizeString = "%0.2fkByte" % (float(info['size']) / 1000)
+						sizeString = f"{float(info['size']) / 1000:0.2f} kByte"
 					overallProgressSubject.setMessage(f"[1/1] {info['name']} ({sizeString})")
 
 				try:
@@ -699,14 +699,14 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 						if overallProgressSubject:
 							countLen = len(str(totalFiles))
 							countLenFormat = '%' + str(countLen) + 's'
-							sizeString = "%d Byte" % item['size']
+							sizeString = f"{item['size']:d} Byte"
 							if item['size'] > 1000 * 1000:
-								sizeString = "%0.2f MByte" % (float(item['size']) / (1000 * 1000))
+								sizeString = f"{float(item['size']) / (1000 * 1000):0.2f} MByte"
 							elif item['size'] > 1000:
-								sizeString = "%0.2fkByte" % (float(item['size']) / 1000)
+								sizeString = f"{float(item['size']) / 1000:0.2f} kByte"
 
 							overallProgressSubject.setMessage(
-								"[%s/%s] %s (%s)" % (
+								"[%s/%s] %s (%s)" % (  # pylint: disable=consider-using-f-string
 									countLenFormat % fileCount,
 									totalFiles,
 									item['name'],
@@ -1049,7 +1049,7 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 		if not port:
 			port = 80 if scheme == "http" else 443
 
-		hostname = url.hostname
+		hostname = str(url.hostname)
 		if ":" in hostname:
 			hostname = f"[{hostname}]"
 
