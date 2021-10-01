@@ -9,7 +9,7 @@ MySQL-Backend
 import re
 import base64
 import time
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 from hashlib import md5
 try:
 	# PyCryptodome from pypi installs into Crypto
@@ -130,10 +130,22 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 	def init_connection(self):
 		password = quote(self._password)
 		secret_filter.add_secrets(password)
+
+		properties = {}
 		if self._databaseCharset == "utf8":
-			uri = f'mysql://{quote(self._username)}:{password}@{self._address}/{self._database}?charset=utf8mb4'
+			properties["charset"] = "utf8mb4"
+
+		address = self._address
+		if address.startswith("/"):
+			properties["unix_socket"] = address
+			address = "localhost"
+
+		if properties:
+			properties = f"?{urlencode(properties)}"
 		else:
-			uri = f'mysql://{quote(self._username)}:{password}@{self._address}/{self._database}'
+			properties = ""
+
+		uri = f"mysql://{quote(self._username)}:{password}@{address}/{self._database}{properties}"
 		logger.info("Connecting to %s", uri)
 
 		self.engine = create_engine(
