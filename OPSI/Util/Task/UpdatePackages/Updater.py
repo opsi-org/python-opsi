@@ -859,7 +859,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		md5sumFile = f'{packageFile}.md5'
 		logger.info("Creating md5sum file '%s'", md5sumFile)
 
-		with open(md5sumFile, 'w') as hashFile:
+		with open(md5sumFile, mode="w", encoding="utf-8") as hashFile:
 			hashFile.write(md5sum(packageFile))
 
 		setRights(md5sumFile)
@@ -948,7 +948,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 								packages.append(pdict)
 								logger.info("Found opsi package: %s/%s", url, link)
 							continue
-						except Exception as err:  # pylint: disable=broad-except
+						except Exception:  # pylint: disable=broad-except
 							logger.warning("No repofile found, falling back to scanning the repository")
 
 					response = session.get(url, headers=self.httpHeaders)
@@ -1103,7 +1103,7 @@ _version_, _packageFile_ (complete path), _filename_ and _md5sum_.
 			checkSumFile = packageFile + '.md5'
 			if not forceChecksumCalculation and os.path.exists(checkSumFile):
 				logger.debug("Reading existing checksum from %s", checkSumFile)
-				with open(checkSumFile) as hashFile:
+				with open(checkSumFile, mode="r", encoding="utf-8") as hashFile:
 					packageMd5 = hashFile.read().strip()
 			else:
 				logger.debug("Calculating checksum for %s", packageFile)

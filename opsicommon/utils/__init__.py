@@ -94,14 +94,14 @@ class PickleString(str):
 
 def formatFileSize(sizeInBytes):
 	if sizeInBytes < 1024:
-		return '%i' % sizeInBytes
+		return f"{sizeInBytes:d}"
 	if sizeInBytes < 1048576:  # 1024**2
-		return '%iK' % (sizeInBytes / 1024)
+		return f"{sizeInBytes / 1024:d}K"
 	if sizeInBytes < 1073741824:  # 1024**3
-		return '%iM' % (sizeInBytes / 1048576)
+		return f"{sizeInBytes / 1048576:d}M"
 	if sizeInBytes < 1099511627776:  # 1024**4
-		return '%iG' % (sizeInBytes / 1073741824)
-	return '%iT' % (sizeInBytes / 1099511627776)
+		return f"{sizeInBytes / 1073741824:d}G"
+	return f"{sizeInBytes / 1099511627776:d}T"
 
 
 OBJECT_CLASSES = None
@@ -123,10 +123,10 @@ def deserialize(obj, preventObjectCreation=False):
 	if isinstance(obj, list):
 		return [deserialize(element, preventObjectCreation=preventObjectCreation) for element in obj]
 
-	global OBJECT_CLASSES  # pylint: disable=global-statement,invalid-name
+	global OBJECT_CLASSES  # pylint: disable=global-statement,invalid-name,global-variable-not-assigned
 	if OBJECT_CLASSES is None:
 		from opsicommon.objects import OBJECT_CLASSES  # pylint: disable=redefined-outer-name,import-outside-toplevel
-	global BaseObject  # pylint: disable=global-statement,invalid-name
+	global BaseObject  # pylint: disable=global-statement,invalid-name,global-variable-not-assigned
 	if BaseObject is None:
 		from opsicommon.objects import BaseObject  # pylint: disable=redefined-outer-name,import-outside-toplevel
 
@@ -248,10 +248,10 @@ def objectToBash(obj, bashVars=None, level=0):  # pylint: disable=too-many-branc
 
 	if level == 0:
 		obj = serialize(obj)
-		varName = 'RESULT'
+		varName = "RESULT"
 		compress = True
 	else:
-		varName = 'RESULT%d' % level
+		varName = f"RESULT{level}"
 		compress = False
 
 	try:
@@ -272,7 +272,7 @@ def objectToBash(obj, bashVars=None, level=0):  # pylint: disable=too-many-branc
 			if isinstance(element, (dict, list)):
 				level += 1
 				objectToBash(element, bashVars, level)
-				append('RESULT%d=${RESULT%d[*]}' % (level, level))
+				append(f'RESULT{level}=${{RESULT{level}[*]}}')
 			else:
 				objectToBash(element, bashVars, level)
 			append('\n')
@@ -280,11 +280,11 @@ def objectToBash(obj, bashVars=None, level=0):  # pylint: disable=too-many-branc
 	elif isinstance(obj, dict):
 		append('(\n')
 		for (key, value) in obj.items():
-			append('%s=' % key)
+			append(f'{key}=')
 			if isinstance(value, (dict, list)):
 				level += 1
 				objectToBash(value, bashVars, level)
-				append('${RESULT%d[*]}' % level)
+				append(f'${{RESULT{level}[*]}}')
 			else:
 				objectToBash(value, bashVars, level)
 			append('\n')
@@ -365,7 +365,7 @@ def combineVersions(obj):
 	:return: The version.
 	:rtype: str
 	"""
-	return '{0.productVersion}-{0.packageVersion}'.format(obj)
+	return f"{obj.productVersion}-{obj.packageVersion}"
 
 
 def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many-locals
@@ -739,7 +739,7 @@ def removeDirectory(directory):
 
 		# late import to avoid circular dependency
 		import OPSI.System  # pylint: disable=import-outside-toplevel
-		OPSI.System.execute('rm -rf {dir}'.format(dir=directory))
+		OPSI.System.execute("rm -rf {directory}")
 
 
 def chunk(iterable, size):

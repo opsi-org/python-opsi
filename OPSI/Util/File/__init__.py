@@ -39,6 +39,7 @@ if os.name == 'posix':
 	import pwd
 
 if os.name == 'nt':
+	# pyright: reportMissingImports=false
 	import win32con  # pylint: disable=import-error
 	import win32file  # pylint: disable=import-error
 	import pywintypes  # pylint: disable=import-error
@@ -126,7 +127,7 @@ class File:
 			self.chmod(mode)
 
 	def open(self, mode='r'):
-		self._fileHandle = builtins.open(self._filename, mode)
+		self._fileHandle = builtins.open(self._filename, mode)  # pylint: disable=unspecified-encoding,consider-using-with
 		return self._fileHandle
 
 	def close(self):
@@ -186,7 +187,7 @@ class LockableFile(File):
 		if encoding:
 			self._fileHandle = codecs.open(self._filename, mode, encoding, errors)
 		else:
-			self._fileHandle = builtins.open(self._filename, mode)
+			self._fileHandle = builtins.open(self._filename, mode)  # pylint: disable=unspecified-encoding,consider-using-with
 		self._lockFile(mode)
 		if truncate:
 			self._fileHandle.seek(0)
@@ -392,14 +393,16 @@ class ChangelogFile(TextFile):
 				raise ValueError("No entries to write")
 			self._lines = []
 			for entry in self._entries:
-				self._lines.append('%s (%s) %s; urgency=%s' % (entry['package'], entry['version'], entry['release'], entry['urgency']))
+				self._lines.append(
+					f"{entry['package']} ({entry['version']}) {entry['release']}; urgency={entry['urgency']}"
+				)
 				self._lines.append('')
 				for line in entry['changelog']:
 					self._lines.append(line)
 				if self._lines[-1].strip():
 					self._lines.append('')
-				self._lines.append(' -- %s <%s>  %s' % (
-					entry['maintainerName'], entry['maintainerEmail'], time.strftime('%a, %d %b %Y %H:%M:%S +0000', entry['date']))
+				self._lines.append(
+					f" -- {entry['maintainerName']} <{entry['maintainerEmail']}>  {time.strftime('%a, %d %b %Y %H:%M:%S +0000', entry['date'])}"
 				)
 				self._lines.append('')
 
@@ -784,7 +787,7 @@ class InfFile(ConfigFile):
 							if match:
 								var = match.group(1).lower()
 								if var in strings:
-									deviceClass = deviceClass.replace('%{0}%'.format(var), strings[var])
+									deviceClass = deviceClass.replace(f'%{var}%', strings[var])
 
 				elif section.lower() == 'manufacturer':
 					if line and '=' in line:
@@ -850,7 +853,7 @@ class InfFile(ConfigFile):
 									device = forceHardwareDeviceId(match.group(2))
 
 								if f"{vendor}:{device}" not in found:
-									logger.trace("         - Found %s device: %s:%s" % (deviceType, vendor, device))
+									logger.trace("         - Found %s device: %s:%s", deviceType, vendor, device)
 									found.add(f"{deviceType}:{vendor}:{device}")
 									self._devices.append(
 										{
@@ -1305,21 +1308,23 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 		lines = []
 		lines.append('[Disks]\r\n')
 		for disk in self._driverDisks:
-			lines.append('%s = "%s", \\%s, \\%s\r\n' % (disk["diskName"], disk["description"], disk["tagfile"], disk["driverDir"]))
+			lines.append(
+				f'{disk["diskName"]} = "{disk["description"]}", \\{disk["tagfile"]}, \\{disk["driverDir"]}\r\n'
+			)
 		lines.append('\r\n')
 		lines.append('[Defaults]\r\n')
 		for default in self._defaultComponentIds:
-			lines.append('%s = %s\r\n' % (default["componentName"], default["componentId"]))
+			lines.append(f'{default["componentName"]} = {default["componentId"]}\r\n')
 
 		for name in self._componentNames:
 			lines.append('\r\n')
-			lines.append('[%s]\r\n' % name)
+			lines.append(f'[{name}]\r\n')
 			for options in self._componentOptions:
 				if options["componentName"] != name:
 					continue
-				line = '%s = "%s"' % (options["componentId"], options["description"])
+				line = f'{options["componentId"]} = "{options["description"]}"'
 				if options["optionName"]:
-					line += ', %s' % options["optionName"]
+					line = f'{line}, {options["optionName"]}'
 				lines.append(line + '\r\n')
 
 		for name in self._componentNames:
@@ -1327,13 +1332,13 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 				if options["componentName"] != name:
 					continue
 				lines.append('\r\n')
-				lines.append('[Files.%s.%s]\r\n' % (name, options["componentId"]))
+				lines.append(f'[Files.{name}.{options["componentId"]}]\r\n')
 				for file in self._files:
 					if file['componentName'] != name or file['componentId'] != options["componentId"]:
 						continue
-					line = '%s = %s, %s' % (file['fileType'], file['diskName'], file['filename'])
+					line = f'{file["fileType"]} = {file["diskName"]}, {file["filename"]}'
 					if file["optionName"]:
-						line += ', %s' % file["optionName"]
+						line = f'{line}, {file["optionName"]}'
 					lines.append(line + '\r\n')
 
 		for name in self._componentNames:
@@ -1341,19 +1346,19 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 				if options["componentName"] != name:
 					continue
 				lines.append('\r\n')
-				lines.append('[HardwareIds.%s.%s]\r\n' % (name, options["componentId"]))
+				lines.append(f'[HardwareIds.{name}.{options["componentId"]}]\r\n')
 				for dev in self._devices:
 					if dev['componentName'] != name or dev['componentId'] != options["componentId"]:
 						continue
 
-					line = 'id = "%s\\VEN_%s' % (dev['type'], dev['vendor'])
+					line = f'id = "{dev["type"]}\\VEN_{dev["vendor"]}'
 					if dev['device']:
-						line += '&DEV_%s' % dev['device']
+						line += f'&DEV_{dev["device"]}'
 					if dev['extra']:
 						line += dev['extra']
 					if dev['type'] == 'USB':
 						line = line.replace('VEN_', 'VID_').replace('DEV_', 'PID_')
-					line += '", "%s"' % dev['serviceName']
+					line += f'", "{dev["serviceName"]}"'
 					lines.append(line + '\r\n')
 
 		configComponents = {}
@@ -1364,12 +1369,12 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 
 		for (componentId, configs) in configComponents.items():
 			lines.append('\r\n')
-			lines.append('[Config.%s]\r\n' % componentId)
+			lines.append(f'[Config.{componentId}]\r\n')
 			for conf in configs:
-				lines.append('value = %s, %s, %s, %s\r\n' % (conf['keyName'], conf['valueName'], conf['valueType'], conf['value']))
+				lines.append(f"value = {conf['keyName']}, {conf['valueName']}, {conf['valueType']}, {conf['value']}\r\n")
 
 		self._lines = lines
-		self._fileHandle = codecs.open(self._filename, 'w', 'cp1250')
+		self._fileHandle = codecs.open(self._filename, 'w', 'cp1250')  # pylint: disable=consider-using-with
 		self.writelines()
 		self.close()
 
@@ -1399,14 +1404,14 @@ class ZsyncFile(LockableFile):
 
 	def generate(self, dataFile=None):
 		if dataFile:
-			execute("%s -u '%s' -o '%s' '%s'" % (which('zsyncmake'), os.path.basename(dataFile), self._filename, dataFile))
+			execute(f"{which('zsyncmake')} -u '{os.path.basename(dataFile)}' -o '{self._filename}' '{dataFile}'")
 			self.parse()
 
 		with open(self._filename, 'wb') as file:
 			for key, value in self._header.items():
 				if key.lower() == 'mtime':
 					continue
-				headerData = '%s: %s\n' % (key, value)
+				headerData = f'{key}: {value}\n'
 				file.write(headerData.encode())
 			file.write('\n'.encode())
 			file.write(self._data)
@@ -1432,8 +1437,7 @@ class DHCPDConf_Component:  # pylint: disable=invalid-name
 		return self.getShifting()
 
 	def __str__(self):
-		return '<{0}({1:d}, {2})>'.format(
-			self.__class__.__name__, self.startLine, self.endLine)
+		return f'<{self.__class__.__name__}({self.startLine}, {self.endLine})>'
 
 	def __repr__(self):
 		return self.__str__()
@@ -1462,8 +1466,8 @@ class DHCPDConf_Parameter(DHCPDConf_Component):  # pylint: disable=invalid-name
 				re.match(r'^\w+\.\w+$', value) or
 				self.key.endswith('-name')):
 
-			value = '"%s"' % value
-		return "%s%s %s;" % (self.getShifting(), self.key, value)
+			value = f'"{value}"'
+		return f"{self.getShifting()}{self.key} {value};"
 
 	def asHash(self):
 		return {self.key: self.value}
@@ -1496,7 +1500,7 @@ class DHCPDConf_Option(DHCPDConf_Component):  # pylint: disable=invalid-name
 			else:
 				text.append(value)
 
-		return "{0}option {key} {values};".format(self.getShifting(), key=self.key, values=', '.join(text))
+		return f"{self.getShifting()}option {self.key} {', '.join(text)};"
 
 	def asHash(self):
 		return {self.key: self.value}
@@ -1508,7 +1512,7 @@ class DHCPDConf_Comment(DHCPDConf_Component):  # pylint: disable=invalid-name
 		self._data = data
 
 	def asText(self):
-		return '{0}#{1}'.format(self.getShifting(), self._data)
+		return f'{self.getShifting()}#{self._data}'
 
 
 class DHCPDConf_EmptyLine(DHCPDConf_Component):  # pylint: disable=invalid-name
@@ -1546,7 +1550,7 @@ class DHCPDConf_Block(DHCPDConf_Component):  # pylint: disable=invalid-name
 				break
 
 		if index < 0:
-			raise BackendMissingDataError("Component '{0}' not found".format(component))
+			raise BackendMissingDataError(f"Component '{component}' not found")
 
 		del self.components[index]
 
@@ -1624,9 +1628,7 @@ class DHCPDConf_Block(DHCPDConf_Component):  # pylint: disable=invalid-name
 			text += shifting + ' '.join(self.settings) + ' {\n'
 
 		notWritten = self.components
-		lineNumber = self.startLine
-		if lineNumber < 1:
-			lineNumber = 1
+		lineNumber = max(self.startLine, 1)
 
 		while lineNumber <= self.endLine:
 			if lineNumber not in self.lineRefs or not self.lineRefs[lineNumber]:

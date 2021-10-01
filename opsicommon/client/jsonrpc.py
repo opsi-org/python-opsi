@@ -311,7 +311,7 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		if not path or path == "/":
 			path = "/rpc"
 
-		hostname = url.hostname
+		hostname = str(url.hostname)
 		if ":" in hostname:
 			hostname = f"[{hostname}]"
 		self.base_url = f"{url.scheme}://{hostname}:{port}{path}"
@@ -465,7 +465,7 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 					if isinstance(defaults, (tuple, list)) and len(defaults) + i >= len(args):
 						default = defaults[len(defaults) - len(args) + i]
 						if isinstance(default, str):
-							default = "{0!r}".format(default).replace('"', "'")
+							default = "{0!r}".format(default).replace('"', "'")  # pylint: disable=consider-using-f-string
 						arg_string.append(f'{argument}={default}')
 					else:
 						arg_string.append(argument)

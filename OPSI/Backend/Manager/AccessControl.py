@@ -143,7 +143,7 @@ class BackendAccessControl:
 								val = modules[module]
 								if isinstance(val, bool):
 									val = "yes" if val else "no"
-							data += "%s = %s\r\n" % (module.lower().strip(), val)
+							data += f"{module.lower().strip()} = {val}\r\n"
 
 						verified = False
 						if modules["signature"].startswith("{"):
@@ -587,6 +587,6 @@ class BackendAccessControl:
 @lru_cache(maxsize=None)
 def _readACLFile(path):
 	if not os.path.exists(path):
-		raise BackendIOError("Acl file '%s' not found" % path)
+		raise BackendIOError(f"Acl file '{path}' not found")
 
 	return BackendACLFile(path).parse()
