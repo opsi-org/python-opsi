@@ -25,7 +25,7 @@ __all__ = ('initializeBackends', )
 logger = Logger()
 
 
-def initializeBackends(ipAddress=None):
+def initializeBackends(ipAddress=None, backendManagerConfig=None):
 	"""
 	Initial backend setup based on the current configuration.
 
@@ -45,6 +45,8 @@ def initializeBackends(ipAddress=None):
 		"extensionConfigDir": "/etc/opsi/backendManager/extend.d",
 		"depotbackend": False
 	}
+	if backendManagerConfig:
+		managerConfig.update(backendManagerConfig)
 
 	with BackendManager(**managerConfig) as backend:
 		backend.backend_createBase()											#pylint: disable=no-member
@@ -104,7 +106,8 @@ def _setupPasswdFile():
 	Set up the opsi passwd file and set the correct rights.
 	"""
 	if not os.path.exists(OPSI_PASSWD_FILE):
-		open(OPSI_PASSWD_FILE, "w").close()
+		with open(OPSI_PASSWD_FILE, mode="w", encoding="utf-8"):
+			pass
 		set_rights(OPSI_PASSWD_FILE)
 
 
