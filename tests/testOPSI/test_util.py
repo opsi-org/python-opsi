@@ -19,14 +19,15 @@ from OPSI.Util import (
 	findFilesGenerator, formatFileSize,
 	fromJson, generateOpsiHostKey, getfqdn, ipAddressInNetwork,
 	isRegularExpressionPattern,	md5sum, objectToBash, objectToBeautifiedText,
-	objectToHtml, randomString, removeUnit, toJson)
+	objectToHtml, randomString, removeUnit, toJson
+)
 from OPSI.Util import BlowfishError
 from OPSI.Util.Config import getGlobalConfig
-from OPSI.Util.Task.Certificate import createCertificate
 
 from .helpers import (
 	fakeGlobalConf, patchAddress, patchEnvironmentVariables,
-	workInTemporaryDirectory)
+	workInTemporaryDirectory
+)
 
 import pytest
 
@@ -216,8 +217,8 @@ def testObjectToBeautifiedTextEmptyObjects(expected, value):
 
 
 def testObjectToBeautifiedTextFormattingDefaultDict():
-	normalDict = {u'lastStateChange': u'', u'actionRequest': u'none', u'productVersion': u'', u'productActionProgress': u'', u'packageVersion': u'', u'installationStatus': u'not_installed', u'productId': u'thunderbird'}
-	defaultDict = defaultdict(lambda x: u'')
+	normalDict = {'lastStateChange': '', 'actionRequest': 'none', 'productVersion': '', 'productActionProgress': '', 'packageVersion': '', 'installationStatus': 'not_installed', 'productId': 'thunderbird'}
+	defaultDict = defaultdict(lambda x: '')
 
 	for key, value in normalDict.items():
 		defaultDict[key] = value
@@ -226,13 +227,13 @@ def testObjectToBeautifiedTextFormattingDefaultDict():
 	default = objectToBeautifiedText(defaultDict)
 
 	expected = [
-		(u'lastStateChange', u''),
-		(u'actionRequest', u'none'),
-		(u'productVersion', u''),
-		(u'productActionProgress', u''),
-		(u'packageVersion', u''),
-		(u'installationStatus', u'not_installed'),
-		(u'productId', u'thunderbird')
+		('lastStateChange', ''),
+		('actionRequest', 'none'),
+		('productVersion', ''),
+		('productActionProgress', ''),
+		('packageVersion', ''),
+		('installationStatus', 'not_installed'),
+		('productId', 'thunderbird')
 	]
 
 	for index, result in enumerate((normal, default)):
@@ -583,7 +584,7 @@ def testGetFQDNByIPAddress():
 
 
 def testSerialisingSet():
-	inputSet = set([u'opsi-client-agent', u'mshotfix', u'firefox'])
+	inputSet = set(['opsi-client-agent', 'mshotfix', 'firefox'])
 	output = toJson(inputSet)
 
 	assert set(fromJson(output)) == inputSet
@@ -594,7 +595,7 @@ def testSerialisingList():
 	output = toJson(inputValues)
 
 	assert inputValues == fromJson(output)
-	assert u'["a", "b", "c", 4, 5]' == output
+	assert '["a", "b", "c", 4, 5]' == output
 
 
 def testSerialisingListWithFLoat():
@@ -602,27 +603,27 @@ def testSerialisingListWithFLoat():
 	output = toJson(inputValues)
 
 	assert inputValues == fromJson(output)
-	assert u'["a", "b", "c", 4, 5.6]' == output
+	assert '["a", "b", "c", 4, 5.6]' == output
 
 
 def testSerialisingListInList():
 	inputValues = ['a', 'b', 'c', [4, 5, ['f']]]
-	assert u'["a", "b", "c", [4, 5, ["f"]]]' == toJson(inputValues)
+	assert '["a", "b", "c", [4, 5, ["f"]]]' == toJson(inputValues)
 
 
 def testSerialisingListInListWithFloat():
 	inputValues = ['a', 'b', 'c', [4, 5.6, ['f']]]
-	assert u'["a", "b", "c", [4, 5.6, ["f"]]]' == toJson(inputValues)
+	assert '["a", "b", "c", [4, 5.6, ["f"]]]' == toJson(inputValues)
 
 
 def testSerialisingSetInList():
 	inputValues = ['a', 'b', set('c'), 4, 5]
-	assert u'["a", "b", ["c"], 4, 5]' == toJson(inputValues)
+	assert '["a", "b", ["c"], 4, 5]' == toJson(inputValues)
 
 
 def testSerialisingSetInListWithFloat():
 	inputValues = ['a', 'b', set('c'), 4, 5.6]
-	assert u'["a", "b", ["c"], 4, 5.6]' == toJson(inputValues)
+	assert '["a", "b", ["c"], 4, 5.6]' == toJson(inputValues)
 
 
 def testSerialisingDictsInList():
@@ -827,7 +828,7 @@ def testSerialisingGeneratorFunction():
 
 	obj = toJson(gen())
 
-	assert u'[1, 2, 3, "a"]' == obj
+	assert '[1, 2, 3, "a"]' == obj
 
 
 def testSerialisingTuples():
@@ -863,28 +864,9 @@ def preparedDemoFolders():
 		yield tempDir
 
 
-@pytest.fixture(scope='module')
-def tempCertPath():
-	with workInTemporaryDirectory() as tempDir:
-		keyFile = os.path.join(tempDir, 'temp.pem')
-		createCertificate(keyFile)
-
-		yield keyFile
-
-
 @pytest.fixture(params=[1, 5, 91, 256, 337, 512, 829, 3333], scope="session")
 def randomText(request):
 	yield randomString(request.param)
-
-
-def testEncryptingAndDecryptingTextWithCertificate(tempCertPath, randomText):
-	pytest.importorskip("M2Crypto")  # Lazy import in the encrypt / decrypt functions
-
-	encryptedText = encryptWithPublicKeyFromX509CertificatePEMFile(randomText, tempCertPath)
-	assert encryptedText != randomText
-
-	decryptedText = decryptWithPrivateKeyFromPEMFile(encryptedText, tempCertPath)
-	assert decryptedText == randomText
 
 
 @pytest.fixture(params=['575bf0d0b557dd9184ae41e7ff58ead0'])
@@ -975,9 +957,9 @@ def testObjectToBashOutput():
 	)
 
 	expected = {
-		'RESULT': u'(\nRESULT1=${RESULT1[*]}\nRESULT2=${RESULT2[*]}\n)',
-		'RESULT1': u'(\nonceScript="once.ins"\nwindowsSoftwareIds=""\ndescription="asdf"\nadvice="lolnope"\nalwaysScript="always.ins"\nupdateScript="update.ins"\nproductClassIds=""\nid="htmltestproduct"\nlicenseRequired="False"\nident="htmltestproduct;3.1;1"\nname="Product HTML Test"\nchangelog=""\ncustomScript=""\nuninstallScript="uninstall.ins"\nuserLoginScript=""\npriority="0"\nproductVersion="3.1"\npackageVersion="1"\ntype="LocalbootProduct"\nsetupScript="setup.ins"\n)',
-		'RESULT2': u'(\nonceScript="once.ins"\nwindowsSoftwareIds=""\ndescription="asdf"\nadvice="lolnope"\nalwaysScript="always.ins"\nupdateScript="update.ins"\nproductClassIds=""\nid="htmltestproduct"\nlicenseRequired="False"\nident="htmltestproduct;3.1;1"\nname="Product HTML Test"\nchangelog=""\ncustomScript=""\nuninstallScript="uninstall.ins"\nuserLoginScript=""\npriority="0"\nproductVersion="3.1"\npackageVersion="1"\ntype="LocalbootProduct"\nsetupScript="setup.ins"\n)',
+		'RESULT': '(\nRESULT1=${RESULT1[*]}\nRESULT2=${RESULT2[*]}\n)',
+		'RESULT1': '(\nonceScript="once.ins"\nwindowsSoftwareIds=""\ndescription="asdf"\nadvice="lolnope"\nalwaysScript="always.ins"\nupdateScript="update.ins"\nproductClassIds=""\nid="htmltestproduct"\nlicenseRequired="False"\nident="htmltestproduct;3.1;1"\nname="Product HTML Test"\nchangelog=""\ncustomScript=""\nuninstallScript="uninstall.ins"\nuserLoginScript=""\npriority="0"\nproductVersion="3.1"\npackageVersion="1"\ntype="LocalbootProduct"\nsetupScript="setup.ins"\n)',
+		'RESULT2': '(\nonceScript="once.ins"\nwindowsSoftwareIds=""\ndescription="asdf"\nadvice="lolnope"\nalwaysScript="always.ins"\nupdateScript="update.ins"\nproductClassIds=""\nid="htmltestproduct"\nlicenseRequired="False"\nident="htmltestproduct;3.1;1"\nname="Product HTML Test"\nchangelog=""\ncustomScript=""\nuninstallScript="uninstall.ins"\nuserLoginScript=""\npriority="0"\nproductVersion="3.1"\npackageVersion="1"\ntype="LocalbootProduct"\nsetupScript="setup.ins"\n)',
 	}
 
 	result = objectToBash([product, product])
@@ -1018,13 +1000,13 @@ def testObjectToBashOutput():
 def testObjectToBashOnConfigStates():
 	states = [
 		ConfigState(
-			configId=u'foo.bar.baz',
-			objectId=u'client1.invalid.test',
-			values=[u'']
+			configId='foo.bar.baz',
+			objectId='client1.invalid.test',
+			values=['']
 		),
 		ConfigState(
-			configId=u'drive.slow',
-			objectId=u'client2.invalid.test',
+			configId='drive.slow',
+			objectId='client2.invalid.test',
 			values=[False])
 	]
 
