@@ -329,7 +329,7 @@ If this is `None` information will be read from the current system.
 							"dispatchConfigFile": '/etc/opsi/backendManager/dispatch.conf',
 							"backendConfigDir": '/etc/opsi/backends',
 							"extensionConfigDir": '/etc/opsi/backendManager/extend.d',
-							"depotbackend": False,
+							"depotBackend": False,
 							"dispatchIgnoreModules": ["OpsiPXEConfd", "DHCPD", "HostControl"]
 						}
 						with BackendManager(**managerConfig) as backend:

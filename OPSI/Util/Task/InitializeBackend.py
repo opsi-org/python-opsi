@@ -43,7 +43,7 @@ def initializeBackends(ipAddress=None, backendManagerConfig=None):
 		"dispatchConfigFile": "/etc/opsi/backendManager/dispatch.conf",
 		"backendConfigDir": "/etc/opsi/backends",
 		"extensionConfigDir": "/etc/opsi/backendManager/extend.d",
-		"depotbackend": False
+		"depotBackend": False
 	}
 	if backendManagerConfig:
 		managerConfig.update(backendManagerConfig)

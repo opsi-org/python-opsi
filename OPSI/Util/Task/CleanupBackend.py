@@ -63,7 +63,7 @@ BackendManager from default paths.
 			dispatchConfigFile='/etc/opsi/backendManager/dispatch.conf',
 			backendConfigDir='/etc/opsi/backends',
 			extensionConfigDir='/etc/opsi/backendManager/extend.d',
-			depotbackend=False
+			depotBackend=False
 		)
 
 		try:

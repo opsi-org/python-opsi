@@ -141,7 +141,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				dispatchConfigFile='/etc/opsi/backendManager/dispatch.conf',
 				backendConfigDir='/etc/opsi/backends',
 				extensionConfigDir='/etc/opsi/backendManager/extend.d',
-				depotbackend=True,
+				depotBackend=True,
 				hostControlBackend=True,
 				proxy_url=self.config["proxy"]
 			)

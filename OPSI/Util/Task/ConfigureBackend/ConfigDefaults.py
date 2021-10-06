@@ -26,7 +26,7 @@ def editConfigDefaults():
 		dispatchConfigFile=u'/etc/opsi/backendManager/dispatch.conf',
 		backendConfigDir=u'/etc/opsi/backends',
 		extensionConfigDir=u'/etc/opsi/backendManager/extend.d',
-		depotbackend=False
+		depotBackend=False
 	)
 
 	with BackendManager(**bmconfig) as backend:
