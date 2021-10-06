@@ -19,10 +19,9 @@ import platform
 import shutil
 import psutil
 
-from OPSI.Logger import Logger
 from OPSI.Types import forceFilename
 
-logger = Logger()
+from opsicommon.logging import logger
 
 if platform.system().lower() == 'linux':
 	from .Linux import *
@@ -121,7 +120,7 @@ def getSize(path):
 		elif os.path.isfile(path):
 			size = os.path.getsize(path)
 		elif os.path.isdir(path):
-			logger.debug(u"Getting size of files in dir '%s'", path)
+			logger.debug("Getting size of files in dir '%s'", path)
 			for element in os.listdir(path):
 				size += getSize(os.path.join(path, element))
 	except Exception as error:
@@ -147,7 +146,7 @@ def countFiles(path):
 		elif os.path.isfile(path):
 			count = 1
 		elif os.path.isdir(path):
-			logger.debug(u"Counting files in dir '%s'", path)
+			logger.debug("Counting files in dir '%s'", path)
 			for element in os.listdir(path):
 				count += countFiles(os.path.join(path, element))
 	except Exception as error:
@@ -170,11 +169,11 @@ def getCountAndSize(path):
 	(count, size) = (0, 0)
 	try:
 		if os.path.isfile(path):
-			logger.debug2(u"Is file: %s", path)
+			logger.trace("Is file: %s", path)
 			(count, size) = (1, os.path.getsize(path))
 		elif os.path.isdir(path):
-			logger.debug2(u"Is dir: %s", path)
-			logger.debug(u"Counting and getting sizes of files in dir %s", path)
+			logger.trace("Is dir: %s", path)
+			logger.debug("Counting and getting sizes of files in dir %s", path)
 			for element in os.listdir(path):
 				(elementCount, elementSize) = getCountAndSize(os.path.join(path, element))
 				count += elementCount
@@ -203,7 +202,7 @@ def mkdir(newDir, mode=0o750):
 	if os.path.isdir(newDir):
 		pass
 	elif os.path.isfile(newDir):
-		raise OSError(u"A file with the same name as the desired dir, '%s', already exists." % newDir)
+		raise OSError("A file with the same name as the desired dir, '%s', already exists." % newDir)
 	else:
 		(head, tail) = os.path.split(newDir)
 		if head and not os.path.isdir(head):
@@ -246,9 +245,9 @@ def copy(src, dst, progressSubject=None):
 			copySrcContent = True
 
 		if copySrcContent and not os.path.isdir(src):
-			raise IOError(u"Source directory '%s' not found" % src)
+			raise IOError("Source directory '%s' not found" % src)
 
-		logger.info(u"Copying from '%s' to '%s'", src, dst)
+		logger.info("Copying from '%s' to '%s'", src, dst)
 		(count, size) = (0, 0)
 		if progressSubject:
 			progressSubject.reset()
@@ -256,7 +255,7 @@ def copy(src, dst, progressSubject=None):
 			progressSubject.setEnd(size)
 
 		_copy(src, dst, copySrcContent, 0, count, size, progressSubject)
-		logger.info(u'Copy done')
+		logger.info('Copy done')
 		if progressSubject:
 			progressSubject.setState(size)
 	except Exception as err:
@@ -293,7 +292,7 @@ def _copy(src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0
 				sizeString = "%d Byte" % size
 
 			progressSubject.setMessage(
-				u"[%s/%s] %s (%s)" % (
+				"[%s/%s] %s (%s)" % (
 					countLenFormat % fileCount, totalFiles,
 					os.path.basename(src), sizeString
 				)

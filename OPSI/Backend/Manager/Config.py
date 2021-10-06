@@ -22,7 +22,7 @@ def loadBackendConfig(path):
 	:rtype: dict
 	"""
 	if not os.path.exists(path):
-		raise BackendConfigurationError(u"Backend config file '%s' not found" % path)
+		raise BackendConfigurationError(f"Backend config file '{path}' not found")
 
 	moduleGlobals = {
 		'config': {},  # Will be filled after loading
@@ -39,5 +39,5 @@ def loadBackendConfig(path):
 
 @lru_cache(maxsize=None)
 def _readFile(path):
-	with open(path) as configFile:
+	with open(path, encoding="utf-8") as configFile:
 		return configFile.read()

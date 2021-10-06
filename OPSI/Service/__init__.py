@@ -10,9 +10,7 @@ import os
 from OpenSSL import SSL
 from OPSI.Service.Session import SessionHandler
 
-from OPSI.Logger import Logger
-
-logger = Logger()
+from opsicommon.logging import logger
 
 
 class SSLContext(object):
@@ -43,10 +41,10 @@ is set.
 
 		# Test if server certificate and key file exist.
 		if not os.path.isfile(self._sslServerKeyFile):
-			raise OSError(u"Server key file {0!r} does not exist!".format(self._sslServerKeyFile))
+			raise OSError(f"Server key file '{self._sslServerKeyFile}' does not exist!")
 
 		if not os.path.isfile(self._sslServerCertFile):
-			raise OSError(u"Server certificate file {0!r} does not exist!".format(self._sslServerCertFile))
+			raise OSError(f"Server certificate file '{self._sslServerCertFile}' does not exist!")
 
 		context = SSL.Context(SSL.SSLv23_METHOD)
 		context.use_privatekey_file(self._sslServerKeyFile)

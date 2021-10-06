@@ -36,7 +36,6 @@ from OPSI.Exceptions import (
 	BackendMissingDataError, BackendPermissionDeniedError,
 	BackendUnaccomplishableError
 )
-from OPSI.Logger import Logger
 from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Object import (
 	mandatoryConstructorArgs,
@@ -46,9 +45,10 @@ from OPSI.Types import forceBool, forceList, forceUnicodeList
 from OPSI.Util import getPublicKey
 from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
 
+from opsicommon.logging import logger
+
 __all__ = ('BackendAccessControl',)
 
-logger = Logger()
 
 class UserStore:  # pylint: disable=too-few-public-methods
 	""" Stores user information """

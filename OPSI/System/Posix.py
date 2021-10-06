@@ -29,7 +29,6 @@ import copy as pycopy
 from functools import lru_cache
 import psutil
 
-from OPSI.Logger import Logger, LOG_NONE
 from OPSI.Types import (
 	forceBool, forceDomain, forceFilename, forceHardwareAddress,
 	forceHardwareDeviceId, forceHardwareVendorId, forceHostId, forceHostname,
@@ -37,6 +36,8 @@ from OPSI.Types import (
 )
 from OPSI.Object import *  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
+
+from opsicommon.logging import logger, LOG_NONE
 
 distro_module = None  # pylint: disable=invalid-name
 if platform.system() == "Linux":
@@ -62,7 +63,6 @@ __all__ = (
 	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
 )
 
-logger = Logger()
 
 # Constants
 GEO_OVERWRITE_SO = '/usr/local/lib/geo_override.so'

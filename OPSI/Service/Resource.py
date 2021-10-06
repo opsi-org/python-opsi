@@ -8,13 +8,10 @@ opsi python library - Resource
 
 from twisted.internet import defer
 
-from OPSI.Logger import Logger
 from OPSI.Service.Worker import WorkerOpsi, WorkerOpsiJsonRpc, WorkerOpsiJsonInterface
-from OPSI.Types import forceUnicode
-from twisted.web import http, resource, server
+from twisted.web import resource, server
 
-logger = Logger()
-
+from opsicommon.logging import logger
 
 class ResourceOpsi(resource.Resource):
 	WorkerClass = WorkerOpsi
@@ -40,9 +37,9 @@ class ResourceOpsi(resource.Resource):
 	def render(self, request):
 		''' Process request. '''
 		try:
-			logger.debug2(u"%s.render()", self.__class__.__name__)
+			logger.trace("%s.render()", self.__class__.__name__)
 			if not self.WorkerClass:
-				raise RuntimeError(u"No worker class defined in resource %s" % self.__class__.__name__)
+				raise RuntimeError(f"No worker class defined in resource {self.__class__.__name__}")
 			worker = self.WorkerClass(self._service, request, self)
 			worker.process()
 			return server.NOT_DONE_YET
@@ -67,4 +64,3 @@ class ResourceOpsiJsonInterface(ResourceOpsiJsonRpc):
 	def __init__(self, service):
 		ResourceOpsi.__init__(self, service)
 		self._interface = service.getInterface()
-

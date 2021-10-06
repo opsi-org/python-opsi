@@ -16,13 +16,13 @@ from twisted.internet import defer, threads
 from twisted.python.failure import Failure
 
 from OPSI.Exceptions import OpsiAuthenticationError, OpsiBadRpcError
-from OPSI.Logger import Logger
 from OPSI.Types import forceUnicode, forceList
 from OPSI.Util import objectToHtml, toJson, fromJson, serialize
 from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipEncode, gzipDecode
 from OPSI.Service.JsonRpc import JsonRpc
 
-logger = Logger()
+from opsicommon.logging import logger
+
 
 INTERFACE_PAGE = '''<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -429,15 +429,9 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 			self.query = urllib.parse.urlparse(urllib.parse.unquote(self.request.uri.decode("ascii"))).query
 		elif self.request.method == b'POST':
 			self.query = self.request.content.read()
-			# Returning deferred needed for chaining
-			#d = stream.readStream(self.request.stream, self._handlePostData)
-			#return d
 		else:
-			raise ValueError("Unhandled method '%s'" % self.request.method)
+			raise ValueError(f"Unhandled method '{self.request.method}'")
 		return result
-
-	#def _handlePostData(self, chunk):
-	#	self.query += chunk
 
 	def _decodeQuery(self, result):
 		try:
@@ -507,9 +501,9 @@ class WorkerOpsiJsonRpc(WorkerOpsi):  # pylint: disable=too-few-public-methods
 		if not self.query:
 			raise ValueError("Got no rpcs")
 		if not self._callInstance:
-			raise RuntimeError("Call instance not defined in %s" % self)
+			raise RuntimeError(f"Call instance not defined in {self}")
 		if not self._callInterface:
-			raise RuntimeError("Call interface not defined in %s" % self)
+			raise RuntimeError(f"Call interface not defined in {self}")
 
 		try:
 			rpcs = fromJson(self.query, preventObjectCreation=True)
@@ -521,7 +515,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):  # pylint: disable=too-few-public-methods
 					if not os.path.exists(self.debugDir):
 						os.makedirs(self.debugDir)
 					debug_file = os.path.join(self.debugDir, f"service-json-decode-error-{uuid.uuid1()}")
-					logger.notice("Writing debug file: %s" % debug_file)
+					logger.notice("Writing debug file: %s", debug_file)
 					with open(debug_file, "wb") as file:
 						file.write(self.query)
 				except Exception as err2:  # pylint: disable=broad-except

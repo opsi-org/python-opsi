@@ -30,13 +30,11 @@ The files should be encoded as utf-8.
 import codecs
 import os
 
-from OPSI.Logger import Logger
 from OPSI.Types import forceUnicode, forceUrl
 
+from opsicommon.logging import logger
+
 __all__ = ('getOpsircPath', 'readOpsirc')
-
-
-logger = Logger()
 
 
 def readOpsirc(filename=None):
@@ -54,7 +52,7 @@ the result from `getOpsircPath`.
 		filename = getOpsircPath()
 
 	if not os.path.exists(filename):
-		logger.debug(u".opsirc file %s does not exist.", filename)
+		logger.debug(".opsirc file %s does not exist.", filename)
 		return {}
 
 	return _parseConfig(filename)
@@ -82,7 +80,7 @@ def _parseConfig(filename):
 			try:
 				key, value = line.split('=', 1)
 			except ValueError:
-				logger.debug2(u"Unable to split line %s", line)
+				logger.trace("Unable to split line %s", line)
 				continue
 
 			key = key.strip()
@@ -109,7 +107,7 @@ def _parseConfig(filename):
 				logger.addConfidentialString(value)
 				config['password'] = value
 			else:
-				logger.debug(u"Ignoring unknown key %s", key)
+				logger.debug("Ignoring unknown key %s", key)
 
 	logger.debug(
 		"Found the following usable keys in %s: %s",

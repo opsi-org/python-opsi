@@ -17,12 +17,12 @@ from OPSI.Exceptions import (
 	BackendConfigurationError, OpsiBackupFileError,
 	OpsiBackupBackendNotFound, OpsiError
 )
-from OPSI.Logger import Logger, LOG_DEBUG
+
 from OPSI.Types import forceList, forceUnicode, forceHostId
 from OPSI.Util.File.Opsi import OpsiBackupArchive
 from OPSI.Util.Task.CleanupBackend import cleanupBackend
 
-logger = Logger()
+from opsicommon.logging import logger
 
 try:
 	sp = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -31,8 +31,8 @@ try:
 	sp = os.path.join(sp, 'python-opsi_data', 'locale')
 	translation = gettext.translation('python-opsi', sp)
 	_ = translation.gettext
-except Exception as err:  # pylint: disable=broad-except
-	logger.debug("Failed to load locale from %s: %s", sp, err)
+except Exception as lerr:  # pylint: disable=broad-except
+	logger.debug("Failed to load locale from %s: %s", sp, lerr)
 
 	def _(string):
 		""" Fallback function """

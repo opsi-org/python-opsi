@@ -30,19 +30,19 @@ except (ImportError, OSError):
 
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import BackendError
-from OPSI.Logger import Logger
 from OPSI.Object import *  # this is needed for dynamic loading # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Types import (
 	forceDict, forceFilename, forceList, forceUnicode, forceUnicodeList
 )
 from OPSI.Util import compareVersions, getPublicKey
 
+from opsicommon.logging import logger
+
 __all__ = ('describeInterface', 'Backend')
 
 OPSI_MODULES_FILE = '/etc/opsi/modules'
 OPSI_LICENSE_PATH = '/etc/opsi/licenses'
 
-logger = Logger()
 
 def describeInterface(instance):
 	"""
@@ -72,7 +72,7 @@ def describeInterface(instance):
 			offset = len(params) - len(defaults)
 			for i in range(len(defaults)):
 				index = offset + i
-				params[index] = '*{0}'.format(params[index])
+				params[index] = f'*{params[index]}'
 
 		for index, element in enumerate((spec.varargs, spec.varkw), start=1):
 			if element:

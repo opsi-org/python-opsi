@@ -13,13 +13,12 @@ import re
 from collections import namedtuple
 
 import OPSI.Backend.BackendManager as bm
-import OPSI.System.Posix as Posix
+from OPSI.System import Posix
 from OPSI.Object import UnicodeConfig, BoolConfig
-from OPSI.Logger import Logger
 from OPSI.Exceptions import BackendMissingDataError
 from OPSI.Util.Task.Samba import SMB_CONF
 
-logger = Logger()
+from opsicommon.logging import logger
 
 SimpleBoolConfig = namedtuple('SimpleBoolConfig', ['id', 'description', 'value'])
 SimpleUnicodeConfig = namedtuple('SimpleUnicodeConfig', ['id', 'description', 'values'])
@@ -349,7 +348,7 @@ def readWindowsDomainFromUCR():
 	"""
 	domain = ''
 	try:
-		readCommand = '{ucr} get windows/domain'.format(ucr=Posix.which('ucr'))
+		readCommand = f"{Posix.which('ucr')} get windows/domain"
 		for output in Posix.execute(readCommand):
 			if output:
 				domain = output.strip().upper()

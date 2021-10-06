@@ -14,9 +14,8 @@ import win32security  # pylint: disable=import-error
 from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Backend.Manager.Authentication import AuthenticationModule
 from OPSI.Exceptions import BackendAuthenticationError
-from OPSI.Logger import Logger
 
-logger = Logger()
+from opsicommon.logging import logger
 
 
 class NTAuthentication(AuthenticationModule):

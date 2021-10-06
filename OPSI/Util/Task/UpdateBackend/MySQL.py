@@ -16,12 +16,13 @@ from contextlib import contextmanager
 
 from OPSI.Backend.SQL import DATABASE_SCHEMA_VERSION, createSchemaVersionTable
 from OPSI.Backend.MySQL import MySQL, MySQLBackend
-from OPSI.Logger import Logger
 from OPSI.Types import (
 	forceHardwareDeviceId, forceHardwareVendorId, forceLicenseContractId,
 	forceSoftwareLicenseId, forceLicensePoolId
 )
 from OPSI.Util.Task.ConfigureBackend import getBackendConfiguration
+
+from opsicommon.logging import logger
 
 from . import BackendUpdateError
 
@@ -29,8 +30,6 @@ __all__ = (
 	'DatabaseMigrationUnfinishedError',
 	'disableForeignKeyChecks', 'getTableColumns', 'updateMySQLBackend'
 )
-
-logger = Logger()
 
 
 class DatabaseMigrationUnfinishedError(BackendUpdateError):

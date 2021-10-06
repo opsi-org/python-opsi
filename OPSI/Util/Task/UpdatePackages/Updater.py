@@ -25,7 +25,6 @@ from opsicommon.ssl import install_ca
 
 from OPSI import System
 from OPSI.Backend.BackendManager import BackendManager
-from OPSI.Logger import Logger
 from OPSI.Object import NetbootProduct, ProductOnClient
 from OPSI.Types import forceHostId, forceProductId
 from OPSI.Util import compareVersions, formatFileSize, getfqdn, md5sum
@@ -43,7 +42,6 @@ urllib3.disable_warnings()
 
 __all__ = ('OpsiPackageUpdater', )
 
-logger = Logger()
 
 class HashsumMissmatchError(ValueError):
 	pass

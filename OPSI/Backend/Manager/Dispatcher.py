@@ -17,15 +17,14 @@ from OPSI.Backend.Base import (
 	Backend, ConfigDataBackend, getArgAndCallString
 )
 from OPSI.Exceptions import BackendConfigurationError
-from OPSI.Logger import Logger
 from OPSI.Types import forceList
 from OPSI.Util.File.Opsi import BackendDispatchConfigFile
+
+from opsicommon.logging import logger
 
 from .Config import loadBackendConfig
 
 __all__ = ('BackendDispatcher', )
-
-logger = Logger()
 
 
 class BackendDispatcher(Backend):

@@ -9,12 +9,11 @@ Working with Windows Imaging Format (WIM) files.
 import os.path
 from collections import namedtuple
 
-from OPSI.Logger import Logger
 from OPSI.System import execute, which
 from OPSI.Types import forceList, forceProductId
 from OPSI.Util import getfqdn
 
-logger = Logger()
+from opsicommon.logging import logger
 
 __all__ = ('getImageInformation', 'parseWIM', 'writeImageInformation')
 
@@ -50,7 +49,7 @@ def getImageInformation(imagePath):
 	Every dict has at least the key 'name'.
 	"""
 	if not os.path.exists(imagePath):
-		raise OSError(u"File {0!r} not found!".format(imagePath))
+		raise OSError(f"File '{imagePath}' not found!")
 
 	try:
 		imagex = which('wimlib-imagex')
@@ -107,7 +106,7 @@ def writeImageInformation(backend, productId, imagenames, languages=None, defaul
 			backend = backend_dispatcher
 
 	if not productId:
-		raise ValueError("Not a valid productId: {0!r}".format(productId))
+		raise ValueError(f"Not a valid productId: '{productId}'")
 	productId = forceProductId(productId)
 
 	productProperty = _getProductProperty(backend, productId, 'imagename')
@@ -121,7 +120,7 @@ def writeImageInformation(backend, productId, imagenames, languages=None, defaul
 		productProperty.defaultValues = [imagenames[0]]
 
 	backend.productProperty_updateObject(productProperty)
-	logger.notice("Wrote imagenames to property 'imagename' product on {0!r}.".format(productId))
+	logger.notice("Wrote imagenames to property 'imagename' product on '%s'.", productId)
 
 	if languages:
 		logger.debug("Writing detected languages...")
@@ -147,16 +146,16 @@ def _getProductProperty(backend, productId, propertyId):
 	logger.debug("Properties: %s", properties)
 
 	if not properties:
-		raise RuntimeError("No property {1!r} for product {0!r} found!".format(productId, propertyId))
+		raise RuntimeError(f"No property '{propertyId}' for product '{productId}'' found!")
 	if len(properties) > 1:
 		logger.debug("Found more than one property... trying to be more specific")
 
 		serverId = getfqdn()
 		prodOnDepot = backend.productOnDepot_getObjects(depotId=serverId, productId=productId)
 		if not prodOnDepot:
-			raise RuntimeError("Did not find product {0!r} on depot {1!r}".format(productId, serverId))
+			raise RuntimeError(f"Did not find product '{productId}' on depot '{serverId}'")
 		if len(prodOnDepot) > 1:
-			raise RuntimeError("Too many products {0!r} on depot {1!r}".format(productId, serverId))
+			raise RuntimeError(f"Too many products '{productId}' on depot {serverId}")
 
 		prodOnDepot = prodOnDepot[0]
 		productFilter['packageVersion'] = prodOnDepot.packageVersion
@@ -166,7 +165,7 @@ def _getProductProperty(backend, productId, propertyId):
 		logger.debug("Properties: %s", properties)
 
 		if not properties:
-			raise RuntimeError("Unable to find property {1!r} for product {0!r}!".format(productId, propertyId))
+			raise RuntimeError(f"Unable to find property '{propertyId}' for product '{productId}'!")
 		if len(properties) > 1:
 			raise RuntimeError("Too many product properties found - aborting.")
 

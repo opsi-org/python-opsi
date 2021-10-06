@@ -10,12 +10,12 @@ import email.utils
 import smtplib
 import time
 
-from OPSI.Logger import Logger
 from OPSI.Types import forceInt, forceUnicode, forceUnicodeList
 
-__all__ = ('DummyNotifier', 'EmailNotifier')
+from opsicommon.logging import logger
 
-logger = Logger()
+
+__all__ = ('DummyNotifier', 'EmailNotifier')
 
 
 class BaseNotifier():
@@ -32,7 +32,7 @@ class BaseNotifier():
 		:type pre: str
 		"""
 		now = time.strftime("%b %d %H:%M:%S", time.localtime())
-		self.message += '%s%s %s\n' % (pre, now, forceUnicode(line))
+		self.message += f'{pre}{now} {line}\n'
 
 	def hasMessage(self):
 		"""

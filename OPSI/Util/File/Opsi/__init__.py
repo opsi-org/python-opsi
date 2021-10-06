@@ -32,7 +32,6 @@ from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import (
 	OpsiBackupBackendNotFound, OpsiBackupFileError,	OpsiBackupFileNotFound
 )
-from OPSI.Logger import Logger
 from OPSI.Object import (
 	BoolProductProperty, LocalbootProduct, NetbootProduct,
 	Product, ProductDependency, ProductProperty, UnicodeProductProperty
@@ -43,10 +42,13 @@ from OPSI.Types import (
 	forceOpsiHostKey, forcePackageVersion, forceProductId, forceProductPriority,
 	forceProductPropertyType, forceProductType, forceProductVersion,
 	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower,
-	forceUniqueList)
+	forceUniqueList
+)
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 from OPSI.Util import md5sum, toJson, fromJson
 from OPSI.System import get_subprocess_environment
+
+from opsicommon.logging import logger
 
 if os.name == 'posix':
 	import fcntl
@@ -54,7 +56,6 @@ if os.name == 'posix':
 	import pwd
 	from OPSI.System.Posix import SysInfo
 
-logger = Logger()
 
 FileInfo = namedtuple('FileInfo', 'productId version')
 

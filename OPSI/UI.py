@@ -39,16 +39,18 @@ import gettext
 import locale
 import signal as ui_signal
 
-from snack import (		#pylint: disable=import-error
+from snack import (  #pylint: disable=import-error
 	Button, CheckboxTree, Entry, Grid, GridForm, Label, Listbox, Scale,
-	SnackScreen, Textbox)
+	SnackScreen, Textbox
+)
 
-from OPSI.Logger import Logger
-from OPSI.Types import (forceBool, forceInt, forceList, forceUnicode,
-	forceUnicodeList)
+from OPSI.Types import (
+	forceBool, forceInt, forceList, forceUnicode, forceUnicodeList
+)
 from OPSI.Util.Message import MessageObserver, ProgressObserver
 
-logger = Logger()
+from opsicommon.logging import logger
+
 encoding = locale.getpreferredencoding()
 
 try:
@@ -58,8 +60,8 @@ try:
 	sp = os.path.join(sp, 'python-opsi_data', 'locale')
 	translation = gettext.translation('python-opsi', sp)
 	_ = translation.gettext
-except Exception as error:
-	logger.debug("Failed to load locale from %s: %s", sp, error)
+except Exception as err:  # pylint: disable=broad-except
+	logger.debug("Failed to load locale from %s: %s", sp, err)
 
 	def _(string):
 		""" Fallback function """
@@ -70,13 +72,13 @@ def UIFactory(type=''):
 	uiType = forceUnicode(type)
 	if uiType in ('snack', 'SnackUI'):
 		return SnackUI()
-	elif uiType in ('dummy', 'UI'):
+	if uiType in ('dummy', 'UI'):
 		return UI()
 
 	try:
 		return SnackUI()
-	except Exception as error:
-		logger.warning("Failed to create SnackUI: %s", error)
+	except Exception as err:  # pylint: disable=broad-except
+		logger.warning("Failed to create SnackUI: %s", err)
 		return UI()
 
 
@@ -240,9 +242,9 @@ class SnackUI(UI):
 		try:
 			self._screen.drawRootText(x, y, text)
 			self.refresh()
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			self.exit()
-			logger.error(error, exc_info=True)
+			logger.error(err, exc_info=True)
 			raise
 
 	def showError(self, text, title=_('An error occurred'), okLabel=_('OK'), width=-1, height=-1, seconds=0):
@@ -279,9 +281,9 @@ class SnackUI(UI):
 				helpLine = _("<F12> %s | <Space> select | <Up/Down> scroll text") % okLabel
 				self.getScreen().pushHelpLine(forceUnicode(helpLine))
 				return gridForm.runOnce()
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			self.exit()
-			logger.error(error, exc_info=True)
+			logger.error(err, exc_info=True)
 			raise
 
 	def showMessage(self, text, title=_('Message'), okLabel=_('OK'), width=-1, height=-1, seconds=0):
@@ -340,9 +342,9 @@ class SnackUI(UI):
 				text=text
 			)
 			return progressBox
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			self.exit()
-			logger.error(error, exc_info=True)
+			logger.error(err, exc_info=True)
 			raise
 
 	def createCopyProgressBox(self, width=-1, height=-1, total=100, title=_('Copy progress'), text=''):
@@ -362,9 +364,9 @@ class SnackUI(UI):
 				text=text
 			)
 			return progressBox
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			self.exit()
-			logger.error(error, exc_info=True)
+			logger.error(err, exc_info=True)
 			raise
 
 	def createDualProgressBox(self, width=-1, height=-1, total=100, title=_('Progress'), text=''):
@@ -384,9 +386,9 @@ class SnackUI(UI):
 				text=text
 			)
 			return dualProgressBox
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			self.exit()
-			logger.error(error, exc_info=True)
+			logger.error(err, exc_info=True)
 			raise
 
 	def createCopyDualProgressBox(self, width=-1, height=-1, total=100, title=_('Copy progress'), text=''):
@@ -406,9 +408,9 @@ class SnackUI(UI):
 				text=text
 			)
 			return progressBox
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			self.exit()
-			logger.error(error, exc_info=True)
+			logger.error(err, exc_info=True)
 			raise
 
 	def createMessageBox(self, width=-1, height=-1, title=_('Text'), text=''):
@@ -515,9 +517,9 @@ class SnackUI(UI):
 				return None
 
 			return entry.value()
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			self.exit()
-			logger.error(error, exc_info=True)
+			logger.error(err, exc_info=True)
 			raise
 
 	def getSelection(self, entries, radio=False, width=-1, height=-1, title=_('Please select'), text='', okLabel=_('OK'), cancelLabel=_('Cancel')):
@@ -641,9 +643,9 @@ class SnackUI(UI):
 				for sel in entriesWidget.getSelection():
 					result.append(entries[sel]['name'])
 			return result
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			self.exit()
-			logger.error(error, exc_info=True)
+			logger.error(err, exc_info=True)
 			raise
 
 	def getValues(self, entries, width=-1, height=-1, title=_('Please fill in'), text='', okLabel=_('OK'), cancelLabel=_('Cancel')):
@@ -753,9 +755,9 @@ class SnackUI(UI):
 				entries[i]['value'] = value
 				del entries[i]['entry']
 			return entries
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			self.exit()
-			logger.error(error, exc_info=True)
+			logger.error(err, exc_info=True)
 			raise
 
 	def yesno(self, text, title=_('Question'), okLabel=_('OK'), cancelLabel=_('Cancel'), width=-1, height=-1):
@@ -811,9 +813,9 @@ class SnackUI(UI):
 			if buttonPressed in (okButton, 'F12'):
 				return True
 			return False
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			self.exit()
-			logger.error(error, exc_info=True)
+			logger.error(err, exc_info=True)
 			raise
 
 
@@ -850,9 +852,9 @@ class SnackMessageBox(MessageBox, MessageObserver):
 
 			# help line
 			self._ui.getScreen().pushHelpLine("")
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			self._ui.exit()
-			logger.error(error, exc_info=True)
+			logger.error(err, exc_info=True)
 			raise
 
 	def show(self, seconds=0):
@@ -863,9 +865,9 @@ class SnackMessageBox(MessageBox, MessageObserver):
 			if seconds:
 				time.sleep(seconds)
 				self.hide()
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			self._ui.exit()
-			logger.error(error, exc_info=True)
+			logger.error(err, exc_info=True)
 			raise
 
 	def hide(self):
@@ -873,9 +875,9 @@ class SnackMessageBox(MessageBox, MessageObserver):
 			if self._visible:
 				self._ui.getScreen().popWindow()
 			self._visible = False
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			self._ui.exit()
-			logger.error(error, exc_info=True)
+			logger.error(err, exc_info=True)
 			raise
 
 	def setText(self, text):
@@ -898,20 +900,20 @@ class SnackMessageBox(MessageBox, MessageObserver):
 
 			try:
 				self._textbox.setText(self._text)
-			except Exception as err:
+			except Exception as err:  # pylint: disable=broad-except
 				logger.error(err, exc_info=True)
 			self.show()
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			self._ui.exit()
-			logger.error(error, exc_info=True)
+			logger.error(err, exc_info=True)
 			raise
 
 	def addText(self, text):
 		try:
 			self.setText(self._text + forceUnicode(text))
-		except Exception as error:
+		except Exception as err:  # pylint: disable=broad-except
 			self._ui.exit()
-			logger.error(error, exc_info=True)
+			logger.error(err, exc_info=True)
 			raise
 
 	def messageChanged(self, subject, message):

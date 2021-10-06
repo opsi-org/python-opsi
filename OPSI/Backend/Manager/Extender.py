@@ -20,17 +20,16 @@ from OPSI.Backend.Base import ExtendedBackend
 from OPSI.Backend.Manager.AccessControl import BackendAccessControl
 from OPSI.Exceptions import BackendConfigurationError
 from OPSI.Exceptions import *  # this is needed for dynamic extension loading  # pylint: disable=wildcard-import,unused-wildcard-import
-from OPSI.Logger import Logger
 from OPSI.Object import *  # this is needed for dynamic extension loading  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Types import *  # this is needed for dynamic extension loading  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Util import objectToBeautifiedText, getfqdn  # used in extensions  # pylint: disable=unused-import
+
+from opsicommon.logging import logger
 
 from .Dispatcher import BackendDispatcher
 from .. import deprecated  # used in extensions  # pylint: disable=unused-import
 
 __all__ = ('BackendExtender', )
-
-logger = Logger()
 
 
 class BackendExtender(ExtendedBackend):
@@ -106,5 +105,5 @@ def _getExtensionFiles(directory) -> list:
 @lru_cache(maxsize=None)
 def _readExtension(filepath):
 	logger.debug("Reading extension file %s}", filepath)
-	with open(filepath) as confFileHandle:
+	with open(filepath, encoding="utf-8") as confFileHandle:
 		return confFileHandle.read()

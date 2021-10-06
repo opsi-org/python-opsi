@@ -14,12 +14,13 @@ import re
 import socket
 
 from OPSI import __version__
-from OPSI.Logger import Logger
 from OPSI.Util.File import IniFile
 from OPSI.Types import (
 	forceBool, forceEmailAddress, forceFilename, forceHostAddress,
 	forceHostId, forceInt, forceProductId, forceUnicode, forceUrl
 )
+
+from opsicommon.logging import logger
 
 from .Exceptions import (
 	ConfigurationError, MissingConfigurationValueError, RequiringBackendError
@@ -28,7 +29,7 @@ from .Repository import ProductRepositoryInfo
 
 __all__ = ('DEFAULT_CONFIG', 'DEFAULT_USER_AGENT', 'ConfigurationParser')
 
-DEFAULT_USER_AGENT = 'opsi-package-updater/%s' % __version__
+DEFAULT_USER_AGENT = f'opsi-package-updater/{__version__}'
 DEFAULT_CONFIG = {
 	"userAgent": DEFAULT_USER_AGENT,
 	"packageDir": '/var/lib/opsi/products',
@@ -61,8 +62,6 @@ DEFAULT_CONFIG = {
 	"proxy": None,
 	"ignoreErrors" : False
 }
-
-logger = Logger()
 
 
 def getRepoConfigs(repoDir):
@@ -108,7 +107,7 @@ overriden based on values in configuration file.
 		"""
 		logger.info("Reading config file '%s'", self.configFile)
 		if not os.path.isfile(self.configFile):
-			raise OSError("Configuration file {!r} not found".format(self.configFile))
+			raise OSError(f"Configuration file '{self.configFile}' not found")
 
 		config = DEFAULT_CONFIG.copy()
 		if configuration:
@@ -189,13 +188,13 @@ overriden based on values in configuration file.
 							if not value.strip():
 								continue
 							if not self.TIME_REGEX.search(value.strip()):
-								raise ValueError("Start time '%s' not in needed format 'HH:MM'" % value.strip())
+								raise ValueError(f"Start time '{value.strip()}' not in needed format 'HH:MM'")
 							config["installationWindowStartTime"] = value.strip()
 						elif option.lower() == 'windowend':
 							if not value.strip():
 								continue
 							if not self.TIME_REGEX.search(value.strip()):
-								raise ValueError("End time '%s' not in needed format 'HH:MM'" % value.strip())
+								raise ValueError(f"End time '{value.strip()}' not in needed format 'HH:MM'")
 							config["installationWindowEndTime"] = value.strip()
 						elif option.lower() == 'exceptproductids':
 							config['installationWindowExceptions'] = [
@@ -298,13 +297,13 @@ overriden based on values in configuration file.
 		repository = None
 		if opsiDepotId:
 			if not self.backend:
-				raise RequiringBackendError("Repository section '{0}' supplied an depot ID but we have no backend to check.".format(section))
+				raise RequiringBackendError(f"Repository section '{section}' supplied an depot ID but we have no backend to check.")
 
 			depots = self.backend.host_getObjects(type='OpsiDepotserver', id=opsiDepotId)
 			if not depots:
-				raise ConfigurationError("Depot '%s' not found in backend" % opsiDepotId)
+				raise ConfigurationError(f"Depot '{opsiDepotId}' not found in backend")
 			if not depots[0].repositoryRemoteUrl:
-				raise ConfigurationError("Repository remote url for depot '%s' not found in backend" % opsiDepotId)
+				raise ConfigurationError(f"Repository remote url for depot '{opsiDepotId}' not found in backend")
 
 			repository = ProductRepositoryInfo(
 				name=repoName,
@@ -329,7 +328,7 @@ overriden based on values in configuration file.
 				verifyCert=verifyCert
 			)
 		else:
-			raise MissingConfigurationValueError("Repository section '{0}': neither baseUrl nor opsiDepotId set".format(section))
+			raise MissingConfigurationValueError(f"Repository section '{section}': neither baseUrl nor opsiDepotId set")
 
 		for (option, value) in config.items(section):
 			if option.lower() == 'username':

@@ -14,7 +14,6 @@ import codecs
 import tempfile
 import psutil
 
-from OPSI.Logger import Logger
 from OPSI.Types import forceUnicode, forceFilename
 from OPSI.System import Posix
 from OPSI.System.Posix import (
@@ -35,7 +34,7 @@ from OPSI.System.Posix import (
 	runCommandInSession, setLocalSystemTime, shutdown, umount, which
 )
 
-logger = Logger()
+from opsicommon.logging import logger
 
 __all__ = (
 	'CommandNotFoundException',
@@ -182,7 +181,7 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 		if match:
 			fs = "-t cifs"
 			parts = match.group(2).split('/')
-			dev = "//%s/%s" % (parts[0], parts[1])
+			dev = f"//{parts[0]}/{parts[1]}"
 			if 'username' not in options:
 				options['username'] = "guest"
 			if 'password' not in options:
@@ -264,7 +263,7 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 		while True:
 			try:
 				if mountOptions:
-					optString = '-o "{0}"'.format((u','.join(mountOptions)).replace('"', '\\"'))
+					optString = '-o "{0}"'.format((','.join(mountOptions)).replace('"', '\\"'))
 				else:
 					optString = ''
 				proc_env = os.environ.copy()
@@ -277,7 +276,7 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 					mountOptions.append("vers=2.0")
 				else:
 					logger.error("Failed to mount '%s': %s", dev, err)
-					raise RuntimeError("Failed to mount '%s': %s" % (dev, err)) from err
+					raise RuntimeError(f"Failed to mount '{dev}': {err}") from err
 	finally:
 		for file in tmpFiles:
 			os.remove(file)

@@ -21,12 +21,11 @@ import re
 import OPSI.Util.Task.ConfigureBackend as backendUtil
 from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Backend.MySQL import MySQL
-from OPSI.Logger import Logger
 from OPSI.Types import forceBool, forceUnicodeLower
 from OPSI.Util import chunk
 from OPSI.Util.File.Opsi import BackendDispatchConfigFile
 
-logger = Logger()
+from opsicommon.logging import logger
 
 _CHUNK_SIZE = 500
 

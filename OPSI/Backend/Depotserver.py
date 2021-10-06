@@ -16,7 +16,6 @@ from OPSI.Exceptions import (
 	BackendTemporaryError, BackendUnaccomplishableError,
 	BackendReferentialIntegrityError
 )
-from OPSI.Logger import Logger
 from OPSI.Types import (
 	forceBool, forceDict, forceFilename, forceHostId,
 	forceUnicode, forceUnicodeLower
@@ -29,15 +28,12 @@ from OPSI.Util import compareVersions, getfqdn, md5sum, removeDirectory
 from OPSI.Util.File import ZsyncFile
 from OPSI.Config import FILE_ADMIN_GROUP
 
-import opsicommon.logging
+from opsicommon.logging import logger, log_context
 
 if os.name == "posix":
 	import grp
 
 __all__ = ('DepotserverBackend', 'DepotserverPackageManager')
-
-logger = Logger()
-
 
 class DepotserverBackend(ExtendedBackend):
 	def __init__(self, backend, **kwargs):
@@ -53,7 +49,7 @@ class DepotserverBackend(ExtendedBackend):
 		self._packageManager = DepotserverPackageManager(self)
 
 	def depot_getHostRSAPublicKey(self):
-		with open(self._sshRSAPublicKeyFile, 'r') as publicKey:
+		with open(self._sshRSAPublicKeyFile, 'r', encoding="utf-8") as publicKey:
 			return forceUnicode(publicKey.read())
 
 	def depot_getMD5Sum(self, filename, forceCalculation=False):  # pylint: disable=invalid-name,no-self-use
@@ -63,7 +59,7 @@ class DepotserverBackend(ExtendedBackend):
 				hashFile = filename + '.md5'
 
 				try:
-					with open(hashFile) as fileHandle:
+					with open(hashFile, encoding="utf-8") as fileHandle:
 						checksum = fileHandle.read()
 
 					logger.info("Using pre-calculated MD5sum from '%s'.", hashFile)
@@ -115,7 +111,7 @@ class DepotserverBackend(ExtendedBackend):
 		self, filename, force=False, propertyDefaultValues=None, tempDir=None,
 		forceProductId=None, suppressPackageContentFileGeneration=False
 	):
-		with opsicommon.logging.log_context({'instance' : 'package_install'}):
+		with log_context({'instance' : 'package_install'}):
 			self._packageManager.installPackage(filename,
 				force=force, propertyDefaultValues=propertyDefaultValues or {},
 				tempDir=tempDir, forceProductId=forceProductId,
@@ -130,7 +126,7 @@ class DepotserverBackend(ExtendedBackend):
 			raise BackendIOError(f"File not found: {filename}")
 		logger.info("Creating md5sum file '%s'", md5sumFilename)
 		md5 = md5sum(filename)
-		with open(md5sumFilename, 'w') as md5file:
+		with open(md5sumFilename, 'w', encoding="utf-8") as md5file:
 			md5file.write(md5)
 		if os.name == "posix":
 			os.chown(md5sumFilename, -1, grp.getgrnam(FILE_ADMIN_GROUP)[2])
@@ -173,7 +169,9 @@ class DepotserverPackageManager:
 
 			depotLocalUrl = depot.getDepotLocalUrl()
 			if not depotLocalUrl or not depotLocalUrl.startswith('file:///'):
-				raise BackendBadValueError("Value '%s' not allowed for depot local url (has to start with 'file:///')" % depotLocalUrl)
+				raise BackendBadValueError(
+					f"Value '{depotLocalUrl}' not allowed for depot local url (has to start with 'file:///')"
+				)
 			clientDataDir = depotLocalUrl[7:]
 
 			ppf = ProductPackageFile(filename, tempDir=tempDir)
@@ -248,7 +246,7 @@ class DepotserverPackageManager:
 		def cleanUpProducts(backend, productId):
 			productIdents = set()
 			for productOnDepot in backend.productOnDepot_getObjects(productId=productId):
-				productIdent = "%s;%s;%s" % (productOnDepot.productId, productOnDepot.productVersion, productOnDepot.packageVersion)
+				productIdent = f"{productOnDepot.productId};{productOnDepot.productVersion};{productOnDepot.packageVersion}"
 				productIdents.add(productIdent)
 
 			deleteProducts = set(
@@ -346,9 +344,9 @@ class DepotserverPackageManager:
 				tempDir = None
 
 			if not os.path.isfile(filename):
-				raise BackendIOError("Package file '{0}' does not exist or can not be accessed.".format(filename))
+				raise BackendIOError(f"Package file '{filename}' does not exist or can not be accessed.")
 			if not os.access(filename, os.R_OK):
-				raise BackendIOError("Read access denied for package file '%s'" % filename)
+				raise BackendIOError(f"Read access denied for package file '{filename}'")
 
 			try:
 				dataBackend = self._depotBackend._context  # pylint: disable=protected-access
@@ -504,11 +502,11 @@ class DepotserverPackageManager:
 				f"Failed to install package '{filename}' on depot '{depotId}': {err}"
 			) from err
 
-	def uninstallPackage(self, productId, force=False, deleteFiles=True): # pylint: disable=too-many-branches
+	def uninstallPackage(self, productId, force=False, deleteFiles=True): # pylint: disable=too-many-branches,too-many-locals,too-many-statements
 		depotId = self._depotBackend._depotId  # pylint: disable=protected-access
 		logger.info("=================================================================================================")
 		logger.notice("Uninstalling product '%s' on depot '%s'", productId, depotId)
-		try:
+		try: # pylint: disable=too-many-nested-blocks
 			productId = forceProductIdFunc(productId)
 			force = forceBool(force)
 			deleteFiles = forceBool(deleteFiles)
@@ -581,7 +579,9 @@ class DepotserverPackageManager:
 
 			if deleteFiles:
 				if not depot.depotLocalUrl.startswith('file:///'):
-					raise BackendBadValueError("Value '%s' not allowed for depot local url (has to start with 'file:///')" % depot.depotLocalUrl)
+					raise BackendBadValueError(
+						f"Value '{depot.depotLocalUrl}' not allowed for depot local url (has to start with 'file:///')"
+					)
 
 				for element in os.listdir(depot.depotLocalUrl[7:]):
 					if element.lower() == productId.lower():
@@ -602,7 +602,7 @@ class DepotserverPackageManager:
 				depotId=self._depotBackend._depotId, productId=dependency['package']  # pylint: disable=protected-access
 			)
 			if not productOnDepots:
-				raise BackendUnaccomplishableError("Dependent package '%s' not installed" % dependency['package'])
+				raise BackendUnaccomplishableError(f"Dependent package '{dependency['package']}' not installed")
 
 			if not dependency['version']:
 				logger.info("Fulfilled product dependency '%s'", dependency)
@@ -614,4 +614,4 @@ class DepotserverPackageManager:
 			if compareVersions(availableVersion, dependency['condition'], dependency['version']):
 				logger.info("Fulfilled package dependency %s (available version: %s)", dependency, availableVersion)
 			else:
-				raise BackendUnaccomplishableError("Unfulfilled package dependency %s (available version: %s)" % (dependency, availableVersion))
+				raise BackendUnaccomplishableError(f"Unfulfilled package dependency {dependency} (available version: {availableVersion})")

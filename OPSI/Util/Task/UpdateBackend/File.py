@@ -16,14 +16,13 @@ import os.path
 import time
 from contextlib import contextmanager
 
-from OPSI.Logger import Logger
 from OPSI.Util.Task.ConfigureBackend import getBackendConfiguration
+
+from opsicommon.logging import logger
 
 from . import BackendUpdateError
 
 __all__ = ('FileBackendUpdateError', 'updateFileBackend')
-
-LOGGER = Logger()
 
 
 class FileBackendUpdateError(BackendUpdateError):
@@ -33,8 +32,9 @@ class FileBackendUpdateError(BackendUpdateError):
 
 
 def updateFileBackend(
-		backendConfigFile=u'/etc/opsi/backends/file.conf',
-		additionalBackendConfiguration={}):
+	backendConfigFile='/etc/opsi/backends/file.conf',
+	additionalBackendConfiguration={}
+):
 	"""
 	Applies migrations to the file-based backend.
 
@@ -49,16 +49,16 @@ read from `backendConfigFile`.
 
 	config = getBackendConfiguration(backendConfigFile)
 	config.update(additionalBackendConfiguration)
-	LOGGER.info(u"Current file backend config: %s", config)
+	logger.info("Current file backend config: %s", config)
 
 	baseDirectory = config['baseDir']
 	schemaVersion = readBackendVersion(baseDirectory)
 
 	if schemaVersion is None:
-		LOGGER.notice("Missing information about file backend version. Creating...")
+		logger.notice("Missing information about file backend version. Creating...")
 		with updateBackendVersion(baseDirectory, 0):
-			LOGGER.info("Creating...")
-		LOGGER.notice("Created information about file backend version.")
+			logger.info("Creating...")
+		logger.notice("Created information about file backend version.")
 
 		schemaVersion = readBackendVersion(baseDirectory)
 		assert schemaVersion == 0
@@ -86,10 +86,10 @@ started but never ended.
 
 	for version, info in schemaConfig.items():
 		if 'start' not in info:
-			raise FileBackendUpdateError("Update {0} gone wrong: start time missing.".format(version))
+			raise FileBackendUpdateError(f"Update {version} gone wrong: start time missing.")
 
 		if 'end' not in info:
-			raise FileBackendUpdateError("Update {0} gone wrong: end time missing.".format(version))
+			raise FileBackendUpdateError(f"Update {version} gone wrong: end time missing.")
 
 	maximumVersion = max(schemaConfig)
 
@@ -113,7 +113,7 @@ def updateBackendVersion(baseDirectory, version):
 	versionInfo = _readVersionFile(baseDirectory)
 
 	if version in versionInfo:
-		raise FileBackendUpdateError("Update for {0} already applied!.".format(version))
+		raise FileBackendUpdateError(f"Update for {version} already applied!.")
 
 	versionInfo[version] = {"start": time.time()}
 	_writeVersionFile(baseDirectory, versionInfo)
@@ -136,7 +136,7 @@ time the update was started and `end` about the time the update finished.
 	schemaConfigFile = getVersionFilePath(baseDirectory)
 
 	try:
-		with open(schemaConfigFile) as source:
+		with open(schemaConfigFile, encoding="utf-8") as source:
 			versionInfo = json.load(source)
 	except IOError:
 		return {}
@@ -156,7 +156,7 @@ def getVersionFilePath(baseDirectory):
 	:type baseDirectory: str
 	:rtype: str
 	"""
-	return os.path.join(os.path.dirname(baseDirectory), u'config', u'schema.json')
+	return os.path.join(os.path.dirname(baseDirectory), 'config', 'schema.json')
 
 
 def _writeVersionFile(baseDirectory, versionInfo):
@@ -170,5 +170,5 @@ def _writeVersionFile(baseDirectory, versionInfo):
 	"""
 	schemaConfigFile = getVersionFilePath(baseDirectory)
 
-	with open(schemaConfigFile, 'w') as destination:
+	with open(schemaConfigFile, 'w', encoding="utf-8") as destination:
 		json.dump(versionInfo, destination)

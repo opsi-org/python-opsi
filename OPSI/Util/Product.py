@@ -12,14 +12,17 @@ import shutil
 
 from OPSI.Config import (
 	FILE_ADMIN_GROUP as DEFAULT_CLIENT_DATA_GROUP,
-	OPSICONFD_USER as DEFAULT_CLIENT_DATA_USER)
-from OPSI.Logger import Logger
+	OPSICONFD_USER as DEFAULT_CLIENT_DATA_USER
+)
 from OPSI.Util.File.Opsi import PackageControlFile, PackageContentFile
 from OPSI.Util.File.Archive import Archive
 from OPSI.Util import randomString, findFilesGenerator, removeDirectory
 from OPSI.System import execute
-from OPSI.Types import (forceBool, forceFilename, forcePackageCustomName,
-	forceUnicode)
+from OPSI.Types import (
+	forceBool, forceFilename, forcePackageCustomName, forceUnicode
+)
+
+from opsicommon.logging import logger
 
 if os.name == 'posix':
 	import pwd
@@ -29,8 +32,6 @@ DEFAULT_TMP_DIR = '/tmp'
 EXCLUDE_DIRS_ON_PACK_REGEX = re.compile(r'(^\.svn$)|(^\.git$)')
 EXCLUDE_FILES_ON_PACK_REGEX = re.compile(r'(~$)|(^[Tt]humbs\.db$)|(^\.[Dd][Ss]_[Ss]tore$)')
 PACKAGE_SCRIPT_TIMEOUT = 600
-
-logger = Logger()
 
 
 def _(string):

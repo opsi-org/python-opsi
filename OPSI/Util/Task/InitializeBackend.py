@@ -12,7 +12,6 @@ This holds backend-independent migrations.
 """
 
 import os.path
-from OPSI.Logger import Logger
 from OPSI.Object import OpsiConfigserver
 from OPSI.System.Posix import getLocalFqdn, getNetworkConfiguration, isUCS
 from OPSI.Types import forceList
@@ -22,7 +21,7 @@ from OPSI.Backend.Base.ConfigData import OPSI_PASSWD_FILE
 
 __all__ = ('initializeBackends', )
 
-logger = Logger()
+from opsicommon.logging import logger
 
 
 def initializeBackends(ipAddress=None, backendManagerConfig=None):

@@ -24,18 +24,17 @@ import shutil
 import time
 
 from OPSI.Config import FILE_ADMIN_GROUP
-from OPSI.Logger import Logger
 from OPSI.System.Posix import Distribution, which
 
-LOGGER = Logger()
+from opsicommon.logging import logger
 
-SUDOERS_FILE = u'/etc/sudoers'
-_NO_TTY_REQUIRED_DEFAULT = u"Defaults:opsiconfd !requiretty"
+SUDOERS_FILE = '/etc/sudoers'
+_NO_TTY_REQUIRED_DEFAULT = "Defaults:opsiconfd !requiretty"
 
 try:
-	_NO_TTY_FOR_SERVICE_REQUIRED = u"Defaults!{0} !requiretty".format(which('service'))
-except Exception:
-	_NO_TTY_FOR_SERVICE_REQUIRED = u"Defaults!/sbin/service !requiretty"
+	_NO_TTY_FOR_SERVICE_REQUIRED = f"Defaults!{which('service')} !requiretty"
+except Exception:  # pylint: disable=broad-except
+	_NO_TTY_FOR_SERVICE_REQUIRED = "Defaults!/sbin/service !requiretty"
 
 
 def patchSudoersFileForOpsi(sudoersFile=SUDOERS_FILE):
@@ -47,7 +46,7 @@ call opsi-set-rights.
 	"""
 	entries = [
 		"opsiconfd ALL=NOPASSWD: /usr/bin/opsi-set-rights",
-		"%{group} ALL=NOPASSWD: /usr/bin/opsi-set-rights".format(group=FILE_ADMIN_GROUP),
+		f"%{FILE_ADMIN_GROUP} ALL=NOPASSWD: /usr/bin/opsi-set-rights"
 	]
 
 	_patchSudoersFileWithEntries(sudoersFile, entries)
@@ -62,7 +61,7 @@ def patchSudoersFileToAllowRestartingDHCPD(dhcpdRestartCommand, sudoersFile=SUDO
 	:param sudoersFile: The path to the sudoers file.
 	"""
 	entries = [
-		u"opsiconfd ALL=NOPASSWD: {0}\n".format(dhcpdRestartCommand)
+		f"opsiconfd ALL=NOPASSWD: {dhcpdRestartCommand}\n"
 	]
 
 	_patchSudoersFileWithEntries(sudoersFile, entries)
@@ -105,31 +104,25 @@ def _patchSudoersFileWithEntries(sudoersFile, entries):
 	ttyPatchRequired = ttyPatchRequired and distributionRequiresNoTtyPatch()
 	modifyFile = ttyPatchRequired or servicePatchRequired or entriesToAdd
 	if modifyFile:
-		LOGGER.notice(u"   Adding sudoers entries for opsi")
+		logger.notice("   Adding sudoers entries for opsi")
 
 	if entriesToAdd:
 		for entry in entriesToAdd:
-			lines.append("{0}\n".format(entry))
+			lines.append(f"{entry}\n")
 
 	if ttyPatchRequired:
-		lines.append(u"{0}\n".format(_NO_TTY_REQUIRED_DEFAULT))
+		lines.append(f"{_NO_TTY_REQUIRED_DEFAULT}\n")
 
 	if servicePatchRequired:
-		lines.append(u"{0}\n".format(_NO_TTY_FOR_SERVICE_REQUIRED))
+		lines.append(f"{_NO_TTY_FOR_SERVICE_REQUIRED}\n")
 
 	if modifyFile:
 		lines.append('\n')
 
-		LOGGER.notice(u"   Creating backup of %s" % sudoersFile)
-		shutil.copy(
-			sudoersFile,
-			u'{filename}.{timestamp}'.format(
-				filename=sudoersFile,
-				timestamp=time.strftime("%Y-%m-%d_%H:%M")
-			)
-		)
+		logger.notice("   Creating backup of %s", sudoersFile)
+		shutil.copy(sudoersFile, f"{sudoersFile}.{time.strftime('%Y-%m-%d_%H:%M')}")
 
-		LOGGER.notice(u"   Writing new %s" % sudoersFile)
+		logger.notice("   Writing new %s", sudoersFile)
 		with codecs.open(sudoersFile, 'w', 'utf-8') as outputFile:
 			outputFile.writelines(lines)
 

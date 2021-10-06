@@ -14,12 +14,12 @@ import MySQLdb
 
 import OPSI.Util.Task.ConfigureBackend as backendUtils
 from OPSI.Backend.MySQL import MySQLBackend
-from OPSI.Logger import Logger
+
+from opsicommon.logging import logger
 
 DATABASE_EXISTS_ERROR_CODE = 1007
 ACCESS_DENIED_ERROR_CODE = 1044
 INVALID_DEFAULT_VALUE = 1067
-LOGGER = Logger()
 
 
 class DatabaseConnectionFailedException(Exception):
@@ -31,7 +31,7 @@ def configureMySQLBackend(
 	config=None,
 	systemConfiguration=None,
 	additionalBackendConfig=None,
-	backendConfigFile=u'/etc/opsi/backends/mysql.conf',
+	backendConfigFile='/etc/opsi/backends/mysql.conf',
 	notificationFunction=None,
 	errorFunction=None):
 	"""
@@ -51,18 +51,18 @@ If not given this will be read from ``backendConfigFile``.
 	:type config: dict
 	:param additionalBackendConfig: If given this will update ``config``
 	:param notificationFunction: A function that notifications will be \
-passed on to. Defaults to ``Logger.notice``.
+passed on to. Defaults to ``logger.notice``.
 	:type notificationFunction: func
 	:param errorFunction: A function that error messages will be passed \
-on to. Defaults to ``Logger.error``.
+on to. Defaults to ``logger.error``.
 	:type errorFunction: func
 	"""
 
 	if notificationFunction is None:
-		notificationFunction = LOGGER.notice
+		notificationFunction = logger.notice
 
 	if errorFunction is None:
-		errorFunction = LOGGER.error
+		errorFunction = logger.error
 
 	if config is None:
 		config = backendUtils.getBackendConfiguration(backendConfigFile)
@@ -76,37 +76,30 @@ on to. Defaults to ``Logger.error``.
 			systemConfig=systemConfiguration,
 			notificationFunction=notificationFunction
 		)
-	except DatabaseConnectionFailedException as exc:
+	except DatabaseConnectionFailedException as err:
 		errorFunction(
-			u"Failed to connect to host '{hostname}' as user '{username}': "
-			u"{error}".format(
-				hostname=config['address'],
-				username=dbAdminUser,
-				error=exc,
-			)
+			"Failed to connect to host '%s' as user '%s': %s",
+			config['address'], dbAdminUser, err
 		)
-		raise exc
-	except Exception as exc:
-		errorFunction(exc)
-		raise exc
+		raise err
+	except Exception as err:
+		errorFunction(err)
+		raise err
 
 	backendUtils.updateConfigFile(backendConfigFile, config, notificationFunction)
 
-	notificationFunction(u"Initializing mysql backend")
+	notificationFunction("Initializing mysql backend")
 	backend = MySQLBackend(**config)
 	try:
 		backend.backend_createBase()
-	except MySQLdb.OperationalError as exc:
-		if exc.args[0] == INVALID_DEFAULT_VALUE:
+	except MySQLdb.OperationalError as err:
+		if err.args[0] == INVALID_DEFAULT_VALUE:
 			errorFunction(
-				u"It seems you have the MySQL strict mode enabled. "
-				u"Please read the opsi handbook.\n"
-				u"{error}".format(error=exc)
+				f"It seems you have the MySQL strict mode enabled. Please read the opsi handbook.\n{err}"
 			)
+		raise err
 
-		raise exc
-
-	notificationFunction(u"Finished initializing mysql backend.")
+	notificationFunction("Finished initializing mysql backend.")
 
 
 def initializeDatabase(
@@ -126,67 +119,67 @@ def initializeDatabase(
 		try:
 			with closing(MySQLdb.connect(**conConfig)) as db:
 				yield db
-		except Exception as error:
+		except Exception as err:
 			if  config['address'] == "127.0.0.1":
-				LOGGER.info("Failed to connect with tcp/ip (%s), retrying with socket", error)
+				logger.info("Failed to connect with tcp/ip (%s), retrying with socket", err)
 				try:
 					conConfig["host"] = "localhost"
 					with closing(MySQLdb.connect(**conConfig)) as db:
 						yield db
-				except Exception as error:
-					raise DatabaseConnectionFailedException(error)
+				except Exception as err:
+					raise DatabaseConnectionFailedException(err) from err
 			else:
-				raise DatabaseConnectionFailedException(error)
+				raise DatabaseConnectionFailedException(err) from err
 
 	def createUser(host):
 		notificationFunction(f"Creating user '{config['username']}' and granting all rights on '{config['database']}'")
 		db.query(f"CREATE USER IF NOT EXISTS '{config['username']}'@'{host}'")
 		try:
 			db.query(f"ALTER USER '{config['username']}'@'{host}' IDENTIFIED WITH mysql_native_password BY '{config['password']}'")
-		except Exception as e:
-			LOGGER.debug(e)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.debug(err)
 			try:
 				db.query(f"ALTER USER '{config['username']}'@'{host}' IDENTIFIED BY '{config['password']}'")
-			except Exception as e:
-				LOGGER.debug(e)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.debug(err)
 				db.query(f"SET PASSWORD FOR'{config['username']}'@'{host}' = PASSWORD('{config['password']}')")
 		db.query(f"GRANT ALL ON {config['database']}.* TO '{config['username']}'@'{host}'")
 		db.query("FLUSH PRIVILEGES")
 		notificationFunction(f"User '{config['username']}' created and privileges set")
 
 	if notificationFunction is None:
-		notificationFunction = LOGGER.notice
+		notificationFunction = logger.notice
 
 	if errorFunction is None:
-		errorFunction = LOGGER.error
+		errorFunction = logger.error
 
 	if systemConfig is None:
 		systemConfig = backendUtils._getSysConfig()
 
 	# Connect to database host
 	notificationFunction(
-		u"Connecting to host '{0[address]}' as user '{username}'".format(
+		"Connecting to host '{0[address]}' as user '{username}'".format(
 			config, username=dbAdminUser
 		)
 	)
 	with connectAsDBA() as db:
 		notificationFunction(
-			u"Successfully connected to host '{0[address]}'"
-			u" as user '{username}'".format(config, username=dbAdminUser)
+			"Successfully connected to host '{0[address]}'"
+			" as user '{username}'".format(config, username=dbAdminUser)
 		)
 
 		# Create opsi database and user
-		notificationFunction(u"Creating database '{database}'".format(**config))
+		notificationFunction("Creating database '{database}'".format(**config))
 		try:
-			db.query(u'CREATE DATABASE {database} DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_bin;'.format(**config))
-		except MySQLdb.OperationalError as error:
-			if error.args[0] == ACCESS_DENIED_ERROR_CODE:
-				raise DatabaseConnectionFailedException(str(error))
-			raise error
-		except MySQLdb.ProgrammingError as error:
-			if error.args[0] != DATABASE_EXISTS_ERROR_CODE:
-				raise error
-		notificationFunction(u"Database '{database}' created".format(**config))
+			db.query('CREATE DATABASE {database} DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_bin;'.format(**config))
+		except MySQLdb.OperationalError as err:
+			if err.args[0] == ACCESS_DENIED_ERROR_CODE:
+				raise DatabaseConnectionFailedException(str(err)) from err
+			raise err
+		except MySQLdb.ProgrammingError as err:
+			if err.args[0] != DATABASE_EXISTS_ERROR_CODE:
+				raise err
+		notificationFunction("Database '{database}' created".format(**config))
 
 		if config['address'] in ("localhost", "127.0.0.1", systemConfig['hostname'], systemConfig['fqdn']):
 			createUser("localhost")
@@ -199,8 +192,8 @@ def initializeDatabase(
 
 	# Test connection / credentials
 	notificationFunction(
-		u"Testing connection to database '{database}' as "
-		u"user '{username}'".format(**config)
+		"Testing connection to database '{database}' as "
+		"user '{username}'".format(**config)
 	)
 
 	userConnectionSettings = {
@@ -212,10 +205,10 @@ def initializeDatabase(
 	try:
 		with closing(MySQLdb.connect(**userConnectionSettings)):
 			pass
-	except Exception as error:
-		raise DatabaseConnectionFailedException(error)
+	except Exception as err:  # pylint: disable=broad-except
+		raise DatabaseConnectionFailedException(err) from err
 
 	notificationFunction(
-		u"Successfully connected to host '{address}' as user"
-		u" '{username}'".format(**config)
+		"Successfully connected to host '{address}' as user"
+		" '{username}'".format(**config)
 	)

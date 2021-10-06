@@ -15,12 +15,11 @@ from sqlalchemy.event import listen
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
-from OPSI.Logger import Logger
 from OPSI.Types import forceFilename
 
-__all__ = ('SQLite', 'SQLiteBackend', 'SQLiteObjectBackendModificationTracker')
+from opsicommon.logging import logger
 
-logger = Logger()
+__all__ = ('SQLite', 'SQLiteBackend', 'SQLiteObjectBackendModificationTracker')
 
 
 class SQLite(SQL):

@@ -12,35 +12,34 @@ from contextlib import contextmanager
 
 from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Exceptions import BackendMissingDataError
-from OPSI.Logger import LOG_NONE, Logger
 from OPSI.Types import forceUnicodeList
 from OPSI.UI import UIFactory
 
+from opsicommon.logging import logger, LOG_NONE
+
 __all__ = ('editConfigDefaults', )
 
-LOGGER = Logger()
 
-
-def editConfigDefaults():
+def editConfigDefaults():  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 	bmconfig = dict(
-		dispatchConfigFile=u'/etc/opsi/backendManager/dispatch.conf',
-		backendConfigDir=u'/etc/opsi/backends',
-		extensionConfigDir=u'/etc/opsi/backendManager/extend.d',
+		dispatchConfigFile='/etc/opsi/backendManager/dispatch.conf',
+		backendConfigDir='/etc/opsi/backends',
+		extensionConfigDir='/etc/opsi/backendManager/extend.d',
 		depotBackend=False
 	)
 
 	with BackendManager(**bmconfig) as backend:
-		configs = backend.config_getObjects()					#pylint: disable=no-member
+		configs = backend.config_getObjects()  #pylint: disable=no-member
 		configs = [
 			config for config in configs
-			if not config.id.startswith(u'configed.saved_search.')
+			if not config.id.startswith('configed.saved_search.')
 		]
 
 		if not configs:
 			raise BackendMissingDataError("Backend misses configurations!")
 
 		maxConfigIdLen = max(len(config.id) for config in configs)
-		entryFormat = u"%-10s %-" + str(maxConfigIdLen) + "s = %s"
+		entryFormat = "%-10s %-" + str(maxConfigIdLen) + "s = %s"
 
 		with disableConsoleLogging(), _getUI() as ui:
 			while True:
@@ -50,7 +49,7 @@ def editConfigDefaults():
 					if config.getType() == 'BoolConfig':
 						configType = '[bool]'
 
-					values = u', '.join(forceUnicodeList(config.defaultValues))
+					values = ', '.join(forceUnicodeList(config.defaultValues))
 					values = shortenStr(values, 60)
 					entries.append(
 						{
@@ -62,7 +61,7 @@ def editConfigDefaults():
 				selection = ui.getSelection(
 					entries, radio=True,
 					width=100, height=10,
-					title=u'Please select config value to change',
+					title='Please select config value to change',
 					okLabel='Change', cancelLabel='Quit'
 				)
 
@@ -82,9 +81,9 @@ def editConfigDefaults():
 						break
 
 				addNewValue = False
-				cancelLabel = u'Back'
-				title = u'Edit default values for: %s' % configs[selectedConfig].id
-				text = configs[selectedConfig].description or u''
+				cancelLabel = 'Back'
+				title = f'Edit default values for: {configs[selectedConfig].id}'
+				text = configs[selectedConfig].description or ''
 				if configs[selectedConfig].possibleValues:
 					entries = []
 					for possibleValue in configs[selectedConfig].possibleValues:
@@ -104,7 +103,7 @@ def editConfigDefaults():
 					addNewValue = True
 
 				if addNewValue:
-					default = u''
+					default = ''
 					if configs[selectedConfig].defaultValues:
 						default = configs[selectedConfig].defaultValues[0]
 					value = ui.getValue(width=65, height=13, title=title, default=default, password=False, text=text, cancelLabel=cancelLabel)
@@ -123,12 +122,12 @@ def editConfigDefaults():
 @contextmanager
 def disableConsoleLogging():
 	"Disable console logging in the context."
-	consoleLevel = LOGGER.getConsoleLevel()
-	LOGGER.setConsoleLevel(LOG_NONE)
+	consoleLevel = logger.getConsoleLevel()
+	logger.setConsoleLevel(LOG_NONE)
 	try:
 		yield
 	finally:
-		LOGGER.setConsoleLevel(consoleLevel)
+		logger.setConsoleLevel(consoleLevel)
 
 
 @contextmanager

@@ -12,13 +12,10 @@ import os
 import re
 import subprocess
 import time
-import urllib.parse
 from typing import Dict, List, Any
 import pexpect
 
-from OPSI.Logger import Logger
 from OPSI.Types import forceUnicode, forceFilename
-#from OPSI.Object import *
 from OPSI.Util import  objectToBeautifiedText, removeUnit
 from OPSI.System import Posix
 from OPSI.System.Posix import (
@@ -39,7 +36,7 @@ from OPSI.System.Posix import (
 	runCommandInSession, setLocalSystemTime, shutdown, umount, which
 )
 
-logger = Logger()
+from opsicommon.logging import logger
 
 HIERARCHY_SEPARATOR = "//"
 

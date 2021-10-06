@@ -17,7 +17,6 @@ import shutil
 import time
 
 from OPSI.Config import OPSI_ADMIN_GROUP as ADMIN_GROUP, OPSICONFD_USER
-from OPSI.Logger import Logger
 from OPSI.System import execute
 from OPSI.System.Posix import getDHCPDRestartCommand, locateDHCPDConfig
 from OPSI.System.Posix import getNetworkConfiguration
@@ -25,12 +24,12 @@ from OPSI.System.Posix import isCentOS, isSLES, isRHEL, isOpenSUSE
 from OPSI.Util.File import DHCPDConfFile, DHCPDConf_Block, DHCPDConf_Parameter
 from OPSI.Util.Task.Sudoers import patchSudoersFileToAllowRestartingDHCPD
 
-DHCPD_CONF = locateDHCPDConfig(default=u'/etc/dhcp/dhcpd.conf')
+from opsicommon.logging import logger
 
-logger = Logger()
+DHCPD_CONF = locateDHCPDConfig(default='/etc/dhcp/dhcpd.conf')
 
 
-def configureDHCPD(configFile=DHCPD_CONF):
+def configureDHCPD(configFile=DHCPD_CONF):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 	"""
 	Configure the configuration file for DHCPD.
 
@@ -44,17 +43,17 @@ def configureDHCPD(configFile=DHCPD_CONF):
 		return
 
 	sysConfig = getNetworkConfiguration()
-	logger.notice(u"Configuring dhcpd")
+	logger.notice("Configuring dhcpd")
 
 	dhcpdConf = DHCPDConfFile(configFile)
 	dhcpdConf.parse()
 
 	confChanged = False
 	if dhcpdConf.getGlobalBlock().getParameters_hash().get('use-host-decl-names', False):
-		logger.info(u"  use-host-decl-names already enabled")
+		logger.info("  use-host-decl-names already enabled")
 	else:
 		confChanged = True
-		logger.notice(u"  enabling use-host-decl-names")
+		logger.notice("  enabling use-host-decl-names")
 		dhcpdConf.getGlobalBlock().addComponent(
 			DHCPDConf_Parameter(
 				startLine=-1,
@@ -67,7 +66,7 @@ def configureDHCPD(configFile=DHCPD_CONF):
 	subnets = dhcpdConf.getGlobalBlock().getBlocks('subnet', recursive=True)
 	if not subnets:
 		confChanged = True
-		logger.notice(u"  No subnets found, adding subnet")
+		logger.notice("  No subnets found, adding subnet")
 		dhcpdConf.getGlobalBlock().addComponent(
 			DHCPDConf_Block(
 				startLine=-1,
@@ -76,11 +75,11 @@ def configureDHCPD(configFile=DHCPD_CONF):
 				settings=['subnet', sysConfig['subnet'], 'netmask', sysConfig['netmask']]))
 
 	for subnet in dhcpdConf.getGlobalBlock().getBlocks('subnet', recursive=True):
-		logger.info(u"  Found subnet %s/%s" % (subnet.settings[1], subnet.settings[3]))
+		logger.info("  Found subnet %s/%s", subnet.settings[1], subnet.settings[3])
 		groups = subnet.getBlocks('group')
 		if not groups:
 			confChanged = True
-			logger.notice(u"    No groups found, adding group")
+			logger.notice("    No groups found, adding group")
 			subnet.addComponent(
 				DHCPDConf_Block(
 					startLine=-1,
@@ -91,11 +90,11 @@ def configureDHCPD(configFile=DHCPD_CONF):
 			)
 
 		for group in subnet.getBlocks('group'):
-			logger.info(u"    Configuring group")
+			logger.info("    Configuring group")
 			params = group.getParameters_hash(inherit='global')
 
 			if params.get('next-server'):
-				logger.info(u"      next-server already set")
+				logger.info("      next-server already set")
 			else:
 				confChanged = True
 				group.addComponent(
@@ -106,10 +105,10 @@ def configureDHCPD(configFile=DHCPD_CONF):
 						value=sysConfig['ipAddress']
 					)
 				)
-				logger.notice(u"      next-server set to %s" % sysConfig['ipAddress'])
+				logger.notice("      next-server set to %s", sysConfig['ipAddress'])
 
 			if params.get('filename'):
-				logger.info(u"      filename already set")
+				logger.info("      filename already set")
 			else:
 				confChanged = True
 				filename = 'linux/pxelinux.0'
@@ -123,23 +122,23 @@ def configureDHCPD(configFile=DHCPD_CONF):
 						value=filename
 					)
 				)
-				logger.notice(u"      filename set to %s" % filename)
+				logger.notice("      filename set to %s", filename)
 
-	restartCommand = getDHCPDRestartCommand(default=u'/etc/init.d/dhcp3-server restart')
+	restartCommand = getDHCPDRestartCommand(default='/etc/init.d/dhcp3-server restart')
 	if confChanged:
-		logger.notice(u"  Creating backup of %s" % configFile)
-		shutil.copy(configFile, configFile + u'.' + time.strftime("%Y-%m-%d_%H:%M"))
+		logger.notice("  Creating backup of %s", configFile)
+		shutil.copy(configFile, configFile + '.' + time.strftime("%Y-%m-%d_%H:%M"))
 
-		logger.notice(u"  Writing new %s" % configFile)
+		logger.notice("  Writing new %s", configFile)
 		dhcpdConf.generate()
 
-		logger.notice(u"  Restarting dhcpd")
+		logger.notice("  Restarting dhcpd")
 		try:
 			execute(restartCommand)
-		except Exception as error:
-			logger.warning(error)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.warning(err)
 
-	logger.notice(u"Configuring sudoers")
+	logger.notice("Configuring sudoers")
 	patchSudoersFileToAllowRestartingDHCPD(restartCommand)
 
 	opsiconfdUid = pwd.getpwnam(OPSICONFD_USER)[2]
@@ -153,13 +152,13 @@ def configureDHCPD(configFile=DHCPD_CONF):
 			return
 
 		logger.notice(
-			'Detected Red Hat-family system. Providing rights on "{dir}" '
-			'to group "{group}"'.format(dir=dhcpDir, group=ADMIN_GROUP)
+			'Detected Red Hat-family system. Providing rights on "%s" to group "%s"',
+			dhcpDir, ADMIN_GROUP
 		)
 		os.chown(dhcpDir, -1, adminGroupGid)
 
 	backendConfigFile = os.path.join('/etc', 'opsi', 'backends', 'dhcpd.conf')
-	logger.notice('Configuring backend file {0}'.format(backendConfigFile))
+	logger.notice('Configuring backend file %s', backendConfigFile)
 	insertDHCPDRestartCommand(backendConfigFile, restartCommand)
 
 
@@ -173,7 +172,7 @@ def insertDHCPDRestartCommand(dhcpBackendConfigFile, restartCommand):
 	patch the value we want as this would result in destroying the
 	dynamic.
 	"""
-	with open(dhcpBackendConfigFile) as configFile:
+	with open(dhcpBackendConfigFile, encoding="utf-8") as configFile:
 		config = configFile.read()
 
 	for line in config.split('\n'):
@@ -181,8 +180,8 @@ def insertDHCPDRestartCommand(dhcpBackendConfigFile, restartCommand):
 			_, command = line.split(':', 1)
 
 	command = command.strip()
-	logger.debug("Found command: {0!r}".format(command))
-	if command.startswith('u'):
+	logger.debug("Found command: '%s'", command)
+	if command.startswith(''):
 		command = command[1:]
 
 	if command.endswith(','):
@@ -192,7 +191,7 @@ def insertDHCPDRestartCommand(dhcpBackendConfigFile, restartCommand):
 
 	if command.startswith('sudo '):
 		command = command[5:]
-	logger.debug("Processed command to be: {0!r}".format(command))
+	logger.debug("Processed command to be: '%s'", command)
 
-	with open(dhcpBackendConfigFile, 'w') as configFile:
+	with open(dhcpBackendConfigFile, 'w', encoding="utf-8") as configFile:
 		configFile.write(config.replace(command, restartCommand))

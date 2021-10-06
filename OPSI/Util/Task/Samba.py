@@ -11,17 +11,15 @@ import os
 import shutil
 import time
 
-from OPSI.Config import FILE_ADMIN_GROUP
-from OPSI.Logger import Logger
 from OPSI.System import execute, which
 from OPSI.System.Posix import getSambaServiceName
 from OPSI.Util.Task.Rights import getWorkbenchDirectory
 
+from opsicommon.logging import logger
+
 __all__ = ('configureSamba', 'isSamba4')
 
-logger = Logger()
-
-SMB_CONF = u'/etc/samba/smb.conf'
+SMB_CONF = '/etc/samba/smb.conf'
 
 
 def configureSamba(config=SMB_CONF):
@@ -31,13 +29,13 @@ def configureSamba(config=SMB_CONF):
 	:param config: The path to the Samba configuration file.
 	:type config: str
 	"""
-	logger.notice(u"Configuring samba")
+	logger.notice("Configuring samba")
 	lines = _readConfig(config)
 	newlines = _processConfig(lines)
 	if lines != newlines:
 		_writeConfig(newlines, config)
 		_reloadSamba()
-		logger.notice(u"Samba configuration finished. You may want to restart your Samba daemon.")
+		logger.notice("Samba configuration finished. You may want to restart your Samba daemon.")
 
 
 def _readConfig(config):
@@ -45,7 +43,7 @@ def _readConfig(config):
 		return readConf.readlines()
 
 
-def _processConfig(lines):
+def _processConfig(lines):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 	newlines = []
 	optPcbinShareFound = False
 	depotShareFound = False
@@ -79,31 +77,33 @@ def _processConfig(lines):
 		newlines.append(line)
 
 	if optPcbinShareFound:
-		logger.warning(u"Share opt_pcbin configuration found. You should use opsi_depot_rw instead, if you need a writeable depot-Share.")
+		logger.warning("Share opt_pcbin configuration found. You should use opsi_depot_rw instead, if you need a writeable depot-Share.")
 
 	if not depotShareFound:
-		logger.notice(u"   Adding share [opsi_depot]")
-		newlines.append(u"[opsi_depot]\n")
-		newlines.append(u"   available = yes\n")
-		newlines.append(u"   comment = opsi depot share (ro)\n")
-		newlines.append(u"   path = /var/lib/opsi/depot\n")
-		newlines.append(u"   follow symlinks = yes\n")
-		newlines.append(u"   writeable = no\n")
-		newlines.append(u"   invalid users = root\n")
+		logger.notice("   Adding share [opsi_depot]")
+		newlines.append("[opsi_depot]\n")
+		newlines.append("   available = yes\n")
+		newlines.append("   comment = opsi depot share (ro)\n")
+		newlines.append("   path = /var/lib/opsi/depot\n")
+		newlines.append("   follow symlinks = yes\n")
+		newlines.append("   writeable = no\n")
+		newlines.append("   invalid users = root\n")
 		if samba4:
-			newlines.append(u"   acl allow execute always = true\n")
-		newlines.append(u"\n")
+			newlines.append("   acl allow execute always = true\n")
+		newlines.append("\n")
 
 		depotDir = '/var/lib/opsi/depot'
 		if not os.path.exists(depotDir):
 			try:
 				os.mkdir(depotDir)
 				if os.path.exists("/opt/pcbin/install"):
-					logger.warning(u"You have an old depot configuration. Using /opt/pcbin/install is deprecated, please use /var/lib/opsi/depot instead.")
-			except Exception as error:
-				logger.warning(u"Failed to create depot directory '%s': %s", depotDir, error)
+					logger.warning(
+						"You have an old depot configuration. Using /opt/pcbin/install is deprecated, please use /var/lib/opsi/depot instead."
+					)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.warning("Failed to create depot directory '%s': %s", depotDir, err)
 	elif samba4:
-		logger.notice(u"   Share opsi_depot found and samba 4 is detected. Setting executable fix on opsi_depot share")
+		logger.notice("   Share opsi_depot found and samba 4 is detected. Setting executable fix on opsi_depot share")
 		tmp_lines = []
 		in_opsi_depot_section = False
 		for i, line in enumerate(newlines):
@@ -128,36 +128,36 @@ def _processConfig(lines):
 					continue
 			tmp_lines.append(line)
 		newlines = tmp_lines
-	
+
 	if not depotShareRWFound:
-		logger.notice(u"   Adding share [opsi_depot_rw]")
-		newlines.append(u"[opsi_depot_rw]\n")
-		newlines.append(u"   available = yes\n")
-		newlines.append(u"   comment = opsi depot share (rw)\n")
-		newlines.append(u"   path = /var/lib/opsi/depot\n")
-		newlines.append(u"   follow symlinks = yes\n")
-		newlines.append(u"   writeable = yes\n")
-		newlines.append(u"   invalid users = root\n")
-		newlines.append(u"\n")
+		logger.notice("   Adding share [opsi_depot_rw]")
+		newlines.append("[opsi_depot_rw]\n")
+		newlines.append("   available = yes\n")
+		newlines.append("   comment = opsi depot share (rw)\n")
+		newlines.append("   path = /var/lib/opsi/depot\n")
+		newlines.append("   follow symlinks = yes\n")
+		newlines.append("   writeable = yes\n")
+		newlines.append("   invalid users = root\n")
+		newlines.append("\n")
 
 	if not opsiImagesFound:
-		logger.notice(u"   Adding share [opsi_images]")
-		newlines.append(u"[opsi_images]\n")
-		newlines.append(u"   available = yes\n")
-		newlines.append(u"   comment = opsi ntfs images share (rw)\n")
-		newlines.append(u"   path = /var/lib/opsi/ntfs-images\n")
-		newlines.append(u"   writeable = yes\n")
-		newlines.append(u"   invalid users = root\n")
-		newlines.append(u"\n")
+		logger.notice("   Adding share [opsi_images]")
+		newlines.append("[opsi_images]\n")
+		newlines.append("   available = yes\n")
+		newlines.append("   comment = opsi ntfs images share (rw)\n")
+		newlines.append("   path = /var/lib/opsi/ntfs-images\n")
+		newlines.append("   writeable = yes\n")
+		newlines.append("   invalid users = root\n")
+		newlines.append("\n")
 		if not os.path.exists("/var/lib/opsi/ntfs-images"):
-			logger.debug(u"Path:  /var/lib/opsi/ntfs-images not found: creating.")
+			logger.debug("Path:  /var/lib/opsi/ntfs-images not found: creating.")
 			os.mkdir("/var/lib/opsi/ntfs-images")
 
 	if not workbenchShareFound:
 		try:
 			workbenchDirectory = getWorkbenchDirectory()
-		except Exception as error:
-			logger.warning("Failed to read the location of the workbench: %s", error)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.warning("Failed to read the location of the workbench: %s", err)
 			workbenchDirectory = None
 
 		if workbenchDirectory:
@@ -167,48 +167,52 @@ def _processConfig(lines):
 
 			try:
 				os.mkdir(workbenchDirectory)
-				logger.notice(u"Created missing workbench directory %s", workbenchDirectory)
+				logger.notice("Created missing workbench directory %s", workbenchDirectory)
 			except OSError as mkdirErr:
-				logger.debug2(u"Did not create workbench %s: '%s", workbenchDirectory, mkdirErr)
+				logger.trace("Did not create workbench %s: '%s", workbenchDirectory, mkdirErr)
 
-			logger.notice(u"   Adding share [opsi_workbench]")
-			newlines.append(u"[opsi_workbench]\n")
-			newlines.append(u"   available = yes\n")
-			newlines.append(u"   comment = opsi workbench\n")
-			newlines.append(u"   path = {0}\n".format(workbenchDirectory))
-			newlines.append(u"   writeable = yes\n")
-			newlines.append(u"   invalid users = root\n")
-			newlines.append(u"   create mask = 0660\n")
-			newlines.append(u"   directory mask = 0770\n")
-			newlines.append(u"\n")
+			logger.notice("   Adding share [opsi_workbench]")
+			newlines.append("[opsi_workbench]\n")
+			newlines.append("   available = yes\n")
+			newlines.append("   comment = opsi workbench\n")
+			newlines.append(f"   path = {workbenchDirectory}\n")
+			newlines.append("   writeable = yes\n")
+			newlines.append("   invalid users = root\n")
+			newlines.append("   create mask = 0660\n")
+			newlines.append("   directory mask = 0770\n")
+			newlines.append("\n")
 
 	if not repositoryFound:
-		logger.notice(u"  Adding share [opsi_repository]")
-		newlines.append(u"[opsi_repository]\n")
-		newlines.append(u"   available = yes\n")
-		newlines.append(u"   comment = opsi repository share (ro)\n")
-		newlines.append(u"   path = /var/lib/opsi/repository\n")
-		newlines.append(u"   follow symlinks = yes\n")
-		newlines.append(u"   writeable = no\n")
-		newlines.append(u"   invalid users = root\n")
-		newlines.append(u"\n")
+		logger.notice("  Adding share [opsi_repository]")
+		newlines.append("[opsi_repository]\n")
+		newlines.append("   available = yes\n")
+		newlines.append("   comment = opsi repository share (ro)\n")
+		newlines.append("   path = /var/lib/opsi/repository\n")
+		newlines.append("   follow symlinks = yes\n")
+		newlines.append("   writeable = no\n")
+		newlines.append("   invalid users = root\n")
+		newlines.append("\n")
 		if not os.path.exists("/var/lib/opsi/repository"):
-			logger.debug(u"Path:  /var/lib/opsi/repository not found: creating.")
+			logger.debug("Path:  /var/lib/opsi/repository not found: creating.")
 			os.mkdir("/var/lib/opsi/repository")
 
 	if not logsFound:
-		logger.notice(u"  Adding share [opsi_logs]")
-		newlines.append(u"[opsi_logs]\n")
-		newlines.append(u"   available = yes\n")
-		newlines.append(u"   comment = opsi logs share (ro)\n")
-		newlines.append(u"   path = /var/log/opsi\n")
-		newlines.append(u"   follow symlinks = yes\n")
-		newlines.append(u"   writeable = no\n")
-		newlines.append(u"   invalid users = root\n")
-		newlines.append(u"\n")
+		logger.notice("  Adding share [opsi_logs]")
+		newlines.append("[opsi_logs]\n")
+		newlines.append("   available = yes\n")
+		newlines.append("   comment = opsi logs share (ro)\n")
+		newlines.append("   path = /var/log/opsi\n")
+		newlines.append("   follow symlinks = yes\n")
+		newlines.append("   writeable = no\n")
+		newlines.append("   invalid users = root\n")
+		newlines.append("\n")
 
 	if oplocksFound:
-		logger.warning(u" Detected oplocks in your samba configuration. It is not recommended to use them with opsi. Please see the opsi manual for further information.")
+		logger.warning(
+			"Detected oplocks in your samba configuration. "
+			"It is not recommended to use them with opsi. "
+			"Please see the opsi manual for further information."
+		)
 
 	return newlines
 
@@ -224,29 +228,28 @@ def isSamba4():
 
 	try:
 		smbd = which('smbd')
-		result = execute('%s -V 2>/dev/null' % smbd)
+		result = execute(f'{smbd} -V 2>/dev/null')
 		for line in result:
 			if line.lower().startswith("version"):
 				samba4 = line.split()[1].startswith('4')
-	except Exception as error:
-		logger.debug('Getting Samba Version failed due to: %s', error)
+	except Exception as err:  # pylint: disable=broad-except
+		logger.debug('Getting Samba Version failed due to: %s', err)
 
 	return samba4
 
 
 def _writeConfig(newlines, config):
-	logger.notice(u"   Creating backup of %s", config)
-	shutil.copy(config, config + u'.' + time.strftime("%Y-%m-%d_%H:%M"))
+	logger.notice("   Creating backup of %s", config)
+	shutil.copy(config, config + '.' + time.strftime("%Y-%m-%d_%H:%M"))
 
-	logger.notice(u"   Writing new smb.conf")
+	logger.notice("   Writing new smb.conf")
 	with codecs.open(config, 'w', 'utf-8') as writeConf:
 		writeConf.writelines(newlines)
 
 
 def _reloadSamba():
-	logger.notice(u"   Reloading samba")
-
+	logger.notice("   Reloading samba")
 	try:
-		execute(u'service {name} reload'.format(name=getSambaServiceName(default="smbd")))
-	except Exception as error:
-		logger.warning(error)
+		execute(f'service {getSambaServiceName(default="smbd")} reload')
+	except Exception as err:  # pylint: disable=broad-except
+		logger.warning(err)

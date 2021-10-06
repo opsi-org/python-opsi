@@ -14,22 +14,21 @@ import time
 
 from contextlib import closing
 
-from opsicommon.client.jsonrpc import JSONRPCClient
 from OPSI import __version__
 from OPSI.Backend.Base import ExtendedBackend
 from OPSI.Exceptions import (
 	BackendMissingDataError, BackendUnaccomplishableError
 )
-from OPSI.Logger import Logger
 from OPSI.Types import (
 	forceBool, forceDict, forceHostId, forceHostIdList,	forceInt,
 	forceIpAddress, forceList, forceUnicode, forceUnicodeList
 )
 from OPSI.Util.Thread import KillableThread
 
-__all__ = ('RpcThread', 'ConnectionThread', 'HostControlBackend')
+from opsicommon.client.jsonrpc import JSONRPCClient
+from opsicommon.logging import logger
 
-logger = Logger()
+__all__ = ('RpcThread', 'ConnectionThread', 'HostControlBackend')
 
 
 def _configureHostcontrolBackend(backend, kwargs):
@@ -80,7 +79,7 @@ def _configureHostcontrolBackend(backend, kwargs):
 
 class RpcThread(KillableThread):  # pylint: disable=too-many-instance-attributes
 
-	_USER_AGENT = 'opsi-RpcThread/{}'.format(__version__)
+	_USER_AGENT = f'opsi-RpcThread/{__version__}'
 
 	def __init__(self, hostControlBackend, hostId, address, username, password, method, params=[], hostPort=0):  # pylint: disable=dangerous-default-value,too-many-arguments
 		KillableThread.__init__(self)
@@ -185,7 +184,7 @@ class HostControlBackend(ExtendedBackend):
 					f"Failed to resolve ip address for host '{host.id}'"
 				) from err
 		if not address:
-			raise BackendUnaccomplishableError("Failed to get ip address for host '%s'" % host.id)
+			raise BackendUnaccomplishableError(f"Failed to get ip address for host '{host.id}'")
 		return address
 
 	def _opsiclientdRpc(self, hostIds, method, params=[], timeout=None):  # pylint: disable=dangerous-default-value,too-many-locals,too-many-branches,too-many-statements
@@ -274,7 +273,7 @@ class HostControlBackend(ExtendedBackend):
 		for host in hosts:
 			try:
 				if not host.hardwareAddress:
-					raise BackendMissingDataError("Failed to get hardware address for host '%s'" % host.id)
+					raise BackendMissingDataError(f"Failed to get hardware address for host '{host.id}'")
 
 				mac = host.hardwareAddress.replace(':', '')
 				data = b''.join([b'FFFFFFFFFFFF', mac.encode("ascii") * 16])  # Pad the synchronization stream.

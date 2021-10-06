@@ -12,9 +12,8 @@ import copy
 from OPSI.Exceptions import BackendAuthenticationError
 from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Util.File.Opsi import OpsiConfFile
-from OPSI.Logger import Logger
 
-logger = Logger()
+from opsicommon.logging import logger
 
 class AuthenticationModule:
 	def __init__(self):

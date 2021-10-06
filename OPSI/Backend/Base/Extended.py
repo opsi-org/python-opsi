@@ -18,12 +18,13 @@ import random
 import copy
 from types import MethodType
 
-from OPSI.Logger import Logger
 from OPSI.Exceptions import *  # this is needed for dynamic loading  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Types import *  # this is needed for dynamic loading  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Object import *  # this is needed for dynamic loading  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Util import timestamp
 import OPSI.SharedAlgorithm
+
+from opsicommon.logging import logger
 
 from .Backend import Backend
 
@@ -31,8 +32,6 @@ __all__ = (
 	'getArgAndCallString',
 	'ExtendedBackend', 'ExtendedConfigDataBackend',
 )
-
-logger = Logger()
 
 
 def getArgAndCallString(method):
@@ -56,9 +55,9 @@ def getArgAndCallString(method):
 		if isinstance(argDefaults, tuple) and (len(argDefaults) + _args.index(element) >= len(_args)):
 			default = argDefaults[len(argDefaults) - len(_args) + _args.index(element)]
 			if isinstance(default, str):
-				default = "'{0}'".format(default)
+				default = f"'{default}'"
 			elif isinstance(default, bytes):
-				default = "b'{0}'".format(default)
+				default = f"b'{default}'"
 
 			argString.append('='.join((element, str(default))))
 		else:
@@ -111,7 +110,7 @@ class ExtendedBackend(Backend):
 
 			argString, callString = getArgAndCallString(functionRef)
 
-			exec('def %s(self, %s): return self._executeMethod("%s", %s)' % (methodName, argString, methodName, callString))  # pylint: disable=exec-used
+			exec(f'def {methodName}(self, {argString}): return self._executeMethod("{methodName}", {callString})')  # pylint: disable=exec-used
 			new_function = eval(methodName)  # pylint: disable=eval-used
 			new_function.deprecated = getattr(functionRef, "deprecated", False)
 			new_function.alternative_method = getattr(functionRef, "alternative_method", None)
@@ -195,7 +194,7 @@ class ExtendedConfigDataBackend(ExtendedBackend):  # pylint: disable=too-many-pu
 					}
 
 	def __repr__(self):
-		return "<{0}(configDataBackend={1!r})>".format(self.__class__.__name__, self._backend)
+		return f"<{self.__class__.__name__}(configDataBackend={self._backend})>"
 
 	def host_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [host.getIdent(returnType) for host in self.host_getObjects(attributes=['id'], **filter)]  # pylint: disable=no-member
@@ -977,11 +976,10 @@ into the IDs of these depots are to be found in the list behind \
 
 		pHash = {}
 		for (depotId, productOnDepotsByProductId) in poDepotsByDepotIdAndProductId.items():
-			productString = ['|{0};{1};{2}'.format(
-				productId,
-				productOnDepotsByProductId[productId].productVersion,
-				productOnDepotsByProductId[productId].packageVersion)
-				for productId in sorted(productOnDepotsByProductId.keys())]
+			productString = [
+				f'|{productId};{productOnDepotsByProductId[productId].productVersion};{productOnDepotsByProductId[productId].packageVersion}'
+				for productId in sorted(productOnDepotsByProductId.keys())
+			]
 
 			pHash[depotId] = ''.join(productString)
 
@@ -2825,7 +2823,7 @@ into the IDs of these depots are to be found in the list behind \
 		if hardwareClass is None:
 			hardwareClass = []
 
-		for key in kwargs:
+		for key in list(kwargs):
 			if kwargs[key] is None:
 				kwargs[key] = []
 
@@ -2899,7 +2897,7 @@ into the IDs of these depots are to be found in the list behind \
 		if state is None:
 			state = []
 
-		for key in kwargs:
+		for key in list(kwargs):
 			if kwargs[key] is None:
 				kwargs[key] = []
 

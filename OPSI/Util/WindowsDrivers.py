@@ -10,30 +10,31 @@ import os
 import re
 import codecs
 
-import OPSI.System as System
-from OPSI.Logger import Logger
+from OPSI import System
 from OPSI.Object import AuditHardware, AuditHardwareOnHost
-from OPSI.Types import (forceFilename, forceInt, forceList,
-	forceObjectClassList, forceUnicode, forceUnicodeList)
+from OPSI.Types import (
+	forceFilename, forceInt, forceList,
+	forceObjectClassList, forceUnicode, forceUnicodeList
+)
 from OPSI.Util import findFilesGenerator
 from OPSI.Util.File import InfFile, TxtSetupOemFile
 from OPSI.Util.Repository import Repository
 
-logger = Logger()
+from opsicommon.logging import logger
 
 
-def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepository=None):
+def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepository=None):  # pylint: disable=too-many-branches,too-many-statements,too-many-arguments
 	driverDir = forceFilename(driverDir)
 	try:
 		auditHardwares = forceObjectClassList(auditHardwares, AuditHardware)
-	except Exception:
+	except Exception:  # pylint: disable=broad-except
 		auditHardwares = forceObjectClassList(auditHardwares, AuditHardwareOnHost)
 
 	exists = os.path.exists
 	listdir = os.listdir
 	if srcRepository:
 		if not isinstance(srcRepository, Repository):
-			raise TypeError(u"Not a repository: %s" % srcRepository)
+			raise TypeError(f"Not a repository: {srcRepository}")
 		exists = srcRepository.exists
 		listdir = srcRepository.listdir
 
@@ -42,32 +43,34 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepo
 		hwClass = auditHardware.getHardwareClass()
 		baseDir = ''
 		if hwClass == 'PCI_DEVICE':
-			baseDir = u'pciids'
+			baseDir = 'pciids'
 		elif hwClass == 'USB_DEVICE':
-			baseDir = u'usbids'
+			baseDir = 'usbids'
 		elif hwClass == 'HDAUDIO_DEVICE':
-			baseDir = u'hdaudioids'
+			baseDir = 'hdaudioids'
 		else:
-			logger.debug(u"Skipping unhandled hardware class '%s' (%s)" % (hwClass, auditHardware))
+			logger.debug("Skipping unhandled hardware class '%s' (%s)", hwClass, auditHardware)
 			continue
 
 		if not hasattr(auditHardware, 'vendorId') or not auditHardware.vendorId:
-			logger.debug(u"Skipping %s device %s: vendor id not found" % (hwClass, auditHardware))
+			logger.debug("Skipping %s device %s: vendor id not found", hwClass, auditHardware)
 			continue
 		if not hasattr(auditHardware, 'deviceId') or not auditHardware.deviceId:
-			logger.debug(u"Skipping %s device %s: device id not found" % (hwClass, auditHardware))
+			logger.debug("Skipping %s device %s: device id not found", hwClass, auditHardware)
 			continue
 
-		name = u'unknown'
+		name = 'unknown'
 		try:
 			if auditHardware.name:
-				name = auditHardware.name.replace(u'/', u'_')
+				name = auditHardware.name.replace('/', '_')
 		except AttributeError:
 			pass
 
-		logger.info(u"Searching driver for %s '%s', id '%s:%s'" % (hwClass, name, auditHardware.vendorId, auditHardware.deviceId))
+		logger.info("Searching driver for %s '%s', id '%s:%s'", hwClass, name, auditHardware.vendorId, auditHardware.deviceId)
 		if messageSubject:
-			messageSubject.setMessage(u"Searching driver for %s '%s', id '%s:%s'" % (hwClass, name, auditHardware.vendorId, auditHardware.deviceId))
+			messageSubject.setMessage(
+				f"Searching driver for {hwClass} '{name}', id '{auditHardware.vendorId}:{auditHardware.deviceId}'"
+			)
 
 		driver = {
 			'directory': None,
@@ -79,21 +82,21 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepo
 		}
 		srcDriverPath = os.path.join(driverDir, baseDir, auditHardware.vendorId)
 		if not exists(srcDriverPath):
-			logger.error(u"%s vendor directory '%s' not found" % (hwClass, srcDriverPath))
+			logger.error("%s vendor directory '%s' not found", hwClass, srcDriverPath)
 			continue
 
 		srcDriverPath = os.path.join(srcDriverPath, auditHardware.deviceId)
 		if not exists(srcDriverPath):
-			logger.error(u"%s device directory '%s' not found" % (hwClass, srcDriverPath))
+			logger.error("%s device directory '%s' not found", hwClass, srcDriverPath)
 			continue
 
 		if exists(os.path.join(srcDriverPath, 'WINDOWS_BUILDIN')):
-			logger.notice(u"Found windows built-in driver")
+			logger.notice("Found windows built-in driver")
 			driver['buildin'] = True
 			drivers.append(driver)
 			continue
 
-		logger.notice(u"Found driver for %s device '%s', in dir '%s'" % (hwClass, name, srcDriverPath))
+		logger.notice("Found driver for %s device '%s', in dir '%s'", hwClass, name, srcDriverPath)
 		driver['directory'] = srcDriverPath
 
 		for entry in listdir(srcDriverPath):
@@ -112,12 +115,14 @@ def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepo
 	return drivers
 
 
-def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory, messageSubject=None, srcRepository=None, drivers=None, checkDups=False):
+def integrateWindowsDrivers(  # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
+	driverSourceDirectories, driverDestinationDirectory, messageSubject=None, srcRepository=None, drivers=None, checkDups=False
+):
 	driverSourceDirectories = forceUnicodeList(driverSourceDirectories)
 	driverDestinationDirectory = forceFilename(driverDestinationDirectory)
 
 	if not driverSourceDirectories:
-		logger.warning(u"No driver source directories passed")
+		logger.warning("No driver source directories passed")
 		return []
 
 	driversOnMachine = {}
@@ -135,14 +140,14 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 	copy = System.copy
 	if srcRepository:
 		if not isinstance(srcRepository, Repository):
-			raise TypeError(u"Not a repository: %s" % srcRepository)
+			raise TypeError(f"Not a repository: {srcRepository}")
 		exists = srcRepository.exists
 		copy = srcRepository.copy
 
-	logger.info(u"Integrating drivers: %s" % driverSourceDirectories)
+	logger.info("Integrating drivers: %s", driverSourceDirectories)
 
 	if messageSubject:
-		messageSubject.setMessage(u"Integrating drivers")
+		messageSubject.setMessage("Integrating drivers")
 
 	System.mkdir(driverDestinationDirectory)
 	driverNumber = 0
@@ -162,7 +167,7 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 		returnDirs=False,
 		followLinks=True
 	))
-	logger.debug(u"Found inf files: %s in dir '%s'" % (infFiles, driverDestinationDirectory))
+	logger.debug("Found inf files: %s in dir '%s'", infFiles, driverDestinationDirectory)
 	for infFile in infFiles:
 		infFile = InfFile(infFile)
 		for dev in infFile.getDevices():
@@ -173,18 +178,20 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 			if dev['device'] in integratedDrivers[dev['type']][dev['vendor']]:
 				continue
 			integratedDrivers[dev['type']][dev['vendor']].append(dev['device'])
-			logger.debug(u"Integrated driver for %s device %s:%s, infFile: %s found." \
-					% (dev['type'], dev['vendor'], dev['device'], os.path.abspath(infFile.getFilename())))
+			logger.debug(
+				"Integrated driver for %s device %s:%s, infFile: %s found.",
+				dev['type'], dev['vendor'], dev['device'], os.path.abspath(infFile.getFilename())
+			)
 
 	newDrivers = []
 	for driverSourceDirectory in driverSourceDirectories:
-		logger.notice(u"Integrating driver dir '%s'" % driverSourceDirectory)
+		logger.notice("Integrating driver dir '%s'", driverSourceDirectory)
 		if messageSubject:
-			messageSubject.setMessage(u"Integrating driver dir '%s'" % os.path.basename(driverSourceDirectory))
+			messageSubject.setMessage(f"Integrating driver dir '{os.path.basename(driverSourceDirectory)}'")
 		if not exists(driverSourceDirectory):
-			logger.error(u"Driver directory '%s' not found" % driverSourceDirectory)
+			logger.error("Driver directory '%s' not found", driverSourceDirectory)
 			if messageSubject:
-				messageSubject.setMessage(u"Driver directory '%s' not found" % driverSourceDirectory)
+				messageSubject.setMessage(f"Driver directory '{driverSourceDirectory}' not found")
 			continue
 		driverNeeded = True
 		newDriversTmp = []
@@ -199,7 +206,7 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 		for infFile in infFiles:
 			tempInfFile = None
 			if srcRepository:
-				tempInfFile = u'/tmp/temp.inf'
+				tempInfFile = '/tmp/temp.inf'
 				copy(infFile, tempInfFile)
 				infFile = InfFile(tempInfFile)
 			else:
@@ -214,8 +221,10 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 					if dev['device'] not in driversOnMachine.get(dev['vendor'], []):
 						continue
 					if dev['device'] in integratedDrivers.get(dev['type'], {}).get(dev['vendor'], []):
-						logger.notice(u"Driver for %s device %s:%s already integrated" \
-							% (dev['type'], dev['vendor'], dev['device']))
+						logger.notice(
+							"Driver for %s device %s:%s already integrated",
+							dev['type'], dev['vendor'], dev['device']
+						)
 						driverNeeded = False
 					else:
 						driverNeeded = True
@@ -232,11 +241,11 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 				os.mkdir(dstDriverPath)
 
 			copy(driverSourceDirectory + '/*', dstDriverPath)
-			for i in range(len(newDriversTmp)):
-				newDriversTmp[i]['driverNumber'] = driverNumber
-				newDriversTmp[i]['directory'] = dstDriverPath
-				newDriversTmp[i]['infFile'] = os.path.join(dstDriverPath, newDriversTmp[i]['infFile'])
-				for dev in newDriversTmp[i]['devices']:
+			for idx, driver in enumerate(newDriversTmp):
+				newDriversTmp[idx]['driverNumber'] = driverNumber
+				newDriversTmp[idx]['directory'] = dstDriverPath
+				newDriversTmp[idx]['infFile'] = os.path.join(dstDriverPath, driver['infFile'])
+				for dev in driver['devices']:
 					if dev['type'] not in integratedDrivers:
 						integratedDrivers[dev['type']] = {}
 					if dev['vendor'] not in integratedDrivers[dev['type']]:
@@ -246,100 +255,116 @@ def integrateWindowsDrivers(driverSourceDirectories, driverDestinationDirectory,
 	return newDrivers
 
 
-def integrateWindowsHardwareDrivers(driverSourceDirectory, driverDestinationDirectory, auditHardwares, messageSubject=None, srcRepository=None):
-	logger.info(u"Adding drivers for detected hardware")
+def integrateWindowsHardwareDrivers(
+	driverSourceDirectory, driverDestinationDirectory, auditHardwares, messageSubject=None, srcRepository=None
+):
+	logger.info("Adding drivers for detected hardware")
 
 	driverSourceDirectory = forceFilename(driverSourceDirectory)
 	driverDestinationDirectory = forceFilename(driverDestinationDirectory)
 	try:
 		auditHardwares = forceObjectClassList(auditHardwares, AuditHardware)
-	except Exception:
+	except Exception:  # pylint: disable=broad-except
 		auditHardwares = forceObjectClassList(auditHardwares, AuditHardwareOnHost)
 
-	drivers = searchWindowsDrivers(driverDir=driverSourceDirectory, auditHardwares=auditHardwares, messageSubject=messageSubject, srcRepository=srcRepository)
+	drivers = searchWindowsDrivers(
+		driverDir=driverSourceDirectory, auditHardwares=auditHardwares,
+		messageSubject=messageSubject, srcRepository=srcRepository
+	)
 
 	driverDirectories = []
 	for driver in drivers:
 		if driver['buildin'] or not driver['directory']:
 			continue
 
-		logger.debug(u"Got windows driver: %s" % driver)
+		logger.debug("Got windows driver: %s", driver)
 
 		if driver['directory'] not in driverDirectories:
 			driverDirectories.append(driver['directory'])
 
-		name = u'[%s:%s]' % (driver['vendorId'], driver['deviceId'])
+		name = f"[{driver['vendorId']}:{driver['deviceId']}]"
 		try:
-			name += u' %s' % driver['hardwareInfo'].vendor
+			name += f" {driver['hardwareInfo'].vendor}"
 		except AttributeError:
 			pass
 
 		try:
-			name += u' : %s' % driver['hardwareInfo'].name
+			name += f" : {driver['hardwareInfo'].name}"
 		except AttributeError:
 			pass
 
-		logger.notice(u"Integrating driver for device %s" % name)
+		logger.notice("Integrating driver for device %s", name)
 		if messageSubject:
-			messageSubject.setMessage(u"Integrating driver for device %s" % name)
+			messageSubject.setMessage(f"Integrating driver for device {name}")
 
 	if not driverDirectories:
-		logger.debug(u"No driver directories to integrate")
+		logger.debug("No driver directories to integrate")
 		return []
 
-	return integrateWindowsDrivers(driverDirectories, driverDestinationDirectory, messageSubject=messageSubject, srcRepository=srcRepository, drivers=drivers, checkDups=True)
+	return integrateWindowsDrivers(
+		driverDirectories, driverDestinationDirectory,
+		messageSubject=messageSubject, srcRepository=srcRepository, drivers=drivers, checkDups=True
+	)
 
 
-def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFile=None, messageSubject=None):
+def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFile=None, messageSubject=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 	driverDirectory = forceFilename(driverDirectory)
 	destination = forceFilename(destination)
 	devices = forceList(devices)
 
-	logger.notice(u"Integrating textmode drivers")
+	logger.notice("Integrating textmode drivers")
 
 	if not os.path.exists(driverDirectory):
-		logger.notice(u"Driver directory '%s' does not exist" % driverDirectory)
+		logger.notice("Driver directory '%s' does not exist", driverDirectory)
 		return
 
 	if messageSubject:
-		messageSubject.setMessage(u"Integrating textmode drivers")
+		messageSubject.setMessage("Integrating textmode drivers")
 
-	logger.info(u"Searching for txtsetup.oem in '%s'" % driverDirectory)
-	txtSetupOems = list(findFilesGenerator(directory=driverDirectory, prefix=driverDirectory, includeFile=re.compile(r'^txtsetup\.oem$', re.IGNORECASE), returnDirs=False))
+	logger.info("Searching for txtsetup.oem in '%s'", driverDirectory)
+	txtSetupOems = list(
+		findFilesGenerator(
+			directory=driverDirectory, prefix=driverDirectory,
+			includeFile=re.compile(r'^txtsetup\.oem$', re.IGNORECASE), returnDirs=False
+		)
+	)
 	if not txtSetupOems:
-		logger.info(u"No txtsetup.oem found in '%s'" % driverDirectory)
+		logger.info("No txtsetup.oem found in '%s'", driverDirectory)
 		return
 
 	for txtSetupOem in txtSetupOems:
-		logger.info(u"File '%s' found" % txtSetupOem)
+		logger.info("File '%s' found", txtSetupOem)
 		txtSetupOemFile = TxtSetupOemFile(txtSetupOem)
 		driverPath = os.path.dirname(txtSetupOem)
 		supportedDevice = None
 		deviceKnown = None
 		for device in devices:
-			logger.debug2(u"Testing if textmode driver '%s' supports device %s" % (driverPath, device))
+			logger.trace("Testing if textmode driver '%s' supports device %s", driverPath, device)
 			try:
 				deviceKnown = txtSetupOemFile.isDeviceKnown(vendorId=device.get('vendorId'), deviceId=device.get('deviceId'))
-			except Exception as error:
-				logger.critical(u"Error by integrating TextMode driver, error was: %s" % error)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.critical("Error by integrating TextMode driver, error was: %s", err)
 
 			if deviceKnown:
-				logger.debug(u"Textmode driver '%s' supports device %s" % (driverPath, device))
+				logger.debug("Textmode driver '%s' supports device %s", driverPath, device)
 				supportedDevice = device
 				break
-			else:
-				logger.debug2(u"Textmode driver '%s' does not support device %s" % (driverPath, device))
-				continue
+			logger.trace("Textmode driver '%s' does not support device %s", driverPath, device)
+			continue
 		if not supportedDevice:
-			logger.debug2(u"Textmode driver '%s' not needed" % driverPath)
+			logger.trace("Textmode driver '%s' not needed", driverPath)
 			continue
 
-		logger.notice(u"Integrating textmode driver '%s'" % driverPath)
+		logger.notice("Integrating textmode driver '%s'", driverPath)
 		if messageSubject:
-			messageSubject.setMessage(u"Integrating textmode driver '%s'" % driverPath)
+			messageSubject.setMessage(f"Integrating textmode driver '{driverPath}'")
 
 		oemBootFiles = []
-		for fn in txtSetupOemFile.getFilesForDevice(vendorId=supportedDevice['vendorId'], deviceId=supportedDevice['deviceId'], fileTypes=['inf', 'driver', 'catalog', 'dll']):
+		for fn in txtSetupOemFile.getFilesForDevice(
+			vendorId=supportedDevice['vendorId'],
+			deviceId=supportedDevice['deviceId'],
+			fileTypes=['inf', 'driver', 'catalog', 'dll']
+		):
 			System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$', 'textmode', os.path.basename(fn)))
 			System.copy(os.path.join(driverPath, fn), os.path.join(destination, '$win_nt$.~bt', '$oem$', fn))
 			oemBootFiles.append(fn)
@@ -349,51 +374,53 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 		txtSetupOemFile.generate()
 
 		oemBootFiles.append(os.path.basename(txtSetupOem))
-		for textmodePath in (os.path.join(destination, u'$', u'textmode'),
-							os.path.join(destination, u'$win_nt$.~bt', u'$oem$')):
+		for textmodePath in (os.path.join(destination, '$', 'textmode'),
+							os.path.join(destination, '$win_nt$.~bt', '$oem$')):
 			System.mkdir(textmodePath)
 			System.copy(txtSetupOem, textmodePath)
 
-		description = txtSetupOemFile.getComponentOptionsForDevice(vendorId=supportedDevice['vendorId'], deviceId=supportedDevice['deviceId'])['description']
+		description = txtSetupOemFile.getComponentOptionsForDevice(
+			vendorId=supportedDevice['vendorId'], deviceId=supportedDevice['deviceId']
+		)['description']
 
 		# Patch winnt.sif
 		if sifFile:
-			logger.notice(u"Registering textmode drivers in sif file '%s'" % sifFile)
+			logger.notice("Registering textmode drivers in sif file '%s'", sifFile)
 			lines = []
 			massStorageDriverLines = []
 			oemBootFileLines = []
-			section = u''
+			section = ''
 			with codecs.open(sifFile, 'r', 'cp1250') as sif:
 				for line in sif.readlines():
 					if line.strip():
-						logger.debug2(u"Current sif file content: %s" % line.rstrip())
-					if line.strip().startswith(u'['):
+						logger.trace("Current sif file content: %s", line.rstrip())
+					if line.strip().startswith('['):
 						section = line.strip().lower()[1:-1]
-						if section in (u'massstoragedrivers', u'oembootfiles'):
+						if section in ('massstoragedrivers', 'oembootfiles'):
 							continue
-					if section == u'massstoragedrivers':
+					if section == 'massstoragedrivers':
 						massStorageDriverLines.append(line)
 						continue
-					if section == u'oembootfiles':
+					if section == 'oembootfiles':
 						oemBootFileLines.append(line)
 						continue
 					lines.append(line)
 
-			logger.info(u"Patching sections for driver '%s'" % description)
+			logger.info("Patching sections for driver '%s'", description)
 
 			if not massStorageDriverLines:
-				massStorageDriverLines = [u'\r\n', u'[MassStorageDrivers]\r\n']
-			massStorageDriverLines.append(u'"%s" = "OEM"\r\n' % description)
+				massStorageDriverLines = ['\r\n', '[MassStorageDrivers]\r\n']
+			massStorageDriverLines.append(f'"{description}" = "OEM"\r\n')
 
 			if not oemBootFileLines:
-				oemBootFileLines = [u'\r\n', u'[OEMBootFiles]\r\n']
+				oemBootFileLines = ['\r\n', '[OEMBootFiles]\r\n']
 			for obf in oemBootFiles:
-				oemBootFileLines.append(u'%s\r\n' % obf)
+				oemBootFileLines.append(f'{obf}\r\n')
 
-			logger.debug(u"Patching [MassStorageDrivers] in file '%s':" % sifFile)
+			logger.debug("Patching [MassStorageDrivers] in file '%s':", sifFile)
 			logger.debug(massStorageDriverLines)
 			lines.extend(massStorageDriverLines)
-			logger.debug(u"Patching [OEMBootFiles] in file '%s':" % sifFile)
+			logger.debug("Patching [OEMBootFiles] in file '%s':", sifFile)
 			logger.debug(oemBootFileLines)
 			lines.extend(oemBootFileLines)
 
@@ -401,7 +428,10 @@ def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFi
 				sif.writelines(lines)
 
 
-def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDirectory, additionalDrivers, messageSubject=None, srcRepository=None, auditHardwareOnHosts=None):
+def integrateAdditionalWindowsDrivers(  # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
+	driverSourceDirectory, driverDestinationDirectory, additionalDrivers,
+	messageSubject=None, srcRepository=None, auditHardwareOnHosts=None
+):
 	driverSourceDirectory = forceFilename(driverSourceDirectory)
 	driverDestinationDirectory = forceFilename(driverDestinationDirectory)
 	if not isinstance(additionalDrivers, list):
@@ -416,14 +446,14 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 	listdir = os.listdir
 	if srcRepository:
 		if not isinstance(srcRepository, Repository):
-			raise TypeError(u"Not a repository: %s" % srcRepository)
+			raise TypeError(f"Not a repository: {srcRepository}")
 		exists = srcRepository.exists
 		listdir = srcRepository.listdir
 
-	logger.info(u"Adding additional drivers")
+	logger.info("Adding additional drivers")
 
 	if messageSubject:
-		messageSubject.setMessage(u"Adding additional drivers")
+		messageSubject.setMessage("Adding additional drivers")
 
 	rulesdir = os.path.join(driverSourceDirectory, "byAudit")
 
@@ -431,14 +461,13 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 	for auditHardwareOnHost in auditHardwareOnHosts:
 		if auditHardwareOnHost.hardwareClass not in ("COMPUTER_SYSTEM", "BASE_BOARD"):
 			continue
-		else:
-			if auditHardwareOnHost.hardwareClass not in auditInfoByClass:
-				auditInfoByClass[auditHardwareOnHost.hardwareClass] = auditHardwareOnHost
+		if auditHardwareOnHost.hardwareClass not in auditInfoByClass:
+			auditInfoByClass[auditHardwareOnHost.hardwareClass] = auditHardwareOnHost
 
 	invalidCharactersRegex = re.compile(r'[<>?":|\\/*]')
 	byAuditIntegrated = False
-	if exists(rulesdir) and "COMPUTER_SYSTEM" in auditInfoByClass:
-		logger.info(u"Checking if automated integrating of additional drivers are possible")
+	if exists(rulesdir) and "COMPUTER_SYSTEM" in auditInfoByClass:  # pylint: disable=too-many-nested-blocks
+		logger.info("Checking if automated integrating of additional drivers are possible")
 		auditHardwareOnHost = auditInfoByClass["COMPUTER_SYSTEM"]
 		vendorFromHost = invalidCharactersRegex.sub("_", auditHardwareOnHost.vendor or "")
 		modelFromHost = invalidCharactersRegex.sub("_", auditHardwareOnHost.model or "")
@@ -447,57 +476,65 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 		fallbackPath = ""
 
 		if vendorFromHost and modelFromHost:
-			logger.notice(u"Additional drivers for integration found using byAudit (System) for vendor: '%s' model : '%s' Check if drivers are available." % (vendorFromHost, modelFromHost))
+			logger.notice(
+				"Additional drivers for integration found using byAudit (System) for vendor: "
+				"'%s' model : '%s' Check if drivers are available.",
+				vendorFromHost, modelFromHost
+			)
 
 			vendordirectories = listdir(rulesdir)
 			if vendorFromHost not in vendordirectories:
 				if vendorFromHost.endswith((".", " ")):
-					vendorFromHost = "%s_" % vendorFromHost[:-1]
+					vendorFromHost = f"{vendorFromHost[:-1]}_"
 
 			for vendordirectory in vendordirectories:
-				logger.info("ByAudit: Checking Vendor directory: %s" % vendordirectory)
+				logger.info("ByAudit: Checking Vendor directory: %s", vendordirectory)
 				if vendordirectory.lower() == vendorFromHost.lower():
 					modeldirectories = listdir(os.path.join(rulesdir, vendordirectory))
 					if skuFromHost and skuFromHost in modelFromHost:
-						skuLabel = "(%s)" % skuFromHost
+						skuLabel = f"({skuFromHost})"
 					if modelFromHost not in modeldirectories:
 						if modelFromHost.endswith((".", " ")):
-							modelFromHost = "%s_" % modelFromHost[:-1]
+							modelFromHost = f"{modelFromHost[:-1]}_"
+					modeldirectory = None
 					for modeldirectory in modeldirectories:
-						logger.info("ByAudit: Checking Model directory: %s" % vendordirectory)
+						logger.info("ByAudit: Checking Model directory: %s", vendordirectory)
 						if modeldirectory.lower() == modelFromHost.lower():
 							logger.info("ByAudit: Exact match found.")
 							additionalDrivers.append(os.path.join("byAudit", vendordirectory, modeldirectory))
 							byAuditIntegrated = True
 							break
-						elif modeldirectory.lower() == modelFromHost.replace(skuLabel, "").strip().lower():
+						if modeldirectory.lower() == modelFromHost.replace(skuLabel, "").strip().lower():
 							fallbackPath = os.path.join("byAudit", vendordirectory, modeldirectory)
 					if not byAuditIntegrated and fallbackPath:
-						logger.info("ByAudit: No Exact match found but model without sku found. Using Directory: '%s'" % modeldirectory )
+						logger.info("ByAudit: No Exact match found but model without sku found. Using Directory: '%s'", modeldirectory)
 						additionalDrivers.append(fallbackPath)
 						byAuditIntegrated = True
 					break
 
-	if not byAuditIntegrated and exists(rulesdir) and "BASE_BOARD" in auditInfoByClass:
-		logger.info(u"Checking if mainboard-fallback for automated integrating of additional drivers are possible")
+	if not byAuditIntegrated and exists(rulesdir) and "BASE_BOARD" in auditInfoByClass:  # pylint: disable=too-many-nested-blocks
+		logger.info("Checking if mainboard-fallback for automated integrating of additional drivers are possible")
 		auditHardwareOnHost = auditInfoByClass["BASE_BOARD"]
 		vendorFromHost = invalidCharactersRegex.sub("_", auditHardwareOnHost.vendor or "")
 		productFromHost = invalidCharactersRegex.sub("_", auditHardwareOnHost.product or "")
 
 		if vendorFromHost and productFromHost:
-			logger.notice(u"Additional drivers for integration found using byAudit (Board) for vendor: '%s' model : '%s' Check if drivers are available." % (vendorFromHost, modelFromHost))
+			logger.notice(
+				"Additional drivers for integration found using byAudit (Board) for vendor: '%s' model : '%s' Check if drivers are available.",
+				vendorFromHost, modelFromHost
+			)
 
 			vendordirectories = listdir(rulesdir)
 			if vendorFromHost not in vendordirectories:
 				if vendorFromHost.endswith((".", " ")):
-					vendorFromHost = "%s_" % vendorFromHost[:-1]
+					vendorFromHost = f"{vendorFromHost[:-1]}_"
 
 			for vendordirectory in vendordirectories:
 				if vendordirectory.lower() == vendorFromHost.lower():
 					productdirectories = listdir(os.path.join(rulesdir, vendordirectory))
 					if productFromHost not in productdirectories:
 						if productFromHost.endswith((".", " ")):
-							productFromHost = "%s_" % productFromHost[:-1]
+							productFromHost = f"{productFromHost[:-1]}_"
 
 					for productdirectory in productdirectories:
 						if productdirectory.lower() == productFromHost.lower():
@@ -509,9 +546,9 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 			continue
 		additionalDriverDir = os.path.join(driverSourceDirectory, additionalDriver)
 		if not exists(additionalDriverDir):
-			logger.error(u"Additional drivers dir '%s' not found" % additionalDriverDir)
+			logger.error("Additional drivers dir '%s' not found", additionalDriverDir)
 			if messageSubject:
-				messageSubject.setMessage(u"Additional drivers dir '%s' not found" % additionalDriverDir)
+				messageSubject.setMessage(f"Additional drivers dir '{additionalDriverDir}' not found")
 			continue
 		infFiles = list(findFilesGenerator(
 				directory=additionalDriverDir,
@@ -520,11 +557,11 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 				returnDirs=False,
 				followLinks=True,
 				repository=srcRepository))
-		logger.info(u"Found inf files: %s in dir '%s'" % (infFiles, additionalDriverDir))
+		logger.info("Found inf files: %s in dir '%s'", infFiles, additionalDriverDir)
 		if not infFiles:
-			logger.error(u"No drivers found in dir '%s'" % additionalDriverDir)
+			logger.error("No drivers found in dir '%s'", additionalDriverDir)
 			if messageSubject:
-				messageSubject.setMessage(u"No drivers found in dir '%s'" % additionalDriverDir)
+				messageSubject.setMessage(f"No drivers found in dir '{additionalDriverDir}'")
 			continue
 		for infFile in infFiles:
 			additionalDriverDir = os.path.dirname(infFile)
@@ -534,44 +571,44 @@ def integrateAdditionalWindowsDrivers(driverSourceDirectory, driverDestinationDi
 					if entry.lower() == 'txtsetup.oem':
 						additionalDriverDir = parentDir
 						break
-			except Exception as error:
-				logger.debug(error)
+			except Exception as err:  # pylint: disable=broad-except
+				logger.debug(err)
 
 			if additionalDriverDir in driverDirectories:
 				continue
-			logger.info(u"Adding additional driver dir '%s'" % additionalDriverDir)
+			logger.info("Adding additional driver dir '%s'", additionalDriverDir)
 			if messageSubject:
-				messageSubject.setMessage(u"Adding additional driver dir '%s'" % additionalDriverDir)
+				messageSubject.setMessage(f"Adding additional driver dir '{additionalDriverDir}'")
 			driverDirectories.append(additionalDriverDir)
 
 	if not driverDirectories:
-		logger.debug(u"No additional driver directories to integrate")
+		logger.debug("No additional driver directories to integrate")
 		return []
 
 	return integrateWindowsDrivers(driverDirectories, driverDestinationDirectory, messageSubject=messageSubject, srcRepository=srcRepository)
 
 
-def getOemPnpDriversPath(driverDirectory, target, separator=u';', prePath=u'', postPath=u''):
-	logger.info(u"Generating oemPnpDriversPath")
+def getOemPnpDriversPath(driverDirectory, target, separator=';', prePath='', postPath=''):
+	logger.info("Generating oemPnpDriversPath")
 	if not driverDirectory.startswith(target):
-		raise TypeError(u"Driver directory '%s' not on target '%s'" % (driverDirectory, target))
+		raise TypeError(f"Driver directory '{driverDirectory}' not on target '{target}'")
 
 	relPath = driverDirectory[len(target):]
 	while relPath.startswith(os.sep):
 		relPath = relPath[1:]
 	while relPath.endswith(os.sep):
 		relPath = relPath[:-1]
-	relPath = u'\\'.join(relPath.split(os.sep))
-	oemPnpDriversPath = u''
+	relPath = '\\'.join(relPath.split(os.sep))
+	oemPnpDriversPath = ''
 	if os.path.exists(driverDirectory):
 		for dirname in os.listdir(driverDirectory):
-			dirname = relPath + u'\\' + dirname
+			dirname = relPath + '\\' + dirname
 			if prePath:
-				dirname = prePath + u'\\' + dirname
+				dirname = prePath + '\\' + dirname
 			if postPath:
-				dirname = postPath + u'\\' + dirname
+				dirname = postPath + '\\' + dirname
 			if oemPnpDriversPath:
 				oemPnpDriversPath += separator
 			oemPnpDriversPath += dirname
-	logger.info(u"Returning oemPnpDriversPath '%s'" % oemPnpDriversPath)
+	logger.info("Returning oemPnpDriversPath '%s'", oemPnpDriversPath)
 	return oemPnpDriversPath

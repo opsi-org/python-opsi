@@ -6,15 +6,13 @@
 Utility functions for package updates.
 """
 
-from .Exceptions import NoActiveRepositoryError
-
-from OPSI.Logger import Logger
 from OPSI.Util import compareVersions
 
+from opsicommon.logging import logger
+
+from .Exceptions import NoActiveRepositoryError
 
 __all__ = ('getUpdatablePackages', )
-
-logger = Logger()
 
 
 def getUpdatablePackages(updater):
@@ -38,21 +36,26 @@ _repository_.
 		installedProducts = updater.getInstalledProducts()
 		downloadablePackages = updater.getDownloadablePackages()
 		downloadablePackages = updater.onlyNewestPackages(downloadablePackages)
-		downloadablePackages = updater._filterProducts(downloadablePackages)
+		downloadablePackages = updater._filterProducts(downloadablePackages)  # pylint: disable=protected-access
 
 		for availablePackage in downloadablePackages:
 			productId = availablePackage['productId']
 			for product in installedProducts:
 				if product['productId'] == productId:
-					logger.debug(u"Product '%s' is installed" % productId)
-					logger.debug(u"Available product version is '%s', installed product version is '%s-%s'" % (availablePackage['version'], product['productVersion'], product['packageVersion']))
-					updateAvailable = compareVersions(availablePackage['version'], '>', '%s-%s' % (product['productVersion'], product['packageVersion']))
+					logger.debug("Product '%s' is installed", productId)
+					logger.debug(
+						"Available product version is '%s', installed product version is '%s-%s'",
+						availablePackage['version'], product['productVersion'], product['packageVersion']
+					)
+					updateAvailable = compareVersions(
+						availablePackage['version'], '>', f"{product['productVersion']}-{product['packageVersion']}"
+					)
 
 					if updateAvailable:
 						updates[productId] = {
 							"productId": productId,
-							"newVersion": "{version}".format(**availablePackage),
-							"oldVersion": "{productVersion}-{packageVersion}".format(**product),
+							"newVersion": f"{availablePackage['version']}",
+							"oldVersion": f"{product['productVersion']}-{product['packageVersion']}",
 							"repository": availablePackage['repository'].name
 						}
 					break

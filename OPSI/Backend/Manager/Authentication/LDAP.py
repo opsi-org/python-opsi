@@ -2,16 +2,17 @@
 
 # Copyright (c) uib GmbH <info@uib.de>
 # License: AGPL-3.0
+"""
+LDAP authentication
+"""
 
 from typing import Set
 import ldap3
 
 from OPSI.Backend.Manager.Authentication import AuthenticationModule
 from OPSI.Exceptions import BackendAuthenticationError
-from OPSI.Logger import Logger
 
-logger = Logger()
-
+from opsicommon.logging import logger
 
 class LDAPAuthentication(AuthenticationModule):
 	def __init__(self, ldap_url: str, bind_user: str = None, group_filter: str = None):

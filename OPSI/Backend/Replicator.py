@@ -9,14 +9,13 @@ The replicator allows replication from one backend into another.
 """
 
 from OPSI.Backend.Base import ExtendedConfigDataBackend
-from OPSI.Logger import LOG_DEBUG, Logger
 from OPSI.Object import *
 from OPSI.Types import forceBool, forceHostId, forceList
 from OPSI.Util.Message import ProgressSubject
 
-__all__ = ('BackendReplicator', )
+from opsicommon.logging import logger
 
-logger = Logger()
+__all__ = ('BackendReplicator', )
 
 
 class BackendReplicator:
@@ -68,13 +67,13 @@ class BackendReplicator:
 			self.__oldServerId = forceHostId(oldServerId)
 
 		self.__overallProgressSubject = ProgressSubject(
-			id=u'overall_replication',
-			title=u'Replicating',
+			id='overall_replication',
+			title='Replicating',
 			end=100,
 			fireAlways=True
 		)
 		self.__currentProgressSubject = ProgressSubject(
-			id=u'current_replication',
+			id='current_replication',
 			fireAlways=True
 		)
 
@@ -101,10 +100,10 @@ class BackendReplicator:
 		licenses = forceBool(licenses)
 
 		logger.info(
-			u"Replicating: serverIds={serverIds}, depotIds={depotIds}, "
-			u"clientIds={clientIds}, groupIds={groupIds}, "
-			u"productIds={productIds}, productTypes={productTypes}, "
-			u"audit: {audit}, license: {licenses}".format(**locals())
+			"Replicating: serverIds={serverIds}, depotIds={depotIds}, "
+			"clientIds={clientIds}, groupIds={groupIds}, "
+			"productIds={productIds}, productTypes={productTypes}, "
+			"audit: {audit}, license: {licenses}".format(**locals())
 		)
 
 		rb = self._extendedReadBackend
@@ -192,10 +191,10 @@ class BackendReplicator:
 				if objClass == 'Host':
 					subClasses = ['OpsiConfigserver', 'OpsiDepotserver', 'OpsiClient']
 
-				methodPrefix = eval("%s.backendMethodPrefix" % objClass)
+				methodPrefix = eval(f"{objClass}.backendMethodPrefix")
 
-				self.__overallProgressSubject.setMessage(u"Replicating %s" % objClass)
-				self.__currentProgressSubject.setTitle(u"Replicating %s" % objClass)
+				self.__overallProgressSubject.setMessage(f"Replicating {objClass}")
+				self.__currentProgressSubject.setTitle(f"Replicating {objClass}")
 				for subClass in subClasses:
 					filter = {}
 					if subClass == 'OpsiConfigserver':
@@ -247,7 +246,7 @@ class BackendReplicator:
 					Class = eval(subClass)
 
 					self.__currentProgressSubject.reset()
-					self.__currentProgressSubject.setMessage(u"Reading objects")
+					self.__currentProgressSubject.setMessage("Reading objects")
 					self.__currentProgressSubject.setEnd(1)
 					objs = []
 
@@ -268,25 +267,25 @@ class BackendReplicator:
 							for obj in objs:
 								if not obj.getParentGroupId() or obj.getParentGroupId() in groupIds:
 									if not obj.getParentGroupId():
-										logger.debug(u"Adding group '%s' without parent group set" % obj)
+										logger.debug("Adding group '%s' without parent group set", obj)
 									else:
-										logger.debug(u"Adding group '%s' with parent group '%s' already added" % (obj, obj.getParentGroupId()))
+										logger.debug("Adding group '%s' with parent group '%s' already added", obj, obj.getParentGroupId())
 									sortedObjs.append(obj)
 									groupIds.append(obj.getId())
 								else:
-									logger.debug(u"Cannot add group '%s' parent group '%s' not added yet" % (obj, obj.getParentGroupId()))
+									logger.debug("Cannot add group '%s' parent group '%s' not added yet", obj, obj.getParentGroupId())
 									notAddedObjs.append(obj)
 							if not notAddedObjs:
 								break
 							if len(notAddedObjs) == len(objs):
 								for obj in notAddedObjs:
-									logger.error(u"Failed to add group: %s" % obj)
+									logger.error("Failed to add group: %s", obj)
 								break
 							objs = notAddedObjs
 						objs = sortedObjs
 
 					self.__currentProgressSubject.reset()
-					self.__currentProgressSubject.setMessage(u"Writing objects")
+					self.__currentProgressSubject.setMessage("Writing objects")
 					if subClass == 'OpsiConfigserver' and objs:
 						configServer = objs[0]
 						depotServers.extend(objs)
@@ -309,7 +308,7 @@ class BackendReplicator:
 								meth(obj)
 							except Exception as err:
 								logger.debug(err, exc_info=True)
-								logger.error("Failed to replicate object %s: %s" % (obj, err))
+								logger.error("Failed to replicate object %s: %s", obj, err)
 							self.__currentProgressSubject.addToState(1)
 					self.__currentProgressSubject.setState(len(objs))
 
@@ -317,8 +316,8 @@ class BackendReplicator:
 
 			if self.__newServerId:
 				self.__currentProgressSubject.reset()
-				self.__currentProgressSubject.setMessage(u"Renaming server")
-				self.__currentProgressSubject.setTitle(u"Renaming server")
+				self.__currentProgressSubject.setMessage("Renaming server")
+				self.__currentProgressSubject.setTitle("Renaming server")
 				self.__currentProgressSubject.setEnd(1)
 				if not self.__oldServerId:
 					if configServer:
@@ -326,10 +325,10 @@ class BackendReplicator:
 					elif depotServers:
 						self.__oldServerId = depotServers[0].id
 					else:
-						logger.error(u"No config/depot servers found")
+						logger.error("No config/depot servers found")
 
 				if self.__oldServerId and self.__oldServerId != self.__newServerId:
-					logger.notice(u"Renaming config server {0!r} to {1!r}".format(self.__oldServerId, self.__newServerId))
+					logger.notice("Renaming config server {0!r} to {1!r}".format(self.__oldServerId, self.__newServerId))
 					renamingBackend = wb
 					try:
 						renamingBackend.host_renameOpsiDepotserver()
@@ -343,12 +342,12 @@ class BackendReplicator:
 
 					newDepots = []
 					for depot in renamingBackend.host_getObjects(type='OpsiDepotserver'):
-						hash = depot.toHash()
-						del hash['type']
+						_hash = depot.toHash()
+						del _hash['type']
 						if depot.id == self.__newServerId:
-							newDepots.append(OpsiConfigserver.fromHash(hash))
+							newDepots.append(OpsiConfigserver.fromHash(_hash))
 						else:
-							newDepots.append(OpsiDepotserver.fromHash(hash))
+							newDepots.append(OpsiDepotserver.fromHash(_hash))
 					renamingBackend.host_createObjects(newDepots)
 
 				self.__overallProgressSubject.addToState(1)

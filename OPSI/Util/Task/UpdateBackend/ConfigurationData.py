@@ -8,13 +8,11 @@ Updating backend data.
 This holds backend-independent migrations.
 """
 
-from OPSI.Logger import Logger
 from OPSI.System.Posix import isOpenSUSE, isSLES
 
+from opsicommon.logging import logger
+
 __all__ = ('updateBackendData', )
-
-
-LOGGER = Logger()
 
 
 def updateBackendData(backend):
@@ -36,22 +34,22 @@ def setDefaultWorkbenchLocation(backend):
 
 	if isSLES() or isOpenSUSE():
 		# On Suse
-		localWorkbenchPath = u'file:///var/lib/opsi/workbench'
+		localWorkbenchPath = 'file:///var/lib/opsi/workbench'
 	else:
 		# On non-SUSE systems the path was usually /home/opsiproducts
-		localWorkbenchPath = u'file:///home/opsiproducts'
+		localWorkbenchPath = 'file:///home/opsiproducts'
 
 	changedServers = set()
 	for server in servers:
 		if server.getWorkbenchLocalUrl() is None:
-			LOGGER.notice("Setting missing value for workbenchLocalUrl on %s to %s", server.id, localWorkbenchPath)
+			logger.notice("Setting missing value for workbenchLocalUrl on %s to %s", server.id, localWorkbenchPath)
 			server.setWorkbenchLocalUrl(localWorkbenchPath)
 			changedServers.add(server)
 
 		if server.getWorkbenchRemoteUrl() is None:
 			depotAddress = getServerAddress(server.depotRemoteUrl)
-			remoteWorkbenchPath = u'smb://{}/opsi_workbench'.format(depotAddress)
-			LOGGER.notice("Setting missing value for workbenchRemoteUrl on %s to %s", server.id, remoteWorkbenchPath)
+			remoteWorkbenchPath = f'smb://{depotAddress}/opsi_workbench'
+			logger.notice("Setting missing value for workbenchRemoteUrl on %s to %s", server.id, remoteWorkbenchPath)
 			server.setWorkbenchRemoteUrl(remoteWorkbenchPath)
 			changedServers.add(server)
 

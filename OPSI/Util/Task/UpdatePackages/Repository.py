@@ -8,12 +8,9 @@ Handling repositories.
 
 from html.parser import HTMLParser
 
-from OPSI.Logger import Logger
 from OPSI.Types import forceBool, forceUnicode, forceUnicodeList
 
 __all__ = ('LinksExtractor', 'ProductRepositoryInfo')
-
-logger = Logger()
 
 
 class ProductRepositoryInfo:  # pylint: disable=dangerous-default-value,too-many-instance-attributes,too-few-public-methods,too-many-arguments,too-many-locals

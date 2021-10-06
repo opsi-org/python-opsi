@@ -6,10 +6,7 @@
 Applications for the use of opsi in an twisted-application context.
 """
 
-from OPSI.Logger import Logger
-
-logger = Logger()
-
+from opsicommon.logging import logger
 
 class AppRunner:  # pylint: disable=too-few-public-methods
 
@@ -34,7 +31,7 @@ class _BaseProfiler(AppRunner):  # pylint: disable=too-few-public-methods
 
 			out = self._config.get("profile")
 
-			with open(out, "w") as outputfile:
+			with open(out, mode="w", encoding="utf-8") as outputfile:
 				statistics = pstats.Stats(profiler, stream=outputfile)
 				statistics.strip_dirs()
 				statistics.sort_stats(-1)

@@ -23,15 +23,17 @@ from io import StringIO
 from itertools import islice
 
 from OPSI.Exceptions import BackendBadValueError, BackendMissingDataError
-from OPSI.Logger import Logger
 from OPSI.Types import (
 	forceArchitecture, forceBool, forceDict, forceEmailAddress, forceFilename,
 	forceHardwareAddress, forceHardwareDeviceId, forceHardwareVendorId,
 	forceHostname, forceInt, forceIPAddress, forceList, forceOct,
 	forceProductId, forceTime, forceUnicode, forceUnicodeList,
-	forceUnicodeLower, forceUnicodeLowerList)
+	forceUnicodeLower, forceUnicodeLowerList
+)
 from OPSI.System import which, execute
 from OPSI.Util import ipAddressInNetwork
+
+from opsicommon.logging import logger
 
 if os.name == 'posix':
 	import fcntl
@@ -49,8 +51,6 @@ else:
 	win32file = None # pylint: disable=invalid-name
 	pywintypes = None # pylint: disable=invalid-name
 	pywintypeserror = IOError # pylint: disable=invalid-name
-
-logger = Logger()
 
 
 def requiresParsing(function):

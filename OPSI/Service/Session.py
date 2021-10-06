@@ -15,11 +15,9 @@ import threading
 
 from OPSI.Exceptions import OpsiAuthenticationError
 from OPSI.Types import forceInt, forceUnicode
-from OPSI.Logger import Logger
 from OPSI.Util import randomString
 
-logger = Logger()
-
+from opsicommon.logging import logger
 
 class Session:  # pylint: disable=too-many-instance-attributes
 	def __init__(self, sessionHandler, name='OPSISID', sessionMaxInactiveInterval=120):
@@ -44,11 +42,9 @@ class Session:  # pylint: disable=too-many-instance-attributes
 		self.touch()
 
 	def __repr__(self):
-		return "<{0}({1!r}, name={2!r}, sessionMaxInactiveInterval={3!r}>".format(
-			self.__class__.__name__,
-			self.sessionHandler,
-			self.name,
-			self.sessionMaxInactiveInterval
+		return (
+			f"<{self.__class__.__name__}"
+			f"({self.sessionHandler}, name={self.name}, sessionMaxInactiveInterval={self.sessionMaxInactiveInterval})>"
 		)
 
 	def decreaseUsageCount(self):
@@ -177,8 +173,8 @@ the value holds the sesion.
 
 	def sessionExpired(self, session):
 		logger.notice(
-			"Session '%s' from ip '%s', application '%s' expired after %d seconds" %
-			(session.uid, session.ip, session.userAgent, (time.time() - session.lastModified))
+			"Session '%s' from ip '%s', application '%s' expired after %d seconds",
+			session.uid, session.ip, session.userAgent, (time.time() - session.lastModified)
 		)
 
 		if session.usageCount > 0:
@@ -216,7 +212,10 @@ the value holds the sesion.
 
 		try:
 			del self.sessions[uid]
-			logger.notice("Session '%s' from ip '%s', application '%s' deleted" % (session.uid, session.ip, session.userAgent))
+			logger.notice(
+				"Session '%s' from ip '%s', application '%s' deleted",
+				session.uid, session.ip, session.userAgent
+			)
 			del session
 		except KeyError:
 			pass

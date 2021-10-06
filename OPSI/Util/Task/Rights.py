@@ -20,15 +20,14 @@ from functools import lru_cache
 from OPSI.Config import (
 	FILE_ADMIN_GROUP, OPSI_ADMIN_GROUP, DEFAULT_DEPOT_USER, DEFAULT_DEPOT_USER_HOME, OPSICONFD_USER
 )
-from OPSI.Logger import Logger
 from OPSI.System.Posix import (
 	getLocalFqdn, isCentOS, isOpenSUSE, isRHEL, isSLES, isUCS
 )
 from OPSI.Backend.Base.ConfigData import OPSI_PASSWD_FILE
 
 from opsicommon.utils import Singleton
+from opsicommon.logging import logger
 
-logger = Logger()
 
 _HAS_ROOT_RIGHTS = os.geteuid() == 0
 

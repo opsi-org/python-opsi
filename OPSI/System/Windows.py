@@ -45,11 +45,12 @@ import win32wnet		# pylint: disable=import-error
 
 import pefile
 
-from OPSI.Logger import Logger
 from OPSI.Types import (
 	forceBool, forceInt, forceUnicode, forceUnicodeList,
 	forceUnicodeLower, forceFilename
 )
+
+from opsicommon.logging import logger
 
 __all__ = (
 	'HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE', 'hooks', 'SystemSpecificHook',
@@ -73,7 +74,6 @@ __all__ = (
 	'setLocalSystemTime', 'Impersonate'
 )
 
-logger = Logger()
 hooks = []
 
 HKEY_CURRENT_USER = winreg.HKEY_CURRENT_USER
@@ -231,7 +231,7 @@ def getOpsiHotfixName(helper=None):  #pylint: disable=too-many-branches,too-many
 		else:
 			_os = 'win10-win2016'
 
-	return 'mshotfix-%s-%s-%s' % (_os, arch, lang)
+	return f'mshotfix-{_os}-{arch}-{lang}'
 
 
 def getHostname():
@@ -375,7 +375,7 @@ class NetworkPerformanceCounter(threading.Thread):  # pylint: disable=too-many-i
 		windll.iphlpapi.GetIfTable(byref(iftable), byref(iftable_size), 0)
 		bestRatio = 0.0
 		if iftable.dwNumEntries <= 0:
-			raise RuntimeError("No network interfaces found while searching for interface '%s'" % interface)
+			raise RuntimeError(f"No network interfaces found while searching for interface '{interface}'")
 
 		for i in range(iftable.dwNumEntries):
 			ratio = difflib.SequenceMatcher(None, iftable.table[i].bDescr, interface).ratio()
@@ -387,7 +387,7 @@ class NetworkPerformanceCounter(threading.Thread):  # pylint: disable=too-many-i
 				self.interface = iftable.table[i].bDescr
 
 		if not self.interface:
-			raise ValueError("Network interface '%s' not found" % interface)
+			raise ValueError(f"Network interface '{interface}' not found")
 
 		logger.info("NetworkPerformanceCounter: using interface '%s' match ratio (%s)", self.interface, bestRatio)
 		self.start()
@@ -1470,7 +1470,9 @@ def getUserToken(sessionId=None, duplicateFrom="winlogon.exe"):
 
 	pid = getPid(process=duplicateFrom, sessionId=sessionId)
 	if not pid:
-		raise RuntimeError("Failed to get user token, pid of '%s' not found in session '%s'" % (duplicateFrom, sessionId))
+		raise RuntimeError(
+			f"Failed to get user token, pid of '{duplicateFrom}' not found in session '{sessionId}'"
+		)
 
 	hProcess = win32api.OpenProcess(win32con.MAXIMUM_ALLOWED, False, pid)
 	hPToken = win32security.OpenProcessToken(
@@ -1587,7 +1589,7 @@ def createUser(username, password, groups=[]):  # pylint: disable=dangerous-defa
 
 	domain = domain.upper()
 	if domain != getHostname().upper():
-		raise ValueError("Can only handle domain %s" % getHostname().upper())
+		raise ValueError(f"Can only handle domain {getHostname().upper()}")
 
 	userData = {
 		'name': username,
@@ -1620,7 +1622,7 @@ def deleteUser(username, deleteProfile=True):
 
 	domain = domain.upper()
 	if domain != getHostname().upper():
-		raise ValueError("Can only handle domain %s" % getHostname().upper())
+		raise ValueError(f"Can only handle domain {getHostname().upper()}")
 
 	if deleteProfile:
 		try:
@@ -1647,7 +1649,7 @@ def existsUser(username):
 
 	domain = domain.upper()
 	if domain != getHostname().upper():
-		raise ValueError("Can only handle domain %s" % getHostname().upper())
+		raise ValueError(f"Can only handle domain {getHostname().upper()}")
 
 	for user in win32net.NetUserEnum("\\\\" + domain, 0)[0]:
 		if user.get('name').lower() == username.lower():

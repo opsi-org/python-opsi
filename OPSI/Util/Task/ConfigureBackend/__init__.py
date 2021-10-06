@@ -14,13 +14,12 @@ import re
 import socket
 import sys
 
-from OPSI.Logger import Logger
 from OPSI.System.Posix import getNetworkConfiguration, getLocalFqdn
 from OPSI.Util import objectToBeautifiedText
 
-__all__ = ('getBackendConfiguration', 'updateConfigFile')
+from opsicommon.logging import logger
 
-LOGGER = Logger()
+__all__ = ('getBackendConfiguration', 'updateConfigFile')
 
 
 def getBackendConfiguration(backendConfigFile, customGlobals=None):
@@ -41,12 +40,12 @@ please pass them here. If this is None defaults will be used.
 			'sys': sys,
 		}
 
-	LOGGER.info(u"Loading backend config '%s'", backendConfigFile)
-	with open(backendConfigFile) as configFile:
-		exec(configFile.read(), customGlobals)
+	logger.info("Loading backend config '%s'", backendConfigFile)
+	with open(backendConfigFile, encoding="utf-8") as configFile:
+		exec(configFile.read(), customGlobals)  # pylint: disable=exec-used
 
 	config = customGlobals['config']
-	LOGGER.debug(u"Current backend config: %s", config)
+	logger.debug("Current backend config: %s", config)
 
 	return config
 
@@ -68,9 +67,9 @@ on to. Defaults to logger.notice
 		return text.replace("true", "True").replace("false", "False")
 
 	if notificationFunction is None:
-		notificationFunction = LOGGER.notice
+		notificationFunction = logger.notice
 
-	notificationFunction(u"Updating backend config '%s'" % backendConfigFile)
+	notificationFunction(f"Updating backend config '{backendConfigFile}'")
 
 	lines = []
 	with codecs.open(backendConfigFile, 'r', 'utf-8') as backendFile:
@@ -82,9 +81,9 @@ on to. Defaults to logger.notice
 	with codecs.open(backendConfigFile, 'w', 'utf-8') as backendFile:
 		backendFile.writelines(lines)
 		backendConfigData = correctBooleans(objectToBeautifiedText(newConfig))
-		backendFile.write("config = %s\n" % backendConfigData)
+		backendFile.write(f"config = {backendConfigData}\n")
 
-	notificationFunction(u"Backend config '%s' updated" % backendConfigFile)
+	notificationFunction(f"Backend config '{backendConfigFile}' updated")
 
 
 def _getSysConfig():
@@ -93,21 +92,21 @@ def _getSysConfig():
 
 	Should be used as **fallback only**!
 	"""
-	LOGGER.notice(u"Getting current system config")
+	logger.notice("Getting current system config")
 	fqdn = getLocalFqdn()
 	sysConfig = {
 		'fqdn': fqdn,
-		'hostname': fqdn.split(u'.')[0]
+		'hostname': fqdn.split('.')[0]
 	}
 
 	sysConfig.update(getNetworkConfiguration())
 
-	LOGGER.notice(u"System information:")
-	LOGGER.notice(u"   ip address   : %s" % sysConfig['ipAddress'])
-	LOGGER.notice(u"   netmask      : %s" % sysConfig['netmask'])
-	LOGGER.notice(u"   subnet       : %s" % sysConfig['subnet'])
-	LOGGER.notice(u"   broadcast    : %s" % sysConfig['broadcast'])
-	LOGGER.notice(u"   fqdn         : %s" % sysConfig['fqdn'])
-	LOGGER.notice(u"   hostname     : %s" % sysConfig['hostname'])
+	logger.notice("System information:")
+	logger.notice("   ip address   : %s", sysConfig['ipAddress'])
+	logger.notice("   netmask      : %s", sysConfig['netmask'])
+	logger.notice("   subnet       : %s", sysConfig['subnet'])
+	logger.notice("   broadcast    : %s", sysConfig['broadcast'])
+	logger.notice("   fqdn         : %s", sysConfig['fqdn'])
+	logger.notice("   hostname     : %s", sysConfig['hostname'])
 
 	return sysConfig

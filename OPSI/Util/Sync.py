@@ -14,11 +14,11 @@ import ctypes
 import ctypes.util
 import tempfile
 
-from OPSI.Logger import Logger
 from OPSI.Types import forceFilename, forceUnicode
 
+from opsicommon.logging import logger
+
 _librsync = None
-logger = Logger()
 
 if os.name == "posix":
 	path = ctypes.util.find_library("rsync")
@@ -26,13 +26,13 @@ if os.name == "posix":
 		raise ImportError("Could not find librsync, make sure it is installed")
 	try:
 		_librsync = ctypes.cdll.LoadLibrary(path)
-	except OSError:
-		raise ImportError(f"Could not load librsync at '{path}'")
+	except OSError as err:
+		raise ImportError(f"Could not load librsync at '{path}'") from err
 elif os.name == "nt":
 	try:
 		_librsync = ctypes.cdll.librsync
-	except:
-		raise ImportError("Could not load librsync, make sure it is installed")
+	except Exception as err:
+		raise ImportError("Could not load librsync, make sure it is installed") from err
 else:
 	raise NotImplementedError("Librsync is not supported on your platform")
 
@@ -129,13 +129,13 @@ def _execute(job, input_handle, output_handle=None):
 		# Set up our buffer for output.
 		buff.next_out = ctypes.cast(out, ctypes.c_char_p)
 		buff.avail_out = ctypes.c_size_t(RS_JOB_BLOCKSIZE)
-		r = _librsync.rs_job_iter(job, ctypes.byref(buff))
+		res = _librsync.rs_job_iter(job, ctypes.byref(buff))
 		if output_handle:
 			output_handle.write(out.raw[:RS_JOB_BLOCKSIZE - buff.avail_out])
-		if r == RS_DONE:
+		if res == RS_DONE:
 			break
-		elif r != RS_BLOCKED:
-			raise LibrsyncError(r)
+		if res != RS_BLOCKED:
+			raise LibrsyncError(res)
 		if buff.avail_in > 0:
 			# There is data left in the input buffer, librsync did not consume
 			# all of it. Rewind the file a bit so we include that data in our
@@ -170,8 +170,7 @@ def librsyncSignature(filename, base64Encoded=True):
 				sigfile_handle.seek(0)
 				if base64Encoded:
 					return base64.encodebytes(sigfile_handle.read()).decode("ascii")
-				else:
-					return sigfile_handle.read()
+				return sigfile_handle.read()
 			finally:
 				_librsync.rs_job_free(job)
 				sigfile_handle.close()
@@ -187,12 +186,12 @@ def librsyncDeltaFile(filename, signature, deltafile):
 	deltafile = forceFilename(deltafile)
 	if filename == deltafile:
 		raise ValueError("filename and deltafile are the same file")
-	
+
 	try:
 		sigfile_handle = tempfile.NamedTemporaryFile("wb+")
 		sigfile_handle.write(signature)
 		sigfile_handle.seek(0)
-		
+
 		sig = ctypes.c_void_p()
 		try:
 			job = _librsync.rs_loadsig_begin(ctypes.byref(sig))
@@ -203,7 +202,7 @@ def librsyncDeltaFile(filename, signature, deltafile):
 			res = _librsync.rs_build_hash_table(sig)
 			if res != RS_DONE:
 				raise LibrsyncError(res)
-			
+
 			with open(filename, "rb") as filehandle:
 				with open(deltafile, "wb") as deltafile_handle:
 					job = _librsync.rs_delta_begin(sig)
@@ -234,10 +233,10 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
 		raise ValueError("deltafile and newfile are the same file")
 	if deltafile == oldfile:
 		raise ValueError("oldfile and deltafile are the same file")
-	
+
 	try:
 		with open(oldfile, "rb") as oldfile_handle:
-			
+
 			@patch_callback
 			def read_cb(opaque, pos, length, buff):
 				oldfile_handle.seek(pos)
@@ -248,7 +247,7 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
 				buff_p = ctypes.cast(buff, ctypes.POINTER(ctypes.c_char_p)).contents
 				buff_p.value = block
 				return RS_DONE
-			
+
 			with open(deltafile, "rb") as deltafile_handle:
 				with open(newfile, "wb") as newfile_handle:
 					job = _librsync.rs_patch_begin(read_cb, None)

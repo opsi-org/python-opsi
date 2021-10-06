@@ -2,17 +2,19 @@
 
 # Copyright (c) uib GmbH <info@uib.de>
 # License: AGPL-3.0
+"""
+setup tasks
+"""
 
 import pwd
 import grp
 import subprocess
 
 from OPSI.Config import OPSI_ADMIN_GROUP, FILE_ADMIN_GROUP, DEFAULT_DEPOT_USER, DEFAULT_DEPOT_USER_HOME
-from OPSI.Logger import Logger
 from OPSI.System import get_subprocess_environment
 from OPSI.Util.Task.Rights import set_rights
 
-logger = Logger()
+from opsicommon.logging import logger
 
 def create_group(groupname: str, system: bool = False):
 	logger.notice("Creating group: %s", groupname)

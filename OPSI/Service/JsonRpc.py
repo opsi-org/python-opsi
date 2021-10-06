@@ -14,13 +14,10 @@ import time
 import traceback
 
 from OPSI.Exceptions import OpsiBadRpcError, OpsiRpcError
-from OPSI.Logger import Logger
 from OPSI.Types import forceUnicode
 from OPSI.Util import deserialize
 
-
-logger = Logger()
-
+from opsicommon.logging import logger
 
 class JsonRpc:  # pylint: disable=too-many-instance-attributes
 	def __init__(self, instance, interface, rpc):
@@ -52,7 +49,7 @@ class JsonRpc:  # pylint: disable=too-many-instance-attributes
 
 	def getMethodName(self):
 		if self.action:
-			return '%s_%s' % (self.action, self.method)
+			return f"{self.action}_{self.method}"
 
 		return self.method
 
@@ -77,7 +74,7 @@ class JsonRpc:  # pylint: disable=too-many-instance-attributes
 				methodInterface = None
 
 			if not methodInterface:
-				raise OpsiRpcError("Method '%s' is not valid" % methodName)
+				raise OpsiRpcError(f"Method '{methodName}' is not valid")
 
 			keywords = {}
 			if methodInterface['keywords']:
@@ -90,7 +87,7 @@ class JsonRpc:  # pylint: disable=too-many-instance-attributes
 				if len(params) >= parameterCount:
 					kwargs = params.pop(-1)
 					if not isinstance(kwargs, dict):
-						raise TypeError("kwargs param is not a dict: %s" % params[-1])
+						raise TypeError(f"kwargs param is not a dict: {params[-1]}")
 
 					for (key, value) in kwargs.items():
 						keywords[str(key)] = deserialize(value)

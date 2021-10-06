@@ -15,9 +15,12 @@ from twisted.protocols.basic import LineReceiver
 from twisted.internet.protocol import ServerFactory, ClientFactory
 from twisted.internet import reactor, defer
 
-from OPSI.Logger import Logger
-from OPSI.Types import (forceBool, forceInt, forceIntList, forceIpAddress,
-	forceList, forceUnicode, forceUnicodeList)
+from OPSI.Types import (
+	forceBool, forceInt, forceIntList, forceIpAddress,
+	forceList, forceUnicode, forceUnicodeList
+)
+
+from opsicommon.logging import logger
 
 __all__ = (
 	'Subject', 'MessageSubject', 'ChoiceSubject', 'ProgressSubject',
@@ -28,11 +31,9 @@ __all__ = (
 	'NotificationClientFactory', 'NotificationClient'
 )
 
-logger = Logger()
-
 
 class Subject:
-	def __init__(self, id, type=u'', title=u'', **args):
+	def __init__(self, id, type='', title='', **args):
 		self._id = forceUnicode(id)
 		self._type = forceUnicode(type)
 		self._title = forceUnicode(title)
@@ -73,14 +74,14 @@ class Subject:
 		}
 
 	def __str__(self):
-		return u'<%s type: %s, id: %s>' % (self.__class__.__name__, self._type, self._id)
+		return '<%s type: %s, id: %s>' % (self.__class__.__name__, self._type, self._id)
 
 	def __repr__(self):
 		return self.__str__()
 
 
 class MessageSubject(Subject):
-	def __init__(self, id, type=u'', title=u'', **args):
+	def __init__(self, id, type='', title='', **args):
 		Subject.__init__(self, id, type, title, **args)
 		self.reset()
 		try:
@@ -97,7 +98,7 @@ class MessageSubject(Subject):
 
 	def reset(self):
 		Subject.reset(self)
-		self._message = u''
+		self._message = ''
 		self._severity = 0
 
 	def setMessage(self, message, severity=0):
@@ -123,7 +124,7 @@ class MessageSubject(Subject):
 
 
 class ChoiceSubject(MessageSubject):
-	def __init__(self, id, type=u'', title=u'', **args):
+	def __init__(self, id, type='', title='', **args):
 		MessageSubject.__init__(self, id, type, title, **args)
 		self.reset()
 		self._callbacks = []
@@ -209,7 +210,7 @@ class ChoiceSubject(MessageSubject):
 
 
 class ProgressSubject(MessageSubject):
-	def __init__(self, id, type=u'', title=u'', **args):
+	def __init__(self, id, type='', title='', **args):
 		MessageSubject.__init__(self, id, type, title, **args)
 		self.reset()
 		self._fireAlways = True
@@ -422,7 +423,7 @@ class SubjectsObserver(ChoiceObserver, ProgressObserver):
 
 
 class MessageSubjectProxy(ProgressSubject, ProgressObserver, ChoiceSubject, ChoiceObserver):
-	def __init__(self, id, type=u'', title=u'', **args):
+	def __init__(self, id, type='', title='', **args):
 		ChoiceSubject.__init__(self, id, type, title, **args)
 		ChoiceObserver.__init__(self)
 		ProgressSubject.__init__(self, id, type, title, **args)
@@ -445,12 +446,12 @@ class MessageSubjectProxy(ProgressSubject, ProgressObserver, ChoiceSubject, Choi
 
 
 class ChoiceSubjectProxy(MessageSubjectProxy):
-	def __init__(self, id, type=u'', title=u'', **args):
+	def __init__(self, id, type='', title='', **args):
 		MessageSubjectProxy.__init__(self, id, type, title, **args)
 
 
 class ProgressSubjectProxy(MessageSubjectProxy):
-	def __init__(self, id, type=u'', title=u'', **args):
+	def __init__(self, id, type='', title='', **args):
 		MessageSubjectProxy.__init__(self, id, type, title, **args)
 
 
@@ -589,8 +590,8 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 			try:
 				logger.debug("Sending line '%s' to client %s", jsonBytes, client)
 				client.sendLine(jsonBytes)
-			except Exception as e:
-				logger.warning("Failed to send line to client %s: %s", client, e)
+			except Exception as err:
+				logger.warning("Failed to send line to client %s: %s", client, err)
 
 
 class NotificationServer(threading.Thread, SubjectsObserver):
@@ -598,7 +599,7 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 		threading.Thread.__init__(self)
 		self._address = forceIpAddress(address)
 		if not self._address:
-			self._address = u'0.0.0.0'
+			self._address = '0.0.0.0'
 		self._start_port = forceInt(start_port)
 		self._factory = NotificationServerFactory()
 		self._factory.setSubjects(subjects)
@@ -648,20 +649,20 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 		while True:
 			trynum += 1
 			try:
-				logger.debug("Notification server - attempt %d, trying port %d" % (trynum, port))
+				logger.debug("Notification server - attempt %d, trying port %d", trynum, port)
 				if self._address == '0.0.0.0':
 					self._server = reactor.listenTCP(port, self._factory)		#pylint: disable=no-member
 				else:
 					self._server = reactor.listenTCP(port, self._factory, interface=self._address)		#pylint: disable=no-member
 				self._port = port
 				self._listening = True
-				logger.info("Notification server is now listening on port %d after %d attempts" % (port, trynum))
+				logger.info("Notification server is now listening on port %d after %d attempts", port, trynum)
 				if not reactor.running:						#pylint: disable=no-member
 					logger.info("Starting reactor")
 					reactor.run(installSignalHandlers=0)	#pylint: disable=no-member
 				break
 			except Exception as error:
-				logger.debug("Notification server - attempt %d, failed to listen on port %d: %s" % (trynum, port, error))
+				logger.debug("Notification server - attempt %d, failed to listen on port %d: %s", trynum, port, error)
 				if trynum >= 20:
 					self._error = forceUnicode(error)
 					logger.error(error, exc_info=True)
@@ -771,7 +772,7 @@ class NotificationClientFactory(ClientFactory):
 			time.sleep(0.1)
 			timeout += 0.1
 		if timeout >= self._timeout:
-			raise RuntimeError("Execute timed out after %d seconds" % self._timeout)
+			raise RuntimeError(f"Execute timed out after {self._timeout} seconds")
 
 		rpc = {'id': None, "method": method, "params": params}
 		self.sendLine(json.dumps(rpc))

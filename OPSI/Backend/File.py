@@ -22,7 +22,6 @@ from OPSI.Exceptions import (
 	BackendBadValueError, BackendConfigurationError, BackendError,
 	BackendIOError, BackendMissingDataError, BackendUnaccomplishableError
 )
-from OPSI.Logger import Logger
 from OPSI.Types import (
 	forceBool, forceHostId, forceFilename, forceList, forceObjectClass,
 	forceObjectClassList, forceProductId, forceUnicode, forceUnicodeList
@@ -32,9 +31,9 @@ from OPSI.Util.File import IniFile, LockableFile
 from OPSI.Util.File.Opsi import HostKeyFile, PackageControlFile
 from OPSI.Object import *  # needed for calls to "eval"  # pylint: disable=wildcard-import,unused-wildcard-import
 
-__all__ = ('FileBackend', )
+from opsicommon.logging import logger
 
-logger = Logger()
+__all__ = ('FileBackend', )
 
 
 class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attributes,too-many-public-methods

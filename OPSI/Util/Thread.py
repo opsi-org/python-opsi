@@ -11,10 +11,9 @@ import inspect
 import ctypes
 from queue import Queue, Empty
 
-from OPSI.Logger import Logger
+from opsicommon.logging import logger
 
-logger = Logger()
-GlobalPool = None
+global_pool = None  # pylint: disable=invalid-name
 
 
 class ThreadPoolException(Exception):
@@ -22,16 +21,16 @@ class ThreadPoolException(Exception):
 
 
 def getGlobalThreadPool(*args, **kwargs):
-	global GlobalPool
-	if not GlobalPool:
-		GlobalPool = ThreadPool(*args, **kwargs)
+	global global_pool  # pylint: disable=global-statement,invalid-name
+	if not global_pool:
+		global_pool = ThreadPool(*args, **kwargs)
 	else:
 		size = kwargs.get('size', 0)
-		GlobalPool.increaseUsageCount()
-		if GlobalPool.size < size:
-			GlobalPool.adjustSize(size)
+		global_pool.increaseUsageCount()
+		if global_pool.size < size:
+			global_pool.adjustSize(size)
 
-	return GlobalPool
+	return global_pool
 
 
 def _async_raise(tid, exctype):
@@ -43,7 +42,7 @@ def _async_raise(tid, exctype):
 	if res == 0:
 		logger.warning("Invalid thread id %s", tid)
 		return
-	elif res != 1:
+	if res != 1:
 		# if it returns a number greater than one, you're in trouble,
 		# and you should call it again with exc=NULL to revert the effect
 		ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), 0)
@@ -55,15 +54,16 @@ class KillableThread(threading.Thread):
 		"""determines this (self's) thread id"""
 		# do we have it cached?
 		if hasattr(self, "_thread_id"):
-			return self._thread_id
+			return self._thread_id  # pylint: disable=access-member-before-definition
 
 		# no, look for it in the _active dict
-		for tid, tobj in threading._active.items():
+		for tid, tobj in threading._active.items():  # pylint: disable=protected-access
 			if tobj is self:
-				self._thread_id = tid
+				self._thread_id = tid  # pylint: disable=attribute-defined-outside-init
 				return tid
 
-		logger.warning(u"Cannot terminate, could not determine the thread's id")
+		logger.warning("Cannot terminate, could not determine the thread's id")
+		return None
 
 	def raise_exc(self, exctype):
 		"""raises the given exception type in the context of this thread"""
@@ -73,7 +73,7 @@ class KillableThread(threading.Thread):
 		"""raises SystemExit in the context of the given thread, which should
 		cause the thread to exit silently (unless caught)"""
 		if not self.is_alive():
-			logger.debug(u"Cannot terminate, thread must be started")
+			logger.debug("Cannot terminate, thread must be started")
 			return
 		self.raise_exc(SystemExit)
 
@@ -107,7 +107,7 @@ class ThreadPool:
 	def adjustSize(self, size):
 		size = int(size)
 		if size < 1:
-			raise ThreadPoolException(u"Threadpool size %d is invalid" % size)
+			raise ThreadPoolException(f"Threadpool size {size} is invalid")
 
 		with self.workerLock:
 			self.size = size
@@ -118,7 +118,7 @@ class ThreadPool:
 					self.__createWorkers(num=self.size - len(self.worker))
 
 	def __deleteWorkers(self, num, wait=False):
-		logger.debug(u"Deleting %d workers", num)
+		logger.debug("Deleting %d workers", num)
 		deleteWorkers = set()
 
 		for worker in self.worker:
@@ -145,19 +145,19 @@ class ThreadPool:
 				worker.join(60)
 
 	def __createWorkers(self, num):
-		logger.debug(u"Creating %s new workers", num)
+		logger.debug("Creating %s new workers", num)
 		while num > 0:
 			self.worker.append(Worker(self, len(self.worker) + 1))
 			num -= 1
 
 	def addJob(self, function, callback=None, *args, **kwargs):
-		logger.debug(u"New job added: %s(%s, %s)", callback, args, kwargs)
+		logger.debug("New job added: %s(%s, %s)", callback, args, kwargs)
 		if not self.started:
-			raise ThreadPoolException(u"Pool is not running.")
+			raise ThreadPoolException("Pool is not running.")
 		self.jobQueue.put((function, callback, args, kwargs))
 
 	def stop(self):
-		logger.debug(u"Stopping ThreadPool")
+		logger.debug("Stopping ThreadPool")
 		with self.workerLock:
 			self.started = False
 			self.__deleteWorkers(num=len(self.worker), wait=True)
@@ -187,8 +187,8 @@ class Worker(threading.Thread):
 						result = function(*args, **kwargs)
 						success = True
 						errors = None
-					except Exception as error:
-						logger.debug(u"Problem running function: '%s'", error)
+					except Exception as error:  # pylint: disable=broad-except
+						logger.debug("Problem running function: '%s'", error)
 						result = None
 						errors = error
 

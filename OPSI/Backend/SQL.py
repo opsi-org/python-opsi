@@ -34,7 +34,6 @@ from OPSI.Exceptions import (
 	BackendModuleDisabledError, BackendReferentialIntegrityError,
 	BackendBadValueError
 )
-from OPSI.Logger import Logger
 from OPSI.Object import (
 	AuditHardware, AuditHardwareOnHost, AuditSoftware,
 	AuditSoftwareOnClient, AuditSoftwareToLicensePool, Config, ConfigState,
@@ -51,14 +50,14 @@ from OPSI.Types import (
 )
 from OPSI.Util import timestamp, getPublicKey
 
+from opsicommon.logging import logger
+
 __all__ = (
 	'timeQuery', 'onlyAllowSelect', 'SQL', 'SQLBackend',
 	'SQLBackendObjectModificationTracker'
 )
 
 DATABASE_SCHEMA_VERSION = 7
-
-logger = Logger()
 
 
 @contextmanager

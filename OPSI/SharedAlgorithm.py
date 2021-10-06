@@ -14,12 +14,11 @@ Algorithms to get a product order for an installation.
 
 from collections import defaultdict
 
-from OPSI.Logger import Logger
 from OPSI.Object import ProductOnClient
 from OPSI.Exceptions import OpsiProductOrderingError, BackendUnaccomplishableError
 from OPSI.Types import forceInt, forceBool
 
-logger = Logger()
+from opsicommon.logging import logger
 
 BOTTOM = -100
 
@@ -356,7 +355,7 @@ class Requirements:
 			noInListOrderedByPriors = j
 			return (candidate, noInListOrderedByPriors)
 
-		errorMessage = 'Potentially conflicting requirements for: {0}'.format(candidatesCausingProblemes)
+		errorMessage = f'Potentially conflicting requirements for: {candidatesCausingProblemes}'
 		logger.error(errorMessage)
 		raise OpsiProductOrderingError(errorMessage, candidatesCausingProblemes)
 

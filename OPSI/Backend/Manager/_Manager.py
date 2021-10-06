@@ -21,8 +21,9 @@ from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Backend.HostControlSafe import HostControlSafeBackend
 from OPSI.Exceptions import BackendConfigurationError
-from OPSI.Logger import Logger
 from OPSI.Types import forceBool
+
+from opsicommon.logging import logger
 
 from .AccessControl import BackendAccessControl
 from .Config import loadBackendConfig
@@ -32,8 +33,6 @@ from .Extender import BackendExtender
 __all__ = ('BackendManager', 'backendManagerFactory')
 
 _BACKEND_CONFIG_NAME_REGEX = re.compile(r'^[a-zA-Z0-9-_]+$')
-
-logger = Logger()
 
 
 class BackendManager(ExtendedBackend):
@@ -209,22 +208,22 @@ class BackendManager(ExtendedBackend):
 		if not self._backendConfigDir:
 			raise BackendConfigurationError("Backend config dir not given")
 		if not os.path.exists(self._backendConfigDir):
-			raise BackendConfigurationError("Backend config dir '%s' not found" % self._backendConfigDir)
+			raise BackendConfigurationError(f"Backend config dir '{self._backendConfigDir}' not found")
 		if not _BACKEND_CONFIG_NAME_REGEX.search(name):
-			raise ValueError("Bad backend config name '%s'" % name)
+			raise ValueError(f"Bad backend config name '{name}'")
 		name = name.lower()
-		backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % name)
+		backendConfigFile = os.path.join(self._backendConfigDir, f"{name}.conf")
 		return loadBackendConfig(backendConfigFile)
 
 	def __loadBackend(self, name):
 		config = self.__loadBackendConfig(name)
 		if not config['module']:
-			raise BackendConfigurationError("No module defined in backend config file for '%s'" % name)
+			raise BackendConfigurationError(f"No module defined in backend config file for '{name}'")
 		if not isinstance(config['config'], dict):
-			raise BackendConfigurationError("Bad type for 'config' var in backend config file for '%s': has to be dict" % name)
+			raise BackendConfigurationError(f"Bad type for 'config' var in backend config file for '{name}': has to be dict")
 		config['config']['name'] = name
 		moduleName = config['module']
-		backendClassName = '%sBackend' % config['module']
+		backendClassName = f"{config['module']}Backend"
 		exec(f'from OPSI.Backend.{moduleName} import {backendClassName}')  # pylint: disable=exec-used
 		return eval(f'{backendClassName}(**config["config"])')  # pylint: disable=eval-used
 
@@ -247,7 +246,7 @@ def backendManagerFactory(
 	elif len(postpath) == 2 and postpath[0] == 'extend':
 		extendPath = postpath[1]
 		if not re.search(r'^[a-zA-Z0-9_-]+$', extendPath):
-			raise ValueError("Extension config path '%s' refused" % extendPath)
+			raise ValueError(f"Extension config path '{extendPath}' refused")
 		backendManager = BackendManager(
 			dispatchConfigFile=dispatchConfigFile,
 			backendConfigDir=backendConfigDir,
