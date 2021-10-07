@@ -95,8 +95,8 @@ class BackendManager(ExtendedBackend):
 		bmc = dict(self.default_config)
 		if kwargs:
 			if "backend" in kwargs:
-				del bmc["dispatchConfigFile"]
-				del bmc["extensionConfigDir"]
+				# Do not use any defaults if concrete backend specified
+				bmc = {}
 			for key, val in kwargs.items():
 				found = False
 				for bmc_key in list(bmc):
