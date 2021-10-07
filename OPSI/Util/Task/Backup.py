@@ -326,9 +326,6 @@ If this is `None` information will be read from the current system.
 					try:
 						from OPSI.Backend.BackendManager import BackendManager  # pylint: disable=import-outside-toplevel
 						managerConfig = {
-							"dispatchConfigFile": '/etc/opsi/backendManager/dispatch.conf',
-							"backendConfigDir": '/etc/opsi/backends',
-							"extensionConfigDir": '/etc/opsi/backendManager/extend.d',
 							"depotBackend": False,
 							"dispatchIgnoreModules": ["OpsiPXEConfd", "DHCPD", "HostControl"]
 						}
