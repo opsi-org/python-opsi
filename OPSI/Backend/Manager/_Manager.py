@@ -48,7 +48,7 @@ class BackendManager(ExtendedBackend):
 		"extensionConfigDir": '/etc/opsi/backendManager/extend.d',
 		"depotBackend": True,
 		"hostControlBackend": True,
-		"hostControlSafeBackend": True,
+		"hostControlSafeBackend": True
 	}
 
 	def __init__(self, **kwargs):  # pylint: disable=super-init-not-called,too-many-locals,too-many-branches,too-many-statements
@@ -104,6 +104,8 @@ class BackendManager(ExtendedBackend):
 				if not found:
 					bmc[key] = val
 		kwargs = bmc
+		if "backend" in kwargs:
+			del kwargs["dispatchConfigFile"]
 
 		Backend.__init__(self, **kwargs)  # pylint: disable=non-parent-init-called
 
