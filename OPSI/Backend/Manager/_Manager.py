@@ -42,6 +42,14 @@ class BackendManager(ExtendedBackend):
 	This includes extending the backends, dispatching calls to backends,
 	limiting the access through ACL.
 	"""
+	default_config = {
+		"dispatchConfigFile": '/etc/opsi/backendManager/dispatch.conf',
+		"backendConfigDir": '/etc/opsi/backends',
+		"extensionConfigDir": '/etc/opsi/backendManager/extend.d',
+		"depotBackend": True,
+		"hostControlBackend": True,
+		"hostControlSafeBackend": True,
+	}
 
 	def __init__(self, **kwargs):  # pylint: disable=super-init-not-called,too-many-locals,too-many-branches,too-many-statements
 		"""
@@ -84,6 +92,11 @@ class BackendManager(ExtendedBackend):
 		self._context = self
 		self.backendAccessControl = None
 
+		bmc = dict(self.default_config)
+		if kwargs:
+			bmc.update(**kwargs)
+		kwargs = bmc
+
 		Backend.__init__(self, **kwargs)  # pylint: disable=non-parent-init-called
 
 		dispatch = False
@@ -96,17 +109,6 @@ class BackendManager(ExtendedBackend):
 		hostControlBackend = False
 		hostControlSafeBackend = False
 		loadBackend = None
-
-		if not kwargs:
-			kwargs = {
-				"dispatchConfigFile": '/etc/opsi/backendManager/dispatch.conf',
-				"backendConfigDir": '/etc/opsi/backends',
-				"extensionConfigDir": '/etc/opsi/backendManager/extend.d',
-				"depotBackend": True,
-				"hostControlBackend": True,
-				"hostControlSafeBackend": True,
-			}
-			logger.debug("No config given, using %s", kwargs)
 
 		argumentToDelete = set()
 		for (option, value) in kwargs.items():
