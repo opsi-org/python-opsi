@@ -95,10 +95,14 @@ class BackendManager(ExtendedBackend):
 		bmc = dict(self.default_config)
 		if kwargs:
 			for key, val in kwargs.items():
+				found = False
 				for bmc_key in list(bmc):
 					if bmc_key.lower() == key.lower():
 						bmc[bmc_key] = val
+						found = True
 						break
+				if not found:
+					bmc[key] = val
 		kwargs = bmc
 
 		Backend.__init__(self, **kwargs)  # pylint: disable=non-parent-init-called
