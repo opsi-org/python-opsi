@@ -92,9 +92,9 @@ class BackendManager(ExtendedBackend):
 		self._context = self
 		self.backendAccessControl = None
 
-		bmc = dict(self.default_config)
+		bmc = {key.lower(): val for key, val in self.default_config.items()}
 		if kwargs:
-			bmc.update(**kwargs)
+			bmc.update({key.lower(): val for key, val in kwargs.items()})
 		kwargs = bmc
 
 		Backend.__init__(self, **kwargs)  # pylint: disable=non-parent-init-called
