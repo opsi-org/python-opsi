@@ -94,6 +94,9 @@ class BackendManager(ExtendedBackend):
 
 		bmc = dict(self.default_config)
 		if kwargs:
+			if "backend" in kwargs:
+				del bmc["dispatchConfigFile"]
+				del bmc["extensionConfigDir"]
 			for key, val in kwargs.items():
 				found = False
 				for bmc_key in list(bmc):
@@ -104,8 +107,6 @@ class BackendManager(ExtendedBackend):
 				if not found:
 					bmc[key] = val
 		kwargs = bmc
-		if "backend" in kwargs:
-			del kwargs["dispatchConfigFile"]
 
 		Backend.__init__(self, **kwargs)  # pylint: disable=non-parent-init-called
 
