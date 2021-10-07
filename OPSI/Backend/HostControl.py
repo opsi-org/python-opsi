@@ -101,7 +101,9 @@ class RpcThread(KillableThread):  # pylint: disable=too-many-instance-attributes
 			username=forceUnicode(username),
 			password=forceUnicode(password),
 			connect_timeout=max(self.hostControlBackend._hostRpcTimeout, 0),
-			read_timeout=max(self.hostControlBackend._hostRpcTimeout, 0)
+			read_timeout=max(self.hostControlBackend._hostRpcTimeout, 0),
+			connect_on_init=False,
+			create_methods=False
 		)
 
 	def run(self):
@@ -160,12 +162,10 @@ class HostControlBackend(ExtendedBackend):
 
 	def __repr__(self):
 		try:
-			return '<{0}(resolveHostAddress={1!r}, maxConnections={2!r})>'.format(
-				self.__class__.__name__, self._resolveHostAddress, self._maxConnections
-			)
+			return f'<{self.__class__.__name__}(resolveHostAddress={self._resolveHostAddress}, maxConnections={self._maxConnections})>'
 		except AttributeError:
 			# Can happen during initialisation
-			return '<{0}()>'.format(self.__class__.__name__)
+			return f'<{self.__class__.__name__}()>'
 
 	def _getHostAddress(self, host):
 		address = None
@@ -252,7 +252,7 @@ class HostControlBackend(ExtendedBackend):
 					if timeRunning >= timeout + 5:
 						# thread still alive 5 seconds after timeout => kill
 						logger.error("Rpc to host %s (address: %s) timed out after %0.2f seconds, terminating", rpct.hostId, rpct.address, timeRunning)
-						result[rpct.hostId] = {"result": None, "error": "timed out after %0.2f seconds" % timeRunning}
+						result[rpct.hostId] = {"result": None, "error": f"timed out after {timeRunning:0.2f} seconds"}
 						if not rpct.ended:
 							try:
 								rpct.terminate()

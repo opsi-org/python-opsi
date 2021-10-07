@@ -76,6 +76,7 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		self._application = f"opsi-jsonrpc-client/{__version__}"
 		self._compression = False
 		self._connect_on_init = True
+		self._create_methods = True
 		self._connected = False
 		self._interface = None
 		self._rpc_id = 0
@@ -109,6 +110,8 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 				self.setCompression(value)
 			elif option == 'connectoninit':
 				self._connectOnInit = bool(value)
+			elif option == 'createmethods':
+				self._create_methods = bool(value)
 			elif option == 'connectionpoolsize' and value not in (None, ""):
 				self._connection_pool_size = int(value)
 			elif option == 'retry':
@@ -256,7 +259,7 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 
 	@property
 	def interface(self):
-		if not self._interface:
+		if not self._interface and self._create_methods:
 			self.connect()
 		return self._interface
 
@@ -493,8 +496,9 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 	@no_export
 	def connect(self):
 		logger.info("Connecting to service %s", self.base_url)
-		self._interface = self.execute_rpc('backend_getInterface')
-		self._create_instance_methods()
+		if self._create_methods:
+			self._interface = self.execute_rpc('backend_getInterface')
+			self._create_instance_methods()
 		self._http_adapter.max_retries = Retry.from_int(self._http_max_retries)
 		logger.debug("Connected to service %s", self.base_url)
 		self._connected = True
