@@ -87,6 +87,7 @@ class RpcThread(KillableThread):  # pylint: disable=too-many-instance-attributes
 		self.hostId = forceHostId(hostId)
 		self.method = forceUnicode(method)
 		self.params = forceList(params)
+		self.address = address
 		self.error = None
 		self.result = None
 		self.started = 0
@@ -97,13 +98,14 @@ class RpcThread(KillableThread):  # pylint: disable=too-many-instance-attributes
 			hostPort = self.hostControlBackend._opsiclientdPort
 
 		self.jsonrpc = JSONRPCClient(
-			address=f"https://{forceIpAddress(address)}:{hostPort}/opsiclientd",
+			address=f"https://{self.address}:{hostPort}/opsiclientd",
 			username=forceUnicode(username),
 			password=forceUnicode(password),
 			connect_timeout=max(self.hostControlBackend._hostRpcTimeout, 0),
 			read_timeout=max(self.hostControlBackend._hostRpcTimeout, 0),
 			connect_on_init=False,
-			create_methods=False
+			create_methods=False,
+			retry=0
 		)
 
 	def run(self):
@@ -234,7 +236,7 @@ class HostControlBackend(ExtendedBackend):
 			for rpct in rpcts:
 				if rpct.ended:
 					if rpct.error:
-						logger.error("Rpc to host %s failed, error: %s", rpct.hostId, rpct.error)
+						logger.info("Rpc to host %s failed, error: %s", rpct.hostId, rpct.error)
 						result[rpct.hostId] = {"result": None, "error": rpct.error}
 					else:
 						logger.info("Rpc to host %s successful, result: %s", rpct.hostId, rpct.result)
@@ -251,7 +253,10 @@ class HostControlBackend(ExtendedBackend):
 					timeRunning = time.time() - rpct.started
 					if timeRunning >= timeout + 5:
 						# thread still alive 5 seconds after timeout => kill
-						logger.error("Rpc to host %s (address: %s) timed out after %0.2f seconds, terminating", rpct.hostId, rpct.address, timeRunning)
+						logger.info(
+							"Rpc to host %s (address: %s) timed out after %0.2f seconds, terminating",
+							rpct.hostId, rpct.address, timeRunning
+						)
 						result[rpct.hostId] = {"result": None, "error": f"timed out after {timeRunning:0.2f} seconds"}
 						if not rpct.ended:
 							try:

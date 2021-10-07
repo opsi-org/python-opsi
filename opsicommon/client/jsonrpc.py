@@ -115,7 +115,9 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 			elif option == 'connectionpoolsize' and value not in (None, ""):
 				self._connection_pool_size = int(value)
 			elif option == 'retry':
-				if not value:
+				if isinstance(value, int):
+					self._http_max_retries = max(value, 0)
+				elif not value:
 					self._http_max_retries = 0
 			elif option == 'connecttimeout' and value not in (None, ""):
 				self._connect_timeout = int(value)
