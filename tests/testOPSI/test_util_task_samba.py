@@ -71,13 +71,13 @@ def testReadingEmptySambaConfig(pathToSmbConf):
 
 def testReadingSambaConfig(pathToSmbConf):
 	config = [
-		u"[opt_pcbin]\n",
-		u"[opsi_depot]\n",
-		u"[opsi_depot_rw]\n",
-		u"[opsi_images]\n",
-		u"[opsi_workbench]\n",
-		u"[opsi_repository]\n",
-		u"[opsi_logs]\n",
+		"[opt_pcbin]\n",
+		"[opsi_depot]\n",
+		"[opsi_depot_rw]\n",
+		"[opsi_images]\n",
+		"[opsi_workbench]\n",
+		"[opsi_repository]\n",
+		"[opsi_logs]\n",
 	]
 
 	with open(pathToSmbConf, 'w') as fakeSambaConfig:
@@ -98,13 +98,13 @@ def testConfigureSambaOnUbuntu(isSamba4, workbenchPath, disableDirCreation):
 
 def testSambaConfigureSamba4Share(isSamba4, workbenchPath, disableDirCreation):
 	config = [
-		u"[opt_pcbin]\n",
-		u"[opsi_depot]\n",
-		u"[opsi_depot_rw]\n",
-		u"[opsi_images]\n",
-		u"[opsi_workbench]\n",
-		u"[opsi_repository]\n",
-		u"[opsi_logs]\n",
+		"[opt_pcbin]\n",
+		"[opsi_depot]\n",
+		"[opsi_depot_rw]\n",
+		"[opsi_images]\n",
+		"[opsi_workbench]\n",
+		"[opsi_repository]\n",
+		"[opsi_logs]\n",
 	]
 	result = Samba._processConfig(config)
 
@@ -113,16 +113,16 @@ def testSambaConfigureSamba4Share(isSamba4, workbenchPath, disableDirCreation):
 
 def testAdminUsersAreRemovedExistingOpsiDepotShare(isSamba4, disableDirCreation):
 	config = [
-		u"[opsi_depot]\n",
-		u"   available = yes\n",
-		u"   comment = opsi depot share (ro)\n",
-		u"   path = /var/lib/opsi/depot\n",
-		u"   oplocks = no\n",
-		u"   follow symlinks = yes\n",
-		u"   level2 oplocks = no\n",
-		u"   writeable = no\n",
-		u"   invalid users = root\n",
-		u"   admin users = %s\n" % Samba.FILE_ADMIN_GROUP, # old fix
+		"[opsi_depot]\n",
+		"   available = yes\n",
+		"   comment = opsi depot share (ro)\n",
+		"   path = /var/lib/opsi/depot\n",
+		"   oplocks = no\n",
+		"   follow symlinks = yes\n",
+		"   level2 oplocks = no\n",
+		"   writeable = no\n",
+		"   invalid users = root\n",
+		"   admin users = pcpatch\n" # old fix
 	]
 
 	if not isSamba4:
@@ -135,16 +135,16 @@ def testAdminUsersAreRemovedExistingOpsiDepotShare(isSamba4, disableDirCreation)
 
 def testCorrectOpsiDepotShareWithoutFixForSamba4(isSamba4, disableDirCreation):
 	config = [
-		u"[opsi_depot]\n",
-		u"   available = yes\n",
-		u"   comment = opsi depot share (ro)\n",
-		u"   path = /var/lib/opsi/depot\n",
-		u"   oplocks = no\n",
-		u"   follow symlinks = yes\n",
-		u"   level2 oplocks = no\n",
-		u"   writeable = no\n",
-		u"   invalid users = root\n",
-		u"   # acl allow execute always = true\n",
+		"[opsi_depot]\n",
+		"   available = yes\n",
+		"   comment = opsi depot share (ro)\n",
+		"   path = /var/lib/opsi/depot\n",
+		"   oplocks = no\n",
+		"   follow symlinks = yes\n",
+		"   level2 oplocks = no\n",
+		"   writeable = no\n",
+		"   invalid users = root\n",
+		"   # acl allow execute always = true\n",
 	]
 
 	if not isSamba4:
@@ -156,31 +156,31 @@ def testCorrectOpsiDepotShareWithoutFixForSamba4(isSamba4, disableDirCreation):
 			in_opsi_depot_section = True
 		elif in_opsi_depot_section and line.lower().strip().startswith('['):
 			in_opsi_depot_section = False
-		
+
 		if in_opsi_depot_section and line.strip() == "acl allow execute always = true":
 			return
-	
+
 	raise RuntimeError('Did not find "acl allow execute always = true" in opsi_depot share')
 
 
 def testCorrectOpsiDepotShareWithSamba4Fix(isSamba4, disableDirCreation):
 	config = [
-		u"[opt_pcbin]\n",
-		u"[opsi_depot]\n",
-		u"   available = yes\n",
-		u"   comment = opsi depot share (ro)\n",
-		u"   path = /var/lib/opsi/depot\n",
-		u"   oplocks = no\n",
-		u"   follow symlinks = yes\n",
-		u"   level2 oplocks = no\n",
-		u"   writeable = no\n",
-		u"   invalid users = root\n",
-		u"   acl allow execute always = true\n",
-		u"[opsi_depot_rw]\n",
-		u"[opsi_images]\n",
-		u"[opsi_workbench]\n",
-		u"[opsi_repository]\n",
-		u"[opsi_logs]\n",
+		"[opt_pcbin]\n",
+		"[opsi_depot]\n",
+		"   available = yes\n",
+		"   comment = opsi depot share (ro)\n",
+		"   path = /var/lib/opsi/depot\n",
+		"   oplocks = no\n",
+		"   follow symlinks = yes\n",
+		"   level2 oplocks = no\n",
+		"   writeable = no\n",
+		"   invalid users = root\n",
+		"   acl allow execute always = true\n",
+		"[opsi_depot_rw]\n",
+		"[opsi_images]\n",
+		"[opsi_workbench]\n",
+		"[opsi_repository]\n",
+		"[opsi_logs]\n",
 	]
 
 	if not isSamba4:
@@ -195,15 +195,15 @@ def testCorrectOpsiDepotShareWithSamba4Fix(isSamba4, disableDirCreation):
 
 def testProcessConfigDoesNotRemoveComment(isSamba4, disableDirCreation):
 	config = [
-		u"; load opsi shares\n",
-		u"include = /etc/samba/share.conf\n",
-		u"[opt_pcbin]\n",
-		u"[opsi_depot]\n",
-		u"[opsi_depot_rw]\n",
-		u"[opsi_images]\n",
-		u"[opsi_workbench]\n",
-		u"[opsi_repository]\n",
-		u"[opsi_logs]\n",
+		"; load opsi shares\n",
+		"include = /etc/samba/share.conf\n",
+		"[opt_pcbin]\n",
+		"[opsi_depot]\n",
+		"[opsi_depot_rw]\n",
+		"[opsi_images]\n",
+		"[opsi_workbench]\n",
+		"[opsi_repository]\n",
+		"[opsi_logs]\n",
 	]
 
 	result = Samba._processConfig(config)
@@ -213,14 +213,14 @@ def testProcessConfigDoesNotRemoveComment(isSamba4, disableDirCreation):
 
 def testProcessConfigAddsMissingRepositoryShare(isSamba4, disableDirCreation):
 	config = [
-		u"; load opsi shares\n",
-		u"include = /etc/samba/share.conf\n",
-		u"[opt_pcbin]\n",
-		u"[opsi_depot]\n",
-		u"[opsi_depot_rw]\n",
-		u"[opsi_images]\n",
-		u"[opsi_workbench]\n",
-		u"[opsi_logs]\n",
+		"; load opsi shares\n",
+		"include = /etc/samba/share.conf\n",
+		"[opt_pcbin]\n",
+		"[opsi_depot]\n",
+		"[opsi_depot_rw]\n",
+		"[opsi_images]\n",
+		"[opsi_workbench]\n",
+		"[opsi_logs]\n",
 	]
 
 	result = Samba._processConfig(config)
@@ -252,13 +252,13 @@ def testWritingEmptySambaConfig(pathToSmbConf):
 
 def testWritingSambaConfig(pathToSmbConf):
 	config = [
-		u"[opt_pcbin]\n",
-		u"[opsi_depot]\n",
-		u"[opsi_depot_rw]\n",
-		u"[opsi_images]\n",
-		u"[opsi_workbench]\n",
-		u"[opsi_repository]\n",
-		u"[opsi_logs]\n",
+		"[opt_pcbin]\n",
+		"[opsi_depot]\n",
+		"[opsi_depot_rw]\n",
+		"[opsi_images]\n",
+		"[opsi_workbench]\n",
+		"[opsi_repository]\n",
+		"[opsi_logs]\n",
 
 	]
 
