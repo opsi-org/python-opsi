@@ -99,6 +99,7 @@ class BackendManager(ExtendedBackend):
 					if bmc_key.lower() == key.lower():
 						bmc[bmc_key] = val
 						break
+		kwargs = bmc
 
 		Backend.__init__(self, **kwargs)  # pylint: disable=non-parent-init-called
 
