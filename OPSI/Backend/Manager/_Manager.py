@@ -46,7 +46,7 @@ class BackendManager(ExtendedBackend):
 		"dispatchConfigFile": '/etc/opsi/backendManager/dispatch.conf',
 		"backendConfigDir": '/etc/opsi/backends',
 		"extensionConfigDir": '/etc/opsi/backendManager/extend.d',
-		"depotBackend": True,
+		"depotBackend": False,
 		"hostControlBackend": True,
 		"hostControlSafeBackend": True
 	}
