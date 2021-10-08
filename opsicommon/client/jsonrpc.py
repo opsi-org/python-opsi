@@ -8,6 +8,7 @@ This file is part of opsi - https://www.opsi.org
 
 import os
 import re
+import time
 import types
 import socket
 import threading
@@ -391,6 +392,7 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 			self.base_url, self._ip_version, rpc_id, method,
 			headers.get('Content-Type', ''), headers.get('Content-Encoding', ''), timeout
 		)
+		start_time = time.time()
 		try:
 			response = self._session.post(self.base_url, headers=headers, data=data, stream=True, timeout=timeout)
 		except SSLError as err:
@@ -399,8 +401,8 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		content_type = response.headers.get("Content-Type", "")
 		content_encoding = response.headers.get("Content-Encoding", "")
 		logger.info(
-			"Got response status=%s, Content-Type=%s, Content-Encoding=%s",
-			response.status_code, content_type, content_encoding
+			"Got response status=%s, Content-Type=%s, Content-Encoding=%s, duration=%0.3fs",
+			response.status_code, content_type, content_encoding, (time.time(), start_time)
 		)
 
 		if 'server' in response.headers:
