@@ -20,7 +20,7 @@ from OPSI.Types import (
 	forceHostId, forceInt, forceProductId, forceUnicode, forceUrl
 )
 
-from opsicommon.logging import logger
+from opsicommon.logging import logger, secret_filter
 
 from .Exceptions import (
 	ConfigurationError, MissingConfigurationValueError, RequiringBackendError
@@ -336,7 +336,7 @@ overriden based on values in configuration file.
 			elif option.lower() == 'password':
 				repository.password = forceUnicode(value.strip())
 				if repository.password:
-					logger.addConfidentialString(repository.password)
+					secret_filter.add_secrets(repository.password)
 			elif option.lower() == 'authcertfile':
 				repository.authcertfile = forceFilename(value.strip())
 			elif option.lower() == 'authkeyfile':

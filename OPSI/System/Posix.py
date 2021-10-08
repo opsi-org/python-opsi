@@ -37,7 +37,7 @@ from OPSI.Types import (
 from OPSI.Object import *  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
 
-from opsicommon.logging import logger, LOG_NONE
+from opsicommon.logging import logger, LOG_NONE, logging_config
 
 distro_module = None  # pylint: disable=invalid-name
 if platform.system() == "Linux":
@@ -3603,7 +3603,7 @@ def daemonize():
 	except OSError as err:
 		raise RuntimeError(f"Second fork failed: {err}") from err
 
-	logger.setConsoleLevel(LOG_NONE)
+	logging_config(LOG_NONE)
 
 	# Close standard output and standard error.
 	os.close(0)
@@ -3619,8 +3619,8 @@ def daemonize():
 	# Duplicate standard input to standard output and standard error.
 	os.dup2(0, 1)
 	os.dup2(0, 2)
-	sys.stdout = logger.getStdout()
-	sys.stderr = logger.getStderr()
+	sys.stdout = None
+	sys.stderr = None
 
 
 def locateDHCPDConfig(default=None):

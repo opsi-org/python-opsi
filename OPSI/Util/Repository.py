@@ -1247,7 +1247,7 @@ class CIFSRepository(FileRepository):  # pylint: disable=too-many-instance-attri
 		self._username = forceUnicode(kwargs.get('username', 'guest'))
 		self._password = forceUnicode(kwargs.get('password', ''))
 		if self._password:
-			logger.addConfidentialString(self._password)
+			secret_filter.add_secrets(self._password)
 
 		self._mountOptions = kwargs.get('mountOptions', {})
 
