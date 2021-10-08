@@ -774,6 +774,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 					if exit_code is not None:
 						break
 			if exit_code != 0:
+				data = data.decode("utf-8", "replace")
 				raise RuntimeError(f"Command {cmd} failed with exit code {exit_code}: {data}")
 
 
