@@ -20,7 +20,7 @@ import requests
 from requests.packages import urllib3
 from OpenSSL.crypto import FILETYPE_PEM, load_certificate
 
-from opsicommon.logging import logger
+from opsicommon.logging import logger, secret_filter
 from opsicommon.ssl import install_ca
 
 from OPSI import System
@@ -80,7 +80,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 
 		if not self.depotKey:
 			raise ValueError(f"Opsi host key for depot '{self.depotId}' not found in backend")
-		logger.addConfidentialString(self.depotKey)
+		secret_filter.add_secrets(self.depotKey)
 
 		self.readConfigFile()
 

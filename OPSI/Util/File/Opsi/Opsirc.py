@@ -32,7 +32,7 @@ import os
 
 from OPSI.Types import forceUnicode, forceUrl
 
-from opsicommon.logging import logger
+from opsicommon.logging import logger, secret_filter
 
 __all__ = ('getOpsircPath', 'readOpsirc')
 
@@ -99,12 +99,12 @@ def _parseConfig(filename):
 				config[key] = forceUnicode(value)
 			elif key == 'password':
 				value = forceUnicode(value)
-				logger.addConfidentialString(value)
+				secret_filter.add_secrets(value)
 				config[key] = value
 			elif key == 'password file':
 				passwordFilePath = os.path.expanduser(value)
 				value = _readPasswordFile(passwordFilePath)
-				logger.addConfidentialString(value)
+				secret_filter.add_secrets(value)
 				config['password'] = value
 			else:
 				logger.debug("Ignoring unknown key %s", key)

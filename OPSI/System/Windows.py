@@ -50,7 +50,7 @@ from OPSI.Types import (
 	forceUnicodeLower, forceFilename
 )
 
-from opsicommon.logging import logger
+from opsicommon.logging import logger, secret_filter
 
 __all__ = (
 	'HKEY_CURRENT_USER', 'HKEY_LOCAL_MACHINE', 'hooks', 'SystemSpecificHook',
@@ -799,7 +799,7 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-branches,too-
 	if 'password' not in options or not options['password']:
 		options['password'] = None
 	else:
-		logger.addConfidentialString(options['password'])
+		secret_filter.add_secrets(options['password'])
 
 	if dev.lower().startswith(('smb://', 'cifs://')):
 		match = re.search(r'^(smb|cifs)://([^/]+/.+)$', dev, re.IGNORECASE)
@@ -1580,7 +1580,7 @@ def createUser(username, password, groups=[]):  # pylint: disable=dangerous-defa
 	username = forceUnicode(username)
 	password = forceUnicode(password)
 	groups = forceUnicodeList(groups)
-	logger.addConfidentialString(password)
+	secret_filter.add_secrets(password)
 
 	domain = getHostname().upper()
 	if '\\' in username:

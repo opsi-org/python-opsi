@@ -182,7 +182,7 @@ logger.setUniventionFormat = setUniventionFormat
 
 def setMessageSubjectFormat(format, currentThread=False, object=None):  # pylint: disable=unused-argument,redefined-builtin
 	warnings.warn(
-		"OPSI.Logger.setUniventionFormat is deprecated",
+		"OPSI.Logger.setMessageSubjectFormat is deprecated",
 		DeprecationWarning
 	)
 logger.setMessageSubjectFormat = setMessageSubjectFormat
