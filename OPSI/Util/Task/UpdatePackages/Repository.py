@@ -67,6 +67,8 @@ class ProductRepositoryInfo:  # pylint: disable=dangerous-default-value,too-many
 				url = self.baseUrl
 			else:
 				url = f'{self.baseUrl}/{directory}'
+			if not url.endswith("/"):
+				url = f"{url}/"
 			urls.add(url)
 		return urls
 
