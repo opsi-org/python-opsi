@@ -784,8 +784,8 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 
 		response = session.get(url, headers=self.httpHeaders, stream=True, timeout=3600*8) # 8h timeout
 		if response.status_code < 200 or response.status_code > 299:
-			logger.error("Unable to download Package from %s", url)
-			raise ConnectionError(f"Unable to download Package from {url}")
+			logger.error("Unable to download Package from %s: %s - %s", url, response.status_code, response.text)
+			raise ConnectionError(f"Unable to download Package from {url}: {response.status_code} - {response.text}")
 		size = int(response.headers.get("Content-length", 0))
 		if size:
 			logger.info("Downloading %s (%s MB) to %s", url, round(size / (1024.0 * 1024.0), 2), outFile)
