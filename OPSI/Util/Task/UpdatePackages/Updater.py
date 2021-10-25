@@ -20,7 +20,7 @@ import requests
 from requests.packages import urllib3
 from OpenSSL.crypto import FILETYPE_PEM, load_certificate
 
-from opsicommon.logging import logger
+from opsicommon.logging import logger, secret_filter
 from opsicommon.ssl import install_ca
 
 from OPSI import System
@@ -80,7 +80,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 
 		if not self.depotKey:
 			raise ValueError(f"Opsi host key for depot '{self.depotId}' not found in backend")
-		logger.addConfidentialString(self.depotKey)
+		secret_filter.add_secrets(self.depotKey)
 
 		self.readConfigFile()
 
@@ -1055,7 +1055,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 							del os.environ[key]
 				no_proxy = [x.strip() for x in os.environ.get("no_proxy", "").split(",") if x.strip()]
 				if no_proxy != ["*"]:
-					no_proxy.extend(["localhost", "127.0.0.1", "ip6-localhost", "::1"])
+					no_proxy.extend(["localhost", "localhost:4447", "127.0.0.1", "127.0.0.1:4447", "ip6-localhost", "::1"])
 				os.environ["no_proxy"] = ",".join(set(no_proxy))
 			else:
 				# Do not use a proxy

@@ -15,7 +15,8 @@ from OPSI.Exceptions import BackendMissingDataError
 from OPSI.Types import forceUnicodeList
 from OPSI.UI import UIFactory
 
-from opsicommon.logging import logger, LOG_NONE
+import logging
+from opsicommon.logging import LOG_CONFIDENTIAL, LOG_CRITICAL, OPSI_LEVEL_TO_LEVEL
 
 __all__ = ('editConfigDefaults', )
 
@@ -122,13 +123,11 @@ def editConfigDefaults():  # pylint: disable=too-many-locals,too-many-branches,t
 @contextmanager
 def disableConsoleLogging():
 	"Disable console logging in the context."
-	consoleLevel = logger.getConsoleLevel()
-	logger.setConsoleLevel(LOG_NONE)
+	logging.disable(OPSI_LEVEL_TO_LEVEL[LOG_CRITICAL])
 	try:
 		yield
 	finally:
-		logger.setConsoleLevel(consoleLevel)
-
+		logging.disable(OPSI_LEVEL_TO_LEVEL[LOG_CONFIDENTIAL])
 
 @contextmanager
 def _getUI():

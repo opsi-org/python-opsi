@@ -982,7 +982,7 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 					if key in os.environ:
 						del os.environ[key]
 			no_proxy = [x.strip() for x in os.environ.get("no_proxy", "").split(",") if x.strip()]
-			no_proxy.extend(["localhost", "127.0.0.1", "ip6-localhost", "::1"])
+			no_proxy.extend(["localhost", "localhost:4447", "127.0.0.1", "127.0.0.1:4447", "ip6-localhost", "::1"])
 			os.environ["no_proxy"] = ",".join(set(no_proxy))
 		else:
 			# Do not use a proxy
@@ -1247,7 +1247,7 @@ class CIFSRepository(FileRepository):  # pylint: disable=too-many-instance-attri
 		self._username = forceUnicode(kwargs.get('username', 'guest'))
 		self._password = forceUnicode(kwargs.get('password', ''))
 		if self._password:
-			logger.addConfidentialString(self._password)
+			secret_filter.add_secrets(self._password)
 
 		self._mountOptions = kwargs.get('mountOptions', {})
 

@@ -20,7 +20,7 @@ from OPSI.Types import (
 	forceHostId, forceInt, forceProductId, forceUnicode, forceUrl
 )
 
-from opsicommon.logging import logger
+from opsicommon.logging import logger, secret_filter, logging_config
 
 from .Exceptions import (
 	ConfigurationError, MissingConfigurationValueError, RequiringBackendError
@@ -125,9 +125,9 @@ overriden based on values in configuration file.
 							config["packageDir"] = forceFilename(value.strip())
 						elif option.lower() == 'logfile':
 							value = forceFilename(value.strip())
-							logger.setLogFile(value)
+							logging_config(log_file=value)
 						elif option.lower() == 'loglevel':
-							logger.setFileLevel(forceInt(value.strip()))
+							logging_config(file_level=forceInt(value.strip()))
 						elif option.lower() == 'timeout':
 							# TODO: find a better way!
 							socket.setdefaulttimeout(float(value.strip()))
@@ -336,7 +336,7 @@ overriden based on values in configuration file.
 			elif option.lower() == 'password':
 				repository.password = forceUnicode(value.strip())
 				if repository.password:
-					logger.addConfidentialString(repository.password)
+					secret_filter.add_secrets(repository.password)
 			elif option.lower() == 'authcertfile':
 				repository.authcertfile = forceFilename(value.strip())
 			elif option.lower() == 'authkeyfile':
