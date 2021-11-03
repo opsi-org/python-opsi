@@ -402,7 +402,7 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		content_encoding = response.headers.get("Content-Encoding", "")
 		logger.info(
 			"Got response status=%s, Content-Type=%s, Content-Encoding=%s, duration=%0.3fs",
-			response.status_code, content_type, content_encoding, (time.time(), start_time)
+			response.status_code, content_type, content_encoding, (time.time() - start_time)
 		)
 
 		if 'server' in response.headers:
