@@ -15,6 +15,7 @@ from logging.handlers import RotatingFileHandler
 import tempfile
 import warnings
 import contextvars
+from urllib.parse import quote
 from contextlib import contextmanager
 from typing import Dict, Any, IO
 import colorlog
@@ -408,6 +409,7 @@ class SecretFilter(metaclass=Singleton):
 		for _secret in secrets:
 			if _secret and len(_secret) >= self._min_length and not _secret in self.secrets:
 				self.secrets.append(_secret)
+				self.secrets.append(quote(_secret))
 
 	def remove_secrets(self, *secrets: str):
 		"""
