@@ -154,6 +154,7 @@ overriden based on values in configuration file.
 							config["smtpuser"] = forceUnicode(value.strip())
 						elif option.lower() == 'smtppassword':
 							config["smtppassword"] = forceUnicode(value.strip())
+							secret_filter.add_secrets(config["smtppassword"])
 						elif option.lower() == 'subject':
 							config["subject"] = forceUnicode(value.strip())
 						elif option.lower() == 'use_starttls':

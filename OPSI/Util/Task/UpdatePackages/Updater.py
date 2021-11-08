@@ -713,7 +713,9 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 			if self.config["zsync2Command"]:
 				url = availablePackage["zsyncFile"]
 				if repository.username:
-					auth = f"{quote(repository.username)}:{quote(repository.password)}"
+					quoted_password = quote(repository.password)
+					secret_filter.add_secrets(quoted_password)
+					auth = f"{quote(repository.username)}:{quoted_password}"
 					tmp = url.split("://", 1)
 					url = f"{tmp[0]}://{auth}@{tmp[1]}"
 				cmd = [
