@@ -196,6 +196,7 @@ class OpsiBackup:
 				return forceUnicode(firstCharacter) in ("y", "Y")
 			except Exception as err:  # pylint: disable=broad-except
 				logger.error("Error while reading user input: %s", err)
+			return False
 
 		try:
 			if self.getDifferencesInSysConfig(archive.sysinfo):

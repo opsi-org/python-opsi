@@ -27,6 +27,8 @@ from operator import itemgetter
 import subprocess
 import ruyaml
 
+from opsicommon.logging import logger
+
 import OPSI.System
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import (
@@ -48,13 +50,11 @@ from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 from OPSI.Util import md5sum, toJson, fromJson
 from OPSI.System import get_subprocess_environment
 
-from opsicommon.logging import logger
-
 if os.name == 'posix':
+	from OPSI.System.Posix import SysInfo
 	import fcntl
 	import grp
 	import pwd
-	from OPSI.System.Posix import SysInfo
 
 
 FileInfo = namedtuple('FileInfo', 'productId version')
@@ -115,7 +115,7 @@ class HostKeyFile(ConfigFile):
 
 	def generate(self):
 		self._lines = [
-			'%s:%s' % (hostId, hostkey)
+			f'{hostId}:{hostkey}'
 			for hostId, hostkey
 			in sorted(self._opsiHostKeys.items(), key=itemgetter(1))
 		]
@@ -151,7 +151,7 @@ class BackendACLFile(ConfigFile):
 	def __init__(self, filename, lockFailTimeout=2000):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=['#'])
 
-	def parse(self, lines=None):  # pylint: disable=too-many-branches,too-many-statements
+	def parse(self, lines=None):  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 		from OPSI.Config import OPSI_ADMIN_GROUP, FILE_ADMIN_GROUP   # pylint: disable=import-outside-toplevel
 		if lines:
 			self._lines = forceUnicodeList(lines)
@@ -644,7 +644,7 @@ class PackageControlFile(TextFile):
 					if isinstance(value, str):
 						value = value.rstrip()
 
-					self._sections[sectionType][i][option] = value
+					self._sections[sectionType][i][option] = value  # pylint: disable=unnecessary-dict-index-lookup
 
 		if not self._sections.get('product'):
 			raise ValueError(f"Error in control file '{self._filename}': 'product' section not found")
@@ -941,7 +941,7 @@ class PackageControlFile(TextFile):
 			return self.generate_yaml()
 
 		self._lines = ['[Package]']
-		self._lines.append('version: %s' % self._product.getPackageVersion())
+		self._lines.append(f'version: {self._product.getPackageVersion()}')
 		depends = ''
 		for packageDependency in self._packageDependencies:
 			if depends:
@@ -949,9 +949,9 @@ class PackageControlFile(TextFile):
 
 			depends += packageDependency['package']
 			if packageDependency['version']:
-				depends += ' (%s %s)' % (packageDependency['condition'], packageDependency['version'])
+				depends += f" ({packageDependency['condition']} {packageDependency['version']})"
 
-		self._lines.append('depends: %s' % depends)
+		self._lines.append(f'depends: {depends}')
 		self._lines.append('')
 
 		self._lines.append('[Product]')
@@ -963,9 +963,9 @@ class PackageControlFile(TextFile):
 		else:
 			raise ValueError(f"Unhandled product type '{productType}'")
 
-		self._lines.append('type: %s' % productType)
-		self._lines.append('id: %s' % self._product.getId())
-		self._lines.append('name: %s' % self._product.getName())
+		self._lines.append(f'type: {productType}')
+		self._lines.append(f'id: {self._product.getId()}')
+		self._lines.append(f'name: {self._product.getName()}')
 		self._lines.append('description: ')
 		descLines = self._product.getDescription().split('\n')
 		if len(descLines) > 0:
@@ -973,47 +973,47 @@ class PackageControlFile(TextFile):
 			if len(descLines) > 1:
 				for line in descLines[1:]:
 					self._lines.append(f' {line}')
-		self._lines.append('advice: %s' % self._product.getAdvice())
-		self._lines.append('version: %s' % self._product.getProductVersion())
-		self._lines.append('priority: %s' % self._product.getPriority())
-		self._lines.append('licenseRequired: %s' % self._product.getLicenseRequired())
+		self._lines.append(f'advice: {self._product.getAdvice()}')
+		self._lines.append(f'version: {self._product.getProductVersion()}')
+		self._lines.append(f'priority: {self._product.getPriority()}')
+		self._lines.append(f'licenseRequired: {self._product.getLicenseRequired()}')
 		if self._product.getProductClassIds() is not None:
-			self._lines.append('productClasses: %s' % ', '.join(self._product.getProductClassIds()))
-		self._lines.append('setupScript: %s' % self._product.getSetupScript())
-		self._lines.append('uninstallScript: %s' % self._product.getUninstallScript())
-		self._lines.append('updateScript: %s' % self._product.getUpdateScript())
-		self._lines.append('alwaysScript: %s' % self._product.getAlwaysScript())
-		self._lines.append('onceScript: %s' % self._product.getOnceScript())
-		self._lines.append('customScript: %s' % self._product.getCustomScript())
+			self._lines.append(f'productClasses: {", ".join(self._product.getProductClassIds())}')
+		self._lines.append(f'setupScript: {self._product.getSetupScript()}')
+		self._lines.append(f'uninstallScript: {self._product.getUninstallScript()}')
+		self._lines.append(f'updateScript: {self._product.getUpdateScript()}')
+		self._lines.append(f'alwaysScript: {self._product.getAlwaysScript()}')
+		self._lines.append(f'onceScript: {self._product.getOnceScript()}')
+		self._lines.append(f'customScript: {self._product.getCustomScript()}')
 		if isinstance(self._product, LocalbootProduct):
-			self._lines.append('userLoginScript: %s' % self._product.getUserLoginScript())
+			self._lines.append(f'userLoginScript: {self._product.getUserLoginScript()}')
 		if isinstance(self._product, NetbootProduct):
 			pxeConfigTemplate = self._product.getPxeConfigTemplate()
 			if not pxeConfigTemplate:
 				pxeConfigTemplate = ''
-			self._lines.append('pxeConfigTemplate: %s' % pxeConfigTemplate)
+			self._lines.append(f'pxeConfigTemplate: {pxeConfigTemplate}')
 		self._lines.append('')
 
 		if self._product.getWindowsSoftwareIds():
 			self._lines.append('[Windows]')
-			self._lines.append('softwareIds: %s' % ', '.join(self._product.getWindowsSoftwareIds()))
+			self._lines.append(f'softwareIds: {", ".join(self._product.getWindowsSoftwareIds())}')
 			self._lines.append('')
 
 		for dependency in self._productDependencies:
 			self._lines.append('[ProductDependency]')
-			self._lines.append('action: %s' % dependency.getProductAction())
+			self._lines.append(f'action: {dependency.getProductAction()}')
 			if dependency.getRequiredProductId():
-				self._lines.append('requiredProduct: %s' % dependency.getRequiredProductId())
+				self._lines.append(f'requiredProduct: {dependency.getRequiredProductId()}')
 			if dependency.getRequiredProductVersion():
-				self._lines.append('requiredProductVersion: %s' % dependency.getRequiredProductVersion())
+				self._lines.append(f'requiredProductVersion: {dependency.getRequiredProductVersion()}')
 			if dependency.getRequiredPackageVersion():
-				self._lines.append('requiredPackageVersion: %s' % dependency.getRequiredPackageVersion())
+				self._lines.append(f'requiredPackageVersion: {dependency.getRequiredPackageVersion()}')
 			if dependency.getRequiredAction():
-				self._lines.append('requiredAction: %s' % dependency.getRequiredAction())
+				self._lines.append(f'requiredAction: {dependency.getRequiredAction()}')
 			if dependency.getRequiredInstallationStatus():
-				self._lines.append('requiredStatus: %s' % dependency.getRequiredInstallationStatus())
+				self._lines.append(f'requiredStatus: {dependency.getRequiredInstallationStatus()}')
 			if dependency.getRequirementType():
-				self._lines.append('requirementType: %s' % dependency.getRequirementType())
+				self._lines.append(f'requirementType: {dependency.getRequirementType()}')
 			self._lines.append('')
 
 		for productProperty in self._productProperties:
@@ -1021,11 +1021,11 @@ class PackageControlFile(TextFile):
 			productPropertyType = 'unicode'
 			if isinstance(productProperty, BoolProductProperty):
 				productPropertyType = 'bool'
-			self._lines.append('type: %s' % productPropertyType)
-			self._lines.append('name: %s' % productProperty.getPropertyId())
+			self._lines.append(f'type: {productPropertyType}')
+			self._lines.append(f'name: {productProperty.getPropertyId()}')
 			if not isinstance(productProperty, BoolProductProperty):
-				self._lines.append('multivalue: %s' % productProperty.getMultiValue())
-				self._lines.append('editable: %s' % productProperty.getEditable())
+				self._lines.append(f'multivalue: {productProperty.getMultiValue()}')
+				self._lines.append(f'editable: {productProperty.getEditable()}')
 			if productProperty.getDescription():
 				self._lines.append('description: ')
 				descLines = productProperty.getDescription().split('\n')
@@ -1036,12 +1036,12 @@ class PackageControlFile(TextFile):
 							self._lines.append(f' {line}')
 
 			if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues() is not None:
-				self._lines.append('values: %s' % toJson(productProperty.getPossibleValues()))
+				self._lines.append(f'values: {toJson(productProperty.getPossibleValues())}')
 			if productProperty.getDefaultValues() is not None:
 				if isinstance(productProperty, BoolProductProperty):
-					self._lines.append('default: %s' % productProperty.getDefaultValues()[0])
+					self._lines.append(f'default: {productProperty.getDefaultValues()[0]}')
 				else:
-					self._lines.append('default: %s' % toJson(productProperty.getDefaultValues()))
+					self._lines.append(f'default: {toJson(productProperty.getDefaultValues())}')
 			self._lines.append('')
 
 		if self._product.getChangelog():
@@ -1313,8 +1313,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 		if not os.path.exists(self.BACKEND_CONF_DIR):
 			raise OpsiBackupFileError(
-				'Could not read backend configuration: '
-				'Missing directory "{0}"'.format(self.BACKEND_CONF_DIR)
+				f'Could not read backend configuration: Missing directory "{self.BACKEND_CONF_DIR}"'
 			)
 
 		backends = {}
@@ -1327,7 +1326,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 				backendGlobals = {'config': {}, 'module': '', 'socket': socket}
 				backendFile = os.path.join(self.BACKEND_CONF_DIR, entry)
 				try:
-					with open(backendFile) as confFile:
+					with open(backendFile, encoding="utf-8") as confFile:
 						exec(confFile.read(), backendGlobals)  # pylint: disable=exec-used
 
 					backends[name] = {
@@ -1355,9 +1354,9 @@ class OpsiBackupArchive(tarfile.TarFile):
 	def _generateArchiveName(self, suffix=None):
 		currentTime = datetime.datetime.now()
 		timestamp = str(currentTime).replace(" ", "_").replace(":", "-")
-		name = "{hostname}_{opsiVersion}_{timestamp}.tar".format(timestamp=timestamp, **self.sysinfo)
+		name = f"{self.sysinfo['hostname']}_{self.sysinfo['opsiVersion']}_{timestamp}.tar"
 		if suffix:
-			name += ".%s" % suffix
+			name += f".{suffix}"
 		return name
 
 	@staticmethod
@@ -1384,7 +1383,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 	def _readSysInfo(self):
 		sysInfo = {}
-		with closing(self.extractfile("%s/sysinfo" % self.CONTROL_DIR)) as fp:
+		with closing(self.extractfile(f"{self.CONTROL_DIR}/sysinfo")) as fp:
 			for line in fp:
 				key, value = line.decode().split(":")
 				sysInfo[key.strip()] = value.strip()
@@ -1393,7 +1392,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 	def _readChecksumFile(self):
 		checksums = {}
-		with closing(self.extractfile("%s/checksums" % self.CONTROL_DIR)) as fp:
+		with closing(self.extractfile(f"{self.CONTROL_DIR}/checksums")) as fp:
 			for line in fp:
 				key, value = line.decode().split(" ", 1)
 				checksums[value.strip()] = key.strip()
@@ -1440,10 +1439,10 @@ element of the tuple is replace with the second element.
 		string = StringIO()
 		size = 0
 		for path, checksum in self._filemap.items():
-			size += string.write("%s %s\n" % (checksum, path))
+			size += string.write(f"{checksum} {path}\n")
 		string.seek(0)
 
-		info = tarfile.TarInfo(name="%s/checksums" % self.CONTROL_DIR)
+		info = tarfile.TarInfo(name=f"{self.CONTROL_DIR}/checksums")
 		info.size = size
 
 		self.addfile(info, BytesIO(string.getvalue().encode()))
@@ -1452,10 +1451,10 @@ element of the tuple is replace with the second element.
 		string = StringIO()
 		size = 0
 		for key, value in self.sysinfo.items():
-			size += string.write("%s: %s\n" % (key, value))
+			size += string.write(f"{key}: {value}\n")
 		string.seek(0)
 
-		info = tarfile.TarInfo(name="%s/sysinfo" % self.CONTROL_DIR)
+		info = tarfile.TarInfo(name=f"{self.CONTROL_DIR}/sysinfo")
 		info.size = size
 
 		self.addfile(info, BytesIO(string.getvalue().encode()))
@@ -1562,12 +1561,12 @@ element of the tuple is replace with the second element.
 				if not backend["dispatch"]:
 					logger.warning("Backing up backend %s although it's currently not in use.", backend["name"])
 				baseDir = backend["config"]["baseDir"]
-				self._addContent(baseDir, sub=(baseDir, "BACKENDS/FILE/%s" % backend["name"]))
+				self._addContent(baseDir, sub=(baseDir, f"BACKENDS/FILE/{backend['name']}"))
 
 				hostKeyFile = backend["config"]["hostKeyFile"]
 				if baseDir not in os.path.dirname(hostKeyFile):
 					# File resides outside of baseDir
-					self._addContent(hostKeyFile, sub=(os.path.dirname(hostKeyFile), "BACKENDS/FILE_HOSTKEYS/%s" % backend["name"]))
+					self._addContent(hostKeyFile, sub=(os.path.dirname(hostKeyFile), "BACKENDS/FILE_HOSTKEYS/%{backend['name']}"))
 
 	def restoreFileBackend(self, auto=False):
 		if not self.hasFileBackend():
@@ -1602,7 +1601,7 @@ element of the tuple is replace with the second element.
 					logger.warning("Backing up backend %s although it's currently not in use.", backend["name"])
 
 				dhcpdConfigFile = backend["config"]['dhcpdConfigFile']
-				self._addContent(dhcpdConfigFile, sub=(os.path.dirname(dhcpdConfigFile), "BACKENDS/DHCP/%s" % backend["name"]))
+				self._addContent(dhcpdConfigFile, sub=(os.path.dirname(dhcpdConfigFile), f"BACKENDS/DHCP/{backend['name']}"))
 
 	def hasDHCPBackend(self, name=None):
 		return self._hasBackend("DHCP", name=name)
@@ -1626,7 +1625,7 @@ element of the tuple is replace with the second element.
 	def hasMySQLBackend(self, name=None):
 		return self._hasBackend("MYSQL", name=name)
 
-	def backupMySQLBackend(self, flushLogs=False, auto=False):  # pylint: disable=too-many-locals,too-many-branches
+	def backupMySQLBackend(self, flushLogs=False, auto=False):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		for backend in self._getBackends("mysql"):  # pylint: disable=too-many-nested-blocks
 			if not auto or backend["dispatch"]:
 				if not backend["dispatch"]:
@@ -1642,11 +1641,17 @@ element of the tuple is replace with the second element.
 					backend["config"]["password"]
 				)
 
+				address = backend['config']['address']
+				if address.startswith("/"):
+					address = f"--socket={address}"
+				else:
+					address = f"--host={address}"
+
 				cmd = [
 					mysqldumpCmd,
 					# --defaults-file has to be the first argument
-					"--defaults-file=%s" % defaultsFile,
-					"--host=%s" % backend["config"]["address"],
+					f"--defaults-file={defaultsFile}",
+					address,
 					"--lock-tables",
 					"--add-drop-table"
 				]
@@ -1658,7 +1663,7 @@ element of the tuple is replace with the second element.
 
 				fd, name = tempfile.mkstemp(dir=self.tempdir)
 				try:
-					proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=get_subprocess_environment())
+					proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=get_subprocess_environment())  # pylint: disable=consider-using-with
 
 					flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
 					fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
@@ -1727,14 +1732,20 @@ element of the tuple is replace with the second element.
 						backend["config"]["password"]
 					)
 
+					address = backend['config']['address']
+					if address.startswith("/"):
+						address = f"--socket={address}"
+					else:
+						address = f"--host={address}"
+
 					cmd = [
 						mysqlCmd,
 						# --defaults-file has to be the first argument
-						"--defaults-file=%s" % defaultsFile,
-						"--host=%s" % backend["config"]["address"]
+						f"--defaults-file={defaultsFile}",
+						address
 					]
 					logger.trace("Running command: '%s'", cmd)
-					proc = subprocess.Popen(
+					proc = subprocess.Popen(  # pylint: disable=consider-using-with
 						cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=get_subprocess_environment()
 					)
 					proc.stdin.write(
@@ -1755,7 +1766,9 @@ element of the tuple is replace with the second element.
 
 					cmd.append(backend["config"]["database"])
 					logger.trace("Running command: '%s'", cmd)
-					proc = subprocess.Popen(cmd, stdin=fd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=get_subprocess_environment())
+					proc = subprocess.Popen(  # pylint: disable=consider-using-with
+						cmd, stdin=fd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=get_subprocess_environment()
+					)
 
 					out = proc.stdout.readline()
 					while proc.poll() is None:

@@ -224,7 +224,9 @@ class BaseObject:
 
 	def update(self, updateObject, updateWithNoneValues=True):
 		if not issubclass(updateObject.__class__, self.__class__):
-			raise TypeError("Cannot update instance of %s with instance of %s" % (self.__class__.__name__, updateObject.__class__.__name__))
+			raise TypeError(
+				f"Cannot update instance of {self.__class__.__name__} with instance of {updateObject.__class__.__name__}"
+			)
 		objectHash = updateObject.toHash()
 
 		try:

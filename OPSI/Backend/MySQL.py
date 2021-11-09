@@ -214,7 +214,7 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			for tableName in i.values():
 				tableName = tableName.upper()
 				logger.trace(" [ %s ]", tableName)
-				fields = [j['Field'] for j in self.getSet(session, 'SHOW COLUMNS FROM `%s`' % tableName)]
+				fields = [j['Field'] for j in self.getSet(session, f'SHOW COLUMNS FROM `{tableName}`')]
 				tables[tableName] = fields
 				logger.trace("Fields in %s: %s", tableName, fields)
 
@@ -277,7 +277,7 @@ class MySQLBackend(SQLBackend):
 					val = modules[module]
 					if isinstance(val, bool):
 						val = "yes" if val else "no"
-				data += "%s = %s\r\n" % (module.lower().strip(), val)
+				data += f"{module.lower().strip()} = {val}\r\n"
 
 			verified = False
 			if modules["signature"].startswith("{"):
@@ -316,7 +316,7 @@ class MySQLBackend(SQLBackend):
 		# More information about the defaults can be found in the MySQL
 		# handbook:
 		#   https://dev.mysql.com/doc/refman/5.1/de/timestamp-4-1.html
-		table = '''CREATE TABLE `HOST` (
+		table = f'''CREATE TABLE `HOST` (
 				`hostId` varchar(255) NOT NULL,
 				`type` varchar(30),
 				`description` varchar(100),
@@ -340,7 +340,7 @@ class MySQLBackend(SQLBackend):
 				`workbenchLocalUrl` varchar(128),
 				`workbenchRemoteUrl` varchar(255),
 				PRIMARY KEY (`hostId`)
-			) %s;''' % self._sql.getTableCreationOptions('HOST')
+			) {self._sql.getTableCreationOptions("HOST")};'''
 		logger.debug(table)
 		with self._sql.session() as session:
 			self._sql.execute(session, table)
@@ -351,8 +351,8 @@ class MySQLBackend(SQLBackend):
 		# We want the primary key config_id to be of a bigint as
 		# regular int has been proven to be too small on some
 		# installations.
-		table = '''CREATE TABLE `SOFTWARE_CONFIG` (
-				`config_id` bigint NOT NULL ''' + self._sql.AUTOINCREMENT + ''',
+		table = f'''CREATE TABLE `SOFTWARE_CONFIG` (
+				`config_id` bigint NOT NULL {self._sql.AUTOINCREMENT},
 				`clientId` varchar(255) NOT NULL,
 				`name` varchar(100) NOT NULL,
 				`version` varchar(100) NOT NULL,
@@ -368,8 +368,8 @@ class MySQLBackend(SQLBackend):
 				`lastUsed` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				`licenseKey` VARCHAR(1024),
 				PRIMARY KEY (`config_id`)
-			) %s;
-			''' % self._sql.getTableCreationOptions('SOFTWARE_CONFIG')
+			) {self._sql.getTableCreationOptions("SOFTWARE_CONFIG")};
+			'''
 		logger.debug(table)
 		with self._sql.session() as session:
 			self._sql.execute(session, table)
