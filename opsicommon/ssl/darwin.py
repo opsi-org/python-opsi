@@ -44,3 +44,18 @@ def remove_ca(subject_name: str) -> bool:
 		execute(f'security remove-trusted-cert -d "{pem_file.name}"')
 	finally:
 		os.remove(pem_file.name)
+
+
+def is_in_os_store(ca_cert: crypto.X509) -> bool:
+	subject_name = ca_cert.get_subject().CN
+	logger.devel("checking signature of %s against entries in system certificate store", subject_name)
+
+	pem = execute(f'security find-certificate -p -c "{subject_name}" /Library/Keychains/System.keychain').strip()
+	if pem:
+		ca = crypto.load_certificate(crypto.FILETYPE_PEM, pem.encode("utf-8"))
+		if ca.digest("sha1") == ca_cert.digest("sha1"):
+			logger.devel("Found certificate with matching digest")
+			return True
+
+	logger.devel("Did not find certificate with matching digest")
+	return False
