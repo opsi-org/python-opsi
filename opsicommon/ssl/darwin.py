@@ -20,7 +20,7 @@ __all__ = ["install_ca", "remove_ca", "is_in_os_store"]
 def install_ca(ca_cert: crypto.X509):
 	logger.info("Installing CA '%s' into system store", ca_cert.get_subject().CN)
 
-	pem_file = tempfile.NamedTemporaryFile(mode="wb", delete=False, encoding="ascii")
+	pem_file = tempfile.NamedTemporaryFile(mode="wb", delete=False)  # pylint: disable=consider-using-with
 	pem_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, ca_cert))
 	pem_file.close()
 	try:
@@ -29,16 +29,22 @@ def install_ca(ca_cert: crypto.X509):
 		os.remove(pem_file.name)
 
 
-def remove_ca(subject_name: str) -> bool:
-
+def load_ca(subject_name: str) -> crypto.X509:
 	pem = execute(f'security find-certificate -p -c "{subject_name}" /Library/Keychains/System.keychain').strip()
-	if not pem:
+	if not pem or not pem.strip():
+		return None
+	return crypto.load_certificate(crypto.FILETYPE_PEM, pem)
+
+
+def remove_ca(subject_name: str) -> bool:
+	ca = load_ca(subject_name)
+	if not ca:
 		logger.info("CA '%s' not found, nothing to remove", subject_name)
 		return
 
 	logger.info("Removing CA '%s'", subject_name)
-	pem_file = tempfile.NamedTemporaryFile(mode="wb", delete=False, encoding="ascii")
-	pem_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, pem))
+	pem_file = tempfile.NamedTemporaryFile(mode="wb", delete=False)  # pylint: disable=consider-using-with
+	pem_file.write(crypto.dump_certificate(crypto.FILETYPE_PEM, ca))
 	pem_file.close()
 	try:
 		execute(f'security remove-trusted-cert -d "{pem_file.name}"')

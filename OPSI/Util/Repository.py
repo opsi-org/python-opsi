@@ -934,6 +934,7 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 		self._read_timeout = 3600
 		self._http_pool_maxsize = 10
 		self._http_max_retries = 1
+		self._session_lifetime = 150
 		self.base_url = None
 
 		for option, value in kwargs.items():
@@ -959,6 +960,8 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 					self._ip_version = str(value)
 				else:
 					logger.error("Invalid ip version '%s', using %s", value, self._ip_version)
+			elif option == 'sessionlifetime' and value:
+				self._session_lifetime = int(value)
 
 		self._set_url(url)
 
@@ -968,7 +971,8 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 		self._session = requests.Session()
 		self._session.auth = (self._username or '', self._password or '')
 		self._session.headers.update({
-			'User-Agent': self._application
+			'User-Agent': self._application,
+			"X-opsi-session-lifetime": str(self._session_lifetime)
 		})
 
 		if self._proxy_url:

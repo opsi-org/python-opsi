@@ -93,6 +93,7 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		self._read_timeout = 60
 		self._http_pool_maxsize = 10
 		self._http_max_retries = 1
+		self._session_lifetime = 150 # In seconds
 		self.server_name = None
 		self.base_url = None
 
@@ -140,6 +141,8 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 					self._serialization = value
 				else:
 					logger.error("Invalid serialization '%s', using %s", value, self._serialization)
+			elif option == 'sessionlifetime' and value:
+				self._session_lifetime = int(value)
 
 		self._set_address(address)
 
@@ -149,7 +152,8 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 		self._session = requests.Session()
 		self._session.auth = (self._username or '', self._password or '')
 		self._session.headers.update({
-			'User-Agent': self._application
+			"User-Agent": self._application,
+			"X-opsi-session-lifetime": str(self._session_lifetime)
 		})
 		if session_id:
 			if "=" in session_id:
