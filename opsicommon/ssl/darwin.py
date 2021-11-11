@@ -14,7 +14,7 @@ from OPSI.System import execute
 
 from opsicommon.logging import logger
 
-__all__ = ["install_ca", "remove_ca"]
+__all__ = ["install_ca", "remove_ca", "is_in_os_store"]
 
 
 def install_ca(ca_cert: crypto.X509):

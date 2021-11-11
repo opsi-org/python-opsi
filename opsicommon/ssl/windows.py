@@ -16,7 +16,7 @@ from opsicommon.logging import logger
 
 crypt32 = ctypes.WinDLL('crypt32.dll')
 
-__all__ = ["install_ca", "remove_ca"]
+__all__ = ["install_ca", "remove_ca", "is_in_os_store"]
 
 # lpszStoreProvider
 CERT_STORE_PROV_SYSTEM = 0x0000000A
@@ -137,8 +137,9 @@ def is_in_os_store(ca_cert: crypto.X509):
 	store_name = "Root"
 	logger.devel("checking signature of %s against entries in system certificate store", ca_cert.get_subject().CN)
 
-	# CERT_FIND_HASH always checks against sha1
+	# CERT_FIND_HASH always checks against sha1 (lowercase without separating characters)
 	input_signature = ca_cert.digest("sha1")
+	input_signature = b"".join([part.lower() for part in input_signature.split(b":")])
 	subject_name = ca_cert.get_subject().CN
 	logger.devel("got name %s with digest %s", subject_name, input_signature)
 	with _open_cert_store(store_name, ctype=True) as store:
@@ -146,12 +147,21 @@ def is_in_os_store(ca_cert: crypto.X509):
 			store,
 			X509_ASN_ENCODING,
 			0,
-			CERT_FIND_HASH, # Searches for a certificate that matches the given digest
-			input_signature,
+			#CERT_FIND_HASH, # Searches for a certificate that matches the given digest
+			#input_signature,
+			CERT_FIND_SUBJECT_STR,
+			subject_name,
 			None
 		)
+		logger.devel("got p_cert_ctx %s of type %s", p_cert_ctx, type(p_cert_ctx))
 		if p_cert_ctx == 0:
-			logger.devel("Did not find certificate with matching digest")
-			return False	# Certificate not found
-	logger.devel("Found certificate with matching digest")
-	return True
+			try:
+				digest = p_cert_ctx.digest("sha1")
+				logger.devel("found digest %s, comparing with input", digest)
+				if digest == input_signature:
+					logger.devel("Found certificate with matching digest")
+					return True
+			except Exception as error:
+				logger.devel("something went wrong in p_cert_ctx.digest", error)
+	logger.devel("Did not find certificate with matching digest")
+	return False	# Certificate not found
