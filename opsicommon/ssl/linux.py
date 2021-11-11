@@ -15,7 +15,7 @@ from OPSI.System import (
 
 from opsicommon.logging import logger
 
-__all__ = ["install_ca", "remove_ca", "is_in_os_store"]
+__all__ = ["install_ca", "remove_ca", "load_ca"]
 
 
 def _get_cert_path_and_cmd():
@@ -87,22 +87,3 @@ def remove_ca(subject_name: str) -> bool:
 			"CA '%s' not found in '%s', nothing to remove",
 			subject_name, system_cert_path
 		)
-
-
-def is_in_os_store(ca_cert: crypto.X509) -> bool:
-	logger.devel("checking signature of %s against entries in system certificate store", ca_cert.get_subject().CN)
-	input_signature = ca_cert.digest("sha1")
-	system_cert_path, _ = _get_cert_path_and_cmd()
-	for entry in os.listdir(system_cert_path):
-		filename = os.path.join(system_cert_path, entry)
-		ca = None
-		with open(filename, "rb") as file:
-			try:
-				ca = crypto.load_certificate(crypto.FILETYPE_PEM, file.read())
-			except crypto.Error:
-				continue
-		if ca.digest("sha1") == input_signature:
-			logger.devel("Found certificate with matching digest")
-			return True
-	logger.devel("Did not find certificate with matching digest")
-	return False	# Certificate not found
