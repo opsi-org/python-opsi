@@ -169,9 +169,6 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 		logger.debug("Mountpoint '%s' already mounted, umounting before mount", mountpoint)
 		umount(mountpoint)
 
-	for (key, value) in options.items():
-		options[key] = forceUnicode(value)
-
 	fs = ""
 	stdin_data = b""
 
@@ -224,7 +221,7 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 		tf = tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8")  # pylint: disable=consider-using-with
 		conf = "n_cookies 1\ncache_size 0\ntable_size 16384\nuse_locks 0\n"
 		if options.get('ca_cert_file'):
-			conf += f"trust_ca_cert {options['ca_cert_file']}\n"
+			conf += f"trust_ca_cert {os.path.abspath(options['ca_cert_file'])}\n"
 		tf.write(conf)
 		tf.close()
 		tmpFiles.append(tf.name)
@@ -246,14 +243,10 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 	else:
 		raise ValueError(f"Cannot mount unknown fs type '{dev}'")
 
-	for key in ('trust_ca_cert', 'ca_cert_file', 'verify_server_cert'):
-		if key in options:
-			del options[key]
-
 	mountOptions = []
 	for (key, value) in options.items():
-		key = forceUnicode(key)
-		value = forceUnicode(value)
+		if key in ("trust_ca_cert", "ca_cert_file", "verify_server_cert"):
+			continue
 		if value:
 			mountOptions.append(f"{key}={value}")
 		else:
@@ -263,12 +256,13 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 		while True:
 			try:
 				if mountOptions:
-					optString = '-o "{0}"'.format((','.join(mountOptions)).replace('"', '\\"'))
+					options = (','.join(mountOptions)).replace('"', '\\"')
+					optString = f'-o "{options}"'
 				else:
 					optString = ''
 				proc_env = os.environ.copy()
 				proc_env["LC_ALL"] = "C"
-				execute("%s %s %s %s %s" % (which('mount'), fs, optString, dev, mountpoint), env=proc_env, stdin_data=stdin_data)
+				execute(f"{which('mount')} {fs} {optString} {dev} {mountpoint}", env=proc_env, stdin_data=stdin_data)
 				break
 			except Exception as err:  # pylint: disable=broad-except
 				if fs == "-t cifs" and "vers=2.0" not in mountOptions and "error(95)" in str(err):
