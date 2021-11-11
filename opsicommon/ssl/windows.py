@@ -16,7 +16,7 @@ from opsicommon.logging import logger
 
 crypt32 = ctypes.WinDLL('crypt32.dll')
 
-__all__ = ["install_ca", "remove_ca", "is_in_os_store"]
+__all__ = ["install_ca", "remove_ca", "load_ca"]
 
 # lpszStoreProvider
 CERT_STORE_PROV_SYSTEM = 0x0000000A
@@ -49,6 +49,7 @@ CERT_FIND_SUBJECT_NAME = 0x00020007
 CERT_FIND_HASH = 0x00010000
 CERT_NAME_SIMPLE_DISPLAY_TYPE = 4
 CERT_NAME_FRIENDLY_DISPLAY_TYPE = 5
+CERT_HASH_PROP_ID = 3			#sha1
 
 # Specifies the name of the X.509 certificate store to open. Valid values include the following:
 
@@ -98,6 +99,16 @@ def install_ca(ca_cert: crypto.X509):
 		)
 
 
+def load_ca(subject_name: str) -> crypto.X509:
+	store_name = "Root"
+	with _open_cert_store(store_name) as store:
+		for certificate in store.CertEnumCertificatesInStore():
+			ca = crypto.load_certificate(crypto.FILETYPE_ASN1, certificate.CertEncoded)
+			if ca.get_subject().CN == subject_name:
+				return ca
+	return None
+
+
 def remove_ca(subject_name: str) -> bool:
 	store_name = "Root"
 	with _open_cert_store(store_name, ctype=True) as store:
@@ -131,37 +142,3 @@ def remove_ca(subject_name: str) -> bool:
 		crypt32.CertDeleteCertificateFromStore(p_cert_ctx)
 		crypt32.CertFreeCertificateContext(p_cert_ctx)
 		return True
-
-
-def is_in_os_store(ca_cert: crypto.X509):
-	store_name = "Root"
-	logger.devel("checking signature of %s against entries in system certificate store", ca_cert.get_subject().CN)
-
-	# CERT_FIND_HASH always checks against sha1 (lowercase without separating characters)
-	input_signature = ca_cert.digest("sha1")
-	input_signature = b"".join([part.lower() for part in input_signature.split(b":")])
-	subject_name = ca_cert.get_subject().CN
-	logger.devel("got name %s with digest %s", subject_name, input_signature)
-	with _open_cert_store(store_name, ctype=True) as store:
-		p_cert_ctx = crypt32.CertFindCertificateInStore(
-			store,
-			X509_ASN_ENCODING,
-			0,
-			#CERT_FIND_HASH, # Searches for a certificate that matches the given digest
-			#input_signature,
-			CERT_FIND_SUBJECT_STR,
-			subject_name,
-			None
-		)
-		logger.devel("got p_cert_ctx %s of type %s", p_cert_ctx, type(p_cert_ctx))
-		if p_cert_ctx == 0:
-			try:
-				digest = p_cert_ctx.digest("sha1")
-				logger.devel("found digest %s, comparing with input", digest)
-				if digest == input_signature:
-					logger.devel("Found certificate with matching digest")
-					return True
-			except Exception as error:
-				logger.devel("something went wrong in p_cert_ctx.digest", error)
-	logger.devel("Did not find certificate with matching digest")
-	return False	# Certificate not found
