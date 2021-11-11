@@ -70,6 +70,7 @@ def _open_cert_store(store_name: str, ctype: bool = False):
 	if ctype:
 		_open = crypt32.CertOpenStore
 
+	logger.devel("opening certificate_store")
 	store = _open(
 		CERT_STORE_PROV_SYSTEM,
 		0,
@@ -80,10 +81,12 @@ def _open_cert_store(store_name: str, ctype: bool = False):
 	try:
 		yield store
 	finally:
+		logger.devel("started closing certificate_store")
 		if ctype:
 			crypt32.CertCloseStore(store, CERT_CLOSE_STORE_FORCE_FLAG)
 		else:
 			store.CertCloseStore(CERT_CLOSE_STORE_FORCE_FLAG)
+		logger.devel("finished closing certificate_store")
 
 
 def install_ca(ca_cert: crypto.X509):
@@ -101,16 +104,22 @@ def install_ca(ca_cert: crypto.X509):
 
 def load_ca(subject_name: str) -> crypto.X509:
 	store_name = "Root"
+	logger.devel("Trying to find %s in certificate store", subject_name)
 	with _open_cert_store(store_name) as store:
 		for certificate in store.CertEnumCertificatesInStore():
+			logger.devel("checking certificate %s", certificate)
 			ca = crypto.load_certificate(crypto.FILETYPE_ASN1, certificate.CertEncoded)
+			logger.devel("loaded serialized certificate %s (digest %s)", ca, ca.digest("sha1"))
 			if ca.get_subject().CN == subject_name:
+				logger.devel("Found matching ca %s", subject_name)
 				return ca
+	logger.devel("Did not find ca")
 	return None
 
 
 def remove_ca(subject_name: str) -> bool:
 	store_name = "Root"
+	logger.devel("Trying to remove %s from certificate store", subject_name)
 	with _open_cert_store(store_name, ctype=True) as store:
 		p_cert_ctx = crypt32.CertFindCertificateInStore(
 			store,
@@ -120,6 +129,7 @@ def remove_ca(subject_name: str) -> bool:
 			subject_name,
 			None
 		)
+		logger.devel("Found certificate context at %s", p_cert_ctx)
 		if p_cert_ctx == 0:
 			# Cert not found
 			logger.info(
