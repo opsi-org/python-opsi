@@ -15,7 +15,7 @@ from OPSI.System import (
 
 from opsicommon.logging import logger
 
-__all__ = ["install_ca", "remove_ca"]
+__all__ = ["install_ca", "load_ca", "remove_ca"]
 
 
 def _get_cert_path_and_cmd():
