@@ -1704,7 +1704,7 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 					self._parse_emptyline()
 				continue
 
-			for token in ('#', ';', '{', '}'):
+			for token in ('#', ';', '}', '{'):
 				index = self._data.find(token)
 				if (index != -1) and (index >= minIndex) and ((self._currentIndex == -1) or (index < self._currentIndex)):
 					if (self._data[:index].count('"') % 2 == 1) or (self._data[:index].count("'") % 2 == 1):
@@ -1724,10 +1724,10 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 				self._parse_comment()
 			elif self._currentToken == ';':
 				self._parse_semicolon()
-			elif self._currentToken == '{':
-				self._parse_lbracket()
 			elif self._currentToken == '}':
 				self._parse_rbracket()
+			elif self._currentToken == '{':
+				self._parse_lbracket()
 
 		self._parsed = True
 
