@@ -231,11 +231,11 @@ class BackendAccessControl:
 
 				try:
 					host = self._context.host_getObjects(id=self.user_store.username)
-				except AttributeError as aerr:
-					logger.debug(str(aerr))
+				except AttributeError as err:
+					logger.debug(err)
 					raise BackendUnaccomplishableError(
 						f"Passed backend has no method 'host_getObjects', cannot authenticate host '{self.user_store.username}'"
-					) from aerr
+					) from err
 
 				try:
 					self.user_store.host = host[0]
@@ -249,18 +249,22 @@ class BackendAccessControl:
 					raise BackendMissingDataError(
 						f"OpsiHostKey not found for host '{self.user_store.username}'"
 					)
+				one_time_password = getattr(self.user_store.host, "oneTimePassword", None)
 
 				logger.confidential(
-					"Client %s, key sent %s, key stored %s",
-					self.user_store.username, self.user_store.password, self.user_store.host.opsiHostKey
+					"Host '%s' authentication: password sent '%s', host key '%s', onetime password '%s'",
+					self.user_store.username, self.user_store.password,
+					self.user_store.host.opsiHostKey, one_time_password
 				)
 
-				if self.user_store.password != self.user_store.host.opsiHostKey:
-					raise BackendAuthenticationError(
-						f"OpsiHostKey authentication failed for host '{self.user_store.host.id}': wrong key"
-					)
-
-				logger.info("OpsiHostKey authentication successful for host %s", self.user_store.host.id)
+				if self.user_store.host.opsiHostKey and self.user_store.password == self.user_store.host.opsiHostKey:
+					logger.info("Host '%s' authenticated by host key", self.user_store.host.id)
+				elif one_time_password and self.user_store.password == one_time_password:
+					logger.info("Host '%s' authenticated by onetime password", self.user_store.host.id)
+					self.user_store.host.setOneTimePassword(None)
+					host = self._context.host_updateObject(self.user_store.host)
+				else:
+					raise BackendAuthenticationError(f"Authentication of host '{self.user_store.host.id}' failed")
 
 				self.user_store.authenticated = True
 				self.user_store.isAdmin = self._isOpsiDepotserver()
