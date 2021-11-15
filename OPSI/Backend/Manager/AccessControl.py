@@ -261,7 +261,7 @@ class BackendAccessControl:
 					logger.info("Host '%s' authenticated by host key", self.user_store.host.id)
 				elif one_time_password and self.user_store.password == one_time_password:
 					logger.info("Host '%s' authenticated by onetime password", self.user_store.host.id)
-					self.user_store.host.setOneTimePassword(None)
+					self.user_store.host.setOneTimePassword("")
 					host = self._context.host_updateObject(self.user_store.host)
 				else:
 					raise BackendAuthenticationError(f"Authentication of host '{self.user_store.host.id}' failed")
