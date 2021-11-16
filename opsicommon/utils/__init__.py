@@ -25,6 +25,7 @@ import sys
 import time
 import types
 import secrets
+import subprocess
 from collections import namedtuple
 from hashlib import md5
 from itertools import islice
@@ -775,3 +776,24 @@ class Singleton(type):
 		if cls not in cls._instances:
 			cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
 		return cls._instances[cls]
+
+def monkeypatch_subprocess_for_frozen():
+	from subprocess import Popen as Popen_orig
+	class Popen_patched(Popen_orig):
+		def __init__(self, *args, **kwargs):
+			if not kwargs.get("env"):
+				kwargs["env"] = os.environ.copy()
+			if getattr(sys, 'frozen', False):
+				# Running in pyinstaller / frozen
+				lp_orig = kwargs["env"].get("LD_LIBRARY_PATH_ORIG")
+				if lp_orig is not None:
+					# Restore the original, unmodified value
+					kwargs["env"]["LD_LIBRARY_PATH"] = lp_orig
+				else:
+					# This happens when LD_LIBRARY_PATH was not set.
+					# Remove the env var as a last resort
+					kwargs["env"].pop("LD_LIBRARY_PATH", None)
+
+			super().__init__(*args, **kwargs)
+
+	subprocess.Popen = Popen_patched
