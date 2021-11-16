@@ -781,10 +781,10 @@ def monkeypatch_subprocess_for_frozen():
 	from subprocess import Popen as Popen_orig
 	class Popen_patched(Popen_orig):
 		def __init__(self, *args, **kwargs):
-			if not kwargs.get("env"):
-				kwargs["env"] = os.environ.copy()
 			if getattr(sys, 'frozen', False):
 				# Running in pyinstaller / frozen
+				if kwargs.get("env") is None:
+					kwargs["env"] = os.environ.copy()
 				lp_orig = kwargs["env"].get("LD_LIBRARY_PATH_ORIG")
 				if lp_orig is not None:
 					# Restore the original, unmodified value
