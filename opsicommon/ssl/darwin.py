@@ -31,13 +31,13 @@ def install_ca(ca_cert: crypto.X509):
 
 def load_ca(subject_name: str) -> crypto.X509:
 	try:
-		pem = execute(f'security find-certificate -p -c "{subject_name}" /Library/Keychains/System.keychain').strip()
-		if not pem or not pem.strip():
+		pem = execute(f'security find-certificate -p -c "{subject_name}" /Library/Keychains/System.keychain')
+		if not pem or not pem[0].strip():
 			return None
 	except RuntimeError:
 		logger.notice("did not find certificate %s", subject_name)
 		return None
-	return crypto.load_certificate(crypto.FILETYPE_PEM, pem)
+	return crypto.load_certificate(crypto.FILETYPE_PEM, pem[0].strip())
 
 
 def remove_ca(subject_name: str) -> bool:
