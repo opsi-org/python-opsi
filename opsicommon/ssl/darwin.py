@@ -33,11 +33,13 @@ def load_ca(subject_name: str) -> crypto.X509:
 	try:
 		pem = execute(f'security find-certificate -p -c "{subject_name}" /Library/Keychains/System.keychain')
 		if not pem or not pem[0].strip():
+			logger.notice("did not find certificate %s", subject_name)
 			return None
 	except RuntimeError:
 		logger.notice("did not find certificate %s", subject_name)
 		return None
-	return crypto.load_certificate(crypto.FILETYPE_PEM, pem[0].strip())
+	pemstring = "\n".join([line.strip() for line in pem])
+	return crypto.load_certificate(crypto.FILETYPE_PEM, pemstring)
 
 
 def remove_ca(subject_name: str) -> bool:
