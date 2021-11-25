@@ -8,14 +8,15 @@ Configuration data holding backend.
 
 # pylint: disable=too-many-lines
 
-from functools import lru_cache
-import platform
+import os
+import re
+import json
+import glob
 import codecs
 import collections
 import copy as pycopy
-import json
-import os
-import re
+from functools import lru_cache
+
 import shutil
 
 from opsicommon.logging import logger, secret_filter
@@ -26,7 +27,7 @@ from OPSI.Exceptions import (
 	BackendBadValueError, BackendMissingDataError, BackendReferentialIntegrityError
 )
 from OPSI.Types import (
-	forceBool, forceFilename, forceHostId, forceInt, forceLanguageCode,
+	forceFilename, forceHostId, forceInt, forceLanguageCode,
 	forceObjectClass, forceObjectClassList, forceObjectId, forceUnicode,
 	forceUnicodeList, forceUnicodeLower
 )
@@ -39,7 +40,7 @@ from OPSI.Object import (
 	ProductOnClient, ProductProperty, ProductPropertyState, SoftwareLicense,
 	SoftwareLicenseToLicensePool
 )
-from OPSI.Util import blowfishEncrypt, blowfishDecrypt, getfqdn, removeUnit
+from OPSI.Util import blowfishEncrypt, blowfishDecrypt, getfqdn
 from OPSI.Util.File import ConfigFile
 from OPSI.Util.Log import truncateLogData
 
@@ -61,21 +62,8 @@ LOG_TYPES = {  # key = logtype, value = requires objectId for read
 _PASSWD_LINE_REGEX = re.compile(r'^\s*([^:]+)\s*:\s*(\S+)\s*$')
 OPSI_HARDWARE_CLASSES = []
 
-DEFAULT_MAX_LOGFILE_SIZE = 5000000
-if platform.system().lower() == 'linux':
-	try:
-		with open(os.path.join('/etc', 'opsi', 'opsiconfd.conf')) as opsiconfd_config:
-			for _line in opsiconfd_config:
-				if _line.strip().startswith('max-log-size'):
-					_, logSize = _line.strip().split('=', 1)
-					logSize = removeUnit(logSize.strip())
-					logger.debug("Setting max log size to %s MB", logSize)
-					DEFAULT_MAX_LOGFILE_SIZE = int(logSize)*1000*1000
-					break
-			else:
-				raise ValueError("No custom setting found.")
-	except Exception as max_log_err:  # pylint: disable=broad-except
-		logger.debug("Failed to set MAX LOG SIZE from config: %s", max_log_err)
+DEFAULT_MAX_LOG_SIZE = 5000000
+DEFAULT_KEEP_ROTATED_LOGS = 0
 
 
 class ConfigDataBackend(Backend):  # pylint: disable=too-many-public-methods
@@ -104,12 +92,14 @@ containing the localisation of the hardware audit.
 		:param opsipasswdfile: Location of opsis own passwd file.
 		:param depotid: Id of the current depot.
 		:param maxlogsize: Maximum size of a logfile.
+		:param keeprotatedlogfiles: Maximum size of a logfile.
 		"""
 		Backend.__init__(self, **kwargs)
 		self._auditHardwareConfigFile = '/etc/opsi/hwaudit/opsihwaudit.conf'
 		self._auditHardwareConfigLocalesDir = '/etc/opsi/hwaudit/locales'
 		self._opsiPasswdFile = OPSI_PASSWD_FILE
-		self._maxLogfileSize = DEFAULT_MAX_LOGFILE_SIZE
+		self._max_log_size = DEFAULT_MAX_LOG_SIZE
+		self._keep_rotated_logs = DEFAULT_KEEP_ROTATED_LOGS
 		self._depotId = None
 
 		for (option, value) in kwargs.items():
@@ -123,8 +113,9 @@ containing the localisation of the hardware audit.
 			elif option in ('depotid', 'serverid'):
 				self._depotId = value
 			elif option == 'maxlogsize':
-				self._maxLogfileSize = forceInt(value)
-				logger.info('Logsize limited to: %s', self._maxLogfileSize)
+				self._max_log_size = forceInt(value)
+			elif option == 'keeprotatedlogs':
+				self._keep_rotated_logs = forceInt(value)
 
 		if not self._depotId:
 			self._depotId = getfqdn()
@@ -141,11 +132,11 @@ containing the localisation of the hardware audit.
 
 		for attribute in forceUnicodeList(attributes):
 			if attribute not in possibleAttributes:
-				raise BackendBadValueError("Class {0!r} has no attribute '{1}'".format(Class, attribute))
+				raise BackendBadValueError(f"Class {Class} has no attribute '{attribute}'")
 
 		for attribute in filter:
 			if attribute not in possibleAttributes:
-				raise BackendBadValueError("Class {0!r} has no attribute '{1}'".format(Class, attribute))
+				raise BackendBadValueError(f"Class {Class} has no attribute '{attribute}'")
 
 	def backend_createBase(self):
 		"""
@@ -180,7 +171,8 @@ containing the localisation of the hardware audit.
 		"""
 		return {
 			"log": {
-				"size_limit": DEFAULT_MAX_LOGFILE_SIZE,
+				"size_limit": self._max_log_size,
+				"keep_rotated": self._keep_rotated_logs,
 				"types": list(LOG_TYPES)
 			}
 		}
@@ -276,48 +268,50 @@ overwrite the log.
 		"""
 		logType = forceUnicode(logType)
 		if logType not in LOG_TYPES:
-			raise BackendBadValueError("Unknown log type '%s'" % logType)
+			raise BackendBadValueError(f"Unknown log type '{logType}'")
 
 		if not objectId:
-			raise BackendBadValueError("Writing {0} log requires an objectId".format(logType))
+			raise BackendBadValueError(f"Writing {logType} log requires an objectId")
 		objectId = forceObjectId(objectId)
 
-		limitFileSize = self._maxLogfileSize > 0
-		data = forceUnicode(data)
-		logFile = os.path.join(LOG_DIR, logType, '{0}.log'.format(objectId))
+		data = data.encode("utf-8", "replace")
+		log_file = os.path.join(LOG_DIR, logType, f"{objectId}.log")
 
-		if not os.path.exists(os.path.dirname(logFile)):
-			os.mkdir(os.path.dirname(logFile), 0o2770)
-
-		logWriteMode = "w"
-		if forceBool(append):
-			logWriteMode = "a"
-			if limitFileSize and os.path.exists(logFile):
-				currentLogSize = os.stat(logFile).st_size
-				amountToReadFromLog = max(self._maxLogfileSize - len(data), 0)
-				if 0 <= amountToReadFromLog < currentLogSize:
-					logWriteMode = "w"
-					with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
-						log.seek(currentLogSize - amountToReadFromLog)
-						oldData = log.read()
-						idx = oldData.find("\n")
-						if idx > 0:
-							oldData = oldData[idx+1:]
-						data = oldData + data
-
-		if limitFileSize and len(data) > self._maxLogfileSize:
-			data = truncateLogData(data, self._maxLogfileSize)
-
-		with codecs.open(logFile, logWriteMode, 'utf-8', 'replace') as log:
-			log.write(data)
+		if not os.path.exists(os.path.dirname(log_file)):
+			os.mkdir(os.path.dirname(log_file), 0o2770)
 
 		try:
-			shutil.chown(logFile, group=OPSI_ADMIN_GROUP)
-		except LookupError:
-			# Group could not be found
-			pass
+			rotate = not append or (append and os.path.exists(log_file) and os.path.getsize(log_file) + len(data) > self._max_log_size)
+			if rotate:
+				for num in range(self._keep_rotated_logs, 0, -1):
+					src_file_path = log_file
+					if num > 1:
+						src_file_path = f"{log_file}.{num-1}"
+					if not os.path.exists(src_file_path):
+						continue
+					dst_file_path = f"{log_file}.{num}"
+					os.rename(src_file_path, dst_file_path)
+					shutil.chown(dst_file_path, -1, OPSI_ADMIN_GROUP)
+					os.chmod(dst_file_path, 0o644)
 
-		os.chmod(logFile, 0o640)
+			for filename in glob.glob(f"{log_file}.*"):
+				try:
+					if int(filename.split(".")[-1]) > self._keep_rotated_logs:
+						os.remove(filename)
+				except ValueError:
+					os.remove(filename)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.error("Failed to rotate log files: %s", err)
+
+		with open(log_file, mode="ab" if append else "wb") as file:
+			file.write(data)
+
+		try:
+			shutil.chown(log_file, group=OPSI_ADMIN_GROUP)
+			os.chmod(log_file, 0o640)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.error("Failed to set file permissions on '%s': %s", log_file, err)
+
 
 	def log_read(self, logType, objectId=None, maxSize=0):  # pylint: disable=no-self-use
 		"""
@@ -334,24 +328,22 @@ Setting this to `0` disables limiting.
 		maxSize = int(maxSize)
 
 		if logType not in LOG_TYPES:
-			raise BackendBadValueError('Unknown log type {0!r}'.format(logType))
+			raise BackendBadValueError(f"Unknown log type '{logType}'")
 
 		if objectId:
 			objectId = forceObjectId(objectId)
-			logFile = os.path.join(LOG_DIR, logType, '{0}.log'.format(objectId))
+			log_file = os.path.join(LOG_DIR, logType, f"{objectId}.log")
 		else:
 			if LOG_TYPES[logType]:
-				raise BackendBadValueError("Log type {0!r} requires objectId".format(logType))
-
-			logFile = os.path.join(LOG_DIR, logType, 'opsiconfd.log')
+				raise BackendBadValueError(f"Log type '{logType}' requires objectId")
+			log_file = os.path.join(LOG_DIR, logType, 'opsiconfd.log')
 
 		try:
-			with codecs.open(logFile, 'r', 'utf-8', 'replace') as log:
+			with codecs.open(log_file, 'r', 'utf-8', 'replace') as log:
 				data = log.read()
 		except IOError as ioerr:
 			if ioerr.errno == 2:  # This is "No such file or directory"
 				return ''
-
 			raise
 
 		if len(data) > maxSize > 0:
@@ -390,14 +382,14 @@ the opsi host key.
 				break
 
 		if not result['password']:
-			raise BackendMissingDataError("Username '%s' not found in '%s'" % (username, self._opsiPasswdFile))
+			raise BackendMissingDataError(f"Username '{username}' not found in '{self._opsiPasswdFile}'")
 
 		depot = self.host_getObjects(id=self._depotId)
 		if not depot:
-			raise BackendMissingDataError("Depot {0!r} not found in backend".format(self._depotId))
+			raise BackendMissingDataError(f"Depot '{self._depotId}'' not found in backend")
 		depot = depot[0]
 		if not depot.opsiHostKey:
-			raise BackendMissingDataError("Host key for depot {0!r} not found".format(self._depotId))
+			raise BackendMissingDataError(f"Host key for depot '{self._depotId}' not found")
 
 		result['password'] = blowfishDecrypt(depot.opsiHostKey, result['password'])
 
@@ -405,7 +397,7 @@ the opsi host key.
 			try:
 				import pwd  # pylint: disable=import-outside-toplevel
 				idRsa = os.path.join(pwd.getpwnam(username)[5], '.ssh', 'id_rsa')
-				with open(idRsa, 'r') as file:
+				with open(idRsa, encoding="utf-8") as file:
 					result['rsaPrivateKey'] = file.read()
 			except Exception as err:  # pylint: disable=broad-except
 				logger.debug(err)
@@ -574,7 +566,7 @@ depot where the method is.
 			configIds = [config.id for config in self._context.config_getObjects(attributes=['id'])]
 
 			if configState.configId not in configIds:
-				raise BackendReferentialIntegrityError("Config with id '%s' not found" % configState.configId)
+				raise BackendReferentialIntegrityError(f"Config with id '{configState.configId}' not found")
 
 	def configState_updateObject(self, configState):  # pylint: disable=no-self-use
 		configState = forceObjectClass(configState, ConfigState)
@@ -672,12 +664,9 @@ depot where the method is.
 					packageVersion=productProperty.packageVersion):
 
 				raise BackendReferentialIntegrityError(
-					"Product with id '{0}', productVersion '{1}', "
-					"packageVersion '{2}' not found".format(
-						productProperty.productId,
-						productProperty.productVersion,
-						productProperty.packageVersion
-					)
+					f"Product with id '{productProperty.productId}', "
+					f"productVersion '{productProperty.productVersion}', "
+					f"packageVersion '{productProperty.packageVersion}' not found"
 				)
 
 	def productProperty_updateObject(self, productProperty):  # pylint: disable=no-self-use
@@ -709,12 +698,9 @@ depot where the method is.
 					packageVersion=productDependency.packageVersion):
 
 				raise BackendReferentialIntegrityError(
-					"Product with id '{0}', productVersion '{1}', "
-					"packageVersion '{2}' not found".format(
-						productDependency.productId,
-						productDependency.productVersion,
-						productDependency.packageVersion
-					)
+					f"Product with id '{productDependency.productId}', "
+					f"productVersion '{productDependency.productVersion}', "
+					f"packageVersion '{productDependency.packageVersion}' not found"
 				)
 
 	def productDependency_updateObject(self, productDependency):  # pylint: disable=no-self-use
@@ -745,12 +731,9 @@ depot where the method is.
 				packageVersion=productOnDepot.packageVersion):
 
 				raise BackendReferentialIntegrityError(
-					"Product with id '{0}', productVersion '{1}', "
-					"packageVersion '{2}' not found".format(
-						productOnDepot.productId,
-						productOnDepot.productVersion,
-						productOnDepot.packageVersion
-					)
+					f"Product with id '{productOnDepot.productId}', "
+					f"productVersion '{productOnDepot.productVersion}', "
+					f"packageVersion '{productOnDepot.packageVersion}' not found"
 				)
 
 	def productOnDepot_updateObject(self, productOnDepot):
@@ -764,12 +747,9 @@ depot where the method is.
 				packageVersion=productOnDepot.packageVersion):
 
 				raise BackendReferentialIntegrityError(
-					"Product with id '{0}', productVersion '{1}', "
-					"packageVersion '{2}' not found".format(
-						productOnDepot.productId,
-						productOnDepot.productVersion,
-						productOnDepot.packageVersion
-					)
+					f"Product with id '{productOnDepot.productId}', "
+					f"productVersion '{productOnDepot.productVersion}', "
+					f"packageVersion '{productOnDepot.packageVersion}' not found"
 				)
 
 	def productOnDepot_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -825,8 +805,10 @@ depot where the method is.
 				productId=productPropertyState.productId,
 				propertyId=productPropertyState.propertyId):
 
-				raise BackendReferentialIntegrityError("ProductProperty with id '%s' for product '%s' not found"
-					% (productPropertyState.propertyId, productPropertyState.productId))
+				raise BackendReferentialIntegrityError(
+					f"ProductProperty with id '{productPropertyState.propertyId}' "
+					f"for product '{productPropertyState.productId}' not found"
+				)
 
 	def productPropertyState_updateObject(self, productPropertyState):  # pylint: disable=no-self-use
 		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
@@ -850,7 +832,9 @@ depot where the method is.
 
 		if self._options['additionalReferentialIntegrityChecks']:
 			if group.parentGroupId and not self._context.group_getObjects(attributes=['id'], id=group.parentGroupId):
-				raise BackendReferentialIntegrityError("Parent group '%s' of group '%s' not found" % (group.parentGroupId, group.id))
+				raise BackendReferentialIntegrityError(
+					f"Parent group '{group.parentGroupId}' of group '{group.id}' not found"
+				)
 
 	def group_updateObject(self, group):  # pylint: disable=no-self-use
 		group = forceObjectClass(group, Group)
@@ -921,7 +905,9 @@ depot where the method is.
 
 		if self._options['additionalReferentialIntegrityChecks']:
 			if not self._context.licenseContract_getObjects(attributes=['id'], id=softwareLicense.licenseContractId):
-				raise BackendReferentialIntegrityError("License contract with id '%s' not found" % softwareLicense.licenseContractId)
+				raise BackendReferentialIntegrityError(
+					f"License contract with id '{softwareLicense.licenseContractId}' not found"
+				)
 
 	def softwareLicense_updateObject(self, softwareLicense):  # pylint: disable=no-self-use
 		softwareLicense = forceObjectClass(softwareLicense, SoftwareLicense)
@@ -965,8 +951,10 @@ depot where the method is.
 		if licensePoolIds:
 			softwareLicenseToLicensePools = self._context.softwareLicenseToLicensePool_getObjects(licensePoolId=licensePoolIds)
 			if softwareLicenseToLicensePools:
-				raise BackendReferentialIntegrityError("Refusing to delete license pool(s) %s, one ore more licenses/keys refer to pool: %s" % \
-					(licensePoolIds, softwareLicenseToLicensePools))
+				raise BackendReferentialIntegrityError(
+					f"Refusing to delete license pool(s) {licensePoolIds}, "
+					f"one ore more licenses/keys refer to pool: {softwareLicenseToLicensePools}"
+				)
 
 			self._context.auditSoftwareToLicensePool_deleteObjects(
 				self._context.auditSoftwareToLicensePool_getObjects(
@@ -988,9 +976,13 @@ depot where the method is.
 
 		if self._options['additionalReferentialIntegrityChecks']:
 			if not self._context.softwareLicense_getObjects(attributes=['id'], id=softwareLicenseToLicensePool.softwareLicenseId):
-				raise BackendReferentialIntegrityError("Software license with id '%s' not found" % softwareLicenseToLicensePool.softwareLicenseId)
+				raise BackendReferentialIntegrityError(
+					f"Software license with id '{softwareLicenseToLicensePool.softwareLicenseId}' not found"
+				)
 			if not self._context.licensePool_getObjects(attributes=['id'], id=softwareLicenseToLicensePool.licensePoolId):
-				raise BackendReferentialIntegrityError("License with id '%s' not found" % softwareLicenseToLicensePool.licensePoolId)
+				raise BackendReferentialIntegrityError(
+					f"License with id '{softwareLicenseToLicensePool.licensePoolId}' not found"
+				)
 
 	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):  # pylint: disable=no-self-use
 		softwareLicenseToLicensePool = forceObjectClass(softwareLicenseToLicensePool, SoftwareLicenseToLicensePool)
@@ -1011,8 +1003,9 @@ depot where the method is.
 		if softwareLicenseIds:
 			licenseOnClients = self._context.licenseOnClient_getObjects(softwareLicenseId=softwareLicenseIds)
 			if licenseOnClients:
-				raise BackendReferentialIntegrityError("Refusing to delete softwareLicenseToLicensePool(s), one ore more licenses in use: %s"\
-					% licenseOnClients)
+				raise BackendReferentialIntegrityError(
+					f"Refusing to delete softwareLicenseToLicensePool(s), one ore more licenses in use: {licenseOnClients}"
+				)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicenseOnClients                                                                          -
@@ -1182,7 +1175,7 @@ depot where the method is.
 
 		classes = []
 		try:  # pylint: disable=too-many-nested-blocks
-			with open(self._auditHardwareConfigFile) as hwcFile:
+			with open(self._auditHardwareConfigFile, encoding="utf-8") as hwcFile:
 				exec(hwcFile.read())  # pylint: disable=exec-used
 
 			for i, currentClassConfig in enumerate(OPSI_HARDWARE_CLASSES):
