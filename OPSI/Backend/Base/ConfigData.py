@@ -92,7 +92,7 @@ containing the localisation of the hardware audit.
 		:param opsipasswdfile: Location of opsis own passwd file.
 		:param depotid: Id of the current depot.
 		:param maxlogsize: Maximum size of a logfile.
-		:param keeprotatedlogfiles: Maximum size of a logfile.
+		:param keeprotatedlogs: Maximum size of a logfile.
 		"""
 		Backend.__init__(self, **kwargs)
 		self._auditHardwareConfigFile = '/etc/opsi/hwaudit/opsihwaudit.conf'
@@ -103,7 +103,7 @@ containing the localisation of the hardware audit.
 		self._depotId = None
 
 		for (option, value) in kwargs.items():
-			option = option.lower()
+			option = option.lower().replace("_", "")
 			if option == 'audithardwareconfigfile':
 				self._auditHardwareConfigFile = forceFilename(value)
 			elif option == 'audithardwareconfiglocalesdir':
@@ -253,7 +253,7 @@ containing the localisation of the hardware audit.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Logs                                                                                      -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def log_write(self, logType, data, objectId=None, append=False):
+	def log_write(self, logType, data, objectId=None, append=False):  # pylint: disable=too-many-branches
 		"""
 		Write log data into the corresponding log file.
 
@@ -281,18 +281,24 @@ overwrite the log.
 			os.mkdir(os.path.dirname(log_file), 0o2770)
 
 		try:
-			rotate = not append or (append and os.path.exists(log_file) and os.path.getsize(log_file) + len(data) > self._max_log_size)
-			if rotate:
-				for num in range(self._keep_rotated_logs, 0, -1):
-					src_file_path = log_file
-					if num > 1:
-						src_file_path = f"{log_file}.{num-1}"
-					if not os.path.exists(src_file_path):
-						continue
-					dst_file_path = f"{log_file}.{num}"
-					os.rename(src_file_path, dst_file_path)
-					shutil.chown(dst_file_path, -1, OPSI_ADMIN_GROUP)
-					os.chmod(dst_file_path, 0o644)
+			if not append or (append and os.path.exists(log_file) and os.path.getsize(log_file) + len(data) > self._max_log_size):
+				logger.info("Rotating file '%s'", log_file)
+				if self._keep_rotated_logs <= 0:
+					os.remove(log_file)
+				else:
+					for num in range(self._keep_rotated_logs, 0, -1):
+						src_file_path = log_file
+						if num > 1:
+							src_file_path = f"{log_file}.{num-1}"
+						if not os.path.exists(src_file_path):
+							continue
+						dst_file_path = f"{log_file}.{num}"
+						os.rename(src_file_path, dst_file_path)
+						try:
+							shutil.chown(dst_file_path, -1, OPSI_ADMIN_GROUP)
+							os.chmod(dst_file_path, 0o644)
+						except Exception as err:  # pylint: disable=broad-except
+							logger.error("Failed to set file permissions on '%s': %s", dst_file_path, err)
 
 			for filename in glob.glob(f"{log_file}.*"):
 				try:
