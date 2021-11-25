@@ -138,11 +138,10 @@ class ConnectionThread(KillableThread):
 			sock.settimeout(timeout)
 			sock.connect((self.address, self.hostControlBackend._opsiclientdPort))  # pylint: disable=protected-access
 			self.result = True
-		except Exception as err:  # pylint: disable=broad-except
-			logger.debug(err, exc_info=True)
-		finally:
 			sock.shutdown(socket.SHUT_RDWR)
 			sock.close()
+		except Exception as err:  # pylint: disable=broad-except
+			logger.info(err, exc_info=True)
 		self.ended = time.time()
 
 
