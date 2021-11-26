@@ -66,7 +66,8 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 
 class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 	_rpc_timeouts = {
-		"depot_installPackage": 3600
+		"depot_installPackage": 3600,
+		"depot_librsyncPatchFile" : 3600
 	}
 
 	def __init__(self, address, **kwargs):  # pylint: disable=too-many-branches,too-many-statements

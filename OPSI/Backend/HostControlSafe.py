@@ -43,10 +43,10 @@ class HostControlSafeBackend(HostControlBackend):
 			raise BackendMissingDataError("No matching host ids found")
 		return HostControlBackend.hostControl_fireEvent(self, event, hostIds)
 
-	def hostControlSafe_showPopup(self, message, hostIds=[]):  # pylint: disable=dangerous-default-value
+	def hostControlSafe_showPopup(self, message, hostIds=[], displaySeconds=-1):  # pylint: disable=dangerous-default-value
 		if not hostIds:
 			raise BackendMissingDataError("No matching host ids found")
-		return HostControlBackend.hostControl_showPopup(self, message, hostIds)
+		return HostControlBackend.hostControl_showPopup(self, message, hostIds, displaySeconds)
 
 	def hostControlSafe_uptime(self, hostIds=[]):  # pylint: disable=dangerous-default-value
 		if not hostIds:
