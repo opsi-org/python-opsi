@@ -322,10 +322,11 @@ class HostControlBackend(ExtendedBackend):
 		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method='fireEvent', params=[event])
 
-	def hostControl_showPopup(self, message, hostIds=[]):  # pylint: disable=dangerous-default-value
+	def hostControl_showPopup(self, message, hostIds=[], mode="prepend", addTimestamp=True, displaySeconds=0):  # pylint: disable=dangerous-default-value
 		message = forceUnicode(message)
+		displaySeconds = forceInt(displaySeconds)
 		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
-		return self._opsiclientdRpc(hostIds=hostIds, method='showPopup', params=[message])
+		return self._opsiclientdRpc(hostIds=hostIds, method='showPopup', params=[message, mode, addTimestamp, displaySeconds])
 
 	def hostControl_uptime(self, hostIds=[]):  # pylint: disable=dangerous-default-value
 		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
