@@ -73,7 +73,7 @@ def _read_modules_file(modules_file):
 			key = key.strip()
 			val = val.strip()
 			if key == "expires":
-				expires = date.fromisoformat(val)
+				expires = date.fromisoformat("2999-12-31") if val == "never" else date.fromisoformat(val)
 			elif key == "customer":
 				customer = val
 			elif key == "signature":
@@ -549,6 +549,7 @@ def test_opsi_modules_file():
 	omf.read()
 	assert len(modules) == len(omf.licenses)
 	for lic in omf.licenses:
+		assert lic.get_state() == "valid"
 		assert lic.module_id in modules
 		assert lic.valid_until == expires
 		client_number = 999999999
