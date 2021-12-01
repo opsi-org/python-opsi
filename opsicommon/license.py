@@ -93,6 +93,8 @@ def _str2date(value) -> date:
 
 def _hexstr2bytes(value) -> bytes:
 	if isinstance(value, str):
+		if len(value) % 2:
+			value = "0" + value
 		return bytes.fromhex(value)
 	return value
 

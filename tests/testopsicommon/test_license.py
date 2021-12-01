@@ -151,6 +151,7 @@ def test_opsi_license_defaults():
 		("revoked_ids", ["1", 2], ValueError),
 		("signature", "----------------------------", ValueError),
 		("signature", "0102030405060708090a0b0c0d0e", None),
+		("signature", "102030405060708090a0b0c0d0e", None),
 		("signature", bytes.fromhex("0102030405060708090a0b0c0d0e"), None),
 	),
 )
