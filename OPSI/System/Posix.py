@@ -11,7 +11,7 @@ Functions and classes for the use with a POSIX operating system.
 # pylint: disable=too-many-lines
 
 from itertools import islice
-from signal import SIGKILL, SIGTERM
+from signal import SIGKILL
 import codecs
 import datetime
 import fcntl
@@ -1034,9 +1034,9 @@ def terminateProcess(processHandle=None, processId=None):  # pylint: disable=unu
 		raise ValueError("process id must be given")
 
 	try:
-		os.kill(processId, SIGTERM)
+		os.kill(processId, SIGKILL)
 	except Exception as sigException:  # pylint: disable=broad-except
-		logger.warning('Sending SIGTERM to pid %s failed: %s', processId, sigException)
+		logger.warning('Sending SIGKILL to pid %s failed: %s', processId, sigException)
 		raise
 	return 0
 
@@ -3888,7 +3888,8 @@ def runCommandInSession(  # pylint: disable=unused-argument,too-many-arguments,t
 	duplicateFrom=None,
 	waitForProcessEnding=True,
 	timeoutSeconds=0,
-	noWindow=False
+	noWindow=False,
+	shell=True
 ):
 	"""
 	Run an command.
@@ -3927,8 +3928,8 @@ until the execution of the process is terminated.
 			)
 	logger.info("Running command %s", command)
 	process = subprocess.Popen(
-		args="exec " + command,
-		shell=True,
+		args=command,
+		shell=shell,
 		stdin=subprocess.PIPE,
 		stdout=subprocess.PIPE,
 		stderr=subprocess.STDOUT,
