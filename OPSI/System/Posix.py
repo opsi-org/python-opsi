@@ -11,7 +11,7 @@ Functions and classes for the use with a POSIX operating system.
 # pylint: disable=too-many-lines
 
 from itertools import islice
-from signal import SIGKILL
+from signal import SIGKILL, SIGTERM
 import codecs
 import datetime
 import fcntl
@@ -60,7 +60,8 @@ __all__ = (
 	'isCentOS', 'isDebian', 'isOpenSUSE', 'isRHEL', 'isSLES',
 	'isUCS', 'isUbuntu', 'locateDHCPDConfig',
 	'locateDHCPDInit', 'mount', 'reboot', 'removeSystemHook',
-	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
+	'runCommandInSession', 'setLocalSystemTime', 'shutdown',
+	'terminateProcess', 'umount', 'which'
 )
 
 
@@ -1023,6 +1024,21 @@ def _terminateProcess(process):
 			os.kill(process.pid, SIGKILL)
 		except Exception as sigKillException:  # pylint: disable=broad-except
 			logger.debug('Sending SIGKILL to pid %s failed: %s', process.pid, sigKillException)
+
+
+def terminateProcess(processHandle=None, processId=None):  # pylint: disable=unused-argument
+	if processId is not None:
+		processId = forceInt(processId)
+
+	if not processId:
+		raise ValueError("process id must be given")
+
+	try:
+		os.kill(processId, SIGTERM)
+	except Exception as sigException:  # pylint: disable=broad-except
+		logger.warning('Sending SIGTERM to pid %s failed: %s', processId, sigException)
+		raise
+	return 0
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3911,7 +3927,7 @@ until the execution of the process is terminated.
 			)
 	logger.info("Running command %s", command)
 	process = subprocess.Popen(
-		args=command,
+		args="exec " + command,
 		shell=True,
 		stdin=subprocess.PIPE,
 		stdout=subprocess.PIPE,
