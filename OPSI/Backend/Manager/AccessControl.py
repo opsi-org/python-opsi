@@ -251,6 +251,8 @@ class BackendAccessControl:
 						f"Host '{self.user_store.username}' not found in backend {self._context}"
 					) from err
 
+				self.user_store.username = self.user_store.host.id
+
 				if not self.user_store.host.opsiHostKey:
 					raise BackendMissingDataError(
 						f"OpsiHostKey not found for host '{self.user_store.username}'"
