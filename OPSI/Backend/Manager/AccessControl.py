@@ -209,10 +209,12 @@ class BackendAccessControl:
 
 	def authenticate(self, username: str, password: str, forceGroups: List[str] = None, auth_type: str = None):  # pylint: disable=too-many-branches,too-many-statements
 		if not auth_type:
-			if re.search(r'^[^.]+\.[^.]+\.\S+$', username):
+			if re.search(r'^[^.]+\.[^.]+\.\S+$', username) or re.search(r'^[a-fA-F0-9]{2}(:[a-fA-F0-9]{2}){5}$', username):
+				# Username is a fqdn or mac address
 				auth_type = "opsi-hostkey"
 			else:
 				auth_type = "auth-module"
+
 		self.user_store.authenticated = False
 		self.user_store.username = username
 		self.user_store.password = password
@@ -223,14 +225,18 @@ class BackendAccessControl:
 		if not self.user_store.password:
 			raise BackendAuthenticationError("No password specified")
 		try:
-			if auth_type == "opsi-hostkey":
-				# Username starts with something like hostname.domain.tld:
-				# Assuming it is a host passing his FQDN as username
-				logger.debug("Trying to authenticate by opsiHostKey...")
+			if self.auth_type == "opsi-hostkey":
 				self.user_store.username = self.user_store.username.lower()
+				host_filter = {}
+				if re.search(r'^[a-fA-F0-9]{2}(:[a-fA-F0-9]{2}){5}$', self.user_store.username):
+					logger.debug("Trying to authenticate by mac address and opsi host key")
+					host_filter["hardwareAddress"] = self.user_store.username
+				else:
+					logger.debug("Trying to authenticate by host id and opsi host key")
+					host_filter["id"] = self.user_store.username
 
 				try:
-					host = self._context.host_getObjects(id=self.user_store.username)
+					host = self._context.host_getObjects(**host_filter)
 				except AttributeError as err:
 					logger.debug(err)
 					raise BackendUnaccomplishableError(
@@ -239,11 +245,11 @@ class BackendAccessControl:
 
 				try:
 					self.user_store.host = host[0]
-				except IndexError as ierr:
-					logger.debug(str(ierr))
+				except IndexError as err:
+					logger.debug(err)
 					raise BackendMissingDataError(
 						f"Host '{self.user_store.username}' not found in backend {self._context}"
-					) from ierr
+					) from err
 
 				if not self.user_store.host.opsiHostKey:
 					raise BackendMissingDataError(
@@ -253,7 +259,7 @@ class BackendAccessControl:
 
 				logger.confidential(
 					"Host '%s' authentication: password sent '%s', host key '%s', onetime password '%s'",
-					self.user_store.username, self.user_store.password,
+					self.user_store.host.id, self.user_store.password,
 					self.user_store.host.opsiHostKey, one_time_password
 				)
 
@@ -269,13 +275,13 @@ class BackendAccessControl:
 				self.user_store.authenticated = True
 				self.user_store.isAdmin = self._isOpsiDepotserver()
 				self.user_store.isReadOnly = False
-			elif auth_type == "opsi-passwd":
+			elif self.auth_type == "opsi-passwd":
 				credentials = self._context.user_getCredentials(self.user_store.username)
 				if self.user_store.password and self.user_store.password == credentials.get("password"):
 					self.user_store.authenticated = True
 				else:
 					raise BackendAuthenticationError(f"Authentication failed for user {self.user_store.username}")
-			elif auth_type == "auth-module":
+			elif self.auth_type == "auth-module":
 				# Get a fresh instance
 				auth_module = self._auth_module.get_instance()
 				# System user trying to log in with username and password
@@ -306,10 +312,10 @@ class BackendAccessControl:
 					self.user_store.username, ','.join(self.user_store.userGroups)
 				)
 			else:
-				raise BackendAuthenticationError(f"Invalid auth type {auth_type}")
+				raise BackendAuthenticationError(f"Invalid auth type {self.auth_type}")
 		except Exception as err:
 			logger.debug(err, exc_info=True)
-			raise BackendAuthenticationError(f"{err} (auth_type={auth_type})") from err
+			raise BackendAuthenticationError(f"{err} (auth_type={self.auth_type})") from err
 
 
 	def accessControl_authenticated(self):
