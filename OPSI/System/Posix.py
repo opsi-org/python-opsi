@@ -3909,7 +3909,8 @@ until the execution of the process is terminated.
 	"""
 	sleepDuration = 0.1
 
-	command = forceUnicode(command)
+	if not isinstance(command, list):
+		command = forceUnicode(command)
 	waitForProcessEnding = forceBool(waitForProcessEnding)
 	timeoutSeconds = forceInt(timeoutSeconds)
 
@@ -3924,7 +3925,6 @@ until the execution of the process is terminated.
 				"Failed to grant access to session %s to user %s: %s",
 				sessionId, getpass.getuser(), err, exc_info=True
 			)
-	logger.info("Running command %s", command)
 	process = subprocess.Popen(
 		args=command,
 		shell=shell,
