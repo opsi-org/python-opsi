@@ -64,7 +64,7 @@ OPSI_HARDWARE_CLASSES = []
 
 DEFAULT_MAX_LOG_SIZE = 5000000
 DEFAULT_KEEP_ROTATED_LOGS = 0
-
+LOG_SIZE_HARD_LIMIT = 10000000
 
 class ConfigDataBackend(Backend):  # pylint: disable=too-many-public-methods
 	"""
@@ -275,6 +275,12 @@ overwrite the log.
 		objectId = forceObjectId(objectId)
 
 		data = data.encode("utf-8", "replace")
+		if len(data) > LOG_SIZE_HARD_LIMIT:
+			data = data[-1 * LOG_SIZE_HARD_LIMIT:]
+			idx = data.find(b"\n")
+			if idx > 0:
+				data = data[idx+1:]
+
 		log_file = os.path.join(LOG_DIR, logType, f"{objectId}.log")
 
 		if not os.path.exists(os.path.dirname(log_file)):
