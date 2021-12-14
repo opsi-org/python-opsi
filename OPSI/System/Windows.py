@@ -1452,12 +1452,10 @@ def terminateProcess(processHandle=None, processId=None):
 	if not processHandle and not processId:
 		raise ValueError("Neither process handle not process id given")
 
-	exitCode = 0
 	if not processHandle:
 		processHandle = getProcessHandle(processId)
 
-	win32process.TerminateProcess(processHandle, exitCode)
-	return exitCode
+	win32process.TerminateProcess(processHandle, 0)
 
 
 def getUserToken(sessionId=None, duplicateFrom="winlogon.exe"):
