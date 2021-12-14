@@ -31,7 +31,8 @@ from OPSI.System.Posix import (
 	isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
 	isUCS, isUbuntu, locateDHCPDConfig,
 	locateDHCPDInit, reboot, removeSystemHook,
-	runCommandInSession, setLocalSystemTime, shutdown, umount, which
+	runCommandInSession, setLocalSystemTime, shutdown,
+	terminateProcess, umount, which
 )
 
 from opsicommon.logging import logger
@@ -52,7 +53,8 @@ __all__ = (
 	'isCentOS', 'isDebian', 'isOpenSUSE', 'isRHEL', 'isSLES',
 	'isUCS', 'isUbuntu', 'locateDHCPDConfig',
 	'locateDHCPDInit', 'mount', 'reboot', 'removeSystemHook',
-	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
+	'runCommandInSession', 'setLocalSystemTime', 'shutdown',
+	'terminateProcess', 'umount', 'which'
 )
 
 def getActiveSessionIds(protocol = None, states = None):  # pylint: disable=unused-argument

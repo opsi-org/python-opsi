@@ -1499,14 +1499,15 @@ def getUserToken(sessionId=None, duplicateFrom="winlogon.exe"):
 	return hUserTokenDup
 
 
-def runCommandInSession(  # pylint: disable=too-many-arguments,too-many-locals
+def runCommandInSession(  # pylint: disable=too-many-arguments,too-many-locals,unused-argument
 	command,
 	sessionId=None,
 	desktop="default",
 	duplicateFrom="winlogon.exe",
 	waitForProcessEnding=True,
 	timeoutSeconds=0,
-	noWindow=False
+	noWindow=False,
+	shell=True
 ):
 	"""
 	put command arguments in double, not single, quotes.

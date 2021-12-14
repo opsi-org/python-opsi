@@ -60,7 +60,8 @@ __all__ = (
 	'isCentOS', 'isDebian', 'isOpenSUSE', 'isRHEL', 'isSLES',
 	'isUCS', 'isUbuntu', 'locateDHCPDConfig',
 	'locateDHCPDInit', 'mount', 'reboot', 'removeSystemHook',
-	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
+	'runCommandInSession', 'setLocalSystemTime', 'shutdown',
+	'terminateProcess', 'umount', 'which'
 )
 
 
@@ -1023,6 +1024,21 @@ def _terminateProcess(process):
 			os.kill(process.pid, SIGKILL)
 		except Exception as sigKillException:  # pylint: disable=broad-except
 			logger.debug('Sending SIGKILL to pid %s failed: %s', process.pid, sigKillException)
+
+
+def terminateProcess(processHandle=None, processId=None):  # pylint: disable=unused-argument
+	if processId is not None:
+		processId = forceInt(processId)
+
+	if not processId:
+		raise ValueError("process id must be given")
+
+	try:
+		os.kill(processId, SIGKILL)
+	except Exception as sigException:  # pylint: disable=broad-except
+		logger.warning('Sending SIGKILL to pid %s failed: %s', processId, sigException)
+		raise
+	return 0
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3872,7 +3888,8 @@ def runCommandInSession(  # pylint: disable=unused-argument,too-many-arguments,t
 	duplicateFrom=None,
 	waitForProcessEnding=True,
 	timeoutSeconds=0,
-	noWindow=False
+	noWindow=False,
+	shell=True
 ):
 	"""
 	Run an command.
@@ -3912,7 +3929,7 @@ until the execution of the process is terminated.
 	logger.info("Running command %s", command)
 	process = subprocess.Popen(
 		args=command,
-		shell=True,
+		shell=shell,
 		stdin=subprocess.PIPE,
 		stdout=subprocess.PIPE,
 		stderr=subprocess.STDOUT,
