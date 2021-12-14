@@ -1512,7 +1512,9 @@ def runCommandInSession(  # pylint: disable=too-many-arguments,too-many-locals,u
 	"""
 	put command arguments in double, not single, quotes (or use list).
 	"""
-	if not isinstance(command, list):
+	if isinstance(command, list):
+		command = " ".join(command)
+	else:
 		command = forceUnicode(command)
 	if sessionId is not None:
 		sessionId = forceInt(sessionId)
