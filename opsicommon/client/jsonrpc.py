@@ -183,9 +183,9 @@ class JSONRPCClient:  # pylint: disable=too-many-instance-attributes
 			os.environ["no_proxy"] = ",".join(set(no_proxy))
 			logger.info(
 				"Using proxy settings: http_proxy='%s', https_proxy='%s', no_proxy='%s'",
-				os.environ["http_proxy"],
-				os.environ["https_proxy"],
-				os.environ["no_proxy"]
+				os.environ.get("http_proxy"),
+				os.environ.get("https_proxy"),
+				os.environ.get("no_proxy")
 			)
 		else:
 			# Do not use a proxy
