@@ -1027,18 +1027,16 @@ def _terminateProcess(process):
 
 
 def terminateProcess(processHandle=None, processId=None):  # pylint: disable=unused-argument
-	if processId is not None:
-		processId = forceInt(processId)
-
 	if not processId:
-		raise ValueError("process id must be given")
+		raise ValueError("Process id must be given")
+
+	processId = forceInt(processId)
 
 	try:
 		os.kill(processId, SIGKILL)
-	except Exception as sigException:  # pylint: disable=broad-except
-		logger.warning('Sending SIGKILL to pid %s failed: %s', processId, sigException)
+	except Exception as err:  # pylint: disable=broad-except
+		logger.warning('Sending SIGKILL to pid %s failed: %s', processId, err)
 		raise
-	return 0
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
