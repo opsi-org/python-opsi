@@ -33,7 +33,8 @@ from OPSI.System.Posix import (
 	isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
 	isUCS, isUbuntu, locateDHCPDConfig,
 	locateDHCPDInit, reboot, removeSystemHook,
-	runCommandInSession, setLocalSystemTime, shutdown, umount, which
+	runCommandInSession, setLocalSystemTime, shutdown,
+	terminateProcess, umount, which
 )
 
 from opsicommon.logging import logger
@@ -56,7 +57,8 @@ __all__ = (
 	'isCentOS', 'isDebian', 'isOpenSUSE', 'isRHEL', 'isSLES',
 	'isUCS', 'isUbuntu', 'locateDHCPDConfig',
 	'locateDHCPDInit', 'mount', 'reboot', 'removeSystemHook',
-	'runCommandInSession', 'setLocalSystemTime', 'shutdown', 'umount', 'which'
+	'runCommandInSession', 'setLocalSystemTime', 'shutdown',
+	'terminateProcess', 'umount', 'which'
 )
 
 def set_tree_value(mydict: Dict, key_list : List, last_key : str, value : str) -> None:
