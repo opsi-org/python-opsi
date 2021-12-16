@@ -1546,7 +1546,7 @@ def runCommandInSession(  # pylint: disable=too-many-arguments,too-many-locals,u
 	sti.lpDesktop = desktop
 
 	logger.notice("Executing: '%s' in session '%s' on desktop '%s'", command, sessionId, desktop)
-	(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(
+	(hProcess, hThread, dwProcessId, dwThreadId) = (
 		userToken, None, command, None, None, 1, dwCreationFlags, None, None, sti
 	)
 

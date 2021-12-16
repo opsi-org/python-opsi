@@ -18,7 +18,11 @@ be skipped if it does not exist.
 
 import os
 import shutil
+import urllib3
 from contextlib import contextmanager
+
+import pytest
+from _pytest.logging import LogCaptureHandler
 
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Backend.BackendManager import BackendManager
@@ -28,9 +32,14 @@ from .Backends.SQLite import getSQLiteBackend
 from .Backends.MySQL import getMySQLBackend
 from .helpers import workInTemporaryDirectory, createTemporaryTestfile
 
-import pytest
 
 _MODULES_FILE = os.path.exists(os.path.join('/etc', 'opsi', 'modules'))
+
+urllib3.disable_warnings()
+
+def emit(*args, **kwargs) -> None:  # pylint: disable=unused-argument
+	pass
+LogCaptureHandler.emit = emit
 
 
 @pytest.fixture(
