@@ -1510,9 +1510,12 @@ def runCommandInSession(  # pylint: disable=too-many-arguments,too-many-locals,u
 	shell=True
 ):
 	"""
-	put command arguments in double, not single, quotes.
+	put command arguments in double, not single, quotes (or use list).
 	"""
-	command = forceUnicode(command)
+	if isinstance(command, list):
+		command = subprocess.list2cmdline(command)
+	else:
+		command = forceUnicode(command)
 	if sessionId is not None:
 		sessionId = forceInt(sessionId)
 
