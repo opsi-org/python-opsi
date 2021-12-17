@@ -1543,9 +1543,7 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 			else:
 				self._sql.insert(session, 'PRODUCT_PROPERTY', data)
 
-			if possibleValues is not None:  # TODO: this is always true. Does it hurt to always do this?
-				self._sql.delete(session, 'PRODUCT_PROPERTY_VALUE', where)
-
+			self._sql.delete(session, 'PRODUCT_PROPERTY_VALUE', where)
 			for value in possibleValues:
 				self._sql.insert(session, 'PRODUCT_PROPERTY_VALUE', {
 					'productId': data['productId'],
@@ -1572,9 +1570,7 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 		with self._sql.session() as session:
 			self._sql.update(session, 'PRODUCT_PROPERTY', where, data)
 
-			if possibleValues is not None:  # TODO: this is always true. Does it hurt to always do this?
-				self._sql.delete(session, 'PRODUCT_PROPERTY_VALUE', where)
-
+			self._sql.delete(session, 'PRODUCT_PROPERTY_VALUE', where)
 			for value in possibleValues:
 				self._sql.insert(session, 'PRODUCT_PROPERTY_VALUE', {
 					'productId': data['productId'],
