@@ -358,24 +358,28 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 				values = forceList(values)
 				if not values:
 					continue
-
-				yield ' or '.join(processValues(key, values, table))
+				if len(values) > 10 and isinstance(values[0], str):
+					if table:
+						key = f"`{table}`.`{key}`"
+					def escaped_string(value):
+						return f"'{self._sql.escapeApostrophe(self._sql.escapeBackslash(self._sql.escapeColon(value)))}'"
+					yield f"{key} in ({','.join([escaped_string(val) for val in values])})"
+				else:
+					yield ' or '.join(processValues(key, values, table))
 
 		def processValues(key, values, table=None):  # pylint: disable=too-many-branches
 			if table:
-				table = "`{0}`.".format(table)
-			else:
-				table = ""
+				key = f"`{table}`.`{key}`"
 			for value in values:
 				if isinstance(value, bool):
 					if value:
-						yield "{0}`{1}` = 1".format(table, key)
+						yield f"{key} = 1"
 					else:
-						yield "{0}`{1}` = 0".format(table, key)
+						yield f"{key} = 0"
 				elif isinstance(value, (float, int)):
-					yield "{0}`{1}` = {2}".format(table, key, value)
+					yield f"{key} = {value}"
 				elif value is None:
-					yield "{0}`{1}` is NULL".format(table, key)
+					yield f"{key} is NULL"
 				else:
 					value = value.replace(self._sql.ESCAPED_ASTERISK, '\uffff')
 					value = self._sql.escapeApostrophe(self._sql.escapeBackslash(self._sql.escapeColon(value)))
@@ -384,7 +388,7 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 						operator = match.group(1)
 						value = match.group(2)
 						value = value.replace('\uffff', self._sql.ESCAPED_ASTERISK)
-						yield "%s`%s` %s %s" % (table, key, operator, forceUnicode(value))
+						yield f"{key} {operator} {value}"
 					else:
 						if '*' in value:
 							operator = 'LIKE'
@@ -393,7 +397,7 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 							operator = '='
 
 						value = value.replace('\uffff', self._sql.ESCAPED_ASTERISK)
-						yield "{0}`{1}` {2} '{3}'".format(table, key, operator, forceUnicode(value))
+						yield f"{key} {operator} '{value}'"
 
 		def addParenthesis(conditions):
 			for condition in conditions:
@@ -1396,7 +1400,6 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 					pass
 
 				configStates.append(ConfigState.fromHash(res))
-
 		return configStates
 
 	def configState_deleteObjects(self, configStates):
