@@ -43,16 +43,16 @@ class ProductPackageFile:
 	def __init__(self, packageFile, tempDir=None):
 		self.packageFile = os.path.abspath(forceFilename(packageFile))
 		if not os.path.exists(self.packageFile):
-			raise IOError("Package file '%s' not found" % self.packageFile)
+			raise IOError(f"Package file '{self.packageFile}' not found")
 
 		tempDir = tempDir or DEFAULT_TMP_DIR
 		self.tempDir = os.path.abspath(forceFilename(tempDir))
 
 		if not os.path.isdir(self.tempDir):
-			raise IOError("Temporary directory '%s' not found" % self.tempDir)
+			raise IOError(f"Temporary directory '{self.tempDir}' not found")
 
 		self.clientDataDir = None
-		self.tmpUnpackDir = os.path.join(self.tempDir, '.opsi.unpack.%s' % randomString(5))
+		self.tmpUnpackDir = os.path.join(self.tempDir, f".opsi.unpack.{randomString(5)}")
 		self.packageControlFile = None
 		self.clientDataFiles = []
 
@@ -481,12 +481,12 @@ class ProductPackageSource:  # pylint: disable=too-many-instance-attributes
 	):
 		self.packageSourceDir = os.path.abspath(forceFilename(packageSourceDir))
 		if not os.path.isdir(self.packageSourceDir):
-			raise IOError("Package source directory '%s' not found" % self.packageSourceDir)
+			raise IOError(f"Package source directory '{self.packageSourceDir}' not found")
 
 		tempDir = tempDir or DEFAULT_TMP_DIR
 		self.tempDir = os.path.abspath(forceFilename(tempDir))
 		if not os.path.isdir(self.tempDir):
-			raise IOError("Temporary directory '%s' not found" % self.tempDir)
+			raise IOError(f"Temporary directory '{self.tempDir}' not found")
 
 		self.customName = None
 		if customName:
@@ -496,7 +496,7 @@ class ProductPackageSource:  # pylint: disable=too-many-instance-attributes
 
 		if format:
 			if format not in ('cpio', 'tar'):
-				raise ValueError("Format '%s' not supported" % format)
+				raise ValueError(f"Format '{format}' not supported")
 			self.format = format
 		else:
 			self.format = 'cpio'
@@ -505,7 +505,7 @@ class ProductPackageSource:  # pylint: disable=too-many-instance-attributes
 			self.compression = None
 		else:
 			if compression not in ('gzip', 'bzip2'):
-				raise ValueError("Compression '%s' not supported" % compression)
+				raise ValueError(f"Compression '{compression}' not supported")
 			self.compression = compression
 
 		self.dereference = forceBool(dereference)
@@ -514,32 +514,32 @@ class ProductPackageSource:  # pylint: disable=too-many-instance-attributes
 			packageFileDestDir = self.packageSourceDir
 		packageFileDestDir = os.path.abspath(forceFilename(packageFileDestDir))
 		if not os.path.isdir(packageFileDestDir):
-			raise IOError("Package destination directory '%s' not found" % packageFileDestDir)
+			raise IOError(f"Package destination directory '{packageFileDestDir}' not found")
 
 		if customName:
-			packageControlFile = os.path.join(self.packageSourceDir, 'OPSI.%s' % customName, 'control.yml')
+			packageControlFile = os.path.join(self.packageSourceDir, f'OPSI.{customName}', 'control.yml')
 			if not os.path.exists(packageControlFile):
-				packageControlFile = os.path.join(self.packageSourceDir, 'OPSI.%s' % customName, 'control')
+				packageControlFile = os.path.join(self.packageSourceDir, f'OPSI.{customName}', 'control')
 		if not customName or not os.path.exists(packageControlFile):
 			packageControlFile = os.path.join(self.packageSourceDir, 'OPSI', 'control.yml')
 			if not os.path.exists(packageControlFile):
 				packageControlFile = os.path.join(self.packageSourceDir, 'OPSI', 'control')
 		if not os.path.exists(packageControlFile):
-			raise OSError("Control file '%s' not found" % packageControlFile)
+			raise OSError(f"Control file '{packageControlFile}' not found")
 
 		self.packageControlFile = PackageControlFile(packageControlFile)
 		self.packageControlFile.parse()
 
 		customName = ''
 		if self.customName:
-			customName = '~%s' % self.customName
-		self.packageFile = os.path.join(packageFileDestDir, "%s_%s-%s%s.opsi" % (
-				self.packageControlFile.getProduct().id,
-				self.packageControlFile.getProduct().productVersion,
-				self.packageControlFile.getProduct().packageVersion,
-				customName))
+			customName = f'~{self.customName}'
+		self.packageFile = os.path.join(
+			packageFileDestDir,
+			f"{self.packageControlFile.getProduct().id}_{self.packageControlFile.getProduct().productVersion}-"
+			f"{self.packageControlFile.getProduct().packageVersion}{customName}.opsi"
+		)
 
-		self.tmpPackDir = os.path.join(self.tempDir, '.opsi.pack.%s' % randomString(5))
+		self.tmpPackDir = os.path.join(self.tempDir, f'.opsi.pack.{randomString(5)}')
 
 	def getPackageFile(self):
 		return self.packageFile
@@ -564,7 +564,7 @@ class ProductPackageSource:  # pylint: disable=too-many-instance-attributes
 			if self.customName:
 				found = False
 				for i, currentDir in enumerate(dirs):
-					customDir = "%s.%s" % (currentDir, self.customName)
+					customDir = f"{currentDir}.{self.customName}"
 					if os.path.exists(os.path.join(self.packageSourceDir, customDir)):
 						found = True
 						if self.customOnly:
@@ -572,7 +572,7 @@ class ProductPackageSource:  # pylint: disable=too-many-instance-attributes
 						else:
 							dirs.append(customDir)
 				if not found:
-					raise RuntimeError("No custom dirs found for '%s'" % self.customName)
+					raise RuntimeError(f"No custom dirs found for '{self.customName}'")
 
 			# Try to define diskusage from Sourcedirectory to prevent a override from cpio sizelimit.
 			for _dir in dirs:
@@ -617,7 +617,7 @@ class ProductPackageSource:  # pylint: disable=too-many-instance-attributes
 					logger.notice("Skipping empty dir '%s'", os.path.join(self.packageSourceDir, _dir))
 					continue
 
-				filename = os.path.join(self.tmpPackDir, '%s.%s' % (_dir, self.format))
+				filename = os.path.join(self.tmpPackDir, f'{_dir}.{self.format}')
 				if self.compression == 'gzip':
 					filename += '.gz'
 				elif self.compression == 'bzip2':
@@ -625,14 +625,14 @@ class ProductPackageSource:  # pylint: disable=too-many-instance-attributes
 				archive = Archive(filename, format=self.format, compression=self.compression, progressSubject=progressSubject)
 				if progressSubject:
 					progressSubject.reset()
-					progressSubject.setMessage('Creating archive %s' % os.path.basename(archive.getFilename()))
+					progressSubject.setMessage(f'Creating archive {os.path.basename(archive.getFilename())}')
 				archive.create(fileList=fileList, baseDir=os.path.join(self.packageSourceDir, _dir), dereference=self.dereference)
 				archives.append(filename)
 
 			archive = Archive(self.packageFile, format=self.format, compression=None, progressSubject=progressSubject)
 			if progressSubject:
 				progressSubject.reset()
-				progressSubject.setMessage('Creating archive %s' % os.path.basename(archive.getFilename()))
+				progressSubject.setMessage(f'Creating archive {os.path.basename(archive.getFilename())}')
 			archive.create(fileList=archives, baseDir=self.tmpPackDir)
 		except Exception as err:
 			self.cleanup()

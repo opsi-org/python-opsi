@@ -18,8 +18,8 @@ be skipped if it does not exist.
 
 import os
 import shutil
-import urllib3
 from contextlib import contextmanager
+import urllib3
 
 import pytest
 from _pytest.logging import LogCaptureHandler
@@ -75,7 +75,7 @@ def _backendBase(backend):
 
 
 @pytest.fixture
-def extendedConfigDataBackend(configDataBackend):
+def extendedConfigDataBackend(configDataBackend):  # pylint: disable=redefined-outer-name
 	"""
 	Returns an `OPSI.Backend.ExtendedConfigDataBackend` for testing.
 
@@ -124,7 +124,7 @@ def replicationDestinationBackend(request):
 
 
 @pytest.fixture
-def backendManager(_serverBackend, tempDir):
+def backendManager(_serverBackend, tempDir):  # pylint: disable=redefined-outer-name
 	"""
 	Returns an `OPSI.Backend.BackendManager.BackendManager` for testing.
 
@@ -150,7 +150,7 @@ def tempDir():
 
 
 @pytest.fixture
-def licenseManagementBackend(sqlBackendCreationContextManager):
+def licenseManagementBackend(sqlBackendCreationContextManager):  # pylint: disable=redefined-outer-name
 	'''Returns a backend that can handle License Management.'''
 	with sqlBackendCreationContextManager() as backend:
 		with _backendBase(backend):
@@ -182,7 +182,7 @@ def multithreadingBackend(request):
 	params=[getMySQLBackend, getSQLiteBackend],
 	ids=['mysql', 'sqlite']
 )
-def hardwareAuditBackendWithHistory(request, hardwareAuditConfigPath):
+def hardwareAuditBackendWithHistory(request, hardwareAuditConfigPath):  # pylint: disable=redefined-outer-name
 	with request.param(auditHardwareConfigFile=hardwareAuditConfigPath) as backend:
 		with _backendBase(backend):
 			yield ExtendedConfigDataBackend(backend)
@@ -206,7 +206,7 @@ def hardwareAuditConfigPath():
 	params=[getFileBackend, getMySQLBackend, getSQLiteBackend],
 	ids=['file', 'mysql', 'sqlite']
 )
-def auditDataBackend(request, hardwareAuditConfigPath):
+def auditDataBackend(request, hardwareAuditConfigPath):  # pylint: disable=redefined-outer-name
 	with request.param(auditHardwareConfigFile=hardwareAuditConfigPath) as backend:
 		with _backendBase(backend):
 			yield ExtendedConfigDataBackend(backend)
@@ -235,8 +235,8 @@ def pytest_runtest_setup(item):
 	envmarker = item.get_closest_marker("requiresModulesFile")
 	if envmarker is not None:
 		if not _MODULES_FILE:
-			pytest.skip("{0} requires a modules file!".format(item.name))
+			pytest.skip(f"{item.name} requires a modules file!")
 
 	envmarker = item.get_closest_marker("obsolete")
 	if envmarker is not None:
-		pytest.skip("{0} uses tech that will likely be obsolete in the future".format(item.name))
+		pytest.skip(f"{item.name} uses tech that will likely be obsolete in the future")

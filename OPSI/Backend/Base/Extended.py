@@ -1518,6 +1518,17 @@ into the IDs of these depots are to be found in the list behind \
 
 			productIds = productIds.union(additionalProductIds)
 
+		def addDependencies(product, products, productDependencies, productByProductIdAndVersion, pDepsByProductIdAndVersion):
+			dependencies = pDepsByProductIdAndVersion[product.id][product.productVersion][product.packageVersion]
+			for dep in dependencies:
+				product = productByProductIdAndVersion[dep.productId][dep.productVersion][dep.packageVersion]
+				if product:
+					products.add(product)
+
+					if dep not in productDependencies:
+						productDependencies.add(dep)
+						addDependencies(product, products, productDependencies, productByProductIdAndVersion, pDepsByProductIdAndVersion)
+
 		productOnClients = []
 		for (depotId, clientIds) in depotToClients.items():
 			products = set()
@@ -1532,17 +1543,6 @@ into the IDs of these depots are to be found in the list behind \
 						f"packageVersion '{productOnDepot.packageVersion}' not found"
 					)
 				products.add(product)
-
-				def addDependencies(product, products, productDependencies, productByProductIdAndVersion, pDepsByProductIdAndVersion):
-					dependencies = pDepsByProductIdAndVersion[product.id][product.productVersion][product.packageVersion]
-					for dep in dependencies:
-						product = productByProductIdAndVersion[dep.productId][dep.productVersion][dep.packageVersion]
-						if product:
-							products.add(product)
-
-							if dep not in productDependencies:
-								productDependencies.add(dep)
-								addDependencies(product, products, productDependencies, productByProductIdAndVersion, pDepsByProductIdAndVersion)
 
 				addDependencies(product, products, productDependencies, productByProductIdAndVersion, pDepsByProductIdAndVersion)
 

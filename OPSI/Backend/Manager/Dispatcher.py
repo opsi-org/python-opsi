@@ -70,20 +70,20 @@ class BackendDispatcher(Backend):
 		additionalInformation = []
 		try:
 			if self._dispatchIgnoreModules:
-				additionalInformation.append('dispatchIgnoreModules={0!r}'.format(self._dispatchIgnoreModules))
+				additionalInformation.append(f"dispatchIgnoreModules='{self._dispatchIgnoreModules}'")
 
 			if self._dispatchConfigFile:
-				additionalInformation.append('dispatchConfigFile={0!r}'.format(self._dispatchConfigFile))
+				additionalInformation.append(f"dispatchConfigFile='{self._dispatchConfigFile}'")
 			elif self._dispatchConfig:
-				additionalInformation.append('dispatchConfig={0!r}'.format(self._dispatchConfig))
+				additionalInformation.append(f"dispatchConfig='{self._dispatchConfig}'")
 
 			if self._context != self:
-				additionalInformation.append('context={0!r}'.format(self._context))
+				additionalInformation.append(f"context='{self._context}'")
 		except AttributeError:
 			# Can happen during initialisation
 			pass
 
-		return '<{0}({1})>'.format(self.__class__.__name__, ', '.join(additionalInformation))
+		return f"<{self.__class__.__name__}({', '.join(additionalInformation)})>"
 
 	def __loadDispatchConfig(self):
 		if not self._dispatchConfigFile:
@@ -116,7 +116,7 @@ class BackendDispatcher(Backend):
 
 		for backend in collectedBackends:
 			self._backends[backend] = {}
-			backendConfigFile = os.path.join(self._backendConfigDir, '%s.conf' % backend)
+			backendConfigFile = os.path.join(self._backendConfigDir, f'{backend}.conf')
 			logger.info("Loading backend config '%s'", backendConfigFile)
 			backend_config = loadBackendConfig(backendConfigFile)
 			if not backend_config['module']:
@@ -243,6 +243,6 @@ class BackendDispatcher(Backend):
 @lru_cache(maxsize=None)
 def _loadDispatchConfig(dispatchConfigFile):
 	if not os.path.exists(dispatchConfigFile):
-		raise BackendConfigurationError("Dispatch config file '%s' not found" % dispatchConfigFile)
+		raise BackendConfigurationError(f"Dispatch config file '{dispatchConfigFile}' not found")
 
 	return BackendDispatchConfigFile(dispatchConfigFile).parse()
