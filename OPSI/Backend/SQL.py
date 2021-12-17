@@ -361,6 +361,8 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 				if len(values) > 10 and isinstance(values[0], str):
 					if table:
 						key = f"`{table}`.`{key}`"
+					else:
+						key = f"`{key}`"
 					def escaped_string(value):
 						return f"'{self._sql.escapeApostrophe(self._sql.escapeBackslash(self._sql.escapeColon(value)))}'"
 					yield f"{key} in ({','.join([escaped_string(val) for val in values])})"
@@ -370,6 +372,8 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 		def processValues(key, values, table=None):  # pylint: disable=too-many-branches
 			if table:
 				key = f"`{table}`.`{key}`"
+			else:
+				key = f"`{key}`"
 			for value in values:
 				if isinstance(value, bool):
 					if value:
