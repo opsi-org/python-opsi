@@ -232,15 +232,15 @@ class DepotserverPackageManager:
 			backend.productOnDepot_updateObject(productOnDepot)
 
 		@contextmanager
-		def runPackageScripts(productPackageFile, depotId):
+		def runPackageScripts(productPackageFile, env=None):
 			logger.info("Running preinst script")
-			for line in productPackageFile.runPreinst(({'DEPOT_ID': depotId})):
+			for line in productPackageFile.runPreinst(env=env or {}):
 				logger.info("[preinst] %s", line)
 
 			yield
 
 			logger.info("Running postinst script")
-			for line in productPackageFile.runPostinst({'DEPOT_ID': depotId}):
+			for line in productPackageFile.runPostinst(env=env or {}):
 				logger.info("[postinst] %s", line)
 
 		def cleanUpProducts(backend, productId):
@@ -359,6 +359,14 @@ class DepotserverPackageManager:
 						ppf.packageControlFile.setProduct(product)
 
 					productId = product.getId()
+					old_product_version = ""
+					old_package_version = ""
+					try:
+						product_on_depot = dataBackend.productOnDepot_getObjects(depotId=depotId, productId=productId)[0]
+						old_product_version = product_on_depot.getProductVersion()
+						old_package_version = product_on_depot.getPackageVersion()
+					except Exception as err:  # pylint: disable=broad-except
+						logger.debug(err)
 
 					logger.info("Creating product in backend")
 					dataBackend.product_createObjects(product)
@@ -367,7 +375,12 @@ class DepotserverPackageManager:
 						logger.info("Checking package dependencies")
 						self.checkDependencies(ppf)
 
-						with runPackageScripts(ppf, depotId):
+						env = {
+							"DEPOT_ID": depotId,
+							"OLD_PRODUCT_VERSION": old_product_version,
+							"OLD_PACKAGE_VERSION": old_package_version
+						}
+						with runPackageScripts(ppf, env):
 							logger.info("Deleting old client-data dir")
 							ppf.deleteProductClientDataDir()
 
@@ -377,9 +390,10 @@ class DepotserverPackageManager:
 							logger.info("Updating product dependencies of product %s", product)
 							currentProductDependencies = {}
 							for productDependency in dataBackend.productDependency_getObjects(
-										productId=productId,
-										productVersion=product.getProductVersion(),
-										packageVersion=product.getPackageVersion()):
+								productId=productId,
+								productVersion=product.getProductVersion(),
+								packageVersion=product.getPackageVersion()
+							):
 								ident = productDependency.getIdent(returnType='unicode')
 								currentProductDependencies[ident] = productDependency
 
