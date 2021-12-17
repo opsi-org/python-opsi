@@ -170,10 +170,13 @@ class BackendManager(ExtendedBackend):
 			# self._backend is now a BackendDispatcher which is a ConfigDataBackend
 
 		if extend or depotBackend:
-			logger.info("* BackendManager is creating ExtendedConfigDataBackend")
-			# DepotserverBackend/BackendExtender need ExtendedConfigDataBackend backend
-			self._backend = ExtendedConfigDataBackend(self._backend, **kwargs)
-			# self._backend is now an ExtendedConfigDataBackend
+			if dispatch and self._backend.is_extended_config_data_backend:
+				logger.info("* BackendManager is using BackendDispatcher as ExtendedConfigDataBackend")
+			else:
+				logger.info("* BackendManager is creating ExtendedConfigDataBackend")
+				# DepotserverBackend/BackendExtender need ExtendedConfigDataBackend backend
+				self._backend = ExtendedConfigDataBackend(self._backend, **kwargs)
+				# self._backend is now an ExtendedConfigDataBackend
 
 		if depotBackend:
 			logger.info("* BackendManager is creating DepotserverBackend")
