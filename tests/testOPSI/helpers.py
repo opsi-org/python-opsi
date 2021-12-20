@@ -170,29 +170,6 @@ hostname = {0}
 
 
 @contextmanager
-def showLogs(logLevel=7, color=True):
-	"""
-	A contextmanager that returns a usable logger that is configured
-	to log debug output.
-	"""
-	from OPSI.Logger import Logger
-
-	logger = Logger()
-
-	logLevelBefore = logger.getConsoleLevel()
-
-	# We might want to have a better log format:
-	# logger.setLogFormat(u'[%l] [%D] %M (%F|%N)')
-
-	try:
-		logger.setConsoleLevel(logLevel)
-		logger.setConsoleColor(color)
-		yield logger
-	finally:
-		logger.setConsoleLevel(logLevelBefore)
-
-
-@contextmanager
 def cleanMandatoryConstructorArgsCache():
 	with mock.patch('opsicommon.objects._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
 		yield

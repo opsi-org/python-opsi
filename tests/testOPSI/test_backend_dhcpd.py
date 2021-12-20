@@ -15,7 +15,7 @@ from OPSI.Backend.DHCPD import DHCPDBackend
 from OPSI.Exceptions import BackendIOError
 from OPSI.Object import OpsiClient
 
-from .helpers import createTemporaryTestfile, mock, showLogs
+from .helpers import createTemporaryTestfile, mock
 from .test_util_file_dhcpdconf import dhcpdConf  # test fixture
 
 
@@ -68,11 +68,8 @@ def testAddingHostToBackend():
 	with createTemporaryTestfile(originalDhcpdFile) as dhcpdFile:
 		backend = DHCPDBackend(
 			dhcpdConfigFile=dhcpdFile,
-			reloadConfigCommand=u'/bin/echo "Reloading dhcpd.conf"'
+			reloadConfigCommand='/bin/echo "Reloading dhcpd.conf"'
 		)
-
-		with showLogs(8):
-			backend.host_insertObject(client)
 
 		optionExists = False
 		clientFound = False
