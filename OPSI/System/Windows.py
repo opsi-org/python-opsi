@@ -756,6 +756,20 @@ def getDiskSpaceUsage(path):
 	return info
 
 
+def get_available_drive_letter(start="c", end="z"):
+	drive_letters_in_use = [
+		x[0].lower()
+		for x in win32api.GetLogicalDriveStrings().split('\0')
+		if x
+	]
+
+	for i in range(ord(start), ord(end)):
+		drive = forceUnicode(chr(i))
+		if drive not in drive_letters_in_use:
+			logger.info("Available drive letter '%s' found", drive)
+			return drive
+
+
 def mount(dev, mountpoint, **options):  # pylint: disable=too-many-branches,too-many-statements
 	"""
 	Mount *dev* to the given *mountpoint*.
@@ -775,20 +789,8 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-branches,too-
 		raise ValueError(f"Invalid mountpoint '{mountpoint}'")
 
 	if mountpoint == 'dynamic':
-		drive_letters_in_use = [
-			x[0].lower()
-			for x in win32api.GetLogicalDriveStrings().split('\0')
-			if x
-		]
-
-		for i in range(ord('c'), ord('z')):
-			mp = forceUnicode(chr(i))
-			if mp not in drive_letters_in_use:
-				mountpoint = mp
-				logger.info("Using free mountpoint '%s'", mountpoint)
-				break
-
-		if mountpoint == 'dynamic':
+		mountpoint = get_available_drive_letter()
+		if not mountpoint:
 			raise RuntimeError("Dynamic mountpoint detection and no free mountpoint available")
 
 	if not dev.lower().startswith(('smb://', 'cifs://', 'webdavs://', 'https://')):
