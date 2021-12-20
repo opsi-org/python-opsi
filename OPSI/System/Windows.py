@@ -143,13 +143,11 @@ class SystemSpecificHook:  # pylint: disable=too-few-public-methods
 
 
 def addSystemHook(hook):
-	global hooks  # pylint: disable=global-statement,invalid-name
 	if hook not in hooks:
 		hooks.append(hook)
 
 
 def removeSystemHook(hook):
-	global hooks  # pylint: disable=global-statement,invalid-name
 	if hook in hooks:
 		hooks.remove(hook)
 
@@ -568,33 +566,29 @@ class NetworkPerformanceCounterPDH(threading.Thread):  # pylint: disable=too-man
 				win32pdhutil.find_pdh_counter_localized_name('Bytes In/sec')
 			)
 		)
-		self.bytesOutPerSecondCounter = win32pdh.MakeCounterPath(
-			(
-				None,
-				win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
-				self.interface,
-				None,
-				-1,
-				win32pdhutil.find_pdh_counter_localized_name('Bytes Sent/sec')
-			)
-		)
+		self.bytesOutPerSecondCounter = win32pdh.MakeCounterPath((
+			None,
+			win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
+			self.interface,
+			None,
+			-1,
+			win32pdhutil.find_pdh_counter_localized_name('Bytes Sent/sec')
+		))
 
 		try:
 			self._inCounterHandle = win32pdh.AddCounter(self._queryHandle, self.bytesInPerSecondCounter)
 		except Exception as err:  # pylint: disable=broad-except
-			raise RuntimeError("Failed to add inCounterHandle %s->%s: %s" % (
-				win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
-				win32pdhutil.find_pdh_counter_localized_name('Bytes In/sec'),
-				err
-			)) from err
+			raise RuntimeError(
+				f"Failed to add inCounterHandle {win32pdhutil.find_pdh_counter_localized_name('Network Interface')}->"
+				f"{win32pdhutil.find_pdh_counter_localized_name('Bytes In/sec')}: {err}"
+			) from err
 		try:
 			self._outCounterHandle = win32pdh.AddCounter(self._queryHandle, self.bytesOutPerSecondCounter)
 		except Exception as err:  # pylint: disable=broad-except
-			raise RuntimeError("Failed to add outCounterHandle %s->%s: %s" % (
-				win32pdhutil.find_pdh_counter_localized_name('Network Interface'),
-				win32pdhutil.find_pdh_counter_localized_name('Bytes Sent/sec'),
-				err
-			)) from err
+			raise RuntimeError(
+				f"Failed to add inCounterHandle {win32pdhutil.find_pdh_counter_localized_name('Network Interface')}->"
+				f"{win32pdhutil.find_pdh_counter_localized_name('Bytes Sent/sec')}: {err}"
+			) from err
 		self.start()
 
 	def __del__(self):
@@ -768,6 +762,8 @@ def get_available_drive_letter(start="c", end="z"):
 		if drive not in drive_letters_in_use:
 			logger.info("Available drive letter '%s' found", drive)
 			return drive
+
+	return None
 
 
 def mount(dev, mountpoint, **options):  # pylint: disable=too-many-branches,too-many-statements
@@ -1512,12 +1508,9 @@ def runCommandInSession(  # pylint: disable=too-many-arguments,too-many-locals,u
 	shell=True
 ):
 	"""
-	put command arguments in double, not single, quotes (or use list).
+	put command arguments in double, not single, quotes.
 	"""
-	if isinstance(command, list):
-		command = subprocess.list2cmdline(command)
-	else:
-		command = forceUnicode(command)
+	command = forceUnicode(command)
 	if sessionId is not None:
 		sessionId = forceInt(sessionId)
 
@@ -1551,7 +1544,7 @@ def runCommandInSession(  # pylint: disable=too-many-arguments,too-many-locals,u
 	sti.lpDesktop = desktop
 
 	logger.notice("Executing: '%s' in session '%s' on desktop '%s'", command, sessionId, desktop)
-	(hProcess, hThread, dwProcessId, dwThreadId) = (
+	(hProcess, hThread, dwProcessId, dwThreadId) = win32process.CreateProcessAsUser(
 		userToken, None, command, None, None, 1, dwCreationFlags, None, None, sti
 	)
 
@@ -1575,6 +1568,7 @@ def runCommandInSession(  # pylint: disable=too-many-arguments,too-many-locals,u
 		log = logger.warning
 	log("Process %d ended with exit code %d", dwProcessId, exitCode)
 	return (None, None, None, None)
+
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
