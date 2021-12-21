@@ -35,13 +35,6 @@ def testGetGeneralConfig(backendManager):
 	assert not values
 
 
-def testSetGeneralConfigValue(backendManager):
-	backendManager.host_createOpsiClient('some.client.fqdn')  # required by File-backend
-	backendManager.setGeneralConfigValue('foo', 'bar', 'some.client.fqdn')
-
-	assert 'bar' == backendManager.getGeneralConfigValue('foo', 'some.client.fqdn')
-
-
 def testGetDomainShouldWork(backendManager):
 	assert backendManager.getDomain()
 
@@ -55,53 +48,6 @@ def testGetGeneralConfigIsEmptyAfterStart(backendManager):
 	assert {} == backendManager.getGeneralConfig_hash()
 
 
-@pytest.mark.parametrize("value", [
-	{"test": True},
-	{"test": 1},
-	{"test": None}
-])
-def testSetGeneralConfigIsUnabledToHandleNonTextValues(backendManager, value):
-	with pytest.raises(Exception):
-		backendManager.setGeneralConfig(value)
-
-
-def testSetGeneralConfigValueAndReadValues(backendManager):
-	config = {"test.truth": "True", "test.int": "2"}
-	backendManager.setGeneralConfig(config)
-
-	for key, value in config.items():
-		assert value == backendManager.getGeneralConfigValue(key)
-
-	assert {} != backendManager.getGeneralConfig_hash()
-	assert 2 == len(backendManager.getGeneralConfig_hash())
-
-
-@pytest.mark.parametrize("value, expected", [
-	('yes', "True"),
-	('on', "True"),
-	('1', "True"),
-	('true', "True"),
-	('no', "False"),
-	('off', "False"),
-	('0', "False"),
-	('false', "False"),
-	("noconversion", "noconversion")
-])
-def testSetGeneralConfigValueTypeConversion(backendManager, value, expected):
-	backendManager.setGeneralConfig({"bool": value})
-	assert expected == backendManager.getGeneralConfigValue("bool")
-
-
-def testSetGeneralConfigIsAbleToRemovingMissingValue(backendManager):
-	config = {"test.truth": "True", "test.int": "2"}
-	backendManager.setGeneralConfig(config)
-	assert 2 == len(backendManager.getGeneralConfig_hash())
-
-	del config["test.int"]
-	backendManager.setGeneralConfig(config)
-	assert 1 == len(backendManager.getGeneralConfig_hash())
-
-
 def generateLargeConfig(numberOfConfigs):
 	numberOfConfigs = 50  # len(config) will be double
 
@@ -113,17 +59,6 @@ def generateLargeConfig(numberOfConfigs):
 	assert numberOfConfigs * 2 == len(config)
 
 	return config
-
-
-@pytest.mark.parametrize(
-	"config",
-	[generateLargeConfig(50), generateLargeConfig(250)],
-	ids=['50', '250']
-)
-def testMassFilling(backendManager, config):
-	backendManager.setGeneralConfig(config)
-
-	assert config == backendManager.getGeneralConfig_hash()
 
 
 def testDeleteProductDependency(backendManager):

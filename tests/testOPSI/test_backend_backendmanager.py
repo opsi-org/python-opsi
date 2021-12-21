@@ -75,15 +75,16 @@ def testBackendManagerMethods(backendManager):
 		'test-key-2': 'test-value-2',
 		'opsiclientd.depot_server.depot_id': origDepotserver1.id
 	}
-	bm.setGeneralConfig(config=generalConfig, objectId=None)
+	for key, val in generalConfig.items():
+		bm.config_create(id=key, defaultValues=[val])
 
 	key = 'test-key-1'
 	value = bm.getGeneralConfigValue(key=key, objectId=client1.id)
 	assert value == generalConfig[key]
 
 	anotherKey = 'test-key-2'
-	bm.setGeneralConfigValue(anotherKey, client1.id, objectId=client1.id)
-	bm.setGeneralConfigValue(anotherKey, 'changed', objectId=None)
+	bm.configState_create(configId=anotherKey, objectId=client1.id, values=[client1.id])
+	bm.config_create(id=anotherKey, defaultValues=['changed'])
 	assert 'changed' == bm.getGeneralConfigValue(key=anotherKey, objectId=None)
 
 	value = bm.getGeneralConfigValue(key=anotherKey, objectId=client1.id)
