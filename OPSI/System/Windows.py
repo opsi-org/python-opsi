@@ -785,7 +785,7 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-branches,too-
 		raise ValueError(f"Invalid mountpoint '{mountpoint}'")
 
 	if mountpoint == 'dynamic':
-		mountpoint = get_available_drive_letter()
+		mountpoint = get_available_drive_letter().rstrip(":") + ":"
 		if not mountpoint:
 			raise RuntimeError("Dynamic mountpoint detection and no free mountpoint available")
 
