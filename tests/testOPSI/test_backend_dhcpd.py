@@ -71,6 +71,8 @@ def testAddingHostToBackend():
 			reloadConfigCommand='/bin/echo "Reloading dhcpd.conf"'
 		)
 
+		backend.host_insertObject(client)
+
 		optionExists = False
 		clientFound = False
 		with open(dhcpdFile) as f:
