@@ -71,7 +71,7 @@ __all__ = (
 	'closeProcessWindows', 'terminateProcess', 'getUserToken',
 	'runCommandInSession', 'createUser', 'deleteUser', 'existsUser',
 	'getUserSidFromHandle', 'getUserSid', 'getAdminGroupName',
-	'setLocalSystemTime', 'Impersonate'
+	'setLocalSystemTime', 'Impersonate', 'get_available_drive_letter'
 )
 
 hooks = []
