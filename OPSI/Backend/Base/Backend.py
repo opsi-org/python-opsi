@@ -77,7 +77,7 @@ def describeInterface(instance):
 		for index, element in enumerate((spec.varargs, spec.varkw), start=1):
 			if element:
 				stars = '*' * index
-				params.extend(['{0}{1}'.format(stars, arg) for arg in forceList(element)])
+				params.extend([f"{stars}{arg}" for arg in forceList(element)])
 
 		logger.trace("%s interface method: name %s, params %s", instance.__class__.__name__, methodName, params)
 		methods[methodName] = {
@@ -259,7 +259,7 @@ This defaults to ``self``.
 
 							continue
 
-						if '*' in filterValue and re.search(r'^%s$' % filterValue.replace('*', '.*'), value):
+						if '*' in filterValue and re.search(f"^{filterValue.replace('*', '.*')}$", value):
 							matched = True
 							break
 
@@ -386,7 +386,7 @@ This defaults to ``self``.
 						val = modules[module]
 						if isinstance(val, bool):
 							val = "yes" if val else "no"
-					data += "%s = %s\r\n" % (module.lower().strip(), val)
+					data += f"{module.lower().strip()} = {val}\r\n"
 
 				modules['valid'] = False
 				if modules["signature"].startswith("{"):
