@@ -181,6 +181,7 @@ containing the localisation of the hardware audit.
 		return None
 
 	def _get_client_info(self):
+		logger.info("%s fetching client info", self)
 		_all = len(self.host_getObjects(attributes=['id'], type='OpsiClient'))
 		macos = len(self.productOnClient_getObjects(
 			attributes=['clientId'], installationStatus="installed", productId="opsi-mac-client-agent")
