@@ -323,20 +323,12 @@ def testFormatFileSize(testInput, expected):
 	assert expected == formatFileSize(testInput)
 
 
-@pytest.fixture(
-	params=[
-		(('util/dhcpd/dhcpd_1.conf'), '5f345ca76574c528903c1022b05acb4c'),
-		(('util/dhcpd/link_to_dhcpd1_1.conf'), '5f345ca76574c528903c1022b05acb4c'),
-	],
-	ids=['dhcpd_1.conf', 'link_to_dhcpd1_1.conf']
-)
-def fileAndHash(test_data_path, request):
-	yield os.path.join(test_data_path, request.param)
-
-
-def testCreatingMd5sum(fileAndHash):
-	testFile, expectedHash = fileAndHash
-	assert expectedHash == md5sum(testFile)
+@pytest.mark.parametrize("test_file, expected_hash", [
+	('util/dhcpd/dhcpd_1.conf', '5f345ca76574c528903c1022b05acb4c'),
+	('util/dhcpd/link_to_dhcpd1_1.conf', '5f345ca76574c528903c1022b05acb4c')
+])
+def testCreatingMd5sum(test_data_path, test_file, expected_hash):
+	assert md5sum(os.path.join(test_data_path, test_file)) == expected_hash
 
 
 def testChunkingList():

@@ -98,7 +98,8 @@ def txtSetupOemFilePath(request):
 
 
 def getAbsolutePathToTestData(filename):
-	return os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'file', filename)
+	from .conftest import TEST_DATA_PATH
+	return os.path.join(TEST_DATA_PATH, 'util', 'file', filename)
 
 
 @pytest.fixture
