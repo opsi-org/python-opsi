@@ -79,7 +79,7 @@ empty_backends:\t, ,
 
 @pytest.fixture
 def opsiConfigFile():
-	path = os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'file', 'opsi', 'opsi.conf')
+	path = os.path.join(os.path.dirname(__file__), 'data', 'util', 'file', 'opsi', 'opsi.conf')
 	return OpsiConfFile(filename=path)
 
 
@@ -116,7 +116,7 @@ def opsiControlFilePath():
 	# https://forum.opsi.org/viewtopic.php?f=7&t=7907
 	return os.path.join(
 		os.path.dirname(__file__),
-		'testdata', 'util', 'file', 'opsi', 'control_with_german_umlauts'
+		'data', 'util', 'file', 'opsi', 'control_with_german_umlauts'
 	)
 
 
@@ -131,7 +131,7 @@ def testParsingControlFileWithGermanUmlautsInDescription(opsiControlFilePath):
 def testProductControlFileWithoutVersionUsesDefaults():
 	filename = os.path.join(
 		os.path.dirname(__file__),
-		'testdata', 'util', 'file', 'opsi', 'control_without_versions')
+		'data', 'util', 'file', 'opsi', 'control_without_versions')
 
 	pcf = PackageControlFile(filename)
 
@@ -145,7 +145,7 @@ def testProductControlFileWithoutVersionUsesDefaults():
 def controlFileWithEmptyValues():
 	filePath = os.path.join(
 		os.path.dirname(__file__),
-		'testdata', 'util', 'file', 'opsi', 'control_with_empty_property_values')
+		'data', 'util', 'file', 'opsi', 'control_with_empty_property_values')
 
 	with createTemporaryTestfile(filePath) as newFilePath:
 		yield newFilePath
@@ -191,7 +191,7 @@ def testGeneratingProductControlFileContainingPropertyWithEmptyValues(controlFil
 def specialCharacterControlFile():
 	filePath = os.path.join(
 		os.path.dirname(__file__),
-		'testdata', 'util', 'file', 'opsi',
+		'data', 'util', 'file', 'opsi',
 		'control_with_special_characters_in_property')
 
 	with createTemporaryTestfile(filePath) as newFilePath:

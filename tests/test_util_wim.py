@@ -23,8 +23,9 @@ def fakeWIMEnvironment(tempDir=None):
 		with open(fakeWimPath, 'w'):
 			pass
 
-		exampleData = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-								   'testdata', 'wimlib.example')
+		exampleData = os.path.join(
+			os.path.dirname(os.path.abspath(__file__)), 'data', 'wimlib.example'
+		)
 
 		def fakeReturningOutput(_unused):
 			with open(exampleData, 'rt', encoding='utf-8') as f:

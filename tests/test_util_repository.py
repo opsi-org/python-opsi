@@ -56,7 +56,7 @@ def testFileRepositoryFailsWithWrongURL():
 def twistedDAVXMLPath():
 	return os.path.join(
 		os.path.dirname(__file__),
-		'testdata', 'util', 'davxml', 'twisted-davxml.data')
+		'data', 'util', 'davxml', 'twisted-davxml.data')
 
 
 @pytest.fixture

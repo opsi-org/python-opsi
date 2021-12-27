@@ -129,7 +129,7 @@ def testFilesCanBeAdded(tempDir):
 	# TODO: reuse fixture?
 	exampleFile = os.path.join(
 		os.path.dirname(__file__),
-		'testdata', 'util', 'fake_global.conf'
+		'data', 'util', 'fake_global.conf'
 	)
 
 	with closing(archive):

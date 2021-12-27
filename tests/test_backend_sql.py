@@ -304,7 +304,7 @@ def testAlteringTableAfterChangeOfHardwareAuditConfig(sqlBackendCreationContextM
 	audit configuration took place. This is a commong operation during
 	updates.
 	"""
-	configDir = os.path.join(os.path.dirname(__file__), 'testdata', 'backend')
+	configDir = os.path.join(os.path.dirname(__file__), 'data', 'backend')
 	pathToOldConfig = os.path.join(configDir, 'small_hwaudit.conf')
 	pathToNewConfig = os.path.join(configDir, 'small_extended_hwaudit.conf')
 

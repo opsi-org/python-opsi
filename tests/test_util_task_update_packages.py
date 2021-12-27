@@ -72,7 +72,7 @@ def testListingLocalPackages(packageUpdaterClass):
 @pytest.fixture
 def exampleConfigPath():
 	filePath = os.path.join(
-		os.path.dirname(__file__), 'testdata', 'util', 'task',
+		os.path.dirname(__file__), 'data', 'util', 'task',
 		'updatePackages', 'example_updater.conf'
 	)
 	with createTemporaryTestfile(filePath) as newPath:
@@ -151,7 +151,7 @@ def patchConfigFile(filename, **values):
 def copyExampleRepoConfigs(targetDir):
 	for filename in ('experimental.repo', ):
 		filePath = os.path.join(
-			os.path.dirname(__file__), 'testdata', 'util', 'task',
+			os.path.dirname(__file__), 'data', 'util', 'task',
 			'updatePackages', filename
 		)
 		shutil.copy(filePath, targetDir)
@@ -163,7 +163,7 @@ def copyExampleRepoConfigs(targetDir):
 )
 def repositoryListingPage(request):
 	filePath = os.path.join(
-		os.path.dirname(__file__), 'testdata', 'util', 'task',
+		os.path.dirname(__file__), 'data', 'util', 'task',
 		'updatePackages', request.param
 	)
 

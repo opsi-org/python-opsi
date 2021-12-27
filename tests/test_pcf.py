@@ -10,10 +10,10 @@ import os
 
 from OPSI.Util.File.Opsi import PackageControlFile
 
-OLD_PCF_FILENAME = "tests/testdata/package_control_file/control"
-OLD_PCF_FILENAME_OUT = "tests/testdata/package_control_file/out-control"
-YML_PCF_FILENAME = "tests/testdata/package_control_file/control.yml"
-YML_PCF_FILENAME_OUT = "tests/testdata/package_control_file/out-control.yml"
+OLD_PCF_FILENAME = "tests/data/package_control_file/control"
+OLD_PCF_FILENAME_OUT = "tests/data/package_control_file/out-control"
+YML_PCF_FILENAME = "tests/data/package_control_file/control.yml"
+YML_PCF_FILENAME_OUT = "tests/data/package_control_file/out-control.yml"
 
 def test_pcf_old():
 	pcf = PackageControlFile(OLD_PCF_FILENAME)

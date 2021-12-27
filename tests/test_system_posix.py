@@ -65,7 +65,7 @@ def testGetNetworkInterfaces():
 def testReadingDHCPLeasesFile():
 	leasesFile = os.path.join(
 		os.path.dirname(__file__),
-		'testdata', 'system', 'posix', 'dhclient.leases'
+		'data', 'system', 'posix', 'dhclient.leases'
 	)
 	assert os.path.exists(leasesFile)
 

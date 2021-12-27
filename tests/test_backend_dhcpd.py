@@ -56,7 +56,7 @@ def testAddingHostsToBackend(dhcpBackendWithoutLookup):
 def testAddingHostToBackend():
 	originalDhcpdFile = os.path.join(
 		os.path.dirname(os.path.abspath(__file__)),
-		'testdata', 'backend', 'dhcp_ki.conf'
+		'data', 'backend', 'dhcp_ki.conf'
 	)
 
 	client = OpsiClient(

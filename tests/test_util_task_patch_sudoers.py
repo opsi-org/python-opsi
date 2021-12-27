@@ -19,7 +19,7 @@ from OPSI.Util.Task.Sudoers import (
 
 SUDOERS_WITHOUT_ENTRIES = os.path.join(
 	os.path.dirname(__file__),
-	'testdata', 'util', 'task', 'sudoers', 'sudoers_without_entries'
+	'data', 'util', 'task', 'sudoers', 'sudoers_without_entries'
 )
 
 

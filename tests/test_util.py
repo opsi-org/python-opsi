@@ -330,8 +330,8 @@ def testFormatFileSize(testInput, expected):
 
 @pytest.fixture(
 	params=[
-		(os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'dhcpd', 'dhcpd_1.conf'), '5f345ca76574c528903c1022b05acb4c'),
-		(os.path.join(os.path.dirname(__file__), 'testdata', 'util', 'dhcpd', 'link_to_dhcpd1_1.conf'), '5f345ca76574c528903c1022b05acb4c'),
+		(os.path.join(os.path.dirname(__file__), 'data', 'util', 'dhcpd', 'dhcpd_1.conf'), '5f345ca76574c528903c1022b05acb4c'),
+		(os.path.join(os.path.dirname(__file__), 'data', 'util', 'dhcpd', 'link_to_dhcpd1_1.conf'), '5f345ca76574c528903c1022b05acb4c'),
 	],
 	ids=['dhcpd_1.conf', 'link_to_dhcpd1_1.conf']
 )
@@ -402,7 +402,7 @@ def testChunkingGeneratorWithDifferentSize():
 @pytest.fixture
 def globalConfigTestFile():
 	return os.path.join(
-		os.path.dirname(__file__), 'testdata', 'util', 'fake_global.conf'
+		os.path.dirname(__file__), 'data', 'util', 'fake_global.conf'
 	)
 
 

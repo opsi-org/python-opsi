@@ -18,7 +18,7 @@ from .helpers import createTemporaryTestfile
 
 def testParsingExampleDHCPDConf():
 	testExample = os.path.join(
-		os.path.dirname(__file__), 'testdata',
+		os.path.dirname(__file__), 'data',
 		'util', 'dhcpd', 'dhcpd_1.conf'
 	)
 

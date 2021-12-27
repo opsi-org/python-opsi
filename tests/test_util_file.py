@@ -279,7 +279,7 @@ def testZsyncFile(tempDir):
 
 		assert 'mtime' not in zf._header
 
-	shutil.copy(os.path.join(os.path.dirname(__file__), 'testdata',
+	shutil.copy(os.path.join(os.path.dirname(__file__), 'data',
 				'util', 'file', filename), tempDir)
 
 	testFile = os.path.join(tempDir, filename)

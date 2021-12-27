@@ -24,7 +24,7 @@ from OPSI.Util.Sync import librsyncDeltaFile, librsyncSignature, librsyncPatchFi
 def librsyncTestfile():
 	return os.path.join(
 		os.path.dirname(__file__),
-		'testdata', 'util', 'syncFiles', 'librsyncSignature.txt'
+		'data', 'util', 'syncFiles', 'librsyncSignature.txt'
 	)
 
 
