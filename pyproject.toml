@@ -40,6 +40,7 @@ service-identity = "^21.1.0"
 msgpack = "^1.0.2"
 attrs = "^21.2.0"
 pexpect = "^4.8.0"
+python-opsi-common = "^4.2.0"
 
 [tool.poetry.dev-dependencies]
 opsi-dev-tools = "^1.0"

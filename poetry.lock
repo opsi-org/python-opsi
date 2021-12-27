@@ -122,7 +122,7 @@ reference = "uibpypi"
 name = "certifi"
 version = "2021.10.8"
 description = "Python package for providing Mozilla's CA Bundle."
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -151,7 +151,7 @@ reference = "uibpypi"
 name = "charset-normalizer"
 version = "2.0.9"
 description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.5.0"
 
@@ -953,6 +953,29 @@ url = "https://pypi.uib.gmbh/simple"
 reference = "uibpypi"
 
 [[package]]
+name = "python-opsi-common"
+version = "4.2.0.263"
+description = "The opsi python common library"
+category = "main"
+optional = false
+python-versions = ">=3.7,<4.0"
+
+[package.dependencies]
+colorlog = ">=6.6.0,<7.0.0"
+distro = ">=1.6.0,<2.0.0"
+lz4 = ">=3.1.3,<4.0.0"
+msgpack = ">=1.0.2,<2.0.0"
+psutil = ">=5.8.0,<6.0.0"
+pycryptodome = ">=3.10.1,<4.0.0"
+pyopenssl = ">=21.0.0,<22.0.0"
+requests = ">=2.26.0,<3.0.0"
+
+[package.source]
+type = "legacy"
+url = "https://pypi.uib.gmbh/simple"
+reference = "uibpypi"
+
+[[package]]
 name = "python-pam"
 version = "1.8.4"
 description = "Python PAM module using ctypes, py3/py2"
@@ -1008,7 +1031,7 @@ reference = "uibpypi"
 name = "requests"
 version = "2.26.0"
 description = "Python HTTP for Humans."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
 
@@ -1246,7 +1269,7 @@ reference = "uibpypi"
 name = "urllib3"
 version = "1.26.7"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
 
@@ -1350,7 +1373,7 @@ reference = "uibpypi"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "5bd77733124569a910b4413a5e2a82a035b85adc60a5ed8649632f5b3da9576f"
+content-hash = "a313a693482ade3a3f80d187b564f2c0113c52a8e63252ec5280a17e22667e56"
 
 [metadata.files]
 altgraph = [
@@ -1887,6 +1910,10 @@ pytest-cov = [
 ]
 python-gettext = [
     {file = "python-gettext-4.0.tar.gz", hash = "sha256:626b501a51ac892fc3460cf550e60dca121f544eaa46eb69c90ce4682fc7ec02"},
+]
+python-opsi-common = [
+    {file = "python-opsi-common-4.2.0.263.tar.gz", hash = "sha256:ff8c72b4ae871e5109f43cd67ab44582a36427ffae1636bbe11e62642d549fe6"},
+    {file = "python_opsi_common-4.2.0.263-py3-none-any.whl", hash = "sha256:108b761cb1d218ba96c62d15dd51ffb05b0553820b356bc9a73858d859978b5e"},
 ]
 python-pam = [
     {file = "python-pam-1.8.4.tar.gz", hash = "sha256:c856d9c89fedb33951dd8a95727ae57c6887b02d065bbdffd2fd9dbc0183909b"},
