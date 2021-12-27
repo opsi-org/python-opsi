@@ -2,7 +2,6 @@ image: docker.uib.gmbh/opsi/dev/pybuilder:uib-python-3.9
 
 stages:
   - test
-  # - build
   - package
   - publish
 
@@ -32,50 +31,19 @@ test:pylint-pytest:
     apt update
     apt-get --yes install libmysqlclient-dev mysql-client librsync2 #careful: this bumps glibc to at least 2.31
 
+    poetry lock --no-update
     poetry install
-    poetry run pylint --disable=R,C,fixme opsicommon
     poetry run pylint --disable=R,C,W OPSI
-    poetry run ./run_tests.sh
-    #poetry run ./run_qa.sh
+    poetry run pytest -o junit_family=xunit2 --junitxml=testreport.xml --cov-append --cov-report term --cov-report xml -v tests
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+)%/'
   artifacts:
     name: 'python-opsi_test'
     paths:
       - coverage.xml
-      - testreport-OPSI.xml
-      - testreport-opsicommon.xml
-#    reports:
-#        junit: testreport.xml
+      - testreport.xml
+    reports:
+        junit: testreport.xml
     expire_in: 14 days
-
-#build:documentation:
-#  stage: build
-#  script:
-#    - echo "deb http://deb.debian.org/debian unstable main" >> /etc/apt/sources.list
-#    - apt update
-#    - apt -y install build-essential default-libmysqlclient-dev libssl-dev python3-apsw python3-pip
-#    - pip3 install .
-#    - pip3 install sphinx
-#    - sphinx-apidoc --force --separate -o doc/src OPSI/
-#    - sphinx-build -b html -d doc/_build/doctrees -D latex_paper_size=a4 -D latex_paper_size=letter doc/src/ doc/python-opsi/
-#  after_script:
-#    - mv doc/python-opsi/ .
-#  artifacts:
-#    name: 'python-opsi_documentation'
-#    paths:
-#      - python-opsi/
-#    expire_in: 1 day
-
-
-#package:obs_int:
-#  stage: package
-#  script:
-#    - python3 -m opsidevtools -l info --obs-update-package https://obs.uib.gmbh home:uibmz:opsi:4.2:development
-
-#package:obs_ext:
-#  stage: package
-#  script:
-#    - python3 -m opsidevtools -l debug --obs-update-package https://build.opensuse.org home:uibmz:opsi:4.2:development
 
 publish:uibpypi:
   stage: publish
