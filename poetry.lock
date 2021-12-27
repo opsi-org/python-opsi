@@ -1913,7 +1913,7 @@ python-gettext = [
 ]
 python-opsi-common = [
     {file = "python-opsi-common-4.2.0.263.tar.gz", hash = "sha256:9b47802c2ba921853f9944e9791819db695d45bc34411bd4dad1d3809e70bf3b"},
-    {file = "python_opsi_common-4.2.0.263-py3-none-any.whl", hash = "sha256:dee30a223185dacac2e5d079fa96b3588a8ac48e0538ac2de2014b24f966ff86"},
+    {file = "python_opsi_common-4.2.0.263-py3-none-any.whl", hash = "sha256:751c2123f4a511a4a4de410c95f23873a78cff1fdf36e54df94c2285e0cf27aa"},
 ]
 python-pam = [
     {file = "python-pam-1.8.4.tar.gz", hash = "sha256:c856d9c89fedb33951dd8a95727ae57c6887b02d065bbdffd2fd9dbc0183909b"},
