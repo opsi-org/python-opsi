@@ -17,13 +17,14 @@ from .helpers import workInTemporaryDirectory, mock
 
 
 @contextmanager
-def fakeWIMEnvironment(test_data_path, tempDir=None):
+def fakeWIMEnvironment(tempDir=None):
+	from .conftest import TEST_DATA_PATH
 	with workInTemporaryDirectory(tempDir) as temporaryDir:
 		fakeWimPath = os.path.join(temporaryDir, 'fake.wim')
 		with open(fakeWimPath, 'w'):
 			pass
 
-		exampleData = os.path.join(test_data_path, 'wimlib.example')
+		exampleData = os.path.join(TEST_DATA_PATH, 'wimlib.example')
 
 		def fakeReturningOutput(_unused):
 			with open(exampleData, 'rt', encoding='utf-8') as f:

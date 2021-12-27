@@ -149,7 +149,7 @@ def testVerifyingBackup(tempDir):
 
 @contextmanager
 def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False, dataBackend="file"):
-	from conftest import DIST_DATA_PATH
+	from .conftest import DIST_DATA_PATH
 	with workInTemporaryDirectory(tempdir) as tempDir:
 		baseDir = os.path.join(tempDir, 'base')
 		backendDir = os.path.join(baseDir, 'backends')

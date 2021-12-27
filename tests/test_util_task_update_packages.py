@@ -146,7 +146,7 @@ def patchConfigFile(filename, **values):
 
 
 def copyExampleRepoConfigs(targetDir):
-	from conftest import TEST_DATA_PATH
+	from .conftest import TEST_DATA_PATH
 	for filename in ('experimental.repo', ):
 		filePath = os.path.join(TEST_DATA_PATH, 'util', 'task', 'updatePackages', filename)
 		shutil.copy(filePath, targetDir)
