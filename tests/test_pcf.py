@@ -2,15 +2,18 @@
 
 # Copyright (c) uib GmbH <info@uib.de>
 # License: AGPL-3.0
+"""
+test_pcf
+"""
 
 import os
 
 from OPSI.Util.File.Opsi import PackageControlFile
 
-OLD_PCF_FILENAME = "tests/testOPSI/test_data/control"
-OLD_PCF_FILENAME_OUT = "tests/testOPSI/test_data/out-control"
-YML_PCF_FILENAME = "tests/testOPSI/test_data/control.yml"
-YML_PCF_FILENAME_OUT = "tests/testOPSI/test_data/out-control.yml"
+OLD_PCF_FILENAME = "tests/test_data/control"
+OLD_PCF_FILENAME_OUT = "tests/test_data/out-control"
+YML_PCF_FILENAME = "tests/test_data/control.yml"
+YML_PCF_FILENAME_OUT = "tests/test_data/out-control.yml"
 
 def test_pcf_old():
 	pcf = PackageControlFile(OLD_PCF_FILENAME)

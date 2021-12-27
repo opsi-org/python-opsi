@@ -49,10 +49,9 @@ from opsicommon.types import (
 	_PRODUCT_VERSION_REGEX, _PACKAGE_VERSION_REGEX
 )
 from opsicommon.utils import (
-	from_json, to_json, serialize,
+	Singleton, from_json, to_json, serialize,
 	deserialize as oc_deserialize,
-	combine_versions as combineVersions,
-	genreate_opsi_host_key as generateOpsiHostKey,
+	generate_opsi_host_key as generateOpsiHostKey,
 	timestamp as oc_timestamp
 )
 
@@ -72,7 +71,9 @@ __all__ = (
 BLOWFISH_IV = b"OPSI1234"
 RANDOM_DEVICE = "/dev/urandom"
 UNIT_REGEX = re.compile(r'^(\d+\.*\d*)\s*(\w{0,4})$')
-_ACCEPTED_CHARACTERS = (deserialize
+_ACCEPTED_CHARACTERS = (
+	"abcdefghijklmnopqrstuvwxyz"
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	"0123456789"
 )
 
@@ -134,15 +135,15 @@ def timestamp(secs=0, dateOnly=False):
 
 
 def fromJson(obj, objectType=None, preventObjectCreation=False):
-	return from_json(object_type=objectType, prevent_object_creation=preventObjectCreation)
+	return from_json(obj, object_type=objectType, prevent_object_creation=preventObjectCreation)
 
 
 def toJson(obj, ensureAscii=False):
 	return to_json(obj, ensure_ascii=ensureAscii)
 
 
-def deserialize(obj, preventObjectCreation=False):  # pylint: disable=invalid-name
-	def oc_deserialize(obj, prevent_object_creation=preventObjectCreation):  # pylint: disable=invalid-name
+def deserialize(obj, preventObjectCreation=False):
+	return oc_deserialize(obj, prevent_object_creation=preventObjectCreation)
 
 
 def objectToBeautifiedText(obj):
@@ -672,16 +673,10 @@ def getPublicKey(data):
 
 	return RSA.construct((mp[1], mp[0]))
 
-class Singleton(type):
-	_instances = {}
-	def __call__(cls, *args, **kwargs):
-		if cls not in cls._instances:
-			cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-		return cls._instances[cls]
 
 def monkeypatch_subprocess_for_frozen():
-	from subprocess import Popen as Popen_orig
-	class Popen_patched(Popen_orig):
+	from subprocess import Popen as PopenOrig  # pylint: disable=import-outside-toplevel
+	class PopenPatched(PopenOrig):
 		def __init__(self, *args, **kwargs):
 			if kwargs.get("env") is None:
 				kwargs["env"] = os.environ.copy()
@@ -696,4 +691,4 @@ def monkeypatch_subprocess_for_frozen():
 
 			super().__init__(*args, **kwargs)
 
-	subprocess.Popen = Popen_patched
+	subprocess.Popen = PopenPatched

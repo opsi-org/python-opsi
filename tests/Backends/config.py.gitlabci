@@ -30,10 +30,10 @@ Please adjust this file to your settings and rename it to ``config.py``
 # /etc/opsi/backends/mysql.conf but you should not use that database
 # for your tests because the tests will delete
 MySQLconfiguration = {
-	"address": u"mysql",
-	"database": u"opsi",
-	"username": u"root",
-	"password": u"opsi",
+	"address": "mysql",
+	"database": "opsi",
+	"username": "root",
+	"password": "opsi",
 	"databaseCharset": "utf8",
 	"connectionPoolSize": 20,
 	"connectionPoolMaxOverflow": 10,
@@ -44,8 +44,8 @@ MySQLconfiguration = {
 # If database is set to :memory: it will use an in-memory database.
 # Otherwise you can set the path to an sqlite-db here.
 SQLiteconfiguration = {
-	# "database": u"/tmp/opsi.sqlite3",
-	"database": u":memory:",
+	# "database": "/tmp/opsi.sqlite3",
+	"database": ":memory:",
 	"synchronous": True,
 	"databasecharset": 'utf8'
 }

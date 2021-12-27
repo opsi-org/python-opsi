@@ -27,7 +27,7 @@ test:pylint-pytest:
     rm -rf data
     git clone -b master https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.uib.gmbh/uib/opsi-server.git ../opsi-server
     ln -s ../opsi-server/opsi-server_data/etc data
-    cp tests/testOPSI/Backends/config.py.gitlabci tests/testOPSI/Backends/config.py
+    cp tests/Backends/config.py.gitlabci tests/Backends/config.py
     echo "deb http://deb.debian.org/debian unstable main" >> /etc/apt/sources.list
     apt update
     apt-get --yes install libmysqlclient-dev mysql-client librsync2 #careful: this bumps glibc to at least 2.31
