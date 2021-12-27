@@ -1764,7 +1764,7 @@ mysqlclient = [
     {file = "mysqlclient-2.1.0.tar.gz", hash = "sha256:973235686f1b720536d417bf0a0d39b4ab3d5086b2b6ad5e6752393428c02b12"},
 ]
 opsi-dev-tools = [
-    {file = "opsi-dev-tools-1.0.80.tar.gz", hash = "sha256:b7f9ea9374481e2db478d5552d7aad45cf5ac2931a25a0f40651d62654c1151b"},
+    {file = "opsi-dev-tools-1.0.80.tar.gz", hash = "sha256:1b10efee825118d6a27f40575fafe3a888dc3c7f3cb275c629ba5f48eead52df"},
     {file = "opsi_dev_tools-1.0.80-py3-none-any.whl", hash = "sha256:3b249781b2baf023b3ad46dc81715d7d13df115a08d78922603531f78e0ae6d7"},
 ]
 packaging = [
@@ -1912,8 +1912,8 @@ python-gettext = [
     {file = "python-gettext-4.0.tar.gz", hash = "sha256:626b501a51ac892fc3460cf550e60dca121f544eaa46eb69c90ce4682fc7ec02"},
 ]
 python-opsi-common = [
-    {file = "python-opsi-common-4.2.0.263.tar.gz", hash = "sha256:ff8c72b4ae871e5109f43cd67ab44582a36427ffae1636bbe11e62642d549fe6"},
-    {file = "python_opsi_common-4.2.0.263-py3-none-any.whl", hash = "sha256:108b761cb1d218ba96c62d15dd51ffb05b0553820b356bc9a73858d859978b5e"},
+    {file = "python-opsi-common-4.2.0.263.tar.gz", hash = "sha256:9b47802c2ba921853f9944e9791819db695d45bc34411bd4dad1d3809e70bf3b"},
+    {file = "python_opsi_common-4.2.0.263-py3-none-any.whl", hash = "sha256:dee30a223185dacac2e5d079fa96b3588a8ac48e0538ac2de2014b24f966ff86"},
 ]
 python-pam = [
     {file = "python-pam-1.8.4.tar.gz", hash = "sha256:c856d9c89fedb33951dd8a95727ae57c6887b02d065bbdffd2fd9dbc0183909b"},
