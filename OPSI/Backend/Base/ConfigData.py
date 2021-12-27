@@ -1105,7 +1105,7 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def _checkHardwareClass(self, auditHardwareOrauditHardwareOnHost):  # pylint: disable=no-self-use
 		hardwareClass = auditHardwareOrauditHardwareOnHost.getHardwareClass()
-		if not AuditHardware.hardwareAttributes.get(hardwareClass):
+		if not AuditHardware.hardware_attributes.get(hardwareClass):
 			raise ValueError(f"Attributes for hardware class '{hardwareClass}' not found, please check hwaudit.conf")
 
 	def auditHardware_insertObject(self, auditHardware):  # pylint: disable=no-self-use
