@@ -78,8 +78,8 @@ empty_backends:\t, ,
 
 
 @pytest.fixture
-def opsiConfigFile():
-	path = os.path.join(os.path.dirname(__file__), 'data', 'util', 'file', 'opsi', 'opsi.conf')
+def opsiConfigFile(test_data_path):
+	path = os.path.join(test_data_path, 'util', 'file', 'opsi', 'opsi.conf')
 	return OpsiConfFile(filename=path)
 
 
@@ -111,12 +111,11 @@ def testGettingDefaultPigzStatus(opsiConfigFile):
 
 
 @pytest.fixture
-def opsiControlFilePath():
+def opsiControlFilePath(test_data_path):
 	# The file is the one that was causing a problem in
 	# https://forum.opsi.org/viewtopic.php?f=7&t=7907
 	return os.path.join(
-		os.path.dirname(__file__),
-		'data', 'util', 'file', 'opsi', 'control_with_german_umlauts'
+		test_data_path, 'util', 'file', 'opsi', 'control_with_german_umlauts'
 	)
 
 
@@ -128,10 +127,9 @@ def testParsingControlFileWithGermanUmlautsInDescription(opsiControlFilePath):
 	assert u'Startet die Druckerwarteschlange auf dem Client neu / oder überhaupt.' == product.description
 
 
-def testProductControlFileWithoutVersionUsesDefaults():
+def testProductControlFileWithoutVersionUsesDefaults(test_data_path):
 	filename = os.path.join(
-		os.path.dirname(__file__),
-		'data', 'util', 'file', 'opsi', 'control_without_versions')
+		test_data_path, 'util', 'file', 'opsi', 'control_without_versions')
 
 	pcf = PackageControlFile(filename)
 
@@ -142,10 +140,10 @@ def testProductControlFileWithoutVersionUsesDefaults():
 
 
 @pytest.fixture
-def controlFileWithEmptyValues():
+def controlFileWithEmptyValues(test_data_path):
 	filePath = os.path.join(
-		os.path.dirname(__file__),
-		'data', 'util', 'file', 'opsi', 'control_with_empty_property_values')
+		test_data_path, 'util', 'file', 'opsi', 'control_with_empty_property_values'
+	)
 
 	with createTemporaryTestfile(filePath) as newFilePath:
 		yield newFilePath
@@ -188,11 +186,10 @@ def testGeneratingProductControlFileContainingPropertyWithEmptyValues(controlFil
 
 
 @pytest.fixture
-def specialCharacterControlFile():
+def specialCharacterControlFile(test_data_path):
 	filePath = os.path.join(
-		os.path.dirname(__file__),
-		'data', 'util', 'file', 'opsi',
-		'control_with_special_characters_in_property')
+		test_data_path, 'util', 'file', 'opsi', 'control_with_special_characters_in_property'
+	)
 
 	with createTemporaryTestfile(filePath) as newFilePath:
 		yield newFilePath

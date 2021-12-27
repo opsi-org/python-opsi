@@ -21,11 +21,8 @@ from OPSI.Util.Sync import librsyncDeltaFile, librsyncSignature, librsyncPatchFi
 
 
 @pytest.fixture
-def librsyncTestfile():
-	return os.path.join(
-		os.path.dirname(__file__),
-		'data', 'util', 'syncFiles', 'librsyncSignature.txt'
-	)
+def librsyncTestfile(test_data_path):
+	return os.path.join(test_data_path, 'util', 'syncFiles', 'librsyncSignature.txt')
 
 
 @pytest.mark.skipif(importFailed, reason="Import failed.")

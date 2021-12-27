@@ -27,15 +27,27 @@ from _pytest.logging import LogCaptureHandler
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Backend.BackendManager import BackendManager
 
-from .Backends.File import getFileBackend, _getOriginalBackendLocation
+from .Backends.File import getFileBackend
 from .Backends.SQLite import getSQLiteBackend
 from .Backends.MySQL import getMySQLBackend
 from .helpers import workInTemporaryDirectory, createTemporaryTestfile
 
+urllib3.disable_warnings()
 
 _MODULES_FILE = os.path.exists(os.path.join('/etc', 'opsi', 'modules'))
 
-urllib3.disable_warnings()
+TEST_DATA_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), 'data'))
+DIST_DATA_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'data'))
+
+@pytest.fixture
+def test_data_path():
+	return TEST_DATA_PATH
+
+
+@pytest.fixture
+def dist_data_path():
+	return DIST_DATA_PATH
+
 
 def emit(*args, **kwargs) -> None:  # pylint: disable=unused-argument
 	pass
@@ -124,15 +136,13 @@ def replicationDestinationBackend(request):
 
 
 @pytest.fixture
-def backendManager(_serverBackend, tempDir):  # pylint: disable=redefined-outer-name
+def backendManager(_serverBackend, tempDir, dist_data_path):  # pylint: disable=redefined-outer-name
 	"""
 	Returns an `OPSI.Backend.BackendManager.BackendManager` for testing.
 
 	The returned instance is set up to have access to backend extensions.
 	"""
-	defaultConfigDir = _getOriginalBackendLocation()
-
-	shutil.copytree(defaultConfigDir, os.path.join(tempDir, 'etc', 'opsi'))
+	shutil.copytree(dist_data_path, os.path.join(tempDir, 'etc', 'opsi'))
 
 	yield BackendManager(
 		backend=_serverBackend,
@@ -189,15 +199,13 @@ def hardwareAuditBackendWithHistory(request, hardwareAuditConfigPath):  # pylint
 
 
 @pytest.fixture
-def hardwareAuditConfigPath():
+def hardwareAuditConfigPath(dist_data_path):
 	'''
 	Copies the opsihwaudit.conf that is usually distributed for
 	installation to a temporary folder and then returns the new absolute
 	path of the config file.
 	'''
-	pathToOriginalConfig = os.path.join(
-		os.path.dirname(__file__), 'data', 'hwaudit', 'opsihwaudit.conf'
-	)
+	pathToOriginalConfig = os.path.join(dist_data_path, 'hwaudit', 'opsihwaudit.conf')
 
 	with createTemporaryTestfile(pathToOriginalConfig) as fileCopy:
 		yield fileCopy

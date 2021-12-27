@@ -122,15 +122,9 @@ def testExistingArchiveIsImmutable(tempDir):
 		OpsiBackupArchive(**options)
 
 
-def testFilesCanBeAdded(tempDir):
+def testFilesCanBeAdded(tempDir, test_data_path):
 	archive, _ = createArchive(tempDir)
-
-	# TODO: check if file exists
-	# TODO: reuse fixture?
-	exampleFile = os.path.join(
-		os.path.dirname(__file__),
-		'data', 'util', 'fake_global.conf'
-	)
+	exampleFile = os.path.join(test_data_path, 'util', 'fake_global.conf')
 
 	with closing(archive):
 		archive._addContent(exampleFile)
@@ -155,11 +149,11 @@ def testVerifyingBackup(tempDir):
 
 @contextmanager
 def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False, dataBackend="file"):
+	from conftest import DIST_DATA_PATH
 	with workInTemporaryDirectory(tempdir) as tempDir:
 		baseDir = os.path.join(tempDir, 'base')
 		backendDir = os.path.join(baseDir, 'backends')
-
-		baseDataDir = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'backends')
+		baseDataDir = os.path.join(DIST_DATA_PATH, 'backends')
 		baseDataDir = os.path.normpath(baseDataDir)
 		try:
 			shutil.copytree(baseDataDir, backendDir)

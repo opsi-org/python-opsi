@@ -148,6 +148,5 @@ config = {{
 
 
 def _getOriginalBackendLocation():
-	return os.path.normpath(
-		os.path.join(os.path.dirname(__file__), 'data')
-	)
+	from ..conftest import DIST_DATA_PATH
+	return DIST_DATA_PATH

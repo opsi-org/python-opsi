@@ -17,15 +17,13 @@ from .helpers import workInTemporaryDirectory, mock
 
 
 @contextmanager
-def fakeWIMEnvironment(tempDir=None):
+def fakeWIMEnvironment(test_data_path, tempDir=None):
 	with workInTemporaryDirectory(tempDir) as temporaryDir:
 		fakeWimPath = os.path.join(temporaryDir, 'fake.wim')
 		with open(fakeWimPath, 'w'):
 			pass
 
-		exampleData = os.path.join(
-			os.path.dirname(os.path.abspath(__file__)), 'data', 'wimlib.example'
-		)
+		exampleData = os.path.join(test_data_path, 'wimlib.example')
 
 		def fakeReturningOutput(_unused):
 			with open(exampleData, 'rt', encoding='utf-8') as f:
@@ -38,8 +36,8 @@ def fakeWIMEnvironment(tempDir=None):
 
 
 @pytest.fixture
-def fakeWimPath():
-	with fakeWIMEnvironment() as fakeWimPath:
+def fakeWimPath(dist_data_path):
+	with fakeWIMEnvironment(dist_data_path) as fakeWimPath:
 		yield fakeWimPath
 
 

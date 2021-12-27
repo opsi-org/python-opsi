@@ -258,7 +258,7 @@ def testReadingDataFromTextfileOemSetup(filename):
 			setupFile.getComponentOptionsForDevice(vendorId='10DE', deviceId='0AD4')
 
 
-def testZsyncFile(tempDir):
+def testZsyncFile(tempDir, test_data_path):
 	filename = 'opsi-configed_4.0.7.1.3-2.opsi.zsync'
 	expectedHeaders = {
 		'Blocksize': '2048',
@@ -279,8 +279,7 @@ def testZsyncFile(tempDir):
 
 		assert 'mtime' not in zf._header
 
-	shutil.copy(os.path.join(os.path.dirname(__file__), 'data',
-				'util', 'file', filename), tempDir)
+	shutil.copy(os.path.join(test_data_path, 'util', 'file', filename), tempDir)
 
 	testFile = os.path.join(tempDir, filename)
 

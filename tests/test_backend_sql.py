@@ -296,7 +296,7 @@ def returnQueryAfterCheck(query):
 	return query
 
 
-def testAlteringTableAfterChangeOfHardwareAuditConfig(sqlBackendCreationContextManager):
+def testAlteringTableAfterChangeOfHardwareAuditConfig(test_data_path, sqlBackendCreationContextManager):
 	"""
 	Test if adding and altering hardware audit tables works.
 
@@ -304,7 +304,7 @@ def testAlteringTableAfterChangeOfHardwareAuditConfig(sqlBackendCreationContextM
 	audit configuration took place. This is a commong operation during
 	updates.
 	"""
-	configDir = os.path.join(os.path.dirname(__file__), 'data', 'backend')
+	configDir = os.path.join(test_data_path, 'backend')
 	pathToOldConfig = os.path.join(configDir, 'small_hwaudit.conf')
 	pathToNewConfig = os.path.join(configDir, 'small_extended_hwaudit.conf')
 

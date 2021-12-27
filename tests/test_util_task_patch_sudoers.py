@@ -17,15 +17,9 @@ from OPSI.Util.Task.Sudoers import (
 	patchSudoersFileForOpsi, patchSudoersFileToAllowRestartingDHCPD)
 
 
-SUDOERS_WITHOUT_ENTRIES = os.path.join(
-	os.path.dirname(__file__),
-	'data', 'util', 'task', 'sudoers', 'sudoers_without_entries'
-)
-
-
 @pytest.fixture
-def temporarySudoersFile():
-	with createTemporaryTestfile(SUDOERS_WITHOUT_ENTRIES) as fileName:
+def temporarySudoersFile(test_data_path):
+	with createTemporaryTestfile(os.path.join(test_data_path, 'util', 'task', 'sudoers', 'sudoers_without_entries')) as fileName:
 		yield fileName
 
 
@@ -67,11 +61,11 @@ def testFileEndsWithNewline(temporarySudoersFile):
 	assert '\n' == lastLine
 
 
-def testBackupIsCreated(tempDir):
+def testBackupIsCreated(test_data_path, tempDir):
 	def showFolderInfo():
 		print(u'Files in {0}: {1}'.format(tempDir, filesInTemporaryFolder))
 
-	with createTemporaryTestfile(SUDOERS_WITHOUT_ENTRIES, tempDir=tempDir) as fileName:
+	with createTemporaryTestfile(os.path.join(test_data_path, 'util', 'task', 'sudoers', 'sudoers_without_entries'), tempDir=tempDir) as fileName:
 		filesInTemporaryFolder = os.listdir(tempDir)
 
 		showFolderInfo()

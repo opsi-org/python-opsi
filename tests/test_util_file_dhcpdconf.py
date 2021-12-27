@@ -16,11 +16,8 @@ from OPSI.Util.File import DHCPDConfFile
 from .helpers import createTemporaryTestfile
 
 
-def testParsingExampleDHCPDConf():
-	testExample = os.path.join(
-		os.path.dirname(__file__), 'data',
-		'util', 'dhcpd', 'dhcpd_1.conf'
-	)
+def testParsingExampleDHCPDConf(test_data_path):
+	testExample = os.path.join(test_data_path, 'util', 'dhcpd', 'dhcpd_1.conf')
 
 	with createTemporaryTestfile(testExample) as fileName:
 		confFile = DHCPDConfFile(fileName)

@@ -305,13 +305,8 @@ def testRandomStringHasExpectedLength(length):
 	assert length == len(result.strip())
 
 
-@pytest.mark.parametrize("kwargs", [
-	{},
-	{"forcePython": True},
-	{"forcePython": False}
-])
-def testGeneratingOpsiHostKey(kwargs):
-	key = generateOpsiHostKey(kwargs)
+def testGeneratingOpsiHostKey():
+	key = generateOpsiHostKey()
 	assert 32 == len(key)
 	assert isinstance(key, str)
 
@@ -330,13 +325,13 @@ def testFormatFileSize(testInput, expected):
 
 @pytest.fixture(
 	params=[
-		(os.path.join(os.path.dirname(__file__), 'data', 'util', 'dhcpd', 'dhcpd_1.conf'), '5f345ca76574c528903c1022b05acb4c'),
-		(os.path.join(os.path.dirname(__file__), 'data', 'util', 'dhcpd', 'link_to_dhcpd1_1.conf'), '5f345ca76574c528903c1022b05acb4c'),
+		(('util/dhcpd/dhcpd_1.conf'), '5f345ca76574c528903c1022b05acb4c'),
+		(('util/dhcpd/link_to_dhcpd1_1.conf'), '5f345ca76574c528903c1022b05acb4c'),
 	],
 	ids=['dhcpd_1.conf', 'link_to_dhcpd1_1.conf']
 )
-def fileAndHash(request):
-	yield request.param
+def fileAndHash(test_data_path, request):
+	yield os.path.join(test_data_path, request.param)
 
 
 def testCreatingMd5sum(fileAndHash):
@@ -400,10 +395,8 @@ def testChunkingGeneratorWithDifferentSize():
 
 
 @pytest.fixture
-def globalConfigTestFile():
-	return os.path.join(
-		os.path.dirname(__file__), 'data', 'util', 'fake_global.conf'
-	)
+def globalConfigTestFile(test_data_path):
+	return os.path.join(test_data_path, 'util', 'fake_global.conf')
 
 
 def testGlobalConfigCommentsInFileAreIgnored(globalConfigTestFile):

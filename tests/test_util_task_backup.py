@@ -46,8 +46,8 @@ def testPatchingStdout():
 	assert sys.stdout == newBackup.stdout
 
 
-def testGettingArchive():
-	fakeBackendDir = os.path.join(os.path.dirname(__file__), 'data', 'backends')
+def testGettingArchive(dist_data_path):
+	fakeBackendDir = os.path.join(dist_data_path, 'backends')
 	fakeBackendDir = os.path.normpath(fakeBackendDir)
 
 	with mock.patch('OPSI.Util.Task.Backup.OpsiBackupArchive.BACKEND_CONF_DIR', fakeBackendDir):
@@ -58,7 +58,7 @@ def testGettingArchive():
 		os.remove(archive.name)
 
 
-def testCreatingArchive():
+def testCreatingArchive(dist_data_path):
 	with workInTemporaryDirectory() as backendDir:
 		with workInTemporaryDirectory() as tempDir:
 			assert 0 == len(os.listdir(tempDir)), "Directory not empty"
@@ -66,7 +66,7 @@ def testCreatingArchive():
 			configDir = os.path.join(backendDir, 'config')
 			os.mkdir(configDir)
 
-			sourceBackendDir = os.path.join(os.path.dirname(__file__), 'data', 'backends')
+			sourceBackendDir = os.path.join(dist_data_path, 'backends')
 			sourceBackendDir = os.path.normpath(sourceBackendDir)
 			fakeBackendDir = os.path.join(backendDir, 'backends')
 

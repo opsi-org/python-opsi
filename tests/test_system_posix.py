@@ -62,11 +62,8 @@ def testGetNetworkInterfaces():
 	Posix.getNetworkInterfaces()
 
 
-def testReadingDHCPLeasesFile():
-	leasesFile = os.path.join(
-		os.path.dirname(__file__),
-		'data', 'system', 'posix', 'dhclient.leases'
-	)
+def testReadingDHCPLeasesFile(test_data_path):
+	leasesFile = os.path.join(test_data_path, 'system', 'posix', 'dhclient.leases')
 	assert os.path.exists(leasesFile)
 
 	dhcpConfig = Posix.getDHCPResult('eth0', leasesFile)

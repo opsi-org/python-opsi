@@ -70,11 +70,8 @@ def testListingLocalPackages(packageUpdaterClass):
 
 
 @pytest.fixture
-def exampleConfigPath():
-	filePath = os.path.join(
-		os.path.dirname(__file__), 'data', 'util', 'task',
-		'updatePackages', 'example_updater.conf'
-	)
+def exampleConfigPath(test_data_path):
+	filePath = os.path.join(test_data_path, 'util', 'task', 'updatePackages', 'example_updater.conf')
 	with createTemporaryTestfile(filePath) as newPath:
 		yield newPath
 
@@ -149,11 +146,9 @@ def patchConfigFile(filename, **values):
 
 
 def copyExampleRepoConfigs(targetDir):
+	from conftest import TEST_DATA_PATH
 	for filename in ('experimental.repo', ):
-		filePath = os.path.join(
-			os.path.dirname(__file__), 'data', 'util', 'task',
-			'updatePackages', filename
-		)
+		filePath = os.path.join(TEST_DATA_PATH, 'util', 'task', 'updatePackages', filename)
 		shutil.copy(filePath, targetDir)
 
 
@@ -161,11 +156,8 @@ def copyExampleRepoConfigs(targetDir):
 	params=['apachelisting.html'],
 	ids=['apache']
 )
-def repositoryListingPage(request):
-	filePath = os.path.join(
-		os.path.dirname(__file__), 'data', 'util', 'task',
-		'updatePackages', request.param
-	)
+def repositoryListingPage(test_data_path, request):
+	filePath = os.path.join(test_data_path, 'util', 'task', 'updatePackages', request.param)
 
 	with open(filePath) as exampleFile:
 		return exampleFile.read()

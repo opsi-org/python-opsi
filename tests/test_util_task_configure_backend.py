@@ -19,9 +19,9 @@ from .helpers import createTemporaryTestfile, mock
 
 
 @pytest.fixture
-def exampleMySQLBackendConfig():
+def exampleMySQLBackendConfig(dist_data_path):
 	templateFile = os.path.join(
-		os.path.dirname(__file__), 'data', 'backends', 'mysql.conf'
+		dist_data_path, 'backends', 'mysql.conf'
 	)
 
 	with createTemporaryTestfile(templateFile) as fileName:
@@ -70,8 +70,8 @@ def testUpdatingTestConfigFile(exampleMySQLBackendConfig):
 		assert key in config, '{0} should be in {1}'.format(key, config)
 
 
-def testReadingWindowsDomainFromSambaConfig():
-	testConfig = os.path.join(os.path.dirname(__file__), 'data', 'util', 'task', 'smb.conf')
+def testReadingWindowsDomainFromSambaConfig(test_data_path):
+	testConfig = os.path.join(test_data_path, 'util', 'task', 'smb.conf')
 	domain = confData.readWindowsDomainFromSambaConfig(testConfig)
 
 	assert 'WWWORK' == domain
@@ -92,8 +92,8 @@ def testReadingWindowsDomainFromSambaConfig():
 	'opsiclientd.event_user_login.active',
 	'opsiclientd.event_user_login.action_processor_command',
 ])
-def testConfigureBackendAddsMissingEntries(extendedConfigDataBackend, configId):
-	sambaTestConfig = os.path.join(os.path.dirname(__file__), 'data', 'util', 'task', 'smb.conf')
+def testConfigureBackendAddsMissingEntries(test_data_path, extendedConfigDataBackend, configId):
+	sambaTestConfig = os.path.join(test_data_path, 'util', 'task', 'smb.conf')
 	confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
 	configIdents = set(extendedConfigDataBackend.config_getIdents(returnType='unicode'))
@@ -101,7 +101,7 @@ def testConfigureBackendAddsMissingEntries(extendedConfigDataBackend, configId):
 	assert configId in configIdents
 
 
-def testAddingDynamicClientConfigDepotDrive(extendedConfigDataBackend):
+def testAddingDynamicClientConfigDepotDrive(test_data_path, extendedConfigDataBackend):
 	"""
 	'dynamic' should be a possible value in 'clientconfig.depot.drive'.
 
@@ -123,18 +123,18 @@ def testAddingDynamicClientConfigDepotDrive(extendedConfigDataBackend):
 	)
 	extendedConfigDataBackend.config_createObjects([oldConfig])
 
-	sambaTestConfig = os.path.join(os.path.dirname(__file__), 'data', 'util', 'task', 'smb.conf')
+	sambaTestConfig = os.path.join(test_data_path, 'util', 'task', 'smb.conf')
 	confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
 	config = extendedConfigDataBackend.config_getObjects(id='clientconfig.depot.drive')[0]
 	assert 'dynamic' in config.possibleValues
 
 
-def testAddingDynamicClientConfigDepotDriveKeepsOldDefault(extendedConfigDataBackend):
+def testAddingDynamicClientConfigDepotDriveKeepsOldDefault(test_data_path, extendedConfigDataBackend):
 	"""
 	Adding the new property should keep the old defaults.
 	"""
-	sambaTestConfig = os.path.join(os.path.dirname(__file__), 'data', 'util', 'task', 'smb.conf')
+	sambaTestConfig = os.path.join(test_data_path, 'util', 'task', 'smb.conf')
 	confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
 	extendedConfigDataBackend.config_delete(id=['clientconfig.depot.drive'])
@@ -152,7 +152,7 @@ def testAddingDynamicClientConfigDepotDriveKeepsOldDefault(extendedConfigDataBac
 	)
 	extendedConfigDataBackend.config_createObjects([oldConfig])
 
-	sambaTestConfig = os.path.join(os.path.dirname(__file__), 'data', 'util', 'task', 'smb.conf')
+	sambaTestConfig = os.path.join(test_data_path, 'util', 'task', 'smb.conf')
 	confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
 	config = extendedConfigDataBackend.config_getObjects(id='clientconfig.depot.drive')[0]
@@ -187,10 +187,10 @@ def testAddingInstallByShutdownConfig(extendedConfigDataBackend):
 
 
 @pytest.mark.parametrize("useSamba", [True, False])
-def testAddingClientconfigDepotUser(extendedConfigDataBackend, useSamba):
+def testAddingClientconfigDepotUser(test_data_path, extendedConfigDataBackend, useSamba):
 	sambaTestConfig = "/none"
 	if useSamba:
-		sambaTestConfig = os.path.join(os.path.dirname(__file__), 'data', 'util', 'task', 'smb.conf')
+		sambaTestConfig = os.path.join(test_data_path, 'util', 'task', 'smb.conf')
 
 	confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
@@ -206,8 +206,8 @@ def testAddingClientconfigDepotUser(extendedConfigDataBackend, useSamba):
 		assert 'pcpatch' in defaultValues
 
 
-def testAddingConfigsBasedOnConfigServer(extendedConfigDataBackend):
-	sambaTestConfig = os.path.join(os.path.dirname(__file__), 'data', 'util', 'task', 'smb.conf')
+def testAddingConfigsBasedOnConfigServer(test_data_path, extendedConfigDataBackend):
+	sambaTestConfig = os.path.join(test_data_path, 'util', 'task', 'smb.conf')
 	configServer = getConfigServer()
 	configServer.ipAddress = '12.34.56.78'
 
@@ -235,8 +235,8 @@ def testAddingConfigsBasedOnConfigServer(extendedConfigDataBackend):
 	assert depotConfig.editable
 
 
-def testAddingConfigBasedOnConfigServerFailsIfServerMissesIP(extendedConfigDataBackend):
-	sambaTestConfig = os.path.join(os.path.dirname(__file__), 'data', 'util', 'task', 'smb.conf')
+def testAddingConfigBasedOnConfigServerFailsIfServerMissesIP(test_data_path, extendedConfigDataBackend):
+	sambaTestConfig = os.path.join(test_data_path, 'util', 'task', 'smb.conf')
 	configServer = getConfigServer()
 	configServer.ipAddress = None
 
@@ -244,8 +244,8 @@ def testAddingConfigBasedOnConfigServerFailsIfServerMissesIP(extendedConfigDataB
 		confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig, configServer=configServer)
 
 
-def testConfigsAreOnlyAddedOnce(extendedConfigDataBackend):
-	sambaTestConfig = os.path.join(os.path.dirname(__file__), 'data', 'util', 'task', 'smb.conf')
+def testConfigsAreOnlyAddedOnce(test_data_path, extendedConfigDataBackend):
+	sambaTestConfig = os.path.join(test_data_path, 'util', 'task', 'smb.conf')
 	confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
 	configIdentsFirst = extendedConfigDataBackend.config_getIdents(returnType='unicode')
