@@ -14,6 +14,8 @@ import codecs
 import tempfile
 import psutil
 
+from opsicommon.logging import logger
+
 from OPSI.Types import forceUnicode, forceFilename
 from OPSI.System import Posix
 from OPSI.System.Posix import (
@@ -35,7 +37,6 @@ from OPSI.System.Posix import (
 	terminateProcess, umount, which
 )
 
-from opsicommon.logging import logger
 
 __all__ = (
 	'CommandNotFoundException',
@@ -174,7 +175,7 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 	fs = ""
 	stdin_data = b""
 
-	tmpFiles = []
+	tmp_files = []
 	if dev.lower().startswith(('smb://', 'cifs://')):
 		match = re.search(r'^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
@@ -192,7 +193,7 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 			tf = tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="iso-8859-15")  # pylint: disable=consider-using-with
 			tf.write(f"username={options['username']}\npassword={options['password']}\n")
 			tf.close()
-			tmpFiles.append(tf.name)
+			tmp_files.append(tf.name)
 			options['credentials'] = tf.name
 
 			try:
@@ -220,14 +221,25 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 		if 'password' not in options:
 			options['password'] = ""
 
-		tf = tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8")  # pylint: disable=consider-using-with
-		conf = "n_cookies 1\ncache_size 0\ntable_size 16384\nuse_locks 0\n"
-		if options.get('ca_cert_file'):
-			conf += f"trust_ca_cert {os.path.abspath(options['ca_cert_file'])}\n"
-		tf.write(conf)
-		tf.close()
-		tmpFiles.append(tf.name)
-		options['conf'] = tf.name
+		with tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8") as conf_file:
+			tmp_files.append(conf_file.name)
+			options['conf'] = conf_file.name
+			conf_file.write("n_cookies 1\ncache_size 0\ntable_size 16384\nuse_locks 0\n")
+			if options.get('ca_cert_file'):
+				# ca_cert_file can contain multiple certficates
+				# Use first certificate only, because davfs2 will fail otherwise
+				ca_cert_file = os.path.abspath(options['ca_cert_file'])
+				if not os.path.exists(ca_cert_file):
+					raise RuntimeError(f"ca_cert_file {ca_cert_file} not found")
+
+				with open(ca_cert_file, "r", encoding="utf-8") as infile:
+					with tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8") as tmp_cert_file:
+						conf_file.write(f"trust_ca_cert {tmp_cert_file}\n")
+						tmp_files.append(tmp_cert_file.name)
+						for line in infile.readlines():
+							tmp_cert_file.write(line)
+							if "-END CERTIFICATE-" in line:
+								break
 
 		# Username, Password, Accept certificate for this session? [y,N]
 		accept_cert = 'n' if options.get("verify_server_cert") else 'y'
@@ -245,20 +257,20 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 	else:
 		raise ValueError(f"Cannot mount unknown fs type '{dev}'")
 
-	mountOptions = []
+	mount_options = []
 	for (key, value) in options.items():
 		if key in ("trust_ca_cert", "ca_cert_file", "verify_server_cert"):
 			continue
 		if value:
-			mountOptions.append(f"{key}={value}")
+			mount_options.append(f"{key}={value}")
 		else:
-			mountOptions.append(key)
+			mount_options.append(key)
 
 	try:
 		while True:
 			try:
-				if mountOptions:
-					options = (','.join(mountOptions)).replace('"', '\\"')
+				if mount_options:
+					options = (','.join(mount_options)).replace('"', '\\"')
 					optString = f'-o "{options}"'
 				else:
 					optString = ''
@@ -267,13 +279,13 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 				execute(f"{which('mount')} {fs} {optString} {dev} {mountpoint}", env=proc_env, stdin_data=stdin_data)
 				break
 			except Exception as err:  # pylint: disable=broad-except
-				if fs == "-t cifs" and "vers=2.0" not in mountOptions and "error(95)" in str(err):
+				if fs == "-t cifs" and "vers=2.0" not in mount_options and "error(95)" in str(err):
 					logger.warning("Failed to mount '%s': %s, retrying with option vers=2.0", dev, err)
-					mountOptions.append("vers=2.0")
+					mount_options.append("vers=2.0")
 				else:
 					logger.error("Failed to mount '%s': %s", dev, err)
 					raise RuntimeError(f"Failed to mount '{dev}': {err}") from err
 	finally:
-		for file in tmpFiles:
+		for file in tmp_files:
 			os.remove(file)
 Posix.mount = mount
