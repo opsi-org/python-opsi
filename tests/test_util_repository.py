@@ -114,7 +114,7 @@ def test_limit_download(tmpdir, repo_type, dynamic):
 	#from opsicommon.logging import logging_config
 	#logging_config(stderr_level=8)
 
-	data = "o" * 3_000_000
+	data = "o" * 2_000_000
 	limit = 100_000
 
 	src_dir = tmpdir.mkdir("src")
@@ -143,7 +143,7 @@ def test_limit_download(tmpdir, repo_type, dynamic):
 		bandwidth = int(repo.speed_limiter._average_speed / traffic_ratio)
 		if repo._bytesTransfered >= len(data) * 0.8:
 			if simulate_other_traffic:
-				assert (repo.speed_limiter._dynamic_bandwidth_limit / bandwidth) <= repo.speed_limiter._dynamic_bandwidth_limit_rate * 1.09
+				assert (repo.speed_limiter._dynamic_bandwidth_limit / bandwidth) <= repo.speed_limiter._dynamic_bandwidth_limit_rate * 1.3
 			else:
 				assert repo.speed_limiter._dynamic_bandwidth_limit == 0
 		return bandwidth
