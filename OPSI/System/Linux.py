@@ -223,23 +223,24 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 
 		with tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8") as conf_file:
 			tmp_files.append(conf_file.name)
+			os.chmod(conf_file.name, 0o644)
 			options['conf'] = conf_file.name
 			conf_file.write("n_cookies 1\ncache_size 0\ntable_size 16384\nuse_locks 0\n")
 			if options.get('ca_cert_file'):
-				# ca_cert_file can contain multiple certficates
-				# Use first certificate only, because davfs2 will fail otherwise
 				ca_cert_file = os.path.abspath(options['ca_cert_file'])
 				if not os.path.exists(ca_cert_file):
 					raise RuntimeError(f"ca_cert_file {ca_cert_file} not found")
 
+				# Make sure ca file is readable by davfs2
 				with open(ca_cert_file, "r", encoding="utf-8") as infile:
 					with tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8") as tmp_cert_file:
-						conf_file.write(f"trust_ca_cert {tmp_cert_file}\n")
 						tmp_files.append(tmp_cert_file.name)
+						os.chmod(tmp_cert_file.name, 0o644)
+						conf_file.write(f"trust_ca_cert {tmp_cert_file.name}\n")
 						for line in infile.readlines():
 							tmp_cert_file.write(line)
-							if "-END CERTIFICATE-" in line:
-								break
+							#if "-END CERTIFICATE-" in line:
+							#	break
 
 		# Username, Password, Accept certificate for this session? [y,N]
 		accept_cert = 'n' if options.get("verify_server_cert") else 'y'
