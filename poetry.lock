@@ -954,7 +954,7 @@ reference = "uibpypi"
 
 [[package]]
 name = "python-opsi-common"
-version = "4.2.0.263"
+version = "4.2.0.264"
 description = "The opsi python common library"
 category = "main"
 optional = false
@@ -968,6 +968,7 @@ msgpack = ">=1.0.2,<2.0.0"
 psutil = ">=5.8.0,<6.0.0"
 pycryptodome = ">=3.10.1,<4.0.0"
 pyopenssl = ">=21.0.0,<22.0.0"
+pywin32 = {version = ">=227,<228", markers = "sys_platform == \"win32\""}
 requests = ">=2.26.0,<3.0.0"
 
 [package.source]
@@ -1912,8 +1913,8 @@ python-gettext = [
     {file = "python-gettext-4.0.tar.gz", hash = "sha256:626b501a51ac892fc3460cf550e60dca121f544eaa46eb69c90ce4682fc7ec02"},
 ]
 python-opsi-common = [
-    {file = "python-opsi-common-4.2.0.263.tar.gz", hash = "sha256:9b47802c2ba921853f9944e9791819db695d45bc34411bd4dad1d3809e70bf3b"},
-    {file = "python_opsi_common-4.2.0.263-py3-none-any.whl", hash = "sha256:751c2123f4a511a4a4de410c95f23873a78cff1fdf36e54df94c2285e0cf27aa"},
+    {file = "python-opsi-common-4.2.0.264.tar.gz", hash = "sha256:37c570bfd05fc1fa5871586b0e74c955cd24c8256ab5624527e751de1f117e03"},
+    {file = "python_opsi_common-4.2.0.264-py3-none-any.whl", hash = "sha256:23381482ac2a0e54626f6f261c8adf511f3304cb5638228f5896150ea4559f53"},
 ]
 python-pam = [
     {file = "python-pam-1.8.4.tar.gz", hash = "sha256:c856d9c89fedb33951dd8a95727ae57c6887b02d065bbdffd2fd9dbc0183909b"},

@@ -22,6 +22,7 @@ from requests.adapters import HTTPAdapter
 from requests.packages import urllib3
 
 from opsicommon.logging import logger, secret_filter
+from opsicommon.utils import prepare_proxy_environment
 
 from OPSI import __version__
 from OPSI.Exceptions import RepositoryError
@@ -975,22 +976,8 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 			"X-opsi-session-lifetime": str(self._session_lifetime)
 		})
 
-		if self._proxy_url:
-			# Use a proxy
-			if self._proxy_url.lower() != "system":
-				self._session.proxies.update({
-					"http": self._proxy_url,
-					"https": self._proxy_url,
-				})
-				for key in ("http_proxy", "https_proxy"):
-					if key in os.environ:
-						del os.environ[key]
-			no_proxy = [x.strip() for x in os.environ.get("no_proxy", "").split(",") if x.strip()]
-			no_proxy.extend(["localhost", "localhost:4447", "127.0.0.1", "127.0.0.1:4447", "ip6-localhost", "::1"])
-			os.environ["no_proxy"] = ",".join(set(no_proxy))
-		else:
-			# Do not use a proxy
-			os.environ['no_proxy'] = '*'
+		no_proxy_addresses = ["localhost", "127.0.0.1", "ip6-localhost", "::1"]
+		self._session = prepare_proxy_environment(url, self._proxy_url, no_proxy_addresses=no_proxy_addresses, session=self._session)
 
 		if self._verify_server_cert:
 			self._session.verify = self._ca_cert_file or True
