@@ -164,7 +164,8 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			autocommit=False,
 			autoflush=False
 		)
-		self.Session = scoped_session(self.session_factory)  # pylint: disable=invalid-name
+		#self.Session = scoped_session(self.session_factory)  # pylint: disable=invalid-name
+		self.Session = self.session_factory  # pylint: disable=invalid-name
 
 		# Test connection
 		with self.session() as session:
