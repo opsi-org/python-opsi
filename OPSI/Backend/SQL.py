@@ -28,6 +28,8 @@ except (ImportError, OSError):
 	from Cryptodome.Hash import MD5
 	from Cryptodome.Signature import pkcs1_15
 
+from opsicommon.logging import logger
+
 from OPSI.Backend.Base import BackendModificationListener, ConfigDataBackend
 from OPSI.Exceptions import (
 	BackendConfigurationError, BackendMissingDataError,
@@ -50,7 +52,6 @@ from OPSI.Types import (
 )
 from OPSI.Util import timestamp, getPublicKey
 
-from opsicommon.logging import logger
 
 __all__ = (
 	'timeQuery', 'onlyAllowSelect', 'SQL', 'SQLBackend',

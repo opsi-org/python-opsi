@@ -12,12 +12,13 @@ import threading
 
 from sqlalchemy import create_engine
 from sqlalchemy.event import listen
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import sessionmaker
+
+from opsicommon.logging import logger
 
 from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 from OPSI.Types import forceFilename
 
-from opsicommon.logging import logger
 
 __all__ = ('SQLite', 'SQLiteBackend', 'SQLiteObjectBackendModificationTracker')
 
@@ -108,7 +109,7 @@ class SQLite(SQL):
 		for i in self.getSet(session, 'SELECT name FROM sqlite_master WHERE type = "table";'):
 			tableName = tuple(i.values())[0].upper()
 			logger.trace(" [ %s ]", tableName)
-			fields = [j['name'] for j in self.getSet(session, 'PRAGMA table_info(`%s`);' % tableName)]
+			fields = [j['name'] for j in self.getSet(session, f'PRAGMA table_info(`{tableName}`);')]
 			tables[tableName] = fields
 			logger.trace("Fields in %s: %s", tableName, fields)
 
@@ -162,7 +163,7 @@ class SQLiteBackend(SQLBackend):
 			def finishSQLQuery(tableExists, tableName):
 				if tableExists:
 					return ' ;\n'
-				return '\n) %s;\n' % self._sql.getTableCreationOptions(tableName)
+				return f'\n) {self._sql.getTableCreationOptions(tableName)};\n'
 
 			def getSQLStatements():  # pylint: disable=too-many-branches,too-many-statements
 				for (hwClass, values) in self._auditHardwareConfig.items():  # pylint: disable=too-many-nested-blocks
