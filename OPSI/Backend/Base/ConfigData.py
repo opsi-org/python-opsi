@@ -29,7 +29,7 @@ from OPSI.Exceptions import (
 from OPSI.Types import (
 	forceFilename, forceHostId, forceInt, forceLanguageCode,
 	forceObjectClass, forceObjectClassList, forceObjectId, forceUnicode,
-	forceUnicodeList, forceUnicodeLower
+	forceUnicodeList, forceUnicodeLower, forceBool
 )
 from OPSI.Object import (
 	getPossibleClassAttributes,
@@ -274,6 +274,8 @@ overwrite the log.
 		if not objectId:
 			raise BackendBadValueError(f"Writing {logType} log requires an objectId")
 		objectId = forceObjectId(objectId)
+
+		append = forceBool(append)
 
 		data = data.encode("utf-8", "replace")
 		if len(data) > LOG_SIZE_HARD_LIMIT:
