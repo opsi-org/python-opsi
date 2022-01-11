@@ -16,12 +16,12 @@ import json
 import datetime
 from urllib.parse import quote
 import subprocess
-import requests
 from requests.packages import urllib3
 from OpenSSL.crypto import FILETYPE_PEM, load_certificate
 
 from opsicommon.logging import logger, secret_filter
 from opsicommon.ssl import install_ca
+from opsicommon.utils import prepare_proxy_environment
 
 from OPSI import System
 from OPSI.Backend.BackendManager import BackendManager
@@ -1041,27 +1041,11 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 			return packages
 
 	@contextmanager
-	def makeSession(self, repository):  # pylint: disable=no-self-use
+	def makeSession(self, repository):	# pylint: disable=no-self-use
 		logger.info("opening session for repository '%s' (%s)", repository.name, repository.baseUrl)
 		try:
-			session = requests.session()
-			if repository.proxy:
-				# Use a proxy
-				if repository.proxy.lower() != "system":
-					session.proxies.update({
-						"http": repository.proxy,
-						"https": repository.proxy,
-					})
-					for key in ("http_proxy", "https_proxy"):
-						if key in os.environ:
-							del os.environ[key]
-				no_proxy = [x.strip() for x in os.environ.get("no_proxy", "").split(",") if x.strip()]
-				if no_proxy != ["*"]:
-					no_proxy.extend(["localhost", "localhost:4447", "127.0.0.1", "127.0.0.1:4447", "ip6-localhost", "::1"])
-				os.environ["no_proxy"] = ",".join(set(no_proxy))
-			else:
-				# Do not use a proxy
-				os.environ['no_proxy'] = '*'
+			no_proxy_addresses = ["localhost", "127.0.0.1", "ip6-localhost", "::1"]
+			session = prepare_proxy_environment(repository.baseUrl, repository.proxy, no_proxy_addresses=no_proxy_addresses)
 
 			if os.path.exists(repository.authcertfile) and os.path.exists(repository.authkeyfile):
 				logger.debug("setting session.cert to %s %s", repository.authcertfile, repository.authkeyfile)

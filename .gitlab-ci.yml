@@ -19,7 +19,8 @@ test:pylint-pytest:
     # Installing opsi testmodules file
     mkdir -p /etc/opsi
     mkdir -p /var/log/opsi
-    echo "${OPSI_TEST_MODULES}" > /etc/opsi/modules
+    #echo "${OPSI_TEST_MODULES}" > /etc/opsi/modules
+    cp tests/data/license/modules /etc/opsi
     cat /etc/opsi/modules
     # cloning opsi-server for data directory
     rm -rf ../opsi-server
