@@ -43,7 +43,7 @@ from OPSI.Object import (
 	mandatoryConstructorArgs,
 	BaseObject, Object, OpsiClient, OpsiDepotserver
 )
-from OPSI.Types import forceBool, forceList, forceUnicodeList
+from OPSI.Types import forceBool, forceList, forceUnicodeList, forceUnicodeLowerList
 from OPSI.Util import getPublicKey
 from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
 
@@ -376,13 +376,13 @@ class BackendAccessControl:
 			setattr(self, methodName, types.MethodType(new_function, self))
 
 	def _isMemberOfGroup(self, ids):
-		for groupId in forceUnicodeList(ids):
+		for groupId in forceUnicodeLowerList(ids):
 			if groupId in self.user_store.userGroups:
 				return True
 		return False
 
 	def _isUser(self, ids):
-		return forceBool(self.user_store.username in forceUnicodeList(ids))
+		return self.user_store.username in forceUnicodeLowerList(ids)
 
 	def _isOpsiDepotserver(self, ids=None):
 		if not self.user_store.host or not isinstance(self.user_store.host, OpsiDepotserver):
@@ -390,7 +390,7 @@ class BackendAccessControl:
 		if not ids:
 			return True
 
-		for hostId in forceUnicodeList(ids or []):
+		for hostId in forceUnicodeLowerList(ids or []):
 			if hostId == self.user_store.host.id:
 				return True
 		return False
@@ -402,7 +402,7 @@ class BackendAccessControl:
 		if not ids:
 			return True
 
-		return forceBool(self.user_store.host.id in forceUnicodeList(ids or []))
+		return forceBool(self.user_store.host.id in forceUnicodeLowerList(ids or []))
 
 	def _isSelf(self, **params):
 		if not params:
