@@ -9,10 +9,10 @@ LDAP authentication
 from typing import Set
 import ldap3
 
+from opsicommon.logging import logger
+
 from OPSI.Backend.Manager.Authentication import AuthenticationModule
 from OPSI.Exceptions import BackendAuthenticationError
-
-from opsicommon.logging import logger
 
 class LDAPAuthentication(AuthenticationModule):
 	def __init__(self, ldap_url: str, bind_user: str = None, group_filter: str = None):
@@ -96,7 +96,7 @@ class LDAPAuthentication(AuthenticationModule):
 		group_dns = []
 		for uf in [
 			f"(&(objectclass=user)(sAMAccountName={username}))",
-			f"((objectclass=posixAccount)(uid={username}))"
+			f"(&(objectclass=posixAccount)(uid={username}))"
 		]:
 			try:
 				logger.debug("Searching user in ldap base=%s, filter=%s", self._uri["base"], uf)
@@ -165,4 +165,4 @@ class LDAPAuthentication(AuthenticationModule):
 						if member.lower() == username.lower():
 							groupnames.add(group_name)
 							break
-		return groupnames
+		return {g.lower() for g in groupnames}

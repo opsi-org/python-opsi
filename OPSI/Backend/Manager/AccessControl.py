@@ -25,6 +25,8 @@ except (ImportError, OSError):
 	from Cryptodome.Hash import MD5
 	from Cryptodome.Signature import pkcs1_15
 
+from opsicommon.logging import logger
+
 from OPSI.Backend.Base import (
 	ConfigDataBackend, ExtendedConfigDataBackend, getArgAndCallString
 )
@@ -45,7 +47,6 @@ from OPSI.Types import forceBool, forceList, forceUnicodeList
 from OPSI.Util import getPublicKey
 from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
 
-from opsicommon.logging import logger
 
 __all__ = ('BackendAccessControl',)
 
@@ -310,8 +311,11 @@ class BackendAccessControl:
 				self.user_store.isReadOnly = auth_module.user_is_read_only(self.user_store.username, set(forceGroups) if forceGroups else None)
 
 				logger.info(
-					"Authentication successful for user '%s', groups '%s'",
-					self.user_store.username, ','.join(self.user_store.userGroups)
+					"Authentication successful for user '%s', groups '%s', "
+					"admin group is '%s', admin: %s, readonly groups %s, readonly: %s",
+					self.user_store.username, ','.join(self.user_store.userGroups),
+					auth_module.get_admin_groupname(), self.user_store.isAdmin,
+					auth_module.get_read_only_groupnames(),	self.user_store.isReadOnly
 				)
 			else:
 				raise BackendAuthenticationError(f"Invalid auth type {self.auth_type}")

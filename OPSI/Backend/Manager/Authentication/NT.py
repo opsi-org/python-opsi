@@ -11,11 +11,11 @@ from typing import Set
 import win32net  # pylint: disable=import-error
 import win32security  # pylint: disable=import-error
 
+from opsicommon.logging import logger
+
 from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Backend.Manager.Authentication import AuthenticationModule
 from OPSI.Exceptions import BackendAuthenticationError
-
-from opsicommon.logging import logger
 
 
 class NTAuthentication(AuthenticationModule):
@@ -84,4 +84,4 @@ class NTAuthentication(AuthenticationModule):
 			if gresume == 0:
 				break
 
-		return collected_groupnames
+		return {g.lower() for g in collected_groupnames}

@@ -12,12 +12,11 @@ import pwd
 import os
 import pam
 
+from opsicommon.logging import logger
+
 from OPSI.Backend.Manager.Authentication import AuthenticationModule
 from OPSI.Exceptions import BackendAuthenticationError
 from OPSI.System.Posix import isRHEL, isCentOS, isOpenSUSE, isSLES
-
-from opsicommon.logging import logger
-
 
 class PAMAuthentication(AuthenticationModule):
 	def __init__(self, pam_service: str = None):
@@ -79,4 +78,4 @@ class PAMAuthentication(AuthenticationModule):
 			except KeyError as err:
 				logger.warning(err)
 		logger.debug("User %s is member of groups: %s", username, groups)
-		return groups
+		return {g.lower() for g in groups}

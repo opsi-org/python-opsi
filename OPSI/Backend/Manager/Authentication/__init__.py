@@ -6,14 +6,15 @@
 Authentication helper.
 """
 
-from typing import Set, List
-import copy
+from typing import Set
+
+from opsicommon.logging import logger
 
 from OPSI.Exceptions import BackendAuthenticationError
 from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Util.File.Opsi import OpsiConfFile
 
-from opsicommon.logging import logger
+
 
 class AuthenticationModule:
 	def __init__(self):
