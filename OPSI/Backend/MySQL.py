@@ -93,8 +93,8 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 				self._connectionPoolSize = forceInt(value)
 			elif option == 'connectionpoolmaxoverflow':
 				self._connectionPoolMaxOverflow = forceInt(value)
-			#elif option == 'connectionpooltimeout':
-			#	self._connectionPoolTimeout = forceInt(value)
+			# elif option == 'connectionpooltimeout':
+			# self._connectionPoolTimeout = forceInt(value)
 			elif option == 'connectionpoolrecycling':
 				self._connectionPoolRecyclingSeconds = forceInt(value)
 
@@ -125,7 +125,7 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			);
 		""")
 		conn.execute("SET SESSION group_concat_max_len = 1000000;")
-		#conn.execute("SHOW VARIABLES LIKE 'sql_mode';").fetchone()
+		# conn.execute("SHOW VARIABLES LIKE 'sql_mode';").fetchone()
 
 	def init_connection(self):
 		password = quote(self._password)
@@ -150,7 +150,7 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 
 		self.engine = create_engine(
 			uri,
-			pool_pre_ping=True, # auto reconnect
+			pool_pre_ping=True,  # auto reconnect
 			encoding=self._databaseCharset,
 			pool_size=self._connectionPoolSize,
 			max_overflow=self._connectionPoolMaxOverflow,
@@ -165,7 +165,6 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			autoflush=False
 		)
 		self.Session = scoped_session(self.session_factory)  # pylint: disable=invalid-name
-		#self.Session = self.session_factory  # pylint: disable=invalid-name
 
 		# Test connection
 		with self.session() as session:

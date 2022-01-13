@@ -100,9 +100,8 @@ class SQL:  # pylint: disable=too-many-public-methods
 	ESCAPED_ASTERISK = "\\*"
 	ESCAPED_COLON = "\\:"
 
-
 	def __init__(self, **kwargs):  # pylint: disable=unused-argument
-		self.Session = lambda : None  # pylint: disable=invalid-name
+		self.Session = lambda: None  # pylint: disable=invalid-name
 		self.session_factory = None
 		self.engine = None
 
@@ -124,12 +123,12 @@ class SQL:  # pylint: disable=too-many-public-methods
 			yield session
 			if commit:
 				session.commit()
-		except:
+		except Exception:  # pylint: disable=broad-except
 			session.rollback()
 			raise
 		finally:
 			self.Session.remove()
-			#session.close()
+			# session.close()
 
 	def connect(self, cursorType=None):  # pylint: disable=no-self-use,unused-argument
 		logger.warning("Method 'connect' is deprecated")
@@ -149,7 +148,7 @@ class SQL:  # pylint: disable=too-many-public-methods
 		result = session.execute(query).fetchall()  # pylint: disable=no-member
 		if not result:
 			return []
-		return [ dict(row) for row in result if row is not None ]
+		return [dict(row) for row in result if row is not None]
 
 	def getRows(self, session, query):  # pylint: disable=no-self-use
 		"""
@@ -160,7 +159,7 @@ class SQL:  # pylint: disable=too-many-public-methods
 		result = session.execute(query).fetchall()  # pylint: disable=no-member
 		if not result:
 			return []
-		return [ list(row) for row in result if row is not None ]
+		return [list(row) for row in result if row is not None]
 
 	def getRow(self, session, query):  # pylint: disable=no-self-use
 		"""
@@ -177,8 +176,8 @@ class SQL:  # pylint: disable=too-many-public-methods
 		if not valueHash:
 			raise BackendBadValueError("No values given")
 
-		col_names = [ f"`{col_name}`" for col_name in list(valueHash) ]
-		bind_names = [ f":{col_name}" for col_name in list(valueHash) ]
+		col_names = [f"`{col_name}`" for col_name in list(valueHash)]
+		bind_names = [f":{col_name}" for col_name in list(valueHash)]
 		query = f"INSERT INTO `{table}` ({','.join(col_names)}) VALUES ({','.join(bind_names)})"
 		logger.trace("insert: %s - %s", query, valueHash)
 		result = session.execute(query, valueHash)  # pylint: disable=no-member
@@ -312,7 +311,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 			self._trackModification('delete', obj)
 
 
-class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
+class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 	_OPERATOR_IN_CONDITION_PATTERN = re.compile(r'^\s*([>=<]+)\s*(\d\.?\d*)')
 
@@ -365,8 +364,10 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 						key = f"`{table}`.`{key}`"
 					else:
 						key = f"`{key}`"
+
 					def escaped_string(value):
 						return f"'{self._sql.escapeApostrophe(self._sql.escapeBackslash(self._sql.escapeColon(value)))}'"
+
 					yield f"{key} in ({','.join([escaped_string(val) for val in values])})"
 				else:
 					yield ' or '.join(processValues(key, values, table))
@@ -524,7 +525,7 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 
 		return _hash
 
-	def _objectAttributeToDatabaseAttribute(self, objectClass, attribute):# pylint: disable=too-many-return-statements,no-self-use
+	def _objectAttributeToDatabaseAttribute(self, objectClass, attribute):  # pylint: disable=too-many-return-statements,no-self-use
 		if attribute == 'id':
 			# A class is considered a subclass of itself
 			if issubclass(objectClass, Product):
@@ -1240,7 +1241,7 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 					'configId': data['configId'],
 					'value': value,
 					'isDefault': (value in defaultValues)
-					})
+				})
 
 	def config_updateObject(self, config):
 		self._requiresEnabledSQLBackendModule()
@@ -1275,8 +1276,8 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 			try:
 				if filter['defaultValues']:
 					configIds = filter.get('configId')
-					filter['configId'] = [res['configId'] for res in
-						self._sql.getSet(
+					filter['configId'] = [
+						res['configId'] for res in self._sql.getSet(
 							session,
 							self._createQuery(
 								'CONFIG_VALUE',
@@ -1296,8 +1297,8 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 			try:
 				if filter['possibleValues']:
 					configIds = filter.get('configId')
-					filter['configId'] = [res['configId'] for res in
-						self._sql.getSet(
+					filter['configId'] = [
+						res['configId'] for res in self._sql.getSet(
 							session,
 							self._createQuery(
 								'CONFIG_VALUE',
@@ -2061,7 +2062,7 @@ class SQLBackend(ConfigDataBackend):# pylint: disable=too-many-public-methods
 				logger.error("Failed to verify modules signature")
 		else:
 			h_int = int.from_bytes(md5(data.encode()).digest(), "big")
-			s_int = publicKey._encrypt(int(modules["signature"]))# pylint: disable=protected-access
+			s_int = publicKey._encrypt(int(modules["signature"]))  # pylint: disable=protected-access
 			verified = h_int == s_int
 
 		if not verified:

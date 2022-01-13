@@ -58,7 +58,8 @@ __all__ = (
 	'terminateProcess', 'umount', 'which'
 )
 
-def getActiveSessionIds(protocol = None, states = None):  # pylint: disable=unused-argument
+
+def getActiveSessionIds(protocol=None, states=None):  # pylint: disable=unused-argument
 	"""
 	Getting the IDs of the currently active sessions.
 
@@ -87,7 +88,10 @@ def getActiveSessionIds(protocol = None, states = None):  # pylint: disable=unus
 			logger.debug(err)
 	sessions = sorted(sessions, key=lambda s: int(re.sub(r"\D", "", s)))
 	return sessions
+
+
 Posix.getActiveSessionIds = getActiveSessionIds
+
 
 def getSessionInformation(sessionId):
 	info = {
@@ -108,7 +112,9 @@ def getSessionInformation(sessionId):
 		info["DomainName"] = socket.gethostname().upper()
 	return info
 
+
 Posix.getSessionInformation = getSessionInformation
+
 
 def grant_session_access(username: str, session_id: str):
 	session_username = None
@@ -149,9 +155,11 @@ def grant_session_access(username: str, session_id: str):
 	)
 	out = process.stdout.decode("utf-8", "replace") if process.stdout else ""
 	logger.debug("xhost output: %s", out)
-
 	return sp_env
+
+
 Posix.grant_session_access = grant_session_access
+
 
 def is_mounted(devOrMountpoint):
 	with codecs.open("/proc/mounts", "r", "utf-8") as file:
@@ -160,7 +168,10 @@ def is_mounted(devOrMountpoint):
 			if devOrMountpoint in (dev, mountpoint):
 				return True
 	return False
+
+
 Posix.is_mounted = is_mounted
+
 
 def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 	dev = forceUnicode(dev)
@@ -239,8 +250,6 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 						conf_file.write(f"trust_ca_cert {tmp_cert_file.name}\n")
 						for line in infile.readlines():
 							tmp_cert_file.write(line)
-							#if "-END CERTIFICATE-" in line:
-							#	break
 
 		# Username, Password, Accept certificate for this session? [y,N]
 		accept_cert = 'n' if options.get("verify_server_cert") else 'y'
@@ -289,4 +298,6 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 	finally:
 		for file in tmp_files:
 			os.remove(file)
+
+
 Posix.mount = mount

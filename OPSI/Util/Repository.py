@@ -87,8 +87,8 @@ def getFileInfosFromDavXML(davxmldata, encoding='utf-8'):  # pylint: disable=unu
 					elif tag == "{DAV:}getcontentlength":
 						if text != "None":
 							info['size'] = int(text)
-					#elif tag == "{DAV:}displayname":
-					#	info['name'] = text
+					# elif tag == "{DAV:}displayname":
+					# info['name'] = text
 
 				# IIS Fix: Remove trailing backslash on file-paths
 				if info['type'] == 'file' and info['path'].endswith("/"):
@@ -111,6 +111,7 @@ class RepositoryHook:
 
 	def error_Repository_copy(self, source, destination, overallProgressSubject, currentProgressSubject, exception):  # pylint: disable=unused-argument,too-many-arguments
 		pass
+
 
 class SpeedLimiter():  # pylint: disable=too-many-instance-attributes
 	_dynamic_bandwidth_threshold_limit = 0.75  # pylint: disable=invalid-name
@@ -389,6 +390,7 @@ class SpeedLimiter():  # pylint: disable=too-many-instance-attributes
 			new_buffer_size = self._max_buffer_size
 		return new_buffer_size
 
+
 class Repository:  # pylint: disable=too-many-instance-attributes
 	DEFAULT_BUFFER_SIZE = 32 * 1000
 
@@ -464,7 +466,8 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 		return self._transfer('out', src, dst, size, progressSubject)
 
 	def _transfer(self, transferDirection, src, dst, size, progressSubject=None):  # pylint: disable=redefined-builtin,too-many-arguments,too-many-branches
-		logger.debug("Transfer %s from %s to %s (size=%s, dynamic bandwidth=%s, max bandwidth=%s)",
+		logger.debug(
+			"Transfer %s from %s to %s (size=%s, dynamic bandwidth=%s, max bandwidth=%s)",
 			transferDirection, src, dst, size, self._dynamicBandwidth, self._maxBandwidth
 		)
 		try:
@@ -919,6 +922,7 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 			timeout = self.timeout
 		return super().send(request, stream, timeout, verify, cert, proxies)
 
+
 class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attributes
 
 	def __init__(self, url, **kwargs):  # pylint: disable=too-many-branches,too-many-statements
@@ -927,7 +931,7 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 		self._application = f"opsi-http-repository/{__version__}"
 		self._ca_cert_file = None
 		self._verify_server_cert = False
-		self._proxy_url = "system" # Use system proxy by default
+		self._proxy_url = "system"  # Use system proxy by default
 		self._username = None
 		self._password = None
 		self._ip_version = "auto"
@@ -1092,7 +1096,7 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 				response.raw.decode_content = False
 				self._transferDown(response.raw, dst, size, progressSubject)
 
-		except Exception as err: # pylint: disable=broad-except
+		except Exception as err:  # pylint: disable=broad-except
 			logger.error(err, exc_info=True)
 			raise RepositoryError(f"Failed to download '{source}' to '{destination}': {err}") from err
 		logger.trace("HTTP download done")

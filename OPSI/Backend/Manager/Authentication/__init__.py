@@ -15,7 +15,6 @@ from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Util.File.Opsi import OpsiConfFile
 
 
-
 class AuthenticationModule:
 	def __init__(self):
 		pass

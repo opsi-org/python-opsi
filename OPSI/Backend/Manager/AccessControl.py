@@ -315,14 +315,13 @@ class BackendAccessControl:
 					"admin group is '%s', admin: %s, readonly groups %s, readonly: %s",
 					self.user_store.username, ','.join(self.user_store.userGroups),
 					auth_module.get_admin_groupname(), self.user_store.isAdmin,
-					auth_module.get_read_only_groupnames(),	self.user_store.isReadOnly
+					auth_module.get_read_only_groupnames(), self.user_store.isReadOnly
 				)
 			else:
 				raise BackendAuthenticationError(f"Invalid auth type {self.auth_type}")
 		except Exception as err:
 			logger.debug(err, exc_info=True)
 			raise BackendAuthenticationError(f"{err} (auth_type={self.auth_type})") from err
-
 
 	def accessControl_authenticated(self):
 		return self.user_store.authenticated

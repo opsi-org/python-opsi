@@ -5,7 +5,7 @@
 """
 Utilites to handle files specific to opsi.
 """
-  # pylint: disable=too-many-lines
+# pylint: disable=too-many-lines
 
 import bz2
 import collections
@@ -32,7 +32,7 @@ from opsicommon.logging import logger
 import OPSI.System
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import (
-	OpsiBackupBackendNotFound, OpsiBackupFileError,	OpsiBackupFileNotFound
+	OpsiBackupBackendNotFound, OpsiBackupFileError, OpsiBackupFileNotFound
 )
 from OPSI.Object import (
 	BoolProductProperty, LocalbootProduct, NetbootProduct,
@@ -58,6 +58,7 @@ if os.name == 'posix':
 
 
 FileInfo = namedtuple('FileInfo', 'productId version')
+
 
 def parseFilename(filename):
 	"""
@@ -431,7 +432,7 @@ class PackageControlFile(TextFile):
 		self._productProperties = []
 		self._packageDependencies = []
 
-	def parse(self, lines=None): # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+	def parse(self, lines=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		if self._filename.endswith(".yml"):
 			self.parseYaml()
 			self._parsed = True
@@ -611,13 +612,13 @@ class PackageControlFile(TextFile):
 						self._sections[sectionType][-1][option] += '\n'
 					self._sections[sectionType][-1][option] += value.lstrip()
 
-		for (sectionType, secs) in self._sections.items(): # pylint: disable=too-many-nested-blocks
+		for (sectionType, secs) in self._sections.items():  # pylint: disable=too-many-nested-blocks
 			if sectionType == 'changelog':
 				continue
 
 			for i, currentSection in enumerate(secs):
 				for (option, value) in currentSection.items():
-					if ( # pylint: disable=too-many-boolean-expressions
+					if (  # pylint: disable=too-many-boolean-expressions
 						(sectionType == 'product' and option == 'productclasses') or
 						(sectionType == 'package' and option == 'depends') or
 						(sectionType == 'productproperty' and option in ('default', 'values')) or
@@ -745,7 +746,7 @@ class PackageControlFile(TextFile):
 		self._parsed = True
 		return self._sections
 
-	def parseYaml(self): # pylint: disable=too-many-locals
+	def parseYaml(self):  # pylint: disable=too-many-locals
 		yaml = ruyaml.YAML(typ="safe")
 		self.open('r')
 		data_dict = yaml.load(self)
@@ -759,7 +760,7 @@ class PackageControlFile(TextFile):
 		product = None
 		changelog = data_dict.get('changelog')
 		if changelog is None:
-			path = os.path.join( os.path.dirname(self._filename), "changelog.txt" )
+			path = os.path.join(os.path.dirname(self._filename), "changelog.txt")
 			if os.path.exists(path):
 				with codecs.open(path, "r", encoding="utf-8") as file:
 					changelog = file.read()
@@ -773,53 +774,57 @@ class PackageControlFile(TextFile):
 		else:
 			softwareids = data_dict['Product'].get('windowsSoftwareIds', [])
 
-		emptystring_list = ["advice", "description", "setupScript", "uninstallScript", "updateScript",
-							"updateScript", "alwaysScript", "onceScript", "customScript", "userLoginScript"]
+		emptystring_list = [
+			"advice", "description", "setupScript", "uninstallScript", "updateScript",
+			"updateScript", "alwaysScript", "onceScript", "customScript", "userLoginScript"
+		]
 		for key, value in data_dict['Product'].items():
 			if key in emptystring_list and value is None:
 				data_dict['Product'][key] = ""
 
 		if data_dict['Product']['type'] == "NetbootProduct":
-			product = NetbootProduct(	forceProductId(data_dict['Product'].get('id')),
-										forceProductVersion(data_dict['Product'].get('version')),
-										forcePackageVersion(data_dict['Package'].get('version')),
-										name=forceUnicode(data_dict['Product'].get('name')),
-										licenseRequired=forceBool(data_dict['Product'].get('licenseRequired')),
-										setupScript=forceFilename(data_dict['Product'].get('setupScript')),
-										uninstallScript=forceFilename(data_dict['Product'].get('uninstallScript')),
-										updateScript=forceFilename(data_dict['Product'].get('updateScript')),
-										alwaysScript=forceFilename(data_dict['Product'].get('alwaysScript')),
-										onceScript=forceFilename(data_dict['Product'].get('onceScript')),
-										customScript=forceFilename(data_dict['Product'].get('customScript')),
-										#userLoginScript=forceFilename(data_dict['Product'].get('userLoginScript')),
-										priority=forceProductPriority(data_dict['Product'].get('priority')),
-										description=forceUnicode(data_dict['Product'].get('description')),
-										advice=forceUnicode(data_dict['Product'].get('advice')),
-										changelog=changelog,
-										productClassIds=forceUnicodeList(data_dict['Product'].get('productClasses')),
-										windowsSoftwareIds=softwareids,
-										pxeConfigTemplate=forceFilename(data_dict['Product'].get('pxeConfigTemplate'))
+			product = NetbootProduct(
+				forceProductId(data_dict['Product'].get('id')),
+				forceProductVersion(data_dict['Product'].get('version')),
+				forcePackageVersion(data_dict['Package'].get('version')),
+				name=forceUnicode(data_dict['Product'].get('name')),
+				licenseRequired=forceBool(data_dict['Product'].get('licenseRequired')),
+				setupScript=forceFilename(data_dict['Product'].get('setupScript')),
+				uninstallScript=forceFilename(data_dict['Product'].get('uninstallScript')),
+				updateScript=forceFilename(data_dict['Product'].get('updateScript')),
+				alwaysScript=forceFilename(data_dict['Product'].get('alwaysScript')),
+				onceScript=forceFilename(data_dict['Product'].get('onceScript')),
+				customScript=forceFilename(data_dict['Product'].get('customScript')),
+				# userLoginScript=forceFilename(data_dict['Product'].get('userLoginScript')),
+				priority=forceProductPriority(data_dict['Product'].get('priority')),
+				description=forceUnicode(data_dict['Product'].get('description')),
+				advice=forceUnicode(data_dict['Product'].get('advice')),
+				changelog=changelog,
+				productClassIds=forceUnicodeList(data_dict['Product'].get('productClasses')),
+				windowsSoftwareIds=softwareids,
+				pxeConfigTemplate=forceFilename(data_dict['Product'].get('pxeConfigTemplate'))
 			)
 		elif data_dict['Product']['type'] == "LocalbootProduct":
-			product = LocalbootProduct(	forceProductId(data_dict['Product'].get('id')),
-										forceProductVersion(data_dict['Product'].get('version')),
-										forcePackageVersion(data_dict['Package'].get('version')),
-										name=forceUnicode(data_dict['Product'].get('name')),
-										licenseRequired=forceBool(data_dict['Product'].get('licenseRequired')),
-										setupScript=forceFilename(data_dict['Product'].get('setupScript')),
-										uninstallScript=forceFilename(data_dict['Product'].get('uninstallScript')),
-										updateScript=forceFilename(data_dict['Product'].get('updateScript')),
-										alwaysScript=forceFilename(data_dict['Product'].get('alwaysScript')),
-										onceScript=forceFilename(data_dict['Product'].get('onceScript')),
-										customScript=forceFilename(data_dict['Product'].get('customScript')),
-										userLoginScript=forceFilename(data_dict['Product'].get('userLoginScript')),
-										priority=forceProductPriority(data_dict['Product'].get('priority')),
-										description=forceUnicode(data_dict['Product'].get('description')),
-										advice=forceUnicode(data_dict['Product'].get('advice')),
-										changelog=changelog,
-										productClassIds=forceUnicodeList(data_dict['Product'].get('productClasses')),
-										windowsSoftwareIds=softwareids
-										#pxeConfigTemplate=forceFilename(data_dict['Product'].get('pxeConfigTemplate'))
+			product = LocalbootProduct(
+				forceProductId(data_dict['Product'].get('id')),
+				forceProductVersion(data_dict['Product'].get('version')),
+				forcePackageVersion(data_dict['Package'].get('version')),
+				name=forceUnicode(data_dict['Product'].get('name')),
+				licenseRequired=forceBool(data_dict['Product'].get('licenseRequired')),
+				setupScript=forceFilename(data_dict['Product'].get('setupScript')),
+				uninstallScript=forceFilename(data_dict['Product'].get('uninstallScript')),
+				updateScript=forceFilename(data_dict['Product'].get('updateScript')),
+				alwaysScript=forceFilename(data_dict['Product'].get('alwaysScript')),
+				onceScript=forceFilename(data_dict['Product'].get('onceScript')),
+				customScript=forceFilename(data_dict['Product'].get('customScript')),
+				userLoginScript=forceFilename(data_dict['Product'].get('userLoginScript')),
+				priority=forceProductPriority(data_dict['Product'].get('priority')),
+				description=forceUnicode(data_dict['Product'].get('description')),
+				advice=forceUnicode(data_dict['Product'].get('advice')),
+				changelog=changelog,
+				productClassIds=forceUnicodeList(data_dict['Product'].get('productClasses')),
+				windowsSoftwareIds=softwareids
+				# pxeConfigTemplate=forceFilename(data_dict['Product'].get('pxeConfigTemplate'))
 			)
 		self.setProduct(product)
 
@@ -832,23 +837,24 @@ class PackageControlFile(TextFile):
 			req_act = forceActionRequest(dep.get('required_action')) if dep.get('required_action') else None
 			req_inst_stat = forceInstallationStatus(dep.get('required_status')) if dep.get('required_status') else None
 			req_type = forceRequirementType(dep.get('requirement_type')) if dep.get('requirement_type') else None
-			dependency = ProductDependency(	forceProductId(data_dict['Product'].get('id')),
-											forceProductVersion(data_dict['Product'].get('version')),
-											forcePackageVersion(data_dict['Package'].get('version')),
-											forceActionRequest(dep.get('action')),
-											forceProductId(dep.get('required_product_id')),
-											requiredProductVersion=req_prod_vers,
-											requiredPackageVersion=req_pack_vers,
-											requiredAction=req_act,
-											requiredInstallationStatus=req_inst_stat,
-											requirementType=req_type
+			dependency = ProductDependency(
+				forceProductId(data_dict['Product'].get('id')),
+				forceProductVersion(data_dict['Product'].get('version')),
+				forcePackageVersion(data_dict['Package'].get('version')),
+				forceActionRequest(dep.get('action')),
+				forceProductId(dep.get('required_product_id')),
+				requiredProductVersion=req_prod_vers,
+				requiredPackageVersion=req_pack_vers,
+				requiredAction=req_act,
+				requiredInstallationStatus=req_inst_stat,
+				requirementType=req_type
 			)
 			dep_list.append(dependency)
-			self._sections['productdependency'].append(dep.get('product_id'))	# kept for compatibility
+			self._sections['productdependency'].append(dep.get('product_id'))  # kept for compatibility
 		self.setProductDependencies(dep_list)
 
 		for prop in data_dict['ProductProperties']:
-			self._sections['productproperty'].append(prop.get('name'))	# kept for compatibility
+			self._sections['productproperty'].append(prop.get('name'))  # kept for compatibility
 			self.parse_product_property(prop)
 
 	def parse_product_property(self, productProperty):
@@ -888,7 +894,6 @@ class PackageControlFile(TextFile):
 				self._productProperties[-1].setMultiValue(productProperty['multivalue'])
 
 		self._productProperties[-1].setDefaults()
-
 
 	@requiresParsing
 	def getProduct(self):
@@ -1056,28 +1061,28 @@ class PackageControlFile(TextFile):
 		# TODO: set meaningful data types: list, int, etc... instead of string
 		data_dict = {}
 		data_dict['Package'] = {
-			"version" : self._product.getPackageVersion(),
-			"depends" : self.getPackageDependencies()
+			"version": self._product.getPackageVersion(),
+			"depends": self.getPackageDependencies()
 		}
 		prod = self._product
 		data_dict['Product'] = {
-			"type" : prod.getType(),
-			"id" : prod.getId(),
-			"name" : prod.getName(),
-			"description" : prod.getDescription() if prod.getDescription() else None,
-			"advice" : prod.getAdvice() if prod.getAdvice() else None,
-			"version" : prod.getProductVersion(),
-			"priority" : prod.getPriority(),
-			"licenseRequired" : prod.getLicenseRequired(),
-			"productClasses" : prod.getProductClassIds(),
-			"setupScript" : prod.getSetupScript() if prod.getSetupScript() else None,
-			"uninstallScript" : prod.getUninstallScript() if prod.getUninstallScript() else None,
-			"updateScript" : prod.getUpdateScript() if prod.getUpdateScript() else None,
-			"alwaysScript" : prod.getAlwaysScript() if prod.getAlwaysScript() else None,
-			"onceScript" : prod.getOnceScript() if prod.getOnceScript() else None,
-			"customScript" : prod.getCustomScript() if prod.getCustomScript() else None,
-			"userLoginScript" : prod.getUserLoginScript() if prod.getUserLoginScript() else None,
-			"windowsSoftwareIds" : prod.getWindowsSoftwareIds()
+			"type": prod.getType(),
+			"id": prod.getId(),
+			"name": prod.getName(),
+			"description": prod.getDescription() if prod.getDescription() else None,
+			"advice": prod.getAdvice() if prod.getAdvice() else None,
+			"version": prod.getProductVersion(),
+			"priority": prod.getPriority(),
+			"licenseRequired": prod.getLicenseRequired(),
+			"productClasses": prod.getProductClassIds(),
+			"setupScript": prod.getSetupScript() if prod.getSetupScript() else None,
+			"uninstallScript": prod.getUninstallScript() if prod.getUninstallScript() else None,
+			"updateScript": prod.getUpdateScript() if prod.getUpdateScript() else None,
+			"alwaysScript": prod.getAlwaysScript() if prod.getAlwaysScript() else None,
+			"onceScript": prod.getOnceScript() if prod.getOnceScript() else None,
+			"customScript": prod.getCustomScript() if prod.getCustomScript() else None,
+			"userLoginScript": prod.getUserLoginScript() if prod.getUserLoginScript() else None,
+			"windowsSoftwareIds": prod.getWindowsSoftwareIds()
 		}
 		if data_dict['Product']['type'] == "netboot":
 			data_dict['Product']['pxeConfigTemplate'] = self._product.getPxeConfigTemplate()
@@ -1085,13 +1090,13 @@ class PackageControlFile(TextFile):
 		prop_list = []
 		for prop in self.getProductProperties():
 			prop_dict = {
-				"type" : prop.getType(),
-				"name" : prop.getPropertyId(),
-				"multivalue" : prop.getMultiValue(),
-				"editable" : prop.getEditable(),
-				"description" : prop.getDescription(),
-				"values" :prop.getPossibleValues(),
-				"default" : prop.getDefaultValues()
+				"type": prop.getType(),
+				"name": prop.getPropertyId(),
+				"multivalue": prop.getMultiValue(),
+				"editable": prop.getEditable(),
+				"description": prop.getDescription(),
+				"values": prop.getPossibleValues(),
+				"default": prop.getDefaultValues()
 			}
 
 			prop_list.append(prop_dict)
@@ -1100,13 +1105,13 @@ class PackageControlFile(TextFile):
 		dep_list = []
 		for dep in self.getProductDependencies():
 			dep_dict = {
-				"required_product_id" : dep.getRequiredProductId(),
-				"required_product_version" : dep.getRequiredProductVersion(),
-				"required_package_version" : dep.getRequiredPackageVersion(),
-				"action" : dep.getProductAction(),
-				"requirement_type" : dep.getRequirementType(),
-				"required_action" : dep.getRequiredAction(),
-				"required_status" : dep.getRequiredInstallationStatus()
+				"required_product_id": dep.getRequiredProductId(),
+				"required_product_version": dep.getRequiredProductVersion(),
+				"required_package_version": dep.getRequiredPackageVersion(),
+				"action": dep.getProductAction(),
+				"requirement_type": dep.getRequirementType(),
+				"required_action": dep.getRequiredAction(),
+				"required_status": dep.getRequiredInstallationStatus()
 			}
 			dep_list.append(dep_dict)
 		data_dict['ProductDependencies'] = dep_list
@@ -1118,9 +1123,9 @@ class PackageControlFile(TextFile):
 				file.write(changelog)
 
 		yaml = ruyaml.YAML()
-		yaml.indent(mapping=2, sequence=4, offset=2)		# to have list "-" also indented by 2
+		yaml.indent(mapping=2, sequence=4, offset=2)  # To have list "-" also indented by 2
 		yaml.default_flow_style = False
-		self.open("w")			#contextmanager would be better
+		self.open("w")  # Contextmanager would be better
 		try:
 			yaml.dump(data_dict, self)
 		finally:

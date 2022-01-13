@@ -57,10 +57,10 @@ class SQLite(SQL):
 
 	@staticmethod
 	def on_engine_connect(conn, branch):  # pylint: disable=unused-argument
-		#conn.execute('PRAGMA synchronous=OFF')
-		#conn.execute('PRAGMA temp_store=MEMORY')
-		#conn.execute('PRAGMA cache_size=5000')
-		#conn.execute('PRAGMA encoding="UTF-8"')
+		# conn.execute('PRAGMA synchronous=OFF')
+		# conn.execute('PRAGMA temp_store=MEMORY')
+		# conn.execute('PRAGMA cache_size=5000')
+		# conn.execute('PRAGMA encoding="UTF-8"')
 		pass
 
 	def init_connection(self):
@@ -80,7 +80,7 @@ class SQLite(SQL):
 			autoflush=False
 		)
 		self.Session = scoped_session(self.session_factory)  # pylint: disable=invalid-name
-		#self.Session = self.session_factory  # pylint: disable=invalid-name
+		# self.Session = self.session_factory  # pylint: disable=invalid-name
 
 		# Test connection
 		with self.session() as session:

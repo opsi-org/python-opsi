@@ -17,6 +17,7 @@ from OPSI.Util.Repository import FileRepository, getRepository, getFileInfosFrom
 
 from .helpers import http_file_server
 
+
 def testGettingFileRepository():
 	repo = getRepository("file:///not-here")
 	assert isinstance(repo, FileRepository)
@@ -37,7 +38,7 @@ def testListingRepository(tempDir):
 	for content in repo.content('', recursive=True):
 		assert content == {'path': 'foobar', 'type': 'dir', 'name': 'foobar', 'size': 0}
 
-	with open(os.path.join(tempDir, "bar"), "w"):
+	with open(os.path.join(tempDir, "bar"), "w", encoding='utf8'):
 		pass
 
 	assert 2 == len(repo.content('', recursive=True))
@@ -58,12 +59,12 @@ def twistedDAVXMLPath(test_data_path):
 
 
 @pytest.fixture
-def twistedDAVXML(twistedDAVXMLPath):
-	with open(twistedDAVXMLPath, 'r') as f:
-		return f.read()
+def twistedDAVXML(twistedDAVXMLPath):  # pylint: disable=redefined-outer-name
+	with open(twistedDAVXMLPath, 'r', encoding='utf8') as file:
+		return file.read()
 
 
-def testGetFileInfosFromDavXML(twistedDAVXML):
+def testGetFileInfosFromDavXML(twistedDAVXML):  # pylint: disable=redefined-outer-name
 	content = getFileInfosFromDavXML(twistedDAVXML)
 	assert len(content) == 4
 
@@ -80,6 +81,7 @@ def testGetFileInfosFromDavXML(twistedDAVXML):
 
 	assert dirs == 1
 	assert files == 3
+
 
 def test_file_repo_start_end(tmpdir):
 	src_dir = tmpdir.mkdir("src")
@@ -108,12 +110,8 @@ def test_file_repo_start_end(tmpdir):
 	assert dst.read() == "6789"
 
 
-
 @pytest.mark.parametrize("repo_type,dynamic", [("file", False), ("http", False), ("http", True)])
 def test_limit_download(tmpdir, repo_type, dynamic):
-	#from opsicommon.logging import logging_config
-	#logging_config(stderr_level=8)
-
 	data = "o" * 2_000_000
 	limit = 100_000
 
@@ -136,16 +134,16 @@ def test_limit_download(tmpdir, repo_type, dynamic):
 			assert abs(round(end - start) - round(len(data) / limit)) <= 1
 
 	def get_network_usage(self):
-		traffic_ratio = repo.speed_limiter._dynamic_bandwidth_threshold_no_limit
+		traffic_ratio = repo.speed_limiter._dynamic_bandwidth_threshold_no_limit  # pylint: disable=protected-access
 		if simulate_other_traffic:
-			traffic_ratio = repo.speed_limiter._dynamic_bandwidth_limit_rate
+			traffic_ratio = repo.speed_limiter._dynamic_bandwidth_limit_rate  # pylint: disable=protected-access
 
-		bandwidth = int(repo.speed_limiter._average_speed / traffic_ratio)
-		if repo._bytesTransfered >= len(data) * 0.8:
+		bandwidth = int(repo.speed_limiter._average_speed / traffic_ratio)  # pylint: disable=protected-access
+		if repo._bytesTransfered >= len(data) * 0.8:  # pylint: disable=protected-access
 			if simulate_other_traffic:
-				assert (repo.speed_limiter._dynamic_bandwidth_limit / bandwidth) <= repo.speed_limiter._dynamic_bandwidth_limit_rate * 1.3
+				assert (repo.speed_limiter._dynamic_bandwidth_limit / bandwidth) <= repo.speed_limiter._dynamic_bandwidth_limit_rate * 1.3  # pylint: disable=protected-access
 			else:
-				assert repo.speed_limiter._dynamic_bandwidth_limit == 0
+				assert repo.speed_limiter._dynamic_bandwidth_limit == 0  # pylint: disable=protected-access
 		return bandwidth
 
 	# Setting DEFAULT_BUFFER_SIZE to slow down transfer
