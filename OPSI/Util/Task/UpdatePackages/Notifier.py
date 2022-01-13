@@ -12,7 +12,7 @@ import time
 
 from OPSI.Types import forceInt, forceUnicode, forceUnicodeList
 
-from opsicommon.logging import logger
+from opsicommon.logging import logger, secret_filter, SECRET_REPLACEMENT_STRING
 
 
 __all__ = ('DummyNotifier', 'EmailNotifier')
@@ -32,7 +32,11 @@ class BaseNotifier():
 		:type pre: str
 		"""
 		now = time.strftime("%b %d %H:%M:%S", time.localtime())
-		self.message += f'{pre}{now} {line}\n'
+		filtered_line = line
+		for _secret in secret_filter.secrets:
+			filtered_line = filtered_line.replace(_secret, SECRET_REPLACEMENT_STRING)
+
+		self.message += f'{pre}{now} {filtered_line}\n'
 
 	def hasMessage(self):
 		"""
