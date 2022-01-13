@@ -66,6 +66,7 @@ DEFAULT_MAX_LOG_SIZE = 5000000
 DEFAULT_KEEP_ROTATED_LOGS = 0
 LOG_SIZE_HARD_LIMIT = 10000000
 
+
 class ConfigDataBackend(Backend):  # pylint: disable=too-many-public-methods
 	"""
 	Base class for backends holding data.
@@ -205,10 +206,25 @@ containing the localisation of the hardware audit.
 		"""
 		Returns opsi licensing information.
 		"""
+		warning_limits = {}
+		try:
+			warning_limits["client_limit_warning_percent"] = int(
+				self.config_getObjects(id="licensing.client_limit_warning_percent")[0].getDefaultValues()[0]
+			)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.debug(err)
+		try:
+			warning_limits["client_limit_warning_absolute"] = int(
+				self.config_getObjects(id="licensing.client_limit_warning_absolute")[0].getDefaultValues()[0]
+			)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.debug(err)
+
 		pool = get_default_opsi_license_pool(
 			license_file_path=self._opsi_license_path,
 			modules_file_path=self._opsiModulesFile,
-			client_info=self._get_client_info
+			client_info=self._get_client_info,
+			**warning_limits
 		)
 		info = {
 			"client_numbers": pool.client_numbers,
@@ -219,7 +235,7 @@ containing the localisation of the hardware audit.
 		}
 		if licenses:
 			licenses = pool.get_licenses()
-			info["licenses"] = [ lic.to_dict(serializable=True, with_state=True) for lic in licenses ]
+			info["licenses"] = [lic.to_dict(serializable=True, with_state=True) for lic in licenses]
 		if legacy_modules:
 			info["legacy_modules"] = pool.get_legacy_modules()
 		if dates:
@@ -282,7 +298,7 @@ overwrite the log.
 			data = data[-1 * LOG_SIZE_HARD_LIMIT:]
 			idx = data.find(b"\n")
 			if idx > 0:
-				data = data[idx+1:]
+				data = data[idx + 1:]
 
 		log_file = os.path.join(LOG_DIR, logType, f"{objectId}.log")
 
@@ -326,7 +342,6 @@ overwrite the log.
 			os.chmod(log_file, 0o640)
 		except Exception as err:  # pylint: disable=broad-except
 			logger.error("Failed to set file permissions on '%s': %s", log_file, err)
-
 
 	def log_read(self, logType, objectId=None, maxSize=0):  # pylint: disable=no-self-use
 		"""
@@ -673,11 +688,11 @@ depot where the method is.
 
 		if self._options['additionalReferentialIntegrityChecks']:
 			if not self._context.product_getObjects(
-					attributes=['id', 'productVersion', 'packageVersion'],
-					id=productProperty.productId,
-					productVersion=productProperty.productVersion,
-					packageVersion=productProperty.packageVersion):
-
+				attributes=['id', 'productVersion', 'packageVersion'],
+				id=productProperty.productId,
+				productVersion=productProperty.productVersion,
+				packageVersion=productProperty.packageVersion
+			):
 				raise BackendReferentialIntegrityError(
 					f"Product with id '{productProperty.productId}', "
 					f"productVersion '{productProperty.productVersion}', "
@@ -707,11 +722,11 @@ depot where the method is.
 			raise BackendBadValueError("Either a required action or a required installation status must be given")
 		if self._options['additionalReferentialIntegrityChecks']:
 			if not self._context.product_getObjects(
-					attributes=['id', 'productVersion', 'packageVersion'],
-					id=productDependency.productId,
-					productVersion=productDependency.productVersion,
-					packageVersion=productDependency.packageVersion):
-
+				attributes=['id', 'productVersion', 'packageVersion'],
+				id=productDependency.productId,
+				productVersion=productDependency.productVersion,
+				packageVersion=productDependency.packageVersion
+			):
 				raise BackendReferentialIntegrityError(
 					f"Product with id '{productDependency.productId}', "
 					f"productVersion '{productDependency.productVersion}', "
@@ -1222,7 +1237,8 @@ depot where the method is.
 						# Fill up empty display names
 						for j, currentValue in enumerate(ccopy.get('Values', [])):
 							if not currentValue.get('UI'):
-								logger.warning("No translation found for hardware audit configuration property '%s.%s' in %s",
+								logger.warning(
+									"No translation found for hardware audit configuration property '%s.%s' in %s",
 									ccopy['Class']['Opsi'], currentValue['Opsi'], localeFile
 								)
 								ccopy['Values'][j]['UI'] = currentValue['Opsi']
