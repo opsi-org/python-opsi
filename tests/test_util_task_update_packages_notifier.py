@@ -10,6 +10,8 @@ import pytest
 
 from OPSI.Util.Task.UpdatePackages.Notifier import DummyNotifier, EmailNotifier
 
+from opsicommon.logging import secret_filter
+
 
 @pytest.fixture(
 	params=[DummyNotifier, EmailNotifier],
@@ -45,3 +47,10 @@ def testAddingMessages(notifier):
 	notifier.appendLine('Bla bla bla')
 
 	assert notifier.hasMessage()
+
+
+def testSecrets(notifier):
+	secret_filter.add_secrets("testsecret")
+	notifier.appendLine("this is a testsecret secret blubb")
+
+	assert "testsecret" not in notifier.message
