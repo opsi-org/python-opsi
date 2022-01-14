@@ -12,13 +12,14 @@ import os
 import re
 from collections import namedtuple
 
+from opsicommon.logging import logger
+
 import OPSI.Backend.BackendManager as bm
 from OPSI.System import Posix
 from OPSI.Object import UnicodeConfig, BoolConfig
 from OPSI.Exceptions import BackendMissingDataError
 from OPSI.Util.Task.Samba import SMB_CONF
 
-from opsicommon.logging import logger
 
 SimpleBoolConfig = namedtuple('SimpleBoolConfig', ['id', 'description', 'value'])
 SimpleUnicodeConfig = namedtuple('SimpleUnicodeConfig', ['id', 'description', 'values'])
@@ -364,8 +365,8 @@ def addDynamicDepotDriveSelection(backend):
 
 	if 'dynamic' not in config.possibleValues:
 		logger.debug(
-				"Could not find possibility to select dynamic drive "
-				"selection. Adding it to 'clientconfig.depot.drive'."
+			"Could not find possibility to select dynamic drive "
+			"selection. Adding it to 'clientconfig.depot.drive'."
 		)
 
 		config.possibleValues.append('dynamic')
@@ -376,14 +377,22 @@ def createWANconfigs(backend):
 	"Create the configurations that are used by the WAN extension if missing."
 
 	configs = [
-		SimpleBoolConfig("opsiclientd.event_gui_startup.active",
-			"gui_startup active", True),
-		SimpleBoolConfig("opsiclientd.event_gui_startup{user_logged_in}.active",
-			"gui_startup{user_logged_in} active", True),
-		SimpleBoolConfig("opsiclientd.event_net_connection.active",
-			"event_net_connection active", False),
-		SimpleBoolConfig("opsiclientd.event_timer.active",
-			"event_timer active", False)
+		SimpleBoolConfig(
+			"opsiclientd.event_gui_startup.active",
+			"gui_startup active", True
+		),
+		SimpleBoolConfig(
+			"opsiclientd.event_gui_startup{user_logged_in}.active",
+			"gui_startup{user_logged_in} active", True
+		),
+		SimpleBoolConfig(
+			"opsiclientd.event_net_connection.active",
+			"event_net_connection active", False
+		),
+		SimpleBoolConfig(
+			"opsiclientd.event_timer.active",
+			"event_timer active", False
+		)
 	]
 
 	_createBooleanConfigsIfMissing(backend, configs)
@@ -400,8 +409,10 @@ def _createBooleanConfigsIfMissing(backend, configs):
 def createInstallByShutdownConfig(backend):
 	"Create the configurations that are used by the InstallByShutdown extension if missing."
 
-	config = SimpleBoolConfig("clientconfig.install_by_shutdown.active",
-		"install_by_shutdown active", False)
+	config = SimpleBoolConfig(
+		"clientconfig.install_by_shutdown.active",
+		"install_by_shutdown active", False
+	)
 
 	_createBooleanConfigsIfMissing(backend, [config])
 
