@@ -8,14 +8,14 @@ Testing the work with repositories.
 
 import os
 import time
+from unittest import mock
 
 import pytest
-import unittest.mock as mock
 
 from OPSI.Exceptions import RepositoryError
 from OPSI.Util.Repository import FileRepository, getRepository, getFileInfosFromDavXML
 
-from .helpers import http_file_server
+from .helpers import http_test_server
 
 
 def testGettingFileRepository():
@@ -29,7 +29,7 @@ def testGettingRepositoryFailsOnUnsupportedURL():
 
 
 def testListingRepository(tempDir):
-	repo = FileRepository(url='file://{path}'.format(path=tempDir))
+	repo = FileRepository(url=f'file://{tempDir}')
 	assert not repo.content('', recursive=True)
 
 	os.mkdir(os.path.join(tempDir, "foobar"))
@@ -77,7 +77,7 @@ def testGetFileInfosFromDavXML(twistedDAVXML):  # pylint: disable=redefined-oute
 		elif item['type'] == 'file':
 			files = files + 1
 		else:
-			raise ValueError("Unexpected type {!r} found. Maybe creepy testdata?".format(item['type']))
+			raise ValueError(f"Unexpected type '{item['type']}' found. Maybe creepy testdata?")
 
 	assert dirs == 1
 	assert files == 3
@@ -133,7 +133,7 @@ def test_limit_download(tmpdir, repo_type, dynamic):
 		if not dynamic:
 			assert abs(round(end - start) - round(len(data) / limit)) <= 1
 
-	def get_network_usage(self):
+	def get_network_usage(self):   # pylint: disable=unused-argument
 		traffic_ratio = repo.speed_limiter._dynamic_bandwidth_threshold_no_limit  # pylint: disable=protected-access
 		if simulate_other_traffic:
 			traffic_ratio = repo.speed_limiter._dynamic_bandwidth_limit_rate  # pylint: disable=protected-access
@@ -149,7 +149,7 @@ def test_limit_download(tmpdir, repo_type, dynamic):
 	# Setting DEFAULT_BUFFER_SIZE to slow down transfer
 	with mock.patch('OPSI.Util.Repository.Repository.DEFAULT_BUFFER_SIZE', 1000 if dynamic else 32 * 1000):
 		if repo_type.startswith(("http", "webdav")):
-			with http_file_server(src_dir) as server:
+			with http_test_server(serve_directory=src_dir) as server:
 				repo_url = f"{repo_type}://localhost:{server.port}"
 				repo = getRepository(repo_url, maxBandwidth=0 if dynamic else limit, dynamicBandwidth=dynamic)
 				with mock.patch('OPSI.Util.Repository.SpeedLimiter._get_network_usage', get_network_usage):
@@ -185,7 +185,7 @@ def test_limit_upload(tmpdir, repo_type):
 		assert abs(round(end - start) - round(seconds)) <= 1
 
 	if repo_type.startswith(("http", "webdav")):
-		with http_file_server(dst_dir) as server:
+		with http_test_server(serve_directory=dst_dir) as server:
 			upload(f"{repo_type}://localhost:{server.port}")
 	else:
 		upload(f"{repo_type}://{dst_dir}")

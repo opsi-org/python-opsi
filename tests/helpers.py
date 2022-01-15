@@ -11,31 +11,153 @@ import shutil
 import tempfile
 import threading
 import socket
+import ssl
+import gzip
+import json
+import time
 from contextlib import closing, contextmanager
-import http.server
-import socketserver
+from unittest import mock
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 
-import unittest.mock as mock
+import lz4
+import msgpack
 
 from OPSI.Util.Path import cd
 
 
+class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
+	def __init__(self, *args, **kwargs):
+		if args[2].serve_directory:
+			kwargs["directory"] = args[2].serve_directory
+		super().__init__(*args, **kwargs)
 
-class HTTPFileServerRequestHandler(http.server.SimpleHTTPRequestHandler):
-	def do_PUT(self):
-		"""Serve a PUT request."""
-		path = self.translate_path(self.path)
-		length = int(self.headers['Content-Length'])
-		with open(path, 'wb') as file:
-			file.write(self.rfile.read(length))
-		self.send_response(201, "Created")
+	def _log(self, data):  # pylint: disable=invalid-name
+		if not self.server.log_file:
+			return
+		with open(self.server.log_file, "a", encoding="utf-8") as file:
+			file.write(json.dumps(data))
+			file.write("\n")
+			file.flush()
+
+	def version_string(self):
+		for name, value in self.server.response_headers.items():
+			if name.lower() == "server":
+				return value
+		return super().version_string()
+
+	def _send_headers(self, headers=None):
+		if self.server.response_delay:
+			time.sleep(self.server.response_delay)
+		headers = headers or {}
+		headers.update(self.server.response_headers)
+		for name, value in headers.items():
+			if name.lower() == "server":
+				continue
+			value = value.replace("{server_address}", f"{self.server.server_address[0]}:{self.server.server_address[1]}")
+			value = value.replace("{host}", self.headers["Host"])
+			self.send_header(name, value)
 		self.end_headers()
 
+	def do_POST(self):  # pylint: disable=invalid-name
+		length = int(self.headers['Content-Length'])
+		request = self.rfile.read(length)
+		# print(self.headers)
 
-class HTTPFileServer(threading.Thread):
-	def __init__(self, directory):
+		if self.headers['Content-Encoding'] == "lz4":
+			request = lz4.frame.decompress(request)
+		elif self.headers['Content-Encoding'] == "gzip":
+			request = gzip.decompress(request)
+
+		if "json" in self.headers['Content-Type']:
+			request = json.loads(request)
+		elif "msgpack" in self.headers['Content-Type']:
+			request = msgpack.loads(request)
+
+		self._log({
+			"method": "POST", "client_address": self.client_address,
+			"path": self.path, "headers": dict(self.headers), "request": request
+		})
+		response = None
+		if self.server.response_body:
+			response = self.server.response_body
+		else:
+			response = {"id": request["id"], "result": []}
+			response = json.dumps(response).encode("utf-8")
+		if self.server.response_status:
+			self.send_response(self.server.response_status[0], self.server.response_status[1])
+		else:
+			self.send_response(200, "OK")
+		headers = {
+			"Content-Length": str(len(response)),
+			"Content-Type": "application/json"
+		}
+		self._send_headers(headers)
+		self.wfile.write(response)
+
+	def do_GET(self):
+		if self.server.serve_directory:
+			return super().do_GET()
+
+		if self.headers['X-Response-Status']:
+			val = self.headers['X-Response-Status'].split(" ", 1)
+			self.send_response(int(val[0]), val[1])
+		elif self.server.response_status:
+			self.send_response(self.server.response_status[0], self.server.response_status[1])
+		else:
+			self.send_response(200, "OK")
+		self._log({
+			"method": "GET", "client_address": self.client_address,
+			"path": self.path, "headers": dict(self.headers)
+		})
+		response = None
+		if self.server.response_body:
+			response = self.server.response_body
+		else:
+			response = "OK".encode("utf-8")
+		headers = {
+			"Content-Length": str(len(response))
+		}
+		self._send_headers(headers)
+		self.wfile.write(response)
+		return None
+
+	def do_PUT(self):
+		"""Serve a PUT request."""
+		if self.server.serve_directory:
+			path = self.translate_path(self.path)
+			length = int(self.headers['Content-Length'])
+			with open(path, 'wb') as file:
+				file.write(self.rfile.read(length))
+			self.send_response(201, "Created")
+			self.end_headers()
+		else:
+			self.send_response(500, "Not implemented")
+			self.end_headers()
+
+
+class HTTPTestServer(threading.Thread):  # pylint: disable=too-many-instance-attributes
+	def __init__(  # pylint: disable=too-many-arguments
+		self,
+		log_file=None,
+		ip_version=None,
+		server_key=None,
+		server_cert=None,
+		response_headers=None,
+		response_status=None,
+		response_body=None,
+		response_delay=None,
+		serve_directory=None
+	):
 		super().__init__()
-		self.directory = directory
+		self.log_file = str(log_file) if log_file else None
+		self.ip_version = 6 if ip_version == 6 else 4
+		self.server_key = server_key if server_key else None
+		self.server_cert = server_cert if server_cert else None
+		self.response_headers = response_headers if response_headers else {}
+		self.response_status = response_status if response_status else None
+		self.response_body = response_body if response_body else None
+		self.response_delay = response_delay if response_delay else None
+		self.serve_directory = serve_directory if serve_directory else None
 		# Auto select free port
 		with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
 			sock.bind(('', 0))
@@ -44,12 +166,25 @@ class HTTPFileServer(threading.Thread):
 		self.server = None
 
 	def run(self):
-		directory = self.directory
-		class Handler(HTTPFileServerRequestHandler):
-			def __init__(self, *args, **kwargs):
-				super().__init__(*args, directory=directory, **kwargs)
-		self.server = socketserver.TCPServer(("", self.port), Handler)
-		#print("Server started at localhost:" + str(self.port))
+		class HTTPServer6(HTTPServer):
+			address_family = socket.AF_INET6
+
+		if self.ip_version == 6:
+			self.server = HTTPServer6(("::", self.port), HTTPTestServerRequestHandler)
+		else:
+			self.server = HTTPServer(("", self.port), HTTPTestServerRequestHandler)
+
+		if self.server_key and self.server_cert:
+			context = ssl.SSLContext()
+			context.load_cert_chain(keyfile=self.server_key, certfile=self.server_cert)
+			self.server.socket = context.wrap_socket(sock=self.server.socket, server_side=True)
+		self.server.log_file = self.log_file  # pylint: disable=attribute-defined-outside-init
+		self.server.response_headers = self.response_headers  # pylint: disable=attribute-defined-outside-init
+		self.server.response_status = self.response_status  # pylint: disable=attribute-defined-outside-init
+		self.server.response_body = self.response_body  # pylint: disable=attribute-defined-outside-init
+		self.server.response_delay = self.response_delay  # pylint: disable=attribute-defined-outside-init
+		self.server.serve_directory = self.serve_directory  # pylint: disable=attribute-defined-outside-init
+		# print("Server listening on port:" + str(self.port))
 		self.server.serve_forever()
 
 	def stop(self):
@@ -58,10 +193,37 @@ class HTTPFileServer(threading.Thread):
 
 
 @contextmanager
-def http_file_server(directory):
-	server = HTTPFileServer(directory)
+def http_test_server(  # pylint: disable=too-many-arguments
+	log_file=None,
+	ip_version=None,
+	server_key=None,
+	server_cert=None,
+	response_headers=None,
+	response_status=None,
+	response_body=None,
+	response_delay=None,
+	serve_directory=None
+):
+	timeout = 5
+	server = HTTPTestServer(
+		log_file, ip_version, server_key, server_cert,
+		response_headers, response_status, response_body, response_delay, serve_directory
+	)
 	server.daemon = True
 	server.start()
+
+	running = False
+	start = time.time()
+	while time.time() - start < timeout:
+		with closing(socket.socket(socket.AF_INET6 if ip_version == 6 else socket.AF_INET, socket.SOCK_STREAM)) as sock:
+			sock.settimeout(1)
+			res = sock.connect_ex(("::1" if ip_version == 6 else "127.0.0.1", server.port))
+			if res == 0:
+				running = True
+				break
+
+	if not running:
+		raise RuntimeError("Failed to start HTTPTestServer")
 	try:
 		yield server
 	finally:
@@ -88,7 +250,6 @@ be deleted if given.
 					pass
 
 
-
 @contextmanager
 def createTemporaryTestfile(original, tempDir=None):
 	'''Copy `original` to a temporary directory and \
@@ -107,8 +268,8 @@ yield the path to the new file.
 def getLocalFQDN():
 	'Get the FQDN of the local machine.'
 	# Lazy imports to not hinder other tests.
-	from OPSI.Types import forceHostId
-	from OPSI.Util import getfqdn
+	from OPSI.Types import forceHostId  # pylint: disable=import-outside-toplevel
+	from OPSI.Util import getfqdn  # pylint: disable=import-outside-toplevel
 
 	return forceHostId(getfqdn())
 
@@ -122,9 +283,7 @@ def patchAddress(fqdn="opsi.test.invalid", address="172.16.0.1"):
 as hostname.
 	:param address: The IP address to use.
 	"""
-	fqdn = fqdn
 	hostname = fqdn.split(".")[0]
-	address = address
 
 	def getfqdn(*_):
 		return fqdn
@@ -155,17 +314,15 @@ def patchEnvironmentVariables(**environmentVariables):
 
 
 @contextmanager
-def fakeGlobalConf(fqdn="opsi.test.invalid", dir=None):
+def fakeGlobalConf(fqdn="opsi.test.invalid", dir=None):  # pylint: disable=redefined-builtin
 	"Fake a global.conf and return the path to the file."
 
 	with workInTemporaryDirectory(dir) as tempDir:
 		configPath = os.path.join(tempDir, 'global.conf')
 
-		with open(configPath, "w") as conf:
-			conf.write("""[global]
-hostname = {0}
-""".format(fqdn))
-
+		with open(configPath, "w", encoding="utf-8") as conf:
+			conf.write("[global]\n")
+			conf.write(f"hostname = {fqdn}\n")
 		yield configPath
 
 
