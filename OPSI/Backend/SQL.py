@@ -584,19 +584,21 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		# Drop database
 		with self._sql.session() as session:
-			errorCount = 0
-			errorsExist = True
-			while errorsExist and errorCount < 96:
-				errorsExist = False
-				for tableName in self._sql.getTables(session).keys():
-					dropCommand = f'DROP TABLE `{tableName}`;'
-					logger.debug(dropCommand)
+			error_count = 0
+			success = False
+			while not success:
+				success = True
+				for table_name in self._sql.getTables(session).keys():
+					drop_command = f'DROP TABLE `{table_name}`;'
+					logger.debug(drop_command)
 					try:
-						self._sql.execute(session, dropCommand)
+						self._sql.execute(session, drop_command)
 					except Exception as err:  # pylint: disable=broad-except
-						logger.error("Failed to drop table '%s': %s", tableName, err)
-						errorCount += 1
-						errorsExist = True
+						logger.debug("Failed to drop table '%s': %s", table_name, err)
+						success = False
+						error_count += 1
+						if error_count > 99:
+							raise
 
 	def backend_createBase(self):  # pylint: disable=too-many-branches,too-many-statements
 		ConfigDataBackend.backend_createBase(self)
@@ -1210,7 +1212,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					self.auditHardwareOnHost_deleteObjects(auditHardwareOnDeletedHost)
 
 				# TODO: Delete audit data!
-				# Siehe: https://redmine.uib.local/issues/869
+				# https://redmine.uib.local/issues/869
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs
