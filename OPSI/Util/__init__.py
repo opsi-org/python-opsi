@@ -27,60 +27,7 @@ from collections import namedtuple
 from hashlib import md5
 from itertools import islice
 from functools import lru_cache
-
-import packaging.version as packver
-
-
-def _legacy_cmpkey(version: str):
-	_legacy_version_component_re = re.compile(r"(\d+ | [a-z]+ | \.| -)", re.VERBOSE)
-	_legacy_version_replacement_map = {
-		"pre": "c",
-		"preview": "c",
-		"-": "final-",
-		"rc": "c",
-		"dev": "@",
-	}
-	def _parse_version_parts(s: str):
-		for part in _legacy_version_component_re.split(s):
-			part = _legacy_version_replacement_map.get(part, part)
-
-			if not part or part == ".":
-				continue
-
-			if part[:1] in "0123456789":
-				# pad for numeric comparison
-				yield part.zfill(8)
-			else:
-				yield "*" + part
-
-		# ensure that alpha/beta/candidate are before final
-		yield "*final"
-
-	parts = []
-	for part in _parse_version_parts(version.lower()):
-		if part.startswith("*"):
-			# remove "-" before a prerelease tag
-			if part < "*final":
-				while parts and parts[-1] == "*final-":
-					parts.pop()
-
-			# remove trailing zeros from each series of numeric parts
-			while parts and parts[-1] == "00000000":
-				parts.pop()
-
-		parts.append(part)
-
-	return tuple(parts)
-
-# inspired by packaging.version.LegacyVersion (Deprecated)
-class LegacyVersion(packver.Version):
-	def __init__(self, version: str) -> None:
-		self._version = str(version)
-		self._key = _legacy_cmpkey(self._version)
-
-	def __str__(self) -> str:
-		return self._version
-
+import packaging.version
 
 try:
 	# PyCryptodome from pypi installs into Crypto
@@ -129,6 +76,56 @@ _ACCEPTED_CHARACTERS = (
 )
 
 Version = namedtuple('Version', 'product package')
+
+def _legacy_cmpkey(version: str):
+	_legacy_version_component_re = re.compile(r"(\d+ | [a-z]+ | \.| -)", re.VERBOSE)
+	_legacy_version_replacement_map = {
+		"pre": "c",
+		"preview": "c",
+		"-": "final-",
+		"rc": "c",
+		"dev": "@",
+	}
+	def _parse_version_parts(instring: str):
+		for part in _legacy_version_component_re.split(instring):
+			part = _legacy_version_replacement_map.get(part, part)
+
+			if not part or part == ".":
+				continue
+
+			if part[:1] in "0123456789":
+				# pad for numeric comparison
+				yield part.zfill(8)
+			else:
+				yield "*" + part
+
+		# ensure that alpha/beta/candidate are before final
+		yield "*final"
+
+	parts = []
+	for part in _parse_version_parts(version.lower()):
+		if part.startswith("*"):
+			# remove "-" before a prerelease tag
+			if part < "*final":
+				while parts and parts[-1] == "*final-":
+					parts.pop()
+
+			# remove trailing zeros from each series of numeric parts
+			while parts and parts[-1] == "00000000":
+				parts.pop()
+
+		parts.append(part)
+
+	return tuple(parts)
+
+# inspired by packaging.version.LegacyVersion (Deprecated)
+class LegacyVersion(packaging.version.Version):
+	def __init__(self, version: str):	#pylint: disable=super-init-not-called
+		self._version = str(version)
+		self._key = _legacy_cmpkey(self._version)
+
+	def __str__(self) -> str:
+		return self._version
 
 
 class CryptoError(ValueError):
@@ -351,10 +348,10 @@ def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many
 			raise ValueError(f"Bad package version provided: '{version}'")
 
 	try:
-		#dont use packver.parse() here as packver.Version cannot handle legacy formats
+		#dont use packaging.version.parse() here as packaging.version.Version cannot handle legacy formats
 		first = LegacyVersion(first)
 		second = LegacyVersion(second)
-	except packver.InvalidVersion as version_error:
+	except packaging.version.InvalidVersion as version_error:
 		raise ValueError("Invalid version provided to compareVersions") from version_error
 
 	if condition in ("==", "=") or not condition:

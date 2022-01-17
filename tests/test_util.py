@@ -417,18 +417,6 @@ def testGetGlobalConfigExitsGracefullyIfFileIsMissing(globalConfigTestFile):
 def testIfObjectIsRegExObject(value, result):
 	assert isRegularExpressionPattern(value) == result
 
-@pytest.mark.parametrize("ip, network, result", [
-	('10.10.1.1', '10.10.0.0/16', True),
-	('10.10.1.1', '10.10.0.0/23', True),
-	('10.10.1.1', '10.10.0.0/24', False),
-	('10.10.1.1', '10.10.0.0/25', False),
-])
-def testNetworkWithSlashInNotation(ip, network, result):
-	if result:
-		assert ipAddressInNetwork(ip, network)
-	else:
-		assert not ipAddressInNetwork(ip, network)
-
 
 @pytest.mark.parametrize("value, expected", [
 	(2, 2),
