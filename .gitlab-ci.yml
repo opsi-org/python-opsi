@@ -31,6 +31,8 @@ test:pylint-pytest:
     # echo "deb http://deb.debian.org/debian unstable main" >> /etc/apt/sources.list
     # apt update
     # apt-get --yes install libmysqlclient-dev mysql-client librsync2 #careful: this bumps glibc to at least 2.31
+    apt-get update
+    apt-get --yes install libmysqlclient-dev
     poetry lock --no-update
     poetry install
     poetry run pylint --disable=R,C,W OPSI
