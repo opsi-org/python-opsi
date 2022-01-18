@@ -29,16 +29,12 @@ test:pylint-pytest:
     git clone -b master https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.uib.gmbh/uib/opsi-server.git ../opsi-server
     ln -s ../opsi-server/opsi-server_data/etc data
     cp tests/Backends/config.py.gitlabci tests/Backends/config.py
-    # echo "deb http://deb.debian.org/debian unstable main" >> /etc/apt/sources.list
-    # apt update
-    # apt-get --yes install libmysqlclient-dev mysql-client librsync2 #careful: this bumps glibc to at least 2.31
     apt-get update
-    apt-get --yes install default-libmysqlclient-dev
+    apt-get --yes install default-libmysqlclient-dev librsync1
     poetry lock --no-update
     poetry install
     poetry run pylint --disable=R,C,W OPSI
-    #poetry run pytest --tb=short -o junit_family=xunit2 --junitxml=testreport.xml --cov-append --cov-report term --cov-report xml -v tests
-    poetry run pytest --tb=short -o junit_family=xunit2 --junitxml=testreport.xml --cov-append --cov-report term --cov-report xml -v tests/test_acl.py
+    poetry run pytest --tb=short -o junit_family=xunit2 --junitxml=testreport.xml --cov-append --cov-report term --cov-report xml -v tests
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+)%/'
   artifacts:
     name: 'python-opsi_test'
@@ -52,9 +48,6 @@ test:pylint-pytest:
 publish:uibpypi:
   stage: publish
   script:
-    #- echo "deb http://deb.debian.org/debian unstable main" >> /etc/apt/sources.list
-    #- apt update
-    #- apt-get --yes install libmysqlclient-dev mysql-client librsync2 #careful: this bumps glibc to at least 2.31
     - poetry lock --no-update
     - poetry install
     - poetry run opsi-dev-tool -l info --uib-pypi-publish
