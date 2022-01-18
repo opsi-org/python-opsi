@@ -32,14 +32,14 @@ from .helpers import (
 import pytest
 
 
-@pytest.mark.parametrize("ip, network", [
-	('10.10.1.1', '10.10.0.0/16'),
-	('10.10.1.1', '10.10.0.0/23'),
-	pytest.param('10.10.1.1', '10.10.0.0/24', marks=pytest.mark.xfail),
-	pytest.param('10.10.1.1', '10.10.0.0/25', marks=pytest.mark.xfail),
+@pytest.mark.parametrize("ip, network, result", [
+	('10.10.1.1', '10.10.0.0/16', True),
+	('10.10.1.1', '10.10.0.0/23', True),
+	('10.10.1.1', '10.10.0.0/24', False),
+	('10.10.1.1', '10.10.0.0/25', False),
 ])
-def testNetworkWithSlashInNotation(ip, network):
-	assert ipAddressInNetwork(ip, network)
+def testNetworkWithSlashInNotation(ip, network, result):
+	assert ipAddressInNetwork(ip, network) == result
 
 
 def testIpAddressInNetworkWithEmptyNetworkMask():
@@ -409,13 +409,13 @@ def testGetGlobalConfigExitsGracefullyIfFileIsMissing(globalConfigTestFile):
 	assert getGlobalConfig('dontCare', 'nonexistingFile') is None
 
 
-@pytest.mark.parametrize("value", [
-	re.compile(r"ABC"),
-	pytest.param("no pattern", marks=pytest.mark.xfail),
-	pytest.param("SRE_Pattern", marks=pytest.mark.xfail),
+@pytest.mark.parametrize("value, result", [
+	(re.compile(r"ABC"), True),
+	("no pattern", False),
+	("SRE_Pattern", False),
 ])
-def testIfObjectIsRegExObject(value):
-	assert isRegularExpressionPattern(value)
+def testIfObjectIsRegExObject(value, result):
+	assert isRegularExpressionPattern(value) == result
 
 
 @pytest.mark.parametrize("value, expected", [
@@ -935,9 +935,10 @@ def testObjectToBashOnConfigStates():
 
 @pytest.mark.parametrize("first, operator, second", [
 	('1.0', '<', '2.0'),
-	pytest.param('1.0', '>', '2.0', marks=pytest.mark.xfail),
-	pytest.param('1.0', '>', '1.0', marks=pytest.mark.xfail),
-	pytest.param('1.2.3.5', '>', '2.2.3.5', marks=pytest.mark.xfail),
+	('2.0', '>', '1.0'),
+	('1.0', '==', '1.0'),
+	('1.2.3.5', '<=', '2.2.3.5'),
+	('1.2.3.4-5~6', '>=', '1.2.3.4-5~1'),
 ])
 def testComparingVersionsOfSameSize(first, operator, second):
 	assert compareVersions(first, operator, second)
@@ -945,7 +946,6 @@ def testComparingVersionsOfSameSize(first, operator, second):
 
 @pytest.mark.parametrize("v1, operator, v2", [
 	('1.0', '', '1.0'),
-	pytest.param('1', '', '2', marks=pytest.mark.xfail),
 ])
 def testComparingWithoutGivingOperatorDefaultsToEqual(v1, operator, v2):
 	assert compareVersions(v1, operator, v2)
