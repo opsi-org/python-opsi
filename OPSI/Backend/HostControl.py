@@ -125,13 +125,15 @@ class HostControlBackend(ExtendedBackend):
 		for option, value in kwargs.items():
 			option = option.lower()
 			if option == 'opsiclientdport':
-				backend._opsiclientdPort = forceInt(value)
+				self._opsiclientdPort = forceInt(value)
 			elif option == 'hostrpctimeout':
-				backend._hostRpcTimeout = forceInt(value)
+				self._hostRpcTimeout = forceInt(value)
+			elif option == 'hostreachabletimeout':
+				self._hostReachableTimeout = forceInt(value)
 			elif option == 'resolvehostaddress':
-				backend._resolveHostAddress = forceBool(value)
+				self._resolveHostAddress = forceBool(value)
 			elif option == 'maxconnections':
-				backend._maxConnections = max(forceInt(value), 1)
+				self._maxConnections = max(forceInt(value), 1)
 			elif option == 'broadcastaddresses' and value:
 				broadcastAddresses = value
 

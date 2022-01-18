@@ -18,13 +18,13 @@ import random
 import copy
 from types import MethodType
 
+from opsicommon.logging import logger
+
 from OPSI.Exceptions import *  # this is needed for dynamic loading  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Types import *  # this is needed for dynamic loading  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Object import *  # this is needed for dynamic loading  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Util import timestamp
 import OPSI.SharedAlgorithm
-
-from opsicommon.logging import logger
 
 from .Backend import Backend
 
@@ -310,12 +310,11 @@ class ExtendedConfigDataBackend(ExtendedBackend):  # pylint: disable=too-many-pu
 
 	def licenseOnClient_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
 		return [
-				licenseOnClient.getIdent(returnType)
-				for licenseOnClient
-				in self.licenseOnClient_getObjects(  # pylint: disable=no-member
-					attributes=['softwareLicenseId', 'licensePoolId', 'clientId'],
-					**filter
-				)
+			licenseOnClient.getIdent(returnType) for licenseOnClient in
+			self.licenseOnClient_getObjects(  # pylint: disable=no-member
+				attributes=['softwareLicenseId', 'licensePoolId', 'clientId'],
+				**filter
+			)
 		]
 
 	def auditSoftware_getIdents(self, returnType='unicode', **filter):  # pylint: disable=redefined-builtin
@@ -865,8 +864,9 @@ class ExtendedConfigDataBackend(ExtendedBackend):  # pylint: disable=too-many-pu
 		for configState in forceObjectClassList(configStates, ConfigState):
 			logger.info("Updating configState %s", configState)
 			if self.configState_getIdents(
-					configId=configState.configId,
-					objectId=configState.objectId):
+				configId=configState.configId,
+				objectId=configState.objectId
+			):
 				self.configState_updateObject(configState)
 			else:
 				logger.info("ConfigState %s does not exist, creating", configState)
@@ -1021,9 +1021,10 @@ into the IDs of these depots are to be found in the list behind \
 		for product in forceObjectClassList(products, Product):
 			logger.info("Updating product %s", product)
 			if self.product_getIdents(
-					id=product.id,
-					productVersion=product.productVersion,
-					packageVersion=product.packageVersion):
+				id=product.id,
+				productVersion=product.productVersion,
+				packageVersion=product.packageVersion
+			):
 				self._backend.product_updateObject(product)
 			else:
 				logger.info("Product %s does not exist, creating", product)
@@ -1041,26 +1042,24 @@ into the IDs of these depots are to be found in the list behind \
 		return result
 
 	def product_createLocalboot(  # pylint: disable=too-many-arguments,invalid-name,too-many-locals
-			self, id, productVersion, packageVersion, name=None,  # pylint: disable=unused-argument,redefined-builtin
-			licenseRequired=None, setupScript=None, uninstallScript=None,  # pylint: disable=unused-argument
-			updateScript=None, alwaysScript=None, onceScript=None,  # pylint: disable=unused-argument
-			priority=None, description=None, advice=None, changelog=None,  # pylint: disable=unused-argument
-			productClassIds=None, windowsSoftwareIds=None  # pylint: disable=unused-argument
-		):
-
+		self, id, productVersion, packageVersion, name=None,  # pylint: disable=unused-argument,redefined-builtin
+		licenseRequired=None, setupScript=None, uninstallScript=None,  # pylint: disable=unused-argument
+		updateScript=None, alwaysScript=None, onceScript=None,  # pylint: disable=unused-argument
+		priority=None, description=None, advice=None, changelog=None,  # pylint: disable=unused-argument
+		productClassIds=None, windowsSoftwareIds=None  # pylint: disable=unused-argument
+	):
 		_hash = locals()
 		del _hash['self']
 		return self.product_createObjects(LocalbootProduct.fromHash(_hash))
 
 	def product_createNetboot(  # pylint: disable=too-many-arguments,invalid-name,too-many-locals
-			self, id, productVersion, packageVersion, name=None,  # pylint: disable=unused-argument,redefined-builtin
-			licenseRequired=None, setupScript=None, uninstallScript=None,  # pylint: disable=unused-argument
-			updateScript=None, alwaysScript=None, onceScript=None,  # pylint: disable=unused-argument
-			priority=None, description=None, advice=None, changelog=None,  # pylint: disable=unused-argument
-			productClassIds=None, windowsSoftwareIds=None,  # pylint: disable=unused-argument
-			pxeConfigTemplate=None  # pylint: disable=unused-argument
-		):
-
+		self, id, productVersion, packageVersion, name=None,  # pylint: disable=unused-argument,redefined-builtin
+		licenseRequired=None, setupScript=None, uninstallScript=None,  # pylint: disable=unused-argument
+		updateScript=None, alwaysScript=None, onceScript=None,  # pylint: disable=unused-argument
+		priority=None, description=None, advice=None, changelog=None,  # pylint: disable=unused-argument
+		productClassIds=None, windowsSoftwareIds=None,  # pylint: disable=unused-argument
+		pxeConfigTemplate=None  # pylint: disable=unused-argument
+	):
 		_hash = locals()
 		del _hash['self']
 		return self.product_createObjects(NetbootProduct.fromHash(_hash))
@@ -1118,10 +1117,10 @@ into the IDs of these depots are to be found in the list behind \
 		deleteProductPropertyStates = []
 		updateProductPropertyStates = []
 		for productPropertyState in self.productPropertyState_getObjects(
-					objectId=objectIds,
-					productId=productProperty.productId,
-					propertyId=productProperty.propertyId):
-
+			objectId=objectIds,
+			productId=productProperty.productId,
+			propertyId=productProperty.propertyId
+		):
 			changed = False
 			newValues = []
 			for val in productPropertyState.values:
@@ -1189,10 +1188,11 @@ into the IDs of these depots are to be found in the list behind \
 		for productProperty in forceObjectClassList(productProperties, ProductProperty):
 			logger.info("Creating productProperty %s", productProperty)
 			if self.productProperty_getIdents(
-					productId=productProperty.productId,
-					productVersion=productProperty.productVersion,
-					packageVersion=productProperty.packageVersion,
-					propertyId=productProperty.propertyId):
+				productId=productProperty.productId,
+				productVersion=productProperty.productVersion,
+				packageVersion=productProperty.packageVersion,
+				propertyId=productProperty.propertyId
+			):
 				self._backend.productProperty_updateObject(productProperty)
 			else:
 				logger.info("ProductProperty %s does not exist, creating", productProperty)
@@ -1286,11 +1286,12 @@ into the IDs of these depots are to be found in the list behind \
 		for productDependency in forceObjectClassList(productDependencies, ProductDependency):
 			logger.info("Updating productDependency %s", productDependency)
 			if self.productDependency_getIdents(
-					productId=productDependency.productId,
-					productVersion=productDependency.productVersion,
-					packageVersion=productDependency.packageVersion,
-					productAction=productDependency.productAction,
-					requiredProductId=productDependency.requiredProductId):
+				productId=productDependency.productId,
+				productVersion=productDependency.productVersion,
+				packageVersion=productDependency.packageVersion,
+				productAction=productDependency.productAction,
+				requiredProductId=productDependency.requiredProductId
+			):
 
 				self._backend.productDependency_updateObject(productDependency)
 			else:
@@ -1311,10 +1312,10 @@ into the IDs of these depots are to be found in the list behind \
 		return result
 
 	def productDependency_create(  # pylint: disable=too-many-arguments
-			self, productId, productVersion, packageVersion, productAction, requiredProductId,  # pylint: disable=unused-argument
-			requiredProductVersion=None, requiredPackageVersion=None, requiredAction=None,  # pylint: disable=unused-argument
-			requiredInstallationStatus=None, requirementType=None  # pylint: disable=unused-argument
-		):
+		self, productId, productVersion, packageVersion, productAction, requiredProductId,  # pylint: disable=unused-argument
+		requiredProductVersion=None, requiredPackageVersion=None, requiredAction=None,  # pylint: disable=unused-argument
+		requiredInstallationStatus=None, requirementType=None  # pylint: disable=unused-argument
+	):
 		_hash = locals()
 		del _hash['self']
 		return self.productDependency_createObjects(ProductDependency.fromHash(_hash))
@@ -1391,11 +1392,12 @@ into the IDs of these depots are to be found in the list behind \
 		for productOnDepot in productOnDepots:
 			logger.info("Updating productOnDepot '%s'", productOnDepot)
 			if self.productOnDepot_getIdents(
-					productId=productOnDepot.productId,
-					productType=productOnDepot.productType,
-					productVersion=productOnDepot.productVersion,
-					packageVersion=productOnDepot.packageVersion,
-					depotId=productOnDepot.depotId):
+				productId=productOnDepot.productId,
+				productType=productOnDepot.productType,
+				productVersion=productOnDepot.productVersion,
+				packageVersion=productOnDepot.packageVersion,
+				depotId=productOnDepot.depotId
+			):
 				self._backend.productOnDepot_updateObject(productOnDepot)
 			else:
 				logger.info("ProductOnDepot %s does not exist, creating", productOnDepot)
@@ -1436,10 +1438,10 @@ into the IDs of these depots are to be found in the list behind \
 				for (productVersion, packageVersions) in versions.items():
 					for packageVersion in packageVersions:
 						if not self.productOnDepot_getIdents(
-								productId=productId,
-								productVersion=productVersion,
-								packageVersion=packageVersion):
-
+							productId=productId,
+							productVersion=productVersion,
+							packageVersion=packageVersion
+						):
 							# Product not found on any depot
 							self._backend.product_deleteObjects(
 								self._backend.product_getObjects(
@@ -1704,11 +1706,11 @@ into the IDs of these depots are to be found in the list behind \
 						if pod.productId not in pocByClientIdAndProductId[clientId]:
 							logger.debug("      - creating default productOnClient for clientId '%s', productId '%s'", clientId, pod.productId)
 							poc = ProductOnClient(
-									productId=pod.productId,
-									productType=pod.productType,
-									clientId=clientId,
-									installationStatus='not_installed',
-									actionRequest='none',
+								productId=pod.productId,
+								productType=pod.productType,
+								clientId=clientId,
+								installationStatus='not_installed',
+								actionRequest='none',
 							)
 							poc.setGeneratedDefault(True)
 							productOnClients.append(poc)
@@ -1823,9 +1825,10 @@ into the IDs of these depots are to be found in the list behind \
 		for productOnClient in productOnClients:
 			logger.info("Updating productOnClient %s", productOnClient)
 			if self.productOnClient_getIdents(
-					productId=productOnClient.productId,
-					productType=productOnClient.productType,
-					clientId=productOnClient.clientId):
+				productId=productOnClient.productId,
+				productType=productOnClient.productType,
+				clientId=productOnClient.clientId
+			):
 				logger.info("ProductOnClient %s exists, updating", productOnClient)
 				self.productOnClient_updateObject(productOnClient)
 			else:
@@ -1887,10 +1890,11 @@ into the IDs of these depots are to be found in the list behind \
 		# Create data structure for product property states to find missing ones
 		ppss = collections.defaultdict(lambda: collections.defaultdict(list))
 		for pps in self._backend.productPropertyState_getObjects(
-						attributes=['objectId', 'productId', 'propertyId'],
-						objectId=filter.get('objectId', []),
-						productId=filter.get('productId', []),
-						propertyId=filter.get('propertyId', [])):
+			attributes=['objectId', 'productId', 'propertyId'],
+			objectId=filter.get('objectId', []),
+			productId=filter.get('productId', []),
+			propertyId=filter.get('propertyId', [])
+		):
 			ppss[pps.objectId][pps.productId].append(pps.propertyId)
 
 		# Create missing product property states
@@ -2054,9 +2058,10 @@ into the IDs of these depots are to be found in the list behind \
 		for objectToGroup in objectToGroups:
 			logger.info("Updating objectToGroup %s", objectToGroup)
 			if self.objectToGroup_getIdents(
-					groupType=objectToGroup.groupType,
-					groupId=objectToGroup.groupId,
-					objectId=objectToGroup.objectId):
+				groupType=objectToGroup.groupType,
+				groupId=objectToGroup.groupId,
+				objectId=objectToGroup.objectId
+			):
 				self._backend.objectToGroup_updateObject(objectToGroup)
 			else:
 				logger.info("ObjectToGroup %s does not exist, creating", objectToGroup)
@@ -2268,8 +2273,9 @@ into the IDs of these depots are to be found in the list behind \
 		for softwareLicenseToLicensePool in softwareLicenseToLicensePools:
 			logger.info("Updating %s", softwareLicenseToLicensePool)
 			if self.softwareLicenseToLicensePool_getIdents(
-					softwareLicenseId=softwareLicenseToLicensePool.softwareLicenseId,
-					licensePoolId=softwareLicenseToLicensePool.licensePoolId):
+				softwareLicenseId=softwareLicenseToLicensePool.softwareLicenseId,
+				licensePoolId=softwareLicenseToLicensePool.licensePoolId
+			):
 				self._backend.softwareLicenseToLicensePool_updateObject(softwareLicenseToLicensePool)
 			else:
 				logger.info("SoftwareLicenseToLicensePool %s does not exist, creating", softwareLicenseToLicensePool)
@@ -2333,9 +2339,10 @@ into the IDs of these depots are to be found in the list behind \
 		for licenseOnClient in licenseOnClients:
 			logger.info("Updating licenseOnClient %s", licenseOnClient)
 			if self.licenseOnClient_getIdents(
-					softwareLicenseId=licenseOnClient.softwareLicenseId,
-					licensePoolId=licenseOnClient.licensePoolId,
-					clientId=licenseOnClient.clientId):
+				softwareLicenseId=licenseOnClient.softwareLicenseId,
+				licensePoolId=licenseOnClient.licensePoolId,
+				clientId=licenseOnClient.clientId
+			):
 				self._backend.licenseOnClient_updateObject(licenseOnClient)
 			else:
 				logger.info("LicenseOnClient %s does not exist, creating", licenseOnClient)
@@ -2545,12 +2552,12 @@ into the IDs of these depots are to be found in the list behind \
 		for auditSoftware in auditSoftwares:
 			logger.info("Updating %s", auditSoftware)
 			if self.auditSoftware_getIdents(
-					name=auditSoftware.name,
-					version=auditSoftware.version,
-					subVersion=auditSoftware.subVersion,
-					language=auditSoftware.language,
-					architecture=auditSoftware.architecture):
-
+				name=auditSoftware.name,
+				version=auditSoftware.version,
+				subVersion=auditSoftware.subVersion,
+				language=auditSoftware.language,
+				architecture=auditSoftware.architecture
+			):
 				self._backend.auditSoftware_updateObject(auditSoftware)
 			else:
 				logger.info("AuditSoftware %s does not exist, creating", auditSoftware)
@@ -2570,10 +2577,10 @@ into the IDs of these depots are to be found in the list behind \
 		return result
 
 	def auditSoftware_create(  # pylint: disable=too-many-arguments
-			self, name, version, subVersion, language, architecture,  # pylint: disable=unused-argument
-			windowsSoftwareId=None, windowsDisplayName=None,  # pylint: disable=unused-argument
-			windowsDisplayVersion=None, installSize=None  # pylint: disable=unused-argument
-		):
+		self, name, version, subVersion, language, architecture,  # pylint: disable=unused-argument
+		windowsSoftwareId=None, windowsDisplayName=None,  # pylint: disable=unused-argument
+		windowsDisplayVersion=None, installSize=None  # pylint: disable=unused-argument
+	):
 		_hash = locals()
 		del _hash['self']
 		return self.auditSoftware_createObjects(AuditSoftware.fromHash(_hash))
@@ -2634,12 +2641,12 @@ into the IDs of these depots are to be found in the list behind \
 		for auditSoftwareToLicensePool in auditSoftwareToLicensePools:
 			logger.info("Creating %s", auditSoftwareToLicensePool)
 			if self.auditSoftwareToLicensePool_getIdents(
-					name=auditSoftwareToLicensePool.name,
-					version=auditSoftwareToLicensePool.version,
-					subVersion=auditSoftwareToLicensePool.subVersion,
-					language=auditSoftwareToLicensePool.language,
-					architecture=auditSoftwareToLicensePool.architecture):
-
+				name=auditSoftwareToLicensePool.name,
+				version=auditSoftwareToLicensePool.version,
+				subVersion=auditSoftwareToLicensePool.subVersion,
+				language=auditSoftwareToLicensePool.language,
+				architecture=auditSoftwareToLicensePool.architecture
+			):
 				self._backend.auditSoftwareToLicensePool_updateObject(auditSoftwareToLicensePool)
 			else:
 				logger.info("AuditSoftwareToLicensePool %s does not exist, creating", auditSoftwareToLicensePool)
@@ -2725,12 +2732,13 @@ into the IDs of these depots are to be found in the list behind \
 		for auditSoftwareOnClient in auditSoftwareOnClients:
 			logger.info("Updating auditSoftwareOnClient %s", auditSoftwareOnClient)
 			if self.auditSoftwareOnClient_getIdents(
-					name=auditSoftwareOnClient.name,
-					version=auditSoftwareOnClient.version,
-					subVersion=auditSoftwareOnClient.subVersion,
-					language=auditSoftwareOnClient.language,
-					architecture=auditSoftwareOnClient.architecture,
-					clientId=auditSoftwareOnClient.clientId):
+				name=auditSoftwareOnClient.name,
+				version=auditSoftwareOnClient.version,
+				subVersion=auditSoftwareOnClient.subVersion,
+				language=auditSoftwareOnClient.language,
+				architecture=auditSoftwareOnClient.architecture,
+				clientId=auditSoftwareOnClient.clientId
+			):
 				self._backend.auditSoftwareOnClient_updateObject(auditSoftwareOnClient)
 			else:
 				logger.info("AuditSoftwareOnClient %s does not exist, creating", auditSoftwareOnClient)

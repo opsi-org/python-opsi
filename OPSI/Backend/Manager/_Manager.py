@@ -16,14 +16,14 @@ from __future__ import absolute_import
 import os
 import re
 
+from opsicommon.logging import logger
+
 from OPSI.Backend.Base import Backend, ExtendedBackend, ExtendedConfigDataBackend
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Backend.HostControlSafe import HostControlSafeBackend
 from OPSI.Exceptions import BackendConfigurationError
 from OPSI.Types import forceBool
-
-from opsicommon.logging import logger
 
 from .AccessControl import BackendAccessControl
 from .Config import loadBackendConfig

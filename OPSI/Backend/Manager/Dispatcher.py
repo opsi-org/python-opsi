@@ -13,6 +13,8 @@ import re
 import types
 from functools import lru_cache
 
+from opsicommon.logging import logger
+
 from OPSI.Backend.Base import (
 	Backend, ConfigDataBackend, getArgAndCallString
 )
@@ -21,8 +23,6 @@ from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import BackendConfigurationError
 from OPSI.Types import forceList
 from OPSI.Util.File.Opsi import BackendDispatchConfigFile
-
-from opsicommon.logging import logger
 
 from .Config import loadBackendConfig
 
@@ -143,7 +143,7 @@ class BackendDispatcher(Backend):
 	def _createInstanceMethods(self):  # pylint: disable=too-many-branches
 		logger.debug("BackendDispatcher is creating instance methods")
 		classes = [ConfigDataBackend]
-		classes.extend([ backend["instance"].__class__ for backend in self._backends.values() ])
+		classes.extend([backend["instance"].__class__ for backend in self._backends.values()])
 		if JSONRPCBackend in classes:
 			classes.remove(JSONRPCBackend)
 			classes.append(ExtendedConfigDataBackend)
