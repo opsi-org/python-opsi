@@ -32,7 +32,7 @@ test:pylint-pytest:
     # apt update
     # apt-get --yes install libmysqlclient-dev mysql-client librsync2 #careful: this bumps glibc to at least 2.31
     apt-get update
-    apt-get --yes install libmysqlclient-dev
+    apt-get --yes install default-libmysqlclient-dev
     poetry lock --no-update
     poetry install
     poetry run pylint --disable=R,C,W OPSI
