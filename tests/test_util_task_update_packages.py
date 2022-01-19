@@ -35,127 +35,130 @@ def package_updater_class(backendManager) -> OpsiPackageUpdater:
 		yield klass
 
 
-def test_listing_local_packages(package_updater_class):  # pylint: disable=redefined-outer-name
-	with workInTemporaryDirectory() as tempDir:
-		configFile = os.path.join(tempDir, 'emptyconfig.conf')
-		with open(configFile, 'wb'):
+def test_listing_local_packages(tmpdir, package_updater_class):  # pylint: disable=redefined-outer-name
+	config_file = os.path.join(tmpdir, 'emptyconfig.conf')
+	with open(config_file, 'wb'):
+		pass
+
+	filenames = [
+		'not.tobefound.opsi.nono',
+		'thingy_1.2-3.opsi', 'thingy_1.2-3.opsi.no'
+	]
+
+	for filename in filenames:
+		with open(os.path.join(tmpdir, filename), 'wb'):
 			pass
 
-		filenames = [
-			'not.tobefound.opsi.nono',
-			'thingy_1.2-3.opsi', 'thingy_1.2-3.opsi.no'
-		]
+	config = DEFAULT_CONFIG.copy()
+	config['packageDir'] = tmpdir
+	config['configFile'] = config_file
 
-		for filename in filenames:
-			with open(os.path.join(tempDir, filename), 'wb'):
-				pass
+	package_updater = package_updater_class(config)
+	local_packages = package_updater.getLocalPackages()
+	package_info = local_packages.pop()
+	assert not local_packages, "There should only be one package!"
 
-		config = DEFAULT_CONFIG.copy()
-		config['packageDir'] = tempDir
-		config['configFile'] = configFile
+	expected_info = {
+		"productId": "thingy",
+		"version": "1.2-3",
+		"packageFile": os.path.join(tmpdir, 'thingy_1.2-3.opsi'),
+		"filename": "thingy_1.2-3.opsi",
+		"md5sum": None
+	}
 
-		packageUpdater = package_updater_class(config)
-		localPackages = packageUpdater.getLocalPackages()
-		packageInfo = localPackages.pop()
-		assert not localPackages, "There should only be one package!"
+	assert set(package_info.keys()) == set(expected_info.keys())
+	assert package_info['md5sum']  # We want any value
 
-		expectedInfo = {
-			"productId": "thingy",
-			"version": "1.2-3",
-			"packageFile": os.path.join(tempDir, 'thingy_1.2-3.opsi'),
-			"filename": "thingy_1.2-3.opsi",
-			"md5sum": None
-		}
-
-		assert set(packageInfo.keys()) == set(expectedInfo.keys())
-		assert packageInfo['md5sum']  # We want any value
-
-		del expectedInfo['md5sum']  # Not comparing this
-		for key, expectedValue in expectedInfo.items():
-			assert packageInfo[key] == expectedValue
+	del expected_info['md5sum']  # Not comparing this
+	for key, expected_value in expected_info.items():
+		assert package_info[key] == expected_value
 
 
 @pytest.fixture
 def example_config_path(test_data_path):
-	filePath = os.path.join(test_data_path, 'util', 'task', 'updatePackages', 'example_updater.conf')
-	with createTemporaryTestfile(filePath) as newPath:
-		yield newPath
+	file_path = os.path.join(test_data_path, 'util', 'task', 'updatePackages', 'example_updater.conf')
+	with createTemporaryTestfile(file_path) as new_path:
+		yield new_path
 
 
-def test_parsing_config_file(example_config_path, package_updater_class):  # pylint: disable=redefined-outer-name
-	with workInTemporaryDirectory() as tempDir:
-		preparedConfig = DEFAULT_CONFIG.copy()
-		preparedConfig['packageDir'] = tempDir
-		preparedConfig['configFile'] = example_config_path
+def test_parsing_config_file(tmpdir, example_config_path, package_updater_class):  # pylint: disable=redefined-outer-name
+	prepared_config = DEFAULT_CONFIG.copy()
+	prepared_config['packageDir'] = tmpdir
+	prepared_config['configFile'] = example_config_path
 
-		repoPath = os.path.join(tempDir, 'repos.d')
-		os.mkdir(repoPath)
+	repo_path = os.path.join(tmpdir, 'repos.d')
+	os.mkdir(repo_path)
 
-		patch_config_file(example_config_path, packageDir=tempDir, repositoryConfigDir=repoPath)
-		copy_example_repo_configs(repoPath)
+	patch_config_file(
+		example_config_path,
+		logFile=os.path.join(tmpdir, "opsi-package-updater.log"),
+		packageDir=tmpdir,
+		repositoryConfigDir=repo_path
+	)
+	copy_example_repo_configs(repo_path)
 
-		packageUpdater = package_updater_class(preparedConfig)
-		config = packageUpdater.config
+	package_updater = package_updater_class(prepared_config)
+	config = package_updater.config
 
-		assert config
-		assert config['repositories']
-		assert len(config['repositories']) == 3
-		for repo in config['repositories']:
-			assert isinstance(repo, ProductRepositoryInfo)
+	assert config
+	assert config['repositories']
+	assert len(config['repositories']) == 3
+	for repo in config['repositories']:
+		assert isinstance(repo, ProductRepositoryInfo)
 
-		assert config['packageDir'] == tempDir
-		assert config['tempdir'] == '/tmp'
-		assert config['repositoryConfigDir'] == repoPath
+	assert config['packageDir'] == tmpdir
+	assert config['tempdir'] == '/tmp'
+	assert config['repositoryConfigDir'] == repo_path
 
-		# Global proxy
-		assert not config['proxy']
+	# Global proxy
+	assert not config['proxy']
 
-		# e-mail notification settings
-		assert config['notification'] is False
-		assert config['smtphost'] == 'smtp'
-		assert config['smtpport'] == 25
-		assert config['smtpuser'] == DEFAULT_CONFIG['smtpuser']
-		assert config['smtppassword'] == DEFAULT_CONFIG['smtppassword']
-		assert config['use_starttls'] is False
-		assert config['sender'] == 'opsi-package-updater@localhost'
-		assert config['receivers'] == ['root@localhost', 'anotheruser@localhost']
-		assert config['subject'] == 'opsi-package-updater example config'
+	# e-mail notification settings
+	assert config['notification'] is False
+	assert config['smtphost'] == 'smtp'
+	assert config['smtpport'] == 25
+	assert config['smtpuser'] == DEFAULT_CONFIG['smtpuser']
+	assert config['smtppassword'] == DEFAULT_CONFIG['smtppassword']
+	assert config['use_starttls'] is False
+	assert config['sender'] == 'opsi-package-updater@localhost'
+	assert config['receivers'] == ['root@localhost', 'anotheruser@localhost']
+	assert config['subject'] == 'opsi-package-updater example config'
 
-		# Automatic installation settings
-		assert config['installationWindowStartTime'] == '01:23'
-		assert config['installationWindowEndTime'] == '04:56'
-		assert config['installationWindowExceptions'] == ['firstproduct', 'second-product']
+	# Automatic installation settings
+	assert config['installationWindowStartTime'] == '01:23'
+	assert config['installationWindowEndTime'] == '04:56'
+	assert config['installationWindowExceptions'] == ['firstproduct', 'second-product']
 
-		# Wake-On-LAN settings
-		assert config['wolAction'] is False
-		assert config['wolActionExcludeProductIds'] == ['this', 'that']
-		assert config['wolShutdownWanted'] is True
-		assert config['wolStartGap'] == 10
+	# Wake-On-LAN settings
+	assert config['wolAction'] is False
+	assert config['wolActionExcludeProductIds'] == ['this', 'that']
+	assert config['wolShutdownWanted'] is True
+	assert config['wolStartGap'] == 10
 
 
 def patch_config_file(filename, **values):
-	with open(filename, encoding="utf-8") as configFile:
-		lines = configFile.readlines()
+	with open(filename, encoding="utf-8") as config_file:
+		lines = config_file.readlines()
 
-	newLines = []
+	new_lines = []
 	for line in lines:
 		for key, value in values.items():
 			if line.startswith(key):
-				newLines.append(f'{key} = {value}\n')
+				new_lines.append(f'{key} = {value}\n')
 				break
 		else:
-			newLines.append(line)
+			new_lines.append(line)
 
-	with open(filename, 'w', encoding="utf-8") as configFile:
-		for line in newLines:
-			configFile.write(line)
+	with open(filename, 'w', encoding="utf-8") as config_file:
+		for line in new_lines:
+			config_file.write(line)
 
 
-def copy_example_repo_configs(targetDir):
+def copy_example_repo_configs(target_dir):
 	from .conftest import TEST_DATA_PATH  # pylint: disable=import-outside-toplevel
 	for filename in ('experimental.repo', ):
-		filePath = os.path.join(TEST_DATA_PATH, 'util', 'task', 'updatePackages', filename)
-		shutil.copy(filePath, targetDir)
+		file_path = os.path.join(TEST_DATA_PATH, 'util', 'task', 'updatePackages', filename)
+		shutil.copy(file_path, target_dir)
 
 
 @pytest.fixture(
@@ -163,15 +166,15 @@ def copy_example_repo_configs(targetDir):
 	ids=['apache']
 )
 def repository_listing_page(test_data_path, request):
-	filePath = os.path.join(test_data_path, 'util', 'task', 'updatePackages', request.param)
+	file_path = os.path.join(test_data_path, 'util', 'task', 'updatePackages', request.param)
 
-	with open(filePath, encoding="utf-8") as exampleFile:
-		return exampleFile.read()
+	with open(file_path, encoding="utf-8") as example_file:
+		return example_file.read()
 
 
-def test_link_extracting(repositoryListingPage):  # pylint: disable=redefined-outer-name
+def test_link_extracting(repository_listing_page):  # pylint: disable=redefined-outer-name
 	extractor = LinksExtractor()
-	extractor.feed(repositoryListingPage)
+	extractor.feed(repository_listing_page)
 	extractor.close()
 
 	for _link in extractor.getLinks():
@@ -181,28 +184,33 @@ def test_link_extracting(repositoryListingPage):  # pylint: disable=redefined-ou
 		raise RuntimeError("No links found!")
 
 
-def test_global_proxy_applied_to_repos(example_config_path, package_updater_class):  # pylint: disable=redefined-outer-name
-	testProxy = 'http://hurr:durr@someproxy:1234'
+def test_global_proxy_applied_to_repos(tmpdir, example_config_path, package_updater_class):  # pylint: disable=redefined-outer-name
+	test_proxy = 'http://hurr:durr@someproxy:1234'
 
-	with workInTemporaryDirectory() as tempDir:
-		preparedConfig = DEFAULT_CONFIG.copy()
-		preparedConfig['packageDir'] = tempDir
-		preparedConfig['configFile'] = example_config_path
+	prepared_config = DEFAULT_CONFIG.copy()
+	prepared_config['packageDir'] = tmpdir
+	prepared_config['configFile'] = example_config_path
 
-		repoPath = os.path.join(tempDir, 'repos.d')
-		os.mkdir(repoPath)
+	repo_path = os.path.join(tmpdir, 'repos.d')
+	os.mkdir(repo_path)
 
-		patch_config_file(example_config_path, packageDir=tempDir, repositoryConfigDir=repoPath, proxy=testProxy)
-		copy_example_repo_configs(repoPath)
+	patch_config_file(
+		example_config_path,
+		logFile=os.path.join(tmpdir, "opsi-package-updater.log"),
+		packageDir=tmpdir,
+		repositoryConfigDir=repo_path,
+		proxy=test_proxy
+	)
+	copy_example_repo_configs(repo_path)
 
-		packageUpdater = package_updater_class(preparedConfig)
-		config = packageUpdater.config
+	package_updater = package_updater_class(prepared_config)
+	config = package_updater.config
 
-		assert config['proxy'] == testProxy
+	assert config['proxy'] == test_proxy
 
-		for repo in config['repositories']:
-			print(repo.active)
-			assert repo.proxy == testProxy
+	for repo in config['repositories']:
+		print(repo.active)
+		assert repo.proxy == test_proxy
 
 
 def test_check_accept_ranges(tmp_path, package_updater_class):  # pylint: disable=redefined-outer-name,too-many-locals
