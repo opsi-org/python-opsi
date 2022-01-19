@@ -2891,7 +2891,11 @@ class Distribution:  # pylint: disable=too-many-instance-attributes
 
 	def __init__(self, distribution_information=None):
 		if distribution_information is None:
-			distribution_information = distro_module.linux_distribution()
+			distribution_information = (
+				distro_module.name(),
+				distro_module.version(),
+				distro_module.codename()
+			)
 
 		logger.debug("distribution information: %s", distribution_information)
 		self.distribution, self._version, self.id = distribution_information  # pylint: disable=invalid-name
