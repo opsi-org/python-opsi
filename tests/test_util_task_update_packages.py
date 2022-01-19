@@ -21,7 +21,7 @@ from OPSI.Util.Task.UpdatePackages.Notifier import DummyNotifier
 from OPSI.Util.Task.UpdatePackages.Config import DEFAULT_CONFIG
 from OPSI.Util.Task.UpdatePackages.Repository import ProductRepositoryInfo, LinksExtractor
 
-from .helpers import mock, createTemporaryTestfile, workInTemporaryDirectory
+from .helpers import mock, createTemporaryTestfile
 from .test_hosts import getConfigServer
 
 
