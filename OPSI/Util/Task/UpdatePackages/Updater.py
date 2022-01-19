@@ -164,7 +164,10 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				result[package["repository"]] = [package]
 		return result
 
-	def _useZsync(self, availablePackage, localPackage):
+	def _useZsync(self, availablePackage, localPackage):  # pylint: disable=too-many-return-statements
+		if not availablePackage["acceptRanges"]:
+			logger.info("Cannot use zsync, server does not accept ranges")
+			return False
 		if not self.config["useZsync"]:
 			return False
 		if not localPackage:
@@ -763,7 +766,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 					if inp:
 						data += inp
 						buffer += inp
-						match = stateRegex.search(buffer.decode())
+						match = stateRegex.search(buffer.decode("utf-8", "replace"))
 						if match:
 							buffer = match.group(3).encode()
 							new_percent = float(match.group(1))
@@ -988,7 +991,8 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 								"packageFile": packageFile,
 								"filename": link,
 								"md5sum": None,
-								"zsyncFile": None
+								"zsyncFile": None,
+								"acceptRanges": bool(response.headers.get("Accept-Ranges"))
 							}
 							logger.debug("Repository package info: %s", packageInfo)
 							packages.append(packageInfo)
@@ -1014,14 +1018,14 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 							for i, package in enumerate(packages):
 								if package.get('filename') == filename:
 									if isMd5:
-										response = session.get(f"{url}/{link}")
+										response = session.get(f"{url.rstrip('/')}/{link.lstrip('/')}")
 										match = re.search(r'([a-z\d]{32})', response.content.decode("utf-8"))
 										if match:
 											foundMd5sum = match.group(1)
 											packages[i]["md5sum"] = foundMd5sum
 											logger.debug("Got md5sum for package %s: %s", filename, foundMd5sum)
 									elif isZsync:
-										zsyncFile = url + '/' + link
+										zsyncFile = f"{url.rstrip('/')}/{link.lstrip('/')}"
 										packages[i]["zsyncFile"] = zsyncFile
 										logger.debug("Found zsync file for package '%s': %s", filename, zsyncFile)
 
