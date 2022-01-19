@@ -12,10 +12,10 @@ from unittest import mock
 
 import pytest
 
+from opsicommon.testing.helpers import http_test_server
+
 from OPSI.Exceptions import RepositoryError
 from OPSI.Util.Repository import FileRepository, getRepository, getFileInfosFromDavXML
-
-from .helpers import http_test_server
 
 
 def testGettingFileRepository():
