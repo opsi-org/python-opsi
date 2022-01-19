@@ -321,7 +321,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 					logger.notice(message)
 					installedPackages.append(package)
 
-				except Exception as err: # pylint: disable=broad-except
+				except Exception as err:  # pylint: disable=broad-except
 					if not self.config.get("ignoreErrors"):
 						raise
 					logger.error("Ignoring error for package %s: %s", package["productId"], err, exc_info=True)
@@ -506,7 +506,8 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 
 		logger.info("Verifying download of package '%s'", packageFile)
 		if not availablePackage['md5sum']:
-			logger.warning("%s: Cannot verify download of package: missing md5sum file",
+			logger.warning(
+				"%s: Cannot verify download of package: missing md5sum file",
 				availablePackage['productId']
 			)
 			return True
@@ -532,9 +533,9 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				logger.debug("Product '%s' is installed", availablePackage['productId'])
 				logger.debug(
 					"Available product version is '%s', installed product version is '%s-%s'",
-						availablePackage['version'],
-						product['productVersion'],
-						product['packageVersion']
+					availablePackage['version'],
+					product['productVersion'],
+					product['packageVersion']
 				)
 				return product
 		return None
@@ -548,17 +549,17 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 
 	def is_download_needed(self, localPackageFound, availablePackage, notifier=None):
 		if (
-				localPackageFound and
-				localPackageFound['filename'] == availablePackage['filename'] and
-				localPackageFound['md5sum'] == availablePackage['md5sum']
+			localPackageFound and
+			localPackageFound['filename'] == availablePackage['filename'] and
+			localPackageFound['md5sum'] == availablePackage['md5sum']
 		):
 			# Recalculate md5sum
 			localPackageFound['md5sum'] = md5sum(localPackageFound['packageFile'])
 			if localPackageFound['md5sum'] == availablePackage['md5sum']:
 				logger.info(
 					"%s - download of package is not required: found local package %s with matching md5sum",
-						availablePackage["filename"],
-						localPackageFound["filename"]
+					availablePackage["filename"],
+					localPackageFound["filename"]
 				)
 				# No notifier message as nothing to do
 				return False
@@ -654,14 +655,13 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 							raise HashsumMissmatchError(f"{availablePackage['productId']}: md5sum mismatch")
 						self.cleanupPackages(availablePackage)
 						newPackages.append(availablePackage)
-					except Exception as exc: # pylint: disable=broad-except
+					except Exception as exc:  # pylint: disable=broad-except
 						if self.config.get("ignoreErrors"):
 							logger.error("Ignoring Error for package %s: %s", availablePackage["productId"], exc, exc_info=True)
 							notifier.appendLine(f"Ignoring Error for package {availablePackage['productId']}: {exc}")
 						else:
 							raise exc
 		return newPackages
-
 
 	def get_package(self, availablePackage, localPackageFound, session, notifier=None, zsync=True):  # pylint: disable=too-many-arguments
 		packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
@@ -683,7 +683,6 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				notifier.appendLine(message)
 		else:
 			self.downloadPackage(availablePackage, session, notifier=notifier)
-
 
 	def downloadPackages(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		if not any(self.getActiveRepositories()):
@@ -779,12 +778,11 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				data = data.decode("utf-8", "replace")
 				raise RuntimeError(f"Command {cmd} failed with exit code {exit_code}: {data}")
 
-
 	def downloadPackage(self, availablePackage, session, notifier=None):  # pylint: disable=too-many-locals
 		url = availablePackage["packageFile"]
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 
-		response = session.get(url, headers=self.httpHeaders, stream=True, timeout=3600*8) # 8h timeout
+		response = session.get(url, headers=self.httpHeaders, stream=True, timeout=3600 * 8)  # 8h timeout
 		if response.status_code < 200 or response.status_code > 299:
 			logger.error("Unable to download Package from %s: %s - %s", url, response.status_code, response.text)
 			raise ConnectionError(f"Unable to download Package from {url}: {response.status_code} - {response.text}")
@@ -817,7 +815,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 								lastTime = now
 								lastCompleted = completed
 							logger.debug("Downloading %s: %0.1f%% (%0.2f kbit/s)", url, percent, speed)
-					except Exception: # pylint: disable=broad-except
+					except Exception:  # pylint: disable=broad-except
 						pass
 
 		if size:
@@ -1041,7 +1039,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 			return packages
 
 	@contextmanager
-	def makeSession(self, repository):	# pylint: disable=no-self-use
+	def makeSession(self, repository):  # pylint: disable=no-self-use
 		logger.info("opening session for repository '%s' (%s)", repository.name, repository.baseUrl)
 		try:
 			no_proxy_addresses = ["localhost", "127.0.0.1", "ip6-localhost", "::1"]
@@ -1056,6 +1054,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 			yield session
 		finally:
 			session.close()
+
 
 def getLocalPackages(packageDirectory, forceChecksumCalculation=False):
 	"""
