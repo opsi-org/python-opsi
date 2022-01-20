@@ -209,11 +209,10 @@ def test_global_proxy_applied_to_repos(tmpdir, example_config_path, package_upda
 	assert config['proxy'] == test_proxy
 
 	for repo in config['repositories']:
-		print(repo.active)
 		assert repo.proxy == test_proxy
 
 
-def test_check_accept_ranges(tmp_path, package_updater_class):  # pylint: disable=redefined-outer-name,too-many-locals
+def test_check_accept_ranges(tmp_path, package_updater_class):  # pylint: disable=redefined-outer-name,too-many-locals,too-many-statements
 	config_file = tmp_path / "empty.conf"
 	config_file.touch()
 	local_dir = tmp_path / "local_packages"
