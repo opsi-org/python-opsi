@@ -77,6 +77,7 @@ _ACCEPTED_CHARACTERS = (
 
 Version = namedtuple('Version', 'product package')
 
+
 def _legacy_cmpkey(version: str):
 	_legacy_version_component_re = re.compile(r"(\d+ | [a-z]+ | \.| -)", re.VERBOSE)
 	_legacy_version_replacement_map = {
@@ -86,6 +87,7 @@ def _legacy_cmpkey(version: str):
 		"rc": "c",
 		"dev": "@",
 	}
+
 	def _parse_version_parts(instring: str):
 		for part in _legacy_version_component_re.split(instring):
 			part = _legacy_version_replacement_map.get(part, part)
@@ -118,9 +120,10 @@ def _legacy_cmpkey(version: str):
 
 	return tuple(parts)
 
+
 # inspired by packaging.version.LegacyVersion (Deprecated)
 class LegacyVersion(packaging.version.Version):
-	def __init__(self, version: str):	#pylint: disable=super-init-not-called
+	def __init__(self, version: str):  # pylint: disable=super-init-not-called
 		self._version = str(version)
 		self._key = _legacy_cmpkey(self._version)
 

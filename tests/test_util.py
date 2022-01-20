@@ -5,6 +5,7 @@
 """
 Testing functionality of OPSI.Util.
 """
+# pylint: disable=too-many-lines
 
 import random
 import re
@@ -13,12 +14,14 @@ import os.path
 from collections import defaultdict
 from contextlib import contextmanager
 
+import pytest
+
 from OPSI.Object import ConfigState, LocalbootProduct, OpsiClient
 from OPSI.Util import (
 	blowfishDecrypt, blowfishEncrypt, chunk,
 	findFilesGenerator, formatFileSize,
 	fromJson, generateOpsiHostKey, getfqdn, ipAddressInNetwork,
-	isRegularExpressionPattern,	md5sum, objectToBash, objectToBeautifiedText,
+	isRegularExpressionPattern, md5sum, objectToBash, objectToBeautifiedText,
 	objectToHtml, randomString, removeUnit, toJson, compareVersions
 )
 from OPSI.Util import BlowfishError
@@ -29,17 +32,15 @@ from .helpers import (
 	workInTemporaryDirectory
 )
 
-import pytest
 
-
-@pytest.mark.parametrize("ip, network, result", [
+@pytest.mark.parametrize("ipa, network, result", [
 	('10.10.1.1', '10.10.0.0/16', True),
 	('10.10.1.1', '10.10.0.0/23', True),
 	('10.10.1.1', '10.10.0.0/24', False),
 	('10.10.1.1', '10.10.0.0/25', False),
 ])
-def testNetworkWithSlashInNotation(ip, network, result):
-	assert ipAddressInNetwork(ip, network) == result
+def testNetworkWithSlashInNotation(ipa, network, result):
+	assert ipAddressInNetwork(ipa, network) == result
 
 
 def testIpAddressInNetworkWithEmptyNetworkMask():
@@ -71,10 +72,10 @@ def generateLocalbootProducts(amount):
 
 	for index in range(amount):
 		yield LocalbootProduct(
-			id='product{0}'.format(index),
+			id=f'product{index}',
 			productVersion=random.choice(productVersions),
 			packageVersion=random.choice(packageVersions),
-			name='Product {0}'.format(index),
+			name=f'Product {index}',
 			licenseRequired=random.choice(licenseRequirements),
 			setupScript=random.choice(setupScripts),
 			uninstallScript=random.choice(uninstallScripts),
@@ -190,18 +191,18 @@ def testObjectToBeautifiedText():
 	assert result.count('\n') == 45
 
 	for key, value in product.toHash().items():
-		print("Checking {} ({!r})".format(key, value))
+		# print(f"Checking {key} ({value})")
 
 		if value is None:
 			fValue = 'null'
 		elif isinstance(value, bool):
-			fValue = '{}'.format(str(value).lower())
+			fValue = str(value).lower()
 		elif isinstance(value, int):
-			fValue = '{}'.format(value)
+			fValue = str(value)
 		else:
-			fValue = '"{}"'.format(value)
+			fValue = f'"{value}"'
 
-		formattedStr = '"{}": {}'.format(key, fValue)
+		formattedStr = f'"{key}": {fValue}'
 		assert formattedStr in result
 		assert result.count(formattedStr) == 2  # We have two objects
 
@@ -209,7 +210,7 @@ def testObjectToBeautifiedText():
 @pytest.mark.parametrize("value, expected", [
 	([], '[]'),
 	([[], []], '[\n    [],\n    []\n]'),
-	({},'{}'),
+	({}, '{}'),
 
 ])
 def testObjectToBeautifiedTextEmptyObjects(expected, value):
@@ -217,7 +218,15 @@ def testObjectToBeautifiedTextEmptyObjects(expected, value):
 
 
 def testObjectToBeautifiedTextFormattingDefaultDict():
-	normalDict = {'lastStateChange': '', 'actionRequest': 'none', 'productVersion': '', 'productActionProgress': '', 'packageVersion': '', 'installationStatus': 'not_installed', 'productId': 'thunderbird'}
+	normalDict = {
+		'lastStateChange': '',
+		'actionRequest': 'none',
+		'productVersion': '',
+		'productActionProgress': '',
+		'packageVersion': '',
+		'installationStatus': 'not_installed',
+		'productId': 'thunderbird'
+	}
 	defaultDict = defaultdict(lambda x: '')
 
 	for key, value in normalDict.items():
@@ -236,8 +245,8 @@ def testObjectToBeautifiedTextFormattingDefaultDict():
 		('productId', 'thunderbird')
 	]
 
-	for index, result in enumerate((normal, default)):
-		print("Check #{}: {}".format(index, result))
+	for _index, result in enumerate((normal, default)):
+		# print(f"Check #{_index}: {result}")
 
 		assert result.startswith('{')
 		assert result.endswith('}')
@@ -246,7 +255,7 @@ def testObjectToBeautifiedTextFormattingDefaultDict():
 		assert result.count('\n') == len(expected) + 1
 
 		for key, value in expected:
-			assert '"{}": "{}"'.format(key, value) in result
+			assert f'"{key}": "{value}"' in result
 
 
 def testObjectToBeautifiedTextWorkingWithSet():
@@ -279,23 +288,23 @@ def testObjectToBeautifiedTextWorkingWithSet():
 	assert result.count('\n') == 23
 
 	for key, value in product.toHash().items():
-		print("Checking {} ({!r})".format(key, value))
+		# print(f"Checking {key} ({value})")
 
 		if value is None:
 			fValue = 'null'
 		elif isinstance(value, bool):
-			fValue = '{}'.format(str(value).lower())
+			fValue = str(value).lower()
 		elif isinstance(value, int):
-			fValue = '{}'.format(value)
+			fValue = str(value)
 		else:
-			fValue = '"{}"'.format(value)
+			fValue = f'"{value}"'
 
-		formattedStr = '"{}": {}'.format(key, fValue)
+		formattedStr = f'"{key}": {fValue}'
 		assert formattedStr in result
 
 
 def testRandomStringBuildsStringOutOfGivenCharacters():
-	assert 5*'a' == randomString(5, characters='a')
+	assert 5 * 'a' == randomString(5, characters='a')
 
 
 @pytest.mark.parametrize("length", [10, 1, 0])
@@ -311,16 +320,22 @@ def testGeneratingOpsiHostKey():
 	assert isinstance(key, str)
 
 
-@pytest.mark.parametrize("testInput, expected", [
-	(123, '123'),
-	(1234, '1K'),
-	(1234567, '1M'),
-	(314572800, '300M'),
-	(1234567890, '1G'),
-	(1234567890000, '1T'),
+@pytest.mark.parametrize("sizeInBytes, base, expected", [
+	(123, 2, '123B'),
+	(1_234, 2, '1KiB'),
+	(1_234_567, 2, '1MiB'),
+	(314_572_800, 2, '300MiB'),
+	(1_234_567_890, 2, '1GiB'),
+	(1_234_567_890_000, 2, '1TiB'),
+	(999, 10, '999B'),
+	(10_001, 10, '10kB'),
+	(90_100_100, 10, '90MB'),
+	(300_000_000, 10, '300MB'),
+	(1_123_123_123, 10, '1GB'),
+	(1_000_999_999_999, 10, '1TB'),
 ])
-def testFormatFileSize(testInput, expected):
-	assert expected == formatFileSize(testInput)
+def testFormatFileSize(sizeInBytes, base, expected):
+	assert formatFileSize(sizeInBytes, base) == expected
 
 
 @pytest.mark.parametrize("test_file, expected_hash", [
@@ -391,21 +406,21 @@ def globalConfigTestFile(test_data_path):
 	return os.path.join(test_data_path, 'util', 'fake_global.conf')
 
 
-def testGlobalConfigCommentsInFileAreIgnored(globalConfigTestFile):
+def testGlobalConfigCommentsInFileAreIgnored(globalConfigTestFile):  # pylint: disable=redefined-outer-name
 	assert "no" == getGlobalConfig('comment', globalConfigTestFile)
 
 
-def testGlobalConfigLinesNeedAssignments(globalConfigTestFile):
+def testGlobalConfigLinesNeedAssignments(globalConfigTestFile):  # pylint: disable=redefined-outer-name
 	assert getGlobalConfig('this', globalConfigTestFile) is None
 
 
-def testGlobalConfigFileReadingValues(globalConfigTestFile):
+def testGlobalConfigFileReadingValues(globalConfigTestFile):  # pylint: disable=redefined-outer-name
 	assert "value" == getGlobalConfig('keyword', globalConfigTestFile)
 	assert "this works too" == getGlobalConfig('value with spaces', globalConfigTestFile)
 	assert "we even can include a = and it works" == getGlobalConfig('advanced value', globalConfigTestFile)
 
 
-def testGetGlobalConfigExitsGracefullyIfFileIsMissing(globalConfigTestFile):
+def testGetGlobalConfigExitsGracefullyIfFileIsMissing(globalConfigTestFile):  # pylint: disable=redefined-outer-name,unused-argument
 	assert getGlobalConfig('dontCare', 'nonexistingFile') is None
 
 
@@ -435,7 +450,7 @@ def testRemoveUnitDoesNotFailWithoutUnit(value, expected):
 	('0.5Kb', 512),
 ])
 def testRemovingUnitFromValue(value, expected):
-		assert expected == removeUnit(value)
+	assert expected == removeUnit(value)
 
 
 def testGettingFQDN():
@@ -467,7 +482,7 @@ def testGettingFQDNIfConfigFileEmpty(tempDir):
 	fqdn = "opsi.fqdntestcase.invalid"
 	with patchAddress(fqdn=fqdn):
 		confPath = os.path.join(tempDir, randomString(8))
-		with open(confPath, 'w'):
+		with open(confPath, 'wb'):
 			pass
 
 		assert fqdn == getfqdn(conf=confPath)
@@ -562,12 +577,12 @@ def testSerialisingDictsInListWithFloat():
 	assert output.count(',') == 5
 	assert output.count('}, {') == 1
 
-	for d in inputValues:
-		for key, value in d.items():
-			if isinstance(value, str):
-				assert '"{}": "{}"'.format(key, value) in output
+	for value in inputValues:
+		for key, val in value.items():
+			if isinstance(val, str):
+				assert f'"{key}": "{val}"' in output
 			else:
-				assert '"{}": {}'.format(key, value) in output
+				assert f'"{key}": {val}' in output
 
 	assert inputValues == fromJson(output)
 
@@ -575,7 +590,7 @@ def testSerialisingDictsInListWithFloat():
 @pytest.mark.parametrize("inputValues", [
 	{'a': 'b', 'c': 1, 'e': 2},
 	{'a': 'b', 'c': 1, 'e': 2.3}
-	])
+])
 def testSerialisingDict(inputValues):
 	result = toJson(inputValues)
 
@@ -585,15 +600,15 @@ def testSerialisingDict(inputValues):
 	assert result.count(',') == 2
 	for key, value in inputValues.items():
 		if isinstance(value, str):
-			assert '"{}": "{}"'.format(key, value) in result
+			assert f'"{key}": "{value}"' in result
 		else:
-			assert '"{}": {}'.format(key, value) in result
+			assert f'"{key}": {value}' in result
 
 	assert inputValues == fromJson(result)
 
 
 def testUnserialisableThingsFail():
-	class Foo:
+	class Foo:  # pylint: disable=too-few-public-methods
 		pass
 
 	with pytest.raises(TypeError):
@@ -626,6 +641,7 @@ def testDeserialisationWithObjectCreation():
 	obj = result[0]
 	assert isinstance(obj, OpsiClient)
 
+
 def testDeserialisationWithObjectCreationFailure():
 	json = """[
 	{
@@ -645,7 +661,8 @@ def testDeserialisationWithObjectCreationFailure():
 ]"""
 
 	with pytest.raises(ValueError):
-		result = fromJson(json, preventObjectCreation=False)
+		fromJson(json, preventObjectCreation=False)
+
 
 def testDeserialisationWithoutObjectCreation():
 	json = """[
@@ -729,7 +746,7 @@ def testSerialisingGeneratorFunction():
 		yield 1
 		yield 2
 		yield 3
-		yield u"a"
+		yield "a"
 
 	obj = toJson(gen())
 
@@ -742,7 +759,7 @@ def testSerialisingTuples():
 
 
 def testFindFilesWithEmptyDirectory(tempDir):
-	assert [] == list(findFilesGenerator(tempDir))
+	assert not list(findFilesGenerator(tempDir))
 
 
 def testFindFilesFindsFolders():
@@ -780,9 +797,10 @@ def blowfishKey(request):
 
 
 def test_blowfish_encryption():
-	encodedText = blowfishEncrypt('575bf0d0b557dd9184ae41e7ff58ead0', "jksdfjklöasdfjkladfsjkasdfjlkö")
+	blowfishEncrypt('575bf0d0b557dd9184ae41e7ff58ead0', "jksdfjklöasdfjkladfsjkasdfjlkö")
 
-def testBlowfishEncryption(randomText, blowfishKey):
+
+def testBlowfishEncryption(randomText, blowfishKey):  # pylint: disable=redefined-outer-name
 	encodedText = blowfishEncrypt(blowfishKey, randomText)
 	assert encodedText != randomText
 
@@ -790,21 +808,21 @@ def testBlowfishEncryption(randomText, blowfishKey):
 	assert randomText == decodedText
 
 
-def testBlowfishEncryptionFailures(randomText, blowfishKey):
+def testBlowfishEncryptionFailures(randomText, blowfishKey):  # pylint: disable=redefined-outer-name
 	encodedText = blowfishEncrypt(blowfishKey, randomText)
 
 	with pytest.raises(BlowfishError):
 		blowfishDecrypt(blowfishKey + 'f00b4', encodedText)
 
 
-def testBlowfishDecryptionFailsWithNoKey(randomText, blowfishKey):
+def testBlowfishDecryptionFailsWithNoKey(randomText, blowfishKey):  # pylint: disable=redefined-outer-name
 	encodedText = blowfishEncrypt(blowfishKey, randomText)
 
 	with pytest.raises(BlowfishError):
 		blowfishDecrypt(None, encodedText)
 
 
-def testBlowfishEncryptionFailsWithNoKey(randomText, blowfishKey):
+def testBlowfishEncryptionFailsWithNoKey(randomText, blowfishKey):  # pylint: disable=redefined-outer-name,unused-argument
 	with pytest.raises(BlowfishError):
 		blowfishEncrypt(None, randomText)
 
@@ -834,7 +852,7 @@ def testObjectToBashWorksWithGenerators(objectCount):
 	assert len(result) == objectCount + 1
 
 	for index in range(1, objectCount + 1):  # to not start at 0
-		resultVar = 'RESULT{0}'.format(index)
+		resultVar = f'RESULT{index}'
 		assert resultVar in result
 		assert resultVar in result['RESULT']
 
@@ -863,8 +881,8 @@ def testObjectToBashOutput():
 
 	expected = {
 		'RESULT': '(\nRESULT1=${RESULT1[*]}\nRESULT2=${RESULT2[*]}\n)',
-		'RESULT1': '(\nonceScript="once.ins"\nwindowsSoftwareIds=""\ndescription="asdf"\nadvice="lolnope"\nalwaysScript="always.ins"\nupdateScript="update.ins"\nproductClassIds=""\nid="htmltestproduct"\nlicenseRequired="False"\nident="htmltestproduct;3.1;1"\nname="Product HTML Test"\nchangelog=""\ncustomScript=""\nuninstallScript="uninstall.ins"\nuserLoginScript=""\npriority="0"\nproductVersion="3.1"\npackageVersion="1"\ntype="LocalbootProduct"\nsetupScript="setup.ins"\n)',
-		'RESULT2': '(\nonceScript="once.ins"\nwindowsSoftwareIds=""\ndescription="asdf"\nadvice="lolnope"\nalwaysScript="always.ins"\nupdateScript="update.ins"\nproductClassIds=""\nid="htmltestproduct"\nlicenseRequired="False"\nident="htmltestproduct;3.1;1"\nname="Product HTML Test"\nchangelog=""\ncustomScript=""\nuninstallScript="uninstall.ins"\nuserLoginScript=""\npriority="0"\nproductVersion="3.1"\npackageVersion="1"\ntype="LocalbootProduct"\nsetupScript="setup.ins"\n)',
+		'RESULT1': '(\nonceScript="once.ins"\nwindowsSoftwareIds=""\ndescription="asdf"\nadvice="lolnope"\nalwaysScript="always.ins"\nupdateScript="update.ins"\nproductClassIds=""\nid="htmltestproduct"\nlicenseRequired="False"\nident="htmltestproduct;3.1;1"\nname="Product HTML Test"\nchangelog=""\ncustomScript=""\nuninstallScript="uninstall.ins"\nuserLoginScript=""\npriority="0"\nproductVersion="3.1"\npackageVersion="1"\ntype="LocalbootProduct"\nsetupScript="setup.ins"\n)',  # pylint: disable=line-too-long
+		'RESULT2': '(\nonceScript="once.ins"\nwindowsSoftwareIds=""\ndescription="asdf"\nadvice="lolnope"\nalwaysScript="always.ins"\nupdateScript="update.ins"\nproductClassIds=""\nid="htmltestproduct"\nlicenseRequired="False"\nident="htmltestproduct;3.1;1"\nname="Product HTML Test"\nchangelog=""\ncustomScript=""\nuninstallScript="uninstall.ins"\nuserLoginScript=""\npriority="0"\nproductVersion="3.1"\npackageVersion="1"\ntype="LocalbootProduct"\nsetupScript="setup.ins"\n)',  # pylint: disable=line-too-long
 	}
 
 	result = objectToBash([product, product])
@@ -928,7 +946,7 @@ def testObjectToBashOnConfigStates():
 		assert isinstance(value, str)
 
 	for index in range(1, len(states) + 1):  # exclude ref to values of drive.slow
-		resultVar = 'RESULT{0}'.format(index)
+		resultVar = f'RESULT{index}'
 		assert resultVar in result
 		assert resultVar in result['RESULT']
 
@@ -944,15 +962,16 @@ def testComparingVersionsOfSameSize(first, operator, second):
 	assert compareVersions(first, operator, second)
 
 
-@pytest.mark.parametrize("v1, operator, v2", [
+@pytest.mark.parametrize("ver1, operator, ver2", [
 	('1.0', '', '1.0'),
 ])
-def testComparingWithoutGivingOperatorDefaultsToEqual(v1, operator, v2):
-	assert compareVersions(v1, operator, v2)
+def testComparingWithoutGivingOperatorDefaultsToEqual(ver1, operator, ver2):
+	assert compareVersions(ver1, operator, ver2)
 
 
 def testComparingWithOnlyOneEqualitySign():
 	assert compareVersions('1.0', '=', '1.0')
+
 
 @pytest.mark.parametrize("first, operator, second", [
 	('1.0or2.0', '<', '1.0or2.1'),
@@ -961,6 +980,7 @@ def testComparingWithOnlyOneEqualitySign():
 ])
 def testComparingOrVersions(first, operator, second):
 	assert compareVersions(first, operator, second)
+
 
 @pytest.mark.parametrize("first, operator, second", [
 	('20.09', '<', '21.h1'),
@@ -979,36 +999,35 @@ def testUsingUnknownOperatorFails(operator):
 		compareVersions('1', operator, '2')
 
 
-@pytest.mark.parametrize("v1, operator, v2", [
+@pytest.mark.parametrize("ver1, operator, ver2", [
 	('1.0~20131212', '<', '2.0~20120101'),
 	('1.0~20131212', '==', '1.0~20120101'),
 ])
-def testIgnoringVersionsWithWaveInThem(v1, operator, v2):
-	assert compareVersions(v1, operator, v2)
+def testIgnoringVersionsWithWaveInThem(ver1, operator, ver2):
+	assert compareVersions(ver1, operator, ver2)
 
 
-@pytest.mark.parametrize("v1, operator, v2", [
+@pytest.mark.parametrize("ver1, operator, ver2", [
 	('abc-1.2.3-4', '==', '1.2.3-4'),
 	('1.2.3-4', '==', 'abc-1.2.3-4')
 ])
-def testUsingInvalidVersionStringsFails(v1, operator, v2):
+def testUsingInvalidVersionStringsFails(ver1, operator, ver2):
 	with pytest.raises(ValueError):
-		compareVersions(v1, operator, v2)
+		compareVersions(ver1, operator, ver2)
 
 
-@pytest.mark.parametrize("v1, operator, v2", [
+@pytest.mark.parametrize("ver1, operator, ver2", [
 	('1.1.0.1', '>', '1.1'),
 	('1.1', '<', '1.1.0.1'),
 	('1.1', '==', '1.1.0.0'),
 ])
-def testComparisonsWithDifferntDepthsAreMadeTheSameDepth(v1, operator, v2):
-	assert compareVersions(v1, operator, v2)
+def testComparisonsWithDifferntDepthsAreMadeTheSameDepth(ver1, operator, ver2):
+	assert compareVersions(ver1, operator, ver2)
 
 
-@pytest.mark.parametrize("v1, operator, v2", [
+@pytest.mark.parametrize("ver1, operator, ver2", [
 	('1-2', '<', '1-3'),
 	('1-2.0', '<', '1-2.1')
 ])
-def testPackageVersionsAreComparedAswell(v1, operator, v2):
-	assert compareVersions(v1, operator, v2)
-
+def testPackageVersionsAreComparedAswell(ver1, operator, ver2):
+	assert compareVersions(ver1, operator, ver2)
