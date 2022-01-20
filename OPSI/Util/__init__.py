@@ -149,6 +149,23 @@ class PickleString(str):
 
 
 def formatFileSize(sizeInBytes, base: int = 2):  # pylint: disable=too-many-return-statements
+	"""
+	https://wiki.ubuntu.com/UnitsPolicy
+
+	Correct basis
+
+	Use base-10 for:
+		network bandwidth (for example, 6 Mbit/s or 50 kB/s)
+		disk sizes (for example, 500 GB hard drive or 4.7 GB DVD)
+
+	Use base-2 for:
+		RAM sizes (for example, 2 GiB RAM)
+
+	For file sizes there are two possibilities:
+
+		Show both, base-10 and base-2 (in this order). An example is the Linux kernel: "2930277168 512-byte hardware sectors: (1.50 TB/1.36 TiB)"
+		Only show base-10, or give the user the opportunity to decide between base-10 and base-2 (the default must be base-10).
+	"""
 	if base == 10:
 		if sizeInBytes < 1_000:
 			return f"{sizeInBytes:0.0f}B"
