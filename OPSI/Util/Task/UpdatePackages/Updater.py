@@ -822,7 +822,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 						pass
 
 		if size:
-			message = f"Download of '{url}' completed (~{formatFileSize(size)})"
+			message = f"Download of '{url}' completed (~{formatFileSize(size, base=10)})"
 		else:
 			message = f"Download of '{url}' completed"
 
