@@ -39,6 +39,7 @@ _MODULES_FILE = os.path.exists(os.path.join('/etc', 'opsi', 'modules'))
 TEST_DATA_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), 'data'))
 DIST_DATA_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'data'))
 
+
 @pytest.fixture
 def test_data_path():
 	return TEST_DATA_PATH
@@ -51,6 +52,8 @@ def dist_data_path():
 
 def emit(*args, **kwargs) -> None:  # pylint: disable=unused-argument
 	pass
+
+
 LogCaptureHandler.emit = emit
 
 
@@ -199,7 +202,7 @@ def hardwareAuditBackendWithHistory(request, hardwareAuditConfigPath):  # pylint
 
 
 @pytest.fixture
-def hardwareAuditConfigPath(dist_data_path):
+def hardwareAuditConfigPath(dist_data_path):  # pylint: disable=redefined-outer-name
 	'''
 	Copies the opsihwaudit.conf that is usually distributed for
 	installation to a temporary folder and then returns the new absolute

@@ -2,6 +2,9 @@
 
 # Copyright (c) uib GmbH <info@uib.de>
 # License: AGPL-3.0
+"""
+MySQL backend test helpers
+"""
 
 from contextlib import contextmanager
 
@@ -45,24 +48,20 @@ def cleanDatabase(database):
 	def dropAllTables(database):
 		with database.session() as session:
 			with disableForeignKeyChecks(database, session):
-				tablesToDropAgain = set()
-				for tableName in getTableNames(database, session):
-					try:
-						database.execute(session, 'DROP TABLE `{0}`;'.format(tableName))
-					except Exception as error:
-						print("Failed to drop {0}: {1}".format(tableName, error))
-						tablesToDropAgain.add(tableName)
-
-				for tableName in tablesToDropAgain:
-					try:
-						database.execute(session, 'DROP TABLE `{0}`;'.format(tableName))
-					except Exception as error:
-						errorCode = error.args[0]
-						if errorCode == UNKNOWN_TABLE_ERROR_CODE:
-							continue
-
-						print("Failed to drop {0} a second time: {1}".format(tableName, error))
-						raise error
+				# Drop database
+				error_count = 0
+				success = False
+				while not success:
+					success = True
+					for table_name in getTableNames(database, session):
+						drop_command = f'DROP TABLE `{table_name}`'
+						try:
+							database.execute(session, drop_command)
+						except Exception:  # pylint: disable=broad-except
+							success = False
+							error_count += 1
+							if error_count > 10:
+								raise
 
 	dropAllTables(database)
 	try:
@@ -72,4 +71,4 @@ def cleanDatabase(database):
 
 
 def getTableNames(database, session):
-	return set(tuple(i.values())[0] for i in database.getSet(session, u'SHOW TABLES;'))
+	return set(tuple(i.values())[0] for i in database.getSet(session, 'SHOW TABLES'))

@@ -11,8 +11,13 @@ This backend can be used to control hosts.
 import socket
 import struct
 import time
+import ipaddress
 
 from contextlib import closing
+
+from opsicommon.logging import logger
+from opsicommon.objects import Host
+from opsicommon.client.jsonrpc import JSONRPCClient
 
 from OPSI import __version__
 from OPSI.Backend.Base import ExtendedBackend
@@ -20,61 +25,13 @@ from OPSI.Exceptions import (
 	BackendMissingDataError, BackendUnaccomplishableError
 )
 from OPSI.Types import (
-	forceBool, forceDict, forceHostId, forceHostIdList,	forceInt,
-	forceIpAddress, forceList, forceUnicode, forceUnicodeList
+	forceBool, forceHostId, forceHostIdList, forceInt,
+	forceIpAddress, forceList, forceUnicode
 )
 from OPSI.Util.Thread import KillableThread
 
-from opsicommon.client.jsonrpc import JSONRPCClient
-from opsicommon.logging import logger
 
 __all__ = ('RpcThread', 'ConnectionThread', 'HostControlBackend')
-
-
-def _configureHostcontrolBackend(backend, kwargs):
-	"""
-	Configure `backend` to the values given in `kwargs`.
-
-	Keys in `kwargs` will be treated as lowercase.
-	Supported keys are 'broadcastaddresses', 'hostrpctimeout', \
-'maxconnections' opsiclientdport' and 'resolvehostaddress'.
-	Unrecognized options will be ignored.
-
-	:type backend: HostControlBackend or HostControlSafeBackend
-	:type kwargs: dict
-	"""
-	for option, value in kwargs.items():
-		option = option.lower()
-		if option == 'opsiclientdport':
-			backend._opsiclientdPort = forceInt(value)  # pylint: disable=protected-access
-		elif option == 'hostrpctimeout':
-			backend._hostRpcTimeout = forceInt(value)  # pylint: disable=protected-access
-		elif option == 'resolvehostaddress':
-			backend._resolveHostAddress = forceBool(value)  # pylint: disable=protected-access
-		elif option == 'maxconnections':
-			backend._maxConnections = forceInt(value)  # pylint: disable=protected-access
-		elif option == 'broadcastaddresses':
-			try:
-				backend._broadcastAddresses = forceDict(value)  # pylint: disable=protected-access
-			except ValueError:
-				# This is an old-style configuraton. Old default
-				# port was 12287 so we assume this as the default
-				# and convert everything to the new format.
-				backend._broadcastAddresses = {bcAddress: (12287, ) for bcAddress in forceUnicodeList(value)}  # pylint: disable=protected-access
-				logger.warning(
-					"Your hostcontrol backend configuration uses the old "
-					"format for broadcast addresses. The new format "
-					"allows to also set a list of ports to send the "
-					"broadcast to.\nPlease use this new "
-					"value in the future: %s", backend._broadcastAddresses  # pylint: disable=protected-access
-				)
-
-			newAddresses = {bcAddress: tuple(forceInt(port) for port in ports)
-							for bcAddress, ports
-							in backend._broadcastAddresses.items()}  # pylint: disable=protected-access
-			backend._broadcastAddresses = newAddresses  # pylint: disable=protected-access
-
-	backend._maxConnections = max(backend._maxConnections, 1)  # pylint: disable=protected-access
 
 
 class RpcThread(KillableThread):  # pylint: disable=too-many-instance-attributes
@@ -157,9 +114,30 @@ class HostControlBackend(ExtendedBackend):
 		self._hostReachableTimeout = 3
 		self._resolveHostAddress = False
 		self._maxConnections = 50
-		self._broadcastAddresses = {"255.255.255.255": (7, 9, 12287)}
+		self._broadcastAddresses = {}
 
-		_configureHostcontrolBackend(self, kwargs)
+		broadcastAddresses = {
+			"0.0.0.0/0": {
+				"255.255.255.255": [7, 9, 12287]
+			}
+		}
+
+		for option, value in kwargs.items():
+			option = option.lower()
+			if option == 'opsiclientdport':
+				self._opsiclientdPort = forceInt(value)
+			elif option == 'hostrpctimeout':
+				self._hostRpcTimeout = forceInt(value)
+			elif option == 'hostreachabletimeout':
+				self._hostReachableTimeout = forceInt(value)
+			elif option == 'resolvehostaddress':
+				self._resolveHostAddress = forceBool(value)
+			elif option == 'maxconnections':
+				self._maxConnections = max(forceInt(value), 1)
+			elif option == 'broadcastaddresses' and value:
+				broadcastAddresses = value
+
+		self._set_broadcast_addresses(broadcastAddresses)
 
 	def __repr__(self):
 		try:
@@ -167,6 +145,35 @@ class HostControlBackend(ExtendedBackend):
 		except AttributeError:
 			# Can happen during initialisation
 			return f'<{self.__class__.__name__}()>'
+
+	def _set_broadcast_addresses(self, value):
+		self._broadcastAddresses = {}
+		old_format = False
+		if isinstance(value, list):
+			old_format: True
+			# Old format <list-broadcast-addresses>
+			value = {"0.0.0.0/0": {addr: [7, 9, 12287] for addr in value}}
+
+		elif not isinstance(list(value.values())[0], dict):
+			old_format: True
+			# Old format <broadcast-address>: <port-list>
+			value = {"0.0.0.0/0": value}
+
+		# New format <network-address>: <broadcast-address>: <port-list>
+		for network_address, broadcast_addresses in value.items():
+			net = ipaddress.ip_network(network_address)
+			self._broadcastAddresses[net] = {}
+			for broadcast_address, ports in broadcast_addresses.items():
+				brd = ipaddress.ip_address(broadcast_address)
+				self._broadcastAddresses[net][brd] = tuple(forceInt(port) for port in ports)
+
+		if old_format:
+			logger.warning(
+				"Your hostcontrol backend configuration uses an old format for broadcast addresses. "
+				"Please use the following new format:\n"
+				'{ "<network-address>": { "<broadcast-address>": <port-list> } }\n'
+				'Example: { "0.0.0.0/0": { "255.255.255.255": [7, 9, 12287] } }'
+			)
 
 	def _getHostAddress(self, host):
 		address = None
@@ -270,9 +277,33 @@ class HostControlBackend(ExtendedBackend):
 
 		return result
 
+	def _get_broadcast_addresses_for_host(self, host: Host):  # pylint: disable=inconsistent-return-statements
+		if not self._broadcastAddresses:
+			return []
+
+		networks = []
+		if host.ipAddress:
+			ip_address = ipaddress.ip_address(host.ipAddress)
+			for ip_network in self._broadcastAddresses:
+				if ip_address and ip_address in ip_network:
+					networks.append(ip_network)
+
+			if len(networks) > 1:
+				# Take bets matching network by prefix length
+				networks = [sorted(networks, key=lambda x: x.prefixlen, reverse=True)[0]]
+			elif not networks:
+				logger.debug("No matching ip network found for host address '%s', using all broadcasts", ip_address.compressed)
+				networks = list(self._broadcastAddresses)
+		else:
+			networks = list(self._broadcastAddresses)
+
+		for network in networks:
+			for broadcast, ports in self._broadcastAddresses[network].items():
+				yield (broadcast.compressed, ports)
+
 	def hostControl_start(self, hostIds=[]):  # pylint: disable=dangerous-default-value
 		''' Switches on remote computers using WOL. '''
-		hosts = self._context.host_getObjects(attributes=['hardwareAddress'], id=hostIds)  # pylint: disable=maybe-no-member
+		hosts = self._context.host_getObjects(attributes=['hardwareAddress', 'ipAddress'], id=hostIds)  # pylint: disable=maybe-no-member
 		result = {}
 		for host in hosts:
 			try:
@@ -290,14 +321,14 @@ class HostControlBackend(ExtendedBackend):
 						struct.pack('B', int(data[i:i + 2], 16))
 					])
 
-				for broadcastAddress, targetPorts in self._broadcastAddresses.items():
-					logger.debug("Sending data to network broadcast %s [%s]", broadcastAddress, data)
+				for broadcast_address, target_ports in self._get_broadcast_addresses_for_host(host):
+					logger.debug("Sending data to network broadcast %s %s [%s]", broadcast_address, target_ports, data)
 
-					for port in targetPorts:
+					for port in target_ports:
 						logger.debug("Broadcasting to port %s", port)
 						with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)) as sock:
 							sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
-							sock.sendto(payload, (broadcastAddress, port))
+							sock.sendto(payload, (broadcast_address, port))
 
 				result[host.id] = {"result": "sent", "error": None}
 			except Exception as err:  # pylint: disable=broad-except
@@ -322,7 +353,7 @@ class HostControlBackend(ExtendedBackend):
 		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method='fireEvent', params=[event])
 
-	def hostControl_showPopup(self, message, hostIds=[], mode="prepend", addTimestamp=True, displaySeconds=0):  # pylint: disable=dangerous-default-value
+	def hostControl_showPopup(self, message, hostIds=[], mode="prepend", addTimestamp=True, displaySeconds=0):  # pylint: disable=dangerous-default-value,too-many-arguments
 		message = forceUnicode(message)
 		displaySeconds = forceInt(displaySeconds)
 		hostIds = self._context.host_getIdents(id=hostIds, returnType='unicode')  # pylint: disable=maybe-no-member

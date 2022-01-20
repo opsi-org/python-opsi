@@ -28,6 +28,8 @@ except (ImportError, OSError):
 	from Cryptodome.Hash import MD5
 	from Cryptodome.Signature import pkcs1_15
 
+from opsicommon.logging import logger
+
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import BackendError
 from OPSI.Object import *  # this is needed for dynamic loading # pylint: disable=wildcard-import,unused-wildcard-import
@@ -36,7 +38,6 @@ from OPSI.Types import (
 )
 from OPSI.Util import compareVersions, getPublicKey
 
-from opsicommon.logging import logger
 
 __all__ = ('describeInterface', 'Backend')
 
@@ -93,11 +94,12 @@ def describeInterface(instance):
 
 	return [methods[name] for name in sorted(list(methods.keys()))]
 
+
 class BackendOptions:
 	"""
 	A class used to combine option defaults and changed options
 	"""
-	def __init__(self, option_defaults: dict, option_store: Union[dict,callable] = None):
+	def __init__(self, option_defaults: dict, option_store: Union[dict, callable] = None):
 		"""
 		:param option_defaults: The default option items as dict
 		:param options_store: A dict or a callable to retrieve a dict to store changed options
@@ -136,6 +138,7 @@ class BackendOptions:
 
 	def copy(self):
 		return dict(self.items())
+
 
 class Backend:  # pylint: disable=too-many-instance-attributes
 	"""

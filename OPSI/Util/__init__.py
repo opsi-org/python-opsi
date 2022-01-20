@@ -145,16 +145,27 @@ class PickleString(str):
 		self = base64.standard_b64decode(state)  # pylint: disable=self-cls-assignment
 
 
-def formatFileSize(sizeInBytes):
-	if sizeInBytes < 1024:
-		return f"{sizeInBytes:0.0f}"
-	if sizeInBytes < 1048576:  # 1024**2
-		return f"{sizeInBytes / 1024:0.0f}K"
-	if sizeInBytes < 1073741824:  # 1024**3
-		return f"{sizeInBytes / 1048576:0.0f}M"
-	if sizeInBytes < 1099511627776:  # 1024**4
-		return f"{sizeInBytes / 1073741824:0.0f}G"
-	return f"{sizeInBytes / 1099511627776:0.0f}T"
+def formatFileSize(sizeInBytes, base: int = 2):  # pylint: disable=too-many-return-statements
+	if base == 10:
+		if sizeInBytes < 1_000:
+			return f"{sizeInBytes:0.0f}B"
+		if sizeInBytes < 1_000_000:
+			return f"{sizeInBytes / 1000:0.0f}kB"
+		if sizeInBytes < 1_000_000_000:
+			return f"{sizeInBytes / 1_000_000:0.0f}MB"
+		if sizeInBytes < 1_000_000_000_000:
+			return f"{sizeInBytes / 1_000_000_000:0.0f}GB"
+		return f"{sizeInBytes / 1_000_000_000_000:0.0f}TB"
+
+	if sizeInBytes < 1_024:
+		return f"{sizeInBytes:0.0f}B"
+	if sizeInBytes < 1_048_576:  # 1024**2
+		return f"{sizeInBytes / 1024:0.0f}KiB"
+	if sizeInBytes < 107_374_1824:  # 1024**3
+		return f"{sizeInBytes / 1048576:0.0f}MiB"
+	if sizeInBytes < 1_099_511_627_776:  # 1024**4
+		return f"{sizeInBytes / 1_073_741_824:0.0f}GiB"
+	return f"{sizeInBytes / 1_099_511_627_776:0.0f}TiB"
 
 
 def md5sum(filename):
@@ -348,7 +359,7 @@ def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many
 			raise ValueError(f"Bad package version provided: '{version}'")
 
 	try:
-		#dont use packaging.version.parse() here as packaging.version.Version cannot handle legacy formats
+		# Don't use packaging.version.parse() here as packaging.version.Version cannot handle legacy formats
 		first = LegacyVersion(first)
 		second = LegacyVersion(second)
 	except packaging.version.InvalidVersion as version_error:
@@ -588,6 +599,7 @@ def findFilesGenerator(  # pylint: disable=too-many-branches,too-many-locals,too
 				logger.debug("Including file '%s'", entry)
 		yield pp
 
+
 def findFiles(  # pylint: disable=too-many-arguments
 	directory, prefix='',
 	excludeDir=None, excludeFile=None, includeDir=None, includeFile=None,
@@ -602,6 +614,7 @@ def findFiles(  # pylint: disable=too-many-arguments
 			repository
 		)
 	)
+
 
 if sys.version_info >= (3, 7):
 	def isRegularExpressionPattern(object):  # pylint: disable=redefined-builtin
@@ -723,6 +736,7 @@ def getPublicKey(data):
 
 def monkeypatch_subprocess_for_frozen():
 	from subprocess import Popen as PopenOrig  # pylint: disable=import-outside-toplevel
+
 	class PopenPatched(PopenOrig):
 		def __init__(self, *args, **kwargs):
 			if kwargs.get("env") is None:

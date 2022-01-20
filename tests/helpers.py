@@ -9,63 +9,10 @@ Helpers for testing opsi.
 import os
 import shutil
 import tempfile
-import threading
-import socket
-from contextlib import closing, contextmanager
-import http.server
-import socketserver
-
-import unittest.mock as mock
+from contextlib import contextmanager
+from unittest import mock
 
 from OPSI.Util.Path import cd
-
-
-
-class HTTPFileServerRequestHandler(http.server.SimpleHTTPRequestHandler):
-	def do_PUT(self):
-		"""Serve a PUT request."""
-		path = self.translate_path(self.path)
-		length = int(self.headers['Content-Length'])
-		with open(path, 'wb') as file:
-			file.write(self.rfile.read(length))
-		self.send_response(201, "Created")
-		self.end_headers()
-
-
-class HTTPFileServer(threading.Thread):
-	def __init__(self, directory):
-		super().__init__()
-		self.directory = directory
-		# Auto select free port
-		with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
-			sock.bind(('', 0))
-			sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-			self.port = sock.getsockname()[1]
-		self.server = None
-
-	def run(self):
-		directory = self.directory
-		class Handler(HTTPFileServerRequestHandler):
-			def __init__(self, *args, **kwargs):
-				super().__init__(*args, directory=directory, **kwargs)
-		self.server = socketserver.TCPServer(("", self.port), Handler)
-		#print("Server started at localhost:" + str(self.port))
-		self.server.serve_forever()
-
-	def stop(self):
-		if self.server:
-			self.server.shutdown()
-
-
-@contextmanager
-def http_file_server(directory):
-	server = HTTPFileServer(directory)
-	server.daemon = True
-	server.start()
-	try:
-		yield server
-	finally:
-		server.stop()
 
 
 @contextmanager
@@ -88,7 +35,6 @@ be deleted if given.
 					pass
 
 
-
 @contextmanager
 def createTemporaryTestfile(original, tempDir=None):
 	'''Copy `original` to a temporary directory and \
@@ -107,8 +53,8 @@ yield the path to the new file.
 def getLocalFQDN():
 	'Get the FQDN of the local machine.'
 	# Lazy imports to not hinder other tests.
-	from OPSI.Types import forceHostId
-	from OPSI.Util import getfqdn
+	from OPSI.Types import forceHostId  # pylint: disable=import-outside-toplevel
+	from OPSI.Util import getfqdn  # pylint: disable=import-outside-toplevel
 
 	return forceHostId(getfqdn())
 
@@ -122,9 +68,7 @@ def patchAddress(fqdn="opsi.test.invalid", address="172.16.0.1"):
 as hostname.
 	:param address: The IP address to use.
 	"""
-	fqdn = fqdn
 	hostname = fqdn.split(".")[0]
-	address = address
 
 	def getfqdn(*_):
 		return fqdn
@@ -155,17 +99,15 @@ def patchEnvironmentVariables(**environmentVariables):
 
 
 @contextmanager
-def fakeGlobalConf(fqdn="opsi.test.invalid", dir=None):
+def fakeGlobalConf(fqdn="opsi.test.invalid", dir=None):  # pylint: disable=redefined-builtin
 	"Fake a global.conf and return the path to the file."
 
 	with workInTemporaryDirectory(dir) as tempDir:
 		configPath = os.path.join(tempDir, 'global.conf')
 
-		with open(configPath, "w") as conf:
-			conf.write("""[global]
-hostname = {0}
-""".format(fqdn))
-
+		with open(configPath, "w", encoding="utf-8") as conf:
+			conf.write("[global]\n")
+			conf.write(f"hostname = {fqdn}\n")
 		yield configPath
 
 
