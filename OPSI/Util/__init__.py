@@ -311,8 +311,8 @@ def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many
 			raise ValueError(f"Bad package version provided: '{version}'")
 
 	try:
-		#dont use packver.parse() here as it produces LegacyVersions if some letters are contained (else Versions)
-		#in comparisson, LegacyVersion is always smaller than Version (Problem for 20.09 and 21.h1)
+		# Don't use packver.parse() here as it produces LegacyVersions if some letters are contained (else Versions)
+		# in comparisson, LegacyVersion is always smaller than Version (Problem for 20.09 and 21.h1)
 		first = packver.LegacyVersion(first)
 		second = packver.LegacyVersion(second)
 	except packver.InvalidVersion as version_error:
@@ -552,6 +552,7 @@ def findFilesGenerator(  # pylint: disable=too-many-branches,too-many-locals,too
 				logger.debug("Including file '%s'", entry)
 		yield pp
 
+
 def findFiles(  # pylint: disable=too-many-arguments
 	directory, prefix='',
 	excludeDir=None, excludeFile=None, includeDir=None, includeFile=None,
@@ -566,6 +567,7 @@ def findFiles(  # pylint: disable=too-many-arguments
 			repository
 		)
 	)
+
 
 if sys.version_info >= (3, 7):
 	def isRegularExpressionPattern(object):  # pylint: disable=redefined-builtin
@@ -687,6 +689,7 @@ def getPublicKey(data):
 
 def monkeypatch_subprocess_for_frozen():
 	from subprocess import Popen as PopenOrig  # pylint: disable=import-outside-toplevel
+
 	class PopenPatched(PopenOrig):
 		def __init__(self, *args, **kwargs):
 			if kwargs.get("env") is None:
