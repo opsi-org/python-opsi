@@ -164,10 +164,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				result[package["repository"]] = [package]
 		return result
 
-	def _useZsync(self, availablePackage, localPackage):  # pylint: disable=too-many-return-statements
-		if not availablePackage["acceptRanges"]:
-			logger.info("Cannot use zsync, server does not accept ranges")
-			return False
+	def _useZsync(self, session, availablePackage, localPackage):  # pylint: disable=too-many-return-statements
 		if not self.config["useZsync"]:
 			return False
 		if not localPackage:
@@ -186,6 +183,12 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		):
 			logger.info("Cannot use zsync, because zsync does not support https")
 			return False
+
+		response = session.head(availablePackage["packageFile"])
+		if not response.headers.get("Accept-Ranges"):
+			logger.info("Cannot use zsync, server or proxy does not accept ranges")
+			return False
+
 		return True
 
 	def processUpdates(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
@@ -642,7 +645,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 							continue
 
 						localPackageFound = self.get_local_package(availablePackage, localPackages)
-						zsync = self._useZsync(availablePackage, localPackageFound)
+						zsync = self._useZsync(session, availablePackage, localPackageFound)
 						if self.is_download_needed(localPackageFound, availablePackage, notifier=notifier):
 							self.get_package(availablePackage, localPackageFound, session, zsync=zsync, notifier=notifier)
 						packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
@@ -991,8 +994,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 								"packageFile": packageFile,
 								"filename": link,
 								"md5sum": None,
-								"zsyncFile": None,
-								"acceptRanges": bool(response.headers.get("Accept-Ranges"))
+								"zsyncFile": None
 							}
 							logger.debug("Repository package info: %s", packageInfo)
 							packages.append(packageInfo)

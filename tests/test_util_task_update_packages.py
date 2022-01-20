@@ -239,21 +239,22 @@ def test_check_accept_ranges(tmp_path, package_updater_class):  # pylint: disabl
 		encoding="utf-8"
 	)
 
-	server_package_file = server_dir / "test1_1.2-3.opsi"
+	server_package_file = server_dir / "hwaudit_4.2.0.0-1.opsi"
 	server_package_file.write_bytes(b"abc" * 3_000_000)
-	zsync_file = server_dir / "test1_1.2-3.opsi.zsync"
+	zsync_file = server_dir / "hwaudit_4.2.0.0-1.opsi.zsync"
 	ZsyncFile(str(zsync_file)).generate(str(server_package_file))
-	md5sum_file = server_dir / "test1_1.2-3.opsi.md5"
+	md5sum_file = server_dir / "hwaudit_4.2.0.0-1.opsi.md5"
 	server_package_md5sum = md5sum(str(server_package_file))
 	md5sum_file.write_text(server_package_md5sum, encoding="ascii")
 
-	def write_repo_conf(server_port):
+	def write_repo_conf(base_url, proxy):
 		test_repo_conf.write_text(
 			data=(
 				"[repository_test]\n"
 				"active = true\n"
-				f"baseUrl = http://localhost:{server_port}\n"
+				f"baseUrl = {base_url}\n"
 				"dirs = /\n"
+				f"proxy = {proxy}\n"
 				"autoInstall = true\n"
 			),
 			encoding="utf-8"
@@ -265,36 +266,45 @@ def test_check_accept_ranges(tmp_path, package_updater_class):  # pylint: disabl
 			response_headers={"accept-ranges": "bytes"} if accept_ranges else None,
 			log_file=str(server_log)
 		) as server:
-			write_repo_conf(server.port)
+			base_url = f"http://localhost:{server.port}"
+			proxy = ""
+			# base_url = "https://download.uib.de/4.2/stable/packages/windows/localboot"
+			# proxy = "http://proxy:3128"
 
-			local_package_file = local_dir / "test1_1.2-1.opsi"
+			write_repo_conf(base_url, proxy)
+
+			local_package_file = local_dir / "hwaudit_4.1.0.0-1.opsi"
 			local_package_file.write_bytes(server_package_file.read_bytes() + b"def" * 3_000_000)
 
 			package_updater: OpsiPackageUpdater = package_updater_class(config)
 
 			availabale_packages = package_updater.getDownloadablePackages()
+			package = None
+			for availabale_package in availabale_packages:
+				if availabale_package["productId"] == "hwaudit":
+					package = availabale_package
+					break
+			assert package is not None
+
 			local_packages = package_updater.getLocalPackages()
 
-			assert len(availabale_packages) == 1
-			package = availabale_packages[0]
-			assert package["productId"] == "test1"
-			assert package["version"] == "1.2-3"
-			assert package["packageFile"] == f"http://localhost:{server.port}/test1_1.2-3.opsi"
+			assert package["version"] == "4.2.0.0-1"
+			assert package["packageFile"] == f"{base_url}/hwaudit_4.2.0.0-1.opsi"
 			assert package["filename"] == server_package_file.name
-			assert package["md5sum"] == server_package_md5sum
-			assert package["zsyncFile"] == f"http://localhost:{server.port}/{zsync_file.name}"
-			assert package["acceptRanges"] is accept_ranges
-			assert package_updater._useZsync(package, local_packages[0]) == accept_ranges  # pylint: disable=protected-access
+			assert package["zsyncFile"] == f"{base_url}/{zsync_file.name}"
+			with package_updater.makeSession(package["repository"]) as session:
+				assert package_updater._useZsync(session, package, local_packages[0]) == accept_ranges  # pylint: disable=protected-access
 
-			server_log.unlink()
+			if "localhost" in base_url:
+				server_log.unlink()
 			new_packages = package_updater.get_packages(DummyNotifier())
 			assert len(new_packages) == 1
 
-			assert md5sum(str(local_dir / server_package_file.name)) == server_package_md5sum
-
 			request = json.loads(server_log.read_text(encoding="utf-8").rstrip().split("\n")[-1])
-			server_log.unlink()
-			if accept_ranges:
-				assert "Range" in request["headers"]
-			else:
-				assert "Range" not in request["headers"]
+			if "localhost" in base_url:
+				assert md5sum(str(local_dir / server_package_file.name)) == server_package_md5sum
+				server_log.unlink()
+				if accept_ranges:
+					assert "Range" in request["headers"]
+				else:
+					assert "Range" not in request["headers"]
