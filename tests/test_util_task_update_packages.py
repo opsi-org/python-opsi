@@ -240,7 +240,7 @@ def test_check_accept_ranges(tmp_path, package_updater_class):  # pylint: disabl
 	)
 
 	server_package_file = server_dir / "test1_1.2-3.opsi"
-	server_package_file.write_bytes(b"data" * 200)
+	server_package_file.write_bytes(b"abc" * 3_000_000)
 	zsync_file = server_dir / "test1_1.2-3.opsi.zsync"
 	ZsyncFile(str(zsync_file)).generate(str(server_package_file))
 	md5sum_file = server_dir / "test1_1.2-3.opsi.md5"
@@ -268,7 +268,7 @@ def test_check_accept_ranges(tmp_path, package_updater_class):  # pylint: disabl
 			write_repo_conf(server.port)
 
 			local_package_file = local_dir / "test1_1.2-1.opsi"
-			local_package_file.write_bytes(b"data" * 100)
+			local_package_file.write_bytes(server_package_file.read_bytes() + b"def" * 3_000_000)
 
 			package_updater: OpsiPackageUpdater = package_updater_class(config)
 
@@ -294,7 +294,6 @@ def test_check_accept_ranges(tmp_path, package_updater_class):  # pylint: disabl
 
 			request = json.loads(server_log.read_text(encoding="utf-8").rstrip().split("\n")[-1])
 			server_log.unlink()
-			# print(request)
 			if accept_ranges:
 				assert "Range" in request["headers"]
 			else:
