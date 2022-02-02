@@ -169,7 +169,7 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 
 		# Test connection
 		with self.session() as session:
-			version_string = self.getRow(session, "SHOW VARIABLES LIKE 'VERSION'")[1]
+			version_string = self.getRow(session, "SELECT @@VERSION")[0]
 			logger.info('Connected to server version: %s', version_string)
 			server_type = "MariaDB" if "maria" in version_string.lower() else "MySQL"
 			match = re.search(r"^([\d\.]+)", version_string)
