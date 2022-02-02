@@ -71,6 +71,7 @@ class SQLite(SQL):
 			uri,
 			encoding=self._databaseCharset
 		)
+		self.engine._should_log_info = lambda: self.log_queries
 
 		listen(self.engine, 'engine_connect', self.on_engine_connect)
 

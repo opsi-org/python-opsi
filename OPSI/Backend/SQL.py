@@ -104,6 +104,12 @@ class SQL:  # pylint: disable=too-many-public-methods
 		self.Session = lambda: None  # pylint: disable=invalid-name
 		self.session_factory = None
 		self.engine = None
+		self.log_queries = False
+		# Parse arguments
+		for (option, value) in kwargs.items():
+			option = option.lower()
+			if option == 'log_queries':
+				self.log_queries = forceBool(value)
 
 	@staticmethod
 	def on_engine_connect(conn, branch):  # pylint: disable=unused-argument

@@ -156,6 +156,7 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			max_overflow=self._connectionPoolMaxOverflow,
 			pool_recycle=self._connectionPoolRecyclingSeconds
 		)
+		self.engine._should_log_info = lambda: self.log_queries
 
 		listen(self.engine, 'engine_connect', self.on_engine_connect)
 
