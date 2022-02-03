@@ -943,7 +943,7 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 		self.base_url = None
 
 		for option, value in kwargs.items():
-			option = option.lower()
+			option = option.lower().replace("_", "")
 			if option == 'application':
 				self._application = str(value)
 			elif option == 'username':
