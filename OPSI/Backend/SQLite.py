@@ -131,7 +131,6 @@ class SQLiteBackend(SQLBackend):
 
 		self._licenseManagementEnabled = True
 		self._licenseManagementModule = True
-		self._sqlBackendModule = True
 		logger.debug('SQLiteBackend created: %s', self)
 
 	def backend_createBase(self):

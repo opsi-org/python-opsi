@@ -102,74 +102,12 @@ class BackendAccessControl:
 				if ldap_conf:
 					logger.debug("Using ldap auth with config: %s", ldap_conf)
 
-					backendinfo = self._context.backend_info()
-					modules = backendinfo['modules']
-					helpermodules = backendinfo['realmodules']
-
-					if not all(key in modules for key in ('expires', 'customer')):
-						logger.info(
-							"Missing important information about modules."
-							"Probably no modules file installed."
-						)
-					elif not modules.get('customer'):
-						logger.error("Disabling ldap authentication: no customer in modules file")
-					elif not modules.get('valid'):
-						logger.error("Disabling ldap authentication: modules file invalid")
-					elif (
-						modules.get('expires', '') != 'never' and
-						time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0
-					):
-						logger.error("Disabling ldap authentication: modules file expired")
+					available_modules = self._context.backend_getLicensingInfo()["available_modules"]
+					if "directory-connector" in available_modules:
+						import OPSI.Backend.Manager.Authentication.LDAP  # pylint: disable=import-outside-toplevel
+						self._auth_module = OPSI.Backend.Manager.Authentication.LDAP.LDAPAuthentication(**ldap_conf)
 					else:
-						logger.info("Verifying modules file signature")
-						publicKey = getPublicKey(
-							data=base64.decodebytes(
-								b"AAAAB3NzaC1yc2EAAAADAQABAAABAQCAD/I79Jd0eKwwfuVwh5B2z+S8aV0C5suItJa18RrYip+d4P0ogzqoCfOoVWtDo"
-								b"jY96FDYv+2d73LsoOckHCnuh55GA0mtuVMWdXNZIE8Avt/RzbEoYGo/H0weuga7I8PuQNC/nyS8w3W8TH4pt+ZCjZZoX8"
-								b"S+IizWCYwfqYoYTMLgB0i+6TCAfJj3mNgCrDZkQ24+rOFS4a8RrjamEz/b81noWl9IntllK1hySkR+LbulfTGALHgHkDU"
-								b"lk0OSu+zBPw/hcDSOMiDQvvHfmR4quGyLPbQ2FOVm1TzE0bQPR+Bhx4V8Eo2kNYstG2eJELrz7J1TJI0rCjpB+FQjYPsP"
-							)
-						)
-						data = ""
-						mks = list(modules.keys())
-						mks.sort()
-						for module in mks:
-							if module in ("valid", "signature"):
-								continue
-							if module in helpermodules:
-								val = helpermodules[module]
-								if int(val) > 0:
-									modules[module] = True
-							else:
-								val = modules[module]
-								if isinstance(val, bool):
-									val = "yes" if val else "no"
-							data += f"{module.lower().strip()} = {val}\r\n"
-
-						verified = False
-						if modules["signature"].startswith("{"):
-							s_bytes = int(modules['signature'].split("}", 1)[-1]).to_bytes(256, "big")
-							try:
-								pkcs1_15.new(publicKey).verify(MD5.new(data.encode()), s_bytes)
-								verified = True
-							except ValueError:
-								# Invalid signature
-								pass
-						else:
-							h_int = int.from_bytes(md5(data.encode()).digest(), "big")
-							s_int = publicKey._encrypt(int(modules["signature"]))
-							verified = h_int == s_int
-
-						if not verified:
-							logger.error("Disabling ldap authentication: modules file invalid")
-						else:
-							logger.debug("Modules file signature verified (customer: %s)", modules.get('customer'))
-
-							if modules.get("directory-connector"):
-								import OPSI.Backend.Manager.Authentication.LDAP  # pylint: disable=import-outside-toplevel
-								self._auth_module = OPSI.Backend.Manager.Authentication.LDAP.LDAPAuthentication(**ldap_conf)
-							else:
-								logger.error("Disabling ldap authentication: directory-connector missing in modules file")
+						logger.error("Disabling ldap authentication: directory-connector missing in modules file")
 
 			except Exception as err:  # pylint: disable=broad-except
 				logger.debug(err)
