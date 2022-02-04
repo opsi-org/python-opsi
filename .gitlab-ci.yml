@@ -17,7 +17,7 @@ test:pylint-pytest:
     MYSQL_DATABASE: "opsi"
   stage: test
   script: |
-    mkdir -p /etc/opsi
+    mkdir -p /etc/opsi/licenses
     mkdir -p /var/log/opsi
 
     # Installing opsi test license
