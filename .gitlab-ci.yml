@@ -17,12 +17,12 @@ test:pylint-pytest:
     MYSQL_DATABASE: "opsi"
   stage: test
   script: |
-    # Installing opsi testmodules file
     mkdir -p /etc/opsi
     mkdir -p /var/log/opsi
-    #echo "${OPSI_TEST_MODULES}" > /etc/opsi/modules
-    cp tests/data/license/modules /etc/opsi
-    cat /etc/opsi/modules
+
+    # Installing opsi test license
+    wget --header="Authorization: Bearer ${OPSILICSRV_TOKEN}" "https://opsi-license-server.uib.gmbh/api/v1/licenses/test?usage=python-opsi-gitlab-ci" -O /etc/opsi/licenses/test.opsilic
+
     # cloning opsi-server for data directory
     rm -rf ../opsi-server
     rm -rf data

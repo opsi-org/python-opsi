@@ -34,7 +34,7 @@ from .helpers import workInTemporaryDirectory, createTemporaryTestfile
 
 urllib3.disable_warnings()
 
-_MODULES_FILE = os.path.exists(os.path.join('/etc', 'opsi', 'modules'))
+_LICENSE_FILE = os.path.exists(os.path.join('/etc', 'opsi', 'licenses', 'test.opsilic'))
 
 TEST_DATA_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), 'data'))
 DIST_DATA_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'data'))
@@ -60,8 +60,8 @@ LogCaptureHandler.emit = emit
 @pytest.fixture(
 	params=[
 		getFileBackend,
-		pytest.param(getMySQLBackend, marks=pytest.mark.requiresModulesFile),
-		pytest.param(getSQLiteBackend, marks=pytest.mark.requiresModulesFile),
+		pytest.param(getMySQLBackend, marks=pytest.mark.requires_license_file),
+		pytest.param(getSQLiteBackend, marks=pytest.mark.requires_license_file),
 	],
 	ids=['file', 'mysql', 'sqlite']
 )
@@ -112,7 +112,7 @@ def cleanableDataBackend(_serverBackend):
 @pytest.fixture(
 	params=[
 		getFileBackend,
-		pytest.param(getMySQLBackend, marks=pytest.mark.requiresModulesFile),
+		pytest.param(getMySQLBackend, marks=pytest.mark.requires_license_file),
 	],
 	ids=['file', 'mysql']
 )
@@ -127,7 +127,7 @@ def _serverBackend(request):
 @pytest.fixture(
 	params=[
 		getFileBackend,
-		pytest.param(getMySQLBackend, marks=pytest.mark.requiresModulesFile),
+		pytest.param(getMySQLBackend, marks=pytest.mark.requires_license_file),
 	],
 	ids=['destination:file', 'destination:mysql']
 )
@@ -173,7 +173,7 @@ def licenseManagementBackend(sqlBackendCreationContextManager):  # pylint: disab
 @pytest.fixture(
 	params=[
 		getMySQLBackend,
-		pytest.param(getSQLiteBackend, marks=pytest.mark.requiresModulesFile),
+		pytest.param(getSQLiteBackend, marks=pytest.mark.requires_license_file),
 	],
 	ids=['mysql', 'sqlite']
 )
@@ -227,7 +227,7 @@ def auditDataBackend(request, hardwareAuditConfigPath):  # pylint: disable=redef
 @pytest.fixture(
 	params=[
 		getMySQLBackend,
-		pytest.param(getSQLiteBackend, marks=pytest.mark.requiresModulesFile),
+		pytest.param(getSQLiteBackend, marks=pytest.mark.requires_license_file),
 	],
 	ids=['mysql', 'sqlite']
 )
@@ -244,10 +244,10 @@ def pytest_configure(config):
 
 
 def pytest_runtest_setup(item):
-	envmarker = item.get_closest_marker("requiresModulesFile")
+	envmarker = item.get_closest_marker("requires_license_file")
 	if envmarker is not None:
-		if not _MODULES_FILE:
-			pytest.skip(f"{item.name} requires a modules file!")
+		if not _LICENSE_FILE:
+			pytest.skip(f"{item.name} requires a license file!")
 
 	envmarker = item.get_closest_marker("obsolete")
 	if envmarker is not None:
