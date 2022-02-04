@@ -10,53 +10,56 @@ databases and their implementation.
 """
 
 # pylint: disable=too-many-lines
-import base64
-import json
 import re
 import time
+import json
 
 from contextlib import contextmanager
 from datetime import datetime
-from hashlib import md5
-try:
-	# PyCryptodome from pypi installs into Crypto
-	from Crypto.Hash import MD5
-	from Crypto.Signature import pkcs1_15
-except (ImportError, OSError):
-	# pyright: reportMissingImports=false
-	# python3-pycryptodome installs into Cryptodome
-	from Cryptodome.Hash import MD5
-	from Cryptodome.Signature import pkcs1_15
 
 from opsicommon.logging import logger
 
 from OPSI.Backend.Base import BackendModificationListener, ConfigDataBackend
 from OPSI.Exceptions import (
-	BackendConfigurationError, BackendMissingDataError,
-	BackendModuleDisabledError, BackendReferentialIntegrityError,
-	BackendBadValueError
+	BackendConfigurationError,
+	BackendMissingDataError,
+	BackendReferentialIntegrityError,
+	BackendBadValueError,
 )
 from OPSI.Object import (
-	AuditHardware, AuditHardwareOnHost, AuditSoftware,
-	AuditSoftwareOnClient, AuditSoftwareToLicensePool, Config, ConfigState,
-	Entity, Group, Host, HostGroup, LicenseContract, LicenseOnClient,
-	LicensePool, ObjectToGroup, Product, ProductDependency, ProductGroup,
-	ProductOnClient, ProductOnDepot, ProductProperty, ProductPropertyState,
-	Relationship, SoftwareLicense, SoftwareLicenseToLicensePool,
-	mandatoryConstructorArgs, getPossibleClassAttributes
+	AuditHardware,
+	AuditHardwareOnHost,
+	AuditSoftware,
+	AuditSoftwareOnClient,
+	AuditSoftwareToLicensePool,
+	Config,
+	ConfigState,
+	Entity,
+	Group,
+	Host,
+	HostGroup,
+	LicenseContract,
+	LicenseOnClient,
+	LicensePool,
+	ObjectToGroup,
+	Product,
+	ProductDependency,
+	ProductGroup,
+	ProductOnClient,
+	ProductOnDepot,
+	ProductProperty,
+	ProductPropertyState,
+	Relationship,
+	SoftwareLicense,
+	SoftwareLicenseToLicensePool,
+	mandatoryConstructorArgs,
+	getPossibleClassAttributes,
 )
-from OPSI.Types import (
-	forceBool, forceUnicodeLower, forceOpsiTimestamp,
-	forceList, forceUnicodeList, forceDict,
-	forceObjectClassList
-)
-from OPSI.Util import timestamp, getPublicKey
+from OPSI.Types import forceBool, forceUnicodeLower, forceOpsiTimestamp, forceList, forceUnicodeList, forceDict, forceObjectClassList
+from OPSI.Util import timestamp
 
 
-__all__ = (
-	'timeQuery', 'onlyAllowSelect', 'SQL', 'SQLBackend',
-	'SQLBackendObjectModificationTracker'
-)
+__all__ = ("timeQuery", "onlyAllowSelect", "SQL", "SQLBackend", "SQLBackendObjectModificationTracker")
 
 DATABASE_SCHEMA_VERSION = 7
 
@@ -64,16 +67,16 @@ DATABASE_SCHEMA_VERSION = 7
 @contextmanager
 def timeQuery(query):
 	startingTime = datetime.now()
-	logger.debug('start query %s', query)
+	logger.debug("start query %s", query)
 	try:
 		yield
 	finally:
-		logger.debug('ended query (duration: %s) %s', query, datetime.now() - startingTime)
+		logger.debug("ended query (duration: %s) %s", query, datetime.now() - startingTime)
 
 
 def onlyAllowSelect(query):
-	if not forceUnicodeLower(query).strip().startswith(('select', 'show', 'pragma')):
-		raise ValueError('Only queries to SELECT/SHOW/PRAGMA data are allowed.')
+	if not forceUnicodeLower(query).strip().startswith(("select", "show", "pragma")):
+		raise ValueError("Only queries to SELECT/SHOW/PRAGMA data are allowed.")
 
 
 def createSchemaVersionTable(database, session):
@@ -91,10 +94,10 @@ def createSchemaVersionTable(database, session):
 
 class SQL:  # pylint: disable=too-many-public-methods
 
-	AUTOINCREMENT = 'AUTO_INCREMENT'
+	AUTOINCREMENT = "AUTO_INCREMENT"
 	ALTER_TABLE_CHANGE_SUPPORTED = True
 	ESCAPED_BACKSLASH = "\\\\"
-	ESCAPED_APOSTROPHE = "\\\'"
+	ESCAPED_APOSTROPHE = "\\'"
 	ESCAPED_UNDERSCORE = "\\_"
 	ESCAPED_PERCENT = "\\%"
 	ESCAPED_ASTERISK = "\\*"
@@ -108,7 +111,7 @@ class SQL:  # pylint: disable=too-many-public-methods
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if option == 'log_queries':
+			if option == "log_queries":
 				self.log_queries = forceBool(value)
 
 	@staticmethod
@@ -215,25 +218,25 @@ class SQL:  # pylint: disable=too-many-public-methods
 		return {}
 
 	def getTableCreationOptions(self, table):  # pylint: disable=unused-argument,no-self-use
-		return ''
+		return ""
 
 	def escapeBackslash(self, string):
-		return string.replace('\\', self.ESCAPED_BACKSLASH)
+		return string.replace("\\", self.ESCAPED_BACKSLASH)
 
 	def escapeApostrophe(self, string):
 		return string.replace("'", self.ESCAPED_APOSTROPHE)
 
 	def escapeUnderscore(self, string):
-		return string.replace('_', self.ESCAPED_UNDERSCORE)
+		return string.replace("_", self.ESCAPED_UNDERSCORE)
 
 	def escapePercent(self, string):
-		return string.replace('%', self.ESCAPED_PERCENT)
+		return string.replace("%", self.ESCAPED_PERCENT)
 
 	def escapeAsterisk(self, string):
-		return string.replace('*', self.ESCAPED_ASTERISK)
+		return string.replace("*", self.ESCAPED_ASTERISK)
 
 	def escapeColon(self, string):
-		return string.replace(':', self.ESCAPED_COLON)
+		return string.replace(":", self.ESCAPED_COLON)
 
 
 class SQLBackendObjectModificationTracker(BackendModificationListener):
@@ -243,14 +246,14 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 		self._lastModificationOnly = False
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if option == 'lastmodificationonly':
+			if option == "lastmodificationonly":
 				self._lastModificationOnly = forceBool(value)
 
 	def _createTables(self):
 		with self._sql.session() as session:
 			tables = self._sql.getTables(session)
-			if 'OBJECT_MODIFICATION_TRACKER' not in tables:
-				logger.debug('Creating table OBJECT_MODIFICATION_TRACKER')
+			if "OBJECT_MODIFICATION_TRACKER" not in tables:
+				logger.debug("Creating table OBJECT_MODIFICATION_TRACKER")
 				table = f"""CREATE TABLE `OBJECT_MODIFICATION_TRACKER` (
 						`id` integer NOT NULL {self._sql.AUTOINCREMENT},
 						`command` varchar(6) NOT NULL,
@@ -262,32 +265,29 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 					"""
 				logger.debug(table)
 				self._sql.execute(session, table)
-				self._sql.execute(session, 'CREATE INDEX `objectClass` on `OBJECT_MODIFICATION_TRACKER` (`objectClass`);')
-				self._sql.execute(session, 'CREATE INDEX `ident` on `OBJECT_MODIFICATION_TRACKER` (`ident`);')
-				self._sql.execute(session, 'CREATE INDEX `date` on `OBJECT_MODIFICATION_TRACKER` (`date`);')
+				self._sql.execute(session, "CREATE INDEX `objectClass` on `OBJECT_MODIFICATION_TRACKER` (`objectClass`);")
+				self._sql.execute(session, "CREATE INDEX `ident` on `OBJECT_MODIFICATION_TRACKER` (`ident`);")
+				self._sql.execute(session, "CREATE INDEX `date` on `OBJECT_MODIFICATION_TRACKER` (`date`);")
 
 	def _trackModification(self, command, obj):
 		command = forceUnicodeLower(command)
-		if command not in ('insert', 'update', 'delete'):
+		if command not in ("insert", "update", "delete"):
 			raise ValueError(f"Unhandled command '{command}'")
 
-		data = {
-			'command': command,
-			'objectClass': obj.__class__.__name__,
-			'ident': obj.getIdent(),
-			'date': timestamp()
-		}
+		data = {"command": command, "objectClass": obj.__class__.__name__, "ident": obj.getIdent(), "date": timestamp()}
 
 		with self._sql.session() as session:
 			if self._lastModificationOnly:
-				objectClass = data['objectClass']
-				ident = self._sql.escapeApostrophe(self._sql.escapeBackslash(self._sql.escapeColon(data['ident'])))
-				self._sql.delete(session, 'OBJECT_MODIFICATION_TRACKER', f"`objectClass` = '{objectClass}' AND `ident` = '{ident}'")
+				objectClass = data["objectClass"]
+				ident = self._sql.escapeApostrophe(self._sql.escapeBackslash(self._sql.escapeColon(data["ident"])))
+				self._sql.delete(session, "OBJECT_MODIFICATION_TRACKER", f"`objectClass` = '{objectClass}' AND `ident` = '{ident}'")
 			start = time.time()
-			self._sql.insert(session, 'OBJECT_MODIFICATION_TRACKER', data)
+			self._sql.insert(session, "OBJECT_MODIFICATION_TRACKER", data)
 			logger.debug(
 				"Took %0.2f seconds to track modification of objectClass %s, ident %s",
-				time.time() - start, data['objectClass'], data['ident']
+				time.time() - start,
+				data["objectClass"],
+				data["ident"],
 			)
 
 	def getModifications(self, sinceDate=None):
@@ -307,27 +307,24 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 			self._sql.delete(session, "OBJECT_MODIFICATION_TRACKER", where=where)
 
 	def objectInserted(self, backend, obj):
-		self._trackModification('insert', obj)
+		self._trackModification("insert", obj)
 
 	def objectUpdated(self, backend, obj):
-		self._trackModification('update', obj)
+		self._trackModification("update", obj)
 
 	def objectsDeleted(self, backend, objs):
 		for obj in forceList(objs):
-			self._trackModification('delete', obj)
+			self._trackModification("delete", obj)
 
 
 class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
-	_OPERATOR_IN_CONDITION_PATTERN = re.compile(r'^\s*([>=<]+)\s*(\d\.?\d*)')
+	_OPERATOR_IN_CONDITION_PATTERN = re.compile(r"^\s*([>=<]+)\s*(\d\.?\d*)")
 
 	def __init__(self, **kwargs):
-		self._name = 'sql'
+		self._name = "sql"
 
 		ConfigDataBackend.__init__(self, **kwargs)
-
-		self._licenseManagementEnabled = True
-		self._licenseManagementModule = False
 
 		self._sql = None
 		self._auditHardwareConfig = {}
@@ -336,18 +333,16 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	def _setAuditHardwareConfig(self, config):
 		self._auditHardwareConfig = {}
 		for conf in config:
-			hwClass = conf['Class']['Opsi']
+			hwClass = conf["Class"]["Opsi"]
 			self._auditHardwareConfig[hwClass] = {}
-			for value in conf['Values']:
-				self._auditHardwareConfig[hwClass][value['Opsi']] = {
-					'Type': value["Type"],
-					'Scope': value["Scope"]
-				}
+			for value in conf["Values"]:
+				self._auditHardwareConfig[hwClass][value["Opsi"]] = {"Type": value["Type"], "Scope": value["Scope"]}
 
 	def _filterToSql(self, filter={}, table=None):  # pylint: disable=redefined-builtin,dangerous-default-value
 		"""
 		Creates a SQL condition out of the given filter.
 		"""
+
 		def buildCondition():
 			for key, values in filter.items():
 				if values is None:
@@ -366,7 +361,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 					yield f"{key} in ({','.join([escaped_string(val) for val in values])})"
 				else:
-					yield ' or '.join(processValues(key, values, table))
+					yield " or ".join(processValues(key, values, table))
 
 		def processValues(key, values, table=None):  # pylint: disable=too-many-branches
 			if table:
@@ -384,44 +379,44 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				elif value is None:
 					yield f"{key} is NULL"
 				else:
-					value = value.replace(self._sql.ESCAPED_ASTERISK, '\uffff')
+					value = value.replace(self._sql.ESCAPED_ASTERISK, "\uffff")
 					value = self._sql.escapeApostrophe(self._sql.escapeBackslash(self._sql.escapeColon(value)))
 					match = self._OPERATOR_IN_CONDITION_PATTERN.search(value)
 					if match:
 						operator = match.group(1)
 						value = match.group(2)
-						value = value.replace('\uffff', self._sql.ESCAPED_ASTERISK)
+						value = value.replace("\uffff", self._sql.ESCAPED_ASTERISK)
 						yield f"{key} {operator} {value}"
 					else:
-						if '*' in value:
-							operator = 'LIKE'
-							value = self._sql.escapeUnderscore(self._sql.escapePercent(value)).replace('*', '%')
+						if "*" in value:
+							operator = "LIKE"
+							value = self._sql.escapeUnderscore(self._sql.escapePercent(value)).replace("*", "%")
 						else:
-							operator = '='
+							operator = "="
 
-						value = value.replace('\uffff', self._sql.ESCAPED_ASTERISK)
+						value = value.replace("\uffff", self._sql.ESCAPED_ASTERISK)
 						yield f"{key} {operator} '{value}'"
 
 		def addParenthesis(conditions):
 			for condition in conditions:
-				yield f'({condition})'
+				yield f"({condition})"
 
-		return ' and '.join(addParenthesis(buildCondition()))
+		return " and ".join(addParenthesis(buildCondition()))
 
 	def _createQuery(self, table, attributes=[], filter={}):  # pylint: disable=redefined-builtin,dangerous-default-value
-		select = ','.join(
-			f'`{attribute}`' for attribute in attributes
-		) or '*'
+		select = ",".join(f"`{attribute}`" for attribute in attributes) or "*"
 
 		condition = self._filterToSql(filter)
 		if condition:
-			query = f'select {select} from `{table}` where {condition}'
+			query = f"select {select} from `{table}` where {condition}"
 		else:
-			query = f'select {select} from `{table}`'
+			query = f"select {select} from `{table}`"
 		logger.debug("Created query: %s", query)
 		return query
 
-	def _adjustAttributes(self, objectClass, attributes, filter):  # pylint: disable=redefined-builtin,dangerous-default-value,disable=too-many-branches
+	def _adjustAttributes(
+		self, objectClass, attributes, filter
+	):  # pylint: disable=redefined-builtin,dangerous-default-value,disable=too-many-branches
 		possibleAttributes = getPossibleClassAttributes(objectClass)
 
 		newAttributes = []
@@ -438,30 +433,30 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				if attr not in possibleAttributes:
 					raise ValueError(f"Invalid attribute '{attr}' in filter")
 
-		objectId = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
+		objectId = self._objectAttributeToDatabaseAttribute(objectClass, "id")
 
-		if 'id' in newFilter:
-			newFilter[objectId] = newFilter['id']
-			del newFilter['id']
+		if "id" in newFilter:
+			newFilter[objectId] = newFilter["id"]
+			del newFilter["id"]
 
-		if 'id' in newAttributes:
-			newAttributes.remove('id')
+		if "id" in newAttributes:
+			newAttributes.remove("id")
 			newAttributes.append(objectId)
 
-		if 'type' in newFilter:
-			for oc in forceList(newFilter['type']):
+		if "type" in newFilter:
+			for oc in forceList(newFilter["type"]):
 				if objectClass.__name__ == oc:
-					newFilter['type'] = forceList(newFilter['type']).append(list(objectClass.subClasses.values()))
+					newFilter["type"] = forceList(newFilter["type"]).append(list(objectClass.subClasses.values()))
 					break
 
 		if newAttributes:
-			if issubclass(objectClass, Entity) and 'type' not in newAttributes:
-				newAttributes.append('type')
+			if issubclass(objectClass, Entity) and "type" not in newAttributes:
+				newAttributes.append("type")
 			objectClasses = [objectClass]
 			objectClasses.extend(list(objectClass.subClasses.values()))
 			for oc in objectClasses:
 				for arg in mandatoryConstructorArgs(oc):
-					if arg == 'id':
+					if arg == "id":
 						arg = objectId
 
 					if arg not in newAttributes:
@@ -470,10 +465,10 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		return (newAttributes, newFilter)
 
 	def _adjustResult(self, objectClass, result):
-		idAttribute = self._objectAttributeToDatabaseAttribute(objectClass, 'id')
+		idAttribute = self._objectAttributeToDatabaseAttribute(objectClass, "id")
 
 		try:
-			result['id'] = result[idAttribute]
+			result["id"] = result[idAttribute]
 			del result[idAttribute]
 		except KeyError:
 			pass
@@ -482,9 +477,9 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 	def _objectToDatabaseHash(self, object):  # pylint: disable=redefined-builtin
 		_hash = object.toHash()
-		if object.getType() == 'ProductOnClient':
+		if object.getType() == "ProductOnClient":
 			try:
-				del _hash['actionSequence']
+				del _hash["actionSequence"]
 			except KeyError:
 				pass  # not there - can be
 
@@ -494,10 +489,10 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				# This takes into account that unicode characters may be
 				# composed of multiple bytes by encoding, stripping and
 				# decoding them.
-				changelog = _hash['changelog']
-				changelog = changelog.encode('utf-8')
+				changelog = _hash["changelog"]
+				changelog = changelog.encode("utf-8")
 				changelog = changelog[:65534]
-				_hash['changelog'] = changelog.decode('utf-8')
+				_hash["changelog"] = changelog.decode("utf-8")
 			except (KeyError, TypeError):
 				pass  # Either not present in _hash or set to None
 			except UnicodeError:
@@ -505,11 +500,11 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				# buffer characters for possible unicode characters.
 				# Since encoding is attempted after we have read the
 				# has we can assume that the key is present.
-				_hash['changelog'] = _hash['changelog'][:65000]
+				_hash["changelog"] = _hash["changelog"][:65000]
 
 		if issubclass(object.__class__, Relationship):
 			try:
-				del _hash['type']
+				del _hash["type"]
 			except KeyError:
 				pass  # not there - can be
 
@@ -522,22 +517,22 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		return _hash
 
 	def _objectAttributeToDatabaseAttribute(self, objectClass, attribute):  # pylint: disable=too-many-return-statements,no-self-use
-		if attribute == 'id':
+		if attribute == "id":
 			# A class is considered a subclass of itself
 			if issubclass(objectClass, Product):
-				return 'productId'
+				return "productId"
 			if issubclass(objectClass, Host):
-				return 'hostId'
+				return "hostId"
 			if issubclass(objectClass, Group):
-				return 'groupId'
+				return "groupId"
 			if issubclass(objectClass, Config):
-				return 'configId'
+				return "configId"
 			if issubclass(objectClass, LicenseContract):
-				return 'licenseContractId'
+				return "licenseContractId"
 			if issubclass(objectClass, SoftwareLicense):
-				return 'softwareLicenseId'
+				return "softwareLicenseId"
 			if issubclass(objectClass, LicensePool):
-				return 'licensePoolId'
+				return "licensePoolId"
 		return attribute
 
 	def _uniqueCondition(self, object):  # pylint: disable=redefined-builtin
@@ -550,6 +545,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		:param object: The object to create an condition for.
 		:rtype: str
 		"""
+
 		def createCondition():
 			for argument in mandatoryConstructorArgs(object.__class__):
 				value = getattr(object, argument)
@@ -570,7 +566,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			if isinstance(object, (HostGroup, ProductGroup)):
 				yield f"`type` = '{object.getType()}'"
 
-		return ' and '.join(createCondition())
+		return " and ".join(createCondition())
 
 	def backend_exit(self):
 		pass
@@ -585,7 +581,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			while not success:
 				success = True
 				for table_name in self._sql.getTables(session).keys():
-					drop_command = f'DROP TABLE `{table_name}`;'
+					drop_command = f"DROP TABLE `{table_name}`;"
 					logger.debug(drop_command)
 					try:
 						self._sql.execute(session, drop_command)
@@ -602,15 +598,15 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		with self._sql.session() as session:
 			tables = self._sql.getTables(session)
 
-			logger.notice('Creating opsi base')
+			logger.notice("Creating opsi base")
 
 			existingTables = set(tables.keys())
 			# Host table
-			if 'HOST' not in existingTables:
+			if "HOST" not in existingTables:
 				self._createTableHost()
 
-			if 'CONFIG' not in existingTables:
-				logger.debug('Creating table CONFIG')
+			if "CONFIG" not in existingTables:
+				logger.debug("Creating table CONFIG")
 				table = f"""CREATE TABLE `CONFIG` (
 						`configId` varchar(200) NOT NULL,
 						`type` varchar(30) NOT NULL,
@@ -622,10 +618,10 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					"""
 				logger.debug(table)
 				self._sql.execute(session, table)
-				self._sql.execute(session, 'CREATE INDEX `index_config_type` on `CONFIG` (`type`);')
+				self._sql.execute(session, "CREATE INDEX `index_config_type` on `CONFIG` (`type`);")
 
-			if 'CONFIG_VALUE' not in existingTables:
-				logger.debug('Creating table CONFIG_VALUE')
+			if "CONFIG_VALUE" not in existingTables:
+				logger.debug("Creating table CONFIG_VALUE")
 				table = f"""CREATE TABLE `CONFIG_VALUE` (
 						`config_value_id` integer NOT NULL {self._sql.AUTOINCREMENT},
 						`configId` varchar(200) NOT NULL,
@@ -638,8 +634,8 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				logger.debug(table)
 				self._sql.execute(session, table)
 
-			if 'CONFIG_STATE' not in existingTables:
-				logger.debug('Creating table CONFIG_STATE')
+			if "CONFIG_STATE" not in existingTables:
+				logger.debug("Creating table CONFIG_STATE")
 				table = f"""CREATE TABLE `CONFIG_STATE` (
 						`config_state_id` integer NOT NULL {self._sql.AUTOINCREMENT},
 						`configId` varchar(200) NOT NULL,
@@ -650,11 +646,11 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					"""
 				logger.debug(table)
 				self._sql.execute(session, table)
-				self._sql.execute(session, 'CREATE INDEX `index_config_state_configId` on `CONFIG_STATE` (`configId`);')
-				self._sql.execute(session, 'CREATE INDEX `index_config_state_objectId` on `CONFIG_STATE` (`objectId`);')
+				self._sql.execute(session, "CREATE INDEX `index_config_state_configId` on `CONFIG_STATE` (`configId`);")
+				self._sql.execute(session, "CREATE INDEX `index_config_state_objectId` on `CONFIG_STATE` (`objectId`);")
 
-			if 'PRODUCT' not in existingTables:
-				logger.debug('Creating table PRODUCT')
+			if "PRODUCT" not in existingTables:
+				logger.debug("Creating table PRODUCT")
 				table = f"""CREATE TABLE `PRODUCT` (
 						`productId` varchar(255) NOT NULL,
 						`productVersion` varchar(32) NOT NULL,
@@ -679,12 +675,12 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					"""
 				logger.debug(table)
 				self._sql.execute(session, table)
-				self._sql.execute(session, 'CREATE INDEX `index_product_type` on `PRODUCT` (`type`);')
-				self._sql.execute(session, 'CREATE INDEX `index_productId` on `PRODUCT` (`productId`);')
+				self._sql.execute(session, "CREATE INDEX `index_product_type` on `PRODUCT` (`type`);")
+				self._sql.execute(session, "CREATE INDEX `index_productId` on `PRODUCT` (`productId`);")
 
 			# FOREIGN KEY ( `productId` ) REFERENCES `PRODUCT` ( `productId` ),
-			if 'WINDOWS_SOFTWARE_ID_TO_PRODUCT' not in existingTables:
-				logger.debug('Creating table WINDOWS_SOFTWARE_ID_TO_PRODUCT')
+			if "WINDOWS_SOFTWARE_ID_TO_PRODUCT" not in existingTables:
+				logger.debug("Creating table WINDOWS_SOFTWARE_ID_TO_PRODUCT")
 				table = f"""CREATE TABLE `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (
 						`windowsSoftwareId` VARCHAR(100) NOT NULL,
 						`productId` varchar(255) NOT NULL,
@@ -695,11 +691,11 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				self._sql.execute(session, table)
 				self._sql.execute(
 					session,
-					'CREATE INDEX `index_windows_software_id_to_product_productId` on `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (`productId`);'
+					"CREATE INDEX `index_windows_software_id_to_product_productId` on `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (`productId`);",
 				)
 
-			if 'PRODUCT_ON_DEPOT' not in existingTables:
-				logger.debug('Creating table PRODUCT_ON_DEPOT')
+			if "PRODUCT_ON_DEPOT" not in existingTables:
+				logger.debug("Creating table PRODUCT_ON_DEPOT")
 				table = f"""CREATE TABLE `PRODUCT_ON_DEPOT` (
 						`productId` varchar(255) NOT NULL,
 						`productVersion` varchar(32) NOT NULL,
@@ -714,10 +710,10 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					"""
 				logger.debug(table)
 				self._sql.execute(session, table)
-				self._sql.execute(session, 'CREATE INDEX `index_product_on_depot_productType` on `PRODUCT_ON_DEPOT` (`productType`);')
+				self._sql.execute(session, "CREATE INDEX `index_product_on_depot_productType` on `PRODUCT_ON_DEPOT` (`productType`);")
 
-			if 'PRODUCT_PROPERTY' not in existingTables:
-				logger.debug('Creating table PRODUCT_PROPERTY')
+			if "PRODUCT_PROPERTY" not in existingTables:
+				logger.debug("Creating table PRODUCT_PROPERTY")
 				table = f"""CREATE TABLE `PRODUCT_PROPERTY` (
 						`productId` varchar(255) NOT NULL,
 						`productVersion` varchar(32) NOT NULL,
@@ -733,10 +729,10 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					"""
 				logger.debug(table)
 				self._sql.execute(session, table)
-				self._sql.execute(session, 'CREATE INDEX `index_product_property_type` on `PRODUCT_PROPERTY` (`type`);')
+				self._sql.execute(session, "CREATE INDEX `index_product_property_type` on `PRODUCT_PROPERTY` (`type`);")
 
-			if 'PRODUCT_PROPERTY_VALUE' not in existingTables:
-				logger.debug('Creating table PRODUCT_PROPERTY_VALUE')
+			if "PRODUCT_PROPERTY_VALUE" not in existingTables:
+				logger.debug("Creating table PRODUCT_PROPERTY_VALUE")
 				table = f"""CREATE TABLE `PRODUCT_PROPERTY_VALUE` (
 						`product_property_id` integer NOT NULL {self._sql.AUTOINCREMENT},
 						`productId` varchar(255) NOT NULL,
@@ -754,12 +750,12 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				self._sql.execute(session, table)
 				self._sql.execute(
 					session,
-					'CREATE INDEX `index_product_property_value` on '
-					'`PRODUCT_PROPERTY_VALUE` (`productId`, `propertyId`, `productVersion`, `packageVersion`);'
+					"CREATE INDEX `index_product_property_value` on "
+					"`PRODUCT_PROPERTY_VALUE` (`productId`, `propertyId`, `productVersion`, `packageVersion`);",
 				)
 
-			if 'PRODUCT_DEPENDENCY' not in existingTables:
-				logger.debug('Creating table PRODUCT_DEPENDENCY')
+			if "PRODUCT_DEPENDENCY" not in existingTables:
+				logger.debug("Creating table PRODUCT_DEPENDENCY")
 				table = f"""CREATE TABLE `PRODUCT_DEPENDENCY` (
 						`productId` varchar(255) NOT NULL,
 						`productVersion` varchar(32) NOT NULL,
@@ -779,8 +775,8 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				self._sql.execute(session, table)
 
 			# FOREIGN KEY ( `productId` ) REFERENCES PRODUCT( `productId` ),
-			if 'PRODUCT_ON_CLIENT' not in existingTables:
-				logger.debug('Creating table PRODUCT_ON_CLIENT')
+			if "PRODUCT_ON_CLIENT" not in existingTables:
+				logger.debug("Creating table PRODUCT_ON_CLIENT")
 				table = f"""CREATE TABLE `PRODUCT_ON_CLIENT` (
 						`productId` varchar(255) NOT NULL,
 						`clientId` varchar(255) NOT NULL,
@@ -802,8 +798,8 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				self._sql.execute(session, table)
 
 			# FOREIGN KEY ( `productId` ) REFERENCES `PRODUCT` ( `productId` ),
-			if 'PRODUCT_PROPERTY_STATE' not in existingTables:
-				logger.debug('Creating table PRODUCT_PROPERTY_STATE')
+			if "PRODUCT_PROPERTY_STATE" not in existingTables:
+				logger.debug("Creating table PRODUCT_PROPERTY_STATE")
 				table = f"""CREATE TABLE `PRODUCT_PROPERTY_STATE` (
 						`product_property_state_id` integer NOT NULL {self._sql.AUTOINCREMENT},
 						`productId` varchar(255) NOT NULL,
@@ -815,10 +811,10 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					"""
 				logger.debug(table)
 				self._sql.execute(session, table)
-				self._sql.execute(session, 'CREATE INDEX `index_product_property_state_objectId` on `PRODUCT_PROPERTY_STATE` (`objectId`);')
+				self._sql.execute(session, "CREATE INDEX `index_product_property_state_objectId` on `PRODUCT_PROPERTY_STATE` (`objectId`);")
 
-			if 'GROUP' not in existingTables:
-				logger.debug('Creating table GROUP')
+			if "GROUP" not in existingTables:
+				logger.debug("Creating table GROUP")
 				table = f"""CREATE TABLE `GROUP` (
 						`type` varchar(30) NOT NULL,
 						`groupId` varchar(255) NOT NULL,
@@ -830,10 +826,10 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					"""
 				logger.debug(table)
 				self._sql.execute(session, table)
-				self._sql.execute(session, 'CREATE INDEX `index_group_parentGroupId` on `GROUP` (`parentGroupId`);')
+				self._sql.execute(session, "CREATE INDEX `index_group_parentGroupId` on `GROUP` (`parentGroupId`);")
 
-			if 'OBJECT_TO_GROUP' not in existingTables:
-				logger.debug('Creating table OBJECT_TO_GROUP')
+			if "OBJECT_TO_GROUP" not in existingTables:
+				logger.debug("Creating table OBJECT_TO_GROUP")
 				table = f"""CREATE TABLE `OBJECT_TO_GROUP` (
 						`object_to_group_id` integer NOT NULL {self._sql.AUTOINCREMENT},
 						`groupType` varchar(30) NOT NULL,
@@ -845,10 +841,10 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					"""
 				logger.debug(table)
 				self._sql.execute(session, table)
-				self._sql.execute(session, 'CREATE INDEX `index_object_to_group_objectId` on `OBJECT_TO_GROUP` (`objectId`);')
+				self._sql.execute(session, "CREATE INDEX `index_object_to_group_objectId` on `OBJECT_TO_GROUP` (`objectId`);")
 
-			if 'LICENSE_CONTRACT' not in existingTables:
-				logger.debug('Creating table LICENSE_CONTRACT')
+			if "LICENSE_CONTRACT" not in existingTables:
+				logger.debug("Creating table LICENSE_CONTRACT")
 				table = f"""CREATE TABLE `LICENSE_CONTRACT` (
 						`licenseContractId` VARCHAR(100) NOT NULL,
 						`type` varchar(30) NOT NULL,
@@ -863,10 +859,10 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					"""
 				logger.debug(table)
 				self._sql.execute(session, table)
-				self._sql.execute(session, 'CREATE INDEX `index_license_contract_type` on `LICENSE_CONTRACT` (`type`);')
+				self._sql.execute(session, "CREATE INDEX `index_license_contract_type` on `LICENSE_CONTRACT` (`type`);")
 
-			if 'SOFTWARE_LICENSE' not in existingTables:
-				logger.debug('Creating table SOFTWARE_LICENSE')
+			if "SOFTWARE_LICENSE" not in existingTables:
+				logger.debug("Creating table SOFTWARE_LICENSE")
 				table = f"""CREATE TABLE `SOFTWARE_LICENSE` (
 						`softwareLicenseId` VARCHAR(100) NOT NULL,
 						`licenseContractId` VARCHAR(100) NOT NULL,
@@ -880,11 +876,11 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					"""
 				logger.debug(table)
 				self._sql.execute(session, table)
-				self._sql.execute(session, 'CREATE INDEX `index_software_license_type` on `SOFTWARE_LICENSE` (`type`);')
-				self._sql.execute(session, 'CREATE INDEX `index_software_license_boundToHost` on `SOFTWARE_LICENSE` (`boundToHost`);')
+				self._sql.execute(session, "CREATE INDEX `index_software_license_type` on `SOFTWARE_LICENSE` (`type`);")
+				self._sql.execute(session, "CREATE INDEX `index_software_license_boundToHost` on `SOFTWARE_LICENSE` (`boundToHost`);")
 
-			if 'LICENSE_POOL' not in existingTables:
-				logger.debug('Creating table LICENSE_POOL')
+			if "LICENSE_POOL" not in existingTables:
+				logger.debug("Creating table LICENSE_POOL")
 				table = f"""CREATE TABLE `LICENSE_POOL` (
 						`licensePoolId` VARCHAR(100) NOT NULL,
 						`type` varchar(30) NOT NULL,
@@ -894,10 +890,10 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					"""
 				logger.debug(table)
 				self._sql.execute(session, table)
-				self._sql.execute(session, 'CREATE INDEX `index_license_pool_type` on `LICENSE_POOL` (`type`);')
+				self._sql.execute(session, "CREATE INDEX `index_license_pool_type` on `LICENSE_POOL` (`type`);")
 
-			if 'AUDIT_SOFTWARE_TO_LICENSE_POOL' not in existingTables:
-				logger.debug('Creating table AUDIT_SOFTWARE_TO_LICENSE_POOL')
+			if "AUDIT_SOFTWARE_TO_LICENSE_POOL" not in existingTables:
+				logger.debug("Creating table AUDIT_SOFTWARE_TO_LICENSE_POOL")
 				table = f"""CREATE TABLE `AUDIT_SOFTWARE_TO_LICENSE_POOL` (
 						`licensePoolId` VARCHAR(100) NOT NULL,
 						`name` varchar(100) NOT NULL,
@@ -912,8 +908,8 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				logger.debug(table)
 				self._sql.execute(session, table)
 
-			if 'PRODUCT_ID_TO_LICENSE_POOL' not in existingTables:
-				logger.debug('Creating table PRODUCT_ID_TO_LICENSE_POOL')
+			if "PRODUCT_ID_TO_LICENSE_POOL" not in existingTables:
+				logger.debug("Creating table PRODUCT_ID_TO_LICENSE_POOL")
 				table = f"""CREATE TABLE `PRODUCT_ID_TO_LICENSE_POOL` (
 						`licensePoolId` VARCHAR(100) NOT NULL,
 						`productId` VARCHAR(255) NOT NULL,
@@ -924,8 +920,8 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				logger.debug(table)
 				self._sql.execute(session, table)
 
-			if 'SOFTWARE_LICENSE_TO_LICENSE_POOL' not in existingTables:
-				logger.debug('Creating table SOFTWARE_LICENSE_TO_LICENSE_POOL')
+			if "SOFTWARE_LICENSE_TO_LICENSE_POOL" not in existingTables:
+				logger.debug("Creating table SOFTWARE_LICENSE_TO_LICENSE_POOL")
 				table = f"""CREATE TABLE `SOFTWARE_LICENSE_TO_LICENSE_POOL` (
 						`softwareLicenseId` VARCHAR(100) NOT NULL,
 						`licensePoolId` VARCHAR(100) NOT NULL,
@@ -938,8 +934,8 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				logger.debug(table)
 				self._sql.execute(session, table)
 
-			if 'LICENSE_ON_CLIENT' not in existingTables:
-				logger.debug('Creating table LICENSE_ON_CLIENT')
+			if "LICENSE_ON_CLIENT" not in existingTables:
+				logger.debug("Creating table LICENSE_ON_CLIENT")
 				table = f"""CREATE TABLE `LICENSE_ON_CLIENT` (
 						`license_on_client_id` integer NOT NULL {self._sql.AUTOINCREMENT},
 						`softwareLicenseId` VARCHAR(100) NOT NULL,
@@ -953,11 +949,11 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					"""
 				logger.debug(table)
 				self._sql.execute(session, table)
-				self._sql.execute(session, 'CREATE INDEX `index_license_on_client_clientId` on `LICENSE_ON_CLIENT` (`clientId`);')
+				self._sql.execute(session, "CREATE INDEX `index_license_on_client_clientId` on `LICENSE_ON_CLIENT` (`clientId`);")
 
 			# Software audit tables
-			if 'SOFTWARE' not in existingTables:
-				logger.debug('Creating table SOFTWARE')
+			if "SOFTWARE" not in existingTables:
+				logger.debug("Creating table SOFTWARE")
 				table = f"""CREATE TABLE `SOFTWARE` (
 						`name` varchar(100) NOT NULL,
 						`version` varchar(100) NOT NULL,
@@ -974,15 +970,15 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					"""
 				logger.debug(table)
 				self._sql.execute(session, table)
-				self._sql.execute(session, 'CREATE INDEX `index_software_windowsSoftwareId` on `SOFTWARE` (`windowsSoftwareId`);')
-				self._sql.execute(session, 'CREATE INDEX `index_software_type` on `SOFTWARE` (`type`);')
+				self._sql.execute(session, "CREATE INDEX `index_software_windowsSoftwareId` on `SOFTWARE` (`windowsSoftwareId`);")
+				self._sql.execute(session, "CREATE INDEX `index_software_type` on `SOFTWARE` (`type`);")
 
-			if 'SOFTWARE_CONFIG' not in existingTables:
+			if "SOFTWARE_CONFIG" not in existingTables:
 				self._createTableSoftwareConfig()
 
 			self._createAuditHardwareTables()
 
-			if 'OPSI_SCHEMA' not in existingTables:
+			if "OPSI_SCHEMA" not in existingTables:
 				createSchemaVersionTable(self._sql, session)
 
 				query = f"""
@@ -992,7 +988,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				self._sql.execute(session, query)
 
 	def _createTableHost(self):
-		logger.debug('Creating table HOST')
+		logger.debug("Creating table HOST")
 		table = f"""CREATE TABLE `HOST` (
 				`hostId` varchar(255) NOT NULL,
 				`type` varchar(30),
@@ -1023,10 +1019,10 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		logger.debug(table)
 		with self._sql.session() as session:
 			self._sql.execute(session, table)
-			self._sql.execute(session, 'CREATE INDEX `index_host_type` on `HOST` (`type`);')
+			self._sql.execute(session, "CREATE INDEX `index_host_type` on `HOST` (`type`);")
 
 	def _createTableSoftwareConfig(self):
-		logger.debug('Creating table SOFTWARE_CONFIG')
+		logger.debug("Creating table SOFTWARE_CONFIG")
 		table = f"""CREATE TABLE `SOFTWARE_CONFIG` (
 				`config_id` integer NOT NULL {self._sql.AUTOINCREMENT},
 				`clientId` varchar(255) NOT NULL,
@@ -1050,11 +1046,11 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		logger.debug(table)
 		with self._sql.session() as session:
 			self._sql.execute(session, table)
-			self._sql.execute(session, 'CREATE INDEX `index_software_config_clientId` on `SOFTWARE_CONFIG` (`clientId`);')
+			self._sql.execute(session, "CREATE INDEX `index_software_config_clientId` on `SOFTWARE_CONFIG` (`clientId`);")
 			self._sql.execute(
 				session,
-				'CREATE INDEX `index_software_config_nvsla` on '
-				'`SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);'
+				"CREATE INDEX `index_software_config_nvsla` on "
+				"`SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);",
 			)
 
 	def _createAuditHardwareTables(self):  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
@@ -1074,8 +1070,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					hardwareDeviceTable = f"ALTER TABLE `{hardwareDeviceTableName}`\n"
 				else:
 					hardwareDeviceTable = (
-						f"CREATE TABLE `{hardwareDeviceTableName}` (\n"
-						f"`hardware_id` INTEGER NOT NULL {self._sql.AUTOINCREMENT},\n"
+						f"CREATE TABLE `{hardwareDeviceTableName}` (\n" f"`hardware_id` INTEGER NOT NULL {self._sql.AUTOINCREMENT},\n"
 					)
 
 				if hardwareConfigTableExists:
@@ -1095,7 +1090,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				hardwareConfigValuesProcessed = 0
 				for (value, valueInfo) in values.items():
 					logger.debug("  Processing value '%s'", value)
-					if valueInfo['Scope'] == 'g':
+					if valueInfo["Scope"] == "g":
 						if hardwareDeviceTableExists:
 							if value in tables[hardwareDeviceTableName]:
 								# Column exists => change
@@ -1108,7 +1103,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 						else:
 							hardwareDeviceTable += f'`{value}` {valueInfo["Type"]} NULL,\n'
 						hardwareDeviceValuesProcessed += 1
-					elif valueInfo['Scope'] == 'i':
+					elif valueInfo["Scope"] == "i":
 						if hardwareConfigTableExists:
 							if value in tables[hardwareConfigTableName]:
 								# Column exists => change
@@ -1123,30 +1118,30 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 						hardwareConfigValuesProcessed += 1
 
 				if not hardwareDeviceTableExists:
-					hardwareDeviceTable += 'PRIMARY KEY (`hardware_id`)\n'
+					hardwareDeviceTable += "PRIMARY KEY (`hardware_id`)\n"
 				if not hardwareConfigTableExists:
-					hardwareConfigTable += 'PRIMARY KEY (`config_id`)\n'
+					hardwareConfigTable += "PRIMARY KEY (`config_id`)\n"
 
 				# Remove leading and trailing whitespace
 				hardwareDeviceTable = hardwareDeviceTable.strip()
 				hardwareConfigTable = hardwareConfigTable.strip()
 
 				# Remove trailing comma
-				if hardwareDeviceTable.endswith(','):
+				if hardwareDeviceTable.endswith(","):
 					hardwareDeviceTable = hardwareDeviceTable[:-1]
-				if hardwareConfigTable.endswith(','):
+				if hardwareConfigTable.endswith(","):
 					hardwareConfigTable = hardwareConfigTable[:-1]
 
 				# Finish sql query
 				if hardwareDeviceTableExists:
-					hardwareDeviceTable += ' ;\n'
+					hardwareDeviceTable += " ;\n"
 				else:
-					hardwareDeviceTable += f'\n) {self._sql.getTableCreationOptions(hardwareDeviceTableName)};\n'
+					hardwareDeviceTable += f"\n) {self._sql.getTableCreationOptions(hardwareDeviceTableName)};\n"
 
 				if hardwareConfigTableExists:
-					hardwareConfigTable += ' ;\n'
+					hardwareConfigTable += " ;\n"
 				else:
-					hardwareConfigTable += f'\n) {self._sql.getTableCreationOptions(hardwareConfigTableName)};\n'
+					hardwareConfigTable += f"\n) {self._sql.getTableCreationOptions(hardwareConfigTableName)};\n"
 
 				# Execute sql query
 				if hardwareDeviceValuesProcessed or not hardwareDeviceTableExists:
@@ -1164,31 +1159,31 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		data = self._objectToDatabaseHash(host)
 		where = self._uniqueCondition(host)
 		with self._sql.session() as session:
-			if self._sql.getRow(session, f'select * from `HOST` where {where}'):
-				self._sql.update(session, 'HOST', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `HOST` where {where}"):
+				self._sql.update(session, "HOST", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'HOST', data)
+				self._sql.insert(session, "HOST", data)
 
 	def host_updateObject(self, host):
 		ConfigDataBackend.host_updateObject(self, host)
 		data = self._objectToDatabaseHash(host)
 		where = self._uniqueCondition(host)
 		with self._sql.session() as session:
-			self._sql.update(session, 'HOST', where, data)
+			self._sql.update(session, "HOST", where, data)
 
 	def host_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
 		ConfigDataBackend.host_getObjects(self, attributes=[], **filter)
 		logger.info("Getting hosts, filter: %s", filter)
 
-		hostType = forceList(filter.get('type', []))
-		if 'OpsiDepotserver' in hostType and 'OpsiConfigserver' not in hostType:
-			hostType.append('OpsiConfigserver')
-			filter['type'] = hostType
+		hostType = forceList(filter.get("type", []))
+		if "OpsiDepotserver" in hostType and "OpsiConfigserver" not in hostType:
+			hostType.append("OpsiConfigserver")
+			filter["type"] = hostType
 
 		hosts = []
 		(attributes, filter) = self._adjustAttributes(Host, attributes, filter)
 		with self._sql.session() as session:
-			for res in self._sql.getSet(session, self._createQuery('HOST', attributes, filter)):
+			for res in self._sql.getSet(session, self._createQuery("HOST", attributes, filter)):
 				self._adjustResult(Host, res)
 				hosts.append(Host.fromHash(res))
 
@@ -1201,7 +1196,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			for host in forceObjectClassList(hosts, Host):
 				logger.info("Deleting host %s", host)
 				where = self._uniqueCondition(host)
-				self._sql.delete(session, 'HOST', where)
+				self._sql.delete(session, "HOST", where)
 
 				auditHardwareOnDeletedHost = self.auditHardwareOnHost_getObjects(objectId=host.id)
 				if auditHardwareOnDeletedHost:
@@ -1214,51 +1209,47 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# -   Configs
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def config_insertObject(self, config):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.config_insertObject(self, config)
 		data = self._objectToDatabaseHash(config)
-		possibleValues = data['possibleValues']
-		defaultValues = data['defaultValues']
+		possibleValues = data["possibleValues"]
+		defaultValues = data["defaultValues"]
 		if possibleValues is None:
 			possibleValues = []
 		if defaultValues is None:
 			defaultValues = []
-		del data['possibleValues']
-		del data['defaultValues']
+		del data["possibleValues"]
+		del data["defaultValues"]
 
 		where = self._uniqueCondition(config)
 		with self._sql.session() as session:
-			if self._sql.getRow(session, f'select * from `CONFIG` where {where}'):
-				self._sql.update(session, 'CONFIG', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `CONFIG` where {where}"):
+				self._sql.update(session, "CONFIG", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'CONFIG', data)
+				self._sql.insert(session, "CONFIG", data)
 
-			self._sql.delete(session, 'CONFIG_VALUE', where)
+			self._sql.delete(session, "CONFIG_VALUE", where)
 			for value in possibleValues:
-				self._sql.insert(session, 'CONFIG_VALUE', {
-					'configId': data['configId'],
-					'value': value,
-					'isDefault': (value in defaultValues)
-				})
+				self._sql.insert(
+					session, "CONFIG_VALUE", {"configId": data["configId"], "value": value, "isDefault": (value in defaultValues)}
+				)
 
 	def config_updateObject(self, config):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.config_updateObject(self, config)
 		data = self._objectToDatabaseHash(config)
 		where = self._uniqueCondition(config)
-		possibleValues = data['possibleValues'] or []
-		defaultValues = data['defaultValues'] or []
-		del data['possibleValues']
-		del data['defaultValues']
+		possibleValues = data["possibleValues"] or []
+		defaultValues = data["defaultValues"] or []
+		del data["possibleValues"]
+		del data["defaultValues"]
 
 		with self._sql.session() as session:
-			self._sql.update(session, 'CONFIG', where, data)
-			self._sql.delete(session, 'CONFIG_VALUE', where)
+			self._sql.update(session, "CONFIG", where, data)
+			self._sql.delete(session, "CONFIG_VALUE", where)
 			for value in possibleValues:
 				self._sql.insert(
-					session, 'CONFIG_VALUE', {
-						'configId': data['configId'],
-						'value': value,
-						'isDefault': (value in defaultValues)
-					}
+					session, "CONFIG_VALUE", {"configId": data["configId"], "value": value, "isDefault": (value in defaultValues)}
 				)
 
 	def config_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -1269,107 +1260,104 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		with self._sql.session() as session:
 			try:
-				if filter['defaultValues']:
-					configIds = filter.get('configId')
-					filter['configId'] = [
-						res['configId'] for res in self._sql.getSet(
+				if filter["defaultValues"]:
+					configIds = filter.get("configId")
+					filter["configId"] = [
+						res["configId"]
+						for res in self._sql.getSet(
 							session,
 							self._createQuery(
-								'CONFIG_VALUE',
-								('configId', ),
-								{'configId': configIds, 'value': filter['defaultValues'], 'isDefault': True}
-							)
+								"CONFIG_VALUE", ("configId",), {"configId": configIds, "value": filter["defaultValues"], "isDefault": True}
+							),
 						)
 					]
 
-					if not filter['configId']:
+					if not filter["configId"]:
 						return []
 
-				del filter['defaultValues']
+				del filter["defaultValues"]
 			except KeyError:
 				pass
 
 			try:
-				if filter['possibleValues']:
-					configIds = filter.get('configId')
-					filter['configId'] = [
-						res['configId'] for res in self._sql.getSet(
+				if filter["possibleValues"]:
+					configIds = filter.get("configId")
+					filter["configId"] = [
+						res["configId"]
+						for res in self._sql.getSet(
 							session,
-							self._createQuery(
-								'CONFIG_VALUE',
-								('configId', ),
-								{'configId': configIds, 'value': filter['possibleValues']}
-							)
+							self._createQuery("CONFIG_VALUE", ("configId",), {"configId": configIds, "value": filter["possibleValues"]}),
 						)
 					]
 
-					if not filter['configId']:
+					if not filter["configId"]:
 						return []
 
-				del filter['possibleValues']
+				del filter["possibleValues"]
 			except KeyError:
 				pass
 
-			readValues = not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes
+			readValues = not attributes or "possibleValues" in attributes or "defaultValues" in attributes
 
-			attrs = [attr for attr in attributes if attr not in ('defaultValues', 'possibleValues')]
-			for res in self._sql.getSet(session, self._createQuery('CONFIG', attrs, filter)):
-				res['possibleValues'] = []
-				res['defaultValues'] = []
+			attrs = [attr for attr in attributes if attr not in ("defaultValues", "possibleValues")]
+			for res in self._sql.getSet(session, self._createQuery("CONFIG", attrs, filter)):
+				res["possibleValues"] = []
+				res["defaultValues"] = []
 				if readValues:
-					for res2 in self._sql.getSet(
-						session,
-						f"select * from CONFIG_VALUE where `configId` = '{res['configId']}'"
-					):
-						res['possibleValues'].append(res2['value'])
-						if res2['isDefault']:
-							res['defaultValues'].append(res2['value'])
+					for res2 in self._sql.getSet(session, f"select * from CONFIG_VALUE where `configId` = '{res['configId']}'"):
+						res["possibleValues"].append(res2["value"])
+						if res2["isDefault"]:
+							res["defaultValues"].append(res2["value"])
 				self._adjustResult(Config, res)
 				configs.append(Config.fromHash(res))
 			return configs
 
 	def config_deleteObjects(self, configs):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.config_deleteObjects(self, configs)
 		with self._sql.session() as session:
 			for config in forceObjectClassList(configs, Config):
 				logger.info("Deleting config %s", config)
 				where = self._uniqueCondition(config)
-				self._sql.delete(session, 'CONFIG_VALUE', where)
-				self._sql.delete(session, 'CONFIG', where)
+				self._sql.delete(session, "CONFIG_VALUE", where)
+				self._sql.delete(session, "CONFIG", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def configState_insertObject(self, configState):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.configState_insertObject(self, configState)
 		data = self._objectToDatabaseHash(configState)
-		data['values'] = json.dumps(data['values'])
+		data["values"] = json.dumps(data["values"])
 
 		where = self._uniqueCondition(configState)
 		with self._sql.session() as session:
-			if self._sql.getRow(session, f'select * from `CONFIG_STATE` where {where}'):
-				self._sql.update(session, 'CONFIG_STATE', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `CONFIG_STATE` where {where}"):
+				self._sql.update(session, "CONFIG_STATE", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'CONFIG_STATE', data)
+				self._sql.insert(session, "CONFIG_STATE", data)
 
 	def configState_updateObject(self, configState):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.configState_updateObject(self, configState)
 		data = self._objectToDatabaseHash(configState)
 		where = self._uniqueCondition(configState)
-		data['values'] = json.dumps(data['values'])
+		data["values"] = json.dumps(data["values"])
 		with self._sql.session() as session:
-			self._sql.update(session, 'CONFIG_STATE', where, data)
+			self._sql.update(session, "CONFIG_STATE", where, data)
 
 	def configState_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+		self._check_module("mysql_backend")
 		ConfigDataBackend.configState_getObjects(self, attributes=[], **filter)
 		logger.info("Getting configStates, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(ConfigState, attributes, filter)
 
 		configStates = []
 		with self._sql.session() as session:
-			for res in self._sql.getSet(session, self._createQuery('CONFIG_STATE', attributes, filter)):
+			for res in self._sql.getSet(session, self._createQuery("CONFIG_STATE", attributes, filter)):
 				try:
-					res['values'] = json.loads(res['values'])
+					res["values"] = json.loads(res["values"])
 				except KeyError:
 					pass
 
@@ -1377,77 +1365,74 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		return configStates
 
 	def configState_deleteObjects(self, configStates):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.configState_deleteObjects(self, configStates)
 		with self._sql.session() as session:
 			for configState in forceObjectClassList(configStates, ConfigState):
 				logger.info("Deleting configState %s", configState)
 				where = self._uniqueCondition(configState)
-				self._sql.delete(session, 'CONFIG_STATE', where)
+				self._sql.delete(session, "CONFIG_STATE", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Products
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def product_insertObject(self, product):  # pylint: disable=too-many-branches,too-many-locals
+		self._check_module("mysql_backend")
 		ConfigDataBackend.product_insertObject(self, product)
 		data = self._objectToDatabaseHash(product)
-		windowsSoftwareIds = data['windowsSoftwareIds']
-		del data['windowsSoftwareIds']
-		del data['productClassIds']
+		windowsSoftwareIds = data["windowsSoftwareIds"]
+		del data["windowsSoftwareIds"]
+		del data["productClassIds"]
 
 		where = self._uniqueCondition(product)
 		with self._sql.session() as session:
-			if self._sql.getRow(session, f'select * from `PRODUCT` where {where}'):
-				self._sql.update(session, 'PRODUCT', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `PRODUCT` where {where}"):
+				self._sql.update(session, "PRODUCT", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'PRODUCT', data)
+				self._sql.insert(session, "PRODUCT", data)
 
-			self._sql.delete(session, 'WINDOWS_SOFTWARE_ID_TO_PRODUCT', f"`productId` = '{data['productId']}'")
+			self._sql.delete(session, "WINDOWS_SOFTWARE_ID_TO_PRODUCT", f"`productId` = '{data['productId']}'")
 
 			for windowsSoftwareId in windowsSoftwareIds:
-				mapping = {
-					'windowsSoftwareId': windowsSoftwareId,
-					'productId': data['productId']
-				}
-				self._sql.insert(session, 'WINDOWS_SOFTWARE_ID_TO_PRODUCT', mapping)
+				mapping = {"windowsSoftwareId": windowsSoftwareId, "productId": data["productId"]}
+				self._sql.insert(session, "WINDOWS_SOFTWARE_ID_TO_PRODUCT", mapping)
 
 	def product_updateObject(self, product):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.product_updateObject(self, product)
 		data = self._objectToDatabaseHash(product)
 		where = self._uniqueCondition(product)
-		windowsSoftwareIds = data['windowsSoftwareIds'] or []
-		del data['windowsSoftwareIds']
-		del data['productClassIds']
+		windowsSoftwareIds = data["windowsSoftwareIds"] or []
+		del data["windowsSoftwareIds"]
+		del data["productClassIds"]
 
 		with self._sql.session() as session:
-			self._sql.update(session, 'PRODUCT', where, data)
-			self._sql.delete(session, 'WINDOWS_SOFTWARE_ID_TO_PRODUCT', f"`productId` = '{data['productId']}'")
+			self._sql.update(session, "PRODUCT", where, data)
+			self._sql.delete(session, "WINDOWS_SOFTWARE_ID_TO_PRODUCT", f"`productId` = '{data['productId']}'")
 
 			for windowsSoftwareId in windowsSoftwareIds:
-				mapping = {
-					'windowsSoftwareId': windowsSoftwareId,
-					'productId': data['productId']
-				}
-				self._sql.insert(session, 'WINDOWS_SOFTWARE_ID_TO_PRODUCT', mapping)
+				mapping = {"windowsSoftwareId": windowsSoftwareId, "productId": data["productId"]}
+				self._sql.insert(session, "WINDOWS_SOFTWARE_ID_TO_PRODUCT", mapping)
 
 	def product_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+		self._check_module("mysql_backend")
 		ConfigDataBackend.product_getObjects(self, attributes=[], **filter)
 		logger.info("Getting products, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(Product, attributes, filter)
 
-		readWindowsSoftwareIDs = not attributes or 'windowsSoftwareIds' in attributes
+		readWindowsSoftwareIDs = not attributes or "windowsSoftwareIds" in attributes
 		products = []
 		with self._sql.session() as session:
-			for res in self._sql.getSet(session, self._createQuery('PRODUCT', attributes, filter)):
-				res['windowsSoftwareIds'] = []
-				res['productClassIds'] = []
+			for res in self._sql.getSet(session, self._createQuery("PRODUCT", attributes, filter)):
+				res["windowsSoftwareIds"] = []
+				res["productClassIds"] = []
 				if readWindowsSoftwareIDs:
 					for res2 in self._sql.getSet(
-						session,
-						f"select * from WINDOWS_SOFTWARE_ID_TO_PRODUCT where `productId` = '{res['productId']}'"
+						session, f"select * from WINDOWS_SOFTWARE_ID_TO_PRODUCT where `productId` = '{res['productId']}'"
 					):
-						res['windowsSoftwareIds'].append(res2['windowsSoftwareId'])
+						res["windowsSoftwareIds"].append(res2["windowsSoftwareId"])
 
-				if not attributes or 'productClassIds' in attributes:
+				if not attributes or "productClassIds" in attributes:
 					# TODO: is this missing an query?
 					pass
 
@@ -1456,86 +1441,98 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		return products
 
 	def product_deleteObjects(self, products):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.product_deleteObjects(self, products)
 		with self._sql.session() as session:
 			for product in forceObjectClassList(products, Product):
 				logger.info("Deleting product %s", product)
 				where = self._uniqueCondition(product)
-				self._sql.delete(session, 'WINDOWS_SOFTWARE_ID_TO_PRODUCT', f"`productId` = '{product.getId()}'")
-				self._sql.delete(session, 'PRODUCT', where)
+				self._sql.delete(session, "WINDOWS_SOFTWARE_ID_TO_PRODUCT", f"`productId` = '{product.getId()}'")
+				self._sql.delete(session, "PRODUCT", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productProperty_insertObject(self, productProperty):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 		data = self._objectToDatabaseHash(productProperty)
-		possibleValues = data['possibleValues']
-		defaultValues = data['defaultValues']
+		possibleValues = data["possibleValues"]
+		defaultValues = data["defaultValues"]
 		if possibleValues is None:
 			possibleValues = []
 		if defaultValues is None:
 			defaultValues = []
-		del data['possibleValues']
-		del data['defaultValues']
+		del data["possibleValues"]
+		del data["defaultValues"]
 
 		where = self._uniqueCondition(productProperty)
 		with self._sql.session() as session:
-			if self._sql.getRow(session, f'select * from `PRODUCT_PROPERTY` where {where}'):
-				self._sql.update(session, 'PRODUCT_PROPERTY', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `PRODUCT_PROPERTY` where {where}"):
+				self._sql.update(session, "PRODUCT_PROPERTY", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'PRODUCT_PROPERTY', data)
+				self._sql.insert(session, "PRODUCT_PROPERTY", data)
 
-			self._sql.delete(session, 'PRODUCT_PROPERTY_VALUE', where)
+			self._sql.delete(session, "PRODUCT_PROPERTY_VALUE", where)
 			for value in possibleValues:
-				self._sql.insert(session, 'PRODUCT_PROPERTY_VALUE', {
-					'productId': data['productId'],
-					'productVersion': data['productVersion'],
-					'packageVersion': data['packageVersion'],
-					'propertyId': data['propertyId'],
-					'value': value,
-					'isDefault': (value in defaultValues)
-				})
+				self._sql.insert(
+					session,
+					"PRODUCT_PROPERTY_VALUE",
+					{
+						"productId": data["productId"],
+						"productVersion": data["productVersion"],
+						"packageVersion": data["packageVersion"],
+						"propertyId": data["propertyId"],
+						"value": value,
+						"isDefault": (value in defaultValues),
+					},
+				)
 
 	def productProperty_updateObject(self, productProperty):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
 		data = self._objectToDatabaseHash(productProperty)
 		where = self._uniqueCondition(productProperty)
-		possibleValues = data['possibleValues']
-		defaultValues = data['defaultValues']
+		possibleValues = data["possibleValues"]
+		defaultValues = data["defaultValues"]
 		if possibleValues is None:
 			possibleValues = []
 		if defaultValues is None:
 			defaultValues = []
-		del data['possibleValues']
-		del data['defaultValues']
+		del data["possibleValues"]
+		del data["defaultValues"]
 		with self._sql.session() as session:
-			self._sql.update(session, 'PRODUCT_PROPERTY', where, data)
+			self._sql.update(session, "PRODUCT_PROPERTY", where, data)
 
-			self._sql.delete(session, 'PRODUCT_PROPERTY_VALUE', where)
+			self._sql.delete(session, "PRODUCT_PROPERTY_VALUE", where)
 			for value in possibleValues:
-				self._sql.insert(session, 'PRODUCT_PROPERTY_VALUE', {
-					'productId': data['productId'],
-					'productVersion': data['productVersion'],
-					'packageVersion': data['packageVersion'],
-					'propertyId': data['propertyId'],
-					'value': value,
-					'isDefault': (value in defaultValues)
-				})
+				self._sql.insert(
+					session,
+					"PRODUCT_PROPERTY_VALUE",
+					{
+						"productId": data["productId"],
+						"productVersion": data["productVersion"],
+						"packageVersion": data["packageVersion"],
+						"propertyId": data["propertyId"],
+						"value": value,
+						"isDefault": (value in defaultValues),
+					},
+				)
 
 	def productProperty_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productProperty_getObjects(self, attributes=[], **filter)
 		logger.info("Getting product properties, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(ProductProperty, attributes, filter)
 
-		readValues = not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes
+		readValues = not attributes or "possibleValues" in attributes or "defaultValues" in attributes
 
-		query = self._createQuery('PRODUCT_PROPERTY', attributes, filter)
+		query = self._createQuery("PRODUCT_PROPERTY", attributes, filter)
 		productProperties = []
 		with self._sql.session() as session:
 			for productProperty in self._sql.getSet(session, query):
-				productProperty['possibleValues'] = []
-				productProperty['defaultValues'] = []
+				productProperty["possibleValues"] = []
+				productProperty["defaultValues"] = []
 				if readValues:
 					valueQuery = (
 						"select value, isDefault "
@@ -1546,69 +1543,72 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 						f"AND `packageVersion` = '{productProperty['packageVersion']}'"
 					)
 					for propertyValues in self._sql.getSet(session, valueQuery):
-						productProperty['possibleValues'].append(propertyValues['value'])
-						if propertyValues['isDefault']:
-							productProperty['defaultValues'].append(propertyValues['value'])
+						productProperty["possibleValues"].append(propertyValues["value"])
+						if propertyValues["isDefault"]:
+							productProperty["defaultValues"].append(propertyValues["value"])
 
 				productProperties.append(ProductProperty.fromHash(productProperty))
 
 		return productProperties
 
 	def productProperty_deleteObjects(self, productProperties):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productProperty_deleteObjects(self, productProperties)
 		with self._sql.session() as session:
 			for productProperty in forceObjectClassList(productProperties, ProductProperty):
 				logger.info("Deleting product property %s", productProperty)
 				where = self._uniqueCondition(productProperty)
-				self._sql.delete(session, 'PRODUCT_PROPERTY_VALUE', where)
-				self._sql.delete(session, 'PRODUCT_PROPERTY', where)
+				self._sql.delete(session, "PRODUCT_PROPERTY_VALUE", where)
+				self._sql.delete(session, "PRODUCT_PROPERTY", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductDependencies
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productDependency_insertObject(self, productDependency):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productDependency_insertObject(self, productDependency)
 		data = self._objectToDatabaseHash(productDependency)
 
 		where = self._uniqueCondition(productDependency)
 		with self._sql.session() as session:
-			if self._sql.getRow(session, f'select * from `PRODUCT_DEPENDENCY` where {where}'):
-				self._sql.update(session, 'PRODUCT_DEPENDENCY', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `PRODUCT_DEPENDENCY` where {where}"):
+				self._sql.update(session, "PRODUCT_DEPENDENCY", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'PRODUCT_DEPENDENCY', data)
+				self._sql.insert(session, "PRODUCT_DEPENDENCY", data)
 
 	def productDependency_updateObject(self, productDependency):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productDependency_updateObject(self, productDependency)
 		data = self._objectToDatabaseHash(productDependency)
 		where = self._uniqueCondition(productDependency)
 		with self._sql.session() as session:
-			self._sql.update(session, 'PRODUCT_DEPENDENCY', where, data)
+			self._sql.update(session, "PRODUCT_DEPENDENCY", where, data)
 
 	def productDependency_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productDependency_getObjects(self, attributes=[], **filter)
 		logger.info("Getting product dependencies, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(ProductDependency, attributes, filter)
 		with self._sql.session() as session:
 			return [
 				ProductDependency.fromHash(res)
-				for res in self._sql.getSet(
-					session,
-					self._createQuery('PRODUCT_DEPENDENCY', attributes, filter)
-				)
+				for res in self._sql.getSet(session, self._createQuery("PRODUCT_DEPENDENCY", attributes, filter))
 			]
 
 	def productDependency_deleteObjects(self, productDependencies):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productDependency_deleteObjects(self, productDependencies)
 		with self._sql.session() as session:
 			for productDependency in forceObjectClassList(productDependencies, ProductDependency):
 				logger.info("Deleting product dependency %s", productDependency)
 				where = self._uniqueCondition(productDependency)
-				self._sql.delete(session, 'PRODUCT_DEPENDENCY', where)
+				self._sql.delete(session, "PRODUCT_DEPENDENCY", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnDepots
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnDepot_insertObject(self, productOnDepot):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 		data = self._objectToDatabaseHash(productOnDepot)
 
@@ -1618,39 +1618,42 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		productOnDepotClone.productType = None
 		where = self._uniqueCondition(productOnDepotClone)
 		with self._sql.session() as session:
-			if self._sql.getRow(session, f'select * from `PRODUCT_ON_DEPOT` where {where}'):
-				self._sql.update(session, 'PRODUCT_ON_DEPOT', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `PRODUCT_ON_DEPOT` where {where}"):
+				self._sql.update(session, "PRODUCT_ON_DEPOT", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'PRODUCT_ON_DEPOT', data)
+				self._sql.insert(session, "PRODUCT_ON_DEPOT", data)
 
 	def productOnDepot_updateObject(self, productOnDepot):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
 		data = self._objectToDatabaseHash(productOnDepot)
 		where = self._uniqueCondition(productOnDepot)
 		with self._sql.session() as session:
-			self._sql.update(session, 'PRODUCT_ON_DEPOT', where, data)
+			self._sql.update(session, "PRODUCT_ON_DEPOT", where, data)
 
 	def productOnDepot_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
 		(attributes, filter) = self._adjustAttributes(ProductOnDepot, attributes, filter)
 		with self._sql.session() as session:
 			return [
-				ProductOnDepot.fromHash(res) for res in
-				self._sql.getSet(session, self._createQuery('PRODUCT_ON_DEPOT', attributes, filter))
+				ProductOnDepot.fromHash(res) for res in self._sql.getSet(session, self._createQuery("PRODUCT_ON_DEPOT", attributes, filter))
 			]
 
 	def productOnDepot_deleteObjects(self, productOnDepots):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
 		with self._sql.session() as session:
 			for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
 				logger.info("Deleting productOnDepot %s", productOnDepot)
 				where = self._uniqueCondition(productOnDepot)
-				self._sql.delete(session, 'PRODUCT_ON_DEPOT', where)
+				self._sql.delete(session, "PRODUCT_ON_DEPOT", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnClients
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productOnClient_insertObject(self, productOnClient):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 		data = self._objectToDatabaseHash(productOnClient)
 
@@ -1661,17 +1664,18 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		where = self._uniqueCondition(productOnClientClone)
 
 		with self._sql.session() as session:
-			if self._sql.getRow(session, f'select * from `PRODUCT_ON_CLIENT` where {where}'):
-				self._sql.update(session, 'PRODUCT_ON_CLIENT', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `PRODUCT_ON_CLIENT` where {where}"):
+				self._sql.update(session, "PRODUCT_ON_CLIENT", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'PRODUCT_ON_CLIENT', data)
+				self._sql.insert(session, "PRODUCT_ON_CLIENT", data)
 
 	def productOnClient_updateObject(self, productOnClient):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
 		data = self._objectToDatabaseHash(productOnClient)
 		where = self._uniqueCondition(productOnClient)
 		with self._sql.session() as session:
-			self._sql.update(session, 'PRODUCT_ON_CLIENT', where, data)
+			self._sql.update(session, "PRODUCT_ON_CLIENT", where, data)
 
 	def productOnClient_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
 		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
@@ -1679,310 +1683,294 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		(attributes, filter) = self._adjustAttributes(ProductOnClient, attributes, filter)
 		with self._sql.session() as session:
 			return [
-				ProductOnClient.fromHash(res) for res in
-				self._sql.getSet(session, self._createQuery('PRODUCT_ON_CLIENT', attributes, filter))
+				ProductOnClient.fromHash(res)
+				for res in self._sql.getSet(session, self._createQuery("PRODUCT_ON_CLIENT", attributes, filter))
 			]
 
 	def productOnClient_deleteObjects(self, productOnClients):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
 		with self._sql.session() as session:
 			for productOnClient in forceObjectClassList(productOnClients, ProductOnClient):
 				logger.info("Deleting productOnClient %s", productOnClient)
 				where = self._uniqueCondition(productOnClient)
-				self._sql.delete(session, 'PRODUCT_ON_CLIENT', where)
+				self._sql.delete(session, "PRODUCT_ON_CLIENT", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductPropertyStates
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def productPropertyState_insertObject(self, productPropertyState):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
 		with self._sql.session() as session:
-			if not self._sql.getSet(session, self._createQuery('HOST', ['hostId'], {"hostId": productPropertyState.objectId})):
+			if not self._sql.getSet(session, self._createQuery("HOST", ["hostId"], {"hostId": productPropertyState.objectId})):
 				raise BackendReferentialIntegrityError(f"Object '{productPropertyState.objectId}' does not exist")
 			data = self._objectToDatabaseHash(productPropertyState)
-			data['values'] = json.dumps(data['values'])
+			data["values"] = json.dumps(data["values"])
 
 			where = self._uniqueCondition(productPropertyState)
-			if self._sql.getRow(session, f'select * from `PRODUCT_PROPERTY_STATE` where {where}'):
-				self._sql.update(session, 'PRODUCT_PROPERTY_STATE', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `PRODUCT_PROPERTY_STATE` where {where}"):
+				self._sql.update(session, "PRODUCT_PROPERTY_STATE", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'PRODUCT_PROPERTY_STATE', data)
+				self._sql.insert(session, "PRODUCT_PROPERTY_STATE", data)
 
 	def productPropertyState_updateObject(self, productPropertyState):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
 		data = self._objectToDatabaseHash(productPropertyState)
 		where = self._uniqueCondition(productPropertyState)
-		data['values'] = json.dumps(data['values'])
+		data["values"] = json.dumps(data["values"])
 		with self._sql.session() as session:
-			self._sql.update(session, 'PRODUCT_PROPERTY_STATE', where, data)
+			self._sql.update(session, "PRODUCT_PROPERTY_STATE", where, data)
 
 	def productPropertyState_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
 		logger.info("Getting productPropertyStates, filter: %s", filter)
 		productPropertyStates = []
 		(attributes, filter) = self._adjustAttributes(ProductPropertyState, attributes, filter)
 		with self._sql.session() as session:
-			for res in self._sql.getSet(session, self._createQuery('PRODUCT_PROPERTY_STATE', attributes, filter)):
+			for res in self._sql.getSet(session, self._createQuery("PRODUCT_PROPERTY_STATE", attributes, filter)):
 				try:
-					res['values'] = json.loads(res['values'])
+					res["values"] = json.loads(res["values"])
 				except KeyError:
 					pass  # Could be non-existing and it would be okay.
 				productPropertyStates.append(ProductPropertyState.fromHash(res))
 		return productPropertyStates
 
 	def productPropertyState_deleteObjects(self, productPropertyStates):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
 		with self._sql.session() as session:
 			for productPropertyState in forceObjectClassList(productPropertyStates, ProductPropertyState):
 				logger.info("Deleting productPropertyState %s", productPropertyState)
 				where = self._uniqueCondition(productPropertyState)
-				self._sql.delete(session, 'PRODUCT_PROPERTY_STATE', where)
+				self._sql.delete(session, "PRODUCT_PROPERTY_STATE", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Groups
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def group_insertObject(self, group):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.group_insertObject(self, group)
 		data = self._objectToDatabaseHash(group)
 
 		where = self._uniqueCondition(group)
 		with self._sql.session() as session:
-			if self._sql.getRow(session, f'select * from `GROUP` where {where}'):
-				self._sql.update(session, 'GROUP', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `GROUP` where {where}"):
+				self._sql.update(session, "GROUP", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'GROUP', data)
+				self._sql.insert(session, "GROUP", data)
 
 	def group_updateObject(self, group):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.group_updateObject(self, group)
 		data = self._objectToDatabaseHash(group)
 		where = self._uniqueCondition(group)
 		with self._sql.session() as session:
-			self._sql.update(session, 'GROUP', where, data)
+			self._sql.update(session, "GROUP", where, data)
 
 	def group_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+		self._check_module("mysql_backend")
 		ConfigDataBackend.group_getObjects(self, attributes=[], **filter)
 		logger.info("Getting groups, filter: %s", filter)
 		groups = []
 		(attributes, filter) = self._adjustAttributes(Group, attributes, filter)
 		with self._sql.session() as session:
-			for res in self._sql.getSet(session, self._createQuery('GROUP', attributes, filter)):
+			for res in self._sql.getSet(session, self._createQuery("GROUP", attributes, filter)):
 				self._adjustResult(Group, res)
 				groups.append(Group.fromHash(res))
 		return groups
 
 	def group_deleteObjects(self, groups):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.group_deleteObjects(self, groups)
 		with self._sql.session() as session:
 			for group in forceObjectClassList(groups, Group):
 				logger.info("Deleting group %s", group)
 				where = self._uniqueCondition(group)
-				self._sql.delete(session, 'GROUP', where)
+				self._sql.delete(session, "GROUP", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ObjectToGroups
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def objectToGroup_insertObject(self, objectToGroup):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 		data = self._objectToDatabaseHash(objectToGroup)
 
 		where = self._uniqueCondition(objectToGroup)
 		with self._sql.session() as session:
-			if self._sql.getRow(session, f'select * from `OBJECT_TO_GROUP` where {where}'):
-				self._sql.update(session, 'OBJECT_TO_GROUP', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `OBJECT_TO_GROUP` where {where}"):
+				self._sql.update(session, "OBJECT_TO_GROUP", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'OBJECT_TO_GROUP', data)
+				self._sql.insert(session, "OBJECT_TO_GROUP", data)
 
 	def objectToGroup_updateObject(self, objectToGroup):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
 		data = self._objectToDatabaseHash(objectToGroup)
 		where = self._uniqueCondition(objectToGroup)
 		with self._sql.session() as session:
-			self._sql.update(session, 'OBJECT_TO_GROUP', where, data)
+			self._sql.update(session, "OBJECT_TO_GROUP", where, data)
 
 	def objectToGroup_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+		self._check_module("mysql_backend")
 		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
 		logger.info("Getting objectToGroups, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(ObjectToGroup, attributes, filter)
 		with self._sql.session() as session:
 			return [
-				ObjectToGroup.fromHash(res) for res in
-				self._sql.getSet(session, self._createQuery('OBJECT_TO_GROUP', attributes, filter))
+				ObjectToGroup.fromHash(res) for res in self._sql.getSet(session, self._createQuery("OBJECT_TO_GROUP", attributes, filter))
 			]
 
 	def objectToGroup_deleteObjects(self, objectToGroups):
+		self._check_module("mysql_backend")
 		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
 		with self._sql.session() as session:
 			for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
 				logger.info("Deleting objectToGroup %s", objectToGroup)
 				where = self._uniqueCondition(objectToGroup)
-				self._sql.delete(session, 'OBJECT_TO_GROUP', where)
+				self._sql.delete(session, "OBJECT_TO_GROUP", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicenseContracts
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def licenseContract_insertObject(self, licenseContract):
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return
+		self._check_module("license_management")
 
 		ConfigDataBackend.licenseContract_insertObject(self, licenseContract)
 		data = self._objectToDatabaseHash(licenseContract)
 
 		where = self._uniqueCondition(licenseContract)
 		with self._sql.session() as session:
-			if self._sql.getRow(session, f'select * from `LICENSE_CONTRACT` where {where}'):
-				self._sql.update(session, 'LICENSE_CONTRACT', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `LICENSE_CONTRACT` where {where}"):
+				self._sql.update(session, "LICENSE_CONTRACT", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'LICENSE_CONTRACT', data)
+				self._sql.insert(session, "LICENSE_CONTRACT", data)
 
 	def licenseContract_updateObject(self, licenseContract):
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return
+		self._check_module("license_management")
 
 		ConfigDataBackend.licenseContract_updateObject(self, licenseContract)
 		data = self._objectToDatabaseHash(licenseContract)
 		where = self._uniqueCondition(licenseContract)
 		with self._sql.session() as session:
-			self._sql.update(session, 'LICENSE_CONTRACT', where, data)
+			self._sql.update(session, "LICENSE_CONTRACT", where, data)
 
 	def licenseContract_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return []
+		self._check_module("license_management")
 
 		ConfigDataBackend.licenseContract_getObjects(self, attributes=[], **filter)
 		logger.info("Getting licenseContracts, filter: %s", filter)
 		licenseContracts = []
 		(attributes, filter) = self._adjustAttributes(LicenseContract, attributes, filter)
 		with self._sql.session() as session:
-			for res in self._sql.getSet(session, self._createQuery('LICENSE_CONTRACT', attributes, filter)):
+			for res in self._sql.getSet(session, self._createQuery("LICENSE_CONTRACT", attributes, filter)):
 				self._adjustResult(LicenseContract, res)
 				licenseContracts.append(LicenseContract.fromHash(res))
 		return licenseContracts
 
 	def licenseContract_deleteObjects(self, licenseContracts):
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return
+		self._check_module("license_management")
 
 		ConfigDataBackend.licenseContract_deleteObjects(self, licenseContracts)
 		with self._sql.session() as session:
 			for licenseContract in forceObjectClassList(licenseContracts, LicenseContract):
 				logger.info("Deleting licenseContract %s", licenseContract)
 				where = self._uniqueCondition(licenseContract)
-				self._sql.delete(session, 'LICENSE_CONTRACT', where)
+				self._sql.delete(session, "LICENSE_CONTRACT", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   SoftwareLicenses
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def softwareLicense_insertObject(self, softwareLicense):
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return
+		self._check_module("license_management")
 
 		ConfigDataBackend.softwareLicense_insertObject(self, softwareLicense)
 		data = self._objectToDatabaseHash(softwareLicense)
 
 		where = self._uniqueCondition(softwareLicense)
 		with self._sql.session() as session:
-			if self._sql.getRow(session, f'select * from `SOFTWARE_LICENSE` where {where}'):
-				self._sql.update(session, 'SOFTWARE_LICENSE', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `SOFTWARE_LICENSE` where {where}"):
+				self._sql.update(session, "SOFTWARE_LICENSE", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'SOFTWARE_LICENSE', data)
+				self._sql.insert(session, "SOFTWARE_LICENSE", data)
 
 	def softwareLicense_updateObject(self, softwareLicense):
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return
+		self._check_module("license_management")
 
 		ConfigDataBackend.softwareLicense_updateObject(self, softwareLicense)
 		data = self._objectToDatabaseHash(softwareLicense)
 		where = self._uniqueCondition(softwareLicense)
 		with self._sql.session() as session:
-			self._sql.update(session, 'SOFTWARE_LICENSE', where, data)
+			self._sql.update(session, "SOFTWARE_LICENSE", where, data)
 
 	def softwareLicense_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return []
+		self._check_module("license_management")
 
 		ConfigDataBackend.softwareLicense_getObjects(self, attributes=[], **filter)
 		logger.info("Getting softwareLicenses, filter: %s", filter)
 		softwareLicenses = []
 		(attributes, filter) = self._adjustAttributes(SoftwareLicense, attributes, filter)
 		with self._sql.session() as session:
-			for res in self._sql.getSet(session, self._createQuery('SOFTWARE_LICENSE', attributes, filter)):
+			for res in self._sql.getSet(session, self._createQuery("SOFTWARE_LICENSE", attributes, filter)):
 				self._adjustResult(SoftwareLicense, res)
 				softwareLicenses.append(SoftwareLicense.fromHash(res))
 		return softwareLicenses
 
 	def softwareLicense_deleteObjects(self, softwareLicenses):
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return
+		self._check_module("license_management")
 
 		ConfigDataBackend.softwareLicense_deleteObjects(self, softwareLicenses)
 		with self._sql.session() as session:
 			for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense):
 				logger.info("Deleting softwareLicense %s", softwareLicense)
 				where = self._uniqueCondition(softwareLicense)
-				self._sql.delete(session, 'SOFTWARE_LICENSE', where)
+				self._sql.delete(session, "SOFTWARE_LICENSE", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicensePools
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def licensePool_insertObject(self, licensePool):  # pylint: disable=too-many-branches,too-many-locals
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return
+		self._check_module("license_management")
 
 		ConfigDataBackend.licensePool_insertObject(self, licensePool)
 		data = self._objectToDatabaseHash(licensePool)
-		productIds = data['productIds']
-		del data['productIds']
+		productIds = data["productIds"]
+		del data["productIds"]
 
 		where = self._uniqueCondition(licensePool)
 		with self._sql.session() as session:
-			if self._sql.getRow(session, f'select * from `LICENSE_POOL` where {where}'):
-				self._sql.update(session, 'LICENSE_POOL', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `LICENSE_POOL` where {where}"):
+				self._sql.update(session, "LICENSE_POOL", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'LICENSE_POOL', data)
+				self._sql.insert(session, "LICENSE_POOL", data)
 
-			self._sql.delete(session, 'PRODUCT_ID_TO_LICENSE_POOL', f"`licensePoolId` = '{data['licensePoolId']}'")
+			self._sql.delete(session, "PRODUCT_ID_TO_LICENSE_POOL", f"`licensePoolId` = '{data['licensePoolId']}'")
 
 			for productId in productIds:
-				mapping = {
-					'productId': productId,
-					'licensePoolId': data['licensePoolId']
-				}
-				self._sql.insert(session, 'PRODUCT_ID_TO_LICENSE_POOL', mapping)
+				mapping = {"productId": productId, "licensePoolId": data["licensePoolId"]}
+				self._sql.insert(session, "PRODUCT_ID_TO_LICENSE_POOL", mapping)
 
 	def licensePool_updateObject(self, licensePool):
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return
+		self._check_module("license_management")
 
 		ConfigDataBackend.licensePool_updateObject(self, licensePool)
 		data = self._objectToDatabaseHash(licensePool)
 		where = self._uniqueCondition(licensePool)
-		productIds = data['productIds']
-		del data['productIds']
+		productIds = data["productIds"]
+		del data["productIds"]
 		with self._sql.session() as session:
-			self._sql.update(session, 'LICENSE_POOL', where, data)
-			self._sql.delete(session, 'PRODUCT_ID_TO_LICENSE_POOL', f"`licensePoolId` = '{data['licensePoolId']}'")
+			self._sql.update(session, "LICENSE_POOL", where, data)
+			self._sql.delete(session, "PRODUCT_ID_TO_LICENSE_POOL", f"`licensePoolId` = '{data['licensePoolId']}'")
 
 			for productId in productIds:
-				mapping = {
-					'productId': productId,
-					'licensePoolId': data['licensePoolId']
-				}
-				self._sql.insert(session, 'PRODUCT_ID_TO_LICENSE_POOL', mapping)
+				mapping = {"productId": productId, "licensePoolId": data["licensePoolId"]}
+				self._sql.insert(session, "PRODUCT_ID_TO_LICENSE_POOL", mapping)
 
 	def licensePool_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return []
+		self._check_module("license_management")
 
 		ConfigDataBackend.licensePool_getObjects(self, attributes=[], **filter)
 		logger.info("Getting licensePools, filter: %s", filter)
@@ -1990,171 +1978,142 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		with self._sql.session() as session:
 			try:
-				if filter['productIds']:
-					licensePoolIds = filter.get('licensePoolId')
+				if filter["productIds"]:
+					licensePoolIds = filter.get("licensePoolId")
 					query = self._createQuery(
-						'PRODUCT_ID_TO_LICENSE_POOL',
-						['licensePoolId'],
-						{'licensePoolId': licensePoolIds, 'productId': filter['productIds']}
+						"PRODUCT_ID_TO_LICENSE_POOL",
+						["licensePoolId"],
+						{"licensePoolId": licensePoolIds, "productId": filter["productIds"]},
 					)
 
-					filter['licensePoolId'] = [
-						res['licensePoolId'] for res in self._sql.getSet(session, query)
-					]
+					filter["licensePoolId"] = [res["licensePoolId"] for res in self._sql.getSet(session, query)]
 
-					if not filter['licensePoolId']:
+					if not filter["licensePoolId"]:
 						return []
 
-				del filter['productIds']
+				del filter["productIds"]
 			except KeyError:
 				pass
 
-			readProductIds = not attributes or 'productIds' in attributes
+			readProductIds = not attributes or "productIds" in attributes
 
 			licensePools = []
-			attrs = [attr for attr in attributes if attr != 'productIds']
-			for res in self._sql.getSet(session, self._createQuery('LICENSE_POOL', attrs, filter)):
-				res['productIds'] = []
+			attrs = [attr for attr in attributes if attr != "productIds"]
+			for res in self._sql.getSet(session, self._createQuery("LICENSE_POOL", attrs, filter)):
+				res["productIds"] = []
 				if readProductIds:
 					for res2 in self._sql.getSet(
-						session,
-						f"select * from PRODUCT_ID_TO_LICENSE_POOL where `licensePoolId` = '{res['licensePoolId']}'"
+						session, f"select * from PRODUCT_ID_TO_LICENSE_POOL where `licensePoolId` = '{res['licensePoolId']}'"
 					):
-						res['productIds'].append(res2['productId'])
+						res["productIds"].append(res2["productId"])
 				self._adjustResult(LicensePool, res)
 				licensePools.append(LicensePool.fromHash(res))
 			return licensePools
 
 	def licensePool_deleteObjects(self, licensePools):
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return
+		self._check_module("license_management")
 
 		ConfigDataBackend.licensePool_deleteObjects(self, licensePools)
 		with self._sql.session() as session:
 			for licensePool in forceObjectClassList(licensePools, LicensePool):
 				logger.info("Deleting licensePool %s", licensePool)
 				where = self._uniqueCondition(licensePool)
-				self._sql.delete(session, 'PRODUCT_ID_TO_LICENSE_POOL', f"`licensePoolId` = '{licensePool.id}'")
-				self._sql.delete(session, 'LICENSE_POOL', where)
+				self._sql.delete(session, "PRODUCT_ID_TO_LICENSE_POOL", f"`licensePoolId` = '{licensePool.id}'")
+				self._sql.delete(session, "LICENSE_POOL", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   SoftwareLicenseToLicensePools
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool):
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return
+		self._check_module("license_management")
 
 		ConfigDataBackend.softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool)
 		data = self._objectToDatabaseHash(softwareLicenseToLicensePool)
 
 		where = self._uniqueCondition(softwareLicenseToLicensePool)
 		with self._sql.session() as session:
-			if self._sql.getRow(session, f'select * from `SOFTWARE_LICENSE_TO_LICENSE_POOL` where {where}'):
-				self._sql.update(session, 'SOFTWARE_LICENSE_TO_LICENSE_POOL', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `SOFTWARE_LICENSE_TO_LICENSE_POOL` where {where}"):
+				self._sql.update(session, "SOFTWARE_LICENSE_TO_LICENSE_POOL", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'SOFTWARE_LICENSE_TO_LICENSE_POOL', data)
+				self._sql.insert(session, "SOFTWARE_LICENSE_TO_LICENSE_POOL", data)
 
 	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return
+		self._check_module("license_management")
 
 		ConfigDataBackend.softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool)
 		data = self._objectToDatabaseHash(softwareLicenseToLicensePool)
 		where = self._uniqueCondition(softwareLicenseToLicensePool)
 		with self._sql.session() as session:
-			self._sql.update(session, 'SOFTWARE_LICENSE_TO_LICENSE_POOL', where, data)
+			self._sql.update(session, "SOFTWARE_LICENSE_TO_LICENSE_POOL", where, data)
 
 	def softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return []
+		self._check_module("license_management")
 
 		ConfigDataBackend.softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter)
 		logger.info("Getting softwareLicenseToLicensePool, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(SoftwareLicenseToLicensePool, attributes, filter)
 		with self._sql.session() as session:
 			return [
-				SoftwareLicenseToLicensePool.fromHash(res) for res in
-				self._sql.getSet(
-					session,
-					self._createQuery(
-						'SOFTWARE_LICENSE_TO_LICENSE_POOL', attributes, filter
-					)
-				)
+				SoftwareLicenseToLicensePool.fromHash(res)
+				for res in self._sql.getSet(session, self._createQuery("SOFTWARE_LICENSE_TO_LICENSE_POOL", attributes, filter))
 			]
 
 	def softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools):
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return
+		self._check_module("license_management")
 
 		ConfigDataBackend.softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools)
 		with self._sql.session() as session:
 			for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool):
 				logger.info("Deleting softwareLicenseToLicensePool %s", softwareLicenseToLicensePool)
 				where = self._uniqueCondition(softwareLicenseToLicensePool)
-				self._sql.delete(session, 'SOFTWARE_LICENSE_TO_LICENSE_POOL', where)
+				self._sql.delete(session, "SOFTWARE_LICENSE_TO_LICENSE_POOL", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicenseOnClients
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def licenseOnClient_insertObject(self, licenseOnClient):
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return
+		self._check_module("license_management")
 
 		ConfigDataBackend.licenseOnClient_insertObject(self, licenseOnClient)
 		data = self._objectToDatabaseHash(licenseOnClient)
 
 		where = self._uniqueCondition(licenseOnClient)
 		with self._sql.session() as session:
-			if self._sql.getRow(session, f'select * from `LICENSE_ON_CLIENT` where {where}'):
-				self._sql.update(session, 'LICENSE_ON_CLIENT', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `LICENSE_ON_CLIENT` where {where}"):
+				self._sql.update(session, "LICENSE_ON_CLIENT", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'LICENSE_ON_CLIENT', data)
+				self._sql.insert(session, "LICENSE_ON_CLIENT", data)
 
 	def licenseOnClient_updateObject(self, licenseOnClient):
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return
+		self._check_module("license_management")
 
 		ConfigDataBackend.licenseOnClient_updateObject(self, licenseOnClient)
 		data = self._objectToDatabaseHash(licenseOnClient)
 		where = self._uniqueCondition(licenseOnClient)
 		with self._sql.session() as session:
-			self._sql.update(session, 'LICENSE_ON_CLIENT', where, data)
+			self._sql.update(session, "LICENSE_ON_CLIENT", where, data)
 
 	def licenseOnClient_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return []
+		self._check_module("license_management")
 
 		ConfigDataBackend.licenseOnClient_getObjects(self, attributes=[], **filter)
 		logger.info("Getting licenseOnClient, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(LicenseOnClient, attributes, filter)
 		with self._sql.session() as session:
 			return [
-				LicenseOnClient.fromHash(res) for res in
-				self._sql.getSet(
-					session,
-					self._createQuery('LICENSE_ON_CLIENT', attributes, filter)
-				)
+				LicenseOnClient.fromHash(res)
+				for res in self._sql.getSet(session, self._createQuery("LICENSE_ON_CLIENT", attributes, filter))
 			]
 
 	def licenseOnClient_deleteObjects(self, licenseOnClients):
-		if not self._licenseManagementModule:
-			logger.warning("License management module disabled")
-			return
+		self._check_module("license_management")
 
 		ConfigDataBackend.licenseOnClient_deleteObjects(self, licenseOnClients)
 		with self._sql.session() as session:
 			for licenseOnClient in forceObjectClassList(licenseOnClients, LicenseOnClient):
 				logger.info("Deleting licenseOnClient %s", licenseOnClient)
 				where = self._uniqueCondition(licenseOnClient)
-				self._sql.delete(session, 'LICENSE_ON_CLIENT', where)
+				self._sql.delete(session, "LICENSE_ON_CLIENT", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwares
@@ -2165,30 +2124,27 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		where = self._uniqueCondition(auditSoftware)
 		with self._sql.session() as session:
-			if self._sql.getRow(session, f'select * from `SOFTWARE` where {where}'):
-				self._sql.update(session, 'SOFTWARE', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `SOFTWARE` where {where}"):
+				self._sql.update(session, "SOFTWARE", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'SOFTWARE', data)
+				self._sql.insert(session, "SOFTWARE", data)
 
 	def auditSoftware_updateObject(self, auditSoftware):
 		ConfigDataBackend.auditSoftware_updateObject(self, auditSoftware)
 		data = self._objectToDatabaseHash(auditSoftware)
 		where = self._uniqueCondition(auditSoftware)
 		with self._sql.session() as session:
-			self._sql.update(session, 'SOFTWARE', where, data)
+			self._sql.update(session, "SOFTWARE", where, data)
 
 	def auditSoftware_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
 		(attributes, filter) = self._adjustAttributes(AuditSoftware, attributes, filter)
 		with self._sql.session() as session:
-			return self._sql.getSet(session, self._createQuery('SOFTWARE', attributes, filter))
+			return self._sql.getSet(session, self._createQuery("SOFTWARE", attributes, filter))
 
 	def auditSoftware_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
 		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
 		logger.info("Getting auditSoftware, filter: %s", filter)
-		return [
-			AuditSoftware.fromHash(h) for h in
-			self.auditSoftware_getHashes(attributes, **filter)
-		]
+		return [AuditSoftware.fromHash(h) for h in self.auditSoftware_getHashes(attributes, **filter)]
 
 	def auditSoftware_deleteObjects(self, auditSoftwares):
 		ConfigDataBackend.auditSoftware_deleteObjects(self, auditSoftwares)
@@ -2196,7 +2152,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			for auditSoftware in forceObjectClassList(auditSoftwares, AuditSoftware):
 				logger.info("Deleting auditSoftware %s", auditSoftware)
 				where = self._uniqueCondition(auditSoftware)
-				self._sql.delete(session, 'SOFTWARE', where)
+				self._sql.delete(session, "SOFTWARE", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwareToLicensePools
@@ -2207,33 +2163,27 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		where = self._uniqueCondition(auditSoftwareToLicensePool)
 		with self._sql.session() as session:
-			if self._sql.getRow(session, f'select * from `AUDIT_SOFTWARE_TO_LICENSE_POOL` where {where}'):
-				self._sql.update(session, 'AUDIT_SOFTWARE_TO_LICENSE_POOL', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `AUDIT_SOFTWARE_TO_LICENSE_POOL` where {where}"):
+				self._sql.update(session, "AUDIT_SOFTWARE_TO_LICENSE_POOL", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'AUDIT_SOFTWARE_TO_LICENSE_POOL', data)
+				self._sql.insert(session, "AUDIT_SOFTWARE_TO_LICENSE_POOL", data)
 
 	def auditSoftwareToLicensePool_updateObject(self, auditSoftwareToLicensePool):
 		ConfigDataBackend.auditSoftwareToLicensePool_updateObject(self, auditSoftwareToLicensePool)
 		data = self._objectToDatabaseHash(auditSoftwareToLicensePool)
 		where = self._uniqueCondition(auditSoftwareToLicensePool)
 		with self._sql.session() as session:
-			self._sql.update(session, 'AUDIT_SOFTWARE_TO_LICENSE_POOL', where, data)
+			self._sql.update(session, "AUDIT_SOFTWARE_TO_LICENSE_POOL", where, data)
 
 	def auditSoftwareToLicensePool_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
 		(attributes, filter) = self._adjustAttributes(AuditSoftwareToLicensePool, attributes, filter)
 		with self._sql.session() as session:
-			return self._sql.getSet(
-				session,
-				self._createQuery('AUDIT_SOFTWARE_TO_LICENSE_POOL', attributes, filter)
-			)
+			return self._sql.getSet(session, self._createQuery("AUDIT_SOFTWARE_TO_LICENSE_POOL", attributes, filter))
 
 	def auditSoftwareToLicensePool_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
 		ConfigDataBackend.auditSoftwareToLicensePool_getObjects(self, attributes=[], **filter)
 		logger.info("Getting auditSoftwareToLicensePool, filter: %s", filter)
-		return [
-			AuditSoftwareToLicensePool.fromHash(h) for h in
-			self.auditSoftwareToLicensePool_getHashes(attributes, **filter)
-		]
+		return [AuditSoftwareToLicensePool.fromHash(h) for h in self.auditSoftwareToLicensePool_getHashes(attributes, **filter)]
 
 	def auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools):
 		ConfigDataBackend.auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools)
@@ -2241,7 +2191,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			for auditSoftwareToLicensePool in forceObjectClassList(auditSoftwareToLicensePools, AuditSoftwareToLicensePool):
 				logger.info("Deleting auditSoftware %s", auditSoftwareToLicensePool)
 				where = self._uniqueCondition(auditSoftwareToLicensePool)
-				self._sql.delete(session, 'AUDIT_SOFTWARE_TO_LICENSE_POOL', where)
+				self._sql.delete(session, "AUDIT_SOFTWARE_TO_LICENSE_POOL", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwareOnClients
@@ -2252,30 +2202,27 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		where = self._uniqueCondition(auditSoftwareOnClient)
 		with self._sql.session() as session:
-			if self._sql.getRow(session, f'select * from `SOFTWARE_CONFIG` where {where}'):
-				self._sql.update(session, 'SOFTWARE_CONFIG', where, data, updateWhereNone=True)
+			if self._sql.getRow(session, f"select * from `SOFTWARE_CONFIG` where {where}"):
+				self._sql.update(session, "SOFTWARE_CONFIG", where, data, updateWhereNone=True)
 			else:
-				self._sql.insert(session, 'SOFTWARE_CONFIG', data)
+				self._sql.insert(session, "SOFTWARE_CONFIG", data)
 
 	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
 		ConfigDataBackend.auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient)
 		data = self._objectToDatabaseHash(auditSoftwareOnClient)
 		where = self._uniqueCondition(auditSoftwareOnClient)
 		with self._sql.session() as session:
-			self._sql.update(session, 'SOFTWARE_CONFIG', where, data)
+			self._sql.update(session, "SOFTWARE_CONFIG", where, data)
 
 	def auditSoftwareOnClient_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
 		(attributes, filter) = self._adjustAttributes(AuditSoftwareOnClient, attributes, filter)
 		with self._sql.session() as session:
-			return self._sql.getSet(session, self._createQuery('SOFTWARE_CONFIG', attributes, filter))
+			return self._sql.getSet(session, self._createQuery("SOFTWARE_CONFIG", attributes, filter))
 
 	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
 		ConfigDataBackend.auditSoftwareOnClient_getObjects(self, attributes=[], **filter)
 		logger.info("Getting auditSoftwareOnClient, filter: %s", filter)
-		return [
-			AuditSoftwareOnClient.fromHash(h) for h in
-			self.auditSoftwareOnClient_getHashes(attributes, **filter)
-		]
+		return [AuditSoftwareOnClient.fromHash(h) for h in self.auditSoftwareOnClient_getHashes(attributes, **filter)]
 
 	def auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients):
 		ConfigDataBackend.auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients)
@@ -2283,7 +2230,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			for auditSoftwareOnClient in forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient):
 				logger.info("Deleting auditSoftwareOnClient %s", auditSoftwareOnClient)
 				where = self._uniqueCondition(auditSoftwareOnClient)
-				self._sql.delete(session, 'SOFTWARE_CONFIG', where)
+				self._sql.delete(session, "SOFTWARE_CONFIG", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwares
@@ -2298,7 +2245,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			listWithNone = [None]
 
 			for attribute, value in auditHardware.items():
-				if attribute in ('hardwareClass', 'type'):
+				if attribute in ("hardwareClass", "type"):
 					continue
 
 				if value is None or value == listWithNone:
@@ -2308,7 +2255,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				else:
 					yield f"`{attribute}` = '{self._sql.escapeApostrophe(self._sql.escapeBackslash(self._sql.escapeColon(value)))}'"
 
-		return ' and '.join(createCondition())
+		return " and ".join(createCondition())
 
 	def _getHardwareIds(self, auditHardware):
 		try:
@@ -2344,9 +2291,9 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		if res:
 			return
 
-		table = 'HARDWARE_DEVICE_' + hardwareHash['hardwareClass']
-		del hardwareHash['hardwareClass']
-		del hardwareHash['type']
+		table = "HARDWARE_DEVICE_" + hardwareHash["hardwareClass"]
+		del hardwareHash["hardwareClass"]
+		del hardwareHash["type"]
 
 		with self._sql.session() as session:
 			self._sql.insert(session, table, hardwareHash)
@@ -2367,17 +2314,16 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
 
 		logger.info("Getting auditHardwares, filter: %s", filter)
-		return [
-			AuditHardware.fromHash(h) for h in
-			self.auditHardware_getHashes(attributes, **filter)
-		]
+		return [AuditHardware.fromHash(h) for h in self.auditHardware_getHashes(attributes, **filter)]
 
 	def auditHardware_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
 		return self._auditHardware_search(returnHardwareIds=False, attributes=attributes, **filter)
 
-	def _auditHardware_search(self, returnHardwareIds=False, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value,too-many-branches,too-many-locals,too-many-statements
+	def _auditHardware_search(
+		self, returnHardwareIds=False, attributes=[], **filter
+	):  # pylint: disable=redefined-builtin,dangerous-default-value,too-many-branches,too-many-locals,too-many-statements
 		hardwareClasses = set()
-		hardwareClass = filter.get('hardwareClass')
+		hardwareClass = filter.get("hardwareClass")
 		if hardwareClass not in ([], None):
 			for hwc in forceUnicodeList(hardwareClass):
 				regex = re.compile(f"^{hwc.replace('*', '.*')}$")
@@ -2391,14 +2337,14 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		if not hardwareClasses:
 			hardwareClasses = set(self._auditHardwareConfig)
 
-		for unwanted_key in ('hardwareClass', 'type'):
+		for unwanted_key in ("hardwareClass", "type"):
 			try:
 				del filter[unwanted_key]
 			except KeyError:
 				pass  # not there - everything okay.
 
 		try:
-			attributes.remove('hardwareClass')
+			attributes.remove("hardwareClass")
 		except ValueError:
 			pass
 
@@ -2406,8 +2352,8 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			if attribute not in filter:
 				filter[attribute] = None
 
-		if returnHardwareIds and attributes and 'hardware_id' not in attributes:
-			attributes.append('hardware_id')
+		if returnHardwareIds and attributes and "hardware_id" not in attributes:
+			attributes.append("hardware_id")
 
 		results = []
 		with self._sql.session() as session:
@@ -2420,7 +2366,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 						break
 
 					try:
-						if valueInfo['Scope'] != 'g':
+						if valueInfo["Scope"] != "g":
 							continue
 					except KeyError:
 						pass
@@ -2433,21 +2379,21 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 						continue
 
 					logger.debug("Getting auditHardwares, hardwareClass '%s', filter: %s", hardwareClass, classFilter)
-					query = self._createQuery('HARDWARE_DEVICE_' + hardwareClass, attributes, classFilter)
+					query = self._createQuery("HARDWARE_DEVICE_" + hardwareClass, attributes, classFilter)
 					for res in self._sql.getSet(session, query):
 						if returnHardwareIds:
-							results.append(res['hardware_id'])
+							results.append(res["hardware_id"])
 							continue
 
 						try:
-							del res['hardware_id']
+							del res["hardware_id"]
 						except KeyError:
 							pass
 
-						res['hardwareClass'] = hardwareClass
+						res["hardwareClass"] = hardwareClass
 						for (attribute, valueInfo) in self._auditHardwareConfig[hardwareClass].items():
 							try:
-								if valueInfo['Scope'] == 'i':
+								if valueInfo["Scope"] == "i":
 									continue
 							except KeyError:
 								pass
@@ -2468,13 +2414,9 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				where = self._uniqueAuditHardwareCondition(auditHardware)
 				hardwareClass = auditHardware.getHardwareClass()
 				for hardwareId in self._getHardwareIds(auditHardware):
-					self._sql.delete(
-						session,
-						f'HARDWARE_CONFIG_{hardwareClass}',
-						f'`hardware_id` = {hardwareId}'
-					)
+					self._sql.delete(session, f"HARDWARE_CONFIG_{hardwareClass}", f"`hardware_id` = {hardwareId}")
 
-				self._sql.delete(session, f'HARDWARE_DEVICE_{hardwareClass}', where)
+				self._sql.delete(session, f"HARDWARE_DEVICE_{hardwareClass}", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwareOnHosts
@@ -2485,30 +2427,28 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		except AttributeError:
 			pass
 
-		hardwareClass = auditHardwareOnHost['hardwareClass']
+		hardwareClass = auditHardwareOnHost["hardwareClass"]
 
-		auditHardware = {'type': 'AuditHardware'}
+		auditHardware = {"type": "AuditHardware"}
 		auditHardwareOnHostNew = {}
 		for (attribute, value) in auditHardwareOnHost.items():
-			if attribute == 'type':
+			if attribute == "type":
 				continue
 
-			if attribute in ('hostId', 'state', 'firstseen', 'lastseen'):
+			if attribute in ("hostId", "state", "firstseen", "lastseen"):
 				auditHardwareOnHostNew[attribute] = value
 				continue
 
-			if attribute == 'hardwareClass':
+			if attribute == "hardwareClass":
 				auditHardware[attribute] = value
 				auditHardwareOnHostNew[attribute] = value
 				continue
 
 			valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 			if valueInfo is None:
-				raise BackendConfigurationError(
-					f"Attribute '{attribute}' not found in config of hardware class '{hardwareClass}'"
-				)
+				raise BackendConfigurationError(f"Attribute '{attribute}' not found in config of hardware class '{hardwareClass}'")
 
-			if valueInfo.get('Scope', '') == 'g':
+			if valueInfo.get("Scope", "") == "g":
 				auditHardware[attribute] = value
 				continue
 			auditHardwareOnHostNew[attribute] = value
@@ -2518,7 +2458,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	def _uniqueAuditHardwareOnHostCondition(self, auditHardwareOnHost):
 		(auditHardware, auditHardwareOnHost) = self._extractAuditHardwareHash(auditHardwareOnHost)
 
-		del auditHardwareOnHost['hardwareClass']
+		del auditHardwareOnHost["hardwareClass"]
 
 		hardwareFilter = {}
 		for (attribute, value) in auditHardwareOnHost.items():
@@ -2531,29 +2471,18 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		where = self._filterToSql(hardwareFilter)
 
-		hwIdswhere = ' or '.join([
-			f'`hardware_id` = {hardwareId}' for hardwareId in self._getHardwareIds(auditHardware)
-		])
+		hwIdswhere = " or ".join([f"`hardware_id` = {hardwareId}" for hardwareId in self._getHardwareIds(auditHardware)])
 
 		if not hwIdswhere:
 			logger.error("Building unique AuditHardwareOnHost constraint impossible!")
 			raise BackendReferentialIntegrityError(f"Hardware device '{auditHardware}' not found")
 
-		return ' and '.join(
-			(
-				where,
-				hwIdswhere.join(('(', ')'))
-			)
-		)
+		return " and ".join((where, hwIdswhere.join(("(", ")"))))
 
 	def _auditHardwareOnHostObjectToDatabaseHash(self, auditHardwareOnHost):
 		(auditHardware, auditHardwareOnHost) = self._extractAuditHardwareHash(auditHardwareOnHost)
 
-		data = {
-			attribute: value
-			for attribute, value in auditHardwareOnHost.items()
-			if attribute not in ('hardwareClass', 'type')
-		}
+		data = {attribute: value for attribute, value in auditHardwareOnHost.items() if attribute not in ("hardwareClass", "type")}
 
 		for (key, value) in auditHardware.items():
 			if value is None:
@@ -2561,17 +2490,17 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		hardwareIds = self._getHardwareIds(auditHardware)
 		if not hardwareIds:
 			raise BackendReferentialIntegrityError(f"Hardware device {auditHardware} not found")
-		data['hardware_id'] = hardwareIds[0]
+		data["hardware_id"] = hardwareIds[0]
 		return data
 
 	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
 		ConfigDataBackend.auditHardwareOnHost_insertObject(self, auditHardwareOnHost)
 
-		table = f'HARDWARE_CONFIG_{auditHardwareOnHost.getHardwareClass()}'
+		table = f"HARDWARE_CONFIG_{auditHardwareOnHost.getHardwareClass()}"
 
 		where = self._uniqueAuditHardwareOnHostCondition(auditHardwareOnHost)
 		with self._sql.session() as session:
-			if not self._sql.getRow(session, f'select * from `{table}` where {where}'):
+			if not self._sql.getRow(session, f"select * from `{table}` where {where}"):
 				data = self._auditHardwareOnHostObjectToDatabaseHash(auditHardwareOnHost)
 				self._sql.insert(session, table, data)
 
@@ -2583,7 +2512,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		update = {}
 		toDelete = set()
 		for (attribute, value) in data.items():
-			if attribute in ('state', 'lastseen', 'firstseen'):
+			if attribute in ("state", "lastseen", "firstseen"):
 				if value is not None:
 					update[attribute] = value
 				toDelete.add(attribute)
@@ -2594,11 +2523,13 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		if update:
 			where = self._uniqueAuditHardwareOnHostCondition(data)
 			with self._sql.session() as session:
-				self._sql.update(session, f'HARDWARE_CONFIG_{auditHardwareOnHost.hardwareClass}', where, update)
+				self._sql.update(session, f"HARDWARE_CONFIG_{auditHardwareOnHost.hardwareClass}", where, update)
 
-	def auditHardwareOnHost_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value,too-many-branches,too-many-locals,too-many-statements
+	def auditHardwareOnHost_getHashes(
+		self, attributes=[], **filter
+	):  # pylint: disable=redefined-builtin,dangerous-default-value,too-many-branches,too-many-locals,too-many-statements
 		hardwareClasses = set()
-		hardwareClass = filter.get('hardwareClass')
+		hardwareClass = filter.get("hardwareClass")
 		if hardwareClass not in ([], None):
 			for hwc in forceUnicodeList(hardwareClass):
 				regex = re.compile(f"^{hwc.replace('*', '.*')}$")
@@ -2612,7 +2543,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		if not hardwareClasses:
 			hardwareClasses = set(self._auditHardwareConfig)
 
-		for unwanted_key in ('hardwareClass', 'type'):
+		for unwanted_key in ("hardwareClass", "type"):
 			try:
 				del filter[unwanted_key]
 			except KeyError:
@@ -2630,18 +2561,20 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				skipHardwareClass = False
 				for attribute, value in filter.items():
 					valueInfo = None
-					if attribute not in ('hostId', 'state', 'firstseen', 'lastseen'):
+					if attribute not in ("hostId", "state", "firstseen", "lastseen"):
 						valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 						if not valueInfo:
-							logger.debug("Skipping hardwareClass '%s', because of missing info for attribute '%s'", hardwareClass, attribute)
+							logger.debug(
+								"Skipping hardwareClass '%s', because of missing info for attribute '%s'", hardwareClass, attribute
+							)
 							skipHardwareClass = True
 							break
 
-						scope = valueInfo.get('Scope', '')
-						if scope == 'g':
+						scope = valueInfo.get("Scope", "")
+						if scope == "g":
 							auditHardwareFilter[attribute] = value
 							continue
-						if scope != 'i':
+						if scope != "i":
 							continue
 
 					if value is not None:
@@ -2654,39 +2587,34 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 				hardwareIds = []
 				if auditHardwareFilter:
-					auditHardwareFilter['hardwareClass'] = hardwareClass
+					auditHardwareFilter["hardwareClass"] = hardwareClass
 					hardwareIds = self._getHardwareIds(auditHardwareFilter)
 					logger.trace("Filtered matching hardware ids: %s", hardwareIds)
 					if not hardwareIds:
 						continue
-				classFilter['hardware_id'] = hardwareIds
+				classFilter["hardware_id"] = hardwareIds
 
-				if attributes and 'hardware_id' not in attributes:
-					attributes.append('hardware_id')
+				if attributes and "hardware_id" not in attributes:
+					attributes.append("hardware_id")
 
 				logger.debug(
-					"Getting auditHardwareOnHosts, hardwareClass '%s', hardwareIds: %s, filter: %s",
-					hardwareClass, hardwareIds, classFilter
+					"Getting auditHardwareOnHosts, hardwareClass '%s', hardwareIds: %s, filter: %s", hardwareClass, hardwareIds, classFilter
 				)
-				for res in self._sql.getSet(
-					session,
-					self._createQuery(f'HARDWARE_CONFIG_{hardwareClass}', attributes, classFilter)
-				):
+				for res in self._sql.getSet(session, self._createQuery(f"HARDWARE_CONFIG_{hardwareClass}", attributes, classFilter)):
 					data = self._sql.getSet(
-						session,
-						f"SELECT * from `HARDWARE_DEVICE_{hardwareClass}` where `hardware_id` = {res['hardware_id']}"
+						session, f"SELECT * from `HARDWARE_DEVICE_{hardwareClass}` where `hardware_id` = {res['hardware_id']}"
 					)
 
 					if not data:
-						logger.error("Hardware device of class '%s' with hardware_id '%s' not found", hardwareClass, res['hardware_id'])
+						logger.error("Hardware device of class '%s' with hardware_id '%s' not found", hardwareClass, res["hardware_id"])
 						continue
 
 					data = data[0]
 					data.update(res)
-					data['hardwareClass'] = hardwareClass
-					del data['hardware_id']
+					data["hardwareClass"] = hardwareClass
+					del data["hardware_id"]
 					try:
-						del data['config_id']
+						del data["config_id"]
 					except KeyError:
 						pass  # not there - everything okay
 
@@ -2701,10 +2629,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
 
 		logger.info("Getting auditHardwareOnHosts, filter: %s", filter)
-		return [
-			AuditHardwareOnHost.fromHash(h)
-			for h in self.auditHardwareOnHost_getHashes(attributes, **filter)
-		]
+		return [AuditHardwareOnHost.fromHash(h) for h in self.auditHardwareOnHost_getHashes(attributes, **filter)]
 
 	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):
 		ConfigDataBackend.auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts)
@@ -2712,7 +2637,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
 				logger.info("Deleting auditHardwareOnHost: %s", auditHardwareOnHost)
 				where = self._uniqueAuditHardwareOnHostCondition(auditHardwareOnHost)
-				self._sql.delete(session, f'HARDWARE_CONFIG_{auditHardwareOnHost.getHardwareClass()}', where)
+				self._sql.delete(session, f"HARDWARE_CONFIG_{auditHardwareOnHost.getHardwareClass()}", where)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Extension for direct connect to db
@@ -2725,7 +2650,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				for row in self._sql.getSet(session, query):
 					for key, val in row.items():
 						if isinstance(val, datetime):
-							row[key] = val.strftime('%Y-%m-%d %H:%M:%S')
+							row[key] = val.strftime("%Y-%m-%d %H:%M:%S")
 					yield row
 
 	def getRawData(self, query):
@@ -2736,5 +2661,5 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				for row in self._sql.getRows(session, query):
 					for idx, val in enumerate(row):
 						if isinstance(val, datetime):
-							row[idx] = val.strftime('%Y-%m-%d %H:%M:%S')
+							row[idx] = val.strftime("%Y-%m-%d %H:%M:%S")
 					yield row

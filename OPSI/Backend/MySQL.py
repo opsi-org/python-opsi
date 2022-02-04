@@ -7,19 +7,8 @@ MySQL-Backend
 """
 
 import re
-import base64
 import time
 from urllib.parse import quote, urlencode
-from hashlib import md5
-try:
-	# PyCryptodome from pypi installs into Crypto
-	from Crypto.Hash import MD5
-	from Crypto.Signature import pkcs1_15
-except (ImportError, OSError):
-	# pyright: reportMissingImports=false
-	# python3-pycryptodome installs into Cryptodome
-	from Cryptodome.Hash import MD5
-	from Cryptodome.Signature import pkcs1_15
 
 from sqlalchemy import create_engine
 from sqlalchemy.event import listen
@@ -27,13 +16,12 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 
 from opsicommon.logging import logger, secret_filter
 
-from OPSI.Exceptions import BackendModuleDisabledError
 from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.SQL import (
 	SQL, SQLBackend, SQLBackendObjectModificationTracker
 )
 from OPSI.Types import forceInt, forceUnicode, forceHostIdList
-from OPSI.Util import getPublicKey, compareVersions
+from OPSI.Util import compareVersions
 from OPSI.Object import Product, ProductProperty
 
 __all__ = (
@@ -157,7 +145,7 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			max_overflow=self._connectionPoolMaxOverflow,
 			pool_recycle=self._connectionPoolRecyclingSeconds
 		)
-		self.engine._should_log_info = lambda: self.log_queries
+		self.engine._should_log_info = lambda: self.log_queries  # pylint: disable=protected-access
 
 		listen(self.engine, 'engine_connect', self.on_engine_connect)
 
@@ -236,12 +224,6 @@ class MySQLBackend(SQLBackend):
 		SQLBackend.__init__(self, **kwargs)
 
 		self._sql = MySQL(**kwargs)
-
-		available_modules = self._context.backend_getLicensingInfo()["available_modules"]
-		if "mysql_backend" not in available_modules:
-			raise BackendModuleDisabledError("SQL backend module disabled")
-
-		self._licenseManagementModule = "license_management" in available_modules
 
 		logger.debug('MySQLBackend created: %s', self)
 

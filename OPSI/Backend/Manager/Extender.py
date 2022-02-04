@@ -16,6 +16,8 @@ import os
 import types
 from functools import lru_cache
 
+from opsicommon.logging import logger
+
 from OPSI.Backend.Base import ExtendedBackend
 from OPSI.Backend.Manager.AccessControl import BackendAccessControl
 from OPSI.Exceptions import BackendConfigurationError
@@ -23,8 +25,6 @@ from OPSI.Exceptions import *  # this is needed for dynamic extension loading  #
 from OPSI.Object import *  # this is needed for dynamic extension loading  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Types import *  # this is needed for dynamic extension loading  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Util import objectToBeautifiedText, getfqdn  # used in extensions  # pylint: disable=unused-import
-
-from opsicommon.logging import logger
 
 from .Dispatcher import BackendDispatcher
 from .. import deprecated  # used in extensions  # pylint: disable=unused-import
@@ -78,9 +78,11 @@ class BackendExtender(ExtendedBackend):
 						exec(_readExtension(confFile))  # pylint: disable=exec-used
 					except Exception as err:
 						logger.error(err, exc_info=True)
-						raise RuntimeError("Error reading file {confFile}: {err}") from err
+						raise RuntimeError(f"Error reading file {confFile!r}: {err}") from err
 
 					for key, val in locals().copy().items():
+						if key == "backend_getLicensingInfo":
+							raise RuntimeError(f"Error reading file {confFile!r}")
 						if isinstance(val, types.FunctionType):  # TODO: find a better way
 							logger.trace("Extending %s with instancemethod: '%s'", self._backend.__class__.__name__, key)
 							setattr(self, key, types.MethodType(val, self))

@@ -6,24 +6,12 @@
 Backend access control.
 """
 
-import base64
-import time
 import inspect
 import os
 import re
 import types
 from typing import List
 from functools import lru_cache
-from hashlib import md5
-try:
-	# PyCryptodome from pypi installs into Crypto
-	from Crypto.Hash import MD5
-	from Crypto.Signature import pkcs1_15
-except (ImportError, OSError):
-	# pyright: reportMissingImports=false
-	# python3-pycryptodome installs into Cryptodome
-	from Cryptodome.Hash import MD5
-	from Cryptodome.Signature import pkcs1_15
 
 from opsicommon.logging import logger
 
@@ -44,7 +32,6 @@ from OPSI.Object import (
 	BaseObject, Object, OpsiClient, OpsiDepotserver
 )
 from OPSI.Types import forceBool, forceList, forceUnicodeList, forceUnicodeLowerList
-from OPSI.Util import getPublicKey
 from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
 
 
@@ -107,7 +94,7 @@ class BackendAccessControl:
 						import OPSI.Backend.Manager.Authentication.LDAP  # pylint: disable=import-outside-toplevel
 						self._auth_module = OPSI.Backend.Manager.Authentication.LDAP.LDAPAuthentication(**ldap_conf)
 					else:
-						logger.error("Disabling ldap authentication: directory-connector missing in modules file")
+						logger.error("Disabling ldap authentication: directory-connector module not available")
 
 			except Exception as err:  # pylint: disable=broad-except
 				logger.debug(err)

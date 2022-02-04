@@ -24,7 +24,8 @@ from opsicommon.license import get_default_opsi_license_pool
 
 from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Exceptions import (
-	BackendBadValueError, BackendMissingDataError, BackendReferentialIntegrityError
+	BackendBadValueError, BackendMissingDataError,
+	BackendReferentialIntegrityError, BackendModuleDisabledError
 )
 from OPSI.Types import (
 	forceFilename, forceHostId, forceInt, forceLanguageCode,
@@ -180,6 +181,10 @@ containing the localisation of the hardware audit.
 
 	def getOpsiCACert(self) -> str:  # pylint: disable=invalid-name,no-self-use
 		return None
+
+	def _check_module(self, module: str):
+		if module not in self.backend_getLicensingInfo()["available_modules"]:
+			raise BackendModuleDisabledError(f"Module {module!r} not available")
 
 	def _get_client_info(self):
 		logger.info("%s fetching client info", self)

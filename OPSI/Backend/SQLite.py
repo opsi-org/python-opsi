@@ -71,7 +71,7 @@ class SQLite(SQL):
 			uri,
 			encoding=self._databaseCharset
 		)
-		self.engine._should_log_info = lambda: self.log_queries
+		self.engine._should_log_info = lambda: self.log_queries  # pylint: disable=protected-access
 
 		listen(self.engine, 'engine_connect', self.on_engine_connect)
 
@@ -129,9 +129,10 @@ class SQLiteBackend(SQLBackend):
 
 		self._sql = SQLite(**kwargs)
 
-		self._licenseManagementEnabled = True
-		self._licenseManagementModule = True
 		logger.debug('SQLiteBackend created: %s', self)
+
+	def _check_module(self, module: str):
+		return
 
 	def backend_createBase(self):
 		try:
