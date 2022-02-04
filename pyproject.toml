@@ -32,7 +32,7 @@ psutil = "^5.8"
 pyasn1 = "^0.4"
 pycryptodome = "^3.10"
 pyOpenSSL = "^21.0"
-python-opsi-common = "^4.2.0.266"
+python-opsi-common = "^4.2.0.271"
 python-pam = "^1.8"
 pywin32 = {platform = "win32", version = "^227"}
 ruyaml = "^0.91"
