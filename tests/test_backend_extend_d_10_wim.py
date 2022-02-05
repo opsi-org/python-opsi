@@ -7,21 +7,24 @@ This tests what usually is found under
 ``/etc/opsi/backendManager/extend.de/10_wim.conf``.
 """
 
+import os
 import pytest
 
 from OPSI.Object import NetbootProduct, ProductOnDepot, UnicodeProductProperty
 from .test_hosts import getConfigServer
-from .test_util_wim import fakeWimPath  # required fixture
+from .test_util_wim import fakeWimPath  # required fixture # pylint: disable=unused-import
 from .helpers import getLocalFQDN, mock, patchAddress, patchEnvironmentVariables
 
 
-def testUpdatingWim(backendManager, fakeWimPath):
+def test_update_wim(backendManager, fakeWimPath):  # pylint: disable=unused-argument,redefined-outer-name
 	backend = backendManager
 	localFqdn = getLocalFQDN()
+	if "[mysql]" in os.environ['PYTEST_CURRENT_TEST']:
+		pytest.skip("MySQL backend license check will not work with mocked os.path.exists")
 
 	with patchAddress(fqdn=localFqdn):
 		with patchEnvironmentVariables(OPSI_HOSTNAME=localFqdn):
-			fillBackend(backend)
+			fill_backend(backend)
 
 			with mock.patch('OPSI.Util.WIM.os.path.exists', lambda path: True):
 				backend.updateWIMConfig('testwindows')
@@ -30,9 +33,9 @@ def testUpdatingWim(backendManager, fakeWimPath):
 			imagename = imagename[0]
 
 			possibleImageNames = set([
-				u'Windows 7 HOMEBASICN', u'Windows 7 HOMEPREMIUMN',
-				u'Windows 7 PROFESSIONALN', u'Windows 7 STARTERN',
-				u'Windows 7 ULTIMATEN'
+				'Windows 7 HOMEBASICN', 'Windows 7 HOMEPREMIUMN',
+				'Windows 7 PROFESSIONALN', 'Windows 7 STARTERN',
+				'Windows 7 ULTIMATEN'
 			])
 			assert possibleImageNames == set(imagename.possibleValues)
 			assert imagename.defaultValues[0] in imagename.possibleValues
@@ -44,17 +47,17 @@ def testUpdatingWim(backendManager, fakeWimPath):
 
 
 @pytest.mark.parametrize("objectId", ['', None])
-def testUpdatingWimFailsWithInvalidObjectId(backendManager, objectId):
+def test_updating_wim_fails_with_invalid_object_id(backendManager, objectId):
 	with pytest.raises(ValueError):
 		backendManager.updateWIMConfig(objectId)
 
 
-def testUpdatingWimFailsWithInvalidProductId(backendManager):
+def test_updating_wim_fails_with_invalid_product_id(backendManager):
 	with pytest.raises(OSError):
 		backendManager.updateWIMConfigFromPath('', '')
 
 
-def fillBackend(backend):
+def fill_backend(backend):
 	configServer = getConfigServer()
 	backend.host_insertObject(configServer)
 
