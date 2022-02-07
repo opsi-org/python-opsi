@@ -21,6 +21,7 @@ test:pylint-pytest:
     mkdir -p /var/log/opsi
 
     # Installing opsi test license
+    [ -z "${OPSILICSRV_TOKEN}" ] && (echo "OPSILICSRV_TOKEN not set" 1>&2 ; exit 1)
     wget --header="Authorization: Bearer ${OPSILICSRV_TOKEN}" "https://opsi-license-server.uib.gmbh/api/v1/licenses/test?usage=python-opsi-gitlab-ci" -O /etc/opsi/licenses/test.opsilic
 
     # cloning opsi-server for data directory
