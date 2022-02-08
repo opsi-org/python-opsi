@@ -112,6 +112,8 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 					'NO_ZERO_DATE', ''
 				)
 			);
+			SET SESSION group_concat_max_len = 1000000;
+			SET SESSION lock_wait_timeout = 30;
 		""")
 		conn.execute("SET SESSION group_concat_max_len = 1000000;")
 		# conn.execute("SHOW VARIABLES LIKE 'sql_mode';").fetchone()
