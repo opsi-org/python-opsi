@@ -300,7 +300,7 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 				else:
 					user = parts[0]
 					password = ':'.join(parts[1:])
-				user = user.strip()
+				user = user.strip().lower()
 				logger.confidential("Client supplied username '%s' and password '%s'", user, password)
 			except Exception as err:  # pylint: disable=broad-except
 				logger.error(
