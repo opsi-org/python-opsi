@@ -53,7 +53,7 @@ class NTAuthentication(AuthenticationModule):
 			) from err
 
 	def get_admin_groupname(self) -> str:
-		return self._admin_groupname
+		return self._admin_groupname.lower()
 
 	def get_groupnames(self, username: str) -> Set[str]:
 		"""

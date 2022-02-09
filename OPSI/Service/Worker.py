@@ -15,13 +15,13 @@ import tempfile
 from twisted.internet import defer, threads
 from twisted.python.failure import Failure
 
+from opsicommon.logging import logger
+
 from OPSI.Exceptions import OpsiAuthenticationError, OpsiBadRpcError
 from OPSI.Types import forceUnicode, forceList
 from OPSI.Util import objectToHtml, toJson, fromJson, serialize
 from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipEncode, gzipDecode
 from OPSI.Service.JsonRpc import JsonRpc
-
-from opsicommon.logging import logger
 
 
 INTERFACE_PAGE = '''<?xml version="1.0" encoding="UTF-8"?>
@@ -614,6 +614,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):  # pylint: disable=too-few-public-methods
 			error = toJson({"id": None, "result": None, "error": error})
 		self.request.write(error.encode('utf-8'))
 		return failure
+
 
 class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):  # pylint: disable=too-few-public-methods
 	"""

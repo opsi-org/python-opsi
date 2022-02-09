@@ -13,11 +13,12 @@ Sessions do timeout after a specified time.
 import time
 import threading
 
+from opsicommon.logging import logger
+
 from OPSI.Exceptions import OpsiAuthenticationError
 from OPSI.Types import forceInt, forceUnicode
 from OPSI.Util import randomString
 
-from opsicommon.logging import logger
 
 class Session:  # pylint: disable=too-many-instance-attributes
 	def __init__(self, sessionHandler, name='OPSISID', sessionMaxInactiveInterval=120):
