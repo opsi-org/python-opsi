@@ -31,10 +31,10 @@ pexpect = "^4.8"
 psutil = "^5.8"
 pyasn1 = "^0.4"
 pycryptodome = "^3.10"
-pyOpenSSL = "^21.0"
-python-opsi-common = "^4.2.0.271"
+pyopenssl = "^22.0"
+python-opsi-common = "^4.2.0.272"
 python-pam = "^1.8"
-pywin32 = {platform = "win32", version = "^227"}
+pywin32 = {platform = "win32", version = "^303"}
 ruyaml = "^0.91"
 service-identity = "^21.1"
 sqlalchemy = "^1.4"
