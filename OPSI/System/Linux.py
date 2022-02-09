@@ -220,7 +220,7 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 	elif dev.lower().startswith(('webdav://', 'webdavs://', 'http://', 'https://')):
 		# We need enough free space in /var/cache/davfs2
 		# Maximum transfer file size <= free space in /var/cache/davfs2
-		match = re.search(r'^(http|webdav)(s*)(://[^/]+\/.+)$', dev, re.IGNORECASE)
+		match = re.search(r'^(http|webdav)(s?)(://[^/]+\/.+)$', dev, re.IGNORECASE)
 		if match:
 			fs = "-t davfs"
 			dev = f"http{match.group(2)}{match.group(3)}"
