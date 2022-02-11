@@ -675,28 +675,29 @@ def getfqdn(name='', conf=None):
 	If ``conf`` but no name is given it will try to read the FQDN from
 	the specified configuration file.
 	"""
-	if not name:
+	if name:
+		return forceFqdn(socket.getfqdn(name))
+
+	host_id = os.environ.get("OPSI_HOST_ID", os.environ.get("OPSI_HOSTNAME"))
+	if host_id:
 		try:
-			return forceFqdn(os.environ["OPSI_HOSTNAME"])
-		except KeyError:
-			# Not set in environment.
-			pass
+			return forceFqdn(host_id)
 		except ValueError:
 			# Not a fqdn
 			pass
 
-		# lazy import to avoid circular dependency
-		from OPSI.Util.Config import getGlobalConfig  # pylint: disable=import-outside-toplevel
+	# lazy import to avoid circular dependency
+	from OPSI.Util.Config import getGlobalConfig  # pylint: disable=import-outside-toplevel
 
-		if conf is not None:
-			hostname = getGlobalConfig('hostname', conf)
-		else:
-			hostname = getGlobalConfig('hostname')
+	if conf is not None:
+		host_id = getGlobalConfig('hostname', conf)
+	else:
+		host_id = getGlobalConfig('hostname')
 
-		if hostname:
-			return forceFqdn(hostname)
+	if host_id:
+		return forceFqdn(host_id)
 
-	return forceFqdn(socket.getfqdn(name))
+	return forceFqdn(socket.getfqdn())
 
 
 def removeDirectory(directory):
