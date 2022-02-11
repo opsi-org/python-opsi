@@ -19,6 +19,7 @@ be skipped if it does not exist.
 import os
 import shutil
 from contextlib import contextmanager
+import warnings
 import urllib3
 
 import pytest
@@ -32,12 +33,11 @@ from .Backends.SQLite import getSQLiteBackend
 from .Backends.MySQL import getMySQLBackend
 from .helpers import workInTemporaryDirectory, createTemporaryTestfile
 
-urllib3.disable_warnings()
 
-_LICENSE_FILE = os.path.exists(os.path.join('/etc', 'opsi', 'licenses', 'test.opsilic'))
+_LICENSE_FILE = os.path.exists(os.path.join("/etc", "opsi", "licenses", "test.opsilic"))
 
-TEST_DATA_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), 'data'))
-DIST_DATA_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'data'))
+TEST_DATA_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), "data"))
+DIST_DATA_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "data"))
 
 
 @pytest.fixture
@@ -57,13 +57,27 @@ def emit(*args, **kwargs) -> None:  # pylint: disable=unused-argument
 LogCaptureHandler.emit = emit
 
 
+@pytest.hookimpl()
+def pytest_configure(config):
+	# https://pypi.org/project/pytest-asyncio
+	# When the mode is auto, all discovered async tests are considered
+	# asyncio-driven even if they have no @pytest.mark.asyncio marker.
+	config.option.asyncio_mode = "auto"
+	config.addinivalue_line("markers", "obsolete: mark test that are obsolete for 4.2 development")
+
+
+@pytest.fixture(autouse=True)
+def disable_insecure_request_warning():
+	warnings.simplefilter("ignore", urllib3.exceptions.InsecureRequestWarning)
+
+
 @pytest.fixture(
 	params=[
 		getFileBackend,
 		pytest.param(getMySQLBackend, marks=pytest.mark.requires_license_file),
 		pytest.param(getSQLiteBackend, marks=pytest.mark.requires_license_file),
 	],
-	ids=['file', 'mysql', 'sqlite']
+	ids=["file", "mysql", "sqlite"],
 )
 def configDataBackend(request):
 	"""
@@ -114,7 +128,7 @@ def cleanableDataBackend(_serverBackend):
 		getFileBackend,
 		pytest.param(getMySQLBackend, marks=pytest.mark.requires_license_file),
 	],
-	ids=['file', 'mysql']
+	ids=["file", "mysql"],
 )
 def _serverBackend(request):
 	"Shortcut to specify backends used on an opsi server."
@@ -129,7 +143,7 @@ def _serverBackend(request):
 		getFileBackend,
 		pytest.param(getMySQLBackend, marks=pytest.mark.requires_license_file),
 	],
-	ids=['destination:file', 'destination:mysql']
+	ids=["destination:file", "destination:mysql"],
 )
 def replicationDestinationBackend(request):
 	# This is the same as _serverBackend, but has custom id's set.
@@ -145,26 +159,23 @@ def backendManager(_serverBackend, tempDir, dist_data_path):  # pylint: disable=
 
 	The returned instance is set up to have access to backend extensions.
 	"""
-	shutil.copytree(dist_data_path, os.path.join(tempDir, 'etc', 'opsi'))
+	shutil.copytree(dist_data_path, os.path.join(tempDir, "etc", "opsi"))
 
-	yield BackendManager(
-		backend=_serverBackend,
-		extensionconfigdir=os.path.join(tempDir, 'etc', 'opsi', 'backendManager', 'extend.d')
-	)
+	yield BackendManager(backend=_serverBackend, extensionconfigdir=os.path.join(tempDir, "etc", "opsi", "backendManager", "extend.d"))
 
 
 @pytest.fixture
 def tempDir():
-	'''
+	"""
 	Switch to a temporary directory.
-	'''
+	"""
 	with workInTemporaryDirectory() as tDir:
 		yield tDir
 
 
 @pytest.fixture
 def licenseManagementBackend(sqlBackendCreationContextManager):  # pylint: disable=redefined-outer-name
-	'''Returns a backend that can handle License Management.'''
+	"""Returns a backend that can handle License Management."""
 	with sqlBackendCreationContextManager() as backend:
 		with _backendBase(backend):
 			yield ExtendedConfigDataBackend(backend)
@@ -175,26 +186,20 @@ def licenseManagementBackend(sqlBackendCreationContextManager):  # pylint: disab
 		getMySQLBackend,
 		pytest.param(getSQLiteBackend, marks=pytest.mark.requires_license_file),
 	],
-	ids=['mysql', 'sqlite']
+	ids=["mysql", "sqlite"],
 )
 def sqlBackendCreationContextManager(request):
 	yield request.param
 
 
-@pytest.fixture(
-	params=[getMySQLBackend],
-	ids=['mysql']
-)
+@pytest.fixture(params=[getMySQLBackend], ids=["mysql"])
 def multithreadingBackend(request):
 	with request.param() as backend:
 		with _backendBase(backend):
 			yield backend
 
 
-@pytest.fixture(
-	params=[getMySQLBackend, getSQLiteBackend],
-	ids=['mysql', 'sqlite']
-)
+@pytest.fixture(params=[getMySQLBackend, getSQLiteBackend], ids=["mysql", "sqlite"])
 def hardwareAuditBackendWithHistory(request, hardwareAuditConfigPath):  # pylint: disable=redefined-outer-name
 	with request.param(auditHardwareConfigFile=hardwareAuditConfigPath) as backend:
 		with _backendBase(backend):
@@ -203,21 +208,18 @@ def hardwareAuditBackendWithHistory(request, hardwareAuditConfigPath):  # pylint
 
 @pytest.fixture
 def hardwareAuditConfigPath(dist_data_path):  # pylint: disable=redefined-outer-name
-	'''
+	"""
 	Copies the opsihwaudit.conf that is usually distributed for
 	installation to a temporary folder and then returns the new absolute
 	path of the config file.
-	'''
-	pathToOriginalConfig = os.path.join(dist_data_path, 'hwaudit', 'opsihwaudit.conf')
+	"""
+	pathToOriginalConfig = os.path.join(dist_data_path, "hwaudit", "opsihwaudit.conf")
 
 	with createTemporaryTestfile(pathToOriginalConfig) as fileCopy:
 		yield fileCopy
 
 
-@pytest.fixture(
-	params=[getFileBackend, getMySQLBackend, getSQLiteBackend],
-	ids=['file', 'mysql', 'sqlite']
-)
+@pytest.fixture(params=[getFileBackend, getMySQLBackend, getSQLiteBackend], ids=["file", "mysql", "sqlite"])
 def auditDataBackend(request, hardwareAuditConfigPath):  # pylint: disable=redefined-outer-name
 	with request.param(auditHardwareConfigFile=hardwareAuditConfigPath) as backend:
 		with _backendBase(backend):
@@ -229,18 +231,12 @@ def auditDataBackend(request, hardwareAuditConfigPath):  # pylint: disable=redef
 		getMySQLBackend,
 		pytest.param(getSQLiteBackend, marks=pytest.mark.requires_license_file),
 	],
-	ids=['mysql', 'sqlite']
+	ids=["mysql", "sqlite"],
 )
 def licenseManagentAndAuditBackend(request):
 	with request.param() as backend:
 		with _backendBase(backend):
 			yield ExtendedConfigDataBackend(backend)
-
-
-def pytest_configure(config):
-	config.addinivalue_line(
-		"markers", "obsolete: mark test that are obsolete for 4.2 development"
-	)
 
 
 def pytest_runtest_setup(item):
