@@ -12,16 +12,17 @@ This holds backend-independent migrations.
 """
 
 import os.path
+
+from opsicommon.logging import logger
+
 from OPSI.Object import OpsiConfigserver
-from OPSI.System.Posix import getLocalFqdn, getNetworkConfiguration, isUCS
+from OPSI.System.Posix import getLocalFqdn, getNetworkConfiguration
 from OPSI.Types import forceList
 from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
 from OPSI.Util.Task.Rights import set_rights
 from OPSI.Backend.Base.ConfigData import OPSI_PASSWD_FILE
 
-__all__ = ('initializeBackends', )
-
-from opsicommon.logging import logger
+__all__ = ("initializeBackends",)
 
 
 def initializeBackends(ipAddress=None, backendManagerConfig=None):
@@ -38,55 +39,53 @@ def initializeBackends(ipAddress=None, backendManagerConfig=None):
 
 	from OPSI.Backend.BackendManager import BackendManager  # pylint: disable=import-outside-toplevel
 
-	managerConfig = {
-		"depotBackend": False
-	}
+	managerConfig = {"depotBackend": False}
 	if backendManagerConfig:
 		managerConfig.update(backendManagerConfig)
 
 	with BackendManager(**managerConfig) as backend:
-		backend.backend_createBase()											#pylint: disable=no-member
+		backend.backend_createBase()  # pylint: disable=no-member
 
 		networkConfig = getNetworkConfiguration(ipAddress)
 		fqdn = getLocalFqdn()
 
 		logger.info("Trying to find a Configserver...")
-		configServer = backend.host_getObjects(type='OpsiConfigserver')			#pylint: disable=no-member
-		if not configServer and not backend.host_getIdents(type='OpsiConfigserver', id=fqdn):#pylint: disable=no-member
-			depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)	#pylint: disable=no-member
+		configServer = backend.host_getObjects(type="OpsiConfigserver")  # pylint: disable=no-member
+		if not configServer and not backend.host_getIdents(type="OpsiConfigserver", id=fqdn):  # pylint: disable=no-member
+			depot = backend.host_getObjects(type="OpsiDepotserver", id=fqdn)  # pylint: disable=no-member
 			if not depot:
 				logger.notice("Creating config server '%s'", fqdn)
 				serverConfig = _getServerConfig(fqdn, networkConfig)
-				backend.host_createOpsiConfigserver(**serverConfig)				#pylint: disable=no-member
-				configServer = backend.host_getObjects(type='OpsiConfigserver', id=fqdn)#pylint: disable=no-member
+				backend.host_createOpsiConfigserver(**serverConfig)  # pylint: disable=no-member
+				configServer = backend.host_getObjects(type="OpsiConfigserver", id=fqdn)  # pylint: disable=no-member
 			else:
 				logger.notice("Converting depot server '%s' to config server", fqdn)
 				configServer = OpsiConfigserver.fromHash(depot[0].toHash())
-				backend.host_createObjects(configServer)						#pylint: disable=no-member
+				backend.host_createObjects(configServer)  # pylint: disable=no-member
 
 				# list expected in further processing
 				configServer = [configServer]
 		else:
-			depot = backend.host_getObjects(type='OpsiDepotserver', id=fqdn)	#pylint: disable=no-member
+			depot = backend.host_getObjects(type="OpsiDepotserver", id=fqdn)  # pylint: disable=no-member
 			if not depot:
 				logger.notice("Creating depot server '%s'", fqdn)
 				serverConfig = _getServerConfig(fqdn, networkConfig)
-				backend.host_createOpsiDepotserver(**serverConfig)				#pylint: disable=no-member
+				backend.host_createOpsiDepotserver(**serverConfig)  # pylint: disable=no-member
 
 		if configServer:
 			if configServer[0].id == fqdn:
 				try:
-					configServer = backend.host_getObjects(type='OpsiConfigserver')[0]#pylint: disable=no-member
+					configServer = backend.host_getObjects(type="OpsiConfigserver")[0]  # pylint: disable=no-member
 				except IndexError as err:
 					raise Exception(f"Config server '{fqdn}' not found") from err
 
-				if networkConfig['ipAddress']:
-					configServer.setIpAddress(networkConfig['ipAddress'])
-				if networkConfig['hardwareAddress']:
-					configServer.setHardwareAddress(networkConfig['hardwareAddress'])
+				if networkConfig["ipAddress"]:
+					configServer.setIpAddress(networkConfig["ipAddress"])
+				if networkConfig["hardwareAddress"]:
+					configServer.setHardwareAddress(networkConfig["hardwareAddress"])
 
 				# make sure the config server is present in all backends or we get reference error later on
-				backend.host_insertObject(configServer)							#pylint: disable=no-member
+				backend.host_insertObject(configServer)  # pylint: disable=no-member
 
 			# initializeConfigs does only handle a single object
 			configServer = forceList(configServer)[0]
@@ -115,27 +114,20 @@ def _getServerConfig(fqdn, networkConfig):
 	:type networkConfig: dict
 	:rtype: dict
 	"""
-	if isUCS():
-		logger.info("Detected UCS - relying on working DNS.")
-		address = fqdn
-	else:
-		logger.info("Configuring server for use with IP.")
-		address = networkConfig['ipAddress']
-
 	config = dict(
 		id=fqdn,
 		opsiHostKey=None,
-		depotLocalUrl='file:///var/lib/opsi/depot',
-		depotRemoteUrl=f'smb://{address}/opsi_depot',
-		depotWebdavUrl=f'webdavs://{address}:4447/depot',
-		repositoryLocalUrl='file:///var/lib/opsi/repository',
-		repositoryRemoteUrl=f'webdavs://{address}:4447/repository',
-		workbenchLocalUrl='file:///var/lib/opsi/workbench',
-		workbenchRemoteUrl=f'smb://{address}/opsi_workbench',
+		depotLocalUrl="file:///var/lib/opsi/depot",
+		depotRemoteUrl=f"smb://{fqdn}/opsi_depot",
+		depotWebdavUrl=f"webdavs://{fqdn}:4447/depot",
+		repositoryLocalUrl="file:///var/lib/opsi/repository",
+		repositoryRemoteUrl=f"webdavs://{fqdn}:4447/repository",
+		workbenchLocalUrl="file:///var/lib/opsi/workbench",
+		workbenchRemoteUrl=f"smb://{fqdn}/opsi_workbench",
 		description=None,
 		notes=None,
-		hardwareAddress=networkConfig['hardwareAddress'],
-		ipAddress=networkConfig['ipAddress'],
+		hardwareAddress=networkConfig["hardwareAddress"],
+		ipAddress=networkConfig["ipAddress"],
 		inventoryNumber=None,
 		networkAddress=f"{networkConfig['subnet']}/{networkConfig['netmask']}",
 		maxBandwidth=0,
@@ -151,7 +143,7 @@ def _setupDepotDirectory():
 	"""
 	Set up the directory for the depot.
 	"""
-	depotDir = '/var/lib/opsi/depot'
+	depotDir = "/var/lib/opsi/depot"
 	try:
 		os.mkdir(depotDir)
 	except OSError as error:
@@ -160,9 +152,7 @@ def _setupDepotDirectory():
 
 	if os.path.exists("/opt/pcbin/install"):
 		logger.warning(
-			"You have an old depot directory present. "
-			"Using /opt/pcbin/install is depracted, "
-			"please use /var/lib/opsi/depot instead."
+			"You have an old depot directory present. " "Using /opt/pcbin/install is depracted, " "please use /var/lib/opsi/depot instead."
 		)
 
 
@@ -173,7 +163,7 @@ def _setupWorkbenchDirectory():
 	The path is `/var/lib/opsi/workbench`.
 	"""
 	try:
-		os.mkdir('/var/lib/opsi/workbench')
+		os.mkdir("/var/lib/opsi/workbench")
 	except OSError as error:
 		if error.errno != 17:  # 17 is File exists
 			logger.warning("Failed to create workbench directory: %s", error)
