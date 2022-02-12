@@ -569,7 +569,8 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		return " and ".join(createCondition())
 
 	def backend_exit(self):
-		pass
+		if self._sql and self._sql.engine:
+			self._sql.engine.dispose()
 
 	def backend_deleteBase(self):
 		ConfigDataBackend.backend_deleteBase(self)
