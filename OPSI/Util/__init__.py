@@ -42,40 +42,58 @@ except (ImportError, OSError):
 	from Cryptodome.Util.number import bytes_to_long
 
 from opsicommon.logging import logger
-from opsicommon.types import (
-	forceBool, forceFilename, forceFqdn, forceUnicode,
-	_PRODUCT_VERSION_REGEX, _PACKAGE_VERSION_REGEX
-)
+from opsicommon.types import forceBool, forceFilename, forceFqdn, forceUnicode, _PRODUCT_VERSION_REGEX, _PACKAGE_VERSION_REGEX
 from opsicommon.utils import (
-	Singleton, from_json, to_json, serialize,
+	Singleton,
+	from_json,
+	to_json,
+	serialize,
 	deserialize as oc_deserialize,
 	generate_opsi_host_key as generateOpsiHostKey,
-	timestamp as oc_timestamp
+	timestamp as oc_timestamp,
 )
 
 __all__ = (
-	"BLOWFISH_IV", "RANDOM_DEVICE", "UNIT_REGEX",
-	"CryptoError", "BlowfishError", "PickleString",
-	"blowfishDecrypt", "blowfishEncrypt",
-	"chunk", "compareVersions", "deserialize",
-	"findFiles", "findFilesGenerator", "formatFileSize", "fromJson", "generateOpsiHostKey",
-	"getfqdn", "ipAddressInNetwork", "isRegularExpressionPattern",
-	"md5sum", "objectToBash", "objectToBeautifiedText", "objectToHtml",
-	"randomString", "removeDirectory", "removeUnit",
-	"replaceSpecialHTMLCharacters", "serialize", "timestamp", "toJson",
-	"getPublicKey", "Singleton"
+	"BLOWFISH_IV",
+	"RANDOM_DEVICE",
+	"UNIT_REGEX",
+	"CryptoError",
+	"BlowfishError",
+	"PickleString",
+	"blowfishDecrypt",
+	"blowfishEncrypt",
+	"chunk",
+	"compareVersions",
+	"deserialize",
+	"findFiles",
+	"findFilesGenerator",
+	"formatFileSize",
+	"fromJson",
+	"generateOpsiHostKey",
+	"getfqdn",
+	"ipAddressInNetwork",
+	"isRegularExpressionPattern",
+	"md5sum",
+	"objectToBash",
+	"objectToBeautifiedText",
+	"objectToHtml",
+	"randomString",
+	"removeDirectory",
+	"removeUnit",
+	"replaceSpecialHTMLCharacters",
+	"serialize",
+	"timestamp",
+	"toJson",
+	"getPublicKey",
+	"Singleton",
 )
 
 BLOWFISH_IV = b"OPSI1234"
 RANDOM_DEVICE = "/dev/urandom"
-UNIT_REGEX = re.compile(r'^(\d+\.*\d*)\s*(\w{0,4})$')
-_ACCEPTED_CHARACTERS = (
-	"abcdefghijklmnopqrstuvwxyz"
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	"0123456789"
-)
+UNIT_REGEX = re.compile(r"^(\d+\.*\d*)\s*(\w{0,4})$")
+_ACCEPTED_CHARACTERS = "abcdefghijklmnopqrstuvwxyz" "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0123456789"
 
-Version = namedtuple('Version', 'product package')
+Version = namedtuple("Version", "product package")
 
 
 def _legacy_cmpkey(version: str):
@@ -140,7 +158,6 @@ class BlowfishError(CryptoError):
 
 
 class PickleString(str):
-
 	def __getstate__(self):
 		return base64.standard_b64encode(self)
 
@@ -189,11 +206,11 @@ def formatFileSize(sizeInBytes, base: int = 2):  # pylint: disable=too-many-retu
 
 
 def md5sum(filename):
-	""" Returns the md5sum of the given file. """
+	"""Returns the md5sum of the given file."""
 	md5object = md5()
 
-	with open(filename, 'rb') as fileToHash:
-		for data in iter(lambda: fileToHash.read(524288), b''):
+	with open(filename, "rb") as fileToHash:
+		for data in iter(lambda: fileToHash.read(524288), b""):
 			md5object.update(data)
 
 	return md5object.hexdigest()
@@ -205,11 +222,11 @@ def randomString(length, characters=_ACCEPTED_CHARACTERS):
 
 	:param characters: The characters to choose from. This defaults to 0-9a-Z.
 	"""
-	return ''.join(random.choice(characters) for _ in range(length))
+	return "".join(random.choice(characters) for _ in range(length))
 
 
 def timestamp(secs=0, dateOnly=False):
-	''' Returns a timestamp of the current system time format: YYYY-mm-dd[ HH:MM:SS] '''
+	"""Returns a timestamp of the current system time format: YYYY-mm-dd[ HH:MM:SS]"""
 	return oc_timestamp(secs=secs, date_only=dateOnly)
 
 
@@ -261,28 +278,28 @@ def objectToBash(obj, bashVars=None, level=0):  # pylint: disable=too-many-branc
 		append = emptyList.append
 
 	if isinstance(obj, (list, set)):
-		append('(\n')
+		append("(\n")
 		for element in obj:
 			if isinstance(element, (dict, list)):
 				level += 1
 				objectToBash(element, bashVars, level)
-				append(f'RESULT{level}=${{RESULT{level}[*]}}')
+				append(f"RESULT{level}=${{RESULT{level}[*]}}")
 			else:
 				objectToBash(element, bashVars, level)
-			append('\n')
-		append(')')
+			append("\n")
+		append(")")
 	elif isinstance(obj, dict):
-		append('(\n')
+		append("(\n")
 		for (key, value) in obj.items():
-			append(f'{key}=')
+			append(f"{key}=")
 			if isinstance(value, (dict, list)):
 				level += 1
 				objectToBash(value, bashVars, level)
-				append(f'${{RESULT{level}[*]}}')
+				append(f"${{RESULT{level}[*]}}")
 			else:
 				objectToBash(value, bashVars, level)
-			append('\n')
-		append(')')
+			append("\n")
+		append(")")
 	elif obj is None:
 		append('""')
 	else:
@@ -290,7 +307,7 @@ def objectToBash(obj, bashVars=None, level=0):  # pylint: disable=too-many-branc
 
 	if compress:
 		for key, value in bashVars.items():
-			bashVars[key] = ''.join(value)
+			bashVars[key] = "".join(value)
 
 	return bashVars
 
@@ -303,52 +320,54 @@ def objectToHtml(obj, level=0):  # pylint: disable=too-many-branches
 	append = html.append
 
 	if isinstance(obj, (list, set)):
-		append('[')
+		append("[")
 		if len(obj) > 0:
 			append('<div style="padding-left: 3em;">')
 			for i, currentElement in enumerate(obj):
 				append(objectToHtml(currentElement, level + 1))
 				if i < len(obj) - 1:
-					append(',<br />\n')
-			append('</div>')
-		append(']')
+					append(",<br />\n")
+			append("</div>")
+		append("]")
 	elif isinstance(obj, dict):
-		append('{')
+		append("{")
 		if len(obj) > 0:
 			append('<div style="padding-left: 3em;">')
 			for i, (key, value) in enumerate(obj.items()):
 				append('<font class="json_key">')
 				append(objectToHtml(key))
-				append('</font>: ')
+				append("</font>: ")
 				append(objectToHtml(value, level + 1))
 				if i < len(obj) - 1:
-					append(',<br />\n')
-			append('</div>')
-		append('}')
+					append(",<br />\n")
+			append("</div>")
+		append("}")
 	elif isinstance(obj, bool):
 		append(str(obj).lower())
 	elif obj is None:
-		append('null')
+		append("null")
 	else:
 		if isinstance(obj, str):
 			append(replaceSpecialHTMLCharacters(obj).join(('"', '"')))
 		else:
 			append(replaceSpecialHTMLCharacters(obj))
 
-	return ''.join(html)
+	return "".join(html)
 
 
 def replaceSpecialHTMLCharacters(text):
-	return str(text) \
-		.replace('\r', '')\
-		.replace('\t', '   ')\
-		.replace('&', '&amp;')\
-		.replace('"', '&quot;')\
-		.replace("'", '&apos;')\
-		.replace(' ', '&nbsp;')\
-		.replace('<', '&lt;')\
-		.replace('>', '&gt;')\
-		.replace('\n', '<br />\n')
+	return (
+		str(text)
+		.replace("\r", "")
+		.replace("\t", "   ")
+		.replace("&", "&amp;")
+		.replace('"', "&quot;")
+		.replace("'", "&apos;")
+		.replace(" ", "&nbsp;")
+		.replace("<", "&lt;")
+		.replace(">", "&gt;")
+		.replace("\n", "<br />\n")
+	)
 
 
 def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many-locals
@@ -364,7 +383,7 @@ def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many
 	# Kept removePartAfterWave to not break current behaviour
 	def removePartAfterWave(versionString):
 		if "~" in versionString:
-			return versionString[:versionString.find("~")]
+			return versionString[: versionString.find("~")]
 		return versionString
 
 	first = removePartAfterWave(v1)
@@ -372,9 +391,9 @@ def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many
 	for version in (first, second):
 		parts = version.split("-")
 		if (
-			not _PRODUCT_VERSION_REGEX.search(parts[0]) or
-			(len(parts) == 2 and not _PACKAGE_VERSION_REGEX.search(parts[1])) or
-			len(parts) > 2
+			not _PRODUCT_VERSION_REGEX.search(parts[0])
+			or (len(parts) == 2 and not _PACKAGE_VERSION_REGEX.search(parts[1]))
+			or len(parts) > 2
 		):
 			raise ValueError(f"Bad package version provided: '{version}'")
 
@@ -406,20 +425,20 @@ def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many
 
 
 def removeUnit(value: str) -> int:  # pylint: disable=invalid-name,too-many-return-statements
-	'''
+	"""
 	Take a string representing a byte-based size and return the
 	value in bytes.
 
 	:param value: str
 	:returns: `value` in bytes.
 	:rtype: int or float
-	'''
+	"""
 	value = str(value)
 	match = UNIT_REGEX.search(value)
 	if not match:
 		return value
 
-	if '.' in match.group(1):
+	if "." in match.group(1):
 		value = float(match.group(1))
 	else:
 		value = int(match.group(1))
@@ -427,26 +446,26 @@ def removeUnit(value: str) -> int:  # pylint: disable=invalid-name,too-many-retu
 	unit = match.group(2)
 	mult = 1000
 
-	if unit.lower().endswith('hz'):
+	if unit.lower().endswith("hz"):
 		unit = unit[:-2]
-	elif unit.lower().endswith('bits'):
+	elif unit.lower().endswith("bits"):
 		mult = 1024
 		unit = unit[:-4]
-	elif unit.lower().endswith('b'):
+	elif unit.lower().endswith("b"):
 		mult = 1024
 		unit = unit[:-1]
-	elif unit.lower().endswith(('s', 'v')):
+	elif unit.lower().endswith(("s", "v")):
 		unit = unit[:-1]
 
-	if unit.endswith('n'):
+	if unit.endswith("n"):
 		return float(value) / (mult * mult)
-	if unit.endswith('m'):
+	if unit.endswith("m"):
 		return float(value) / mult
-	if unit.lower().endswith('k'):
+	if unit.lower().endswith("k"):
 		return value * mult
-	if unit.endswith('M'):
+	if unit.endswith("M"):
 		return value * mult * mult
-	if unit.endswith('G'):
+	if unit.endswith("G"):
 		return value * mult * mult * mult
 
 	return value
@@ -507,7 +526,7 @@ def blowfishDecrypt(key, crypt):
 		raise BlowfishError("Failed to decrypt") from err
 
 	# Remove possible \0-chars
-	cleartext = cleartext.rstrip(b'\0')
+	cleartext = cleartext.rstrip(b"\0")
 
 	try:
 		return cleartext.decode("utf-8")
@@ -526,10 +545,16 @@ def _prepareBlowfishKey(key: str) -> bytes:
 
 
 def findFilesGenerator(  # pylint: disable=too-many-branches,too-many-locals,too-many-arguments,too-many-statements
-	directory, prefix='',
-	excludeDir=None, excludeFile=None, includeDir=None, includeFile=None,
-	returnDirs=True, returnLinks=True, followLinks=False,
-	repository=None
+	directory,
+	prefix="",
+	excludeDir=None,
+	excludeFile=None,
+	includeDir=None,
+	includeFile=None,
+	returnDirs=True,
+	returnLinks=True,
+	followLinks=False,
+	repository=None,
 ):
 	directory = forceFilename(directory)
 	prefix = forceUnicode(prefix)
@@ -599,7 +624,7 @@ def findFilesGenerator(  # pylint: disable=too-many-branches,too-many-locals,too
 				returnDirs=returnDirs,
 				returnLinks=returnLinks,
 				followLinks=followLinks,
-				repository=repository
+				repository=repository,
 			)
 			continue
 
@@ -621,25 +646,31 @@ def findFilesGenerator(  # pylint: disable=too-many-branches,too-many-locals,too
 
 
 def findFiles(  # pylint: disable=too-many-arguments
-	directory, prefix='',
-	excludeDir=None, excludeFile=None, includeDir=None, includeFile=None,
-	returnDirs=True, returnLinks=True, followLinks=False,
-	repository=None
+	directory,
+	prefix="",
+	excludeDir=None,
+	excludeFile=None,
+	includeDir=None,
+	includeFile=None,
+	returnDirs=True,
+	returnLinks=True,
+	followLinks=False,
+	repository=None,
 ):
 	return list(
 		findFilesGenerator(
-			directory, prefix,
-			excludeDir, excludeFile, includeDir, includeFile,
-			returnDirs, returnLinks, followLinks,
-			repository
+			directory, prefix, excludeDir, excludeFile, includeDir, includeFile, returnDirs, returnLinks, followLinks, repository
 		)
 	)
 
 
 if sys.version_info >= (3, 7):
+
 	def isRegularExpressionPattern(object):  # pylint: disable=redefined-builtin
 		return isinstance(object, re.Pattern)
+
 else:
+
 	def isRegularExpressionPattern(object):  # pylint: disable=redefined-builtin
 		return "SRE_Pattern" in str(type(object))
 
@@ -666,7 +697,7 @@ def ipAddressInNetwork(ipAddress, networkAddress):
 	return ipAddress in networkAddress
 
 
-def getfqdn(name='', conf=None):
+def getfqdn(name="", conf=None):
 	"""
 	Get the fqdn.
 
@@ -678,7 +709,7 @@ def getfqdn(name='', conf=None):
 	if name:
 		return forceFqdn(socket.getfqdn(name))
 
-	host_id = os.environ.get("OPSI_HOST_ID", os.environ.get("OPSI_HOSTNAME"))
+	host_id = os.environ.get("OPSI_HOST_ID") or os.environ.get("OPSI_HOSTNAME")
 	if host_id:
 		try:
 			return forceFqdn(host_id)
@@ -690,9 +721,9 @@ def getfqdn(name='', conf=None):
 	from OPSI.Util.Config import getGlobalConfig  # pylint: disable=import-outside-toplevel
 
 	if conf is not None:
-		host_id = getGlobalConfig('hostname', conf)
+		host_id = getGlobalConfig("hostname", conf)
 	else:
-		host_id = getGlobalConfig('hostname')
+		host_id = getGlobalConfig("hostname")
 
 	if host_id:
 		return forceFqdn(host_id)
@@ -712,18 +743,16 @@ def removeDirectory(directory):
 	:param directory: Path to the directory
 	:tye directory: str
 	"""
-	logger.debug('Removing directory: %s', directory)
+	logger.debug("Removing directory: %s", directory)
 	try:
 		shutil.rmtree(directory)
 	except UnicodeDecodeError:
 		# See http://bugs.python.org/issue3616
-		logger.info(
-			'Client data directory seems to contain filenames '
-			'with unicode characters. Trying fallback.'
-		)
+		logger.info("Client data directory seems to contain filenames " "with unicode characters. Trying fallback.")
 
 		# late import to avoid circular dependency
 		import OPSI.System  # pylint: disable=import-outside-toplevel
+
 		OPSI.System.execute("rm -rf {directory}")
 
 
@@ -748,8 +777,8 @@ def getPublicKey(data):
 	count = 0
 	mp = []
 	for _ in range(2):
-		length = struct.unpack('>L', rest[count:count + 4])[0]
-		mp.append(bytes_to_long(rest[count + 4:count + 4 + length]))
+		length = struct.unpack(">L", rest[count : count + 4])[0]
+		mp.append(bytes_to_long(rest[count + 4 : count + 4 + length]))
 		count += 4 + length
 
 	return RSA.construct((mp[1], mp[0]))
