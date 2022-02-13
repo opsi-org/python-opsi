@@ -15,9 +15,7 @@ from functools import lru_cache
 
 from opsicommon.logging import logger
 
-from OPSI.Backend.Base import (
-	Backend, ConfigDataBackend, getArgAndCallString
-)
+from OPSI.Backend.Base import Backend, ConfigDataBackend, getArgAndCallString
 from OPSI.Backend.Base.Extended import ExtendedConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import BackendConfigurationError
@@ -26,7 +24,7 @@ from OPSI.Util.File.Opsi import BackendDispatchConfigFile
 
 from .Config import loadBackendConfig
 
-__all__ = ('BackendDispatcher', )
+__all__ = ("BackendDispatcher",)
 
 
 class BackendDispatcher(Backend):
@@ -43,15 +41,15 @@ class BackendDispatcher(Backend):
 
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if option == 'dispatchconfig':
+			if option == "dispatchconfig":
 				self._dispatchConfig = value
-			elif option == 'dispatchconfigfile':
+			elif option == "dispatchconfigfile":
 				self._dispatchConfigFile = value
-			elif option == 'dispatchignoremodules' and value:
+			elif option == "dispatchignoremodules" and value:
 				self._dispatchIgnoreModules = forceList(value)
-			elif option == 'backendconfigdir':
+			elif option == "backendconfigdir":
 				self._backendConfigDir = value
-			elif option == 'context':
+			elif option == "context":
 				self._context = value
 
 		if self._dispatchConfigFile:
@@ -64,7 +62,7 @@ class BackendDispatcher(Backend):
 		self.__loadBackends(dict(kwargs))
 		self._createInstanceMethods()
 		for be in self._backends.values():
-			be['instance']._init_backend(self)
+			be["instance"]._init_backend(self)
 
 	def __repr__(self):
 		additionalInformation = []
@@ -93,9 +91,7 @@ class BackendDispatcher(Backend):
 			self._dispatchConfig = _loadDispatchConfig(self._dispatchConfigFile)
 			logger.debug("Read dispatch config from file %s: %s", self._dispatchConfigFile, self._dispatchConfig)
 		except Exception as err:
-			raise BackendConfigurationError(
-				f"Failed to load dispatch config file '{self._dispatchConfigFile}': {err}"
-			) from err
+			raise BackendConfigurationError(f"Failed to load dispatch config file '{self._dispatchConfigFile}': {err}") from err
 
 	def __loadBackends(self, kwargs=None):
 		if not self._backendConfigDir:
@@ -108,34 +104,28 @@ class BackendDispatcher(Backend):
 		for pattern, backends in self._dispatchConfig:
 			for backend in backends:
 				if not backend:
-					raise BackendConfigurationError(
-						f"Bad dispatcher config: {pattern} has empty target backend: {backends}"
-					)
+					raise BackendConfigurationError(f"Bad dispatcher config: {pattern} has empty target backend: {backends}")
 
 				collectedBackends.add(backend)
 
 		for backend in collectedBackends:
 			self._backends[backend] = {}
-			backendConfigFile = os.path.join(self._backendConfigDir, f'{backend}.conf')
+			backendConfigFile = os.path.join(self._backendConfigDir, f"{backend}.conf")
 			logger.info("Loading backend config '%s'", backendConfigFile)
 			backend_config = loadBackendConfig(backendConfigFile)
-			if not backend_config['module']:
-				raise BackendConfigurationError(
-					f"No module defined in backend config file '{backendConfigFile}'"
-				)
-			if backend_config['module'] in self._dispatchIgnoreModules:
-				logger.notice("Ignoring module '%s', backend '%s'", backend_config['module'], backend)
+			if not backend_config["module"]:
+				raise BackendConfigurationError(f"No module defined in backend config file '{backendConfigFile}'")
+			if backend_config["module"] in self._dispatchIgnoreModules:
+				logger.notice("Ignoring module '%s', backend '%s'", backend_config["module"], backend)
 				del self._backends[backend]
 				continue
-			if not isinstance(backend_config['config'], dict):
-				raise BackendConfigurationError(
-					"Bad type for config var in backend config file '{backendConfigFile}', has to be dict"
-				)
+			if not isinstance(backend_config["config"], dict):
+				raise BackendConfigurationError("Bad type for config var in backend config file '{backendConfigFile}', has to be dict")
 			backend_config["config"]["context"] = self
 			moduleName = f"OPSI.Backend.{backend_config['module']}"
 			backendClassName = f"{backend_config['module']}Backend"
 			backend_module = importlib.import_module(moduleName)
-			cargs = dict(backend_config['config'])
+			cargs = dict(backend_config["config"])
 			cargs.update(kwargs or {})
 			self._backends[backend]["instance"] = getattr(backend_module, backendClassName)(**cargs)
 		logger.info("Dispatcher backends: %s", list(self._backends.keys()))
@@ -153,7 +143,7 @@ class BackendDispatcher(Backend):
 			for methodName, functionRef in inspect.getmembers(Class, inspect.isfunction):
 				if getattr(functionRef, "no_export", False):
 					continue
-				if methodName.startswith('_'):
+				if methodName.startswith("_"):
 					# Not a public method
 					continue
 				logger.trace("Found public %s method '%s'", Class.__name__, methodName)
@@ -165,7 +155,9 @@ class BackendDispatcher(Backend):
 				methodBackends = []
 				methodBackendName = methodName.split("_", 1)[0]
 				if methodBackendName in self._backends:
-					logger.debug("Method name %s starts with %s, dispatching to backend: %s", methodName, methodBackendName, methodBackendName)
+					logger.debug(
+						"Method name %s starts with %s, dispatching to backend: %s", methodName, methodBackendName, methodBackendName
+					)
 					methodBackends.append(methodBackendName)
 				else:
 					for regex, backends in self._dispatchConfig:
@@ -182,7 +174,7 @@ class BackendDispatcher(Backend):
 							methodBackends.append(backend)
 
 						if methodBackends:
-							logger.debug("%s matches method %s, dispatching to backends: %s", regex, methodName, ', '.join(methodBackends))
+							logger.debug("%s matches method %s, dispatching to backends: %s", regex, methodName, ", ".join(methodBackends))
 						break
 
 				if not methodBackends:
@@ -190,7 +182,9 @@ class BackendDispatcher(Backend):
 
 				argString, callString = getArgAndCallString(functionRef)
 
-				exec(f'def {methodName}(self, {argString}): return self._dispatchMethod({methodBackends}, "{methodName}", {callString})')  # pylint: disable=exec-used
+				exec(
+					f'def {methodName}(self, {argString}): return self._dispatchMethod({methodBackends}, "{methodName}", {callString})'
+				)  # pylint: disable=exec-used
 				new_function = eval(methodName)  # pylint: disable=eval-used
 				new_function.deprecated = getattr(functionRef, "deprecated", False)
 				new_function.alternative_method = getattr(functionRef, "alternative_method", None)
@@ -221,17 +215,17 @@ class BackendDispatcher(Backend):
 	def backend_setOptions(self, options):
 		Backend.backend_setOptions(self, options)
 		for be in self._backends.values():
-			be['instance'].backend_setOptions(options)
+			be["instance"].backend_setOptions(options)
 
 	def backend_getOptions(self):
 		options = Backend.backend_getOptions(self)
 		for be in self._backends.values():
-			options.update(be['instance'].backend_getOptions())
+			options.update(be["instance"].backend_getOptions())
 		return options
 
 	def backend_exit(self):
 		for be in self._backends.values():
-			be['instance'].backend_exit()
+			be["instance"].backend_exit()
 
 	def dispatcher_getConfig(self):
 		return self._dispatchConfig
