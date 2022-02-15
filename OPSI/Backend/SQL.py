@@ -1157,11 +1157,25 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	def _host_check_duplicates(self, host, session):
+		if host.hardwareAddress and not host.hardwareAddress.startswith("00:00:00"):
+			res = self._sql.getRow(
+				session,
+				f"""
+					SELECT hostId FROM `HOST`
+					WHERE hostId != '{host.id}' AND hardwareAddress = '{host.hardwareAddress}'
+					LIMIT 1
+				""",
+			)
+			if res:
+				raise BackendBadValueError(f"Hardware address {host.hardwareAddress!r} is already used by host {res[0]!r}")
+
 	def host_insertObject(self, host):
 		ConfigDataBackend.host_insertObject(self, host)
 		data = self._objectToDatabaseHash(host)
 		where = self._uniqueCondition(host)
 		with self._sql.session() as session:
+			self._host_check_duplicates(host, session)
 			if self._sql.getRow(session, f"select * from `HOST` where {where}"):
 				self._sql.update(session, "HOST", where, data, updateWhereNone=True)
 			else:
@@ -1172,6 +1186,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		data = self._objectToDatabaseHash(host)
 		where = self._uniqueCondition(host)
 		with self._sql.session() as session:
+			self._host_check_duplicates(host, session)
 			self._sql.update(session, "HOST", where, data)
 
 	def host_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value

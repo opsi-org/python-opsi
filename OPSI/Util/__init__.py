@@ -91,7 +91,7 @@ __all__ = (
 BLOWFISH_IV = b"OPSI1234"
 RANDOM_DEVICE = "/dev/urandom"
 UNIT_REGEX = re.compile(r"^(\d+\.*\d*)\s*(\w{0,4})$")
-_ACCEPTED_CHARACTERS = "abcdefghijklmnopqrstuvwxyz" "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0123456789"
+_ACCEPTED_CHARACTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 Version = namedtuple("Version", "product package")
 
