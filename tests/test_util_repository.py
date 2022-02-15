@@ -29,19 +29,19 @@ def testGettingRepositoryFailsOnUnsupportedURL():
 
 
 def testListingRepository(tempDir):
-	repo = FileRepository(url=f'file://{tempDir}')
-	assert not repo.content('', recursive=True)
+	repo = FileRepository(url=f"file://{tempDir}")
+	assert not repo.content("", recursive=True)
 
 	os.mkdir(os.path.join(tempDir, "foobar"))
 
-	assert 1 == len(repo.content('', recursive=True))
-	for content in repo.content('', recursive=True):
-		assert content == {'path': 'foobar', 'type': 'dir', 'name': 'foobar', 'size': 0}
+	assert 1 == len(repo.content("", recursive=True))
+	for content in repo.content("", recursive=True):
+		assert content == {"path": "foobar", "type": "dir", "name": "foobar", "size": 0}
 
-	with open(os.path.join(tempDir, "bar"), "w", encoding='utf8'):
+	with open(os.path.join(tempDir, "bar"), "w", encoding="utf8"):
 		pass
 
-	assert 2 == len(repo.content('', recursive=True))
+	assert 2 == len(repo.content("", recursive=True))
 	assert 2 == len(repo.listdir())
 	assert "bar" in repo.listdir()
 
@@ -50,17 +50,17 @@ def testListingRepository(tempDir):
 
 def testFileRepositoryFailsWithWrongURL():
 	with pytest.raises(RepositoryError):
-		FileRepository('nofile://nada')
+		FileRepository("nofile://nada")
 
 
 @pytest.fixture
 def twistedDAVXMLPath(test_data_path):
-	return os.path.join(test_data_path, 'util', 'davxml', 'twisted-davxml.data')
+	return os.path.join(test_data_path, "util", "davxml", "twisted-davxml.data")
 
 
 @pytest.fixture
 def twistedDAVXML(twistedDAVXMLPath):  # pylint: disable=redefined-outer-name
-	with open(twistedDAVXMLPath, 'r', encoding='utf8') as file:
+	with open(twistedDAVXMLPath, "r", encoding="utf8") as file:
 		return file.read()
 
 
@@ -71,10 +71,10 @@ def testGetFileInfosFromDavXML(twistedDAVXML):  # pylint: disable=redefined-oute
 	dirs = 0
 	files = 0
 	for item in content:
-		assert isinstance(item['size'], int)
-		if item['type'] == 'dir':
+		assert isinstance(item["size"], int)
+		if item["type"] == "dir":
 			dirs = dirs + 1
-		elif item['type'] == 'file':
+		elif item["type"] == "file":
 			files = files + 1
 		else:
 			raise ValueError(f"Unexpected type '{item['type']}' found. Maybe creepy testdata?")
@@ -133,7 +133,7 @@ def test_limit_download(tmpdir, repo_type, dynamic):
 		if not dynamic:
 			assert abs(round(end - start) - round(len(data) / limit)) <= 1
 
-	def get_network_usage(self):   # pylint: disable=unused-argument
+	def get_network_usage(self):  # pylint: disable=unused-argument
 		traffic_ratio = repo.speed_limiter._dynamic_bandwidth_threshold_no_limit  # pylint: disable=protected-access
 		if simulate_other_traffic:
 			traffic_ratio = repo.speed_limiter._dynamic_bandwidth_limit_rate  # pylint: disable=protected-access
@@ -141,18 +141,20 @@ def test_limit_download(tmpdir, repo_type, dynamic):
 		bandwidth = int(repo.speed_limiter._average_speed / traffic_ratio)  # pylint: disable=protected-access
 		if repo._bytesTransfered >= len(data) * 0.8:  # pylint: disable=protected-access
 			if simulate_other_traffic:
-				assert (repo.speed_limiter._dynamic_bandwidth_limit / bandwidth) <= repo.speed_limiter._dynamic_bandwidth_limit_rate * 1.3  # pylint: disable=protected-access
+				assert (
+					repo.speed_limiter._dynamic_bandwidth_limit / bandwidth  # pylint: disable=protected-access
+				) <= repo.speed_limiter._dynamic_bandwidth_limit_rate * 1.5  # pylint: disable=protected-access
 			else:
 				assert repo.speed_limiter._dynamic_bandwidth_limit == 0  # pylint: disable=protected-access
 		return bandwidth
 
 	# Setting DEFAULT_BUFFER_SIZE to slow down transfer
-	with mock.patch('OPSI.Util.Repository.Repository.DEFAULT_BUFFER_SIZE', 1000 if dynamic else 32 * 1000):
+	with mock.patch("OPSI.Util.Repository.Repository.DEFAULT_BUFFER_SIZE", 1000 if dynamic else 32 * 1000):
 		if repo_type.startswith(("http", "webdav")):
 			with http_test_server(serve_directory=src_dir) as server:
 				repo_url = f"{repo_type}://localhost:{server.port}"
 				repo = getRepository(repo_url, maxBandwidth=0 if dynamic else limit, dynamicBandwidth=dynamic)
-				with mock.patch('OPSI.Util.Repository.SpeedLimiter._get_network_usage', get_network_usage):
+				with mock.patch("OPSI.Util.Repository.SpeedLimiter._get_network_usage", get_network_usage):
 					download()
 					if dynamic:
 						simulate_other_traffic = True
