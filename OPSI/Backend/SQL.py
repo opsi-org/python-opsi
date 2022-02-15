@@ -1212,7 +1212,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# -   Configs
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def config_insertObject(self, config):
-		self._check_module("mysql_backend")
 		ConfigDataBackend.config_insertObject(self, config)
 		data = self._objectToDatabaseHash(config)
 		possibleValues = data["possibleValues"]
@@ -1238,7 +1237,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				)
 
 	def config_updateObject(self, config):
-		self._check_module("mysql_backend")
 		ConfigDataBackend.config_updateObject(self, config)
 		data = self._objectToDatabaseHash(config)
 		where = self._uniqueCondition(config)
@@ -1316,7 +1314,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			return configs
 
 	def config_deleteObjects(self, configs):
-		self._check_module("mysql_backend")
 		ConfigDataBackend.config_deleteObjects(self, configs)
 		with self._sql.session() as session:
 			for config in forceObjectClassList(configs, Config):
@@ -1351,7 +1348,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			self._sql.update(session, "CONFIG_STATE", where, data)
 
 	def configState_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		self._check_module("mysql_backend")
 		ConfigDataBackend.configState_getObjects(self, attributes=[], **filter)
 		logger.info("Getting configStates, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(ConfigState, attributes, filter)
@@ -1368,7 +1364,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		return configStates
 
 	def configState_deleteObjects(self, configStates):
-		self._check_module("mysql_backend")
 		ConfigDataBackend.configState_deleteObjects(self, configStates)
 		with self._sql.session() as session:
 			for configState in forceObjectClassList(configStates, ConfigState):
@@ -1418,7 +1413,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				self._sql.insert(session, "WINDOWS_SOFTWARE_ID_TO_PRODUCT", mapping)
 
 	def product_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		self._check_module("mysql_backend")
 		ConfigDataBackend.product_getObjects(self, attributes=[], **filter)
 		logger.info("Getting products, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(Product, attributes, filter)
@@ -1523,7 +1517,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				)
 
 	def productProperty_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		self._check_module("mysql_backend")
 		ConfigDataBackend.productProperty_getObjects(self, attributes=[], **filter)
 		logger.info("Getting product properties, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(ProductProperty, attributes, filter)
@@ -1588,7 +1581,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			self._sql.update(session, "PRODUCT_DEPENDENCY", where, data)
 
 	def productDependency_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		self._check_module("mysql_backend")
 		ConfigDataBackend.productDependency_getObjects(self, attributes=[], **filter)
 		logger.info("Getting product dependencies, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(ProductDependency, attributes, filter)
@@ -1635,7 +1627,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			self._sql.update(session, "PRODUCT_ON_DEPOT", where, data)
 
 	def productOnDepot_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		self._check_module("mysql_backend")
 		ConfigDataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
 		(attributes, filter) = self._adjustAttributes(ProductOnDepot, attributes, filter)
 		with self._sql.session() as session:
@@ -1727,7 +1718,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			self._sql.update(session, "PRODUCT_PROPERTY_STATE", where, data)
 
 	def productPropertyState_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		self._check_module("mysql_backend")
 		ConfigDataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
 		logger.info("Getting productPropertyStates, filter: %s", filter)
 		productPropertyStates = []
@@ -1774,7 +1764,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			self._sql.update(session, "GROUP", where, data)
 
 	def group_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		self._check_module("mysql_backend")
 		ConfigDataBackend.group_getObjects(self, attributes=[], **filter)
 		logger.info("Getting groups, filter: %s", filter)
 		groups = []
@@ -1818,7 +1807,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			self._sql.update(session, "OBJECT_TO_GROUP", where, data)
 
 	def objectToGroup_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		self._check_module("mysql_backend")
 		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
 		logger.info("Getting objectToGroups, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(ObjectToGroup, attributes, filter)
