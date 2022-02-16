@@ -20,9 +20,7 @@ from .helpers import createTemporaryTestfile, mock
 
 @pytest.fixture
 def exampleMySQLBackendConfig(dist_data_path):
-	templateFile = os.path.join(
-		dist_data_path, 'backends', 'mysql.conf'
-	)
+	templateFile = os.path.join(dist_data_path, "backends", "mysql.conf")
 
 	with createTemporaryTestfile(templateFile) as fileName:
 		yield fileName
@@ -50,53 +48,56 @@ def testUpdatingTestConfigFile(exampleMySQLBackendConfig):
 	fileName = exampleMySQLBackendConfig
 	config = backendConfigUtils.getBackendConfiguration(fileName)
 
-	assert 'notYourCurrentPassword' != config['password']
-	config['password'] = 'notYourCurrentPassword'
+	assert "notYourCurrentPassword" != config["password"]
+	config["password"] = "notYourCurrentPassword"
 	backendConfigUtils.updateConfigFile(fileName, config)
-	assert 'notYourCurrentPassword' == config['password']
+	assert "notYourCurrentPassword" == config["password"]
 
-	del config['address']
-	del config['database']
-	del config['password']
+	del config["address"]
+	del config["database"]
+	del config["password"]
 
 	backendConfigUtils.updateConfigFile(fileName, config)
 
 	config = backendConfigUtils.getBackendConfiguration(fileName)
 
-	for key in ('address', 'database', 'password'):
-		assert key not in config, '{0} should not be in {1}'.format(key, config)
+	for key in ("address", "database", "password"):
+		assert key not in config, "{0} should not be in {1}".format(key, config)
 
-	for key in ('username', 'connectionPoolMaxOverflow'):
-		assert key in config, '{0} should be in {1}'.format(key, config)
+	for key in ("username", "connectionPoolMaxOverflow"):
+		assert key in config, "{0} should be in {1}".format(key, config)
 
 
 def testReadingWindowsDomainFromSambaConfig(test_data_path):
-	testConfig = os.path.join(test_data_path, 'util', 'task', 'smb.conf')
+	testConfig = os.path.join(test_data_path, "util", "task", "smb.conf")
 	domain = confData.readWindowsDomainFromSambaConfig(testConfig)
 
-	assert 'WWWORK' == domain
+	assert "WWWORK" == domain
 
 
-@pytest.mark.parametrize("configId", [
-	'clientconfig.depot.dynamic',
-	'clientconfig.depot.drive',
-	'clientconfig.depot.protocol',
-	'clientconfig.windows.domain',
-	'opsi-linux-bootimage.append',
-	'license-management.use',
-	'software-on-demand.active',
-	'software-on-demand.product-group-ids',
-	'product_sort_algorithm',
-	'clientconfig.dhcpd.filename',
-	pytest.param('software-on-demand.show-details', marks=pytest.mark.xfail),
-	'opsiclientd.event_user_login.active',
-	'opsiclientd.event_user_login.action_processor_command',
-])
+@pytest.mark.parametrize(
+	"configId",
+	[
+		"clientconfig.depot.dynamic",
+		"clientconfig.depot.drive",
+		"clientconfig.depot.protocol",
+		"clientconfig.windows.domain",
+		"opsi-linux-bootimage.append",
+		"license-management.use",
+		"software-on-demand.active",
+		"software-on-demand.product-group-ids",
+		"product_sort_algorithm",
+		"clientconfig.dhcpd.filename",
+		pytest.param("software-on-demand.show-details", marks=pytest.mark.xfail),
+		"opsiclientd.event_user_login.active",
+		"opsiclientd.event_user_login.action_processor_command",
+	],
+)
 def testConfigureBackendAddsMissingEntries(test_data_path, extendedConfigDataBackend, configId):
-	sambaTestConfig = os.path.join(test_data_path, 'util', 'task', 'smb.conf')
+	sambaTestConfig = os.path.join(test_data_path, "util", "task", "smb.conf")
 	confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
-	configIdents = set(extendedConfigDataBackend.config_getIdents(returnType='unicode'))
+	configIdents = set(extendedConfigDataBackend.config_getIdents(returnType="unicode"))
 
 	assert configId in configIdents
 
@@ -107,56 +108,98 @@ def testAddingDynamicClientConfigDepotDrive(test_data_path, extendedConfigDataBa
 
 	This makes sure that old configs are updated aswell.
 	"""
-	extendedConfigDataBackend.config_delete(id=['clientconfig.depot.drive'])
+	extendedConfigDataBackend.config_delete(id=["clientconfig.depot.drive"])
 
 	oldConfig = UnicodeConfig(
-		id='clientconfig.depot.drive',
-		description='Drive letter for depot share',
+		id="clientconfig.depot.drive",
+		description="Drive letter for depot share",
 		possibleValues=[
-			'c:', 'd:', 'e:', 'f:', 'g:', 'h:', 'i:', 'j:',
-			'k:', 'l:', 'm:', 'n:', 'o:', 'p:', 'q:', 'r:',
-			's:', 't:', 'u:', 'v:', 'w:', 'x:', 'y:', 'z:',
+			"c:",
+			"d:",
+			"e:",
+			"f:",
+			"g:",
+			"h:",
+			"i:",
+			"j:",
+			"k:",
+			"l:",
+			"m:",
+			"n:",
+			"o:",
+			"p:",
+			"q:",
+			"r:",
+			"s:",
+			"t:",
+			"u:",
+			"v:",
+			"w:",
+			"x:",
+			"y:",
+			"z:",
 		],
-		defaultValues=['p:'],
+		defaultValues=["p:"],
 		editable=False,
-		multiValue=False
+		multiValue=False,
 	)
 	extendedConfigDataBackend.config_createObjects([oldConfig])
 
-	sambaTestConfig = os.path.join(test_data_path, 'util', 'task', 'smb.conf')
+	sambaTestConfig = os.path.join(test_data_path, "util", "task", "smb.conf")
 	confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
-	config = extendedConfigDataBackend.config_getObjects(id='clientconfig.depot.drive')[0]
-	assert 'dynamic' in config.possibleValues
+	config = extendedConfigDataBackend.config_getObjects(id="clientconfig.depot.drive")[0]
+	assert "dynamic" in config.possibleValues
 
 
 def testAddingDynamicClientConfigDepotDriveKeepsOldDefault(test_data_path, extendedConfigDataBackend):
 	"""
 	Adding the new property should keep the old defaults.
 	"""
-	sambaTestConfig = os.path.join(test_data_path, 'util', 'task', 'smb.conf')
+	sambaTestConfig = os.path.join(test_data_path, "util", "task", "smb.conf")
 	confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
-	extendedConfigDataBackend.config_delete(id=['clientconfig.depot.drive'])
+	extendedConfigDataBackend.config_delete(id=["clientconfig.depot.drive"])
 	oldConfig = UnicodeConfig(
-		id='clientconfig.depot.drive',
-		description='Drive letter for depot share',
+		id="clientconfig.depot.drive",
+		description="Drive letter for depot share",
 		possibleValues=[
-			'c:', 'd:', 'e:', 'f:', 'g:', 'h:', 'i:', 'j:',
-			'k:', 'l:', 'm:', 'n:', 'o:', 'p:', 'q:', 'r:',
-			's:', 't:', 'u:', 'v:', 'w:', 'x:', 'y:', 'z:',
+			"c:",
+			"d:",
+			"e:",
+			"f:",
+			"g:",
+			"h:",
+			"i:",
+			"j:",
+			"k:",
+			"l:",
+			"m:",
+			"n:",
+			"o:",
+			"p:",
+			"q:",
+			"r:",
+			"s:",
+			"t:",
+			"u:",
+			"v:",
+			"w:",
+			"x:",
+			"y:",
+			"z:",
 		],
-		defaultValues=['n:'],
+		defaultValues=["n:"],
 		editable=False,
-		multiValue=False
+		multiValue=False,
 	)
 	extendedConfigDataBackend.config_createObjects([oldConfig])
 
-	sambaTestConfig = os.path.join(test_data_path, 'util', 'task', 'smb.conf')
+	sambaTestConfig = os.path.join(test_data_path, "util", "task", "smb.conf")
 	confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
-	config = extendedConfigDataBackend.config_getObjects(id='clientconfig.depot.drive')[0]
-	assert ['n:'] == config.defaultValues
+	config = extendedConfigDataBackend.config_getObjects(id="clientconfig.depot.drive")[0]
+	assert ["n:"] == config.defaultValues
 
 
 def testAddingWANConfigs(extendedConfigDataBackend):
@@ -190,44 +233,44 @@ def testAddingInstallByShutdownConfig(extendedConfigDataBackend):
 def testAddingClientconfigDepotUser(test_data_path, extendedConfigDataBackend, useSamba):
 	sambaTestConfig = "/none"
 	if useSamba:
-		sambaTestConfig = os.path.join(test_data_path, 'util', 'task', 'smb.conf')
+		sambaTestConfig = os.path.join(test_data_path, "util", "task", "smb.conf")
 
 	confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
-	configs = extendedConfigDataBackend.config_getHashes(id='clientconfig.depot.user')
+	configs = extendedConfigDataBackend.config_getHashes(id="clientconfig.depot.user")
 	assert len(configs) == 1
 	config = configs[0]
 
-	assert len(config['defaultValues']) == 1
-	defaultValues = config['defaultValues'][0]
+	assert len(config["defaultValues"]) == 1
+	defaultValues = config["defaultValues"][0]
 	if useSamba:
-		assert 'WWWORK\\pcpatch' in defaultValues
+		assert "WWWORK\\pcpatch" in defaultValues
 	else:
-		assert 'pcpatch' in defaultValues
+		assert "pcpatch" in defaultValues
 
 
 def testAddingConfigsBasedOnConfigServer(test_data_path, extendedConfigDataBackend):
-	sambaTestConfig = os.path.join(test_data_path, 'util', 'task', 'smb.conf')
+	sambaTestConfig = os.path.join(test_data_path, "util", "task", "smb.conf")
 	configServer = getConfigServer()
-	configServer.ipAddress = '12.34.56.78'
+	configServer.ipAddress = "12.34.56.78"
 
 	confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig, configServer=configServer)
 
-	configIdents = set(extendedConfigDataBackend.config_getIdents(returnType='unicode'))
-	expectedConfigIDs = ['clientconfig.configserver.url', 'clientconfig.depot.id']
+	configIdents = set(extendedConfigDataBackend.config_getIdents(returnType="unicode"))
+	expectedConfigIDs = ["clientconfig.configserver.url", "clientconfig.depot.id"]
 
 	for cId in expectedConfigIDs:
 		assert cId in configIdents
 
-	urlConfig = extendedConfigDataBackend.config_getObjects(id='clientconfig.configserver.url')[0]
+	urlConfig = extendedConfigDataBackend.config_getObjects(id="clientconfig.configserver.url")[0]
 	assert 1 == len(urlConfig.defaultValues)
 	value = urlConfig.defaultValues[0]
-	assert value.endswith('/rpc')
-	assert value.startswith('https://')
-	assert configServer.ipAddress in value
+	assert value.endswith("/rpc")
+	assert value.startswith("https://")
+	assert configServer.id in value
 	assert urlConfig.editable
 
-	depotConfig = extendedConfigDataBackend.config_getObjects(id='clientconfig.depot.id')[0]
+	depotConfig = extendedConfigDataBackend.config_getObjects(id="clientconfig.depot.id")[0]
 	assert 1 == len(depotConfig.defaultValues)
 	assert configServer.id == depotConfig.defaultValues[0]
 	assert configServer.id == depotConfig.possibleValues[0]
@@ -235,24 +278,15 @@ def testAddingConfigsBasedOnConfigServer(test_data_path, extendedConfigDataBacke
 	assert depotConfig.editable
 
 
-def testAddingConfigBasedOnConfigServerFailsIfServerMissesIP(test_data_path, extendedConfigDataBackend):
-	sambaTestConfig = os.path.join(test_data_path, 'util', 'task', 'smb.conf')
-	configServer = getConfigServer()
-	configServer.ipAddress = None
-
-	with pytest.raises(Exception):
-		confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig, configServer=configServer)
-
-
 def testConfigsAreOnlyAddedOnce(test_data_path, extendedConfigDataBackend):
-	sambaTestConfig = os.path.join(test_data_path, 'util', 'task', 'smb.conf')
+	sambaTestConfig = os.path.join(test_data_path, "util", "task", "smb.conf")
 	confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
 
-	configIdentsFirst = extendedConfigDataBackend.config_getIdents(returnType='unicode')
+	configIdentsFirst = extendedConfigDataBackend.config_getIdents(returnType="unicode")
 	configIdentsFirst.sort()
 
 	confData.initializeConfigs(backend=extendedConfigDataBackend, pathToSMBConf=sambaTestConfig)
-	configIdentsSecond = extendedConfigDataBackend.config_getIdents(returnType='unicode')
+	configIdentsSecond = extendedConfigDataBackend.config_getIdents(returnType="unicode")
 	configIdentsSecond.sort()
 
 	assert configIdentsFirst == configIdentsSecond
@@ -260,12 +294,12 @@ def testConfigsAreOnlyAddedOnce(test_data_path, extendedConfigDataBackend):
 
 
 def testReadingDomainFromUCR():
-	with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.which', lambda x: '/no/real/path/ucr'):
-		with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.execute', lambda x: ['sharpdressed']):
-			assert 'SHARPDRESSED' == confData.readWindowsDomainFromUCR()
+	with mock.patch("OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.which", lambda x: "/no/real/path/ucr"):
+		with mock.patch("OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.execute", lambda x: ["sharpdressed"]):
+			assert "SHARPDRESSED" == confData.readWindowsDomainFromUCR()
 
 
 def testReadingDomainFromUCRReturnEmptyStringOnProblem():
-	failingWhich = mock.Mock(side_effect=CommandNotFoundException('Whoops.'))
-	with mock.patch('OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.which', failingWhich):
-		assert '' == confData.readWindowsDomainFromUCR()
+	failingWhich = mock.Mock(side_effect=CommandNotFoundException("Whoops."))
+	with mock.patch("OPSI.Util.Task.ConfigureBackend.ConfigurationData.Posix.which", failingWhich):
+		assert "" == confData.readWindowsDomainFromUCR()
