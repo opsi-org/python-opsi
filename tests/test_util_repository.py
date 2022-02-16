@@ -143,7 +143,7 @@ def test_limit_download(tmpdir, repo_type, dynamic):
 			if simulate_other_traffic:
 				assert (
 					repo.speed_limiter._dynamic_bandwidth_limit / bandwidth  # pylint: disable=protected-access
-				) <= repo.speed_limiter._dynamic_bandwidth_limit_rate * 1.5  # pylint: disable=protected-access
+				) <= repo.speed_limiter._dynamic_bandwidth_limit_rate * 2  # pylint: disable=protected-access
 			else:
 				assert repo.speed_limiter._dynamic_bandwidth_limit == 0  # pylint: disable=protected-access
 		return bandwidth
