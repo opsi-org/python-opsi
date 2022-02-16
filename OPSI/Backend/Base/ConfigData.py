@@ -23,23 +23,45 @@ from opsicommon.logging import logger, secret_filter
 from opsicommon.license import get_default_opsi_license_pool
 
 from OPSI.Config import OPSI_ADMIN_GROUP
-from OPSI.Exceptions import (
-	BackendBadValueError, BackendMissingDataError,
-	BackendReferentialIntegrityError, BackendModuleDisabledError
-)
+from OPSI.Exceptions import BackendBadValueError, BackendMissingDataError, BackendReferentialIntegrityError, BackendModuleDisabledError
 from OPSI.Types import (
-	forceFilename, forceHostId, forceInt, forceLanguageCode,
-	forceObjectClass, forceObjectClassList, forceObjectId, forceUnicode,
-	forceUnicodeList, forceUnicodeLower, forceBool
+	forceFilename,
+	forceHostId,
+	forceInt,
+	forceLanguageCode,
+	forceObjectClass,
+	forceObjectClassList,
+	forceObjectId,
+	forceUnicode,
+	forceUnicodeList,
+	forceUnicodeLower,
+	forceBool,
 )
 from OPSI.Object import (
 	getPossibleClassAttributes,
-	AuditSoftware, AuditSoftwareOnClient, AuditSoftwareToLicensePool,
-	AuditHardware, AuditHardwareOnHost, Config, ConfigState, Group, Host,
-	LicenseContract, LicenseOnClient, LicensePool, ObjectToGroup, OpsiClient,
-	OpsiDepotserver, Product, ProductDependency, ProductOnDepot,
-	ProductOnClient, ProductProperty, ProductPropertyState, SoftwareLicense,
-	SoftwareLicenseToLicensePool
+	AuditSoftware,
+	AuditSoftwareOnClient,
+	AuditSoftwareToLicensePool,
+	AuditHardware,
+	AuditHardwareOnHost,
+	Config,
+	ConfigState,
+	Group,
+	Host,
+	LicenseContract,
+	LicenseOnClient,
+	LicensePool,
+	ObjectToGroup,
+	OpsiClient,
+	OpsiDepotserver,
+	Product,
+	ProductDependency,
+	ProductOnDepot,
+	ProductOnClient,
+	ProductProperty,
+	ProductPropertyState,
+	SoftwareLicense,
+	SoftwareLicenseToLicensePool,
 )
 from OPSI.Util import blowfishEncrypt, blowfishDecrypt, getfqdn
 from OPSI.Util.File import ConfigFile
@@ -48,19 +70,19 @@ from OPSI.Util.Log import truncateLogData
 from .Backend import Backend
 
 
-__all__ = ('ConfigDataBackend', )
+__all__ = ("ConfigDataBackend",)
 
-OPSI_PASSWD_FILE = '/etc/opsi/passwd'
-LOG_DIR = '/var/log/opsi'
+OPSI_PASSWD_FILE = "/etc/opsi/passwd"
+LOG_DIR = "/var/log/opsi"
 LOG_TYPES = {  # key = logtype, value = requires objectId for read
-	'bootimage': True,
-	'clientconnect': True,
-	'instlog': True,
-	'opsiconfd': False,
-	'userlogin': True,
-	'winpe': True,
+	"bootimage": True,
+	"clientconnect": True,
+	"instlog": True,
+	"opsiconfd": False,
+	"userlogin": True,
+	"winpe": True,
 }
-_PASSWD_LINE_REGEX = re.compile(r'^\s*([^:]+)\s*:\s*(\S+)\s*$')
+_PASSWD_LINE_REGEX = re.compile(r"^\s*([^:]+)\s*:\s*(\S+)\s*$")
 OPSI_HARDWARE_CLASSES = []
 
 DEFAULT_MAX_LOG_SIZE = 5000000
@@ -75,12 +97,7 @@ class ConfigDataBackend(Backend):  # pylint: disable=too-many-public-methods
 	These backends should keep data integrity intact but not alter the data.
 	"""
 
-	option_defaults = {
-		**Backend.option_defaults,
-		**{
-			'additionalReferentialIntegrityChecks': True
-		}
-	}
+	option_defaults = {**Backend.option_defaults, **{"additionalReferentialIntegrityChecks": True}}
 
 	def __init__(self, **kwargs):
 		"""
@@ -97,8 +114,8 @@ containing the localisation of the hardware audit.
 		:param keeprotatedlogs: Maximum size of a logfile.
 		"""
 		Backend.__init__(self, **kwargs)
-		self._auditHardwareConfigFile = '/etc/opsi/hwaudit/opsihwaudit.conf'
-		self._auditHardwareConfigLocalesDir = '/etc/opsi/hwaudit/locales'
+		self._auditHardwareConfigFile = "/etc/opsi/hwaudit/opsihwaudit.conf"
+		self._auditHardwareConfigLocalesDir = "/etc/opsi/hwaudit/locales"
 		self._opsiPasswdFile = OPSI_PASSWD_FILE
 		self._max_log_size = DEFAULT_MAX_LOG_SIZE
 		self._keep_rotated_logs = DEFAULT_KEEP_ROTATED_LOGS
@@ -106,17 +123,17 @@ containing the localisation of the hardware audit.
 
 		for (option, value) in kwargs.items():
 			option = option.lower().replace("_", "")
-			if option == 'audithardwareconfigfile':
+			if option == "audithardwareconfigfile":
 				self._auditHardwareConfigFile = forceFilename(value)
-			elif option == 'audithardwareconfiglocalesdir':
+			elif option == "audithardwareconfiglocalesdir":
 				self._auditHardwareConfigLocalesDir = forceFilename(value)
-			elif option == 'opsipasswdfile':
+			elif option == "opsipasswdfile":
 				self._opsiPasswdFile = forceFilename(value)
-			elif option in ('depotid', 'serverid'):
+			elif option in ("depotid", "serverid"):
 				self._depotId = value
-			elif option == 'maxlogsize':
+			elif option == "maxlogsize":
 				self._max_log_size = forceInt(value)
-			elif option == 'keeprotatedlogs':
+			elif option == "keeprotatedlogs":
 				self._keep_rotated_logs = forceInt(value)
 
 		if not self._depotId:
@@ -171,13 +188,7 @@ containing the localisation of the hardware audit.
 
 		:rtype: dict
 		"""
-		return {
-			"log": {
-				"size_limit": self._max_log_size,
-				"keep_rotated": self._keep_rotated_logs,
-				"types": list(LOG_TYPES)
-			}
-		}
+		return {"log": {"size_limit": self._max_log_size, "keep_rotated": self._keep_rotated_logs, "types": list(LOG_TYPES)}}
 
 	def getOpsiCACert(self) -> str:  # pylint: disable=invalid-name,no-self-use
 		return None
@@ -188,26 +199,17 @@ containing the localisation of the hardware audit.
 
 	def _get_client_info(self):
 		logger.info("%s fetching client info", self)
-		_all = len(self.host_getObjects(attributes=['id'], type='OpsiClient'))
-		macos = len(self.productOnClient_getObjects(
-			attributes=['clientId'], installationStatus="installed", productId="opsi-mac-client-agent")
+		_all = len(self.host_getObjects(attributes=["id"], type="OpsiClient"))
+		macos = len(
+			self.productOnClient_getObjects(attributes=["clientId"], installationStatus="installed", productId="opsi-mac-client-agent")
 		)
-		linux = len(self.productOnClient_getObjects(
-			attributes=['clientId'], installationStatus="installed", productId="opsi-linux-client-agent")
+		linux = len(
+			self.productOnClient_getObjects(attributes=["clientId"], installationStatus="installed", productId="opsi-linux-client-agent")
 		)
-		return {
-			"macos": macos,
-			"linux": linux,
-			"windows": _all - macos - linux
-		}
+		return {"macos": macos, "linux": linux, "windows": _all - macos - linux}
 
 	@lru_cache(maxsize=10)
-	def _get_licensing_info(
-		self,
-		licenses: bool = False,
-		legacy_modules: bool = False,
-		dates: bool = False
-	):
+	def _get_licensing_info(self, licenses: bool = False, legacy_modules: bool = False, dates: bool = False):
 		"""
 		Returns opsi licensing information.
 		"""
@@ -229,14 +231,14 @@ containing the localisation of the hardware audit.
 			license_file_path=self._opsi_license_path,
 			modules_file_path=self._opsiModulesFile,
 			client_info=self._get_client_info,
-			**warning_limits
+			**warning_limits,
 		)
+		modules = pool.get_modules()
 		info = {
 			"client_numbers": pool.client_numbers,
-			"available_modules": [
-				module_id for module_id, info in pool.get_modules().items() if info["available"]
-			],
-			"licenses_checksum": pool.get_licenses_checksum()
+			"available_modules": [module_id for module_id, info in modules.items() if info["available"]],
+			"modules": modules,
+			"licenses_checksum": pool.get_licenses_checksum(),
 		}
 		if licenses:
 			licenses = pool.get_licenses()
@@ -246,31 +248,18 @@ containing the localisation of the hardware audit.
 		if dates:
 			info["dates"] = {}
 			for at_date in pool.get_relevant_dates():
-				info["dates"][str(at_date)] = {
-					"modules": pool.get_modules(at_date=at_date)
-				}
+				info["dates"][str(at_date)] = {"modules": pool.get_modules(at_date=at_date)}
 		return info
 
-	def backend_getLicensingInfo(
-		self,
-		licenses: bool = False,
-		legacy_modules: bool = False,
-		dates: bool = False
-	):
+	def backend_getLicensingInfo(self, licenses: bool = False, legacy_modules: bool = False, dates: bool = False):
 		pool = get_default_opsi_license_pool(
-			license_file_path=self._opsi_license_path,
-			modules_file_path=self._opsiModulesFile,
-			client_info=self._get_client_info
+			license_file_path=self._opsi_license_path, modules_file_path=self._opsiModulesFile, client_info=self._get_client_info
 		)
 		if pool.modified():
 			pool.load()
 			self._get_licensing_info.cache_clear()
 
-		return self._get_licensing_info(
-			licenses=licenses,
-			legacy_modules=legacy_modules,
-			dates=dates
-		)
+		return self._get_licensing_info(licenses=licenses, legacy_modules=legacy_modules, dates=dates)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Logs                                                                                      -
@@ -300,10 +289,10 @@ overwrite the log.
 
 		data = data.encode("utf-8", "replace")
 		if len(data) > LOG_SIZE_HARD_LIMIT:
-			data = data[-1 * LOG_SIZE_HARD_LIMIT:]
+			data = data[-1 * LOG_SIZE_HARD_LIMIT :]
 			idx = data.find(b"\n")
 			if idx > 0:
-				data = data[idx + 1:]
+				data = data[idx + 1 :]
 
 		log_file = os.path.join(LOG_DIR, logType, f"{objectId}.log")
 
@@ -371,14 +360,14 @@ Setting this to `0` disables limiting.
 		else:
 			if LOG_TYPES[logType]:
 				raise BackendBadValueError(f"Log type '{logType}' requires objectId")
-			log_file = os.path.join(LOG_DIR, logType, 'opsiconfd.log')
+			log_file = os.path.join(LOG_DIR, logType, "opsiconfd.log")
 
 		try:
-			with codecs.open(log_file, 'r', 'utf-8', 'replace') as log:
+			with codecs.open(log_file, "r", "utf-8", "replace") as log:
 				data = log.read()
 		except IOError as ioerr:
 			if ioerr.errno == 2:  # This is "No such file or directory"
-				return ''
+				return ""
 			raise
 
 		if len(data) > maxSize > 0:
@@ -389,7 +378,7 @@ Setting this to `0` disables limiting.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Users                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def user_getCredentials(self, username='pcpatch', hostId=None):
+	def user_getCredentials(self, username="pcpatch", hostId=None):
 		"""
 		Get the credentials of an opsi user.
 		The information is stored in ``/etc/opsi/passwd``.
@@ -404,7 +393,7 @@ the opsi host key.
 		if hostId:
 			hostId = forceHostId(hostId)
 
-		result = {'password': '', 'rsaPrivateKey': ''}
+		result = {"password": "", "rsaPrivateKey": ""}
 
 		cf = ConfigFile(filename=self._opsiPasswdFile)
 		for line in cf.parse():
@@ -413,10 +402,10 @@ the opsi host key.
 				continue
 
 			if match.group(1) == username:
-				result['password'] = match.group(2)
+				result["password"] = match.group(2)
 				break
 
-		if not result['password']:
+		if not result["password"]:
 			raise BackendMissingDataError(f"Username '{username}' not found in '{self._opsiPasswdFile}'")
 
 		depot = self.host_getObjects(id=self._depotId)
@@ -426,14 +415,15 @@ the opsi host key.
 		if not depot.opsiHostKey:
 			raise BackendMissingDataError(f"Host key for depot '{self._depotId}' not found")
 
-		result['password'] = blowfishDecrypt(depot.opsiHostKey, result['password'])
+		result["password"] = blowfishDecrypt(depot.opsiHostKey, result["password"])
 
-		if username == 'pcpatch':
+		if username == "pcpatch":
 			try:
 				import pwd  # pylint: disable=import-outside-toplevel
-				idRsa = os.path.join(pwd.getpwnam(username)[5], '.ssh', 'id_rsa')
+
+				idRsa = os.path.join(pwd.getpwnam(username)[5], ".ssh", "id_rsa")
 				with open(idRsa, encoding="utf-8") as file:
-					result['rsaPrivateKey'] = file.read()
+					result["rsaPrivateKey"] = file.read()
 			except Exception as err:  # pylint: disable=broad-except
 				logger.debug(err)
 
@@ -444,9 +434,9 @@ the opsi host key.
 			except IndexError as err:
 				raise BackendMissingDataError(f"Host '{hostId}' not found in backend") from err
 
-			result['password'] = blowfishEncrypt(host.opsiHostKey, result['password'])
-			if result['rsaPrivateKey']:
-				result['rsaPrivateKey'] = blowfishEncrypt(host.opsiHostKey, result['rsaPrivateKey'])
+			result["password"] = blowfishEncrypt(host.opsiHostKey, result["password"])
+			if result["rsaPrivateKey"]:
+				result["rsaPrivateKey"] = blowfishEncrypt(host.opsiHostKey, result["rsaPrivateKey"])
 
 		return result
 
@@ -482,8 +472,8 @@ depot where the method is.
 		except FileNotFoundError:
 			pass
 
-		lines.append(f'{username}:{encodedPassword}')
-		cf.open('w')
+		lines.append(f"{username}:{encodedPassword}")
+		cf.open("w")
 		cf.writelines(lines)
 		cf.close()
 
@@ -507,51 +497,30 @@ depot where the method is.
 	def host_deleteObjects(self, hosts):
 		for host in forceObjectClassList(hosts, Host):
 			# Remove from groups
-			self._context.objectToGroup_deleteObjects(
-				self._context.objectToGroup_getObjects(
-					groupType='HostGroup',
-					objectId=host.id
-				)
-			)
+			self._context.objectToGroup_deleteObjects(self._context.objectToGroup_getObjects(groupType="HostGroup", objectId=host.id))
 
 			if isinstance(host, OpsiClient):
 				# Remove product states
-				self._context.productOnClient_deleteObjects(
-					self._context.productOnClient_getObjects(clientId=host.id)
-				)
+				self._context.productOnClient_deleteObjects(self._context.productOnClient_getObjects(clientId=host.id))
 			elif isinstance(host, OpsiDepotserver):
 				# This is also true for OpsiConfigservers
 				# Remove products
-				self._context.productOnDepot_deleteObjects(
-					self._context.productOnDepot_getObjects(depotId=host.id)
-				)
+				self._context.productOnDepot_deleteObjects(self._context.productOnDepot_getObjects(depotId=host.id))
 			# Remove product property states
-			self._context.productPropertyState_deleteObjects(
-				self._context.productPropertyState_getObjects(objectId=host.id)
-			)
+			self._context.productPropertyState_deleteObjects(self._context.productPropertyState_getObjects(objectId=host.id))
 			# Remove config states
-			self._context.configState_deleteObjects(
-				self._context.configState_getObjects(objectId=host.id)
-			)
+			self._context.configState_deleteObjects(self._context.configState_getObjects(objectId=host.id))
 
 			if isinstance(host, OpsiClient):
 				# Remove audit softwares
-				self._context.auditSoftwareOnClient_deleteObjects(
-					self._context.auditSoftwareOnClient_getObjects(
-						clientId=host.id
-					)
-				)
+				self._context.auditSoftwareOnClient_deleteObjects(self._context.auditSoftwareOnClient_getObjects(clientId=host.id))
 
 			# Remove audit hardwares
-			self._context.auditHardwareOnHost_deleteObjects(
-				self._context.auditHardwareOnHost_getObjects(hostId=host.id)
-			)
+			self._context.auditHardwareOnHost_deleteObjects(self._context.auditHardwareOnHost_getObjects(hostId=host.id))
 
 			if isinstance(host, OpsiClient):
 				# Free software licenses
-				self._context.licenseOnClient_deleteObjects(
-					self._context.licenseOnClient_getObjects(clientId=host.id)
-				)
+				self._context.licenseOnClient_deleteObjects(self._context.licenseOnClient_getObjects(clientId=host.id))
 
 				softwareLicenses = self._context.softwareLicense_getObjects(boundToHost=host.id)
 				softwareLicenses = softwareLicenses or []
@@ -583,12 +552,7 @@ depot where the method is.
 		ids = [config.id for config in forceObjectClassList(configs, Config)]
 
 		if ids:
-			self._context.configState_deleteObjects(
-				self._context.configState_getObjects(
-					configId=ids,
-					objectId=[]
-				)
-			)
+			self._context.configState_deleteObjects(self._context.configState_getObjects(configId=ids, objectId=[]))
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates                                                                              -
@@ -597,8 +561,8 @@ depot where the method is.
 		configState = forceObjectClass(configState, ConfigState)
 		configState.setDefaults()
 
-		if self._options['additionalReferentialIntegrityChecks']:
-			configIds = [config.id for config in self._context.config_getObjects(attributes=['id'])]
+		if self._options["additionalReferentialIntegrityChecks"]:
+			configIds = [config.id for config in self._context.config_getObjects(attributes=["id"])]
 
 			if configState.configId not in configIds:
 				raise BackendReferentialIntegrityError(f"Config with id '{configState.configId}' not found")
@@ -640,29 +604,23 @@ depot where the method is.
 
 			self._context.productProperty_deleteObjects(
 				self._context.productProperty_getObjects(
-					productId=product.id,
-					productVersion=product.productVersion,
-					packageVersion=product.packageVersion
+					productId=product.id, productVersion=product.productVersion, packageVersion=product.packageVersion
 				)
 			)
 			self._context.productDependency_deleteObjects(
 				self._context.productDependency_getObjects(
-					productId=product.id,
-					productVersion=product.productVersion,
-					packageVersion=product.packageVersion
+					productId=product.id, productVersion=product.productVersion, packageVersion=product.packageVersion
 				)
 			)
 			self._context.productOnDepot_deleteObjects(
 				self._context.productOnDepot_getObjects(
-					productId=product.id,
-					productVersion=product.productVersion,
-					packageVersion=product.packageVersion
+					productId=product.id, productVersion=product.productVersion, packageVersion=product.packageVersion
 				)
 			)
 
 		for (productId, versions) in productByIdAndVersion.items():
 			allProductVersWillBeDeleted = True
-			for product in self._context.product_getObjects(attributes=['id', 'productVersion', 'packageVersion'], id=productId):
+			for product in self._context.product_getObjects(attributes=["id", "productVersion", "packageVersion"], id=productId):
 				if product.packageVersion not in versions.get(product.productVersion, []):
 					allProductVersWillBeDeleted = False
 					break
@@ -671,18 +629,9 @@ depot where the method is.
 				continue
 
 			# Remove from groups, when allProductVerionsWillBeDelted
-			self._context.objectToGroup_deleteObjects(
-				self._context.objectToGroup_getObjects(
-					groupType='ProductGroup',
-					objectId=productId
-				)
-			)
-			self._context.productOnClient_deleteObjects(
-				self._context.productOnClient_getObjects(productId=productId)
-			)
-			self._context.productPropertyState_deleteObjects(
-				self._context.productPropertyState_getObjects(productId=productId)
-			)
+			self._context.objectToGroup_deleteObjects(self._context.objectToGroup_getObjects(groupType="ProductGroup", objectId=productId))
+			self._context.productOnClient_deleteObjects(self._context.productOnClient_getObjects(productId=productId))
+			self._context.productPropertyState_deleteObjects(self._context.productPropertyState_getObjects(productId=productId))
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties                                                                         -
@@ -691,12 +640,12 @@ depot where the method is.
 		productProperty = forceObjectClass(productProperty, ProductProperty)
 		productProperty.setDefaults()
 
-		if self._options['additionalReferentialIntegrityChecks']:
+		if self._options["additionalReferentialIntegrityChecks"]:
 			if not self._context.product_getObjects(
-				attributes=['id', 'productVersion', 'packageVersion'],
+				attributes=["id", "productVersion", "packageVersion"],
 				id=productProperty.productId,
 				productVersion=productProperty.productVersion,
-				packageVersion=productProperty.packageVersion
+				packageVersion=productProperty.packageVersion,
 			):
 				raise BackendReferentialIntegrityError(
 					f"Product with id '{productProperty.productId}', "
@@ -725,12 +674,12 @@ depot where the method is.
 		productDependency.setDefaults()
 		if not productDependency.getRequiredAction() and not productDependency.getRequiredInstallationStatus():
 			raise BackendBadValueError("Either a required action or a required installation status must be given")
-		if self._options['additionalReferentialIntegrityChecks']:
+		if self._options["additionalReferentialIntegrityChecks"]:
 			if not self._context.product_getObjects(
-				attributes=['id', 'productVersion', 'packageVersion'],
+				attributes=["id", "productVersion", "packageVersion"],
 				id=productDependency.productId,
 				productVersion=productDependency.productVersion,
-				packageVersion=productDependency.packageVersion
+				packageVersion=productDependency.packageVersion,
 			):
 				raise BackendReferentialIntegrityError(
 					f"Product with id '{productDependency.productId}', "
@@ -758,12 +707,13 @@ depot where the method is.
 		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 		productOnDepot.setDefaults()
 
-		if self._options['additionalReferentialIntegrityChecks']:
+		if self._options["additionalReferentialIntegrityChecks"]:
 			if not self._context.product_getObjects(
-				attributes=['id', 'productVersion', 'packageVersion'],
+				attributes=["id", "productVersion", "packageVersion"],
 				id=productOnDepot.productId,
 				productVersion=productOnDepot.productVersion,
-				packageVersion=productOnDepot.packageVersion):
+				packageVersion=productOnDepot.packageVersion,
+			):
 
 				raise BackendReferentialIntegrityError(
 					f"Product with id '{productOnDepot.productId}', "
@@ -774,12 +724,13 @@ depot where the method is.
 	def productOnDepot_updateObject(self, productOnDepot):
 		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 
-		if self._options['additionalReferentialIntegrityChecks']:
+		if self._options["additionalReferentialIntegrityChecks"]:
 			if not self._context.product_getObjects(
-				attributes=['id', 'productVersion', 'packageVersion'],
+				attributes=["id", "productVersion", "packageVersion"],
 				id=productOnDepot.productId,
 				productVersion=productOnDepot.productVersion,
-				packageVersion=productOnDepot.packageVersion):
+				packageVersion=productOnDepot.packageVersion,
+			):
 
 				raise BackendReferentialIntegrityError(
 					f"Product with id '{productOnDepot.productId}', "
@@ -804,13 +755,15 @@ depot where the method is.
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		productOnClient.setDefaults()
 
-		if (productOnClient.installationStatus == 'installed') and (not productOnClient.productVersion or not productOnClient.packageVersion):
+		if (productOnClient.installationStatus == "installed") and (
+			not productOnClient.productVersion or not productOnClient.packageVersion
+		):
 			raise BackendReferentialIntegrityError(
 				f"Cannot set installationStatus for product '{productOnClient.productId}'"
 				f", client '{productOnClient.clientId}' to 'installed' without productVersion and packageVersion"
 			)
 
-		if productOnClient.installationStatus != 'installed':
+		if productOnClient.installationStatus != "installed":
 			productOnClient.productVersion = None
 			productOnClient.packageVersion = None
 
@@ -834,11 +787,10 @@ depot where the method is.
 		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 		productPropertyState.setDefaults()
 
-		if self._options['additionalReferentialIntegrityChecks']:
+		if self._options["additionalReferentialIntegrityChecks"]:
 			if not self._context.productProperty_getObjects(
-				attributes=['productId', 'propertyId'],
-				productId=productPropertyState.productId,
-				propertyId=productPropertyState.propertyId):
+				attributes=["productId", "propertyId"], productId=productPropertyState.productId, propertyId=productPropertyState.propertyId
+			):
 
 				raise BackendReferentialIntegrityError(
 					f"ProductProperty with id '{productPropertyState.propertyId}' "
@@ -865,11 +817,9 @@ depot where the method is.
 		group = forceObjectClass(group, Group)
 		group.setDefaults()
 
-		if self._options['additionalReferentialIntegrityChecks']:
-			if group.parentGroupId and not self._context.group_getObjects(attributes=['id'], id=group.parentGroupId):
-				raise BackendReferentialIntegrityError(
-					f"Parent group '{group.parentGroupId}' of group '{group.id}' not found"
-				)
+		if self._options["additionalReferentialIntegrityChecks"]:
+			if group.parentGroupId and not self._context.group_getObjects(attributes=["id"], id=group.parentGroupId):
+				raise BackendReferentialIntegrityError(f"Parent group '{group.parentGroupId}' of group '{group.id}' not found")
 
 	def group_updateObject(self, group):  # pylint: disable=no-self-use
 		group = forceObjectClass(group, Group)
@@ -883,10 +833,7 @@ depot where the method is.
 
 	def group_deleteObjects(self, groups):
 		for group in forceObjectClassList(groups, Group):
-			matchingMappings = self._context.objectToGroup_getObjects(
-				groupType=group.getType(),
-				groupId=group.id
-			)
+			matchingMappings = self._context.objectToGroup_getObjects(groupType=group.getType(), groupId=group.id)
 			self._context.objectToGroup_deleteObjects(matchingMappings)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -938,11 +885,9 @@ depot where the method is.
 		if not softwareLicense.licenseContractId:
 			raise BackendBadValueError("License contract missing")
 
-		if self._options['additionalReferentialIntegrityChecks']:
-			if not self._context.licenseContract_getObjects(attributes=['id'], id=softwareLicense.licenseContractId):
-				raise BackendReferentialIntegrityError(
-					f"License contract with id '{softwareLicense.licenseContractId}' not found"
-				)
+		if self._options["additionalReferentialIntegrityChecks"]:
+			if not self._context.licenseContract_getObjects(attributes=["id"], id=softwareLicense.licenseContractId):
+				raise BackendReferentialIntegrityError(f"License contract with id '{softwareLicense.licenseContractId}' not found")
 
 	def softwareLicense_updateObject(self, softwareLicense):  # pylint: disable=no-self-use
 		softwareLicense = forceObjectClass(softwareLicense, SoftwareLicense)
@@ -958,9 +903,7 @@ depot where the method is.
 		softwareLicenseIds = [softwareLicense.id for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense)]
 
 		self._context.softwareLicenseToLicensePool_deleteObjects(
-			self._context.softwareLicenseToLicensePool_getObjects(
-				softwareLicenseId=softwareLicenseIds
-			)
+			self._context.softwareLicenseToLicensePool_getObjects(softwareLicenseId=softwareLicenseIds)
 		)
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -993,12 +936,7 @@ depot where the method is.
 
 			self._context.auditSoftwareToLicensePool_deleteObjects(
 				self._context.auditSoftwareToLicensePool_getObjects(
-					name=[],
-					version=[],
-					subVersion=[],
-					language=[],
-					architecture=[],
-					licensePoolId=licensePoolIds
+					name=[], version=[], subVersion=[], language=[], architecture=[], licensePoolId=licensePoolIds
 				)
 			)
 
@@ -1009,15 +947,13 @@ depot where the method is.
 		softwareLicenseToLicensePool = forceObjectClass(softwareLicenseToLicensePool, SoftwareLicenseToLicensePool)
 		softwareLicenseToLicensePool.setDefaults()
 
-		if self._options['additionalReferentialIntegrityChecks']:
-			if not self._context.softwareLicense_getObjects(attributes=['id'], id=softwareLicenseToLicensePool.softwareLicenseId):
+		if self._options["additionalReferentialIntegrityChecks"]:
+			if not self._context.softwareLicense_getObjects(attributes=["id"], id=softwareLicenseToLicensePool.softwareLicenseId):
 				raise BackendReferentialIntegrityError(
 					f"Software license with id '{softwareLicenseToLicensePool.softwareLicenseId}' not found"
 				)
-			if not self._context.licensePool_getObjects(attributes=['id'], id=softwareLicenseToLicensePool.licensePoolId):
-				raise BackendReferentialIntegrityError(
-					f"License with id '{softwareLicenseToLicensePool.licensePoolId}' not found"
-				)
+			if not self._context.licensePool_getObjects(attributes=["id"], id=softwareLicenseToLicensePool.licensePoolId):
+				raise BackendReferentialIntegrityError(f"License with id '{softwareLicenseToLicensePool.licensePoolId}' not found")
 
 	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):  # pylint: disable=no-self-use
 		softwareLicenseToLicensePool = forceObjectClass(softwareLicenseToLicensePool, SoftwareLicenseToLicensePool)
@@ -1031,8 +967,8 @@ depot where the method is.
 
 	def softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools):
 		softwareLicenseIds = [
-			softwareLicenseToLicensePool.softwareLicenseId for
-			softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool)
+			softwareLicenseToLicensePool.softwareLicenseId
+			for softwareLicenseToLicensePool in forceObjectClassList(softwareLicenseToLicensePools, SoftwareLicenseToLicensePool)
 		]
 
 		if softwareLicenseIds:
@@ -1142,29 +1078,31 @@ depot where the method is.
 	def auditHardware_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
 		return [obj.toHash() for obj in self.auditHardware_getObjects(attributes, **filter)]
 
-	def auditHardware_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value,unused-argument,no-self-use
+	def auditHardware_getObjects(
+		self, attributes=[], **filter
+	):  # pylint: disable=redefined-builtin,dangerous-default-value,unused-argument,no-self-use
 		return []
 
 	def auditHardware_deleteObjects(self, auditHardwares):  # pylint: disable=no-self-use
 		pass
 
 	def auditHardware_getConfig(self, language=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
-		if self._auditHardwareConfigFile.endswith('.json'):
+		if self._auditHardwareConfigFile.endswith(".json"):
 			try:
-				with codecs.open(self._auditHardwareConfigFile, 'r', 'utf8') as file:
+				with codecs.open(self._auditHardwareConfigFile, "r", "utf8") as file:
 					return json.loads(file.read())
 			except Exception as err:  # pylint: disable=broad-except
 				logger.warning("Failed to read audit hardware configuration from file '%s': %s", self._auditHardwareConfigFile, err)
 				return []
 
 		if not language:
-			language = 'en_US'
-		language = forceLanguageCode(language).replace('-', '_')
+			language = "en_US"
+		language = forceLanguageCode(language).replace("-", "_")
 
 		localeFile = os.path.join(self._auditHardwareConfigLocalesDir, language)
 		if not os.path.exists(localeFile):
 			logger.error("No translation file found for language %s, falling back to en_US", language)
-			language = 'en_US'
+			language = "en_US"
 			localeFile = os.path.join(self._auditHardwareConfigLocalesDir, language)
 
 		locale = {}
@@ -1172,7 +1110,7 @@ depot where the method is.
 			lf = ConfigFile(localeFile)
 			for line in lf.parse():
 				try:
-					identifier, translation = line.split('=', 1)
+					identifier, translation = line.split("=", 1)
 					locale[identifier.strip()] = translation.strip()
 				except ValueError as verr:
 					logger.trace("Failed to read translation: %s", verr)
@@ -1182,31 +1120,31 @@ depot where the method is.
 
 		def __inheritFromSuperClasses(classes, _class, scname=None):  # pylint: disable=unused-private-member
 			if not scname:  # pylint: disable=too-many-nested-blocks
-				for _scname in _class['Class'].get('Super', []):
+				for _scname in _class["Class"].get("Super", []):
 					__inheritFromSuperClasses(classes, _class, _scname)
 			else:
 				for cl in classes:
-					if cl['Class'].get('Opsi') == scname:
+					if cl["Class"].get("Opsi") == scname:
 						clcopy = pycopy.deepcopy(cl)
 						__inheritFromSuperClasses(classes, clcopy)
 						newValues = []
-						for newValue in clcopy['Values']:
+						for newValue in clcopy["Values"]:
 							foundAt = -1
-							for i, currentValue in enumerate(_class['Values']):
-								if currentValue['Opsi'] == newValue['Opsi']:
-									if not currentValue.get('UI'):
-										_class['Values'][i]['UI'] = newValue.get('UI', '')
+							for i, currentValue in enumerate(_class["Values"]):
+								if currentValue["Opsi"] == newValue["Opsi"]:
+									if not currentValue.get("UI"):
+										_class["Values"][i]["UI"] = newValue.get("UI", "")
 									foundAt = i
 									break
 							if foundAt > -1:
-								newValue = _class['Values'][foundAt]
-								del _class['Values'][foundAt]
+								newValue = _class["Values"][foundAt]
+								del _class["Values"][foundAt]
 							newValues.append(newValue)
-						newValues.extend(_class['Values'])
-						_class['Values'] = newValues
+						newValues.extend(_class["Values"])
+						_class["Values"] = newValues
 						break
 				else:
-					logger.error("Super class '%s' of class '%s' not found", scname, _class['Class'].get('Opsi'))
+					logger.error("Super class '%s' of class '%s' not found", scname, _class["Class"].get("Opsi"))
 
 		classes = []
 		try:  # pylint: disable=too-many-nested-blocks
@@ -1214,39 +1152,41 @@ depot where the method is.
 				exec(hwcFile.read())  # pylint: disable=exec-used
 
 			for i, currentClassConfig in enumerate(OPSI_HARDWARE_CLASSES):
-				opsiClass = currentClassConfig['Class']['Opsi']
-				if currentClassConfig['Class']['Type'] == 'STRUCTURAL':
+				opsiClass = currentClassConfig["Class"]["Opsi"]
+				if currentClassConfig["Class"]["Type"] == "STRUCTURAL":
 					if locale.get(opsiClass):
-						OPSI_HARDWARE_CLASSES[i]['Class']['UI'] = locale[opsiClass]
+						OPSI_HARDWARE_CLASSES[i]["Class"]["UI"] = locale[opsiClass]
 					else:
 						logger.error("No translation for class '%s' found", opsiClass)
-						OPSI_HARDWARE_CLASSES[i]['Class']['UI'] = opsiClass
+						OPSI_HARDWARE_CLASSES[i]["Class"]["UI"] = opsiClass
 
-				for j, currentValue in enumerate(currentClassConfig['Values']):
-					opsiProperty = currentValue['Opsi']
+				for j, currentValue in enumerate(currentClassConfig["Values"]):
+					opsiProperty = currentValue["Opsi"]
 					try:
-						OPSI_HARDWARE_CLASSES[i]['Values'][j]['UI'] = locale[opsiClass + '.' + opsiProperty]
+						OPSI_HARDWARE_CLASSES[i]["Values"][j]["UI"] = locale[opsiClass + "." + opsiProperty]
 					except KeyError:
 						pass
 
 			for owc in OPSI_HARDWARE_CLASSES:
 				try:
-					if owc['Class'].get('Type') == 'STRUCTURAL':
-						logger.debug("Found STRUCTURAL hardware class '%s'", owc['Class'].get('Opsi'))
+					if owc["Class"].get("Type") == "STRUCTURAL":
+						logger.debug("Found STRUCTURAL hardware class '%s'", owc["Class"].get("Opsi"))
 						ccopy = pycopy.deepcopy(owc)
-						if 'Super' in ccopy['Class']:
+						if "Super" in ccopy["Class"]:
 							__inheritFromSuperClasses(OPSI_HARDWARE_CLASSES, ccopy)
-							del ccopy['Class']['Super']
-						del ccopy['Class']['Type']
+							del ccopy["Class"]["Super"]
+						del ccopy["Class"]["Type"]
 
 						# Fill up empty display names
-						for j, currentValue in enumerate(ccopy.get('Values', [])):
-							if not currentValue.get('UI'):
+						for j, currentValue in enumerate(ccopy.get("Values", [])):
+							if not currentValue.get("UI"):
 								logger.warning(
 									"No translation found for hardware audit configuration property '%s.%s' in %s",
-									ccopy['Class']['Opsi'], currentValue['Opsi'], localeFile
+									ccopy["Class"]["Opsi"],
+									currentValue["Opsi"],
+									localeFile,
 								)
-								ccopy['Values'][j]['UI'] = currentValue['Opsi']
+								ccopy["Values"][j]["UI"] = currentValue["Opsi"]
 
 						classes.append(ccopy)
 				except Exception as err:  # pylint: disable=broad-except
@@ -1272,7 +1212,9 @@ depot where the method is.
 	def auditHardwareOnHost_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
 		return [obj.toHash() for obj in self.auditHardwareOnHost_getObjects(attributes, **filter)]
 
-	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value,unused-argument,no-self-use
+	def auditHardwareOnHost_getObjects(
+		self, attributes=[], **filter
+	):  # pylint: disable=redefined-builtin,dangerous-default-value,unused-argument,no-self-use
 		return []
 
 	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):  # pylint: disable=no-self-use

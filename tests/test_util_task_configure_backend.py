@@ -26,7 +26,7 @@ def exampleMySQLBackendConfig(dist_data_path):
 		yield fileName
 
 
-def testReadingMySQLConfigFile(exampleMySQLBackendConfig):
+def testReadingMySQLConfigFile(exampleMySQLBackendConfig):  # pylint: disable=redefined-outer-name
 	defaultMySQLConfig = {
 		"address": "127.0.0.1",
 		"database": "opsi",
@@ -44,7 +44,7 @@ def testReadingMySQLConfigFile(exampleMySQLBackendConfig):
 	assert config == defaultMySQLConfig
 
 
-def testUpdatingTestConfigFile(exampleMySQLBackendConfig):
+def testUpdatingTestConfigFile(exampleMySQLBackendConfig):  # pylint: disable=redefined-outer-name
 	fileName = exampleMySQLBackendConfig
 	config = backendConfigUtils.getBackendConfiguration(fileName)
 
@@ -62,10 +62,10 @@ def testUpdatingTestConfigFile(exampleMySQLBackendConfig):
 	config = backendConfigUtils.getBackendConfiguration(fileName)
 
 	for key in ("address", "database", "password"):
-		assert key not in config, "{0} should not be in {1}".format(key, config)
+		assert key not in config, f"{key} should not be in {config}"
 
 	for key in ("username", "connectionPoolMaxOverflow"):
-		assert key in config, "{0} should be in {1}".format(key, config)
+		assert key in config, f"{key} should be in {config}"
 
 
 def testReadingWindowsDomainFromSambaConfig(test_data_path):
@@ -214,7 +214,7 @@ def testAddingWANConfigs(extendedConfigDataBackend):
 	identsInBackend = set(extendedConfigDataBackend.config_getIdents())
 
 	for ident in requiredConfigIdents:
-		assert ident in identsInBackend, "Missing config id {0}".format(ident)
+		assert ident in identsInBackend, f"Missing config id {ident}"
 
 
 def testAddingInstallByShutdownConfig(extendedConfigDataBackend):
@@ -226,7 +226,7 @@ def testAddingInstallByShutdownConfig(extendedConfigDataBackend):
 	identsInBackend = set(extendedConfigDataBackend.config_getIdents())
 
 	for ident in requiredConfigIdents:
-		assert ident in identsInBackend, "Missing config id {0}".format(ident)
+		assert ident in identsInBackend, f"Missing config id {ident}"
 
 
 @pytest.mark.parametrize("useSamba", [True, False])
