@@ -1831,7 +1831,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			]
 
 	def objectToGroup_deleteObjects(self, objectToGroups):
-		self._check_module("mysql_backend")
 		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
 		with self._sql.session() as session:
 			for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
