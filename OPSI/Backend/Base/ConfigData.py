@@ -12,6 +12,7 @@ import os
 import re
 import json
 import glob
+import time
 import codecs
 import collections
 import copy as pycopy
@@ -209,10 +210,11 @@ containing the localisation of the hardware audit.
 		return {"macos": macos, "linux": linux, "windows": _all - macos - linux}
 
 	@lru_cache(maxsize=10)
-	def _get_licensing_info(self, licenses: bool = False, legacy_modules: bool = False, dates: bool = False):
+	def _get_licensing_info(self, licenses: bool = False, legacy_modules: bool = False, dates: bool = False, ttl_hash: int = 0):
 		"""
 		Returns opsi licensing information.
 		"""
+		del ttl_hash  # ttl_hash is only used to invalidate the cache after a ttl
 		warning_limits = {}
 		try:
 			warning_limits["client_limit_warning_percent"] = int(
@@ -259,7 +261,11 @@ containing the localisation of the hardware audit.
 			pool.load()
 			self._get_licensing_info.cache_clear()
 
-		return self._get_licensing_info(licenses=licenses, legacy_modules=legacy_modules, dates=dates)
+		def get_ttl_hash(seconds=3600):
+			"""Return the same value withing `seconds` time period"""
+			return round(time.time() / seconds)
+
+		return self._get_licensing_info(licenses=licenses, legacy_modules=legacy_modules, dates=dates, ttl_hash=get_ttl_hash())
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Logs                                                                                      -
