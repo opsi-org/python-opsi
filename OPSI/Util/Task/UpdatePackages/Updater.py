@@ -691,14 +691,14 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		with cd(os.path.dirname(packageFile)):
 			logger.info("Zsyncing %s to %s", availablePackage["packageFile"], packageFile)
 
-			hostname = repository.baseUrl.split("/")[2].split(":")[0]
-			cmd = [
-				self.config["zsyncCommand"],
-				"-A",
-				f"{hostname}='{repository.username}:{repository.password}'" "-o",
-				packageFile,
-				availablePackage["zsyncFile"],
-			]
+			url = availablePackage["zsyncFile"]
+			if repository.username:
+				quoted_password = quote(repository.password)
+				secret_filter.add_secrets(quoted_password)
+				auth = f"{quote(repository.username)}:{quoted_password}"
+				tmp = url.split("://", 1)
+				url = f"{tmp[0]}://{auth}@{tmp[1]}"
+			cmd = [self.config["zsyncCommand"], "-o", packageFile, url]
 
 			env = System.get_subprocess_environment()
 			if repository.proxy:
