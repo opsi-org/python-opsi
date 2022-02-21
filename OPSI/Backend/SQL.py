@@ -1912,8 +1912,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			self._sql.update(session, "SOFTWARE_LICENSE", where, data)
 
 	def softwareLicense_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		self._check_module("license_management")
-
 		ConfigDataBackend.softwareLicense_getObjects(self, attributes=[], **filter)
 		logger.info("Getting softwareLicenses, filter: %s", filter)
 		softwareLicenses = []
@@ -1925,8 +1923,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		return softwareLicenses
 
 	def softwareLicense_deleteObjects(self, softwareLicenses):
-		self._check_module("license_management")
-
 		ConfigDataBackend.softwareLicense_deleteObjects(self, softwareLicenses)
 		with self._sql.session() as session:
 			for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense):
@@ -2099,8 +2095,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			self._sql.update(session, "LICENSE_ON_CLIENT", where, data)
 
 	def licenseOnClient_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		self._check_module("license_management")
-
 		ConfigDataBackend.licenseOnClient_getObjects(self, attributes=[], **filter)
 		logger.info("Getting licenseOnClient, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(LicenseOnClient, attributes, filter)
@@ -2111,8 +2105,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			]
 
 	def licenseOnClient_deleteObjects(self, licenseOnClients):
-		self._check_module("license_management")
-
 		ConfigDataBackend.licenseOnClient_deleteObjects(self, licenseOnClients)
 		with self._sql.session() as session:
 			for licenseOnClient in forceObjectClassList(licenseOnClients, LicenseOnClient):
