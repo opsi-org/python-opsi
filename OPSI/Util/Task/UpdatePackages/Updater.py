@@ -40,7 +40,7 @@ from .Repository import LinksExtractor
 
 urllib3.disable_warnings()
 
-__all__ = ('OpsiPackageUpdater', )
+__all__ = ("OpsiPackageUpdater",)
 
 
 class HashsumMissmatchError(ValueError):
@@ -56,13 +56,6 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		self.errors = []
 
 		try:
-			self.config["zsync2Command"] = System.which("zsync2")
-			logger.info("Zsync2 command found: %s", self.config["zsync2Command"])
-		except Exception:  # pylint: disable=broad-except
-			logger.info("Zsync2 command not found")
-			self.config["zsync2Command"] = None
-
-		try:
 			self.config["zsyncCommand"] = System.which("zsync")
 			logger.info("Zsync command found: %s", self.config["zsyncCommand"])
 		except Exception:  # pylint: disable=broad-except
@@ -72,7 +65,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		# Proxy is needed for getConfigBackend which is needed for ConfigurationParser.parse
 		self.config["proxy"] = ConfigurationParser.get_proxy(self.config["configFile"])
 
-		depots = self.getConfigBackend().host_getObjects(type='OpsiDepotserver', id=self.depotId)  # pylint: disable=no-member
+		depots = self.getConfigBackend().host_getObjects(type="OpsiDepotserver", id=self.depotId)  # pylint: disable=no-member
 		try:
 			self.depotKey = depots[0].opsiHostKey
 		except IndexError as err:
@@ -118,7 +111,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		"""
 		name = self.config.get("repositoryName", None)
 
-		for repo in self.config.get('repositories', []):
+		for repo in self.config.get("repositories", []):
 			if name and repo.name.strip().lower() != name.strip().lower():
 				continue
 
@@ -126,22 +119,19 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 
 	def readConfigFile(self):
 		parser = ConfigurationParser(
-			configFile=self.config["configFile"],
-			backend=self.getConfigBackend(),
-			depotId=self.depotId,
-			depotKey=self.depotKey
+			configFile=self.config["configFile"], backend=self.getConfigBackend(), depotId=self.depotId, depotKey=self.depotKey
 		)
 		self.config = parser.parse(self.config)
 
 	def getConfigBackend(self):
 		if not self.configBackend:
 			self.configBackend = BackendManager(
-				dispatchConfigFile='/etc/opsi/backendManager/dispatch.conf',
-				backendConfigDir='/etc/opsi/backends',
-				extensionConfigDir='/etc/opsi/backendManager/extend.d',
+				dispatchConfigFile="/etc/opsi/backendManager/dispatch.conf",
+				backendConfigDir="/etc/opsi/backends",
+				extensionConfigDir="/etc/opsi/backendManager/extend.d",
 				depotBackend=True,
 				hostControlBackend=True,
-				proxy_url=self.config["proxy"]
+				proxy_url=self.config["proxy"],
 			)
 			try:
 				jsonrpc = self.configBackend.get_jsonrpc_backend()
@@ -170,18 +160,11 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		if not localPackage:
 			logger.info("Cannot use zsync, no local package found")
 			return False
-		if not availablePackage['zsyncFile']:
+		if not availablePackage["zsyncFile"]:
 			logger.info("Cannot use zsync, no zsync file on server found")
 			return False
-		if not self.config["zsyncCommand"] and not self.config["zsync2Command"]:
-			logger.info("Cannot use zsync/zsync2, command not found")
-			return False
-
-		if (
-			availablePackage['repository'].baseUrl.split(':', 1)[0].lower().endswith('s') and
-			not self.config["zsync2Command"]
-		):
-			logger.info("Cannot use zsync, because zsync does not support https")
+		if not self.config["zsyncCommand"]:
+			logger.info("Cannot use zsync, command not found")
 			return False
 
 		response = session.head(availablePackage["packageFile"])
@@ -228,46 +211,46 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 
 			insideInstallWindow = True
 			# Times have to be specified in the form HH:MM, i.e. 06:30
-			if not self.config['installationWindowStartTime'] or not self.config['installationWindowEndTime']:
+			if not self.config["installationWindowStartTime"] or not self.config["installationWindowEndTime"]:
 				logger.info("Installation time window is not defined, installing products and setting actions")
-			elif in_installation_window(self.config['installationWindowStartTime'], self.config['installationWindowEndTime']):
+			elif in_installation_window(self.config["installationWindowStartTime"], self.config["installationWindowEndTime"]):
 				logger.notice("Running inside installation time window, installing products and setting actions")
 			else:
 				logger.notice(
 					"Running outside installation time window, not installing products except product ids %s",
-					self.config['installationWindowExceptions']
+					self.config["installationWindowExceptions"],
 				)
 				insideInstallWindow = False
 
 			sequence = []
 			for package in newPackages:
-				if not insideInstallWindow and package['productId'] not in self.config['installationWindowExceptions']:
+				if not insideInstallWindow and package["productId"] not in self.config["installationWindowExceptions"]:
 					continue
-				sequence.append(package['productId'])
+				sequence.append(package["productId"])
 
 			for package in newPackages:
-				if package['productId'] not in sequence:
+				if package["productId"] not in sequence:
 					continue
 				packageFile = os.path.join(self.config["packageDir"], package["filename"])
-				productId = package['productId']
-				ppf = ProductPackageFile(packageFile, tempDir=self.config.get('tempdir', '/tmp'))
+				productId = package["productId"]
+				ppf = ProductPackageFile(packageFile, tempDir=self.config.get("tempdir", "/tmp"))
 				ppf.getMetaData()
 				dependencies = ppf.packageControlFile.getPackageDependencies()
 				ppf.cleanup()
 				for dependency in dependencies:
 					try:
 						ppos = sequence.index(productId)
-						dpos = sequence.index(dependency['package'])
+						dpos = sequence.index(dependency["package"])
 						if ppos < dpos:
-							sequence.remove(dependency['package'])
-							sequence.insert(ppos, dependency['package'])
+							sequence.remove(dependency["package"])
+							sequence.insert(ppos, dependency["package"])
 					except Exception as err:  # pylint: disable=broad-except
-						logger.debug("While processing package '%s', dependency '%s': %s", packageFile, dependency['package'], err)
+						logger.debug("While processing package '%s', dependency '%s': %s", packageFile, dependency["package"], err)
 
 			sortedPackages = []
 			for productId in sequence:
 				for package in newPackages:
-					if productId == package['productId']:
+					if productId == package["productId"]:
 						sortedPackages.append(package)
 						break
 			newPackages = sortedPackages
@@ -277,23 +260,21 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 			for package in newPackages:
 				packageFile = os.path.join(self.config["packageDir"], package["filename"])
 
-				if package['repository'].onlyDownload:
+				if package["repository"].onlyDownload:
 					logger.debug("Download only is set for repository, not installing package '%s'", packageFile)
 					continue
 
 				try:
 					propertyDefaultValues = {}
 					try:
-						if package['repository'].inheritProductProperties and package['repository'].opsiDepotId:
+						if package["repository"].inheritProductProperties and package["repository"].opsiDepotId:
 							logger.info("Trying to get product property defaults from repository")
 							productPropertyStates = backend.productPropertyState_getObjects(  # pylint: disable=no-member
-								productId=package['productId'],
-								objectId=package['repository'].opsiDepotId
+								productId=package["productId"], objectId=package["repository"].opsiDepotId
 							)
 						else:
 							productPropertyStates = backend.productPropertyState_getObjects(  # pylint: disable=no-member
-								productId=package['productId'],
-								objectId=self.depotId
+								productId=package["productId"], objectId=self.depotId
 							)
 						if productPropertyStates:
 							for pps in productPropertyStates:
@@ -304,26 +285,21 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 
 					logger.info("Installing package '%s'", packageFile)
 					backend.depot_installPackage(  # pylint: disable=no-member
-						filename=packageFile,
-						propertyDefaultValues=propertyDefaultValues,
-						tempDir=self.config.get('tempdir', '/tmp')
+						filename=packageFile, propertyDefaultValues=propertyDefaultValues, tempDir=self.config.get("tempdir", "/tmp")
 					)
 					productOnDepots = backend.productOnDepot_getObjects(  # pylint: disable=no-member
-						depotId=self.depotId,
-						productId=package['productId']
+						depotId=self.depotId, productId=package["productId"]
 					)
 					if not productOnDepots:
-						raise ValueError(
-							f"Product '{package['productId']}' not found on depot '{self.depotId}' after installation"
-						)
-					package['product'] = backend.product_getObjects(  # pylint: disable=no-member
+						raise ValueError(f"Product '{package['productId']}' not found on depot '{self.depotId}' after installation")
+					package["product"] = backend.product_getObjects(  # pylint: disable=no-member
 						id=productOnDepots[0].productId,
 						productVersion=productOnDepots[0].productVersion,
-						packageVersion=productOnDepots[0].packageVersion
+						packageVersion=productOnDepots[0].packageVersion,
 					)[0]
 
 					message = f"Package '{packageFile}' successfully installed"
-					notifier.appendLine(message, pre='\n')
+					notifier.appendLine(message, pre="\n")
 					logger.notice(message)
 					installedPackages.append(package)
 
@@ -342,86 +318,87 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 			backend.config_createBool(id=config_id, description="", defaultValues=[True])  # pylint: disable=no-member
 
 			shutdownProduct = None
-			if self.config['wolAction'] and self.config["wolShutdownWanted"]:
+			if self.config["wolAction"] and self.config["wolShutdownWanted"]:
 				try:
 					shutdownProduct = backend.productOnDepot_getObjects(  # pylint: disable=no-member
-						depotId=self.depotId, productId='shutdownwanted'
-					)[0]
+						depotId=self.depotId, productId="shutdownwanted"
+					)[
+						0
+					]
 					logger.info("Found 'shutdownwanted' product on depot '%s': %s", self.depotId, shutdownProduct)
 				except IndexError:
 					logger.error("Product 'shutdownwanted' not avaliable on depot '%s'", self.depotId)
 
 			wakeOnLanClients = set()
 			for package in installedPackages:
-				if not package['product'].setupScript:
+				if not package["product"].setupScript:
 					continue
-				if package['repository'].autoSetup:
-					if isinstance(package['product'], NetbootProduct):
+				if package["repository"].autoSetup:
+					if isinstance(package["product"], NetbootProduct):
 						logger.info(
 							"Not setting action 'setup' for product '%s' where installation status 'installed' "
 							"because auto setup is not allowed for netboot products",
-							package['productId']
+							package["productId"],
 						)
 						continue
-					if package['productId'].startswith((
-						'opsi-local-image-', 'opsi-uefi-', 'opsi-vhd-', 'opsi-wim-', 'windows10-upgrade', 'opsi-auto-update', 'windomain'
-					)):
+					if package["productId"].startswith(
+						("opsi-local-image-", "opsi-uefi-", "opsi-vhd-", "opsi-wim-", "windows10-upgrade", "opsi-auto-update", "windomain")
+					):
 						logger.info(
 							"Not setting action 'setup' for product '%s' where installation status 'installed' "
 							"because auto setup is not allowed for opsi module products",
-							package['productId']
+							package["productId"],
 						)
 						continue
 
-					if any(exclude.search(package['productId']) for exclude in package['repository'].autoSetupExcludes):
+					if any(exclude.search(package["productId"]) for exclude in package["repository"].autoSetupExcludes):
 						logger.info(
-							"Not setting action 'setup' for product '%s' because it's excluded by regular expression",
-							package['productId']
+							"Not setting action 'setup' for product '%s' because it's excluded by regular expression", package["productId"]
 						)
 						continue
 
 					logger.notice(
 						"Setting action 'setup' for product '%s' where installation status 'installed' "
 						"because auto setup is set for repository '%s'",
-						package['productId'], package['repository'].name
+						package["productId"],
+						package["repository"].name,
 					)
 				else:
 					logger.info(
 						"Not setting action 'setup' for product '%s' where installation status 'installed' "
 						"because auto setup is not set for repository '%s'",
-						package['productId'], package['repository'].name
+						package["productId"],
+						package["repository"].name,
 					)
 					continue
 
 				clientToDepotserver = backend.configState_getClientToDepotserver(depotIds=[self.depotId])  # pylint: disable=no-member
-				clientIds = set(
-					ctd['clientId']
-					for ctd in clientToDepotserver
-					if ctd['clientId']
-				)
+				clientIds = set(ctd["clientId"] for ctd in clientToDepotserver if ctd["clientId"])
 
 				if clientIds:
 					productOnClients = backend.productOnClient_getObjects(  # pylint: disable=no-member
-						attributes=['installationStatus'],
-						productId=package['productId'],
-						productType='LocalbootProduct',
+						attributes=["installationStatus"],
+						productId=package["productId"],
+						productType="LocalbootProduct",
 						clientId=clientIds,
-						installationStatus=['installed'],
+						installationStatus=["installed"],
 					)
 					if productOnClients:
-						wolEnabled = self.config['wolAction']
-						excludedWolProducts = set(self.config['wolActionExcludeProductIds'])
+						wolEnabled = self.config["wolAction"]
+						excludedWolProducts = set(self.config["wolActionExcludeProductIds"])
 
 						for poc in productOnClients:
-							poc.setActionRequest('setup')
-							if wolEnabled and package['productId'] not in excludedWolProducts:
+							poc.setActionRequest("setup")
+							if wolEnabled and package["productId"] not in excludedWolProducts:
 								wakeOnLanClients.add(poc.clientId)
 
 						backend.productOnClient_updateObjects(productOnClients)  # pylint: disable=no-member
-						notifier.appendLine((
-							f"Product {package['productId']} set to 'setup' on clients: "
-							', '.join(sorted(poc.clientId for poc in productOnClients))
-						))
+						notifier.appendLine(
+							(
+								f"Product {package['productId']} set to 'setup' on clients: "
+								", ".join(sorted(poc.clientId for poc in productOnClients))
+							)
+						)
 
 			if wakeOnLanClients:
 				logger.notice("Powering on clients %s", wakeOnLanClients)
@@ -440,7 +417,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 									productVersion=shutdownProduct.productVersion,
 									packageVersion=shutdownProduct.packageVersion,
 									clientId=clientId,
-									actionRequest='setup'
+									actionRequest="setup",
 								)
 							)
 						backend.hostControl_start(hostIds=[clientId])  # pylint: disable=no-member
@@ -490,7 +467,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				else:
 					logger.error("Product '%s' not found in repository!", product)
 					possibleProductIDs = sorted(set(pac["productId"] for pac in products))
-					logger.notice("Possible products are: %s", ', '.join(possibleProductIDs))
+					logger.notice("Possible products are: %s", ", ".join(possibleProductIDs))
 					raise ValueError(f"You have searched for a product, which was not found in configured repository: '{product}'")
 
 			if newProductList:
@@ -511,61 +488,52 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		"""
 
 		logger.info("Verifying download of package '%s'", packageFile)
-		if not availablePackage['md5sum']:
-			logger.warning(
-				"%s: Cannot verify download of package: missing md5sum file",
-				availablePackage['productId']
-			)
+		if not availablePackage["md5sum"]:
+			logger.warning("%s: Cannot verify download of package: missing md5sum file", availablePackage["productId"])
 			return True
 
 		md5 = md5sum(packageFile)
 		if md5 != availablePackage["md5sum"]:
-			logger.info(
-				"%s: md5sum mismatch, package download failed",
-				availablePackage['productId']
-			)
+			logger.info("%s: md5sum mismatch, package download failed", availablePackage["productId"])
 			return False
 
-		logger.info(
-			"%s: md5sum match, package download verified",
-			availablePackage['productId']
-		)
+		logger.info("%s: md5sum match, package download verified", availablePackage["productId"])
 		return True
 
 	def get_installed_package(self, availablePackage, installedProducts):  # pylint: disable=no-self-use
 		logger.info("Testing if download/installation of package '%s' is needed", availablePackage["filename"])
 		for product in installedProducts:
-			if product['productId'] == availablePackage['productId']:
-				logger.debug("Product '%s' is installed", availablePackage['productId'])
+			if product["productId"] == availablePackage["productId"]:
+				logger.debug("Product '%s' is installed", availablePackage["productId"])
 				logger.debug(
 					"Available product version is '%s', installed product version is '%s-%s'",
-					availablePackage['version'],
-					product['productVersion'],
-					product['packageVersion']
+					availablePackage["version"],
+					product["productVersion"],
+					product["packageVersion"],
 				)
 				return product
 		return None
 
 	def get_local_package(self, availablePackage, localPackages):  # pylint: disable=no-self-use
 		for localPackage in localPackages:
-			if localPackage['productId'] == availablePackage['productId']:
-				logger.debug("Found local package file '%s'", localPackage['filename'])
+			if localPackage["productId"] == availablePackage["productId"]:
+				logger.debug("Found local package file '%s'", localPackage["filename"])
 				return localPackage
 		return None
 
 	def is_download_needed(self, localPackageFound, availablePackage, notifier=None):
 		if (
-			localPackageFound and
-			localPackageFound['filename'] == availablePackage['filename'] and
-			localPackageFound['md5sum'] == availablePackage['md5sum']
+			localPackageFound
+			and localPackageFound["filename"] == availablePackage["filename"]
+			and localPackageFound["md5sum"] == availablePackage["md5sum"]
 		):
 			# Recalculate md5sum
-			localPackageFound['md5sum'] = md5sum(localPackageFound['packageFile'])
-			if localPackageFound['md5sum'] == availablePackage['md5sum']:
+			localPackageFound["md5sum"] = md5sum(localPackageFound["packageFile"])
+			if localPackageFound["md5sum"] == availablePackage["md5sum"]:
 				logger.info(
 					"%s - download of package is not required: found local package %s with matching md5sum",
 					availablePackage["filename"],
-					localPackageFound["filename"]
+					localPackageFound["filename"],
 				)
 				# No notifier message as nothing to do
 				return False
@@ -578,10 +546,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				f"found local package {localPackageFound['filename']} which differs from available"
 			)
 		else:
-			message = (
-				f"{availablePackage['filename']} - download of package is required: "
-				" local package not found"
-			)
+			message = f"{availablePackage['filename']} - download of package is required: " " local package not found"
 
 		logger.notice(message)
 		if notifier is not None:
@@ -590,37 +555,52 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 
 	def is_install_needed(self, availablePackage, product):  # pylint: disable=no-self-use
 		if not product:
-			if availablePackage['repository'].autoInstall:
+			if availablePackage["repository"].autoInstall:
 				logger.notice(
 					"%s - installation required: product '%s' is not installed and auto install is set for repository '%s'",
-					availablePackage["filename"], availablePackage['productId'], availablePackage['repository'].name
+					availablePackage["filename"],
+					availablePackage["productId"],
+					availablePackage["repository"].name,
 				)
 				return True
 			logger.info(
 				"%s - installation not required: product '%s' is not installed but auto install is not set for repository '%s'",
-				availablePackage["filename"], availablePackage['productId'], availablePackage['repository'].name
+				availablePackage["filename"],
+				availablePackage["productId"],
+				availablePackage["repository"].name,
 			)
 			return False
 
-		if compareVersions(availablePackage['version'], '>', f"{product['productVersion']}-{product['packageVersion']}"):
-			if availablePackage['repository'].autoUpdate:
+		if compareVersions(availablePackage["version"], ">", f"{product['productVersion']}-{product['packageVersion']}"):
+			if availablePackage["repository"].autoUpdate:
 				logger.notice(
 					"%s - installation required: a more recent version of product '%s' was found"
 					" (installed: %s-%s, available: %s) and auto update is set for repository '%s'",
-					availablePackage["filename"], availablePackage['productId'], product['productVersion'],
-					product['packageVersion'], availablePackage['version'], availablePackage['repository'].name
+					availablePackage["filename"],
+					availablePackage["productId"],
+					product["productVersion"],
+					product["packageVersion"],
+					availablePackage["version"],
+					availablePackage["repository"].name,
 				)
 				return True
 			logger.info(
 				"%s - installation not required: a more recent version of product '%s' was found"
 				" (installed: %s-%s, available: %s) but auto update is not set for repository '%s'",
-				availablePackage["filename"], availablePackage['productId'], product['productVersion'],
-				product['packageVersion'], availablePackage['version'], availablePackage['repository'].name
+				availablePackage["filename"],
+				availablePackage["productId"],
+				product["productVersion"],
+				product["packageVersion"],
+				availablePackage["version"],
+				availablePackage["repository"].name,
 			)
 			return False
 		logger.info(
 			"%s - installation not required: installed version '%s-%s' of product '%s' is up to date",
-			availablePackage["filename"], product['productVersion'], product['packageVersion'], availablePackage['productId']
+			availablePackage["filename"],
+			product["productVersion"],
+			product["packageVersion"],
+			availablePackage["productId"],
 		)
 		return False
 
@@ -651,10 +631,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 						packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 						verified = self._verifyDownloadedPackage(packageFile, availablePackage)
 						if not verified and zsync:
-							logger.warning(
-								"%s: zsync download has failed, trying full download",
-								availablePackage['productId']
-							)
+							logger.warning("%s: zsync download has failed, trying full download", availablePackage["productId"])
 							self.get_package(availablePackage, localPackageFound, session, zsync=False, notifier=notifier)
 							verified = self._verifyDownloadedPackage(packageFile, availablePackage)
 						if not verified:
@@ -672,9 +649,9 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 	def get_package(self, availablePackage, localPackageFound, session, notifier=None, zsync=True):  # pylint: disable=too-many-arguments
 		packageFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 		if zsync:
-			if localPackageFound['filename'] != availablePackage['filename']:
+			if localPackageFound["filename"] != availablePackage["filename"]:
 				os.rename(os.path.join(self.config["packageDir"], localPackageFound["filename"]), packageFile)
-				localPackageFound["filename"] = availablePackage['filename']
+				localPackageFound["filename"] = availablePackage["filename"]
 
 			message = None
 			try:
@@ -710,59 +687,33 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				notifier.notify()
 
 	def zsyncPackage(self, availablePackage, packageFile):  # pylint: disable=too-many-locals
-		repository = availablePackage['repository']
+		repository = availablePackage["repository"]
 		with cd(os.path.dirname(packageFile)):
 			logger.info("Zsyncing %s to %s", availablePackage["packageFile"], packageFile)
 
-			cmd = []
-			if self.config["zsync2Command"]:
-				url = availablePackage["zsyncFile"]
-				if repository.username:
-					quoted_password = quote(repository.password)
-					secret_filter.add_secrets(quoted_password)
-					auth = f"{quote(repository.username)}:{quoted_password}"
-					tmp = url.split("://", 1)
-					url = f"{tmp[0]}://{auth}@{tmp[1]}"
-				cmd = [
-					self.config['zsync2Command'],
-					"-o", packageFile,
-					url
-				]
-			else:
-				hostname = repository.baseUrl.split('/')[2].split(':')[0]
-				cmd = [
-					self.config["zsyncCommand"],
-					"-A", f"{hostname}='{repository.username}:{repository.password}'"
-					"-o", packageFile,
-					availablePackage["zsyncFile"]
-				]
+			hostname = repository.baseUrl.split("/")[2].split(":")[0]
+			cmd = [
+				self.config["zsyncCommand"],
+				"-A",
+				f"{hostname}='{repository.username}:{repository.password}'" "-o",
+				packageFile,
+				availablePackage["zsyncFile"],
+			]
 
 			env = System.get_subprocess_environment()
 			if repository.proxy:
 				if repository.proxy != "system":
-					env.update({
-						"http_proxy": repository.proxy,
-						"https_proxy": repository.proxy
-					})
+					env.update({"http_proxy": repository.proxy, "https_proxy": repository.proxy})
 			else:
-				env.update({
-					"http_proxy": "",
-					"https_proxy": "",
-					"no_proxy": "*"
-				})
+				env.update({"http_proxy": "", "https_proxy": "", "no_proxy": "*"})
 
-			stateRegex = re.compile(r'\s([\d.]+)%\s+([\d.]+)\skBps(.*)$')
+			stateRegex = re.compile(r"\s([\d.]+)%\s+([\d.]+)\skBps(.*)$")
 			data = b""
 			buffer = b""
 			exit_code = 0
 			percent = 0
 			with subprocess.Popen(
-				cmd,
-				shell=False,
-				stdin=subprocess.PIPE,
-				stdout=subprocess.PIPE,
-				stderr=subprocess.STDOUT,
-				env=env
+				cmd, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env
 			) as proc:
 				while True:
 					inp = proc.stdout.read(16)
@@ -805,7 +756,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		lastPercent = 0
 		speed = 0
 
-		with open(outFile, 'wb') as out:
+		with open(outFile, "wb") as out:
 			for chunk in response.iter_content(chunk_size=32768):
 				completed += len(chunk)
 				out.write(chunk)
@@ -845,7 +796,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 			path = os.path.join(self.config["packageDir"], filename)
 			if not os.path.isfile(path):
 				continue
-			if path.endswith('.zs-old'):
+			if path.endswith(".zs-old"):
 				os.unlink(path)
 				continue
 
@@ -861,7 +812,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 
 		packageFile = os.path.join(self.config["packageDir"], newPackage["filename"])
 
-		md5sumFile = f'{packageFile}.md5'
+		md5sumFile = f"{packageFile}.md5"
 		logger.info("Creating md5sum file '%s'", md5sumFile)
 
 		with open(md5sumFile, mode="w", encoding="utf-8") as hashFile:
@@ -869,7 +820,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 
 		setRights(md5sumFile)
 
-		zsyncFile = f'{packageFile}.zsync'
+		zsyncFile = f"{packageFile}.zsync"
 		logger.info("Creating zsync file '%s'", zsyncFile)
 		try:
 			zsyncFile = ZsyncFile(zsyncFile)
@@ -882,13 +833,10 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		for package in packages:
 			found = None
 			for i, newPackage in enumerate(newestPackages):
-				if newPackage['productId'] == package['productId']:
+				if newPackage["productId"] == package["productId"]:
 					found = i
-					if compareVersions(package['version'], '>', newestPackages[i]['version']):
-						logger.debug(
-							"Package version '%s' is newer than version '%s'",
-							package['version'], newestPackages[i]['version']
-						)
+					if compareVersions(package["version"], ">", newestPackages[i]["version"]):
+						logger.debug("Package version '%s' is newer than version '%s'", package["version"], newestPackages[i]["version"])
 						newestPackages[i] = package
 					break
 
@@ -898,17 +846,14 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		return newestPackages
 
 	def getLocalPackages(self):
-		return getLocalPackages(
-			self.config["packageDir"],
-			forceChecksumCalculation=self.config['forceChecksumCalculation']
-		)
+		return getLocalPackages(self.config["packageDir"], forceChecksumCalculation=self.config["forceChecksumCalculation"])
 
 	def getInstalledProducts(self):
 		logger.info("Getting installed products")
 		products = []
 		configBackend = self.getConfigBackend()
 		for product in configBackend.productOnDepot_getHashes(depotId=self.depotId):  # pylint: disable=no-member
-			logger.info("Found installed product '%s_%s-%s'", product['productId'], product['productVersion'], product['packageVersion'])
+			logger.info("Found installed product '%s_%s-%s'", product["productId"], product["productVersion"], product["packageVersion"])
 			products.append(product)
 		return products
 
@@ -927,7 +872,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 
 			for url in repository.getDownloadUrls():  # pylint: disable=too-many-nested-blocks
 				try:
-					url = quote(url.encode('utf-8'), safe="/#%[]=:;$&()+,!?*@'~")
+					url = quote(url.encode("utf-8"), safe="/#%[]=:;$&()+,!?*@'~")
 					if str(os.environ.get("USE_REPOFILE")).lower() == "true":
 						logger.debug("Trying to retrieve packages.json from %s", url)
 						try:
@@ -964,19 +909,21 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 					htmlParser.feed(content)
 					htmlParser.close()
 					for link in htmlParser.getLinks():
-						if not link.endswith('.opsi'):
+						if not link.endswith(".opsi"):
 							continue
 
 						if link.startswith("/"):
 							# absolute link to relative link
 							path = "/" + url.split("/", 3)[-1]
-							rlink = link[len(path):].lstrip("/")
+							rlink = link[len(path) :].lstrip("/")
 							logger.info("Absolute link: '%s', relative link: '%s'", link, rlink)
 							link = rlink
 
 						if repository.includes:
 							if not any(include.search(link) for include in repository.includes):
-								logger.info("Package '%s' is not included. Please check your includeProductIds-entry in configurationfile.", link)
+								logger.info(
+									"Package '%s' is not included. Please check your includeProductIds-entry in configurationfile.", link
+								)
 								continue
 
 						if any(exclude.search(link) for exclude in repository.excludes):
@@ -994,7 +941,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 								"packageFile": packageFile,
 								"filename": link,
 								"md5sum": None,
-								"zsyncFile": None
+								"zsyncFile": None,
 							}
 							logger.debug("Repository package info: %s", packageInfo)
 							packages.append(packageInfo)
@@ -1002,8 +949,8 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 							logger.error("Failed to process link '%s': %s", link, err)
 
 					for link in htmlParser.getLinks():
-						isMd5 = link.endswith('.opsi.md5')
-						isZsync = link.endswith('.opsi.zsync')
+						isMd5 = link.endswith(".opsi.md5")
+						isZsync = link.endswith(".opsi.zsync")
 
 						# stripping directory part from link
 						link = link.split("/")[-1]
@@ -1018,10 +965,10 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 
 						try:
 							for i, package in enumerate(packages):
-								if package.get('filename') == filename:
+								if package.get("filename") == filename:
 									if isMd5:
 										response = session.get(f"{url.rstrip('/')}/{link.lstrip('/')}")
-										match = re.search(r'([a-z\d]{32})', response.content.decode("utf-8"))
+										match = re.search(r"([a-z\d]{32})", response.content.decode("utf-8"))
 										if match:
 											foundMd5sum = match.group(1)
 											packages[i]["md5sum"] = foundMd5sum
@@ -1040,7 +987,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 					errors.add(str(err))
 
 			if errors:
-				logger.warning("Problems processing repository %s: %s", repository.name, '; '.join(str(e) for e in errors))
+				logger.warning("Problems processing repository %s: %s", repository.name, "; ".join(str(e) for e in errors))
 
 			return packages
 
@@ -1083,14 +1030,14 @@ _version_, _packageFile_ (complete path), _filename_ and _md5sum_.
 
 	packages = []
 	for filename in os.listdir(packageDirectory):
-		if not filename.endswith('.opsi'):
+		if not filename.endswith(".opsi"):
 			continue
 
 		packageFile = os.path.join(packageDirectory, filename)
 		logger.info("Found local package '%s'", packageFile)
 		try:
 			productId, version = parseFilename(filename)
-			checkSumFile = packageFile + '.md5'
+			checkSumFile = packageFile + ".md5"
 			if not forceChecksumCalculation and os.path.exists(checkSumFile):
 				logger.debug("Reading existing checksum from %s", checkSumFile)
 				with open(checkSumFile, mode="r", encoding="utf-8") as hashFile:
@@ -1104,7 +1051,7 @@ _version_, _packageFile_ (complete path), _filename_ and _md5sum_.
 				"version": version,
 				"packageFile": packageFile,
 				"filename": filename,
-				"md5sum": packageMd5
+				"md5sum": packageMd5,
 			}
 			logger.debug("Local package info: %s", packageInfo)
 			packages.append(packageInfo)
