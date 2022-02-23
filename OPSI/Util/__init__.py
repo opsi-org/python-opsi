@@ -22,7 +22,6 @@ import shutil
 import socket
 import struct
 import sys
-import subprocess
 from collections import namedtuple
 from hashlib import md5
 from itertools import islice
@@ -51,6 +50,7 @@ from opsicommon.utils import (
 	deserialize as oc_deserialize,
 	generate_opsi_host_key as generateOpsiHostKey,
 	timestamp as oc_timestamp,
+	monkeypatch_subprocess_for_frozen,  # pylint: disable=unused-import
 )
 
 __all__ = (
@@ -782,24 +782,3 @@ def getPublicKey(data):
 		count += 4 + length
 
 	return RSA.construct((mp[1], mp[0]))
-
-
-def monkeypatch_subprocess_for_frozen():
-	from subprocess import Popen as PopenOrig  # pylint: disable=import-outside-toplevel
-
-	class PopenPatched(PopenOrig):
-		def __init__(self, *args, **kwargs):
-			if kwargs.get("env") is None:
-				kwargs["env"] = os.environ.copy()
-			lp_orig = kwargs["env"].get("LD_LIBRARY_PATH_ORIG")
-			if lp_orig is not None:
-				# Restore the original, unmodified value
-				kwargs["env"]["LD_LIBRARY_PATH"] = lp_orig
-			else:
-				# This happens when LD_LIBRARY_PATH was not set.
-				# Remove the env var as a last resort
-				kwargs["env"].pop("LD_LIBRARY_PATH", None)
-
-			super().__init__(*args, **kwargs)
-
-	subprocess.Popen = PopenPatched
