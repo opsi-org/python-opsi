@@ -10,28 +10,29 @@ Functions and classes for the use with a POSIX operating system.
 
 # pylint: disable=too-many-lines
 
+import os
+import re
+import sys
+import time
+import fcntl
+import shutil
+import codecs
+import locale
+import socket
+import getpass
+import warnings
+import datetime
+import platform
+import threading
+import subprocess
 from itertools import islice
 from signal import SIGKILL
-import codecs
-import datetime
-import fcntl
-import locale
-import os
-import platform
-import re
-import socket
-import sys
-import subprocess
-import threading
-import time
-import getpass
 import copy as pycopy
 from functools import lru_cache
 import psutil
 
 from opsicommon.logging import logger, LOG_NONE, logging_config
-
-from OPSI.Types import (
+from opsicommon.types import (
 	forceBool,
 	forceDomain,
 	forceFilename,
@@ -46,8 +47,10 @@ from OPSI.Types import (
 	forceUnicode,
 	forceUnicodeLower,
 )
-from OPSI.Object import *  # pylint: disable=wildcard-import,unused-wildcard-import
+from opsicommon.objects import *  # pylint: disable=wildcard-import,unused-wildcard-import
+
 from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
+from OPSI.Exceptions import CommandNotFoundException
 
 distro_module = None  # pylint: disable=invalid-name
 if platform.system() == "Linux":
@@ -118,7 +121,6 @@ __all__ = (
 # Constants
 GEO_OVERWRITE_SO = "/usr/local/lib/geo_override.so"
 BIN_WHICH = "/usr/bin/which"
-WHICH_CACHE = {}
 DHCLIENT_LEASES_FILE = "/var/lib/dhcp/dhclient.leases"
 _DHCP_SERVICE_NAME = None
 _SAMBA_SERVICE_NAME = None
@@ -130,10 +132,6 @@ try:
 	if "64bit" in platform.architecture():
 		x86_64 = True  # pylint: disable=invalid-name
 except Exception:  # pylint: disable=broad-except
-	pass
-
-
-class CommandNotFoundException(RuntimeError):
 	pass
 
 
@@ -839,20 +837,14 @@ shutdown = halt
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                        PROCESS HANDLING                                           -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-def which(cmd, env: dict = None):
-	env = env or {}
-	if cmd not in WHICH_CACHE:
-		env_string = " ".join(["=".join([key, value]) for (key, value) in env.items()])
-		which_ = os.popen(f'{env_string} {BIN_WHICH} "{cmd}" 2>/dev/null')
-		path = which_.readline().strip()
-		which_.close()
-		if not path:
-			raise CommandNotFoundException(f"Command '{cmd}' not found in PATH")
-
-		logger.debug("Command %s found at: %s", cmd, path)
-		WHICH_CACHE[cmd] = path
-
-	return WHICH_CACHE[cmd]
+@lru_cache(100)
+def which(cmd: str, env: dict = None) -> str:
+	if env is not None:
+		warnings.warn("Parameter env invalid", DeprecationWarning)
+	path = shutil.which(cmd)
+	if not path:
+		raise CommandNotFoundException(f"Command '{cmd}' not found in PATH")
+	return path
 
 
 def get_subprocess_environment(env: dict = None, add_lc_all_C=False, add_path_sbin=False):

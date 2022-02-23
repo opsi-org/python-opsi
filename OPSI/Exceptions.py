@@ -8,3 +8,7 @@ Deprecated, use opsicommon.exceptions instead.
 """
 
 from opsicommon.exceptions import *  # pylint: disable=wildcard-import,unused-wildcard-import
+
+
+class CommandNotFoundException(RuntimeError):
+	pass

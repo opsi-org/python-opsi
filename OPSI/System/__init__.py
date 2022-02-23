@@ -17,20 +17,21 @@ from __future__ import absolute_import
 import os
 import platform
 import shutil
-import psutil
-
-from OPSI.Types import forceFilename
 
 from opsicommon.logging import logger
 
-if platform.system().lower() == 'linux':
+from OPSI.Types import forceFilename
+from OPSI.Util import formatFileSize
+
+if platform.system().lower() == "linux":
 	from .Linux import *
-elif platform.system().lower() == 'windows':
+elif platform.system().lower() == "windows":
 	from .Windows import *
-elif platform.system().lower() == 'darwin':
+elif platform.system().lower() == "darwin":
 	from .Darwin import *
 else:
 	logger.error("Unable to import System library for system %s", platform.system().lower())
+
 
 class SystemHook(SystemSpecificHook):
 	def __init__(self):  # pylint: disable=super-init-not-called
@@ -202,7 +203,7 @@ def mkdir(newDir, mode=0o750):
 	if os.path.isdir(newDir):
 		pass
 	elif os.path.isfile(newDir):
-		raise OSError("A file with the same name as the desired dir, '%s', already exists." % newDir)
+		raise OSError("A file with the same name as the desired dir, '{newDir}', already exists.")
 	else:
 		(head, tail) = os.path.split(newDir)
 		if head and not os.path.isdir(head):
@@ -213,7 +214,7 @@ def mkdir(newDir, mode=0o750):
 
 
 def copy(src, dst, progressSubject=None):
-	'''
+	"""
 	Copy from `src` to `dst`.
 
 	The copy process will follow these rules:
@@ -226,7 +227,7 @@ def copy(src, dst, progressSubject=None):
 	* src = dir, dst = not existent: create dst, copy content of src into dst
 	* src = dir/*, dst = dir/not existent: create dst if not exists, copy content of src into dst
 
-	'''
+	"""
 	for hook in hooks:
 		(src, dst, progressSubject) = hook.pre_copy(src, dst, progressSubject)
 
@@ -236,16 +237,16 @@ def copy(src, dst, progressSubject=None):
 
 		copySrcContent = False
 
-		if src.endswith(('/*.*', '\\*.*')):
+		if src.endswith(("/*.*", "\\*.*")):
 			src = src[:-4]
 			copySrcContent = True
 
-		elif src.endswith(('/*', '\\*')):
+		elif src.endswith(("/*", "\\*")):
 			src = src[:-2]
 			copySrcContent = True
 
 		if copySrcContent and not os.path.isdir(src):
-			raise IOError("Source directory '%s' not found" % src)
+			raise IOError(f"Source directory '{src}' not found")
 
 		logger.info("Copying from '%s' to '%s'", src, dst)
 		(count, size) = (0, 0)
@@ -255,7 +256,7 @@ def copy(src, dst, progressSubject=None):
 			progressSubject.setEnd(size)
 
 		_copy(src, dst, copySrcContent, 0, count, size, progressSubject)
-		logger.info('Copy done')
+		logger.info("Copy done")
 		if progressSubject:
 			progressSubject.setState(size)
 	except Exception as err:
@@ -267,7 +268,9 @@ def copy(src, dst, progressSubject=None):
 		hook.post_copy(src, dst, progressSubject)
 
 
-def _copy(src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0, progressSubject=None):  # pylint: disable=too-many-arguments,too-many-branches
+def _copy(
+	src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0, progressSubject=None
+):  # pylint: disable=too-many-arguments,too-many-branches
 	src = forceFilename(src)
 	dst = forceFilename(dst)
 
@@ -281,21 +284,13 @@ def _copy(src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0
 
 		if progressSubject:
 			countLen = len(str(totalFiles))
-			countLenFormat = '%' + str(countLen) + 's'
+			countLenFormat = "%" + str(countLen) + "s"
 			size = os.path.getsize(src)
 
-			if size > 1024 * 1024:
-				sizeString = "%0.2f MByte" % (float(size) / (1024 * 1024))
-			elif size > 1024:
-				sizeString = "%0.2f kByte" % (float(size) / 1024)
-			else:
-				sizeString = "%d Byte" % size
-
+			sizeString = formatFileSize(size)
 			progressSubject.setMessage(
-				"[%s/%s] %s (%s)" % (
-					countLenFormat % fileCount, totalFiles,
-					os.path.basename(src), sizeString
-				)
+				"[%s/%s] %s (%s)"  # pylint: disable=consider-using-f-string
+				% (countLenFormat % fileCount, totalFiles, os.path.basename(src), sizeString)
 			)
 
 		try:
@@ -317,13 +312,7 @@ def _copy(src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0
 
 		for element in os.listdir(src):
 			fileCount = _copy(
-				os.path.join(src, element),
-				os.path.join(dst, element),
-				True,
-				fileCount,
-				totalFiles,
-				totalSize,
-				progressSubject
+				os.path.join(src, element), os.path.join(dst, element), True, fileCount, totalFiles, totalSize, progressSubject
 			)
 
 	return fileCount
