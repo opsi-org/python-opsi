@@ -1497,7 +1497,7 @@ reference = "uibpypi"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.11"
-content-hash = "00b322bdaa5268b645b25cbbc1b86867a59dfaa25a9a82407ffb7d5ff15369a6"
+content-hash = "268925419d86c1f518efadb149702114436d9ce6efcafc389f1bd175e6a3c0f0"
 
 [metadata.files]
 altgraph = [

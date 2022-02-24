@@ -24,39 +24,55 @@ from itertools import islice
 
 from OPSI.Exceptions import BackendBadValueError, BackendMissingDataError
 from OPSI.Types import (
-	forceArchitecture, forceBool, forceDict, forceEmailAddress, forceFilename,
-	forceHardwareAddress, forceHardwareDeviceId, forceHardwareVendorId,
-	forceHostname, forceInt, forceIPAddress, forceList, forceOct,
-	forceProductId, forceTime, forceUnicode, forceUnicodeList,
-	forceUnicodeLower, forceUnicodeLowerList
+	forceArchitecture,
+	forceBool,
+	forceDict,
+	forceEmailAddress,
+	forceFilename,
+	forceHardwareAddress,
+	forceHardwareDeviceId,
+	forceHardwareVendorId,
+	forceHostname,
+	forceInt,
+	forceIPAddress,
+	forceList,
+	forceOct,
+	forceProductId,
+	forceTime,
+	forceUnicode,
+	forceUnicodeList,
+	forceUnicodeLower,
+	forceUnicodeLowerList,
 )
 from OPSI.System import which, execute
 from OPSI.Util import ipAddressInNetwork
 
 from opsicommon.logging import logger
 
-if os.name == 'posix':
+if os.name == "posix":
 	import fcntl
 	import grp
 	import pwd
 
-if os.name == 'nt':
+if os.name == "nt":
 	# pyright: reportMissingImports=false
 	import win32con  # pylint: disable=import-error
 	import win32file  # pylint: disable=import-error
 	import pywintypes  # pylint: disable=import-error
+
 	pywintypeserror = pywintypes.error
 else:
-	win32con = None # pylint: disable=invalid-name
-	win32file = None # pylint: disable=invalid-name
-	pywintypes = None # pylint: disable=invalid-name
-	pywintypeserror = IOError # pylint: disable=invalid-name
+	win32con = None  # pylint: disable=invalid-name
+	win32file = None  # pylint: disable=invalid-name
+	pywintypes = None  # pylint: disable=invalid-name
+	pywintypeserror = IOError  # pylint: disable=invalid-name
 
 
 def requiresParsing(function):
 	"""
 	Decorator that calls parse() on unparsed configs.
 	"""
+
 	@functools.wraps(function)
 	def parsedFile(self, *args, **kwargs):
 		if not self._parsed:  # pylint: disable=protected-access
@@ -87,7 +103,7 @@ class File:
 			os.unlink(self._filename)
 
 	def chown(self, user, group):
-		if os.name == 'nt':
+		if os.name == "nt":
 			logger.warning("Not implemented on windows")
 			return
 		uid = -1
@@ -118,7 +134,7 @@ class File:
 
 	def create(self, user=None, group=None, mode=None):
 		if not os.path.exists(self._filename):
-			self.open('w')
+			self.open("w")
 			self.close()
 
 		if user is not None or group is not None:
@@ -126,7 +142,7 @@ class File:
 		if mode is not None:
 			self.chmod(mode)
 
-	def open(self, mode='r'):
+	def open(self, mode="r"):
 		self._fileHandle = builtins.open(self._filename, mode)  # pylint: disable=unspecified-encoding,consider-using-with
 		return self._fileHandle
 
@@ -139,33 +155,33 @@ class File:
 	def __getattr__(self, attr):
 		if attr in self.__dict__:
 			return self.__dict__[attr]
-		if self.__dict__['_fileHandle']:
-			return getattr(self.__dict__['_fileHandle'], attr)
+		if self.__dict__["_fileHandle"]:
+			return getattr(self.__dict__["_fileHandle"], attr)
 		return None
 
 	def __getstate__(self):
 		state = self.__dict__.copy()
 		file = self._fileHandle
-		state['_fileHandle'] = None
-		state['fileState'] = {}
-		state['fileState']['closed'] = file.closed
-		state['fileState']['encoding'] = file.encoding
-		state['fileState']['mode'] = file.mode
-		state['fileState']['name'] = file.name
-		state['fileState']['newlines'] = file.newlines
-		state['fileState']['softspace'] = file.softspace
-		state['fileState']['position'] = file.tell()
+		state["_fileHandle"] = None
+		state["fileState"] = {}
+		state["fileState"]["closed"] = file.closed
+		state["fileState"]["encoding"] = file.encoding
+		state["fileState"]["mode"] = file.mode
+		state["fileState"]["name"] = file.name
+		state["fileState"]["newlines"] = file.newlines
+		state["fileState"]["softspace"] = file.softspace
+		state["fileState"]["position"] = file.tell()
 		return state
 
 	def __setstate__(self, state):
 		self.__dict__, self.fileState = state.copy(), None
-		self.setFilename(state['fileState']['name'])
-		if not state['fileState']['closed']:
-			self.open(state['fileState']['mode'])
-			self._fileHandle.encoding = state['fileState']['encoding']
-			self._fileHandle.newlines = state['fileState']['newlines']
-			self._fileHandle.softspace = state['fileState']['softspace']
-			self.seek(state['fileState']['position'])
+		self.setFilename(state["fileState"]["name"])
+		if not state["fileState"]["closed"]:
+			self.open(state["fileState"]["mode"])
+			self._fileHandle.encoding = state["fileState"]["encoding"]
+			self._fileHandle.newlines = state["fileState"]["newlines"]
+			self._fileHandle.softspace = state["fileState"]["softspace"]
+			self.seek(state["fileState"]["position"])
 
 
 class LockableFile(File):
@@ -175,14 +191,14 @@ class LockableFile(File):
 		File.__init__(self, filename)
 		self._lockFailTimeout = forceInt(lockFailTimeout)
 
-	def open(self, mode='r', encoding=None, errors='replace'):  # pylint: disable=arguments-differ
+	def open(self, mode="r", encoding=None, errors="replace"):  # pylint: disable=arguments-differ
 		truncate = False
-		if mode in ('w', 'wb') and os.path.exists(self._filename):
-			if mode == 'w':
-				mode = 'r+'
+		if mode in ("w", "wb") and os.path.exists(self._filename):
+			if mode == "w":
+				mode = "r+"
 				truncate = True
-			elif mode == 'wb':
-				mode = 'rb+'
+			elif mode == "wb":
+				mode = "rb+"
 				truncate = True
 		if encoding:
 			self._fileHandle = codecs.open(self._filename, mode, encoding, errors)
@@ -200,25 +216,25 @@ class LockableFile(File):
 		self._fileHandle.flush()
 		File.close(self)
 
-	def _lockFile(self, mode='r'):
+	def _lockFile(self, mode="r"):
 		timeout = 0
 		while timeout < self._lockFailTimeout:
 			# While not timed out and not locked
 			logger.debug("Trying to lock file '%s' (%s/%s)", self._filename, timeout, self._lockFailTimeout)
 			try:
-				if os.name == 'posix':
+				if os.name == "posix":
 					# Flags for exclusive, non-blocking lock
 					flags = fcntl.LOCK_EX | fcntl.LOCK_NB
-					if mode in ('r', 'rb'):
+					if mode in ("r", "rb"):
 						# Flags for shared, non-blocking lock
 						flags = fcntl.LOCK_SH | fcntl.LOCK_NB
 					fcntl.flock(self._fileHandle.fileno(), flags)
-				elif os.name == 'nt':
+				elif os.name == "nt":
 					flags = win32con.LOCKFILE_EXCLUSIVE_LOCK | win32con.LOCKFILE_FAIL_IMMEDIATELY
-					if mode in ('r', 'rb'):
+					if mode in ("r", "rb"):
 						flags = win32con.LOCKFILE_FAIL_IMMEDIATELY
 					hfile = win32file._get_osfhandle(self._fileHandle.fileno())  # pylint: disable=protected-access
-					win32file.LockFileEx(hfile, flags, 0, 0x7fff0000, pywintypes.OVERLAPPED())
+					win32file.LockFileEx(hfile, flags, 0, 0x7FFF0000, pywintypes.OVERLAPPED())
 			except (IOError, pywintypeserror):
 				# increase timeout counter, sleep 100 millis
 				timeout += 100
@@ -235,20 +251,20 @@ class LockableFile(File):
 	def _unlockFile(self):
 		if not self._fileHandle:
 			return
-		if os.name == 'posix':
+		if os.name == "posix":
 			fcntl.flock(self._fileHandle.fileno(), fcntl.LOCK_UN)
-		elif os.name == 'nt':
+		elif os.name == "nt":
 			hfile = win32file._get_osfhandle(self._fileHandle.fileno())  # pylint: disable=protected-access
-			win32file.UnlockFileEx(hfile, 0, 0x7fff0000, pywintypes.OVERLAPPED())
+			win32file.UnlockFileEx(hfile, 0, 0x7FFF0000, pywintypes.OVERLAPPED())
 
 
 class TextFile(LockableFile):
 	def __init__(self, filename, lockFailTimeout=2000):
 		LockableFile.__init__(self, filename, lockFailTimeout)
 		self._lines = []
-		self._lineSeperator = '\n'
+		self._lineSeperator = "\n"
 
-	def open(self, mode='r', encoding='utf-8', errors='replace'):
+	def open(self, mode="r", encoding="utf-8", errors="replace"):
 		return LockableFile.open(self, mode, encoding, errors)
 
 	def write(self, str):  # pylint: disable=redefined-builtin
@@ -260,11 +276,11 @@ class TextFile(LockableFile):
 	def readlines(self):
 		self._lines = []
 		if not self._fileHandle:
-			for encoding in ('utf-8', 'utf-16', 'latin_1', 'cp1252', 'replace'):
-				errors = 'strict'
-				if encoding == 'replace':
-					errors = 'replace'
-					encoding = 'utf-8'
+			for encoding in ("utf-8", "utf-16", "latin_1", "cp1252", "replace"):
+				errors = "strict"
+				if encoding == "replace":
+					errors = "replace"
+					encoding = "utf-8"
 
 				self.open(encoding=encoding, errors=errors)
 				try:
@@ -290,7 +306,7 @@ class TextFile(LockableFile):
 
 
 class ChangelogFile(TextFile):
-	'''
+	"""
 	Files containing changelogs.
 
 	These follow the Debian style changelogs:
@@ -303,16 +319,16 @@ class ChangelogFile(TextFile):
 	  * even more change details
 		  [optional blank line(s), stripped]
 	[one space]-- maintainer name <email address>[two spaces]date
-	'''
+	"""
 
-	releaseLineRegex = re.compile(r'^\s*(\S+)\s+\(([^\)]+)\)\s+([^;]+);\s+urgency=(\S+)\s*$')
+	releaseLineRegex = re.compile(r"^\s*(\S+)\s+\(([^\)]+)\)\s+([^;]+);\s+urgency=(\S+)\s*$")
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
 		self._parsed = False
 		self._entries = []
 
-	def parse(self, lines=None): # pylint: disable=too-many-branches,too-many-statements
+	def parse(self, lines=None):  # pylint: disable=too-many-branches,too-many-statements
 		if lines:
 			self._lines = forceUnicodeList(lines)
 		else:
@@ -328,40 +344,40 @@ class ChangelogFile(TextFile):
 						self.addEntry(currentEntry)
 
 					currentEntry = {
-						'package': match.group(1),
-						'version': match.group(2),
-						'release': match.group(3),
-						'urgency': match.group(4),
-						'changelog': [],
-						'maintainerName': '',
-						'maintainerEmail': '',
-						'date': None
+						"package": match.group(1),
+						"version": match.group(2),
+						"release": match.group(3),
+						"urgency": match.group(4),
+						"changelog": [],
+						"maintainerName": "",
+						"maintainerEmail": "",
+						"date": None,
 					}
 					continue
 
-				if line.startswith(' --'):
-					if '  ' not in line:
+				if line.startswith(" --"):
+					if "  " not in line:
 						raise ValueError("maintainer must be separated from date using two spaces")
-					if not currentEntry or currentEntry['date']:
+					if not currentEntry or currentEntry["date"]:
 						raise ValueError("found trailer out of release")
 
-					(maintainer, date) = line[3:].strip().split('  ', 1)
-					email = ''
+					(maintainer, date) = line[3:].strip().split("  ", 1)
+					email = ""
 					try:
-						(maintainer, email) = maintainer.split('<', 1)
+						(maintainer, email) = maintainer.split("<", 1)
 						maintainer = maintainer.strip()
-						email = email.strip().replace('<', '').replace('>', '')
+						email = email.strip().replace("<", "").replace(">", "")
 					except ValueError:
 						pass
 
-					currentEntry['maintainerName'] = maintainer
-					currentEntry['maintainerEmail'] = email
-					if '+' in date:
-						date = date.split('+')[0]
-					currentEntry['date'] = time.strptime(date.strip(), "%a, %d %b %Y %H:%M:%S")
+					currentEntry["maintainerName"] = maintainer
+					currentEntry["maintainerEmail"] = email
+					if "+" in date:
+						date = date.split("+")[0]
+					currentEntry["date"] = time.strptime(date.strip(), "%a, %d %b %Y %H:%M:%S")
 					changelog = []
 					buf = []
-					for cline in currentEntry['changelog']:
+					for cline in currentEntry["changelog"]:
 						if not changelog and not cline.strip():
 							continue
 						if not cline.strip():
@@ -370,13 +386,13 @@ class ChangelogFile(TextFile):
 							changelog.extend(buf)
 							buf = []
 							changelog.append(forceUnicode(cline))
-					currentEntry['changelog'] = forceUnicodeList(changelog)
+					currentEntry["changelog"] = forceUnicodeList(changelog)
 
 				else:
 					if not currentEntry and line.strip():
 						raise ValueError("text not in release")
 					if currentEntry:
-						currentEntry['changelog'].append(line.rstrip())
+						currentEntry["changelog"].append(line.rstrip())
 			except Exception as err:
 				raise ValueError(f"Parse error in line {lineNum}: {err}") from err
 		if currentEntry:
@@ -387,26 +403,24 @@ class ChangelogFile(TextFile):
 	def generate(self):
 		# get current locale
 		loc = locale.getlocale()
-		locale.setlocale(locale.LC_ALL, 'C')
+		locale.setlocale(locale.LC_ALL, "C")
 		try:
 			if not self._entries:
 				raise ValueError("No entries to write")
 			self._lines = []
 			for entry in self._entries:
-				self._lines.append(
-					f"{entry['package']} ({entry['version']}) {entry['release']}; urgency={entry['urgency']}"
-				)
-				self._lines.append('')
-				for line in entry['changelog']:
+				self._lines.append(f"{entry['package']} ({entry['version']}) {entry['release']}; urgency={entry['urgency']}")
+				self._lines.append("")
+				for line in entry["changelog"]:
 					self._lines.append(line)
 				if self._lines[-1].strip():
-					self._lines.append('')
+					self._lines.append("")
 				self._lines.append(
 					f" -- {entry['maintainerName']} <{entry['maintainerEmail']}>  {time.strftime('%a, %d %b %Y %H:%M:%S +0000', entry['date'])}"
 				)
-				self._lines.append('')
+				self._lines.append("")
 
-			self.open('w')
+			self.open("w")
 			self.writelines()
 			self.close()
 		finally:
@@ -428,31 +442,31 @@ class ChangelogFile(TextFile):
 
 	def addEntry(self, entry):
 		entry = forceDict(entry)
-		for key in ('package', 'version', 'release', 'urgency', 'changelog', 'maintainerName', 'maintainerEmail', 'date'):
+		for key in ("package", "version", "release", "urgency", "changelog", "maintainerName", "maintainerEmail", "date"):
 			try:
 				entry[key]
 			except KeyError as err:
 				raise KeyError(f"Missing key '{key}' in entry {entry}") from err
 
-		entry['package'] = forceProductId(entry['package'])
-		entry['version'] = forceUnicode(entry['version'])
-		entry['release'] = forceUnicode(entry['release'])
-		entry['urgency'] = forceUnicode(entry['urgency'])
-		entry['changelog'] = forceUnicodeList(entry['changelog'])
-		entry['maintainerName'] = forceUnicode(entry['maintainerName'])
-		entry['maintainerEmail'] = forceEmailAddress(entry['maintainerEmail'])
-		entry['date'] = forceTime(entry['date'])
+		entry["package"] = forceProductId(entry["package"])
+		entry["version"] = forceUnicode(entry["version"])
+		entry["release"] = forceUnicode(entry["release"])
+		entry["urgency"] = forceUnicode(entry["urgency"])
+		entry["changelog"] = forceUnicodeList(entry["changelog"])
+		entry["maintainerName"] = forceUnicode(entry["maintainerName"])
+		entry["maintainerEmail"] = forceEmailAddress(entry["maintainerEmail"])
+		entry["date"] = forceTime(entry["date"])
 		self._entries.append(entry)
 
 
 class ConfigFile(TextFile):
-	def __init__(self, filename, lockFailTimeout=2000, commentChars=[';', '#'], lstrip=True):  # pylint: disable=dangerous-default-value
+	def __init__(self, filename, lockFailTimeout=2000, commentChars=[";", "#"], lstrip=True):  # pylint: disable=dangerous-default-value
 		TextFile.__init__(self, filename, lockFailTimeout)
 		self._commentChars = forceList(commentChars)
 		self._lstrip = forceBool(lstrip)
 		self._parsed = False
 
-	def parse(self, lines=None): # pylint: disable=too-many-branches
+	def parse(self, lines=None):  # pylint: disable=too-many-branches
 		if lines:
 			self._lines = forceUnicodeList(lines)
 		else:
@@ -480,7 +494,7 @@ class ConfigFile(TextFile):
 				for i, part in enumerate(islice(parts, len(parts) - 1)):
 					quote += part.count("'")
 					doublequote += part.count('"')
-					if len(part) > 0 and part[-1] == '\\':
+					if len(part) > 0 and part[-1] == "\\":
 						# escaped comment
 						continue
 
@@ -489,7 +503,7 @@ class ConfigFile(TextFile):
 						break
 
 				if cut > -1:
-					line = cc.join(parts[:cut + 1])
+					line = cc.join(parts[: cut + 1])
 
 			if not line:
 				continue
@@ -501,10 +515,10 @@ class ConfigFile(TextFile):
 
 class IniFile(ConfigFile):
 
-	optionMatch = re.compile(r'^([^:=]+)\s*([:=].*)$')
+	optionMatch = re.compile(r"^([^:=]+)\s*([:=].*)$")
 
 	def __init__(self, filename, lockFailTimeout=2000, ignoreCase=True, raw=True):
-		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
+		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[";", "#"])
 		self._ignoreCase = forceBool(ignoreCase)
 		self._raw = forceBool(raw)
 		self._configParser = None
@@ -518,7 +532,9 @@ class IniFile(ConfigFile):
 	def setKeepOrdering(self, keepOrdering):
 		self._keepOrdering = forceBool(keepOrdering)
 
-	def parse(self, lines=None, returnComments=False):  # pylint: disable=arguments-differ,too-many-branches,too-many-statements,too-many-locals
+	def parse(
+		self, lines=None, returnComments=False
+	):  # pylint: disable=arguments-differ,too-many-branches,too-many-statements,too-many-locals
 		logger.debug("Parsing ini file '%s'", self._filename)
 		start = time.time()
 		if lines:
@@ -535,12 +551,12 @@ class IniFile(ConfigFile):
 			line = line.strip()
 			if not line:
 				if returnComments:
-					currentComments.append('')
+					currentComments.append("")
 				continue
-			if line.startswith('['):
-				currentSection = line.split('[', 1)[1].split(']', 1)[0].strip()
+			if line.startswith("["):
+				currentSection = line.split("[", 1)[1].split("]", 1)[0].strip()
 				if returnComments:
-					comments[currentSection] = {'[]': currentComments}
+					comments[currentSection] = {"[]": currentComments}
 					currentComments = []
 				if self._ignoreCase:
 					line = line.lower()
@@ -558,7 +574,7 @@ class IniFile(ConfigFile):
 				for i, part in enumerate(islice(parts, len(parts) - 1)):
 					quote += part.count("'")
 					doublequote += part.count('"')
-					if len(part) > 0 and part[-1] == '\\':
+					if len(part) > 0 and part[-1] == "\\":
 						# escaped comment
 						continue
 					if not quote % 2 and not doublequote % 2:
@@ -566,9 +582,9 @@ class IniFile(ConfigFile):
 						break
 
 				if cut > -1:
-					line = cc.join(parts[:cut + 1])
+					line = cc.join(parts[: cut + 1])
 					if returnComments:
-						comment = cc + cc.join(parts[cut + 1:])
+						comment = cc + cc.join(parts[cut + 1 :])
 
 			if self._ignoreCase or comment:
 				match = self.optionMatch.search(line)
@@ -592,7 +608,7 @@ class IniFile(ConfigFile):
 			self._configParser = SafeConfigParser()
 
 		try:
-			self._configParser.read_file(StringIO('\r\n'.join(lines)))
+			self._configParser.read_file(StringIO("\r\n".join(lines)))
 		except Exception as err:
 			raise RuntimeError(f"Failed to parse ini file '{self._filename}': {err}") from err
 
@@ -616,11 +632,11 @@ class IniFile(ConfigFile):
 				line = line.strip()
 				if not line or line[0] in self._commentChars:
 					continue
-				if line.startswith('['):
-					section = line.split('[', 1)[1].split(']', 1)[0].strip()
+				if line.startswith("["):
+					section = line.split("[", 1)[1].split("]", 1)[0].strip()
 					sectionSequence.append(section)
-				elif '=' in line:
-					option = line.split('=')[0].strip()
+				elif "=" in line:
+					option = line.split("=")[0].strip()
 					if sectionSequence[-1] not in optionSequence:
 						optionSequence[sectionSequence[-1]] = []
 					optionSequence[sectionSequence[-1]].append(option)
@@ -641,9 +657,9 @@ class IniFile(ConfigFile):
 		for section in sections:
 			section = forceUnicode(section)
 			if comments:
-				for cline in comments.get(section, {}).get('[]', []):
+				for cline in comments.get(section, {}).get("[]", []):
 					self._lines.append(forceUnicode(cline))
-			self._lines.append(f'[{section}]')
+			self._lines.append(f"[{section}]")
 			options = self._configParser.options(section)
 			options.sort()
 			for num, option in enumerate(options):
@@ -662,23 +678,23 @@ class IniFile(ConfigFile):
 				self._lines.append(f"{option} = {self._configParser.get(section, option)}")
 			if not comments:
 				self._lines.append("")
-		self.open('w')
+		self.open("w")
 		self.writelines()
 		self.close()
 
 
 class InfFile(ConfigFile):
 
-	sectionRegex = re.compile(r'\[\s*([^\]]+)\s*\]')
-	pciDeviceRegex = re.compile(r'VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
-	hdaudioDeviceRegex = re.compile(r'HDAUDIO\\.*VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)', re.IGNORECASE)
-	usbDeviceRegex = re.compile(r'USB.*VID_([\da-fA-F]+)&PID_([\da-fA-F]+)', re.IGNORECASE)
-	acpiDeviceRegex = re.compile(r'ACPI\\(\S+)_-_(\S+)', re.IGNORECASE)
-	varRegex = re.compile(r'%([^%]+)%')
-	classRegex = re.compile(r'class\s*=')
+	sectionRegex = re.compile(r"\[\s*([^\]]+)\s*\]")
+	pciDeviceRegex = re.compile(r"VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)", re.IGNORECASE)
+	hdaudioDeviceRegex = re.compile(r"HDAUDIO\\.*VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)", re.IGNORECASE)
+	usbDeviceRegex = re.compile(r"USB.*VID_([\da-fA-F]+)&PID_([\da-fA-F]+)", re.IGNORECASE)
+	acpiDeviceRegex = re.compile(r"ACPI\\(\S+)_-_(\S+)", re.IGNORECASE)
+	varRegex = re.compile(r"%([^%]+)%")
+	classRegex = re.compile(r"class\s*=")
 
 	def __init__(self, filename, lockFailTimeout=2000):
-		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
+		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[";", "#"])
 		self._sourceDisksNames = []
 		self._devices = []
 
@@ -701,14 +717,14 @@ class InfFile(ConfigFile):
 			self.parse()
 		for dev in self._devices:
 			if (
-				(not deviceType or (dev.get('type') == deviceType)) and
-				(dev.get('vendor') == vendorId) and
-				(not dev.get('device') or (dev['device'] == deviceId))
+				(not deviceType or (dev.get("type") == deviceType))
+				and (dev.get("vendor") == vendorId)
+				and (not dev.get("device") or (dev["device"] == deviceId))
 			):
 				return True
 		return False
 
-	def parse(self, lines=None): # pylint: disable=too-many-branches,too-many-statements,too-many-locals
+	def parse(self, lines=None):  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 		logger.debug("Parsing inf file %s", self._filename)
 		lines = ConfigFile.parse(self, lines)
 		self._parsed = False
@@ -716,7 +732,7 @@ class InfFile(ConfigFile):
 
 		path = os.path.dirname(self._filename)
 
-		deviceClass = '???'
+		deviceClass = "???"
 		deviceSections = []
 		appendNext = False
 		newLines = []
@@ -726,23 +742,23 @@ class InfFile(ConfigFile):
 			else:
 				newLines.append(line)
 
-			appendNext = line.endswith('\\')
+			appendNext = line.endswith("\\")
 		lines = newLines
 
 		# Get strings
 		logger.trace("   - Getting strings")
 		strings = {}
-		section = ''
+		section = ""
 		for line in lines:
 			match = re.search(self.sectionRegex, line)
 			if match:
-				if section.lower() == 'strings':
+				if section.lower() == "strings":
 					break
 				section = match.group(1)
 			else:
-				if section.lower() == 'strings':
+				if section.lower() == "strings":
 					try:
-						(var, string) = line.split('=', 1)
+						(var, string) = line.split("=", 1)
 						string = string.strip()
 						if string.startswith('"') and string.endswith('"'):
 							string = string[1:-1]
@@ -758,65 +774,65 @@ class InfFile(ConfigFile):
 			match = re.search(self.sectionRegex, line)
 			if match:
 				section = match.group(1)
-				sectionFound = section.lower().startswith('sourcedisksnames')
+				sectionFound = section.lower().startswith("sourcedisksnames")
 				continue
 
 			if sectionFound:
-				if '=' not in line:
+				if "=" not in line:
 					continue
-				name = line.split('=')[1].split(',')[0].strip()
-				name = strings.get(name.replace('%', '').lower(), name)
+				name = line.split("=")[1].split(",")[0].strip()
+				name = strings.get(name.replace("%", "").lower(), name)
 				if name not in self._sourceDisksNames:
 					self._sourceDisksNames.append(name)
 
 		# Get devices
 		logger.trace("   - Getting devices")
-		section = ''
+		section = ""
 		for line in lines:  # pylint: disable=too-many-locals,too-many-nested-blocks
 			match = re.search(self.sectionRegex, line)
 			if match:
-				if section.lower() == 'manufacturer':
+				if section.lower() == "manufacturer":
 					break
 				section = match.group(1)
 			else:
-				if section.lower() == 'version':
-					if line.lower().startswith('class'):
+				if section.lower() == "version":
+					if line.lower().startswith("class"):
 						if re.search(self.classRegex, line.lower()):
-							deviceClass = line.split('=')[1].strip().lower()
+							deviceClass = line.split("=")[1].strip().lower()
 							match = re.search(self.varRegex, deviceClass)
 							if match:
 								var = match.group(1).lower()
 								if var in strings:
-									deviceClass = deviceClass.replace(f'%{var}%', strings[var])
+									deviceClass = deviceClass.replace(f"%{var}%", strings[var])
 
-				elif section.lower() == 'manufacturer':
-					if line and '=' in line:
-						for dev in line.split('=')[1].split(','):
+				elif section.lower() == "manufacturer":
+					if line and "=" in line:
+						for dev in line.split("=")[1].split(","):
 							deviceSections.append(dev.strip())
 
 		devSections = set()
 		for deviceSection in deviceSections:
-			for i in deviceSection.split('.'):
+			for i in deviceSection.split("."):
 				devSections.add(i)
 		deviceSections = devSections
-		logger.trace("      - Device sections: %s", ', '.join(deviceSections))
+		logger.trace("      - Device sections: %s", ", ".join(deviceSections))
 
 		def isDeviceSection(section):
 			if section in deviceSections:
 				return True
-			for sec in section.split('.'):
+			for sec in section.split("."):
 				if sec not in deviceSections:
 					return False
 			return True
 
 		regexAndType = (
-			(self.hdaudioDeviceRegex, 'HDAUDIO'),
-			(self.pciDeviceRegex, 'PCI'),
-			(self.usbDeviceRegex, 'USB'),
-			(self.acpiDeviceRegex, 'ACPI'),
+			(self.hdaudioDeviceRegex, "HDAUDIO"),
+			(self.pciDeviceRegex, "PCI"),
+			(self.usbDeviceRegex, "USB"),
+			(self.acpiDeviceRegex, "ACPI"),
 		)
 		found = set()
-		section = ''
+		section = ""
 		sectionsParsed = []
 		for line in lines:  # pylint: disable=too-many-locals,too-many-nested-blocks
 			try:
@@ -830,10 +846,10 @@ class InfFile(ConfigFile):
 				else:
 					if isDeviceSection(section) and section not in sectionsParsed:
 						try:
-							if '=' not in line or ',' not in line:
+							if "=" not in line or "," not in line:
 								continue
 
-							devString = line.split('=')[1].split(',')[1].strip()
+							devString = line.split("=")[1].split(",")[1].strip()
 							logger.trace("      - Processing device string: %s", devString)
 
 							for regex, deviceType in regexAndType:
@@ -841,11 +857,11 @@ class InfFile(ConfigFile):
 								if match:
 									break
 							else:  # No match found
-								deviceType = ''  # reset the device type
+								deviceType = ""  # reset the device type
 
 							if match:
 								logger.trace("         - Device type is %s", deviceType)
-								if deviceType == 'ACPI':
+								if deviceType == "ACPI":
 									vendor = match.group(1)
 									device = match.group(2)
 								else:
@@ -856,13 +872,7 @@ class InfFile(ConfigFile):
 									logger.trace("         - Found %s device: %s:%s", deviceType, vendor, device)
 									found.add(f"{deviceType}:{vendor}:{device}")
 									self._devices.append(
-										{
-											'path': path,
-											'class': deviceClass,
-											'vendor': vendor,
-											'device': device,
-											'type': deviceType
-										}
+										{"path": path, "class": deviceClass, "vendor": vendor, "device": device, "type": deviceType}
 									)
 						except IndexError:
 							logger.warning("Skipping bad line '%s' in file %s", line, self._filename)
@@ -872,9 +882,8 @@ class InfFile(ConfigFile):
 
 
 class PciidsFile(ConfigFile):
-
 	def __init__(self, filename, lockFailTimeout=2000):
-		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'], lstrip=False)
+		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[";", "#"], lstrip=False)
 		self._devices = {}
 		self._vendors = {}
 		self._subDevices = {}
@@ -896,7 +905,7 @@ class PciidsFile(ConfigFile):
 		deviceId = forceHardwareDeviceId(deviceId)
 		subVendorId = forceHardwareVendorId(subVendorId)
 		subDeviceId = forceHardwareDeviceId(subDeviceId)
-		return self._subDevices.get(vendorId, {}).get(deviceId, {}).get(subVendorId + ':' + subDeviceId, None)
+		return self._subDevices.get(vendorId, {}).get(deviceId, {}).get(subVendorId + ":" + subDeviceId, None)
 
 	def parse(self, lines=None):
 		logger.debug("Parsing ids file %s", self._filename)
@@ -912,21 +921,25 @@ class PciidsFile(ConfigFile):
 		currentDeviceId = None
 		for line in lines:
 			try:
-				if line.startswith('C '):
+				if line.startswith("C "):
 					# Start of list of known device classes, subclasses and programming interfaces
 					break
 
-				if line.startswith('\t'):
+				if line.startswith("\t"):
 					if not currentVendorId or currentVendorId not in self._devices:
 						raise ValueError(f"Parse error in file '{self._filename}': {line}")
 
-					if line.startswith('\t\t'):
-						if not currentDeviceId or currentVendorId not in self._subDevices or currentDeviceId not in self._subDevices[currentVendorId]:
+					if line.startswith("\t\t"):
+						if (
+							not currentDeviceId
+							or currentVendorId not in self._subDevices
+							or currentDeviceId not in self._subDevices[currentVendorId]
+						):
 							raise ValueError(f"Parse error in file '{self._filename}': {line}")
 						(subVendorId, subDeviceId, subName) = line.lstrip().split(None, 2)
 						subVendorId = forceHardwareVendorId(subVendorId)
 						subDeviceId = forceHardwareDeviceId(subDeviceId)
-						self._subDevices[currentVendorId][currentDeviceId][subVendorId + ':' + subDeviceId] = subName.strip()
+						self._subDevices[currentVendorId][currentDeviceId][subVendorId + ":" + subDeviceId] = subName.strip()
 					else:
 						(deviceId, deviceName) = line.lstrip().split(None, 1)
 						currentDeviceId = deviceId = forceHardwareDeviceId(deviceId)
@@ -957,16 +970,16 @@ UsbidsFile = PciidsFile
 
 class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attributes
 
-	sectionRegex = re.compile(r'\[\s*([^\]]+)\s*\]')
-	pciDeviceRegex = re.compile(r'VEN_([\da-fA-F]+)(&DEV_([\da-fA-F]+))?(\S*)\s*$')
-	usbDeviceRegex = re.compile(r'USB.*VID_([\da-fA-F]+)(&PID_([\da-fA-F]+))?(\S*)\s*$', re.IGNORECASE)
-	filesRegex = re.compile(r'^files\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
-	configsRegex = re.compile(r'^config\.(.+)$', re.IGNORECASE)
-	hardwareIdsRegex = re.compile(r'^hardwareids\.(computer|display|keyboard|mouse|scsi)\.(.+)$', re.IGNORECASE)
-	dllEntryRegex = re.compile(r'^(dll\s*\=\s*)(\S+.*)$', re.IGNORECASE)
+	sectionRegex = re.compile(r"\[\s*([^\]]+)\s*\]")
+	pciDeviceRegex = re.compile(r"VEN_([\da-fA-F]+)(&DEV_([\da-fA-F]+))?(\S*)\s*$")
+	usbDeviceRegex = re.compile(r"USB.*VID_([\da-fA-F]+)(&PID_([\da-fA-F]+))?(\S*)\s*$", re.IGNORECASE)
+	filesRegex = re.compile(r"^files\.(computer|display|keyboard|mouse|scsi)\.(.+)$", re.IGNORECASE)
+	configsRegex = re.compile(r"^config\.(.+)$", re.IGNORECASE)
+	hardwareIdsRegex = re.compile(r"^hardwareids\.(computer|display|keyboard|mouse|scsi)\.(.+)$", re.IGNORECASE)
+	dllEntryRegex = re.compile(r"^(dll\s*\=\s*)(\S+.*)$", re.IGNORECASE)
 
 	def __init__(self, filename, lockFailTimeout=2000):
-		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])
+		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[";", "#"])
 		self._devices = []
 		self._files = []
 		self._componentNames = []
@@ -986,15 +999,15 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 		deviceId = forceHardwareDeviceId(deviceId)
 		for dev in self._devices:
 			if (
-				(not deviceType or (dev.get('type') == deviceType)) and
-				(dev.get('vendor') == vendorId) and
-				(not dev.get('device') or (dev['device'] == deviceId))
+				(not deviceType or (dev.get("type") == deviceType))
+				and (dev.get("vendor") == vendorId)
+				and (not dev.get("device") or (dev["device"] == deviceId))
 			):
 				return True
 		return False
 
 	@requiresParsing
-	def getDevice(self, vendorId, deviceId, deviceType=None, architecture='x86'):
+	def getDevice(self, vendorId, deviceId, deviceType=None, architecture="x86"):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
 		architecture = forceArchitecture(architecture)
@@ -1002,22 +1015,24 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 		device = None
 		for dev in self._devices:
 			if (
-				(not deviceType or (dev.get('type') == deviceType)) and
-				(dev.get('vendor') == vendorId) and
-				(not dev.get('device') or dev['device'] == deviceId)
+				(not deviceType or (dev.get("type") == deviceType))
+				and (dev.get("vendor") == vendorId)
+				and (not dev.get("device") or dev["device"] == deviceId)
 			):
-				if architecture == 'x86':
-					if 'amd64' in dev['componentId'].lower() or 'x64' in dev['componentId'].lower():
+				if architecture == "x86":
+					if "amd64" in dev["componentId"].lower() or "x64" in dev["componentId"].lower():
 						logger.debug(
 							"Skipping device with component id '%s' which does not seem to match architecture '%s'",
-							dev['componentId'], architecture
+							dev["componentId"],
+							architecture,
 						)
 						continue
-				elif architecture == 'x64':
-					if 'i386' in dev['componentId'].lower() or 'x86' in dev['componentId'].lower():
+				elif architecture == "x64":
+					if "i386" in dev["componentId"].lower() or "x86" in dev["componentId"].lower():
 						logger.debug(
 							"Skipping device with component id '%s' which does not seem to match architecture '%s'",
-							dev['componentId'], architecture
+							dev["componentId"],
+							architecture,
 						)
 						continue
 				device = dev
@@ -1026,7 +1041,9 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 			raise ValueError(f"Device '{vendorId}:{deviceId}' not found in txtsetup.oem file '{self._filename}'")
 		return device
 
-	def getFilesForDevice(self, vendorId, deviceId, deviceType=None, fileTypes=[], architecture='x86'):  # pylint: disable=dangerous-default-value,too-many-arguments
+	def getFilesForDevice(
+		self, vendorId, deviceId, deviceType=None, fileTypes=[], architecture="x86"
+	):  # pylint: disable=dangerous-default-value,too-many-arguments
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
 		fileTypes = forceUnicodeLowerList(fileTypes)
@@ -1040,31 +1057,28 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 			diskDriverDirs[dev["diskName"]] = dev["driverDir"]
 
 		for file in self._files:
-			if file['componentName'] != device['componentName'] or file['componentId'] != device['componentId']:
+			if file["componentName"] != device["componentName"] or file["componentId"] != device["componentId"]:
 				continue
-			if fileTypes and file['fileType'] not in fileTypes:
+			if fileTypes and file["fileType"] not in fileTypes:
 				continue
-			if file['diskName'] not in diskDriverDirs:
+			if file["diskName"] not in diskDriverDirs:
 				raise ValueError(f"Driver disk for file {file} not found in txtsetup.oem file '{self._filename}'")
-			files.append(os.path.join(diskDriverDirs[file['diskName']], file['filename']))
+			files.append(os.path.join(diskDriverDirs[file["diskName"]], file["filename"]))
 		return files
 
-	def getComponentOptionsForDevice(self, vendorId, deviceId, deviceType=None, architecture='x86'):
+	def getComponentOptionsForDevice(self, vendorId, deviceId, deviceType=None, architecture="x86"):
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
 
 		device = self.getDevice(vendorId=vendorId, deviceId=deviceId, deviceType=deviceType, architecture=architecture)
 
 		for componentOptions in self._componentOptions:
-			if (
-				componentOptions['componentName'] == device['componentName'] and
-				componentOptions["componentId"] == device['componentId']
-			):
+			if componentOptions["componentName"] == device["componentName"] and componentOptions["componentId"] == device["componentId"]:
 				return componentOptions
 		for componentOptions in self._componentOptions:
 			if (
-				componentOptions['componentName'].lower() == device['componentName'].lower() and
-				componentOptions["componentId"].lower() == device['componentId'].lower()
+				componentOptions["componentName"].lower() == device["componentName"].lower()
+				and componentOptions["componentId"].lower() == device["componentId"].lower()
 			):
 				return componentOptions
 		raise ValueError(f"Component options for device {device} not found in txtsetup.oem file '{self._filename}'")
@@ -1073,23 +1087,19 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 	def applyWorkarounds(self):
 		if not self._defaultComponentIds:
 			# Missing default component will cause problems in windows textmode setup
-			logger.info(
-				"No default component ids found, using '%s' as default component id",
-				self._componentOptions[0]['componentId']
+			logger.info("No default component ids found, using '%s' as default component id", self._componentOptions[0]["componentId"])
+			self._defaultComponentIds.append(
+				{"componentName": self._componentOptions[0]["componentName"], "componentId": self._componentOptions[0]["componentId"]}
 			)
-			self._defaultComponentIds.append({
-				'componentName': self._componentOptions[0]['componentName'],
-				'componentId': self._componentOptions[0]['componentId']
-			})
 		files = []
 		for file in self._files:
-			if file['fileType'] == 'dll':
+			if file["fileType"] == "dll":
 				# dll entries will cause problems in windows textmode setup
 				continue
 			files.append(file)
 		self._files = files
 
-	def parse(self, lines=None): # pylint: disable=too-many-branches,too-many-statements,too-many-locals
+	def parse(self, lines=None):  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 		logger.debug("Parsing txtsetup.oem file %s", self._filename)
 
 		lines = ConfigFile.parse(self, lines)
@@ -1118,17 +1128,17 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 		# Search for component options
 		logger.info("Searching for component names and options")
 		for (section, sec_lines) in sections.items():
-			if section.lower() not in ('computer', 'display', 'keyboard', 'mouse', 'scsi'):
+			if section.lower() not in ("computer", "display", "keyboard", "mouse", "scsi"):
 				continue
 			componentName = section
 			for line in sec_lines:
-				if '=' not in line:
+				if "=" not in line:
 					continue
 				optionName = None
-				(componentId, value) = line.split('=', 1)
+				(componentId, value) = line.split("=", 1)
 				componentId = componentId.strip()
 				try:
-					(description, optionName) = value.split(',', 1)
+					(description, optionName) = value.split(",", 1)
 					optionName = optionName.strip()
 				except ValueError:
 					description = value
@@ -1137,12 +1147,9 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 					description = description[1:-1]
 				if not componentName in self._componentNames:
 					self._componentNames.append(componentName)
-				self._componentOptions.append({
-					"componentName": componentName,
-					"description": description,
-					"componentId": componentId,
-					"optionName": optionName
-				})
+				self._componentOptions.append(
+					{"componentName": componentName, "description": description, "componentId": componentId, "optionName": optionName}
+				)
 
 		logger.info("Component names found: %s", self._componentNames)
 		logger.info("Component options found: %s", self._componentOptions)
@@ -1150,15 +1157,12 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 		# Search for default component ids
 		logger.info("Searching for default component ids")
 		for (section, sec_lines) in sections.items():
-			if section.lower() != 'defaults':
+			if section.lower() != "defaults":
 				continue
 
 			for line in sec_lines:
-				(componentName, componentId) = line.split('=', 1)
-				self._defaultComponentIds.append({
-					'componentName': componentName.strip(),
-					'componentId': componentId.strip()
-				})
+				(componentName, componentId) = line.split("=", 1)
+				self._defaultComponentIds.append({"componentName": componentName.strip(), "componentId": componentId.strip()})
 
 		if self._defaultComponentIds:
 			logger.info("Found default component ids: %s", self._defaultComponentIds)
@@ -1171,14 +1175,11 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 				continue
 			componentName = match.group(1)
 			componentId = match.group(2)
-			logger.info(
-				"Found hardwareIds section '%s', component name '%s', component id '%s'",
-				section, componentName, componentId
-			)
+			logger.info("Found hardwareIds section '%s', component name '%s', component id '%s'", section, componentName, componentId)
 			for line in sec_lines:
-				if not re.search(r'[iI][dD]\s*=', line):
+				if not re.search(r"[iI][dD]\s*=", line):
 					continue
-				(device, serviceName) = line.split('=', 1)[1].strip().split(',', 1)
+				(device, serviceName) = line.split("=", 1)[1].strip().split(",", 1)
 				device = device.strip()
 				if device.startswith('"') and device.endswith('"'):
 					device = device[1:-1]
@@ -1195,16 +1196,18 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 				extra = None
 				if match.group(4):
 					extra = forceUnicode(match.group(4))
-				logger.debug("   Found %s device: %s:%s, service name: %s", 'PCI', vendor, device, serviceName)
-				self._devices.append({
-					'vendor': vendor,
-					'device': device,
-					'extra': extra,
-					'type': 'PCI',
-					'serviceName': serviceName,
-					'componentName': componentName,
-					'componentId': componentId
-				})
+				logger.debug("   Found %s device: %s:%s, service name: %s", "PCI", vendor, device, serviceName)
+				self._devices.append(
+					{
+						"vendor": vendor,
+						"device": device,
+						"extra": extra,
+						"type": "PCI",
+						"serviceName": serviceName,
+						"componentName": componentName,
+						"componentId": componentId,
+					}
+				)
 				if serviceName not in self._serviceNames:
 					self._serviceNames.append(serviceName)
 
@@ -1217,32 +1220,27 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 		# Search for disks
 		logger.info("Searching for disks")
 		for (section, sec_lines) in sections.items():
-			if section.lower() != 'disks':
+			if section.lower() != "disks":
 				continue
 
 			for line in sec_lines:
-				if '=' not in line:
+				if "=" not in line:
 					continue
 
-				(diskName, value) = line.split('=', 1)
+				(diskName, value) = line.split("=", 1)
 				diskName = diskName.strip()
-				(desc, tf, dd) = value.split(',', 2)
+				(desc, tf, dd) = value.split(",", 2)
 				desc = desc.strip()
 				if desc.startswith('"') and desc.endswith('"'):
 					desc = desc[1:-1]
 				tf = tf.strip()
-				if tf.startswith('\\'):
+				if tf.startswith("\\"):
 					tf = tf[1:]
 				dd = dd.strip()
-				if dd.startswith('\\'):
+				if dd.startswith("\\"):
 					dd = dd[1:]
 
-				self._driverDisks.append({
-					"diskName": diskName,
-					"description": desc,
-					"tagfile": tf,
-					"driverDir": dd
-				})
+				self._driverDisks.append({"diskName": diskName, "description": desc, "tagfile": tf, "driverDir": dd})
 		if not self._driverDisks:
 			raise ValueError(f"No driver disks found in txtsetup file '{self._filename}'")
 		logger.info("Found driver disks: %s", self._driverDisks)
@@ -1255,28 +1253,27 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 				continue
 			componentName = match.group(1)
 			componentId = match.group(2)
-			logger.info(
-				"Found files section '%s', component name '%s', component id '%s'",
-				section, componentName, componentId
-			)
+			logger.info("Found files section '%s', component name '%s', component id '%s'", section, componentName, componentId)
 			for line in sec_lines:
-				(fileType, value) = line.split('=', 1)
+				(fileType, value) = line.split("=", 1)
 				fileType = fileType.strip()
-				parts = value.split(',')
+				parts = value.split(",")
 				diskName = parts[0].strip()
 				filename = parts[1].strip()
 				optionName = None
 				if len(parts) > 2:
 					optionName = parts[2].strip()
 
-				self._files.append({
-					'fileType': fileType,
-					'diskName': diskName,
-					'filename': filename,
-					'componentName': componentName,
-					'componentId': componentId,
-					'optionName': optionName
-				})
+				self._files.append(
+					{
+						"fileType": fileType,
+						"diskName": diskName,
+						"filename": filename,
+						"componentName": componentName,
+						"componentId": componentId,
+						"optionName": optionName,
+					}
+				)
 		logger.debug("Found files: %s", self._files)
 
 		# Search for configs
@@ -1288,93 +1285,93 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 			componentId = match.group(1)
 			logger.info("Found configs section '%s', component id '%s'", section, componentId)
 			for line in sec_lines:
-				value = line.split('=', 1)[1]
-				(keyName, valueName, valueType, value) = value.split(',', 3)
+				value = line.split("=", 1)[1]
+				(keyName, valueName, valueType, value) = value.split(",", 3)
 				keyName = keyName.strip()
 				valueName = valueName.strip()
 				valueType = valueType.strip()
 				value = value.strip()
-				self._configs.append({
-					'keyName': keyName.strip(),
-					'valueName': valueName.strip(),
-					'valueType': valueType.strip(),
-					'value': value.strip(),
-					'componentId': componentId
-				})
+				self._configs.append(
+					{
+						"keyName": keyName.strip(),
+						"valueName": valueName.strip(),
+						"valueType": valueType.strip(),
+						"value": value.strip(),
+						"componentId": componentId,
+					}
+				)
 		logger.debug("Found configs: %s", self._configs)
 		self._parsed = True
 
-	def generate(self): # pylint: disable=too-many-branches,too-many-statements
+	def generate(self):  # pylint: disable=too-many-branches,too-many-statements
 		lines = []
-		lines.append('[Disks]\r\n')
+		lines.append("[Disks]\r\n")
 		for disk in self._driverDisks:
-			lines.append(
-				f'{disk["diskName"]} = "{disk["description"]}", \\{disk["tagfile"]}, \\{disk["driverDir"]}\r\n'
-			)
-		lines.append('\r\n')
-		lines.append('[Defaults]\r\n')
+			lines.append(f'{disk["diskName"]} = "{disk["description"]}", \\{disk["tagfile"]}, \\{disk["driverDir"]}\r\n')
+		lines.append("\r\n")
+		lines.append("[Defaults]\r\n")
 		for default in self._defaultComponentIds:
 			lines.append(f'{default["componentName"]} = {default["componentId"]}\r\n')
 
 		for name in self._componentNames:
-			lines.append('\r\n')
-			lines.append(f'[{name}]\r\n')
+			lines.append("\r\n")
+			lines.append(f"[{name}]\r\n")
 			for options in self._componentOptions:
 				if options["componentName"] != name:
 					continue
 				line = f'{options["componentId"]} = "{options["description"]}"'
 				if options["optionName"]:
 					line = f'{line}, {options["optionName"]}'
-				lines.append(line + '\r\n')
+				lines.append(line + "\r\n")
 
 		for name in self._componentNames:
 			for options in self._componentOptions:
 				if options["componentName"] != name:
 					continue
-				lines.append('\r\n')
+				lines.append("\r\n")
 				lines.append(f'[Files.{name}.{options["componentId"]}]\r\n')
 				for file in self._files:
-					if file['componentName'] != name or file['componentId'] != options["componentId"]:
+					if file["componentName"] != name or file["componentId"] != options["componentId"]:
 						continue
 					line = f'{file["fileType"]} = {file["diskName"]}, {file["filename"]}'
 					if file["optionName"]:
 						line = f'{line}, {file["optionName"]}'
-					lines.append(line + '\r\n')
+					lines.append(line + "\r\n")
 
 		for name in self._componentNames:
 			for options in self._componentOptions:
 				if options["componentName"] != name:
 					continue
-				lines.append('\r\n')
+				lines.append("\r\n")
 				lines.append(f'[HardwareIds.{name}.{options["componentId"]}]\r\n')
 				for dev in self._devices:
-					if dev['componentName'] != name or dev['componentId'] != options["componentId"]:
+					if dev["componentName"] != name or dev["componentId"] != options["componentId"]:
 						continue
 
 					line = f'id = "{dev["type"]}\\VEN_{dev["vendor"]}'
-					if dev['device']:
+					if dev["device"]:
 						line += f'&DEV_{dev["device"]}'
-					if dev['extra']:
-						line += dev['extra']
-					if dev['type'] == 'USB':
-						line = line.replace('VEN_', 'VID_').replace('DEV_', 'PID_')
+					if dev["extra"]:
+						line += dev["extra"]
+					if dev["type"] == "USB":
+						line = line.replace("VEN_", "VID_").replace("DEV_", "PID_")
 					line += f'", "{dev["serviceName"]}"'
-					lines.append(line + '\r\n')
+					lines.append(line + "\r\n")
 
 		configComponents = {}
 		for config in self._configs:
-			if config['componentId'] not in configComponents:
-				configComponents[config['componentId']] = []
-			configComponents[config['componentId']].append(config)
+			if config["componentId"] not in configComponents:
+				configComponents[config["componentId"]] = []
+			configComponents[config["componentId"]].append(config)
 
 		for (componentId, configs) in configComponents.items():
-			lines.append('\r\n')
-			lines.append(f'[Config.{componentId}]\r\n')
+			lines.append("\r\n")
+			lines.append(f"[Config.{componentId}]\r\n")
 			for conf in configs:
 				lines.append(f"value = {conf['keyName']}, {conf['valueName']}, {conf['valueType']}, {conf['value']}\r\n")
 
 		self._lines = lines
-		self._fileHandle = codecs.open(self._filename, 'w', 'cp1250')  # pylint: disable=consider-using-with
+		self._fileHandle = codecs.open(self._filename, "w", "cp1250")  # pylint: disable=consider-using-with
 		self.writelines()
 		self.close()
 
@@ -1383,7 +1380,7 @@ class ZsyncFile(LockableFile):
 	def __init__(self, filename, lockFailTimeout=2000):
 		LockableFile.__init__(self, filename, lockFailTimeout)
 		self._header = {}
-		self._data = ''
+		self._data = ""
 		self._parsed = False
 
 	def parse(self, lines=None):  # pylint: disable=unused-argument
@@ -1391,10 +1388,10 @@ class ZsyncFile(LockableFile):
 
 		self._parsed = False
 
-		with open(self._filename, 'rb') as file:
-			for line in iter(lambda: file.readline().strip(), b''):
+		with open(self._filename, "rb") as file:
+			for line in iter(lambda: file.readline().strip(), b""):
 				strLine = line.decode()
-				key, value = strLine.split(':', 1)
+				key, value = strLine.split(":", 1)
 				self._header[key.strip()] = value.strip()
 
 			# Header and data are divided by an empty line
@@ -1404,16 +1401,21 @@ class ZsyncFile(LockableFile):
 
 	def generate(self, dataFile=None):
 		if dataFile:
-			execute(f"{which('zsyncmake')} -u '{os.path.basename(dataFile)}' -o '{self._filename}' '{dataFile}'")
+			zsyncmake = which("zsyncmake-curl")
+			if not zsyncmake:
+				zsyncmake = which("zsyncmake")
+			if not zsyncmake:
+				raise FileNotFoundError("zsyncmake(-curl) binary not found in PATH")
+			execute(f"{zsyncmake} -u '{os.path.basename(dataFile)}' -o '{self._filename}' '{dataFile}'")
 			self.parse()
 
-		with open(self._filename, 'wb') as file:
+		with open(self._filename, "wb") as file:
 			for key, value in self._header.items():
-				if key.lower() == 'mtime':
+				if key.lower() == "mtime":
 					continue
-				headerData = f'{key}: {value}\n'
+				headerData = f"{key}: {value}\n"
 				file.write(headerData.encode())
-			file.write('\n'.encode())
+			file.write("\n".encode())
 			file.write(self._data)
 
 
@@ -1424,12 +1426,12 @@ class DHCPDConf_Component:  # pylint: disable=invalid-name
 		self.parentBlock = parentBlock
 
 	def getShifting(self):
-		shifting = ''
+		shifting = ""
 		if not self.parentBlock:
 			return shifting
 		parentBlock = self.parentBlock.parentBlock
 		while parentBlock:
-			shifting += '\t'
+			shifting += "\t"
 			parentBlock = parentBlock.parentBlock
 		return shifting
 
@@ -1437,7 +1439,7 @@ class DHCPDConf_Component:  # pylint: disable=invalid-name
 		return self.getShifting()
 
 	def __str__(self):
-		return f'<{self.__class__.__name__}({self.startLine}, {self.endLine})>'
+		return f"<{self.__class__.__name__}({self.startLine}, {self.endLine})>"
 
 	def __repr__(self):
 		return self.__str__()
@@ -1449,22 +1451,24 @@ class DHCPDConf_Parameter(DHCPDConf_Component):  # pylint: disable=invalid-name
 		self.key = key
 		self.value = value
 		if isinstance(self.value, str):
-			if self.value.lower() in ('yes', 'true', 'on'):
+			if self.value.lower() in ("yes", "true", "on"):
 				self.value = True
-			elif self.value.lower() in ('no', 'false', 'off'):
+			elif self.value.lower() in ("no", "false", "off"):
 				self.value = False
 
 	def asText(self):
 		value = self.value
 		if isinstance(value, bool):
 			if value:
-				value = 'on'
+				value = "on"
 			else:
-				value = 'off'
-		elif (self.key in ('filename', 'ddns-domainname') or
-				re.match(r".*['/\\].*", value) or
-				re.match(r'^\w+\.\w+$', value) or
-				self.key.endswith('-name')):
+				value = "off"
+		elif (
+			self.key in ("filename", "ddns-domainname")
+			or re.match(r".*['/\\].*", value)
+			or re.match(r"^\w+\.\w+$", value)
+			or self.key.endswith("-name")
+		):
 
 			value = f'"{value}"'
 		return f"{self.getShifting()}{self.key} {value};"
@@ -1483,18 +1487,30 @@ class DHCPDConf_Option(DHCPDConf_Component):  # pylint: disable=invalid-name
 
 	def asText(self):
 		quotedOptions = (
-			'-name', '-domain', '-identifier', '-search',
-			'merit-dump', 'nds-context', 'netbios-scope', 'nwip-domain',
-			'nwip-suboptions', 'nis-domain', 'nisplus-domain', 'root-path',
-			'uap-servers', 'user-class', 'vendor-encapsulated-options',
-			'circuit-id', 'remote-id', 'fqdn.fqdn', 'ddns-rev-domainname'
+			"-name",
+			"-domain",
+			"-identifier",
+			"-search",
+			"merit-dump",
+			"nds-context",
+			"netbios-scope",
+			"nwip-domain",
+			"nwip-suboptions",
+			"nis-domain",
+			"nisplus-domain",
+			"root-path",
+			"uap-servers",
+			"user-class",
+			"vendor-encapsulated-options",
+			"circuit-id",
+			"remote-id",
+			"fqdn.fqdn",
+			"ddns-rev-domainname",
 		)
 
 		text = []
 		for value in self.value:
-			if (re.match(r".*['/\\].*", value) or
-				re.match(r"^\w+\.\w+$", value) or
-				self.key.endswith(quotedOptions)):
+			if re.match(r".*['/\\].*", value) or re.match(r"^\w+\.\w+$", value) or self.key.endswith(quotedOptions):
 
 				text.append(f'"{value}"')
 			else:
@@ -1512,7 +1528,7 @@ class DHCPDConf_Comment(DHCPDConf_Component):  # pylint: disable=invalid-name
 		self._data = data
 
 	def asText(self):
-		return f'{self.getShifting()}#{self._data}'
+		return f"{self.getShifting()}#{self._data}"
 
 
 class DHCPDConf_EmptyLine(DHCPDConf_Component):  # pylint: disable=invalid-name
@@ -1622,10 +1638,10 @@ class DHCPDConf_Block(DHCPDConf_Component):  # pylint: disable=invalid-name
 		return blocks
 
 	def asText(self):
-		text = ''
+		text = ""
 		shifting = self.getShifting()
 		if not isinstance(self, DHCPDConf_GlobalBlock):
-			text += shifting + ' '.join(self.settings) + ' {\n'
+			text += shifting + " ".join(self.settings) + " {\n"
 
 		notWritten = self.components
 		lineNumber = max(self.startLine, 1)
@@ -1638,27 +1654,27 @@ class DHCPDConf_Block(DHCPDConf_Component):  # pylint: disable=invalid-name
 			for i, lineRef in enumerate(self.lineRefs[lineNumber]):
 				compText = lineRef.asText()
 				if i > 0 and isinstance(lineRef, DHCPDConf_Comment):
-					compText = ' ' + compText.lstrip()
+					compText = " " + compText.lstrip()
 				text += compText
 				# Mark component as written
 				if lineRef in notWritten:
 					notWritten.remove(lineRef)
-			text += '\n'
+			text += "\n"
 			lineNumber += 1
 
 		for component in notWritten:
-			text += component.asText() + '\n'
+			text += component.asText() + "\n"
 
 		if not isinstance(self, DHCPDConf_GlobalBlock):
 			# Write '}' to close block
-			text += shifting + '}'
+			text += shifting + "}"
 
 		return text
 
 
 class DHCPDConf_GlobalBlock(DHCPDConf_Block):  # pylint: disable=invalid-name
 	def __init__(self):
-		DHCPDConf_Block.__init__(self, 1, None, 'global')
+		DHCPDConf_Block.__init__(self, 1, None, "global")
 
 
 class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
@@ -1668,7 +1684,7 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 		self._currentLine = 0
 		self._currentToken = None
 		self._currentIndex = -1
-		self._data = ''
+		self._data = ""
 		self._currentBlock = None
 		self._globalBlock = None
 		self._parsed = False
@@ -1678,11 +1694,11 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 	def getGlobalBlock(self):
 		return self._globalBlock
 
-	def parse(self, lines=None): # pylint: disable=too-many-branches
+	def parse(self, lines=None):  # pylint: disable=too-many-branches
 		self._currentLine = 0
 		self._currentToken = None
 		self._currentIndex = -1
-		self._data = ''
+		self._data = ""
 		self._parsed = False
 
 		if lines:
@@ -1704,7 +1720,7 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 					self._parse_emptyline()
 				continue
 
-			for token in ('#', ';', '}', '{'):
+			for token in ("#", ";", "}", "{"):
 				index = self._data.find(token)
 				if (index != -1) and (index >= minIndex) and ((self._currentIndex == -1) or (index < self._currentIndex)):
 					if (self._data[:index].count('"') % 2 == 1) or (self._data[:index].count("'") % 2 == 1):
@@ -1720,13 +1736,13 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 				continue
 
 			minIndex = 0
-			if self._currentToken == '#':
+			if self._currentToken == "#":
 				self._parse_comment()
-			elif self._currentToken == ';':
+			elif self._currentToken == ";":
 				self._parse_semicolon()
-			elif self._currentToken == '}':
+			elif self._currentToken == "}":
 				self._parse_rbracket()
-			elif self._currentToken == '{':
+			elif self._currentToken == "{":
 				self._parse_lbracket()
 
 		self._parsed = True
@@ -1735,12 +1751,14 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 		if not self._globalBlock:
 			raise ValueError("Got no data to write")
 
-		self.open('w')
+		self.open("w")
 		self.write(self._globalBlock.asText())
 		self.close()
 
 	@requiresParsing
-	def addHost(self, hostname, hardwareAddress, ipAddress, fixedAddress, parameters=None): # pylint: disable=too-many-branches,too-many-locals,too-many-arguments
+	def addHost(
+		self, hostname, hardwareAddress, ipAddress, fixedAddress, parameters=None
+	):  # pylint: disable=too-many-branches,too-many-locals,too-many-arguments
 		if not parameters:
 			parameters = {}
 
@@ -1751,14 +1769,14 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 		parameters = forceDict(parameters)
 
 		existingHost = None
-		for block in self._globalBlock.getBlocks('host', recursive=True):
+		for block in self._globalBlock.getBlocks("host", recursive=True):
 			if block.settings[1].lower() == hostname:
 				existingHost = block
 			else:
 				for (key, value) in block.getParameters_hash().items():
-					if key == 'fixed-address' and value.lower() == fixedAddress:
+					if key == "fixed-address" and value.lower() == fixedAddress:
 						raise BackendBadValueError(f"Host '{block.settings[1]}' uses the same fixed address")
-					if key == 'hardware' and value.lower() == f'ethernet {hardwareAddress}':
+					if key == "hardware" and value.lower() == f"ethernet {hardwareAddress}":
 						raise BackendBadValueError(f"Host '{block.settings[1]}' uses the same hardware ethernet address")
 
 		if existingHost:
@@ -1767,7 +1785,12 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 
 		logger.notice(
 			"Creating host '%s', hardwareAddress '%s', ipAddress '%s', fixedAddress '%s', parameters '%s' in dhcpd config file '%s'",
-			hostname, hardwareAddress, ipAddress, fixedAddress, parameters, self._filename
+			hostname,
+			hardwareAddress,
+			ipAddress,
+			fixedAddress,
+			parameters,
+			self._filename,
 		)
 
 		for (key, value) in parameters.items():
@@ -1777,7 +1800,7 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 		parentBlock = self._globalBlock
 
 		# Search the right subnet block
-		for block in self._globalBlock.getBlocks('subnet', recursive=True):
+		for block in self._globalBlock.getBlocks("subnet", recursive=True):
 			if ipAddressInNetwork(ipAddress, f"{block.settings[1]}/{block.settings[3]}"):
 				logger.debug("Choosing subnet %s/%s for host %s", block.settings[1], block.settings[3], hostname)
 				parentBlock = block
@@ -1785,9 +1808,9 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 		# Search the right group for the host
 		bestGroup = None
 		bestMatchCount = 0
-		for block in parentBlock.getBlocks('group'):
+		for block in parentBlock.getBlocks("group"):
 			matchCount = 0
-			blockParameters = block.getParameters_hash(inherit='global')
+			blockParameters = block.getParameters_hash(inherit="global")
 			if blockParameters:
 				# Block has parameters set, check if they match the hosts parameters
 				for (key, value) in blockParameters.items():
@@ -1807,23 +1830,19 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 			parentBlock = bestGroup
 
 		# Remove parameters which are already defined in parents
-		blockParameters = parentBlock.getParameters_hash(inherit='global')
+		blockParameters = parentBlock.getParameters_hash(inherit="global")
 		if blockParameters:
 			for (key, value) in blockParameters.items():
 				if key in parameters and parameters[key] == value:
 					del parameters[key]
 
-		hostBlock = DHCPDConf_Block(
-			startLine=-1,
-			parentBlock=parentBlock,
-			type='host',
-			settings=['host', hostname]
+		hostBlock = DHCPDConf_Block(startLine=-1, parentBlock=parentBlock, type="host", settings=["host", hostname])
+		hostBlock.addComponent(DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key="fixed-address", value=fixedAddress))
+		hostBlock.addComponent(
+			DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key="hardware", value=f"ethernet {hardwareAddress}")
 		)
-		hostBlock.addComponent(DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key='fixed-address', value=fixedAddress))
-		hostBlock.addComponent(DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key='hardware', value=f"ethernet {hardwareAddress}"))
 		for (key, value) in parameters.items():
-			hostBlock.addComponent(
-				DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key=key, value=value))
+			hostBlock.addComponent(DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key=key, value=value))
 
 		parentBlock.addComponent(hostBlock)
 
@@ -1831,7 +1850,7 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 	def getHost(self, hostname):
 		hostname = forceHostname(hostname)
 
-		for block in self._globalBlock.getBlocks('host', recursive=True):
+		for block in self._globalBlock.getBlocks("host", recursive=True):
 			if block.settings[1] == hostname:
 				return block.getParameters_hash()
 		return None
@@ -1842,12 +1861,12 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 
 		logger.notice("Deleting host '%s' from dhcpd config file '%s'", hostname, self._filename)
 		hostBlocks = []
-		for block in self._globalBlock.getBlocks('host', recursive=True):
+		for block in self._globalBlock.getBlocks("host", recursive=True):
 			if block.settings[1] == hostname:
 				hostBlocks.append(block)
 			else:
 				for (key, value) in block.getParameters_hash().items():
-					if key == 'fixed-address' and value == hostname:
+					if key == "fixed-address" and value == hostname:
 						hostBlocks.append(block)
 
 		if not hostBlocks:
@@ -1865,14 +1884,14 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 		logger.notice("Modifying host '%s' in dhcpd config file '%s'", hostname, self.filename)
 
 		hostBlocks = []
-		for block in self._globalBlock.getBlocks('host', recursive=True):
+		for block in self._globalBlock.getBlocks("host", recursive=True):
 			if block.settings[1] == hostname:
 				hostBlocks.append(block)
 			else:
 				for (key, value) in block.getParameters_hash().items():
-					if key == 'fixed-address' and value == hostname:
+					if key == "fixed-address" and value == hostname:
 						hostBlocks.append(block)
-					elif key == 'hardware' and value.lower() == parameters.get('hardware'):
+					elif key == "hardware" and value.lower() == parameters.get("hardware"):
 						raise BackendBadValueError(f"Host '{block.settings[1]}' uses the same hardware ethernet address")
 
 		if len(hostBlocks) != 1:
@@ -1884,7 +1903,7 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 		for (key, value) in parameters.items():
 			parameters[key] = DHCPDConf_Parameter(-1, None, key, value).asHash()[key]
 
-		for (key, value) in hostBlock.parentBlock.getParameters_hash(inherit='global').items():
+		for (key, value) in hostBlock.parentBlock.getParameters_hash(inherit="global").items():
 			if key not in parameters:
 				continue
 
@@ -1892,9 +1911,7 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 				del parameters[key]
 
 		for (key, value) in parameters.items():
-			hostBlock.addComponent(
-				DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key=key, value=value)
-			)
+			hostBlock.addComponent(DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key=key, value=value))
 
 	def _getNewData(self):
 		if self._currentLine >= len(self._lines):
@@ -1905,106 +1922,84 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 
 	def _parse_emptyline(self):
 		logger.trace("_parse_emptyline")
-		self._currentBlock.addComponent(
-			DHCPDConf_EmptyLine(
-				startLine=self._currentLine,
-				parentBlock=self._currentBlock
-			)
-		)
-		self._data = self._data[:self._currentIndex]
+		self._currentBlock.addComponent(DHCPDConf_EmptyLine(startLine=self._currentLine, parentBlock=self._currentBlock))
+		self._data = self._data[: self._currentIndex]
 
 	def _parse_comment(self):
 		logger.trace("_parse_comment")
 		self._currentBlock.addComponent(
-			DHCPDConf_Comment(
-				startLine=self._currentLine,
-				parentBlock=self._currentBlock,
-				data=self._data.strip()[1:]
-			)
+			DHCPDConf_Comment(startLine=self._currentLine, parentBlock=self._currentBlock, data=self._data.strip()[1:])
 		)
-		self._data = self._data[:self._currentIndex]
+		self._data = self._data[: self._currentIndex]
 
-	def _parse_semicolon(self): # pylint: disable=too-many-branches
+	def _parse_semicolon(self):  # pylint: disable=too-many-branches
 		logger.trace("_parse_semicolon")
-		data = self._data[:self._currentIndex]
-		self._data = self._data[self._currentIndex + 1:]
+		data = self._data[: self._currentIndex]
+		self._data = self._data[self._currentIndex + 1 :]
 
 		splittedData = data.split()
 		key = splittedData[0]
-		if key != 'option':
+		if key != "option":
 			# Parameter
-			value = ' '.join(data.split()[1:]).strip()
+			value = " ".join(data.split()[1:]).strip()
 			if len(value) > 1 and value.startswith('"') and value.endswith('"'):
 				value = value[1:-1]
 
 			self._currentBlock.addComponent(
-				DHCPDConf_Parameter(
-					startLine=self._currentLine,
-					parentBlock=self._currentBlock,
-					key=key,
-					value=value
-				)
+				DHCPDConf_Parameter(startLine=self._currentLine, parentBlock=self._currentBlock, key=key, value=value)
 			)
 			return
 
 		# Option
 		key = splittedData[1]
-		value = ' '.join(splittedData[2:]).strip()
+		value = " ".join(splittedData[2:]).strip()
 		values = []
-		quote = ''
+		quote = ""
 		current = []
 		for val in value:
 			if val == '"':
 				if quote == '"':
-					quote = ''
+					quote = ""
 				elif quote == "'":
 					current.append(val)
 				else:
 					quote = '"'
 			elif val == "'":
 				if quote == "'":
-					quote = ''
+					quote = ""
 				elif quote == '"':
 					current.append(val)
 				else:
 					quote = "'"
-			elif re.search(r'\s', val):
+			elif re.search(r"\s", val):
 				current.append(val)
-			elif val == ',':
+			elif val == ",":
 				if quote:
 					current.append(val)
 				else:
-					values.append(''.join(current).strip())
+					values.append("".join(current).strip())
 					current = []
 			else:
 				current.append(val)
 
 		if current:
-			values.append(''.join(current).strip())
+			values.append("".join(current).strip())
 
 		self._currentBlock.addComponent(
-			DHCPDConf_Option(
-				startLine=self._currentLine,
-				parentBlock=self._currentBlock,
-				key=key,
-				value=values
-			)
+			DHCPDConf_Option(startLine=self._currentLine, parentBlock=self._currentBlock, key=key, value=values)
 		)
 
 	def _parse_lbracket(self):
 		logger.trace("_parse_lbracket")
 		# Start of a block
-		data = self._data[:self._currentIndex]
-		self._data = self._data[self._currentIndex+1:]
+		data = self._data[: self._currentIndex]
+		self._data = self._data[self._currentIndex + 1 :]
 		# Split the block definition at whitespace
 		# The first value is the block type
 		# Example: subnet 194.31.185.0 netmask 255.255.255.0 => type is subnet
 		splittedData = data.split()
 		block = DHCPDConf_Block(
-			startLine=self._currentLine,
-			parentBlock=self._currentBlock,
-			type=splittedData[0].strip(),
-			settings=splittedData
+			startLine=self._currentLine, parentBlock=self._currentBlock, type=splittedData[0].strip(), settings=splittedData
 		)
 		self._currentBlock.addComponent(block)
 		self._currentBlock = block
@@ -2012,7 +2007,7 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 	def _parse_rbracket(self):
 		logger.trace("_parse_rbracket")
 		# End of a block
-		self._data = self._data[self._currentIndex+1:]
+		self._data = self._data[self._currentIndex + 1 :]
 
 		self._currentBlock.endLine = self._currentLine
 		self._currentBlock = self._currentBlock.parentBlock

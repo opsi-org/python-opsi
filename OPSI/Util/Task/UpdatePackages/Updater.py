@@ -56,10 +56,10 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		self.errors = []
 
 		try:
-			self.config["zsyncCommand"] = System.which("zsync")
+			self.config["zsyncCommand"] = System.which("zsync-curl")
 			logger.info("Zsync command found: %s", self.config["zsyncCommand"])
 		except Exception:  # pylint: disable=broad-except
-			logger.warning("Zsync command not found")
+			logger.warning("Command 'zsync-curl' not found")
 			self.config["zsyncCommand"] = None
 
 		# Proxy is needed for getConfigBackend which is needed for ConfigurationParser.parse
