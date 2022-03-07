@@ -24,22 +24,27 @@ from OPSI import System
 from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import (
-	BackendIOError, BackendBadValueError, BackendMissingDataError,
-	BackendUnableToConnectError, BackendUnaccomplishableError)
+	BackendIOError,
+	BackendBadValueError,
+	BackendMissingDataError,
+	BackendUnableToConnectError,
+	BackendUnaccomplishableError,
+)
 from OPSI.Object import OpsiClient, Host
 from OPSI.Types import forceBool, forceDict, forceHostId, forceObjectClass
 from OPSI.Util.File import DHCPDConfFile
 from OPSI.Util import getfqdn
 
 
-__all__ = ('DHCPDBackend', )
+__all__ = ("DHCPDBackend",)
 
 WAIT_AFTER_RELOAD = 4.0
 
+
 @contextmanager
 def dhcpd_lock(lock_type=""):
-	lock_file = '/var/lock/opsi-dhcpd-lock'
-	with open(lock_file, 'a+') as lock_fh:
+	lock_file = "/var/lock/opsi-dhcpd-lock"
+	with open(lock_file, "a+") as lock_fh:
 		try:
 			os.chmod(lock_file, 0o666)
 		except PermissionError:
@@ -67,41 +72,42 @@ def dhcpd_lock(lock_type=""):
 		if lock_type == "config_reload":
 			time.sleep(WAIT_AFTER_RELOAD)
 		fcntl.flock(lock_fh, fcntl.LOCK_UN)
-	#os.remove(lock_file)
+	# os.remove(lock_file)
+
 
 class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attributes
-
 	def __init__(self, **kwargs):
-		self._name = 'dhcpd'
+		self._name = "dhcpd"
 
 		ConfigDataBackend.__init__(self, **kwargs)
-		self._dhcpdConfigFile = System.Posix.locateDHCPDConfig('/etc/dhcp3/dhcpd.conf')
+		self._dhcpdConfigFile = System.Posix.locateDHCPDConfig("/etc/dhcp3/dhcpd.conf")
 		self._reloadConfigCommand = None
-		self._fixedAddressFormat = 'IP'
-		self._defaultClientParameters = {
-			'next-server': socket.gethostbyname(getfqdn()),
-			'filename': 'linux/pxelinux.0'
-		}
+		self._fixedAddressFormat = "IP"
+		self._defaultClientParameters = {"next-server": socket.gethostbyname(getfqdn()), "filename": "linux/pxelinux.0"}
 		self._dhcpdOnDepot = False
 
 		# Parse arguments
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if option == 'dhcpdconfigfile':
+			if option == "dhcpdconfigfile":
 				self._dhcpdConfigFile = value
-			elif option == 'reloadconfigcommand':
+			elif option == "reloadconfigcommand":
 				self._reloadConfigCommand = value
-			elif option == 'defaultclientparameters':
+			elif option == "defaultclientparameters":
 				self._defaultClientParameters = forceDict(value)
-			elif option == 'fixedaddressformat':
-				if value not in ('IP', 'FQDN'):
-					raise BackendBadValueError("Bad value '%s' for fixedAddressFormat, possible values are %s" % (value, ', '.join(('IP', 'FQDN'))))
+			elif option == "fixedaddressformat":
+				if value not in ("IP", "FQDN"):
+					raise BackendBadValueError(
+						"Bad value '%s' for fixedAddressFormat, possible values are %s" % (value, ", ".join(("IP", "FQDN")))
+					)
 				self._fixedAddressFormat = value
-			elif option == 'dhcpdondepot':
+			elif option == "dhcpdondepot":
 				self._dhcpdOnDepot = forceBool(value)
 
-		if self._defaultClientParameters.get('next-server') and self._defaultClientParameters['next-server'].startswith('127'):
-			raise BackendBadValueError("Refusing to use ip address '%s' as default next-server" % self._defaultClientParameters['next-server'])
+		if self._defaultClientParameters.get("next-server") and self._defaultClientParameters["next-server"].startswith("127"):
+			raise BackendBadValueError(
+				"Refusing to use ip address '%s' as default next-server" % self._defaultClientParameters["next-server"]
+			)
 
 		self._dhcpdConfFile = DHCPDConfFile(self._dhcpdConfigFile)
 		self._reloadThread = None
@@ -121,7 +127,7 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 	def _init_backend(self, config_data_backend):
 		try:
 			self._get_opsi_host_key(config_data_backend)
-		except BackendMissingDataError as err:
+		except Exception as err:  # pylint: disable=broad-except
 			# This can fail if backend is not yet initialized, continue!
 			logger.info(err)
 
@@ -133,8 +139,8 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 				self._reloadEvent = threading.Event()
 				self._isReloading = False
 				if not self._reloadConfigCommand:
-					self._reloadConfigCommand = '/usr/bin/sudo {command}'.format(
-						command=System.Posix.getDHCPDRestartCommand(default='/etc/init.d/dhcp3-server restart')
+					self._reloadConfigCommand = "/usr/bin/sudo {command}".format(
+						command=System.Posix.getDHCPDRestartCommand(default="/etc/init.d/dhcp3-server restart")
 					)
 
 			@property
@@ -156,9 +162,9 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 								logger.notice("Reloading dhcpd config using command: '%s'", self._reloadConfigCommand)
 								result = System.execute(self._reloadConfigCommand)
 								for line in result:
-									if 'error' in line:
-										raise RuntimeError('\n'.join(result))
-							except Exception as err:# pylint: disable=broad-except
+									if "error" in line:
+										raise RuntimeError("\n".join(result))
+							except Exception as err:  # pylint: disable=broad-except
 								logger.critical("Failed to reload dhcpd config: %s", err)
 							self._isReloading = False
 
@@ -181,22 +187,20 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 				if not self._opsiHostKey:
 					self._get_opsi_host_key()
 				self._depotConnections[depotId] = JSONRPCBackend(
-					address=f'https://{depotId}:4447/rpc/backend/dhcpd',
-					username=self._depotId,
-					password=self._opsiHostKey
+					address=f"https://{depotId}:4447/rpc/backend/dhcpd", username=self._depotId, password=self._opsiHostKey
 				)
 			except Exception as err:
-				raise BackendUnableToConnectError(
-					f"Failed to connect to depot '{depotId}': {err}"
-				) from err
+				raise BackendUnableToConnectError(f"Failed to connect to depot '{depotId}': {err}") from err
 		return self._depotConnections[depotId]
 
 	def _getResponsibleDepotId(self, clientId):
-		configStates = self._context.configState_getObjects(configId='clientconfig.depot.id', objectId=clientId)  # pylint: disable=maybe-no-member
+		configStates = self._context.configState_getObjects(
+			configId="clientconfig.depot.id", objectId=clientId
+		)  # pylint: disable=maybe-no-member
 		try:
 			depotId = configStates[0].values[0]
 		except IndexError as err:
-			configs = self._context.config_getObjects(id='clientconfig.depot.id')  # pylint: disable=maybe-no-member
+			configs = self._context.config_getObjects(id="clientconfig.depot.id")  # pylint: disable=maybe-no-member
 			if not configs or not configs[0].defaultValues:
 				raise BackendUnaccomplishableError(
 					f"Failed to get depotserver for client '{clientId}', config 'clientconfig.depot.id' not set and no defaults found"
@@ -218,7 +222,9 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 		if self._dhcpdOnDepot:
 			depotId = self._getResponsibleDepotId(host.id)  # pylint: disable=maybe-no-member
 			if depotId != self._depotId:
-				logger.info("Not responsible for client '%s', forwarding request to depot '%s'", host.id, depotId)  # pylint: disable=maybe-no-member
+				logger.info(
+					"Not responsible for client '%s', forwarding request to depot '%s'", host.id, depotId
+				)  # pylint: disable=maybe-no-member
 				return self._getDepotConnection(depotId).dhcpd_updateHost(host)  # pylint: disable=maybe-no-member
 		return self.dhcpd_updateHost(host)
 
@@ -244,13 +250,10 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 					currentHostParams = self._dhcpdConfFile.getHost(hostname)
 
 				if currentHostParams:
-					logger.debug(
-						'Trying to use address for %s from existing DHCP '
-						'configuration.', hostname
-					)
+					logger.debug("Trying to use address for %s from existing DHCP " "configuration.", hostname)
 
-					if currentHostParams.get('fixed-address'):
-						ipAddress = currentHostParams['fixed-address']
+					if currentHostParams.get("fixed-address"):
+						ipAddress = currentHostParams["fixed-address"]
 					else:
 						raise BackendIOError(
 							f"Cannot update dhcpd configuration for client {host.id}: "
@@ -258,12 +261,11 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 						) from err
 				else:
 					raise BackendIOError(
-						f"Cannot update dhcpd configuration for client {host.id}: "
-						"ip address unknown and failed to get host by name"
+						f"Cannot update dhcpd configuration for client {host.id}: " "ip address unknown and failed to get host by name"
 					) from err
 
 		fixedAddress = ipAddress
-		if self._fixedAddressFormat == 'FQDN':
+		if self._fixedAddressFormat == "FQDN":
 			fixedAddress = host.id  # pylint: disable=maybe-no-member
 
 		parameters = forceDict(self._defaultClientParameters)
@@ -271,7 +273,7 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 			try:
 				depot = self._context.host_getObjects(id=self._getResponsibleDepotId(host.id))[0]  # pylint: disable=maybe-no-member
 				if depot.ipAddress:
-					parameters['next-server'] = depot.ipAddress
+					parameters["next-server"] = depot.ipAddress
 			except Exception as err:  # pylint: disable=broad-except
 				logger.error("Failed to get depot info: %s", err)
 
@@ -279,9 +281,12 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 			try:
 				self._dhcpdConfFile.parse()
 				currentHostParams = self._dhcpdConfFile.getHost(hostname)
-				if currentHostParams and (currentHostParams.get('hardware', ' ').split(' ')[1] == host.hardwareAddress) \
-					and (currentHostParams.get('fixed-address') == fixedAddress) \
-					and (currentHostParams.get('next-server') == parameters.get('next-server')):
+				if (
+					currentHostParams
+					and (currentHostParams.get("hardware", " ").split(" ")[1] == host.hardwareAddress)
+					and (currentHostParams.get("fixed-address") == fixedAddress)
+					and (currentHostParams.get("next-server") == parameters.get("next-server"))
+				):
 
 					logger.debug("DHCPD config of host '%s' unchanged, no need to update config file", host)
 					return
@@ -291,7 +296,7 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 					hardwareAddress=host.hardwareAddress,  # pylint: disable=maybe-no-member
 					ipAddress=ipAddress,
 					fixedAddress=fixedAddress,
-					parameters=parameters
+					parameters=parameters,
 				)
 				self._dhcpdConfFile.generate()
 			except Exception as err:  # pylint: disable=broad-except
@@ -358,17 +363,17 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 				errors.append(str(err))
 
 		if errors:
-			raise RuntimeError(', '.join(errors))
+			raise RuntimeError(", ".join(errors))
 
 	def configState_insertObject(self, configState):
-		if configState.configId != 'clientconfig.depot.id':
+		if configState.configId != "clientconfig.depot.id":
 			return
 
 		for host in self._context.host_getObjects(id=configState.objectId):
 			self.host_updateObject(host)
 
 	def configState_updateObject(self, configState):
-		if configState.configId != 'clientconfig.depot.id':
+		if configState.configId != "clientconfig.depot.id":
 			return
 
 		for host in self._context.host_getObjects(id=configState.objectId):
@@ -376,7 +381,7 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 
 	def configState_deleteObjects(self, configStates):
 		for configState in configStates:
-			if configState.configId != 'clientconfig.depot.id':
+			if configState.configId != "clientconfig.depot.id":
 				continue
 
 			for host in self._context.host_getObjects(id=configState.objectId):
@@ -392,4 +397,4 @@ def _getHostname(fqdn):
 	:type fqdn: str
 	:rtype: str
 	"""
-	return fqdn.split('.')[0]
+	return fqdn.split(".")[0]

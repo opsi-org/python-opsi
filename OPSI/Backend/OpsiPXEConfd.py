@@ -105,7 +105,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 	def _init_backend(self, config_data_backend):
 		try:
 			self._get_opsi_host_key(config_data_backend)
-		except BackendMissingDataError as err:
+		except Exception as err:  # pylint: disable=broad-except
 			# This can fail if backend is not yet initialized, continue!
 			logger.info(err)
 

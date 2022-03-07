@@ -18,6 +18,7 @@ import re
 import time
 from typing import Union
 from hashlib import md5
+
 try:
 	# PyCryptodome from pypi installs into Crypto
 	from Crypto.Hash import MD5
@@ -33,16 +34,14 @@ from opsicommon.logging import logger
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import BackendError
 from OPSI.Object import *  # this is needed for dynamic loading # pylint: disable=wildcard-import,unused-wildcard-import
-from OPSI.Types import (
-	forceDict, forceFilename, forceList, forceUnicode, forceUnicodeList
-)
+from OPSI.Types import forceDict, forceFilename, forceList, forceUnicode, forceUnicodeList
 from OPSI.Util import compareVersions, getPublicKey
 
 
-__all__ = ('describeInterface', 'Backend')
+__all__ = ("describeInterface", "Backend")
 
-OPSI_MODULES_FILE = '/etc/opsi/modules'
-OPSI_LICENSE_PATH = '/etc/opsi/licenses'
+OPSI_MODULES_FILE = "/etc/opsi/modules"
+OPSI_LICENSE_PATH = "/etc/opsi/licenses"
 
 
 def describeInterface(instance):
@@ -59,7 +58,7 @@ def describeInterface(instance):
 		methodName = function.__name__
 		if getattr(function, "no_export", False):
 			continue
-		if methodName.startswith('_'):
+		if methodName.startswith("_"):
 			# protected / private
 			continue
 
@@ -67,29 +66,29 @@ def describeInterface(instance):
 		args = spec.args
 		defaults = spec.defaults
 
-		params = [arg for arg in args if arg != 'self']
+		params = [arg for arg in args if arg != "self"]
 
 		if defaults is not None:
 			offset = len(params) - len(defaults)
 			for i in range(len(defaults)):
 				index = offset + i
-				params[index] = f'*{params[index]}'
+				params[index] = f"*{params[index]}"
 
 		for index, element in enumerate((spec.varargs, spec.varkw), start=1):
 			if element:
-				stars = '*' * index
+				stars = "*" * index
 				params.extend([f"{stars}{arg}" for arg in forceList(element)])
 
 		logger.trace("%s interface method: name %s, params %s", instance.__class__.__name__, methodName, params)
 		methods[methodName] = {
-			'name': methodName,
-			'params': params,
-			'args': args,
-			'varargs': spec.varargs,
-			'keywords': spec.varkw,
-			'defaults': defaults,
+			"name": methodName,
+			"params": params,
+			"args": args,
+			"varargs": spec.varargs,
+			"keywords": spec.varkw,
+			"defaults": defaults,
 			"deprecated": getattr(function, "deprecated", False),
-			"alternative_method": getattr(function, "alternative_method", None)
+			"alternative_method": getattr(function, "alternative_method", None),
 		}
 
 	return [methods[name] for name in sorted(list(methods.keys()))]
@@ -99,6 +98,7 @@ class BackendOptions:
 	"""
 	A class used to combine option defaults and changed options
 	"""
+
 	def __init__(self, option_defaults: dict, option_store: Union[dict, callable] = None):
 		"""
 		:param option_defaults: The default option items as dict
@@ -170,18 +170,18 @@ This defaults to ``self``.
 
 		for (option, value) in kwargs.items():
 			option = option.lower()
-			if option == 'name':
+			if option == "name":
 				self._name = value
-			elif option == 'username':
+			elif option == "username":
 				self._username = value
-			elif option == 'password':
+			elif option == "password":
 				self._password = value
-			elif option == 'context':
+			elif option == "context":
 				self._context = value
 				logger.info("Backend context was set to %s", self._context)
-			elif option == 'opsimodulesfile':
+			elif option == "opsimodulesfile":
 				self._opsiModulesFile = forceFilename(value)
-			elif option in ('option_store', 'optionstore'):
+			elif option in ("option_store", "optionstore"):
 				option_store = value
 
 		self._options = BackendOptions(self.option_defaults, option_store)
@@ -217,16 +217,13 @@ This defaults to ``self``.
 			matched = False
 
 			try:
-				logger.debug(
-					"Testing match of filter %s of attribute %s with "
-					"value %s", filter[attribute], attribute, value
-				)
+				logger.debug("Testing match of filter %s of attribute %s with " "value %s", filter[attribute], attribute, value)
 				filterValues = forceUnicodeList(filter[attribute])
 				if forceUnicodeList(value) == filterValues or forceUnicode(value) in filterValues:
 					matched = True
 				else:
 					for filterValue in filterValues:
-						if attribute == 'type':
+						if attribute == "type":
 							match = False
 							Class = eval(filterValue)  # pylint: disable=eval-used
 							for subClass in Class.subClasses:
@@ -245,10 +242,10 @@ This defaults to ``self``.
 						if value is None or isinstance(value, bool):
 							continue
 
-						if isinstance(value, (float, int)) or re.search(r'^\s*([>=<]+)\s*([\d.]+)', forceUnicode(filterValue)):
-							operator = '=='
+						if isinstance(value, (float, int)) or re.search(r"^\s*([>=<]+)\s*([\d.]+)", forceUnicode(filterValue)):
+							operator = "=="
 							val = forceUnicode(filterValue)
-							match = re.search(r'^\s*([>=<]+)\s*([\d.]+)', filterValue)
+							match = re.search(r"^\s*([>=<]+)\s*([\d.]+)", filterValue)
 							if match:
 								operator = match.group(1)  # pylint: disable=maybe-no-member
 								val = match.group(2)  # pylint: disable=maybe-no-member
@@ -262,22 +259,18 @@ This defaults to ``self``.
 
 							continue
 
-						if '*' in filterValue and re.search(f"^{filterValue.replace('*', '.*')}$", value):
+						if "*" in filterValue and re.search(f"^{filterValue.replace('*', '.*')}$", value):
 							matched = True
 							break
 
 				if matched:
-					logger.debug(
-						"Value %s matched filter %s, attribute %s",
-						value, filter[attribute], attribute
-					)
+					logger.debug("Value %s matched filter %s, attribute %s", value, filter[attribute], attribute)
 				else:
 					# No match, we can stop further checks.
 					return False
 			except Exception as err:  # pylint: disable=broad-except
 				raise BackendError(
-					f"Testing match of filter {filter[attribute]} of attribute '{attribute}' "
-					f"with value {value} failed: {err}"
+					f"Testing match of filter {filter[attribute]} of attribute '{attribute}' " f"with value {value} failed: {err}"
 				) from err
 
 		return True
@@ -326,25 +319,25 @@ This defaults to ``self``.
 
 		:rtype: dict
 		"""
-		modules = {'valid': False}
+		modules = {"valid": False}
 		helpermodules = {}
 
 		if os.path.exists(self._opsiModulesFile):
 			try:
-				with codecs.open(self._opsiModulesFile, 'r', 'utf-8') as modulesFile:
+				with codecs.open(self._opsiModulesFile, "r", "utf-8") as modulesFile:
 					for line in modulesFile:
 						line = line.strip()
-						if '=' not in line:
+						if "=" not in line:
 							logger.error("Found bad line '%s' in modules file '%s'", line, self._opsiModulesFile)
 							continue
-						(module, state) = line.split('=', 1)
+						(module, state) = line.split("=", 1)
 						module = module.strip().lower()
 						state = state.strip()
-						if module in ('signature', 'customer', 'expires'):
+						if module in ("signature", "customer", "expires"):
 							modules[module] = state
 							continue
 						state = state.lower()
-						if state not in ('yes', 'no'):
+						if state not in ("yes", "no"):
 							try:
 								helpermodules[module] = state
 								state = int(state)
@@ -352,21 +345,21 @@ This defaults to ``self``.
 								logger.error("Found bad line '%s' in modules file '%s'", line, self._opsiModulesFile)
 								continue
 						if isinstance(state, int):
-							modules[module] = (state > 0)
+							modules[module] = state > 0
 						else:
-							modules[module] = (state == 'yes')
+							modules[module] = state == "yes"
 
-				if not modules.get('signature'):
-					modules = {'valid': False}
+				if not modules.get("signature"):
+					modules = {"valid": False}
 					raise ValueError("Signature not found")
-				if not modules.get('customer'):
-					modules = {'valid': False}
+				if not modules.get("customer"):
+					modules = {"valid": False}
 					raise ValueError("Customer not found")
 				if (
-					modules.get('expires', '') != 'never' and
-					time.mktime(time.strptime(modules.get('expires', '2000-01-01'), "%Y-%m-%d")) - time.time() <= 0
+					modules.get("expires", "") != "never"
+					and time.mktime(time.strptime(modules.get("expires", "2000-01-01"), "%Y-%m-%d")) - time.time() <= 0
 				):
-					modules = {'valid': False}
+					modules = {"valid": False}
 					raise ValueError("Signature expired")
 
 				publicKey = getPublicKey(
@@ -391,30 +384,26 @@ This defaults to ``self``.
 							val = "yes" if val else "no"
 					data += f"{module.lower().strip()} = {val}\r\n"
 
-				modules['valid'] = False
+				modules["valid"] = False
 				if modules["signature"].startswith("{"):
-					s_bytes = int(modules['signature'].split("}", 1)[-1]).to_bytes(256, "big")
+					s_bytes = int(modules["signature"].split("}", 1)[-1]).to_bytes(256, "big")
 					try:
 						pkcs1_15.new(publicKey).verify(MD5.new(data.encode()), s_bytes)
-						modules['valid'] = True
+						modules["valid"] = True
 					except ValueError:
 						# Invalid signature
 						pass
 				else:
 					h_int = int.from_bytes(md5(data.encode()).digest(), "big")
 					s_int = publicKey._encrypt(int(modules["signature"]))  # pylint: disable=protected-access
-					modules['valid'] = h_int == s_int
+					modules["valid"] = h_int == s_int
 
 			except Exception as err:  # pylint: disable=broad-except
 				logger.error("Failed to read opsi modules file '%s': %s", self._opsiModulesFile, err)
 		else:
 			logger.info("Opsi modules file '%s' not found", self._opsiModulesFile)
 
-		return {
-			"opsiVersion": self._opsiVersion,
-			"modules": modules,
-			"realmodules": helpermodules
-		}
+		return {"opsiVersion": self._opsiVersion, "modules": modules, "realmodules": helpermodules}
 
 	def backend_exit(self):
 		"""
