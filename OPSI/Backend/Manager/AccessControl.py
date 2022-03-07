@@ -296,14 +296,14 @@ class BackendAccessControl:
 
 			if methodName in protectedMethods:
 				logger.trace("Protecting method '%s'", methodName)
-				exec(
+				exec(  # pylint: disable=exec-used
 					f'def {methodName}(self, {argString}): return self._executeMethodProtected("{methodName}", {callString})'
-				)  # pylint: disable=exec-used
+				)
 			else:
 				logger.trace("Not protecting method '%s'", methodName)
-				exec(
+				exec(  # pylint: disable=exec-used
 					f'def {methodName}(self, {argString}): return self._executeMethod("{methodName}", {callString})'
-				)  # pylint: disable=exec-used
+				)
 
 			new_function = eval(methodName)  # pylint: disable=eval-used
 			new_function.deprecated = getattr(functionRef, "deprecated", False)
