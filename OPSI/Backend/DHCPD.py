@@ -44,7 +44,7 @@ WAIT_AFTER_RELOAD = 4.0
 @contextmanager
 def dhcpd_lock(lock_type=""):
 	lock_file = "/var/lock/opsi-dhcpd-lock"
-	with open(lock_file, "a+") as lock_fh:
+	with open(lock_file, "a+", encoding="utf8") as lock_fh:
 		try:
 			os.chmod(lock_file, 0o666)
 		except PermissionError:
@@ -97,17 +97,13 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 				self._defaultClientParameters = forceDict(value)
 			elif option == "fixedaddressformat":
 				if value not in ("IP", "FQDN"):
-					raise BackendBadValueError(
-						"Bad value '%s' for fixedAddressFormat, possible values are %s" % (value, ", ".join(("IP", "FQDN")))
-					)
+					raise BackendBadValueError(f"Bad value {value!r} for fixedAddressFormat, possible values are IP and FQDN")
 				self._fixedAddressFormat = value
 			elif option == "dhcpdondepot":
 				self._dhcpdOnDepot = forceBool(value)
 
 		if self._defaultClientParameters.get("next-server") and self._defaultClientParameters["next-server"].startswith("127"):
-			raise BackendBadValueError(
-				"Refusing to use ip address '%s' as default next-server" % self._defaultClientParameters["next-server"]
-			)
+			raise BackendBadValueError("Refusing to use ip address {self._defaultClientParameters['next-server']!r} as default next-server")
 
 		self._dhcpdConfFile = DHCPDConfFile(self._dhcpdConfigFile)
 		self._reloadThread = None
@@ -139,8 +135,8 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 				self._reloadEvent = threading.Event()
 				self._isReloading = False
 				if not self._reloadConfigCommand:
-					self._reloadConfigCommand = "/usr/bin/sudo {command}".format(
-						command=System.Posix.getDHCPDRestartCommand(default="/etc/init.d/dhcp3-server restart")
+					self._reloadConfigCommand = (
+						f"/usr/bin/sudo {System.Posix.getDHCPDRestartCommand(default='/etc/init.d/dhcp3-server restart')}"
 					)
 
 			@property

@@ -50,6 +50,7 @@ pytest = "^7.0"
 pytest-asyncio = "^0.18"
 pytest-cov = "^3.0"
 tan = "^21.14"
+isort = "^5.10.1"
 
 [tool.black]
 line-length = 140

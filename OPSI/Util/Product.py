@@ -10,27 +10,22 @@ import os
 import re
 import shutil
 
-from OPSI.Config import (
-	FILE_ADMIN_GROUP as DEFAULT_CLIENT_DATA_GROUP,
-	OPSICONFD_USER as DEFAULT_CLIENT_DATA_USER
-)
-from OPSI.Util.File.Opsi import PackageControlFile, PackageContentFile
-from OPSI.Util.File.Archive import Archive
-from OPSI.Util import randomString, findFilesGenerator, removeDirectory
+from OPSI.Config import FILE_ADMIN_GROUP as DEFAULT_CLIENT_DATA_GROUP
+from OPSI.Config import OPSICONFD_USER as DEFAULT_CLIENT_DATA_USER
 from OPSI.System import execute
-from OPSI.Types import (
-	forceBool, forceFilename, forcePackageCustomName, forceUnicode
-)
-
+from OPSI.Types import forceBool, forceFilename, forcePackageCustomName, forceUnicode
+from OPSI.Util import findFilesGenerator, randomString, removeDirectory
+from OPSI.Util.File.Archive import Archive
+from OPSI.Util.File.Opsi import PackageContentFile, PackageControlFile
 from opsicommon.logging import logger
 
-if os.name == 'posix':
-	import pwd
+if os.name == "posix":
 	import grp
+	import pwd
 
-DEFAULT_TMP_DIR = '/tmp'
-EXCLUDE_DIRS_ON_PACK_REGEX = re.compile(r'(^\.svn$)|(^\.git$)')
-EXCLUDE_FILES_ON_PACK_REGEX = re.compile(r'(~$)|(^[Tt]humbs\.db$)|(^\.[Dd][Ss]_[Ss]tore$)')
+DEFAULT_TMP_DIR = "/tmp"
+EXCLUDE_DIRS_ON_PACK_REGEX = re.compile(r"(^\.svn$)|(^\.git$)")
+EXCLUDE_FILES_ON_PACK_REGEX = re.compile(r"(~$)|(^[Tt]humbs\.db$)|(^\.[Dd][Ss]_[Ss]tore$)")
 PACKAGE_SCRIPT_TIMEOUT = 600
 
 
@@ -39,7 +34,6 @@ def _(string):
 
 
 class ProductPackageFile:
-
 	def __init__(self, packageFile, tempDir=None):
 		self.packageFile = os.path.abspath(forceFilename(packageFile))
 		if not os.path.exists(self.packageFile):
@@ -117,7 +111,9 @@ class ProductPackageFile:
 		self.runPostinst()
 		self.cleanup()
 
-	def unpackSource(self, destinationDir='.', newProductId=None, progressSubject=None):  # pylint: disable=too-many-branches,too-many-statements
+	def unpackSource(
+		self, destinationDir=".", newProductId=None, progressSubject=None
+	):  # pylint: disable=too-many-branches,too-many-statements
 		logger.info("Extracting package source from '%s'", self.packageFile)
 		if progressSubject:
 			progressSubject.setMessage(_("Extracting package source from '%s'") % self.packageFile)
@@ -132,28 +128,28 @@ class ProductPackageFile:
 			logger.debug("Extracting source from package '%s' to: '%s'", self.packageFile, destinationDir)
 
 			if progressSubject:
-				progressSubject.setMessage(_('Extracting archives'))
+				progressSubject.setMessage(_("Extracting archives"))
 			archive.extract(targetPath=self.tmpUnpackDir)
 
 			for file in os.listdir(self.tmpUnpackDir):
 				logger.info("Processing file '%s'", file)
-				archiveName = ''
-				if file.endswith('.cpio.gz'):
+				archiveName = ""
+				if file.endswith(".cpio.gz"):
 					archiveName = file[:-8]
-				elif file.endswith('.cpio'):
+				elif file.endswith(".cpio"):
 					archiveName = file[:-5]
-				elif file.endswith('.tar.gz'):
+				elif file.endswith(".tar.gz"):
 					archiveName = file[:-7]
-				elif file.endswith('.tar'):
+				elif file.endswith(".tar"):
 					archiveName = file[:-4]
-				elif file.startswith('OPSI'):
+				elif file.startswith("OPSI"):
 					continue
 				else:
 					logger.warning("Unknown content in archive: %s", file)
 					continue
 				archive = Archive(filename=os.path.join(self.tmpUnpackDir, file), progressSubject=progressSubject)
 				if progressSubject:
-					progressSubject.setMessage(_('Extracting archive %s') % archiveName)
+					progressSubject.setMessage(_("Extracting archive %s") % archiveName)
 				archive.extract(targetPath=os.path.join(destinationDir, archiveName))
 
 			if newProductId:
@@ -163,19 +159,19 @@ class ProductPackageFile:
 					control_filename = "control.yml"
 				else:
 					control_filename = "control"
-				for scriptName in ('setupScript', 'uninstallScript', 'updateScript', 'alwaysScript', 'onceScript', 'customScript'):
+				for scriptName in ("setupScript", "uninstallScript", "updateScript", "alwaysScript", "onceScript", "customScript"):
 					script = getattr(product, scriptName)
 					if not script:
 						continue
 					newScript = script.replace(product.id, newProductId)
-					if not os.path.exists(os.path.join(destinationDir, 'CLIENT_DATA', script)):
-						logger.warning("Script file '%s' not found", os.path.join(destinationDir, 'CLIENT_DATA', script))
+					if not os.path.exists(os.path.join(destinationDir, "CLIENT_DATA", script)):
+						logger.warning("Script file '%s' not found", os.path.join(destinationDir, "CLIENT_DATA", script))
 						continue
-					os.rename(os.path.join(destinationDir, 'CLIENT_DATA', script), os.path.join(destinationDir, 'CLIENT_DATA', newScript))
+					os.rename(os.path.join(destinationDir, "CLIENT_DATA", script), os.path.join(destinationDir, "CLIENT_DATA", newScript))
 					setattr(product, scriptName, newScript)
 				product.setId(newProductId)
 				self.packageControlFile.setProduct(product)
-				self.packageControlFile.setFilename(os.path.join(destinationDir, 'OPSI', control_filename))
+				self.packageControlFile.setFilename(os.path.join(destinationDir, "OPSI", control_filename))
 				self.packageControlFile.generate()
 			logger.debug("Finished extracting package source")
 		except Exception as err:
@@ -195,7 +191,7 @@ class ProductPackageFile:
 				os.mkdir(self.tmpUnpackDir)
 				os.chmod(self.tmpUnpackDir, 0o700)
 
-			metaDataTmpDir = os.path.join(self.tmpUnpackDir, 'OPSI')
+			metaDataTmpDir = os.path.join(self.tmpUnpackDir, "OPSI")
 			archive = Archive(self.packageFile)
 
 			logger.debug("Extracting meta data from package '%s' to: '%s'", self.packageFile, metaDataTmpDir)
@@ -203,7 +199,7 @@ class ProductPackageFile:
 
 			metadataArchives = []
 			for file in os.listdir(metaDataTmpDir):
-				if not file.endswith(('.cpio.gz', '.tar.gz', '.cpio', '.tar')):
+				if not file.endswith((".cpio.gz", ".tar.gz", ".cpio", ".tar")):
 					logger.warning("Unknown content in archive: %s", file)
 					continue
 				logger.debug("Metadata archive found: %s", file)
@@ -224,11 +220,11 @@ class ProductPackageFile:
 				else:
 					archive.extract(targetPath=output_dir)
 			if output_dir is not None:
-				return			# to work on the whole extracted metadata directory
+				return  # to work on the whole extracted metadata directory
 
-			packageControlFile = os.path.join(metaDataTmpDir, 'control.yml')
+			packageControlFile = os.path.join(metaDataTmpDir, "control.yml")
 			if not os.path.exists(packageControlFile):
-				packageControlFile = os.path.join(metaDataTmpDir, 'control')
+				packageControlFile = os.path.join(metaDataTmpDir, "control")
 			if not os.path.exists(packageControlFile):
 				raise IOError("No control file found in package metadata archives")
 
@@ -262,17 +258,17 @@ class ProductPackageFile:
 			clientDataArchives = []
 			serverDataArchives = []
 			for file in os.listdir(self.tmpUnpackDir):
-				if file.startswith('OPSI'):
+				if file.startswith("OPSI"):
 					continue
 
-				if not file.endswith(('.cpio.gz', '.tar.gz', '.cpio', '.tar')):
+				if not file.endswith((".cpio.gz", ".tar.gz", ".cpio", ".tar")):
 					logger.warning("Unknown content in archive: %s", file)
 					continue
 
-				if file.startswith('CLIENT_DATA'):
+				if file.startswith("CLIENT_DATA"):
 					logger.debug("Client-data archive found: %s", file)
 					clientDataArchives.append(file)
-				elif file.startswith('SERVER_DATA'):
+				elif file.startswith("SERVER_DATA"):
 					logger.debug("Server-data archive found: %s", file)
 					serverDataArchives.append(file)
 
@@ -285,7 +281,7 @@ class ProductPackageFile:
 
 			# Sorting to unpack custom version data at last
 			def psort(name):
-				return re.sub(r'(\.tar|\.tar\.gz|\.cpio|\.cpio\.gz)$', '', name)
+				return re.sub(r"(\.tar|\.tar\.gz|\.cpio|\.cpio\.gz)$", "", name)
 
 			clientDataArchives = sorted(clientDataArchives, key=psort)
 			serverDataArchives = sorted(serverDataArchives, key=psort)
@@ -294,7 +290,7 @@ class ProductPackageFile:
 				archiveFile = os.path.join(self.tmpUnpackDir, serverDataArchive)
 				logger.info("Extracting server-data archive '%s' to '/'", archiveFile)
 				archive = Archive(archiveFile)
-				archive.extract(targetPath='/')
+				archive.extract(targetPath="/")
 
 			productClientDataDir = self.getProductClientDataDir()
 			if not os.path.exists(productClientDataDir):
@@ -316,19 +312,13 @@ class ProductPackageFile:
 		if self.clientDataFiles:
 			return self.clientDataFiles
 
-		self.clientDataFiles = list(
-			findFilesGenerator(
-				directory=self.getProductClientDataDir(),
-				followLinks=True,
-				returnLinks=False
-			)
-		)
+		self.clientDataFiles = list(findFilesGenerator(directory=self.getProductClientDataDir(), followLinks=True, returnLinks=False))
 		return self.clientDataFiles
 
 	def setAccessRights(self):  # pylint: disable=too-many-branches
 		logger.info("Setting access rights of client-data files")
 
-		if os.name != 'posix':
+		if os.name != "posix":
 			raise NotImplementedError("setAccessRights not implemented on windows")
 
 		try:
@@ -393,7 +383,7 @@ class ProductPackageFile:
 
 			productId = self.packageControlFile.getProduct().getId()
 			productClientDataDir = self.getProductClientDataDir()
-			packageContentFilename = productId + '.files'
+			packageContentFilename = productId + ".files"
 			packageContentFile = os.path.join(productClientDataDir, packageContentFilename)
 
 			packageContentFile = PackageContentFile(packageContentFile)
@@ -428,7 +418,7 @@ class ProductPackageFile:
 				raise ValueError("Client data dir not set")
 
 			clientDataDir = self.getProductClientDataDir()
-			script = os.path.join(self.tmpUnpackDir, 'OPSI', scriptName)
+			script = os.path.join(self.tmpUnpackDir, "OPSI", scriptName)
 			if not os.path.exists(script):
 				logger.info("Package script '%s' not found", scriptName)
 				return []
@@ -436,7 +426,9 @@ class ProductPackageFile:
 			with open(script, "rb") as file:
 				data = file.read()
 			if data.startswith(b"#!"):
-				new_data = re.sub(b"(^|\s|/)python3?(\s+)", b'\g<1>opsi-python\g<2>', data)  # pylint: disable=anomalous-backslash-in-string
+				new_data = re.sub(
+					rb"(^|\s|/)python3?(\s+)", rb"\g<1>opsi-python\g<2>", data
+				)  # pylint: disable=anomalous-backslash-in-string
 				if b"\r\n" in data:
 					logger.info("Replacing dos line breaks in %s", script)
 					new_data = new_data.replace(b"\r\n", b"\n")
@@ -448,11 +440,11 @@ class ProductPackageFile:
 			os.chmod(script, 0o700)
 
 			sp_env = {
-				'PRODUCT_ID': self.packageControlFile.getProduct().getId(),
-				'PRODUCT_TYPE': self.packageControlFile.getProduct().getType(),
-				'PRODUCT_VERSION': self.packageControlFile.getProduct().getProductVersion(),
-				'PACKAGE_VERSION': self.packageControlFile.getProduct().getPackageVersion(),
-				'CLIENT_DATA_DIR': clientDataDir
+				"PRODUCT_ID": self.packageControlFile.getProduct().getId(),
+				"PRODUCT_TYPE": self.packageControlFile.getProduct().getType(),
+				"PRODUCT_VERSION": self.packageControlFile.getProduct().getProductVersion(),
+				"PACKAGE_VERSION": self.packageControlFile.getProduct().getPackageVersion(),
+				"CLIENT_DATA_DIR": clientDataDir,
 			}
 			sp_env.update(env)
 			logger.debug("Package script env: %s", sp_env)
@@ -460,24 +452,28 @@ class ProductPackageFile:
 		except Exception as err:
 			logger.error(err, exc_info=True)
 			self.cleanup()
-			raise RuntimeError(
-				f"Failed to execute package script '{scriptName}' of package '{self.packageFile}': {err}"
-			) from err
+			raise RuntimeError(f"Failed to execute package script '{scriptName}' of package '{self.packageFile}': {err}") from err
 		finally:
 			logger.debug("Finished running package script %s", scriptName)
 
 	def runPreinst(self, env=None):
-		return self._runPackageScript('preinst', env=env or {})
+		return self._runPackageScript("preinst", env=env or {})
 
 	def runPostinst(self, env=None):
-		return self._runPackageScript('postinst', env=env or {})
+		return self._runPackageScript("postinst", env=env or {})
 
 
 class ProductPackageSource:  # pylint: disable=too-many-instance-attributes
-
 	def __init__(  # pylint: disable=too-many-arguments,too-many-branches,too-many-locals
-		self, packageSourceDir, tempDir=None, customName=None, customOnly=False,
-		packageFileDestDir=None, format='cpio', compression='gzip', dereference=False  # pylint: disable=redefined-builtin
+		self,
+		packageSourceDir,
+		tempDir=None,
+		customName=None,
+		customOnly=False,
+		packageFileDestDir=None,
+		format="cpio",
+		compression="gzip",
+		dereference=False,  # pylint: disable=redefined-builtin
 	):
 		self.packageSourceDir = os.path.abspath(forceFilename(packageSourceDir))
 		if not os.path.isdir(self.packageSourceDir):
@@ -495,16 +491,16 @@ class ProductPackageSource:  # pylint: disable=too-many-instance-attributes
 		self.customOnly = forceBool(customOnly)
 
 		if format:
-			if format not in ('cpio', 'tar'):
+			if format not in ("cpio", "tar"):
 				raise ValueError(f"Format '{format}' not supported")
 			self.format = format
 		else:
-			self.format = 'cpio'
+			self.format = "cpio"
 
 		if not compression:
 			self.compression = None
 		else:
-			if compression not in ('gzip', 'bzip2'):
+			if compression not in ("gzip", "bzip2"):
 				raise ValueError(f"Compression '{compression}' not supported")
 			self.compression = compression
 
@@ -517,29 +513,29 @@ class ProductPackageSource:  # pylint: disable=too-many-instance-attributes
 			raise IOError(f"Package destination directory '{packageFileDestDir}' not found")
 
 		if customName:
-			packageControlFile = os.path.join(self.packageSourceDir, f'OPSI.{customName}', 'control.yml')
+			packageControlFile = os.path.join(self.packageSourceDir, f"OPSI.{customName}", "control.yml")
 			if not os.path.exists(packageControlFile):
-				packageControlFile = os.path.join(self.packageSourceDir, f'OPSI.{customName}', 'control')
+				packageControlFile = os.path.join(self.packageSourceDir, f"OPSI.{customName}", "control")
 		if not customName or not os.path.exists(packageControlFile):
-			packageControlFile = os.path.join(self.packageSourceDir, 'OPSI', 'control.yml')
+			packageControlFile = os.path.join(self.packageSourceDir, "OPSI", "control.yml")
 			if not os.path.exists(packageControlFile):
-				packageControlFile = os.path.join(self.packageSourceDir, 'OPSI', 'control')
+				packageControlFile = os.path.join(self.packageSourceDir, "OPSI", "control")
 		if not os.path.exists(packageControlFile):
 			raise OSError(f"Control file '{packageControlFile}' not found")
 
 		self.packageControlFile = PackageControlFile(packageControlFile)
 		self.packageControlFile.parse()
 
-		customName = ''
+		customName = ""
 		if self.customName:
-			customName = f'~{self.customName}'
+			customName = f"~{self.customName}"
 		self.packageFile = os.path.join(
 			packageFileDestDir,
 			f"{self.packageControlFile.getProduct().id}_{self.packageControlFile.getProduct().productVersion}-"
-			f"{self.packageControlFile.getProduct().packageVersion}{customName}.opsi"
+			f"{self.packageControlFile.getProduct().packageVersion}{customName}.opsi",
 		)
 
-		self.tmpPackDir = os.path.join(self.tempDir, f'.opsi.pack.{randomString(5)}')
+		self.tmpPackDir = os.path.join(self.tempDir, f".opsi.pack.{randomString(5)}")
 
 	def getPackageFile(self):
 		return self.packageFile
@@ -558,7 +554,7 @@ class ProductPackageSource:  # pylint: disable=too-many-instance-attributes
 
 		archives = []
 		diskusage = 0
-		dirs = ['CLIENT_DATA', 'SERVER_DATA', 'OPSI']
+		dirs = ["CLIENT_DATA", "SERVER_DATA", "OPSI"]
 
 		try:
 			if self.customName:
@@ -576,33 +572,36 @@ class ProductPackageSource:  # pylint: disable=too-many-instance-attributes
 
 			# Try to define diskusage from Sourcedirectory to prevent a override from cpio sizelimit.
 			for _dir in dirs:
-				if not os.path.exists(os.path.join(self.packageSourceDir, _dir)) and _dir != 'OPSI':
+				if not os.path.exists(os.path.join(self.packageSourceDir, _dir)) and _dir != "OPSI":
 					logger.info("Directory '%s' does not exist", os.path.join(self.packageSourceDir, _dir))
 					continue
 				for file in findFilesGenerator(
 					os.path.join(self.packageSourceDir, _dir),
 					excludeDir=EXCLUDE_DIRS_ON_PACK_REGEX,
 					excludeFile=EXCLUDE_FILES_ON_PACK_REGEX,
-					followLinks=self.dereference
+					followLinks=self.dereference,
 				):
 					diskusage = diskusage + os.path.getsize(os.path.join(self.packageSourceDir, _dir, file))
 
 			if diskusage >= 2147483648:
 				logger.info("Switching to tar format, because sourcefiles overrides cpio sizelimit.")
-				self.format = 'tar'
+				self.format = "tar"
 
 			for _dir in dirs:
-				if not os.path.exists(os.path.join(self.packageSourceDir, _dir)) and _dir != 'OPSI':
+				if not os.path.exists(os.path.join(self.packageSourceDir, _dir)) and _dir != "OPSI":
 					logger.info("Directory '%s' does not exist", os.path.join(self.packageSourceDir, _dir))
 					continue
 
-				fileList = list(findFilesGenerator(
-					os.path.join(self.packageSourceDir, _dir),
-					excludeDir=EXCLUDE_DIRS_ON_PACK_REGEX,
-					excludeFile=EXCLUDE_FILES_ON_PACK_REGEX,
-					followLinks=self.dereference))
+				fileList = list(
+					findFilesGenerator(
+						os.path.join(self.packageSourceDir, _dir),
+						excludeDir=EXCLUDE_DIRS_ON_PACK_REGEX,
+						excludeFile=EXCLUDE_FILES_ON_PACK_REGEX,
+						followLinks=self.dereference,
+					)
+				)
 
-				if _dir.startswith('SERVER_DATA'):
+				if _dir.startswith("SERVER_DATA"):
 					# Never change permissions of existing directories in /
 					tmp = []
 					for file in fileList:
@@ -617,22 +616,22 @@ class ProductPackageSource:  # pylint: disable=too-many-instance-attributes
 					logger.notice("Skipping empty dir '%s'", os.path.join(self.packageSourceDir, _dir))
 					continue
 
-				filename = os.path.join(self.tmpPackDir, f'{_dir}.{self.format}')
-				if self.compression == 'gzip':
-					filename += '.gz'
-				elif self.compression == 'bzip2':
-					filename += '.bz2'
+				filename = os.path.join(self.tmpPackDir, f"{_dir}.{self.format}")
+				if self.compression == "gzip":
+					filename += ".gz"
+				elif self.compression == "bzip2":
+					filename += ".bz2"
 				archive = Archive(filename, format=self.format, compression=self.compression, progressSubject=progressSubject)
 				if progressSubject:
 					progressSubject.reset()
-					progressSubject.setMessage(f'Creating archive {os.path.basename(archive.getFilename())}')
+					progressSubject.setMessage(f"Creating archive {os.path.basename(archive.getFilename())}")
 				archive.create(fileList=fileList, baseDir=os.path.join(self.packageSourceDir, _dir), dereference=self.dereference)
 				archives.append(filename)
 
 			archive = Archive(self.packageFile, format=self.format, compression=None, progressSubject=progressSubject)
 			if progressSubject:
 				progressSubject.reset()
-				progressSubject.setMessage(f'Creating archive {os.path.basename(archive.getFilename())}')
+				progressSubject.setMessage(f"Creating archive {os.path.basename(archive.getFilename())}")
 			archive.create(fileList=archives, baseDir=self.tmpPackDir)
 		except Exception as err:
 			self.cleanup()
