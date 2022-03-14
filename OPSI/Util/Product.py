@@ -10,6 +10,8 @@ import os
 import re
 import shutil
 
+from opsicommon.logging import logger
+
 from OPSI.Config import FILE_ADMIN_GROUP as DEFAULT_CLIENT_DATA_GROUP
 from OPSI.Config import OPSICONFD_USER as DEFAULT_CLIENT_DATA_USER
 from OPSI.System import execute
@@ -17,7 +19,6 @@ from OPSI.Types import forceBool, forceFilename, forcePackageCustomName, forceUn
 from OPSI.Util import findFilesGenerator, randomString, removeDirectory
 from OPSI.Util.File.Archive import Archive
 from OPSI.Util.File.Opsi import PackageContentFile, PackageControlFile
-from opsicommon.logging import logger
 
 if os.name == "posix":
 	import grp
@@ -471,9 +472,9 @@ class ProductPackageSource:  # pylint: disable=too-many-instance-attributes
 		customName=None,
 		customOnly=False,
 		packageFileDestDir=None,
-		format="cpio",
+		format="cpio",  # pylint: disable=redefined-builtin
 		compression="gzip",
-		dereference=False,  # pylint: disable=redefined-builtin
+		dereference=False,
 	):
 		self.packageSourceDir = os.path.abspath(forceFilename(packageSourceDir))
 		if not os.path.isdir(self.packageSourceDir):

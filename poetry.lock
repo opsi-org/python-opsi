@@ -947,11 +947,11 @@ reference = "uibpypi"
 
 [[package]]
 name = "pytest"
-version = "7.0.1"
+version = "7.1.0"
 description = "pytest: simple powerful testing with Python"
 category = "dev"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [package.dependencies]
 atomicwrites = {version = ">=1.0", markers = "sys_platform == \"win32\""}
@@ -1027,7 +1027,7 @@ reference = "uibpypi"
 
 [[package]]
 name = "python-opsi-common"
-version = "4.2.0.277"
+version = "4.2.0.278"
 description = "The opsi python common library"
 category = "main"
 optional = false
@@ -2039,8 +2039,8 @@ pypi-simple = [
     {file = "pypi_simple-0.9.0-py3-none-any.whl", hash = "sha256:ee44c07bc61b597cb455e948f88b05fb5fe338549c50b978ae5acdeae2177a4c"},
 ]
 pytest = [
-    {file = "pytest-7.0.1-py3-none-any.whl", hash = "sha256:9ce3ff477af913ecf6321fe337b93a2c0dcf2a0a1439c43f5452112c1e4280db"},
-    {file = "pytest-7.0.1.tar.gz", hash = "sha256:e30905a0c131d3d94b89624a1cc5afec3e0ba2fbdb151867d8e0ebd49850f171"},
+    {file = "pytest-7.1.0-py3-none-any.whl", hash = "sha256:b555252a95bbb2a37a97b5ac2eb050c436f7989993565f5e0c9128fcaacadd0e"},
+    {file = "pytest-7.1.0.tar.gz", hash = "sha256:f1089d218cfcc63a212c42896f1b7fbf096874d045e1988186861a1a87d27b47"},
 ]
 pytest-asyncio = [
     {file = "pytest-asyncio-0.18.2.tar.gz", hash = "sha256:fc8e4190f33fee7797cc7f1829f46a82c213f088af5d1bb5d4e454fe87e6cdc2"},
@@ -2054,8 +2054,8 @@ python-gettext = [
     {file = "python-gettext-4.0.tar.gz", hash = "sha256:626b501a51ac892fc3460cf550e60dca121f544eaa46eb69c90ce4682fc7ec02"},
 ]
 python-opsi-common = [
-    {file = "python-opsi-common-4.2.0.277.tar.gz", hash = "sha256:5f2059d7b30e7269225d2ee94feb25339524a06326d1413172422826fd5a5bf4"},
-    {file = "python_opsi_common-4.2.0.277-py3-none-any.whl", hash = "sha256:3fc79463b9571333805156b13a9f7018fa6cd068014b9f76722970a140d1dc29"},
+    {file = "python-opsi-common-4.2.0.278.tar.gz", hash = "sha256:e013054e1bed824f292c308bcdc5df74e48a2fbd474f219655e57014b4e7d2aa"},
+    {file = "python_opsi_common-4.2.0.278-py3-none-any.whl", hash = "sha256:8faee408a7b98bbd6d60d0fb4dc9fd0b1e4bf076a6cfdd3ff2bb0910a5d6bdd9"},
 ]
 python-pam = [
     {file = "python-pam-1.8.4.tar.gz", hash = "sha256:c856d9c89fedb33951dd8a95727ae57c6887b02d065bbdffd2fd9dbc0183909b"},
