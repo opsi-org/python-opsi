@@ -9,11 +9,11 @@ This backend is a general SQL implementation undependend from concrete
 databases and their implementation.
 """
 
+import json
+
 # pylint: disable=too-many-lines
 import re
 import time
-import json
-
 from contextlib import contextmanager
 from datetime import datetime
 
@@ -21,10 +21,10 @@ from opsicommon.logging import logger
 
 from OPSI.Backend.Base import BackendModificationListener, ConfigDataBackend
 from OPSI.Exceptions import (
+	BackendBadValueError,
 	BackendConfigurationError,
 	BackendMissingDataError,
 	BackendReferentialIntegrityError,
-	BackendBadValueError,
 )
 from OPSI.Object import (
 	AuditHardware,
@@ -52,12 +52,19 @@ from OPSI.Object import (
 	Relationship,
 	SoftwareLicense,
 	SoftwareLicenseToLicensePool,
-	mandatoryConstructorArgs,
 	getPossibleClassAttributes,
+	mandatoryConstructorArgs,
 )
-from OPSI.Types import forceBool, forceUnicodeLower, forceOpsiTimestamp, forceList, forceUnicodeList, forceDict, forceObjectClassList
+from OPSI.Types import (
+	forceBool,
+	forceDict,
+	forceList,
+	forceObjectClassList,
+	forceOpsiTimestamp,
+	forceUnicodeList,
+	forceUnicodeLower,
+)
 from OPSI.Util import timestamp
-
 
 __all__ = ("timeQuery", "onlyAllowSelect", "SQL", "SQLBackend", "SQLBackendObjectModificationTracker")
 
@@ -1864,8 +1871,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			self._sql.update(session, "LICENSE_CONTRACT", where, data)
 
 	def licenseContract_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		self._check_module("license_management")
-
 		ConfigDataBackend.licenseContract_getObjects(self, attributes=[], **filter)
 		logger.info("Getting licenseContracts, filter: %s", filter)
 		licenseContracts = []
@@ -1971,8 +1976,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				self._sql.insert(session, "PRODUCT_ID_TO_LICENSE_POOL", mapping)
 
 	def licensePool_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		self._check_module("license_management")
-
 		ConfigDataBackend.licensePool_getObjects(self, attributes=[], **filter)
 		logger.info("Getting licensePools, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(LicensePool, attributes, filter)
@@ -2048,8 +2051,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			self._sql.update(session, "SOFTWARE_LICENSE_TO_LICENSE_POOL", where, data)
 
 	def softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		self._check_module("license_management")
-
 		ConfigDataBackend.softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter)
 		logger.info("Getting softwareLicenseToLicensePool, filter: %s", filter)
 		(attributes, filter) = self._adjustAttributes(SoftwareLicenseToLicensePool, attributes, filter)
