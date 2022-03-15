@@ -7,21 +7,21 @@ Component for handling package updates.
 """
 # pylint: disable=too-many-lines
 
-from contextlib import contextmanager
+import datetime
+import json
 import os
 import os.path
 import re
-import time
-import json
-import datetime
-from urllib.parse import quote
 import subprocess
-from requests.packages import urllib3
-from OpenSSL.crypto import FILETYPE_PEM, load_certificate
+import time
+from contextlib import contextmanager
+from urllib.parse import quote
 
+from OpenSSL.crypto import FILETYPE_PEM, load_certificate
 from opsicommon.logging import logger, secret_filter
 from opsicommon.ssl import install_ca
 from opsicommon.utils import prepare_proxy_environment
+from requests.packages import urllib3
 
 from OPSI import System
 from OPSI.Backend.BackendManager import BackendManager
@@ -712,6 +712,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 			buffer = b""
 			exit_code = 0
 			percent = 0
+			logger.info("Executing zsync command %r with env %r", cmd, env)
 			with subprocess.Popen(
 				cmd, shell=False, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env
 			) as proc:
