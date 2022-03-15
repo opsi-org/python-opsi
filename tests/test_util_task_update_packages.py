@@ -6,23 +6,25 @@
 Testing the opsi-package-updater functionality.
 """
 
+import json
 import os
 import shutil
-import json
 import subprocess
 
 import pytest
-
 from opsicommon.testing.helpers import http_test_server
 
 from OPSI.Util import md5sum
 from OPSI.Util.File import ZsyncFile
 from OPSI.Util.Task.UpdatePackages import OpsiPackageUpdater
-from OPSI.Util.Task.UpdatePackages.Notifier import DummyNotifier
 from OPSI.Util.Task.UpdatePackages.Config import DEFAULT_CONFIG
-from OPSI.Util.Task.UpdatePackages.Repository import ProductRepositoryInfo, LinksExtractor
+from OPSI.Util.Task.UpdatePackages.Notifier import DummyNotifier
+from OPSI.Util.Task.UpdatePackages.Repository import (
+	LinksExtractor,
+	ProductRepositoryInfo,
+)
 
-from .helpers import mock, createTemporaryTestfile
+from .helpers import createTemporaryTestfile, mock
 from .test_hosts import getConfigServer
 
 
@@ -208,7 +210,7 @@ def test_global_proxy_applied_to_repos(tmpdir, example_config_path, package_upda
 def test_check_accept_ranges(tmp_path, package_updater_class):  # pylint: disable=redefined-outer-name,too-many-locals,too-many-statements
 	zsync_curl = False
 	try:
-		proc = subprocess.run(["zsync", "-V"], capture_output=True, check=False)
+		proc = subprocess.run(["zsync-curl", "-V"], capture_output=True, check=False)
 		if "zsync_curl" in proc.stdout.decode("utf-8"):
 			zsync_curl = True
 	except FileNotFoundError:
@@ -247,7 +249,7 @@ def test_check_accept_ranges(tmp_path, package_updater_class):  # pylint: disabl
 	def write_repo_conf(base_url, proxy):
 		test_repo_conf.write_text(
 			data=(
-				"[repository_test]\n" "active = true\n" f"baseUrl = {base_url}\n" "dirs = /\n" f"proxy = {proxy}\n" "autoInstall = true\n"
+				f"[repository_test]\nactive = true\nbaseUrl = {base_url}\ndirs = /\nproxy = {proxy}\nautoInstall = true\nusername = user\npassword = pass\n"
 			),
 			encoding="utf-8",
 		)
@@ -292,6 +294,7 @@ def test_check_accept_ranges(tmp_path, package_updater_class):  # pylint: disabl
 
 			request = json.loads(server_log.read_text(encoding="utf-8").rstrip().split("\n")[-1])
 			if "localhost" in base_url:
+				assert request["headers"].get("Authorization") == "Basic dXNlcjpwYXNz"
 				assert md5sum(str(local_dir / server_package_file.name)) == server_package_md5sum
 				server_log.unlink()
 				if accept_ranges:
