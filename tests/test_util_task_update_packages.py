@@ -249,7 +249,8 @@ def test_check_accept_ranges(tmp_path, package_updater_class):  # pylint: disabl
 	def write_repo_conf(base_url, proxy):
 		test_repo_conf.write_text(
 			data=(
-				f"[repository_test]\nactive = true\nbaseUrl = {base_url}\ndirs = /\nproxy = {proxy}\nautoInstall = true\nusername = user\npassword = pass\n"
+				f"[repository_test]\nactive = true\nbaseUrl = {base_url}\ndirs = /\nproxy = {proxy}\n"
+				"autoInstall = true\nusername = user\npassword = pass\n"
 			),
 			encoding="utf-8",
 		)
