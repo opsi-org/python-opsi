@@ -335,7 +335,12 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		self._sql = None
 		self._auditHardwareConfig = {}
+		self.unique_hardware_addresses = True
 		self._setAuditHardwareConfig(self.auditHardware_getConfig())
+		# Parse arguments
+		for (option, value) in kwargs.items():
+			if option == "unique_hardware_addresses":
+				self.unique_hardware_addresses = forceBool(value)
 
 	def _setAuditHardwareConfig(self, config):
 		self._auditHardwareConfig = {}
@@ -1165,7 +1170,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# -   Hosts
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	def _host_check_duplicates(self, host, session):
-		if host.hardwareAddress and not host.hardwareAddress.startswith("00:00:00"):
+		if self.unique_hardware_addresses and host.hardwareAddress and not host.hardwareAddress.startswith("00:00:00"):
 			res = self._sql.getRow(
 				session,
 				f"""
