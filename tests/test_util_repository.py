@@ -11,11 +11,10 @@ import time
 from unittest import mock
 
 import pytest
-
 from opsicommon.testing.helpers import http_test_server
 
 from OPSI.Exceptions import RepositoryError
-from OPSI.Util.Repository import FileRepository, getRepository, getFileInfosFromDavXML
+from OPSI.Util.Repository import FileRepository, getFileInfosFromDavXML, getRepository
 
 
 def testGettingFileRepository():
@@ -44,8 +43,6 @@ def testListingRepository(tempDir):
 	assert 2 == len(repo.content("", recursive=True))
 	assert 2 == len(repo.listdir())
 	assert "bar" in repo.listdir()
-
-	# TODO: list subdir tempDir and check if file is shown
 
 
 def testFileRepositoryFailsWithWrongURL():
@@ -90,24 +87,29 @@ def test_file_repo_start_end(tmpdir):
 	dst_dir = tmpdir.mkdir("dst")
 	dst = dst_dir.join("test.txt")
 
-	repo = getRepository(f"file://{src_dir}")
-	repo.download("test.txt", str(dst), startByteNumber=-1, endByteNumber=-1)
-	assert dst.read() == "123456789"
+	with http_test_server(serve_directory=src_dir) as server:
+		for repo_url in (f"file://{src_dir}", f"http://localhost:{server.port}"):
+			repo = getRepository(repo_url)
+			repo.download("test.txt", str(dst), startByteNumber=-1, endByteNumber=-1)
+			assert dst.read() == "123456789"
 
-	repo.download("test.txt", str(dst), startByteNumber=0, endByteNumber=-1)
-	assert dst.read() == "123456789"
+			repo.download("test.txt", str(dst), startByteNumber=0, endByteNumber=-1)
+			assert dst.read() == "123456789"
 
-	repo.download("test.txt", str(dst), startByteNumber=0, endByteNumber=1)
-	assert dst.read() == "1"
+			repo.download("test.txt", str(dst), startByteNumber=0, endByteNumber=0)
+			assert dst.read() == "1"
 
-	repo.download("test.txt", str(dst), startByteNumber=1, endByteNumber=1)
-	assert dst.read() == ""
+			repo.download("test.txt", str(dst), startByteNumber=0, endByteNumber=1)
+			assert dst.read() == "12"
 
-	repo.download("test.txt", str(dst), startByteNumber=0, endByteNumber=2)
-	assert dst.read() == "12"
+			repo.download("test.txt", str(dst), startByteNumber=1, endByteNumber=1)
+			assert dst.read() == "2"
 
-	repo.download("test.txt", str(dst), startByteNumber=5, endByteNumber=9)
-	assert dst.read() == "6789"
+			repo.download("test.txt", str(dst), startByteNumber=0, endByteNumber=2)
+			assert dst.read() == "123"
+
+			repo.download("test.txt", str(dst), startByteNumber=5, endByteNumber=8)
+			assert dst.read() == "6789"
 
 
 @pytest.mark.parametrize("repo_type,dynamic", [("file", False), ("http", False), ("http", True)])
