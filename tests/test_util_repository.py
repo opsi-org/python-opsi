@@ -6,7 +6,10 @@
 Testing the work with repositories.
 """
 
+import json
 import os
+import pathlib
+import shutil
 import time
 from unittest import mock
 
@@ -14,7 +17,14 @@ import pytest
 from opsicommon.testing.helpers import http_test_server
 
 from OPSI.Exceptions import RepositoryError
-from OPSI.Util.Repository import FileRepository, getFileInfosFromDavXML, getRepository
+from OPSI.Util import findFilesGenerator, md5sum
+from OPSI.Util.File.Opsi import PackageContentFile
+from OPSI.Util.Repository import (
+	DepotToLocalDirectorySychronizer,
+	FileRepository,
+	getFileInfosFromDavXML,
+	getRepository,
+)
 
 
 def testGettingFileRepository():
@@ -193,3 +203,81 @@ def test_limit_upload(tmpdir, repo_type):
 			upload(f"{repo_type}://localhost:{server.port}")
 	else:
 		upload(f"{repo_type}://{dst_dir}")
+
+
+def test_depot_to_local_sync(tmp_path: pathlib.Path):  # pylint: disable=too-many-locals,too-many-statements
+	product_id = "test1"
+
+	depot_path = tmp_path / "depot"
+	depot_path.mkdir()
+	product_path = depot_path / product_id
+	product_path.mkdir()
+	file1 = product_path / "file1.txt"
+	file1.write_text("0123456789")
+	file2 = product_path / "subdir" / "file2.txt"
+	file2.parent.mkdir()
+	file2.write_text("0123456789" * 100_000)
+	package_content_file = product_path / f"{product_id}.files"
+
+	local_path = tmp_path / "local"
+	local_path.mkdir()
+	local_product_path = local_path / product_id
+
+	packageContentFile = PackageContentFile(str(package_content_file))
+	packageContentFile.setProductClientDataDir(str(product_path))
+	packageContentFile.setClientDataFiles(list(findFilesGenerator(directory=str(product_path), followLinks=True, returnLinks=False)))
+	packageContentFile.generate()
+
+	assert package_content_file.read_text() == (
+		"f 'file1.txt' 10 781e5e245d69b566979b86e28d23f2c7\n"
+		"d 'subdir' 0 \n"
+		"f 'subdir/file2.txt' 1000000 174ac9a4f023a557a68ab0417355970e\n"
+	)
+
+	file_depot = getRepository(f"file://{str(depot_path)}")
+	server_log_file = tmp_path / "server.log"
+	with http_test_server(serve_directory=depot_path, log_file=server_log_file) as server:
+		webdav_depot = getRepository(f"webdav://localhost:{server.port}")
+		# http_test_server does not support PROPFIND
+		webdav_depot.content = file_depot.content
+
+		for depot in (file_depot, webdav_depot):
+			sync = DepotToLocalDirectorySychronizer(sourceDepot=depot, destinationDirectory=str(local_path), productIds=[product_id])
+			sync._productId = product_id  # pylint: disable=protected-access
+			sync._fileInfo = packageContentFile.parse()  # pylint: disable=protected-access
+			sync._synchronizeDirectories(product_id, str(local_product_path))  # pylint: disable=protected-access
+
+			file = local_product_path / "file1.txt"
+			assert file.exists()
+			assert md5sum(str(file)) == "781e5e245d69b566979b86e28d23f2c7"
+
+			file = local_product_path / "subdir" / "file2.txt"
+			assert file.exists()
+			assert file.read_text() == file2.read_text()
+			assert md5sum(str(file)) == "174ac9a4f023a557a68ab0417355970e"
+
+			if depot == webdav_depot:
+				# Test no transfer needed (no server request)
+				server_log_file.unlink()
+				sync._synchronizeDirectories(product_id, str(local_product_path))  # pylint: disable=protected-access
+				assert not server_log_file.exists()
+
+				# Test correct but incomplete file part
+				(local_product_path / "subdir" / "file2.txt").write_text("0123456789" * 50_000)
+				sync._synchronizeDirectories(product_id, str(local_product_path))  # pylint: disable=protected-access
+				request = json.loads(server_log_file.read_text())
+				assert request["headers"]["range"] == "bytes=500000-"
+
+				# Test incorrect and incomplete file part
+				server_log_file.unlink()
+				(local_product_path / "subdir" / "file2.txt").write_text("xxxxxxxxxx" * 50_000)
+				sync._synchronizeDirectories(product_id, str(local_product_path))  # pylint: disable=protected-access
+
+				requests = server_log_file.read_text().split("\n")
+				request = json.loads(requests[0])
+				assert request["headers"]["range"] == "bytes=500000-"
+
+				request = json.loads(requests[1])
+				assert request["headers"]["range"] == "bytes=0-499999"
+
+			shutil.rmtree(local_product_path)
