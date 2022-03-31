@@ -228,10 +228,8 @@ def test_depot_to_local_sync(tmp_path: pathlib.Path):  # pylint: disable=too-man
 	packageContentFile.setClientDataFiles(list(findFilesGenerator(directory=str(product_path), followLinks=True, returnLinks=False)))
 	packageContentFile.generate()
 
-	assert package_content_file.read_text() == (
-		"f 'file1.txt' 10 781e5e245d69b566979b86e28d23f2c7\n"
-		"d 'subdir' 0 \n"
-		"f 'subdir/file2.txt' 1000000 174ac9a4f023a557a68ab0417355970e\n"
+	assert sorted(package_content_file.read_text().split("\n")) == sorted(
+		"f 'file1.txt' 10 781e5e245d69b566979b86e28d23f2c7" "d 'subdir' 0 " "f 'subdir/file2.txt' 1000000 174ac9a4f023a557a68ab0417355970e"
 	)
 
 	file_depot = getRepository(f"file://{str(depot_path)}")
