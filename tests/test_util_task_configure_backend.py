@@ -7,15 +7,16 @@ Testing the backend configuration.
 """
 
 import os
+
 import pytest
 
-from OPSI.Object import UnicodeConfig
-from OPSI.System.Posix import CommandNotFoundException
 import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 import OPSI.Util.Task.ConfigureBackend.ConfigurationData as confData
+from OPSI.Object import UnicodeConfig
+from OPSI.System.Posix import CommandNotFoundException
 
-from .test_hosts import getConfigServer
 from .helpers import createTemporaryTestfile, mock
+from .test_hosts import getConfigServer
 
 
 @pytest.fixture
@@ -27,17 +28,7 @@ def exampleMySQLBackendConfig(dist_data_path):
 
 
 def testReadingMySQLConfigFile(exampleMySQLBackendConfig):  # pylint: disable=redefined-outer-name
-	defaultMySQLConfig = {
-		"address": "127.0.0.1",
-		"database": "opsi",
-		"username": "opsi",
-		"password": "opsi",
-		"databaseCharset": "utf8",
-		"connectionPoolSize": 25,
-		"connectionPoolMaxOverflow": 10,
-		"connectionPoolTimeout": 30,
-		"connectionPoolRecycling": 28000,
-	}
+	defaultMySQLConfig = {"address": "127.0.0.1", "database": "opsi", "username": "opsi", "password": "opsi"}
 
 	config = backendConfigUtils.getBackendConfiguration(exampleMySQLBackendConfig)
 
@@ -64,7 +55,7 @@ def testUpdatingTestConfigFile(exampleMySQLBackendConfig):  # pylint: disable=re
 	for key in ("address", "database", "password"):
 		assert key not in config, f"{key} should not be in {config}"
 
-	for key in ("username", "connectionPoolMaxOverflow"):
+	for key in ("username",):
 		assert key in config, f"{key} should be in {config}"
 
 
