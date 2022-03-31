@@ -8,15 +8,15 @@ JSONRPC backend.
 This backend executes the calls on a remote backend via JSONRPC.
 """
 
+from opsicommon.client.jsonrpc import JSONRPCClient
+
 from OPSI import __version__
 from OPSI.Backend.Base import Backend
 
-from opsicommon.client.jsonrpc import JSONRPCClient
+__all__ = ("JSONRPCBackend",)
 
-__all__ = ('JSONRPCBackend',)
 
 class JSONRPCBackend(Backend, JSONRPCClient):  # pylint: disable=too-many-instance-attributes
-
 	def __init__(self, address, **kwargs):  # pylint: disable=too-many-branches,too-many-statements
 		"""
 		Backend for JSON-RPC access to another opsi service.
@@ -25,12 +25,21 @@ class JSONRPCBackend(Backend, JSONRPCClient):  # pylint: disable=too-many-instan
 		:type compression: bool
 		"""
 
-		self._name = 'jsonrpc'
+		self._name = "jsonrpc"
 
 		Backend.__init__(self, **kwargs)
+
+		connection_pool_size = 250
+		for option, value in kwargs.copy().items():
+			if option.lower().replace("_", "") in ("connectionpoolsize", "httppoolmaxsize"):
+				if value not in (None, ""):
+					connection_pool_size = int(value)
+				del kwargs[option]
+		kwargs[connection_pool_size] = connection_pool_size
+
 		JSONRPCClient.__init__(self, address, **kwargs)
 
-		self._application = 'opsi-jsonrpc-backend/%s' % __version__
+		self._application = f"opsi-jsonrpc-backend/{__version__}"
 
 	def jsonrpc_getSessionId(self):
 		return self.session_id
