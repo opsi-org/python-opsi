@@ -8,68 +8,71 @@ Configuration data holding backend.
 
 # pylint: disable=too-many-lines
 
-import os
-import re
-import json
-import glob
-import time
 import codecs
 import collections
 import copy as pycopy
+import glob
+import json
+import os
+import re
+import shutil
+import time
 from functools import lru_cache
 
-import shutil
-
-from opsicommon.logging import logger, secret_filter
 from opsicommon.license import get_default_opsi_license_pool
 
 from OPSI.Config import OPSI_ADMIN_GROUP
-from OPSI.Exceptions import BackendBadValueError, BackendMissingDataError, BackendReferentialIntegrityError, BackendModuleDisabledError
-from OPSI.Types import (
-	forceFilename,
-	forceHostId,
-	forceInt,
-	forceLanguageCode,
-	forceObjectClass,
-	forceObjectClassList,
-	forceObjectId,
-	forceUnicode,
-	forceUnicodeList,
-	forceUnicodeLower,
-	forceBool,
+from OPSI.Exceptions import (
+    BackendBadValueError,
+    BackendMissingDataError,
+    BackendModuleDisabledError,
+    BackendReferentialIntegrityError,
 )
 from OPSI.Object import (
-	getPossibleClassAttributes,
-	AuditSoftware,
-	AuditSoftwareOnClient,
-	AuditSoftwareToLicensePool,
-	AuditHardware,
-	AuditHardwareOnHost,
-	Config,
-	ConfigState,
-	Group,
-	Host,
-	LicenseContract,
-	LicenseOnClient,
-	LicensePool,
-	ObjectToGroup,
-	OpsiClient,
-	OpsiDepotserver,
-	Product,
-	ProductDependency,
-	ProductOnDepot,
-	ProductOnClient,
-	ProductProperty,
-	ProductPropertyState,
-	SoftwareLicense,
-	SoftwareLicenseToLicensePool,
+    AuditHardware,
+    AuditHardwareOnHost,
+    AuditSoftware,
+    AuditSoftwareOnClient,
+    AuditSoftwareToLicensePool,
+    Config,
+    ConfigState,
+    Group,
+    Host,
+    LicenseContract,
+    LicenseOnClient,
+    LicensePool,
+    ObjectToGroup,
+    OpsiClient,
+    OpsiDepotserver,
+    Product,
+    ProductDependency,
+    ProductOnClient,
+    ProductOnDepot,
+    ProductProperty,
+    ProductPropertyState,
+    SoftwareLicense,
+    SoftwareLicenseToLicensePool,
+    getPossibleClassAttributes,
 )
-from OPSI.Util import blowfishEncrypt, blowfishDecrypt, getfqdn
+from OPSI.Types import (
+    forceBool,
+    forceFilename,
+    forceHostId,
+    forceInt,
+    forceLanguageCode,
+    forceObjectClass,
+    forceObjectClassList,
+    forceObjectId,
+    forceUnicode,
+    forceUnicodeList,
+    forceUnicodeLower,
+)
+from OPSI.Util import blowfishDecrypt, blowfishEncrypt, getfqdn
 from OPSI.Util.File import ConfigFile
 from OPSI.Util.Log import truncateLogData
+from opsicommon.logging import logger, secret_filter
 
 from .Backend import Backend
-
 
 __all__ = ("ConfigDataBackend",)
 
@@ -253,13 +256,14 @@ containing the localisation of the hardware audit.
 				info["dates"][str(at_date)] = {"modules": pool.get_modules(at_date=at_date)}
 		return info
 
-	def backend_getLicensingInfo(self, licenses: bool = False, legacy_modules: bool = False, dates: bool = False):
+	def backend_getLicensingInfo(self, licenses: bool = False, legacy_modules: bool = False, dates: bool = False, allow_cache: bool = True):
 		pool = get_default_opsi_license_pool(
 			license_file_path=self._opsi_license_path, modules_file_path=self._opsiModulesFile, client_info=self._get_client_info
 		)
+		if not allow_cache or pool.modified():
+			self._get_licensing_info.cache_clear()
 		if pool.modified():
 			pool.load()
-			self._get_licensing_info.cache_clear()
 
 		def get_ttl_hash(seconds=3600):
 			"""Return the same value withing `seconds` time period"""
