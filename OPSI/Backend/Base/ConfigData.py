@@ -20,57 +20,57 @@ import time
 from functools import lru_cache
 
 from opsicommon.license import get_default_opsi_license_pool
+from opsicommon.logging import logger, secret_filter
 
 from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Exceptions import (
-    BackendBadValueError,
-    BackendMissingDataError,
-    BackendModuleDisabledError,
-    BackendReferentialIntegrityError,
+	BackendBadValueError,
+	BackendMissingDataError,
+	BackendModuleDisabledError,
+	BackendReferentialIntegrityError,
 )
 from OPSI.Object import (
-    AuditHardware,
-    AuditHardwareOnHost,
-    AuditSoftware,
-    AuditSoftwareOnClient,
-    AuditSoftwareToLicensePool,
-    Config,
-    ConfigState,
-    Group,
-    Host,
-    LicenseContract,
-    LicenseOnClient,
-    LicensePool,
-    ObjectToGroup,
-    OpsiClient,
-    OpsiDepotserver,
-    Product,
-    ProductDependency,
-    ProductOnClient,
-    ProductOnDepot,
-    ProductProperty,
-    ProductPropertyState,
-    SoftwareLicense,
-    SoftwareLicenseToLicensePool,
-    getPossibleClassAttributes,
+	AuditHardware,
+	AuditHardwareOnHost,
+	AuditSoftware,
+	AuditSoftwareOnClient,
+	AuditSoftwareToLicensePool,
+	Config,
+	ConfigState,
+	Group,
+	Host,
+	LicenseContract,
+	LicenseOnClient,
+	LicensePool,
+	ObjectToGroup,
+	OpsiClient,
+	OpsiDepotserver,
+	Product,
+	ProductDependency,
+	ProductOnClient,
+	ProductOnDepot,
+	ProductProperty,
+	ProductPropertyState,
+	SoftwareLicense,
+	SoftwareLicenseToLicensePool,
+	getPossibleClassAttributes,
 )
 from OPSI.Types import (
-    forceBool,
-    forceFilename,
-    forceHostId,
-    forceInt,
-    forceLanguageCode,
-    forceObjectClass,
-    forceObjectClassList,
-    forceObjectId,
-    forceUnicode,
-    forceUnicodeList,
-    forceUnicodeLower,
+	forceBool,
+	forceFilename,
+	forceHostId,
+	forceInt,
+	forceLanguageCode,
+	forceObjectClass,
+	forceObjectClassList,
+	forceObjectId,
+	forceUnicode,
+	forceUnicodeList,
+	forceUnicodeLower,
 )
 from OPSI.Util import blowfishDecrypt, blowfishEncrypt, getfqdn
 from OPSI.Util.File import ConfigFile
 from OPSI.Util.Log import truncateLogData
-from opsicommon.logging import logger, secret_filter
 
 from .Backend import Backend
 
@@ -218,26 +218,22 @@ containing the localisation of the hardware audit.
 		Returns opsi licensing information.
 		"""
 		del ttl_hash  # ttl_hash is only used to invalidate the cache after a ttl
-		warning_limits = {}
+		pool = get_default_opsi_license_pool(
+			license_file_path=self._opsi_license_path, modules_file_path=self._opsiModulesFile, client_info=self._get_client_info
+		)
 		try:
-			warning_limits["client_limit_warning_percent"] = int(
+			pool.client_limit_warning_percent = int(
 				self.config_getObjects(id="licensing.client_limit_warning_percent")[0].getDefaultValues()[0]
 			)
 		except Exception as err:  # pylint: disable=broad-except
 			logger.debug(err)
 		try:
-			warning_limits["client_limit_warning_absolute"] = int(
+			pool.client_limit_warning_absolute = int(
 				self.config_getObjects(id="licensing.client_limit_warning_absolute")[0].getDefaultValues()[0]
 			)
 		except Exception as err:  # pylint: disable=broad-except
 			logger.debug(err)
 
-		pool = get_default_opsi_license_pool(
-			license_file_path=self._opsi_license_path,
-			modules_file_path=self._opsiModulesFile,
-			client_info=self._get_client_info,
-			**warning_limits,
-		)
 		modules = pool.get_modules()
 		info = {
 			"client_numbers": pool.client_numbers,
