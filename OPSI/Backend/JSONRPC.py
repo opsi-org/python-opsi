@@ -35,7 +35,7 @@ class JSONRPCBackend(Backend, JSONRPCClient):  # pylint: disable=too-many-instan
 				if value not in (None, ""):
 					connection_pool_size = int(value)
 				del kwargs[option]
-		kwargs[connection_pool_size] = connection_pool_size
+		kwargs["connection_pool_size"] = connection_pool_size
 
 		JSONRPCClient.__init__(self, address, **kwargs)
 
