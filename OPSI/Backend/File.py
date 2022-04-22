@@ -497,7 +497,6 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 			for entry in os.listdir(self.__productDir):
 				match = None
 
-				entry = entry.lower()
 				if entry.endswith('.localboot'):
 					if objType == 'NetbootProduct':
 						continue
