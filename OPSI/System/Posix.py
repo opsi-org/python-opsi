@@ -10,28 +10,29 @@ Functions and classes for the use with a POSIX operating system.
 
 # pylint: disable=too-many-lines
 
-import os
-import re
-import sys
-import time
-import fcntl
-import shutil
 import codecs
-import locale
-import socket
-import getpass
-import warnings
+import copy as pycopy
 import datetime
+import fcntl
+import getpass
+import locale
+import os
 import platform
-import threading
+import re
+import shutil
+import socket
 import subprocess
+import sys
+import threading
+import time
+import warnings
+from functools import lru_cache
 from itertools import islice
 from signal import SIGKILL
-import copy as pycopy
-from functools import lru_cache
-import psutil
 
-from opsicommon.logging import logger, LOG_NONE, logging_config
+import psutil
+from opsicommon.logging import LOG_NONE, logger, logging_config
+from opsicommon.objects import *  # pylint: disable=wildcard-import,unused-wildcard-import
 from opsicommon.types import (
 	forceBool,
 	forceDomain,
@@ -47,10 +48,10 @@ from opsicommon.types import (
 	forceUnicode,
 	forceUnicodeLower,
 )
-from opsicommon.objects import *  # pylint: disable=wildcard-import,unused-wildcard-import
+from opsicommon.utils import frozen_lru_cache
 
-from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
 from OPSI.Exceptions import CommandNotFoundException
+from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
 
 distro_module = None  # pylint: disable=invalid-name
 if platform.system() == "Linux":
@@ -837,7 +838,7 @@ shutdown = halt
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # -                                        PROCESS HANDLING                                           -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@lru_cache(100)
+@frozen_lru_cache(100)
 def which(cmd: str, env: dict = None) -> str:
 	if env is not None:
 		warnings.warn("Parameter env invalid", DeprecationWarning)
