@@ -501,9 +501,18 @@ def getNetworkDeviceConfig(device):  # pylint: disable=too-many-branches
 		if val.startswith("0x"):
 			val = eval(val)  # pylint: disable=eval-used
 		val = f"{int(val):x}"
-		result["vendorId"] = forceHardwareVendorId(f"{val:04}")
+		result["vendorId"] = forceHardwareVendorId(f"{val}")
+		logger.notice(f'device {device} vendor ID is {result["vendorId"]}')
 	except Exception:  # pylint: disable=broad-except
-		logger.debug("Failed to get vendor id for network device %s", device)
+		logger.debug("Failed to get vendor id for network device %s, trying alternative", device)
+		valList = execute('udevadm info /sys/class/net/%s | grep VENDOR_ID | cut -d "=" -f 2' % device)
+		val = f'0x{valList[0]}'
+		if val.startswith("0x"):
+			val = eval(val)  # pylint: disable=eval-used
+		val = f"{int(val):x}"
+		result["vendorId"] = forceHardwareVendorId("%s" % val)
+		logger.notice(f'device {device} vendor ID is {result["vendorId"]}')
+		pass
 
 	try:
 		with open(f"/sys/class/net/{device}/device/device", encoding="utf-8") as file:
@@ -518,8 +527,22 @@ def getNetworkDeviceConfig(device):  # pylint: disable=too-many-branches
 			val += 0xFFF
 		val = f"{val:x}"
 		result["deviceId"] = forceHardwareDeviceId(((4 - len(val)) * "0") + val)
+		logger.notice(f'device {device} device ID is {result["deviceId"]}')
 	except Exception:  # pylint: disable=broad-except
-		logger.debug("Failed to get device id for network device %s", device)
+		logger.debug("Failed to get device id for network device %s, trying alternative", device)
+		valList = execute('udevadm info /sys/class/net/%s | grep MODEL_ID | cut -d "=" -f 2' % device)
+		val = f'0x{valList[0]}'
+
+		if val.startswith("0x"):
+			val = eval(val)  # pylint: disable=eval-used
+		val = int(val)
+
+		if result["vendorId"] == "1AF4":
+			val += 0xFFF
+		val = f"{val:x}"
+		result["deviceId"] = forceHardwareDeviceId(((4 - len(val)) * "0") + val)
+		logger.notice(f'device {device} device ID is {result["deviceId"]}')
+		pass
 
 	return result
 
