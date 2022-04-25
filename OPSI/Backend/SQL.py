@@ -504,7 +504,9 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				changelog = _hash["changelog"]
 				changelog = changelog.encode("utf-8")
 				changelog = changelog[:65534]
-				_hash["changelog"] = changelog.decode("utf-8")
+				# Ignoring errors because truncation could have
+				# currupted a multi-byte utf-8 char
+				_hash["changelog"] = changelog.decode("utf-8", "ignore")
 			except (KeyError, TypeError):
 				pass  # Either not present in _hash or set to None
 			except UnicodeError:
