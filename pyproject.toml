@@ -18,7 +18,7 @@ name = "uibpypi"
 url = "https://pypi.uib.gmbh/simple"
 
 [tool.poetry.dependencies]
-python = ">=3.7,<3.11"
+python = ">=3.8,<3.11"
 attrs = "^21.2"
 colorlog = "^6.6"
 distro = {platform = "linux", version = "^1.5"}
