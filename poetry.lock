@@ -1247,14 +1247,14 @@ reference = "uibpypi"
 
 [[package]]
 name = "tan"
-version = "21.14"
+version = "22.2.0"
 description = "The compromising code formatter."
 category = "dev"
 optional = false
 python-versions = ">=3.6.2"
 
 [package.dependencies]
-click = ">=7.1.2"
+click = ">=8.0.0"
 mypy-extensions = ">=0.4.3"
 pathspec = ">=0.9.0"
 platformdirs = ">=2"
@@ -1457,7 +1457,7 @@ reference = "uibpypi"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "e2d68d141eee0f4926ad5d65472bfd14c7c07103b43cb6f95effc601c92d0078"
+content-hash = "61055e7d7ff87d21b7d953da498ea697d2ef9fdcc15011c8b7e2dac41378edd4"
 
 [metadata.files]
 altgraph = [
@@ -2140,8 +2140,8 @@ sqlalchemy = [
     {file = "SQLAlchemy-1.4.35.tar.gz", hash = "sha256:2ffc813b01dc6473990f5e575f210ca5ac2f5465ace3908b78ffd6d20058aab5"},
 ]
 tan = [
-    {file = "tan-21.14-py3-none-any.whl", hash = "sha256:91e7003f86b0891945d610c23f06b48df1d9f2191e57e63c8a9eb0f3859f5b94"},
-    {file = "tan-21.14.tar.gz", hash = "sha256:6cb8d5cf1e8ea467e6c8fb7300f38a5d39b25e9ba455d26c93adb539aa7abcf2"},
+    {file = "tan-22.2.0-py3-none-any.whl", hash = "sha256:4da4295ed3897a97ff1a16f402ebdb2e475ef7f04c0e46cbe3c13daa481cf6d4"},
+    {file = "tan-22.2.0.tar.gz", hash = "sha256:c5edf5512d29f5b43bfb8247203d0d4f3dec8ba64516330259aeab4e3e2f5f7d"},
 ]
 toml = [
     {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},
