@@ -23,7 +23,7 @@ attrs = "^21.2"
 colorlog = "^6.6"
 distro = {platform = "linux", version = "^1.5"}
 ldap3 = "^2.9"
-lz4 = "^3.1"
+lz4 = "^4.0"
 msgpack = "^1.0"
 mysqlclient = {platform = "linux", version = "^2.0"}
 pefile = "^2021.9"
@@ -33,7 +33,7 @@ pyasn1 = "^0.4"
 pycryptodome = "^3.10"
 pyopenssl = "^22.0"
 python-opsi-common = "^4.2.0.281"
-python-pam = "^1.8"
+python-pam = "^2.0"
 pywin32 = {platform = "win32", version = "^303"}
 ruyaml = "^0.91"
 service-identity = "^21.1"
@@ -44,7 +44,7 @@ wmi = {platform = "win32", version = "^1.5"}
 [tool.poetry.dev-dependencies]
 flake8 = "^4.0"
 mock = "^4.0"
-opsi-dev-tools = "^1.0"
+opsi-dev-tools = "^1.1"
 pylint = "^2.7"
 pytest = "^7.0"
 pytest-asyncio = "^0.18"
