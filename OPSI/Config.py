@@ -45,4 +45,10 @@ except Exception:  # pylint: disable=broad-except
 		FILE_ADMIN_GROUP = "opsifileadmins"
 
 # User that is running opsiconfd.
-OPSICONFD_USER = "opsiconfd"
+try:
+	# pyright: reportMissingImports=false
+	from opsiconfd.config import config  # pylint: disable=import-error
+
+	OPSICONFD_USER = config.run_as_user
+except Exception:  # pylint: disable=broad-except
+	OPSICONFD_USER = "opsiconfd"
