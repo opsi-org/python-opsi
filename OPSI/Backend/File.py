@@ -16,22 +16,33 @@ import pwd
 import re
 import shutil
 
+from opsicommon.logging import logger
+
 from OPSI.Backend.Base import ConfigDataBackend
-from OPSI.Config import OPSICONFD_USER, FILE_ADMIN_GROUP
+from OPSI.Config import FILE_ADMIN_GROUP, OPSICONFD_USER
 from OPSI.Exceptions import (
-	BackendBadValueError, BackendConfigurationError, BackendError,
-	BackendIOError, BackendMissingDataError, BackendUnaccomplishableError
+	BackendBadValueError,
+	BackendConfigurationError,
+	BackendError,
+	BackendIOError,
+	BackendMissingDataError,
+	BackendUnaccomplishableError,
 )
+from OPSI.Object import *  # needed for calls to "eval"  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Types import (
-	forceBool, forceHostId, forceFilename, forceList, forceObjectClass,
-	forceObjectClassList, forceProductId, forceUnicode, forceUnicodeList
+	forceBool,
+	forceFilename,
+	forceHostId,
+	forceList,
+	forceObjectClass,
+	forceObjectClassList,
+	forceProductId,
+	forceUnicode,
+	forceUnicodeList,
 )
-from OPSI.Util import toJson, fromJson, getfqdn
+from OPSI.Util import fromJson, getfqdn, toJson
 from OPSI.Util.File import IniFile, LockableFile
 from OPSI.Util.File.Opsi import HostKeyFile, PackageControlFile
-from OPSI.Object import *  # needed for calls to "eval"  # pylint: disable=wildcard-import,unused-wildcard-import
-
-from opsicommon.logging import logger
 
 __all__ = ('FileBackend', )
 
@@ -681,7 +692,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 							'architecture': None
 						}
 
-						for key in objIdent:
+						for key in list(objIdent):
 							option = key.lower()
 							if cp.has_option(section, option):
 								objIdent[key] = self.__unescape(cp.get(section, option))
@@ -917,8 +928,6 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 				raise BackendUnaccomplishableError(
 					f"Filebackend can only handle this config server '{self.__serverId}', not '{obj.getId()}'"
 				)
-				#setGlobalConfig("hostname", obj.getId())
-				#self.__serverId = obj.getId()
 
 		if objType not in self._mappings:
 			raise BackendUnaccomplishableError("Mapping not found for object type '%s'" % objType)
@@ -1846,7 +1855,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 					"lastUsed": None,
 					"licenseKey": None
 				}
-				for key in objHash:
+				for key in list(objHash):
 					try:
 						objHash[key] = self.__unescape(ini.get(section, key.lower()))
 					except Exception:  # pylint: disable=broad-except

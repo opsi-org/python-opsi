@@ -143,8 +143,7 @@ class SQL:  # pylint: disable=too-many-public-methods
 			session.rollback()
 			raise
 		finally:
-			self.Session.remove()
-			# session.close()
+			self.Session.remove()  # pylint: disable=no-member
 
 	def connect(self, cursorType=None):  # pylint: disable=no-self-use,unused-argument
 		logger.warning("Method 'connect' is deprecated")
