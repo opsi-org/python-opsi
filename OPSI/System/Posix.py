@@ -498,57 +498,42 @@ def getNetworkDeviceConfig(device):  # pylint: disable=too-many-branches
 
 	try:
 		with open(f"/sys/class/net/{device}/device/vendor", encoding="utf-8") as file:
-			val = file.read().strip()
+			val = int(file.read().strip(), 16)
 
-		if val.startswith("0x"):
-			val = eval(val)  # pylint: disable=eval-used
-		val = f"{int(val):x}"
-		result["vendorId"] = forceHardwareVendorId(f"{val}")
+		result["vendorId"] = forceHardwareVendorId(f"{val:>04x}")
 		logger.notice(f'device {device} vendor ID is {result["vendorId"]}')
 	except Exception:  # pylint: disable=broad-except
 		logger.debug("Failed to get vendor id for network device %s, trying alternative", device)
 		try:
 			valList = execute('udevadm info /sys/class/net/%s | grep VENDOR_ID | cut -d "=" -f 2' % device)
-			val = f'0x{valList[0]}'
-			if val.startswith("0x"):
-				val = eval(val)  # pylint: disable=eval-used
-			val = f"{int(val):x}"
-			result["vendorId"] = forceHardwareVendorId("%s" % val)
+			result["vendorId"] = forceHardwareVendorId(f"{int(valList[0], 16):>04x}")
 			logger.notice(f'device {device} vendor ID is {result["vendorId"]}')
 		except Exception:
-			logger.debug("alternative failed, no vendor ID for device %s found" % device)
+			logger.debug("Alternative failed, no vendor ID for device %s found", device)
 
 	try:
 		with open(f"/sys/class/net/{device}/device/device", encoding="utf-8") as file:
-			val = file.read().strip()
-
-		if val.startswith("0x"):
-			val = eval(val)  # pylint: disable=eval-used
-		val = int(val)
+			val = int(file.read().strip(), 16)
 
 		if result["vendorId"] == "1AF4":
 			# FIXME: what is wrong with virtio devices?
 			val += 0xFFF
-		val = f"{val:x}"
-		result["deviceId"] = forceHardwareDeviceId(((4 - len(val)) * "0") + val)
+
+		result["deviceId"] = forceHardwareDeviceId(f"{val:>04x}")
 		logger.notice(f'device {device} device ID is {result["deviceId"]}')
 	except Exception:  # pylint: disable=broad-except
 		logger.debug("Failed to get device id for network device %s, trying alternative", device)
 		try:
-			valList = execute('udevadm info /sys/class/net/%s | grep MODEL_ID | cut -d "=" -f 2' % device)
-			val = f'0x{valList[0]}'
-
-			if val.startswith("0x"):
-				val = eval(val)  # pylint: disable=eval-used
-			val = int(val)
+			valList = execute(f'udevadm info /sys/class/net/{device} | grep MODEL_ID | cut -d "=" -f 2')
+			val = int(valList[0], 16)
 
 			if result["vendorId"] == "1AF4":
 				val += 0xFFF
-			val = f"{val:x}"
-			result["deviceId"] = forceHardwareDeviceId(((4 - len(val)) * "0") + val)
+
+			result["deviceId"] = forceHardwareDeviceId(f"{val:>04x}")
 			logger.notice(f'device {device} device ID is {result["deviceId"]}')
 		except Exception:
-			logger.debug("alternative failed, no vendor ID for device %s found" % device)
+			logger.debug("alternative failed, no vendor ID for device %s found", device)
 
 	return result
 
