@@ -6,10 +6,12 @@
 Applications for the use of opsi in an twisted-application context.
 """
 
-from opsicommon.logging import logger
+from opsicommon.logging import get_logger
+
+logger = get_logger("opsi.general")
+
 
 class AppRunner:  # pylint: disable=too-few-public-methods
-
 	def __init__(self, app, config):
 		self._app = app
 		self._config = config
@@ -19,13 +21,13 @@ class AppRunner:  # pylint: disable=too-few-public-methods
 
 
 class _BaseProfiler(AppRunner):  # pylint: disable=too-few-public-methods
-
 	def _getProfiler(self):
 		raise NotImplementedError("Subclass must implement this.")
 
 	def run(self):
 		try:
 			import pstats  # pylint: disable=import-outside-toplevel
+
 			profiler = self._getProfiler()
 			profiler.runcall(self._app.run)
 
@@ -40,31 +42,29 @@ class _BaseProfiler(AppRunner):  # pylint: disable=too-few-public-methods
 		except ImportError as error:
 			logger.error(
 				"Failed to load profiler %s. Make sure the profiler module is installed on your system. (%s)",
-				self._config.get("profiler"), error
+				self._config.get("profiler"),
+				error,
 			)
 			raise error
 
 
 class ProfileRunner(_BaseProfiler):  # pylint: disable=too-few-public-methods
-
 	def _getProfiler(self):
 		import profile  # pylint: disable=import-outside-toplevel
+
 		return profile.Profile()
 
 
 class CProfileRunner(_BaseProfiler):  # pylint: disable=too-few-public-methods
-
 	def _getProfiler(self):
 		import cProfile  # pylint: disable=import-outside-toplevel
+
 		return cProfile.Profile()
 
 
 class Application:  # pylint: disable=too-few-public-methods
 
-	profiler = {
-		"profiler": ProfileRunner,
-		"cprofiler": CProfileRunner
-	}
+	profiler = {"profiler": ProfileRunner, "cprofiler": CProfileRunner}
 
 	def __init__(self, config):
 		self._config = config

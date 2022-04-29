@@ -22,7 +22,10 @@ from configparser import RawConfigParser, SafeConfigParser
 from io import StringIO
 from itertools import islice
 
+from opsicommon.logging import get_logger
+
 from OPSI.Exceptions import BackendBadValueError, BackendMissingDataError
+from OPSI.System import execute, which
 from OPSI.Types import (
 	forceArchitecture,
 	forceBool,
@@ -44,10 +47,7 @@ from OPSI.Types import (
 	forceUnicodeLower,
 	forceUnicodeLowerList,
 )
-from OPSI.System import which, execute
 from OPSI.Util import ipAddressInNetwork
-
-from opsicommon.logging import logger
 
 if os.name == "posix":
 	import fcntl
@@ -56,9 +56,9 @@ if os.name == "posix":
 
 if os.name == "nt":
 	# pyright: reportMissingImports=false
+	import pywintypes  # pylint: disable=import-error
 	import win32con  # pylint: disable=import-error
 	import win32file  # pylint: disable=import-error
-	import pywintypes  # pylint: disable=import-error
 
 	pywintypeserror = pywintypes.error
 else:
@@ -66,6 +66,8 @@ else:
 	win32file = None  # pylint: disable=invalid-name
 	pywintypes = None  # pylint: disable=invalid-name
 	pywintypeserror = IOError  # pylint: disable=invalid-name
+
+logger = get_logger("opsi.general")
 
 
 def requiresParsing(function):

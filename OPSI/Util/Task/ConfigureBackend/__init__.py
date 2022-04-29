@@ -14,12 +14,14 @@ import re
 import socket
 import sys
 
-from OPSI.System.Posix import getNetworkConfiguration, getLocalFqdn
+from opsicommon.logging import get_logger
+
+from OPSI.System.Posix import getLocalFqdn, getNetworkConfiguration
 from OPSI.Util import objectToBeautifiedText
 
-from opsicommon.logging import logger
+__all__ = ("getBackendConfiguration", "updateConfigFile")
 
-__all__ = ('getBackendConfiguration', 'updateConfigFile')
+logger = get_logger("opsi.general")
 
 
 def getBackendConfiguration(backendConfigFile, customGlobals=None):
@@ -33,18 +35,18 @@ please pass them here. If this is None defaults will be used.
 	"""
 	if customGlobals is None:
 		customGlobals = {
-			'config': {},  # Will be filled after loading
-			'module': '',  # Will be filled after loading
-			'os': os,
-			'socket': socket,
-			'sys': sys,
+			"config": {},  # Will be filled after loading
+			"module": "",  # Will be filled after loading
+			"os": os,
+			"socket": socket,
+			"sys": sys,
 		}
 
 	logger.info("Loading backend config '%s'", backendConfigFile)
 	with open(backendConfigFile, encoding="utf-8") as configFile:
 		exec(configFile.read(), customGlobals)  # pylint: disable=exec-used
 
-	config = customGlobals['config']
+	config = customGlobals["config"]
 	logger.debug("Current backend config: %s", config)
 
 	return config
@@ -60,6 +62,7 @@ def updateConfigFile(backendConfigFile, newConfig, notificationFunction=None):
 on to. Defaults to logger.notice
 	:type notificationFunction: func
 	"""
+
 	def correctBooleans(text):
 		"""
 		Creating correct JSON booleans - they are all lowercase.
@@ -72,13 +75,13 @@ on to. Defaults to logger.notice
 	notificationFunction(f"Updating backend config '{backendConfigFile}'")
 
 	lines = []
-	with codecs.open(backendConfigFile, 'r', 'utf-8') as backendFile:
+	with codecs.open(backendConfigFile, "r", "utf-8") as backendFile:
 		for line in backendFile.readlines():
-			if re.search(r'^\s*config\s*\=', line):
+			if re.search(r"^\s*config\s*\=", line):
 				break
 			lines.append(line)
 
-	with codecs.open(backendConfigFile, 'w', 'utf-8') as backendFile:
+	with codecs.open(backendConfigFile, "w", "utf-8") as backendFile:
 		backendFile.writelines(lines)
 		backendConfigData = correctBooleans(objectToBeautifiedText(newConfig))
 		backendFile.write(f"config = {backendConfigData}\n")
@@ -94,19 +97,16 @@ def _getSysConfig():
 	"""
 	logger.notice("Getting current system config")
 	fqdn = getLocalFqdn()
-	sysConfig = {
-		'fqdn': fqdn,
-		'hostname': fqdn.split('.')[0]
-	}
+	sysConfig = {"fqdn": fqdn, "hostname": fqdn.split(".")[0]}
 
 	sysConfig.update(getNetworkConfiguration())
 
 	logger.notice("System information:")
-	logger.notice("   ip address   : %s", sysConfig['ipAddress'])
-	logger.notice("   netmask      : %s", sysConfig['netmask'])
-	logger.notice("   subnet       : %s", sysConfig['subnet'])
-	logger.notice("   broadcast    : %s", sysConfig['broadcast'])
-	logger.notice("   fqdn         : %s", sysConfig['fqdn'])
-	logger.notice("   hostname     : %s", sysConfig['hostname'])
+	logger.notice("   ip address   : %s", sysConfig["ipAddress"])
+	logger.notice("   netmask      : %s", sysConfig["netmask"])
+	logger.notice("   subnet       : %s", sysConfig["subnet"])
+	logger.notice("   broadcast    : %s", sysConfig["broadcast"])
+	logger.notice("   fqdn         : %s", sysConfig["fqdn"])
+	logger.notice("   hostname     : %s", sysConfig["hostname"])
 
 	return sysConfig

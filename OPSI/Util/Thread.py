@@ -6,13 +6,14 @@
 opsi python library - Thread
 """
 
-import threading
-import inspect
 import ctypes
-from queue import Queue, Empty
+import inspect
+import threading
+from queue import Empty, Queue
 
-from opsicommon.logging import logger
+from opsicommon.logging import get_logger
 
+logger = get_logger("opsi.general")
 global_pool = None  # pylint: disable=invalid-name
 
 

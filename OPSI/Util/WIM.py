@@ -9,13 +9,15 @@ Working with Windows Imaging Format (WIM) files.
 import os.path
 from collections import namedtuple
 
+from opsicommon.logging import get_logger
+
 from OPSI.System import execute, which
 from OPSI.Types import forceList, forceProductId
 from OPSI.Util import getfqdn
 
-from opsicommon.logging import logger
-
 __all__ = ('getImageInformation', 'parseWIM', 'writeImageInformation')
+
+logger = get_logger("opsi.general")
 
 
 def parseWIM(wimPath):

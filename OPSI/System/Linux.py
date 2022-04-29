@@ -6,57 +6,136 @@
 Linux specific system functions
 """
 
+import codecs
 import os
 import re
 import socket
 import subprocess
-import codecs
 import tempfile
+
 import psutil
+from opsicommon.logging import get_logger
 
-from opsicommon.logging import logger
-
-from OPSI.Types import forceUnicode, forceFilename
 from OPSI.System import Posix
 from OPSI.System.Posix import (
 	CommandNotFoundException,
-	Distribution, Harddisk, NetworkPerformanceCounter, SysInfo,
-	SystemSpecificHook, addSystemHook, auditHardware,
-	configureInterface, daemonize, execute, get_subprocess_environment, getActiveConsoleSessionId,
-	getActiveSessionId, getActiveSessionInformation, getBlockDeviceBusType,
-	getBlockDeviceContollerInfo, getDHCPDRestartCommand, getDHCPResult,
-	getDHCPServiceName, getDefaultNetworkInterfaceName, getDiskSpaceUsage,
-	getEthernetDevices, getFQDN, getHarddisks, getHostname,
-	getKernelParams, getNetworkDeviceConfig, getNetworkInterfaces,
-	getSambaServiceName, getServiceNames, getSystemProxySetting, halt,
-	hardwareExtendedInventory, hardwareInventory, hooks, ifconfig,
-	isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
-	isUCS, isUbuntu, locateDHCPDConfig,
-	locateDHCPDInit, reboot, removeSystemHook,
-	runCommandInSession, setLocalSystemTime, shutdown,
-	terminateProcess, umount, which
+	Distribution,
+	Harddisk,
+	NetworkPerformanceCounter,
+	SysInfo,
+	SystemSpecificHook,
+	addSystemHook,
+	auditHardware,
+	configureInterface,
+	daemonize,
+	execute,
+	get_subprocess_environment,
+	getActiveConsoleSessionId,
+	getActiveSessionId,
+	getActiveSessionInformation,
+	getBlockDeviceBusType,
+	getBlockDeviceContollerInfo,
+	getDefaultNetworkInterfaceName,
+	getDHCPDRestartCommand,
+	getDHCPResult,
+	getDHCPServiceName,
+	getDiskSpaceUsage,
+	getEthernetDevices,
+	getFQDN,
+	getHarddisks,
+	getHostname,
+	getKernelParams,
+	getNetworkDeviceConfig,
+	getNetworkInterfaces,
+	getSambaServiceName,
+	getServiceNames,
+	getSystemProxySetting,
+	halt,
+	hardwareExtendedInventory,
+	hardwareInventory,
+	hooks,
+	ifconfig,
+	isCentOS,
+	isDebian,
+	isOpenSUSE,
+	isRHEL,
+	isSLES,
+	isUbuntu,
+	isUCS,
+	locateDHCPDConfig,
+	locateDHCPDInit,
+	reboot,
+	removeSystemHook,
+	runCommandInSession,
+	setLocalSystemTime,
+	shutdown,
+	terminateProcess,
+	umount,
+	which,
 )
-
+from OPSI.Types import forceFilename, forceUnicode
 
 __all__ = (
-	'CommandNotFoundException',
-	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
-	'SystemSpecificHook', 'addSystemHook', 'auditHardware',
-	'configureInterface', 'daemonize', 'execute', 'get_subprocess_environment', 'getActiveConsoleSessionId',
-	'getActiveSessionId', 'getActiveSessionIds', 'getActiveSessionInformation', 'getSessionInformation',
-	'getBlockDeviceBusType',
-	'getBlockDeviceContollerInfo', 'getDHCPDRestartCommand', 'getDHCPResult',
-	'getDHCPServiceName', 'getDefaultNetworkInterfaceName', 'getDiskSpaceUsage',
-	'getEthernetDevices', 'getFQDN', 'getHarddisks', 'getHostname',
-	'getKernelParams', 'getNetworkDeviceConfig', 'getNetworkInterfaces',
-	'getSambaServiceName', 'getServiceNames', 'getSystemProxySetting', 'halt',
-	'hardwareExtendedInventory', 'hardwareInventory', 'hooks', 'ifconfig',
-	'isCentOS', 'isDebian', 'isOpenSUSE', 'isRHEL', 'isSLES',
-	'isUCS', 'isUbuntu', 'locateDHCPDConfig',
-	'locateDHCPDInit', 'mount', 'reboot', 'removeSystemHook',
-	'runCommandInSession', 'setLocalSystemTime', 'shutdown',
-	'terminateProcess', 'umount', 'which'
+	"CommandNotFoundException",
+	"Distribution",
+	"Harddisk",
+	"NetworkPerformanceCounter",
+	"SysInfo",
+	"SystemSpecificHook",
+	"addSystemHook",
+	"auditHardware",
+	"configureInterface",
+	"daemonize",
+	"execute",
+	"get_subprocess_environment",
+	"getActiveConsoleSessionId",
+	"getActiveSessionId",
+	"getActiveSessionIds",
+	"getActiveSessionInformation",
+	"getSessionInformation",
+	"getBlockDeviceBusType",
+	"getBlockDeviceContollerInfo",
+	"getDHCPDRestartCommand",
+	"getDHCPResult",
+	"getDHCPServiceName",
+	"getDefaultNetworkInterfaceName",
+	"getDiskSpaceUsage",
+	"getEthernetDevices",
+	"getFQDN",
+	"getHarddisks",
+	"getHostname",
+	"getKernelParams",
+	"getNetworkDeviceConfig",
+	"getNetworkInterfaces",
+	"getSambaServiceName",
+	"getServiceNames",
+	"getSystemProxySetting",
+	"halt",
+	"hardwareExtendedInventory",
+	"hardwareInventory",
+	"hooks",
+	"ifconfig",
+	"isCentOS",
+	"isDebian",
+	"isOpenSUSE",
+	"isRHEL",
+	"isSLES",
+	"isUCS",
+	"isUbuntu",
+	"locateDHCPDConfig",
+	"locateDHCPDInit",
+	"mount",
+	"reboot",
+	"removeSystemHook",
+	"runCommandInSession",
+	"setLocalSystemTime",
+	"shutdown",
+	"terminateProcess",
+	"umount",
+	"which",
 )
+
+logger = get_logger("opsi.general")
 
 
 def getActiveSessionIds(protocol=None, states=None):  # pylint: disable=unused-argument
@@ -77,12 +156,7 @@ def getActiveSessionIds(protocol=None, states=None):  # pylint: disable=unused-a
 		try:
 			env = proc.environ()
 			# Filter out gdm/1024
-			if (
-				env.get("USER") and
-				env.get("DISPLAY") and
-				env["DISPLAY"] != ':1024' and
-				env["DISPLAY"] not in sessions
-			):
+			if env.get("USER") and env.get("DISPLAY") and env["DISPLAY"] != ":1024" and env["DISPLAY"] not in sessions:
 				sessions.append(env["DISPLAY"])
 		except psutil.AccessDenied as err:
 			logger.debug(err)
@@ -146,13 +220,7 @@ def grant_session_access(username: str, session_id: str):
 	# Allow user to connect to X
 	xhost_cmd = ["sudo", "-u", session_username, "xhost", f"+si:localuser:{username}"]
 	logger.info("Running command %s", xhost_cmd)
-	process = subprocess.run(
-		xhost_cmd,
-		stdout=subprocess.PIPE,
-		stderr=subprocess.STDOUT,
-		env=sp_env,
-		check=False
-	)
+	process = subprocess.run(xhost_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=sp_env, check=False)
 	out = process.stdout.decode("utf-8", "replace") if process.stdout else ""
 	logger.debug("xhost output: %s", out)
 	return sp_env
@@ -187,58 +255,58 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 	stdin_data = b""
 
 	tmp_files = []
-	if dev.lower().startswith(('smb://', 'cifs://')):
-		match = re.search(r'^(smb|cifs)://([^/]+\/.+)$', dev, re.IGNORECASE)
+	if dev.lower().startswith(("smb://", "cifs://")):
+		match = re.search(r"^(smb|cifs)://([^/]+\/.+)$", dev, re.IGNORECASE)
 		if match:
 			fs = "-t cifs"
-			parts = match.group(2).split('/')
+			parts = match.group(2).split("/")
 			dev = f"//{parts[0]}/{parts[1]}"
-			if 'username' not in options:
-				options['username'] = "guest"
-			if 'password' not in options:
-				options['password'] = ""
-			if '\\' in options['username']:
-				options['username'] = re.sub(r"\\+", r"\\", options['username'])
-				(options['domain'], options['username']) = options['username'].split('\\', 1)
+			if "username" not in options:
+				options["username"] = "guest"
+			if "password" not in options:
+				options["password"] = ""
+			if "\\" in options["username"]:
+				options["username"] = re.sub(r"\\+", r"\\", options["username"])
+				(options["domain"], options["username"]) = options["username"].split("\\", 1)
 
 			tf = tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="iso-8859-15")  # pylint: disable=consider-using-with
 			tf.write(f"username={options['username']}\npassword={options['password']}\n")
 			tf.close()
 			tmp_files.append(tf.name)
-			options['credentials'] = tf.name
+			options["credentials"] = tf.name
 
 			try:
-				if not options['domain']:
-					del options['domain']
+				if not options["domain"]:
+					del options["domain"]
 			except KeyError:
 				pass
-			del options['username']
-			del options['password']
+			del options["username"]
+			del options["password"]
 		else:
 			raise ValueError(f"Bad smb/cifs uri '{dev}'")
 
-	elif dev.lower().startswith(('webdav://', 'webdavs://', 'http://', 'https://')):
+	elif dev.lower().startswith(("webdav://", "webdavs://", "http://", "https://")):
 		# We need enough free space in /var/cache/davfs2
 		# Maximum transfer file size <= free space in /var/cache/davfs2
-		match = re.search(r'^(http|webdav)(s?)(://[^/]+\/.+)$', dev, re.IGNORECASE)
+		match = re.search(r"^(http|webdav)(s?)(://[^/]+\/.+)$", dev, re.IGNORECASE)
 		if match:
 			fs = "-t davfs"
 			dev = f"http{match.group(2)}{match.group(3)}"
 		else:
 			raise ValueError(f"Bad webdav url '{dev}'")
 
-		if 'username' not in options:
-			options['username'] = ""
-		if 'password' not in options:
-			options['password'] = ""
+		if "username" not in options:
+			options["username"] = ""
+		if "password" not in options:
+			options["password"] = ""
 
 		with tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8") as conf_file:
 			tmp_files.append(conf_file.name)
 			os.chmod(conf_file.name, 0o644)
-			options['conf'] = conf_file.name
+			options["conf"] = conf_file.name
 			conf_file.write("n_cookies 1\ncache_size 0\ntable_size 16384\nuse_locks 0\n")
-			if options.get('ca_cert_file'):
-				ca_cert_file = os.path.abspath(options['ca_cert_file'])
+			if options.get("ca_cert_file"):
+				ca_cert_file = os.path.abspath(options["ca_cert_file"])
 				if not os.path.exists(ca_cert_file):
 					raise RuntimeError(f"ca_cert_file {ca_cert_file} not found")
 
@@ -252,11 +320,11 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 							tmp_cert_file.write(line)
 
 		# Username, Password, Accept certificate for this session? [y,N]
-		accept_cert = 'n' if options.get("verify_server_cert") else 'y'
+		accept_cert = "n" if options.get("verify_server_cert") else "y"
 		stdin_data = f"{options['username']}\n{options['password']}\n{accept_cert}\n".encode("utf-8")
 
-		del options['username']
-		del options['password']
+		del options["username"]
+		del options["password"]
 
 	elif dev.lower().startswith("/"):
 		pass
@@ -280,10 +348,10 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 		while True:
 			try:
 				if mount_options:
-					options = (','.join(mount_options)).replace('"', '\\"')
+					options = (",".join(mount_options)).replace('"', '\\"')
 					optString = f'-o "{options}"'
 				else:
-					optString = ''
+					optString = ""
 				proc_env = os.environ.copy()
 				proc_env["LC_ALL"] = "C"
 				execute(f"{which('mount')} {fs} {optString} {dev} {mountpoint}", env=proc_env, stdin_data=stdin_data)

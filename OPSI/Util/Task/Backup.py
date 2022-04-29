@@ -13,16 +13,19 @@ import os
 import shutil
 import sys
 
-from OPSI.Exceptions import (
-	BackendConfigurationError, OpsiBackupFileError,
-	OpsiBackupBackendNotFound, OpsiError
-)
+from opsicommon.logging import get_logger
 
-from OPSI.Types import forceList, forceUnicode, forceHostId
+from OPSI.Exceptions import (
+	BackendConfigurationError,
+	OpsiBackupBackendNotFound,
+	OpsiBackupFileError,
+	OpsiError,
+)
+from OPSI.Types import forceHostId, forceList, forceUnicode
 from OPSI.Util.File.Opsi import OpsiBackupArchive
 from OPSI.Util.Task.CleanupBackend import cleanupBackend
 
-from opsicommon.logging import logger
+logger = get_logger("opsi.general")
 
 try:
 	sp = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -325,7 +328,9 @@ If this is `None` information will be read from the current system.
 					cleanupBackend()
 					logger.notice("Renaming config server to '%s'", new_server_id)
 					try:
-						from OPSI.Backend.BackendManager import BackendManager  # pylint: disable=import-outside-toplevel
+						from OPSI.Backend.BackendManager import (
+							BackendManager,  # pylint: disable=import-outside-toplevel
+						)
 						managerConfig = {
 							"depotBackend": False,
 							"dispatchIgnoreModules": ["OpsiPXEConfd", "DHCPD", "HostControl"]
@@ -356,7 +361,9 @@ None if reading the configuration failed.
 	:rtype: set or None
 	"""
 	try:
-		from OPSI.Backend.BackendManager import BackendDispatcher  # pylint: disable=import-outside-toplevel
+		from OPSI.Backend.BackendManager import (
+			BackendDispatcher,  # pylint: disable=import-outside-toplevel
+		)
 	except ImportError as err:
 		logger.debug("Import failed: %s", err)
 		return None

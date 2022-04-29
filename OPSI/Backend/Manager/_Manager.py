@@ -16,7 +16,7 @@ from __future__ import absolute_import
 import os
 import re
 
-from opsicommon.logging import logger
+from opsicommon.logging import get_logger
 
 from OPSI.Backend.Base import Backend, ExtendedBackend, ExtendedConfigDataBackend
 from OPSI.Backend.Depotserver import DepotserverBackend
@@ -33,6 +33,8 @@ from .Extender import BackendExtender
 __all__ = ('BackendManager', 'backendManagerFactory')
 
 _BACKEND_CONFIG_NAME_REGEX = re.compile(r'^[a-zA-Z0-9-_]+$')
+
+logger = get_logger("opsi.general")
 
 
 class BackendManager(ExtendedBackend):

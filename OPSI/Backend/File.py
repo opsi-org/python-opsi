@@ -16,7 +16,7 @@ import pwd
 import re
 import shutil
 
-from opsicommon.logging import logger
+from opsicommon.logging import get_logger
 
 from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Config import FILE_ADMIN_GROUP, OPSICONFD_USER
@@ -46,6 +46,8 @@ from OPSI.Util.File.Opsi import HostKeyFile, PackageControlFile
 
 __all__ = ('FileBackend', )
 
+
+logger = get_logger("opsi.general")
 
 class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attributes,too-many-public-methods
 	PRODUCT_FILENAME_REGEX = re.compile(r'^([a-zA-Z0-9_.-]+)_([\w.]+)-([\w.]+)\.(local|net)boot$')

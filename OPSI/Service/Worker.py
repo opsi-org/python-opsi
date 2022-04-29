@@ -6,25 +6,23 @@
 Worker for the various interfaces.
 """
 
-import os
-import uuid
 import base64
-import urllib
+import os
 import tempfile
+import urllib
+import uuid
 
+from opsicommon.logging import get_logger
 from twisted.internet import defer, threads
 from twisted.python.failure import Failure
 
-from opsicommon.logging import logger
-
 from OPSI.Exceptions import OpsiAuthenticationError, OpsiBadRpcError
-from OPSI.Types import forceUnicode, forceList
-from OPSI.Util import objectToHtml, toJson, fromJson, serialize
-from OPSI.Util.HTTP import deflateEncode, deflateDecode, gzipEncode, gzipDecode
 from OPSI.Service.JsonRpc import JsonRpc
+from OPSI.Types import forceList, forceUnicode
+from OPSI.Util import fromJson, objectToHtml, serialize, toJson
+from OPSI.Util.HTTP import deflateDecode, deflateEncode, gzipDecode, gzipEncode
 
-
-INTERFACE_PAGE = '''<?xml version="1.0" encoding="UTF-8"?>
+INTERFACE_PAGE = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -208,19 +206,22 @@ INTERFACE_PAGE = '''<?xml version="1.0" encoding="UTF-8"?>
 	%(result)s
 </body>
 </html>
-'''
+"""
+
+logger = get_logger("opsi.general")
 
 
 class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-attributes
-	""" Base worker class """
+	"""Base worker class"""
+
 	def __init__(self, service, request, resource):
 		self.service = service
 		self.request = request
-		self.query = ''
-		self.path = ''
+		self.query = ""
+		self.path = ""
 		self.resource = resource
 		self.session = None
-		self.authRealm = 'OPSI Service'
+		self.authRealm = "OPSI Service"
 		self.debugDir = os.path.join(tempfile.gettempdir(), "opsiclientd-debug")
 
 	def process(self):
@@ -275,7 +276,7 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 			failure.raiseException()
 		except Exception as err:  # pylint: disable=broad-except
 			error = str(err)
-		self.request.write(error.encode('utf-8'))
+		self.request.write(error.encode("utf-8"))
 
 	def _freeSession(self, result):
 		if self.session:
@@ -286,27 +287,24 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 	def _getAuthorization(self):
 		user = password = ""
 		logger.debug("Trying to get username and password from Authorization header")
-		auth = self.request.getHeader('Authorization')
+		auth = self.request.getHeader("Authorization")
 		if auth:
 			auth = auth.split()
 			logger.debug("Authorization header found (type: %s)", auth[0])
 			try:
 				encoded = auth[1].encode("ascii")
 				logger.confidential("Auth encoded: %s", encoded)
-				parts = str(base64.decodebytes(encoded), encoding='latin-1').split(':')
+				parts = str(base64.decodebytes(encoded), encoding="latin-1").split(":")
 				if len(parts) > 6:
-					user = ':'.join(parts[:6])
-					password = ':'.join(parts[6:])
+					user = ":".join(parts[:6])
+					password = ":".join(parts[6:])
 				else:
 					user = parts[0]
-					password = ':'.join(parts[1:])
+					password = ":".join(parts[1:])
 				user = user.strip().lower()
 				logger.confidential("Client supplied username '%s' and password '%s'", user, password)
 			except Exception as err:  # pylint: disable=broad-except
-				logger.error(
-					"Bad Authorization header from '%s': %s",
-					self.request.getClientIP(), err, exc_info=True
-				)
+				logger.error("Bad Authorization header from '%s': %s", self.request.getClientIP(), err, exc_info=True)
 
 		return (user, password)
 
@@ -315,7 +313,7 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 
 	def _getUserAgent(self):
 		try:
-			userAgent = self.request.getHeader('user-agent')
+			userAgent = self.request.getHeader("user-agent")
 		except Exception:  # pylint: disable=broad-except
 			logger.info("Client '%s' did not supply user-agent", self.request.getClientIP())
 			userAgent = None
@@ -331,10 +329,10 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 		try:
 			cookies = self.request.getHeader("cookie")
 			if cookies:
-				for cookie in cookies.split(';'):
-					if '=' not in cookie:
+				for cookie in cookies.split(";"):
+					if "=" not in cookie:
 						continue
-					(name, value) = cookie.split('=', 1)
+					(name, value) = cookie.split("=", 1)
 					if name.strip() == self._getSessionHandler().sessionName:
 						sessionId = forceUnicode(value.strip())
 						break
@@ -345,7 +343,7 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 		return sessionId
 
 	def _getSession(self, result):
-		''' This method restores a session or generates a new one. '''
+		"""This method restores a session or generates a new one."""
 		self.session = None
 
 		logger.confidential("Request headers: %s", self.request.getAllHeaders())
@@ -359,14 +357,15 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 		if sessionId == self.session.uid:
 			logger.info("Reusing session for client '%s', application '%s'", self.request.getClientIP(), userAgent)
 		elif sessionId:
-			logger.notice("Application '%s' on client '%s' supplied non existing session id: %s", userAgent, self.request.getClientIP(), sessionId)
+			logger.notice(
+				"Application '%s' on client '%s' supplied non existing session id: %s", userAgent, self.request.getClientIP(), sessionId
+			)
 
 		if sessionHandler and self.session.ip and (self.session.ip != self.request.getClientIP()):
 			logger.critical(
-				"Client ip '%s' does not match session ip '%s', "
-				"deleting old session and creating a new one",
+				"Client ip '%s' does not match session ip '%s', " "deleting old session and creating a new one",
 				self.request.getClientIP(),
-				self.session.ip
+				self.session.ip,
 			)
 			sessionHandler.deleteSession(self.session.uid)
 			self.session = sessionHandler.getSession()
@@ -380,15 +379,12 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 				"Application changed from '%s' to '%s' for existing session of client '%s'",
 				self.session.userAgent,
 				userAgent,
-				self.request.getClientIP()
+				self.request.getClientIP(),
 			)
 		self.session.userAgent = userAgent
 
 		logger.confidential(
-			"Session id is %s for client %s, application %s",
-			self.session.uid,
-			self.request.getClientIP(),
-			self.session.userAgent
+			"Session id is %s for client %s, application %s", self.session.uid, self.request.getClientIP(), self.session.userAgent
 		)
 
 		logger.confidential("Session content: %s", self.session.__dict__)
@@ -401,13 +397,13 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 
 		# Add cookie to headers
 		logger.debug("Adding session cookie to headers")
-		self.request.addCookie(self.session.name, self.session.uid, path='/')
+		self.request.addCookie(self.session.name, self.session.uid, path="/")
 
 	def _authenticate(self, result):
-		'''
+		"""
 		This function tries to authenticate a user.
 		Raises an exception on authentication failure.
-		'''
+		"""
 		if self.session.authenticated:
 			return result
 
@@ -425,9 +421,9 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 
 	def _getQuery(self, result):
 		self.query = ""
-		if self.request.method == b'GET':
+		if self.request.method == b"GET":
 			self.query = urllib.parse.urlparse(urllib.parse.unquote(self.request.uri.decode("ascii"))).query
-		elif self.request.method == b'POST':
+		elif self.request.method == b"POST":
 			self.query = self.request.content.read()
 		else:
 			raise ValueError(f"Unhandled method '{self.request.method}'")
@@ -436,14 +432,14 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 	def _decodeQuery(self, result):
 		try:
 			logger.debug("Decoding query, request method %s", self.request.method)
-			if self.request.method == b'POST':
+			if self.request.method == b"POST":
 				logger.trace("Request headers: %s", self.request.getAllHeaders())
 				try:
-					contentType = self.request.getHeader('content-type').lower()
+					contentType = self.request.getHeader("content-type").lower()
 				except Exception:  # pylint: disable=broad-except
 					contentType = None
 				try:
-					contentEncoding = self.request.getHeader('content-encoding').lower()
+					contentEncoding = self.request.getHeader("content-encoding").lower()
 				except Exception:  # pylint: disable=broad-except
 					contentEncoding = None
 
@@ -455,10 +451,10 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 					# we need to behave like we did before.
 					logger.debug("Expecting compressed data from client (backwards compatible)")
 					self.query = deflateDecode(self.query)
-				elif contentEncoding == 'gzip':
+				elif contentEncoding == "gzip":
 					logger.debug("Expecting gzip compressed data from client")
 					self.query = gzipDecode(self.query)
-				elif contentEncoding == 'deflate':
+				elif contentEncoding == "deflate":
 					logger.debug("Expecting deflate compressed data from client")
 					self.query = deflateDecode(self.query)
 
@@ -484,7 +480,6 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 
 
 class WorkerOpsiJsonRpc(WorkerOpsi):  # pylint: disable=too-few-public-methods
-
 	def __init__(self, service, request, resource):
 		WorkerOpsi.__init__(self, service, request, resource)
 
@@ -554,19 +549,19 @@ class WorkerOpsiJsonRpc(WorkerOpsi):  # pylint: disable=too-few-public-methods
 		invalidMime = False  # For handling the invalid MIME type "gzip-application/json-rpc"
 		encoding = None
 		try:
-			if 'gzip' in self.request.getHeader('Accept-Encoding'):
-				encoding = 'gzip'
-			elif 'deflate' in self.request.getHeader('Accept-Encoding'):
-				encoding = 'deflate'
+			if "gzip" in self.request.getHeader("Accept-Encoding"):
+				encoding = "gzip"
+			elif "deflate" in self.request.getHeader("Accept-Encoding"):
+				encoding = "deflate"
 		except Exception as err:  # pylint: disable=broad-except
 			logger.trace("Failed to get Accept-Encoding from request header: %s", err)
 
 		try:
-			if self.request.getHeader('Accept'):
-				for accept in self.request.getHeader('Accept').split(','):
-					if accept.strip().startswith('gzip'):
+			if self.request.getHeader("Accept"):
+				for accept in self.request.getHeader("Accept").split(","):
+					if accept.strip().startswith("gzip"):
 						invalidMime = True
-						encoding = 'gzip'
+						encoding = "gzip"
 						break
 		except Exception as err:  # pylint: disable=broad-except
 			logger.error("Failed to get accepted mime types from header: %s", err)
@@ -605,14 +600,14 @@ class WorkerOpsiJsonRpc(WorkerOpsi):  # pylint: disable=too-few-public-methods
 		return result
 
 	def _renderError(self, failure):
-		self.request.setHeader('content-type', "application/json; charset=utf-8")
+		self.request.setHeader("content-type", "application/json; charset=utf-8")
 		error = "Unknown error"
 		try:
 			failure.raiseException()
 		except Exception as err:  # pylint: disable=broad-except
-			error = {'class': err.__class__.__name__, 'message': str(err)}
+			error = {"class": err.__class__.__name__, "message": str(err)}
 			error = toJson({"id": None, "result": None, "error": error})
-		self.request.write(error.encode('utf-8'))
+		self.request.write(error.encode("utf-8"))
 		return failure
 
 
@@ -620,13 +615,11 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):  # pylint: disable=too-few-pub
 	"""
 	Worker responsible for creating the human-usable interface page.
 	"""
+
 	def _generateResponse(self, result):  # pylint: disable=too-many-locals
 		logger.info("Creating interface page")
 
-		javascript = [
-			"var currentParams = new Array();",
-			"var currentMethod = null;"
-		]
+		javascript = ["var currentParams = new Array();", "var currentMethod = null;"]
 		currentMethod = ""
 		if self._rpcs:
 			currentMethod = self._rpcs[0].getMethodName()
@@ -640,7 +633,7 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):  # pylint: disable=too-few-pub
 				for method in self._callInterface:
 					methodName = method["name"]
 					javascript.append(f"parameters['{methodName}'] = new Array();")
-					for (index, param) in enumerate(method['params']):
+					for (index, param) in enumerate(method["params"]):
 						javascript.append(f"parameters['{methodName}'][{index}]='{param}';")
 
 					selected = ""

@@ -17,19 +17,23 @@ import stat
 from dataclasses import dataclass
 from functools import lru_cache
 
-from OPSI.Config import (
-	FILE_ADMIN_GROUP, OPSI_ADMIN_GROUP, DEFAULT_DEPOT_USER, DEFAULT_DEPOT_USER_HOME, OPSICONFD_USER
-)
-from OPSI.System.Posix import (
-	getLocalFqdn, isCentOS, isOpenSUSE, isRHEL, isSLES, isUCS
-)
-from OPSI.Backend.Base.ConfigData import OPSI_PASSWD_FILE
-
+from opsicommon.logging import get_logger
 from opsicommon.utils import Singleton
-from opsicommon.logging import logger
 
+from OPSI.Backend.Base.ConfigData import OPSI_PASSWD_FILE
+from OPSI.Config import (
+	DEFAULT_DEPOT_USER,
+	DEFAULT_DEPOT_USER_HOME,
+	FILE_ADMIN_GROUP,
+	OPSI_ADMIN_GROUP,
+	OPSICONFD_USER,
+)
+from OPSI.System.Posix import getLocalFqdn, isCentOS, isOpenSUSE, isRHEL, isSLES, isUCS
 
 _HAS_ROOT_RIGHTS = os.geteuid() == 0
+
+logger = get_logger("opsi.general")
+
 
 @dataclass
 class FilePermission:
@@ -119,8 +123,10 @@ class DirPermission(FilePermission):
 			return None
 		return super().chown(path, stat_res)
 
+
 def _get_default_depot_user_ssh_dir():
 	return os.path.join(DEFAULT_DEPOT_USER_HOME, ".ssh")
+
 
 class PermissionRegistry(metaclass=Singleton):
 	def __init__(self):
@@ -146,40 +152,37 @@ class PermissionRegistry(metaclass=Singleton):
 		self.register_permission(
 			DirPermission("/etc/opsi", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o660, 0o770),
 			DirPermission("/var/log/opsi", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o660, 0o770),
-			DirPermission("/var/lib/opsi", OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o770)
+			DirPermission("/var/lib/opsi", OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o770),
 		)
 		self.register_permission(
 			DirPermission("/etc/opsi/ssl", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o600, 0o750),
-			FilePermission("/etc/opsi/ssl/opsi-ca-cert.pem", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o644)
+			FilePermission("/etc/opsi/ssl/opsi-ca-cert.pem", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o644),
 		)
 		depot_dirs = getDepotDirectories()
 		self.register_permission(
 			DirPermission(depot_dirs["public"], OPSICONFD_USER, FILE_ADMIN_GROUP, 0o664, 0o2775, modify_file_exe=False),
 			DirPermission(depot_dirs["depot"], OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o2770, modify_file_exe=False),
 			DirPermission(depot_dirs["repository"], OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o2770),
-			DirPermission(depot_dirs["workbench"], OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o2770, modify_file_exe=False)
+			DirPermission(depot_dirs["workbench"], OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o2770, modify_file_exe=False),
 		)
 
 		pxe_dir = getPxeDirectory()
 		if pxe_dir:
-			self.register_permission(
-				DirPermission(pxe_dir, OPSICONFD_USER, FILE_ADMIN_GROUP, 0o664, 0o775)
-			)
+			self.register_permission(DirPermission(pxe_dir, OPSICONFD_USER, FILE_ADMIN_GROUP, 0o664, 0o775))
 
 		webserver_dir = getWebserverRepositoryPath()
 		if webserver_dir:
 			username, groupname = getWebserverUsernameAndGroupname()
-			self.register_permission(
-				DirPermission(webserver_dir, username, groupname, 0o664, 0o775)
-			)
+			self.register_permission(DirPermission(webserver_dir, username, groupname, 0o664, 0o775))
 
 		ssh_dir = _get_default_depot_user_ssh_dir()
 		self.register_permission(
 			DirPermission(ssh_dir, DEFAULT_DEPOT_USER, FILE_ADMIN_GROUP, 0o640, 0o750, recursive=False),
-			FilePermission(os.path.join(ssh_dir, 'id_rsa'), DEFAULT_DEPOT_USER, FILE_ADMIN_GROUP, 0o640),
-			FilePermission(os.path.join(ssh_dir, 'id_rsa.pub'), DEFAULT_DEPOT_USER, FILE_ADMIN_GROUP, 0o644),
-			FilePermission(os.path.join(ssh_dir, 'authorized_keys'), DEFAULT_DEPOT_USER, FILE_ADMIN_GROUP, 0o600)
+			FilePermission(os.path.join(ssh_dir, "id_rsa"), DEFAULT_DEPOT_USER, FILE_ADMIN_GROUP, 0o640),
+			FilePermission(os.path.join(ssh_dir, "id_rsa.pub"), DEFAULT_DEPOT_USER, FILE_ADMIN_GROUP, 0o644),
+			FilePermission(os.path.join(ssh_dir, "authorized_keys"), DEFAULT_DEPOT_USER, FILE_ADMIN_GROUP, 0o600),
 		)
+
 
 def setRightsOnSSHDirectory(userId=None, groupId=None, path=_get_default_depot_user_ssh_dir()):
 	if not os.path.exists(path):
@@ -195,13 +198,14 @@ def setRightsOnSSHDirectory(userId=None, groupId=None, path=_get_default_depot_u
 
 	PermissionRegistry().register_permission(
 		DirPermission(path, username, groupname, 0o640, 0o750, recursive=False),
-		FilePermission(os.path.join(path, 'id_rsa'), username, groupname, 0o640),
-		FilePermission(os.path.join(path, 'id_rsa.pub'), username, groupname, 0o644),
-		FilePermission(os.path.join(path, 'authorized_keys'), username, groupname, 0o600)
+		FilePermission(os.path.join(path, "id_rsa"), username, groupname, 0o640),
+		FilePermission(os.path.join(path, "id_rsa.pub"), username, groupname, 0o644),
+		FilePermission(os.path.join(path, "authorized_keys"), username, groupname, 0o600),
 	)
 	set_rights()
 
-def set_rights(start_path='/'):  # pylint: disable=too-many-branches
+
+def set_rights(start_path="/"):  # pylint: disable=too-many-branches
 	logger.debug("Setting rights on %s", start_path)
 	permissions = PermissionRegistry().permissions
 	permissions_to_process = []
@@ -237,7 +241,7 @@ def set_rights(start_path='/'):  # pylint: disable=too-many-branches
 			continue
 
 		for root, dirs, files in os.walk(path, topdown=True):
-			#logger.debug("Processing '%s'", root)
+			# logger.debug("Processing '%s'", root)
 			for name in files:
 				abspath = os.path.join(root, name)
 				if abspath in permissions:
@@ -258,9 +262,11 @@ def set_rights(start_path='/'):  # pylint: disable=too-many-branches
 				for name in remove_dirs:
 					dirs.remove(name)
 
+
 def setRights(path="/"):
 	# Deprecated
 	return set_rights(path)
+
 
 def setPasswdRights():
 	"""
@@ -268,7 +274,10 @@ def setPasswdRights():
 	"""
 	return set_rights(OPSI_PASSWD_FILE)
 
+
 CACHED_DEPOT_DIRS = {}
+
+
 def getDepotDirectories():
 	global CACHED_DEPOT_DIRS  # pylint: disable=global-statement
 	if not CACHED_DEPOT_DIRS:
@@ -276,18 +285,21 @@ def getDepotDirectories():
 			"depot": "/var/lib/opsi/depot",
 			"repository": "/var/lib/opsi/repository",
 			"workbench": "/var/lib/opsi/workbench",
-			"public": "/var/lib/opsi/public"
+			"public": "/var/lib/opsi/public",
 		}
 		try:
-			from OPSI.Backend.BackendManager import BackendManager  							# pylint: disable=import-outside-toplevel
+			from OPSI.Backend.BackendManager import (
+				BackendManager,  # pylint: disable=import-outside-toplevel
+			)
+
 			with BackendManager() as backend:
-				depot = backend.host_getObjects(type='OpsiDepotserver', id=getLocalFqdn())[0]	#pylint: disable=no-member
+				depot = backend.host_getObjects(type="OpsiDepotserver", id=getLocalFqdn())[0]  # pylint: disable=no-member
 				for name, url in (
 					("depot", depot.getDepotLocalUrl()),
 					("repository", depot.getRepositoryLocalUrl()),
-					("workbench", depot.getWorkbenchLocalUrl())
+					("workbench", depot.getWorkbenchLocalUrl()),
 				):
-					if url and url.startswith('file:///'):
+					if url and url.startswith("file:///"):
 						CACHED_DEPOT_DIRS[name] = url[7:]
 		except IndexError:
 			logger.warning("Failed to get directories from depot: No depots found")
@@ -295,19 +307,24 @@ def getDepotDirectories():
 			logger.warning("Failed to get directories from depot: %s", err)
 	return CACHED_DEPOT_DIRS
 
+
 def getDepotDirectory():
 	return getDepotDirectories()["depot"]
+
 
 def getRepositoryDirectory():
 	return getDepotDirectories()["repository"]
 
+
 def getWorkbenchDirectory():
 	return getDepotDirectories()["workbench"]
 
+
 def getPxeDirectory():
 	if isSLES() or isOpenSUSE():
-		return '/var/lib/tftpboot/opsi'
-	return '/tftpboot/linux'
+		return "/var/lib/tftpboot/opsi"
+	return "/tftpboot/linux"
+
 
 def getWebserverRepositoryPath():
 	"""
@@ -317,19 +334,20 @@ def getWebserverRepositoryPath():
 	existing `None` will be returned.
 	"""
 	if isUCS():
-		return '/var/www/opsi'
+		return "/var/www/opsi"
 	if isOpenSUSE() or isSLES():
-		return '/srv/www/htdocs/opsi'
-	return '/var/www/html/opsi'
+		return "/srv/www/htdocs/opsi"
+	return "/var/www/html/opsi"
+
 
 def getWebserverUsernameAndGroupname():
-	'''
+	"""
 	Returns the name of the user and group belonging to the webserver in the default configuration.
 
 	:raises RuntimeError: If running on an Unsupported distribution.
-	'''
+	"""
 	if isOpenSUSE() or isSLES():
-		return 'wwwrun', 'www'
+		return "wwwrun", "www"
 	if isCentOS() or isRHEL():
-		return 'apache', 'apache'
-	return 'www-data', 'www-data'
+		return "apache", "apache"
+	return "www-data", "www-data"

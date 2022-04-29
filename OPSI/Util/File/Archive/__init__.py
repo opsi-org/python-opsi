@@ -17,8 +17,11 @@ import os
 import re
 import subprocess
 import time
-if os.name == 'posix':
+
+if os.name == "posix":
 	import fcntl
+
+from opsicommon.logging import get_logger
 
 import OPSI.Util.File.Opsi
 from OPSI import System
@@ -26,18 +29,18 @@ from OPSI.Types import forceBool, forceFilename, forceUnicodeList, forceUnicodeL
 from OPSI.Util import compareVersions
 from OPSI.Util.Path import cd
 
-from opsicommon.logging import logger
-
 try:
 	PIGZ_ENABLED = OPSI.Util.File.Opsi.OpsiConfFile().isPigzEnabled()
 except IOError:
 	PIGZ_ENABLED = True
 
+logger = get_logger("opsi.general")
+
 
 def getFileType(filename):
 	filename = forceFilename(filename)
 	with open(filename, "rb") as f:
-		head = f.read(257+5)
+		head = f.read(257 + 5)
 
 	if head[:3] == b"\x1f\x8b\x08" or head[:8] == b"\x5c\x30\x33\x37\x5c\x32\x31\x33":
 		return ".gz"
@@ -45,7 +48,7 @@ def getFileType(filename):
 		return ".bzip2"
 	if head[:5] == b"\x30\x37\x30\x37\x30":
 		return ".cpio"
-	if head[257:257+5] == b"\x75\x73\x74\x61\x72":
+	if head[257 : 257 + 5] == b"\x75\x73\x74\x61\x72":
 		return ".tar"
 	raise NotImplementedError("getFileType only accepts .gz .bzip2 .cpio .tar archive types.")
 
@@ -57,19 +60,18 @@ class BaseArchive:
 		self._compression = None
 		if compression:
 			compression = forceUnicodeLower(compression)
-			if compression not in ('gzip', 'bzip2'):
+			if compression not in ("gzip", "bzip2"):
 				raise ValueError("Compression '%s' not supported" % compression)
 			self._compression = compression
 		elif os.path.exists(self._filename):
 			fileType = getFileType(self._filename)
 			logger.debug("Identified fileType %s for file %s", fileType, self._filename)
 			if "gz" in fileType.lower():
-				self._compression = 'gzip'
+				self._compression = "gzip"
 			elif "bzip2" in fileType.lower():
-				self._compression = 'bzip2'
+				self._compression = "bzip2"
 			else:
 				self._compression = None
-
 
 	def getFilename(self):
 		return self._filename
@@ -77,10 +79,7 @@ class BaseArchive:
 	def _extract(self, command, fileCount):
 		try:
 			logger.info("Executing: %s", command)
-			proc = subprocess.Popen(
-				command,
-				shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-			)
+			proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
 			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
@@ -91,13 +90,13 @@ class BaseArchive:
 				self._progressSubject.setEnd(fileCount)
 				self._progressSubject.setState(0)
 
-			error = ''
+			error = ""
 			ret = None
 			while ret is None:
 				try:
 					chunk = proc.stdout.read()
 					if chunk:
-						filesExtracted = chunk.count('\n')
+						filesExtracted = chunk.count("\n")
 						if filesExtracted > 0:
 							if self._progressSubject:
 								self._progressSubject.addToState(filesExtracted)
@@ -107,7 +106,7 @@ class BaseArchive:
 					chunk = proc.stderr.read()
 					if chunk:
 						error = chunk
-						filesExtracted = chunk.count('\n')
+						filesExtracted = chunk.count("\n")
 						if filesExtracted > 0:
 							if self._progressSubject:
 								self._progressSubject.addToState(filesExtracted)
@@ -134,10 +133,7 @@ class BaseArchive:
 
 		with cd(baseDir):
 			logger.info("Executing: %s", command)
-			proc = subprocess.Popen(command,
-				shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-				stderr=subprocess.PIPE
-			)
+			proc = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
 			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
@@ -148,7 +144,7 @@ class BaseArchive:
 				self._progressSubject.setEnd(len(fileList))
 				self._progressSubject.setState(0)
 
-			error = ''
+			error = ""
 			ret = None
 			for filename in fileList:
 				if not filename:
@@ -156,8 +152,8 @@ class BaseArchive:
 				if not os.path.exists(filename):
 					raise IOError(f"File '{filename}' not found")
 				if filename.startswith(baseDir):
-					filename = filename[len(baseDir):]
-					while filename.startswith('/'):
+					filename = filename[len(baseDir) :]
+					while filename.startswith("/"):
 						filename = filename[1:]
 				logger.info("Adding file '%s'", filename)
 				proc.stdin.write(("%s\n" % filename).encode())
@@ -165,7 +161,7 @@ class BaseArchive:
 				try:
 					chunk = proc.stdout.read()
 					if chunk:
-						filesAdded = chunk.count('\n')
+						filesAdded = chunk.count("\n")
 						if filesAdded > 0:
 							if self._progressSubject:
 								self._progressSubject.addToState(filesAdded)
@@ -176,7 +172,7 @@ class BaseArchive:
 					chunk = proc.stderr.read()
 					if chunk:
 						error += chunk
-						filesAdded = chunk.count('\n')
+						filesAdded = chunk.count("\n")
 						if filesAdded > 0:
 							if self._progressSubject:
 								self._progressSubject.addToState(filesAdded)
@@ -196,7 +192,7 @@ class BaseArchive:
 					chunk = proc.stderr.read()
 					if chunk:
 						if self._progressSubject:
-							self._progressSubject.addToState(chunk.count('\n'))
+							self._progressSubject.addToState(chunk.count("\n"))
 						error += chunk
 				except Exception:  # pylint: disable=broad-except
 					pass
@@ -214,7 +210,7 @@ class BaseArchive:
 class PigzMixin:
 	@property
 	def pigz_detected(self):
-		if not hasattr(self, '_pigz_detected'):
+		if not hasattr(self, "_pigz_detected"):
 			self._pigz_detected = self.is_pigz_available()
 
 		return self._pigz_detected
@@ -222,18 +218,18 @@ class PigzMixin:
 	@staticmethod
 	def is_pigz_available():
 		def is_correct_pigz_version():
-			ver = System.execute('pigz --version')[0][5:]
+			ver = System.execute("pigz --version")[0][5:]
 
-			logger.debug('Detected pigz version: %s', ver)
-			versionMatches = compareVersions(ver, '>=', '2.2.3')
-			logger.debug('pigz version is compatible? %s', versionMatches)
+			logger.debug("Detected pigz version: %s", ver)
+			versionMatches = compareVersions(ver, ">=", "2.2.3")
+			logger.debug("pigz version is compatible? %s", versionMatches)
 			return versionMatches
 
 		if not PIGZ_ENABLED:
 			return False
 
 		try:
-			System.which('pigz')
+			System.which("pigz")
 			logger.debug('Detected "pigz".')
 
 			return is_correct_pigz_version()
@@ -251,16 +247,16 @@ class TarArchive(BaseArchive, PigzMixin):
 			if not os.path.exists(self._filename):
 				raise IOError("Archive file not found: '%s'" % self._filename)
 			names = []
-			options = ''
-			if self._compression == 'gzip':
+			options = ""
+			if self._compression == "gzip":
 				if self.pigz_detected:
-					options += '--use-compress-program=pigz'
+					options += "--use-compress-program=pigz"
 				else:
-					options += '--gunzip'
-			elif self._compression == 'bzip2':
-				options += '--bzip2'
+					options += "--gunzip"
+			elif self._compression == "bzip2":
+				options += "--bzip2"
 
-			for line in System.execute('%s %s --list --file "%s"' % (System.which('tar'), options, self._filename)):
+			for line in System.execute('%s %s --list --file "%s"' % (System.which("tar"), options, self._filename)):
 				if line:
 					names.append(line)
 
@@ -268,7 +264,7 @@ class TarArchive(BaseArchive, PigzMixin):
 		except Exception as err:
 			raise RuntimeError(f"Failed to get archive content '{self._filename}': {err}") from err
 
-	def extract(self, targetPath='.', patterns=[]):
+	def extract(self, targetPath=".", patterns=[]):
 		try:
 			targetPath = os.path.abspath(forceFilename(targetPath))
 			patterns = forceUnicodeList(patterns)
@@ -278,14 +274,14 @@ class TarArchive(BaseArchive, PigzMixin):
 				except Exception as err:  # pylint: disable=broad-except
 					raise IOError(f"Failed to create target dir '{targetPath}': {err}") from err
 
-			options = ''
-			if self._compression == 'gzip':
+			options = ""
+			if self._compression == "gzip":
 				if self.pigz_detected:
-					options += '--use-compress-program=pigz'
+					options += "--use-compress-program=pigz"
 				else:
-					options += '--gunzip'
-			elif self._compression == 'bzip2':
-				options += '--bzip2'
+					options += "--gunzip"
+			elif self._compression == "bzip2":
+				options += "--bzip2"
 
 			fileCount = 0
 			for filename in self.content():
@@ -295,7 +291,7 @@ class TarArchive(BaseArchive, PigzMixin):
 				else:
 					for pattern in patterns:
 						try:
-							pattern = pattern.replace('*', '.*')
+							pattern = pattern.replace("*", ".*")
 							if re.search(pattern, filename):
 								match = True
 								break
@@ -308,12 +304,12 @@ class TarArchive(BaseArchive, PigzMixin):
 				else:
 					options += ' --exclude="%s"' % filename
 
-			command = '%s %s --directory "%s" --extract --verbose --file "%s"' % (System.which('tar'), options, targetPath, self._filename)
+			command = '%s %s --directory "%s" --extract --verbose --file "%s"' % (System.which("tar"), options, targetPath, self._filename)
 			self._extract(command, fileCount)
 		except Exception as err:  # pylint: disable=broad-except
 			raise RuntimeError(f"Failed to extract archive '{self._filename}': {err}") from err
 
-	def create(self, fileList, baseDir='.', dereference=False):
+	def create(self, fileList, baseDir=".", dereference=False):
 		try:
 			fileList = forceUnicodeList(fileList)
 			baseDir = os.path.abspath(forceFilename(baseDir))
@@ -322,16 +318,16 @@ class TarArchive(BaseArchive, PigzMixin):
 			if not os.path.isdir(baseDir):
 				raise IOError("Base dir '%s' not found" % baseDir)
 
-			command = '%s --no-recursion --verbose --create --files-from -' % System.which('tar')
+			command = "%s --no-recursion --verbose --create --files-from -" % System.which("tar")
 			if dereference:
-				command += ' --dereference'
-			if self._compression == 'gzip':
+				command += " --dereference"
+			if self._compression == "gzip":
 				if self.pigz_detected:
-					command += ' | %s --rsyncable' % System.which('pigz')
+					command += " | %s --rsyncable" % System.which("pigz")
 				else:
-					command += ' | %s --rsyncable' % System.which('gzip')
-			elif self._compression == 'bzip2':
-				command += ' | %s' % System.which('bzip2')
+					command += " | %s --rsyncable" % System.which("gzip")
+			elif self._compression == "bzip2":
+				command += " | %s" % System.which("bzip2")
 			command += ' > "%s"' % self._filename
 
 			self._create(fileList, baseDir, command)
@@ -348,22 +344,28 @@ class CpioArchive(BaseArchive, PigzMixin):
 			if not os.path.exists(self._filename):
 				raise IOError("Archive file not found: '%s'" % self._filename)
 
-			cat = System.which('cat')
-			if self._compression == 'gzip':
+			cat = System.which("cat")
+			if self._compression == "gzip":
 				if self.pigz_detected:
-					cat = '{pigz} --stdout --decompress'.format(pigz=System.which('pigz'))
+					cat = "{pigz} --stdout --decompress".format(pigz=System.which("pigz"))
 				else:
-					cat = System.which('zcat')
-			elif self._compression == 'bzip2':
-				cat = System.which('bzcat')
+					cat = System.which("zcat")
+			elif self._compression == "bzip2":
+				cat = System.which("bzcat")
 
-			return [line for line in
-					System.execute('{cat} "{filename}" | {cpio} --quiet --extract --list'.format(cat=cat, filename=self._filename, cpio=System.which('cpio')))
-					if line]
+			return [
+				line
+				for line in System.execute(
+					'{cat} "{filename}" | {cpio} --quiet --extract --list'.format(
+						cat=cat, filename=self._filename, cpio=System.which("cpio")
+					)
+				)
+				if line
+			]
 		except Exception as err:  # pylint: disable=broad-except
 			raise RuntimeError(f"Failed to get archive content '{self._filename}': {err}") from err
 
-	def extract(self, targetPath='.', patterns=[]):
+	def extract(self, targetPath=".", patterns=[]):
 		try:
 			targetPath = os.path.abspath(forceFilename(targetPath))
 			patterns = forceUnicodeList(patterns)
@@ -373,14 +375,14 @@ class CpioArchive(BaseArchive, PigzMixin):
 				except Exception as err:  # pylint: disable=broad-except
 					raise IOError(f"Failed to create target dir '{targetPath}': {err}") from err
 
-			cat = System.which('cat')
-			if self._compression == 'gzip':
+			cat = System.which("cat")
+			if self._compression == "gzip":
 				if self.pigz_detected:
-					cat = '%s --stdout --decompress' % (System.which('pigz'), )
+					cat = "%s --stdout --decompress" % (System.which("pigz"),)
 				else:
-					cat = System.which('zcat')
-			elif self._compression == 'bzip2':
-				cat = System.which('bzcat')
+					cat = System.which("zcat")
+			elif self._compression == "bzip2":
+				cat = System.which("bzcat")
 
 			fileCount = 0
 			for filename in self.content():
@@ -390,7 +392,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 				else:
 					for pattern in patterns:
 						try:
-							pattern = pattern.replace('*', '.*')
+							pattern = pattern.replace("*", ".*")
 							if re.search(pattern, filename):
 								match = True
 								break
@@ -400,15 +402,18 @@ class CpioArchive(BaseArchive, PigzMixin):
 				if match:
 					fileCount += 1
 
-			include = ' '.join('"%s"' % pattern for pattern in patterns)
+			include = " ".join('"%s"' % pattern for pattern in patterns)
 
 			with cd(targetPath):
-				command = '%s "%s" | %s --quiet --extract --make-directories --unconditional --preserve-modification-time --verbose --no-preserve-owner %s' % (cat, self._filename, System.which('cpio'), include)
+				command = (
+					'%s "%s" | %s --quiet --extract --make-directories --unconditional --preserve-modification-time --verbose --no-preserve-owner %s'
+					% (cat, self._filename, System.which("cpio"), include)
+				)
 				self._extract(command, fileCount)
 		except Exception as err:  # pylint: disable=broad-except
 			raise RuntimeError(f"Failed to extract archive '{self._filename}': {err}") from err
 
-	def create(self, fileList, baseDir='.', dereference=False):
+	def create(self, fileList, baseDir=".", dereference=False):
 		try:
 			fileList = forceUnicodeList(fileList)
 			baseDir = os.path.abspath(forceFilename(baseDir))
@@ -417,16 +422,16 @@ class CpioArchive(BaseArchive, PigzMixin):
 			if not os.path.isdir(baseDir):
 				raise IOError(f"Base dir '{baseDir}' not found")
 
-			command = '%s --create --quiet --verbose --format crc' % System.which('cpio')
+			command = "%s --create --quiet --verbose --format crc" % System.which("cpio")
 			if dereference:
-				command += ' --dereference'
-			if self._compression == 'gzip':
+				command += " --dereference"
+			if self._compression == "gzip":
 				if self.pigz_detected:
-					command += ' | %s --rsyncable' % System.which('pigz')
+					command += " | %s --rsyncable" % System.which("pigz")
 				else:
-					command += ' | %s --rsyncable' % System.which('gzip')
-			elif self._compression == 'bzip2':
-				command += ' | %s' % System.which('bzip2')
+					command += " | %s --rsyncable" % System.which("gzip")
+			elif self._compression == "bzip2":
+				command += " | %s" % System.which("bzip2")
 			command += ' > "%s"' % self._filename
 
 			self._create(fileList, baseDir, command)
@@ -439,9 +444,9 @@ def Archive(filename, format=None, compression=None, progressSubject=None):
 	Class = None
 	if format:
 		format = forceUnicodeLower(format)
-		if format == 'tar':
+		if format == "tar":
 			Class = TarArchive
-		elif format == 'cpio':
+		elif format == "cpio":
 			Class = CpioArchive
 		else:
 			raise ValueError("Unsupported format '%s'" % format)
@@ -449,13 +454,13 @@ def Archive(filename, format=None, compression=None, progressSubject=None):
 	elif os.path.exists(filename):
 		fileType = getFileType(filename)
 		logger.debug("Identified fileType %s for file %s", fileType, filename)
-		if 'tar' in fileType.lower():
+		if "tar" in fileType.lower():
 			Class = TarArchive
-		elif 'cpio' in fileType.lower():
+		elif "cpio" in fileType.lower():
 			Class = CpioArchive
-		elif filename.lower().endswith(('tar', 'tar.gz')):
+		elif filename.lower().endswith(("tar", "tar.gz")):
 			Class = TarArchive
-		elif filename.lower().endswith(('cpio', 'cpio.gz')):
+		elif filename.lower().endswith(("cpio", "cpio.gz")):
 			Class = CpioArchive
 
 	if not Class:

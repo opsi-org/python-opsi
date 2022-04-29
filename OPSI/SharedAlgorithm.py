@@ -14,25 +14,29 @@ Algorithms to get a product order for an installation.
 
 from collections import defaultdict
 
-from OPSI.Object import ProductOnClient
-from OPSI.Exceptions import OpsiProductOrderingError, BackendUnaccomplishableError
-from OPSI.Types import forceInt, forceBool
+from opsicommon.logging import get_logger
 
-from opsicommon.logging import logger
+from OPSI.Exceptions import BackendUnaccomplishableError, OpsiProductOrderingError
+from OPSI.Object import ProductOnClient
+from OPSI.Types import forceBool, forceInt
 
 BOTTOM = -100
+
+logger = get_logger("opsi.general")
 
 
 class CircularProductDependencyError(BackendUnaccomplishableError):
 	ExceptionShortDescription = "A circular dependency between products."
 
 
-def addActionRequest(productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo=None):  # pylint: disable=too-many-branches,too-many-statements
+def addActionRequest(
+	productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo=None
+):  # pylint: disable=too-many-branches,too-many-statements
 	logger.debug("Checking dependencies for product %s, action %s", productId, productOnClientByProductId[productId].actionRequest)
 	addedInfo = addedInfo or {}
 
 	poc = productOnClientByProductId[productId]
-	if poc.actionRequest == 'none' or not productDependenciesByProductId.get(productId):
+	if poc.actionRequest == "none" or not productDependenciesByProductId.get(productId):
 		return
 
 	for dependency in productDependenciesByProductId[productId]:
@@ -43,21 +47,27 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 		if dependency.requiredAction:
 			logger.debug(
 				"   product %s requires action %s of product %s %s-%s on action %s",
-				productId, dependency.requiredAction, dependency.requiredProductId,
-				dependency.requiredProductVersion, dependency.requiredPackageVersion,
-				dependency.productAction
+				productId,
+				dependency.requiredAction,
+				dependency.requiredProductId,
+				dependency.requiredProductVersion,
+				dependency.requiredPackageVersion,
+				dependency.productAction,
 			)
 		elif dependency.requiredInstallationStatus:
 			logger.debug(
 				"   product %s requires status %s of product %s %s-%s on action %s",
-				productId, dependency.requiredInstallationStatus, dependency.requiredProductId,
-				dependency.requiredProductVersion, dependency.requiredPackageVersion,
-				dependency.productAction
+				productId,
+				dependency.requiredInstallationStatus,
+				dependency.requiredProductId,
+				dependency.requiredProductVersion,
+				dependency.requiredPackageVersion,
+				dependency.productAction,
 			)
 
 		requiredAction = dependency.requiredAction
-		installationStatus = 'not_installed'
-		actionRequest = 'none'
+		installationStatus = "not_installed"
+		actionRequest = "none"
 		if dependency.requiredProductId in productOnClientByProductId:
 			installationStatus = productOnClientByProductId[dependency.requiredProductId].installationStatus
 			actionRequest = productOnClientByProductId[dependency.requiredProductId].actionRequest
@@ -67,10 +77,10 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 				logger.debug("   required installation status %s is fulfilled", dependency.requiredInstallationStatus)
 				continue
 
-			if dependency.requiredInstallationStatus == 'installed':
-				requiredAction = 'setup'
-			elif dependency.requiredInstallationStatus == 'not_installed':
-				requiredAction = 'uninstall'
+			if dependency.requiredInstallationStatus == "installed":
+				requiredAction = "setup"
+			elif dependency.requiredInstallationStatus == "not_installed":
+				requiredAction = "uninstall"
 
 		# An action is required => check if possible
 		logger.debug("   need to set action %s for product %s to fulfill dependency", requiredAction, dependency.requiredProductId)
@@ -78,50 +88,55 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 		setActionRequestToNone = False
 		if dependency.requiredProductId not in availableProductsByProductId:
 			logger.warning(
-				"   product %s defines dependency to product %s, which is not avaliable on depot",
-				productId, dependency.requiredProductId
+				"   product %s defines dependency to product %s, which is not avaliable on depot", productId, dependency.requiredProductId
 			)
 			setActionRequestToNone = True
 		elif (
-			dependency.requiredProductVersion is not None and
-			dependency.requiredProductVersion != availableProductsByProductId[dependency.requiredProductId].productVersion
+			dependency.requiredProductVersion is not None
+			and dependency.requiredProductVersion != availableProductsByProductId[dependency.requiredProductId].productVersion
 		):
 			logger.warning(
 				"   product %s defines dependency to product %s, but product version %s is not available",
-				productId, dependency.requiredProductId, dependency.requiredProductVersion
+				productId,
+				dependency.requiredProductId,
+				dependency.requiredProductVersion,
 			)
 			setActionRequestToNone = True
 		elif (
-			dependency.requiredPackageVersion is not None and
-			dependency.requiredPackageVersion != availableProductsByProductId[dependency.requiredProductId].packageVersion
+			dependency.requiredPackageVersion is not None
+			and dependency.requiredPackageVersion != availableProductsByProductId[dependency.requiredProductId].packageVersion
 		):
 			logger.warning(
 				"   product %s defines dependency to product %s, but package version %s is not available",
-				productId, dependency.requiredProductId, dependency.requiredProductId
+				productId,
+				dependency.requiredProductId,
+				dependency.requiredProductId,
 			)
 			setActionRequestToNone = True
 
 		if setActionRequestToNone:
 			logger.notice("   => setting action request for product %s to 'none'!", productId)
-			productOnClientByProductId[productId].actionRequest = 'none'
+			productOnClientByProductId[productId].actionRequest = "none"
 			continue
 
 		if actionRequest == requiredAction:
 			logger.debug("   => required action %s is already set", requiredAction)
 			continue
 
-		if actionRequest not in (None, 'none'):
+		if actionRequest not in (None, "none"):
 			logger.debug(
 				"   => cannot fulfill dependency of product %s to product %s: action %s needed but action %s already set",
-				productId, dependency.requiredProductId, requiredAction, actionRequest
+				productId,
+				dependency.requiredProductId,
+				requiredAction,
+				actionRequest,
 			)
 			continue
 
 		if dependency.requiredProductId in addedInfo:
 			logger.warning("   => Product dependency loop including product %s detected, skipping", productId)
 			logger.debug(
-				"Circular dependency at %s. Processed product: %s addedInfo: %s",
-				dependency.requiredProductId, productId, addedInfo
+				"Circular dependency at %s. Processed product: %s addedInfo: %s", dependency.requiredProductId, productId, addedInfo
 			)
 			continue
 
@@ -133,19 +148,22 @@ def addActionRequest(productOnClientByProductId, productId, productDependenciesB
 				productType=availableProductsByProductId[dependency.requiredProductId].getType(),
 				clientId=poc.clientId,
 				installationStatus=None,
-				actionRequest='none',
+				actionRequest="none",
 			)
 
 		addedInfo[dependency.requiredProductId] = {
-			'addedForProduct': productId,
-			'requiredAction': requiredAction,
-			'requirementType': dependency.requirementType
+			"addedForProduct": productId,
+			"requiredAction": requiredAction,
+			"requirementType": dependency.requirementType,
 		}
 		productOnClientByProductId[dependency.requiredProductId].setActionRequest(requiredAction)
 
 		addActionRequest(
-			productOnClientByProductId, dependency.requiredProductId,
-			productDependenciesByProductId, availableProductsByProductId, addedInfo
+			productOnClientByProductId,
+			dependency.requiredProductId,
+			productDependenciesByProductId,
+			availableProductsByProductId,
+			addedInfo,
 		)
 
 
@@ -204,7 +222,7 @@ class OrderRequirement:
 		self.fulfilled = forceBool(fulfilled)
 
 	def __str__(self):
-		return "<OrderRequirement(prior={0.prior!r}, posterior={0.posterior!r}, fulfilled={0.fulfilled!r}>".format(self)
+		return f"<OrderRequirement(prior={self.prior!r}, posterior={self.posterior!r}, fulfilled={self.fulfilled!r}>"
 
 	def __repr__(self):
 		return self.__str__()
@@ -237,8 +255,7 @@ class Requirements:
 		located = False
 		while (i < len(self.list) - 1) and not located:
 			logger.trace(
-				"Requirement.prior: %s, self.list[self.orderByPrior[i]].prior: %s",
-				requirement.prior, self.list[self.orderByPrior[i]].prior
+				"Requirement.prior: %s, self.list[self.orderByPrior[i]].prior: %s", requirement.prior, self.list[self.orderByPrior[i]].prior
 			)
 			if requirement.prior > self.list[self.orderByPrior[i]].prior:
 				i += 1
@@ -270,7 +287,8 @@ class Requirements:
 		while (i < len(self.list) - 1) and not located:
 			logger.trace(
 				"Requirement.posterior %s, self.list[self.orderByPosterior[i]].posterior) %s",
-				requirement.posterior, self.list[self.orderByPosterior[i]].posterior
+				requirement.posterior,
+				self.list[self.orderByPosterior[i]].posterior,
 			)
 			if requirement.posterior > self.list[self.orderByPosterior[i]].posterior:
 				i += 1
@@ -355,7 +373,7 @@ class Requirements:
 			noInListOrderedByPriors = j
 			return (candidate, noInListOrderedByPriors)
 
-		errorMessage = f'Potentially conflicting requirements for: {candidatesCausingProblemes}'
+		errorMessage = f"Potentially conflicting requirements for: {candidatesCausingProblemes}"
 		logger.error(errorMessage)
 		raise OpsiProductOrderingError(errorMessage, candidatesCausingProblemes)
 
@@ -608,7 +626,12 @@ def modifySortingClassesForAlgorithm1(products, setupRequirements):  # pylint: d
 						if fId2Prod[requ[0]].revisedPriority < level:
 							logger.debug(
 								"product %s must be pushed upwards from level %s to level %s, the level of %s, to meet the requirement first %s, later %s",
-								requ[0], fId2Prod[requ[0]].revisedPriority, level, posti.id, requ[0], requ[1]
+								requ[0],
+								fId2Prod[requ[0]].revisedPriority,
+								level,
+								posti.id,
+								requ[0],
+								requ[1],
 							)
 							fId2Prod[requ[0]].revisedPriority = level
 							recursionNecessary = True
@@ -658,7 +681,9 @@ def generateProductSequence_algorithm2(availableProducts, productDependencies):
 	return generateProductSequenceFromRequPairs_algorithm2(availableProducts, setupRequirements)
 
 
-def generateProductSequenceFromRequPairs_algorithm2(availableProducts, setupRequirements):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+def generateProductSequenceFromRequPairs_algorithm2(
+	availableProducts, setupRequirements
+):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 	# Build priority classes and indices
 	logger.debug("availableProducts %s", availableProducts)
 

@@ -17,7 +17,7 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 
-from opsicommon.logging import logger
+from opsicommon.logging import get_logger
 
 from OPSI.Backend.Base import BackendModificationListener, ConfigDataBackend
 from OPSI.Exceptions import (
@@ -69,6 +69,8 @@ from OPSI.Util import timestamp
 __all__ = ("timeQuery", "onlyAllowSelect", "SQL", "SQLBackend", "SQLBackendObjectModificationTracker")
 
 DATABASE_SCHEMA_VERSION = 7
+
+logger = get_logger("opsi.general")
 
 
 @contextmanager

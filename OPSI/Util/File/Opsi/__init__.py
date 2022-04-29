@@ -8,55 +8,79 @@ Utilites to handle files specific to opsi.
 # pylint: disable=too-many-lines
 
 import bz2
+import codecs
 import collections
 import datetime
 import gzip
 import os
 import re
-import time
-import tarfile
-import tempfile
 import shutil
 import socket
-import codecs
+import subprocess
+import tarfile
+import tempfile
+import time
 from collections import namedtuple
 from contextlib import closing
 from hashlib import sha1
 from io import BytesIO, StringIO
 from operator import itemgetter
-import subprocess
-import ruyaml
 
-from opsicommon.logging import logger
+import ruyaml
+from opsicommon.logging import get_logger
 
 import OPSI.System
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import (
-	OpsiBackupBackendNotFound, OpsiBackupFileError, OpsiBackupFileNotFound
+	OpsiBackupBackendNotFound,
+	OpsiBackupFileError,
+	OpsiBackupFileNotFound,
 )
 from OPSI.Object import (
-	BoolProductProperty, LocalbootProduct, NetbootProduct,
-	Product, ProductDependency, ProductProperty, UnicodeProductProperty
+	BoolProductProperty,
+	LocalbootProduct,
+	NetbootProduct,
+	Product,
+	ProductDependency,
+	ProductProperty,
+	UnicodeProductProperty,
 )
-from OPSI.Types import (
-	forceActionRequest, forceBool, forceDictList, forceFilename, forceHostId,
-	forceInstallationStatus, forceList, forceObjectClass, forceObjectClassList,
-	forceOpsiHostKey, forcePackageVersion, forceProductId, forceProductPriority,
-	forceProductPropertyType, forceProductType, forceProductVersion,
-	forceRequirementType, forceUnicode, forceUnicodeList, forceUnicodeLower,
-	forceUniqueList
-)
-from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
-from OPSI.Util import md5sum, toJson, fromJson
 from OPSI.System import get_subprocess_environment
+from OPSI.Types import (
+	forceActionRequest,
+	forceBool,
+	forceDictList,
+	forceFilename,
+	forceHostId,
+	forceInstallationStatus,
+	forceList,
+	forceObjectClass,
+	forceObjectClassList,
+	forceOpsiHostKey,
+	forcePackageVersion,
+	forceProductId,
+	forceProductPriority,
+	forceProductPropertyType,
+	forceProductType,
+	forceProductVersion,
+	forceRequirementType,
+	forceUnicode,
+	forceUnicodeList,
+	forceUnicodeLower,
+	forceUniqueList,
+)
+from OPSI.Util import fromJson, md5sum, toJson
+from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
 
 if os.name == 'posix':
-	from OPSI.System.Posix import SysInfo
 	import fcntl
 	import grp
 	import pwd
 
+	from OPSI.System.Posix import SysInfo
 
+
+logger = get_logger("opsi.general")
 FileInfo = namedtuple('FileInfo', 'productId version')
 
 
@@ -153,7 +177,10 @@ class BackendACLFile(ConfigFile):
 		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=['#'])
 
 	def parse(self, lines=None):  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
-		from OPSI.Config import OPSI_ADMIN_GROUP, FILE_ADMIN_GROUP   # pylint: disable=import-outside-toplevel
+		from OPSI.Config import (  # pylint: disable=import-outside-toplevel
+			FILE_ADMIN_GROUP,
+			OPSI_ADMIN_GROUP,
+		)
 		if lines:
 			self._lines = forceUnicodeList(lines)
 		else:

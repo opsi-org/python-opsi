@@ -23,9 +23,10 @@ import socket
 import struct
 import sys
 from collections import namedtuple
+from functools import lru_cache
 from hashlib import md5
 from itertools import islice
-from functools import lru_cache
+
 import packaging.version
 
 try:
@@ -40,18 +41,25 @@ except (ImportError, OSError):
 	from Cryptodome.PublicKey import RSA
 	from Cryptodome.Util.number import bytes_to_long
 
-from opsicommon.logging import logger
-from opsicommon.types import forceBool, forceFilename, forceFqdn, forceUnicode, _PRODUCT_VERSION_REGEX, _PACKAGE_VERSION_REGEX
+from opsicommon.logging import get_logger
+from opsicommon.types import (
+	_PACKAGE_VERSION_REGEX,
+	_PRODUCT_VERSION_REGEX,
+	forceBool,
+	forceFilename,
+	forceFqdn,
+	forceUnicode,
+)
 from opsicommon.utils import (
-	Singleton,
-	from_json,
-	to_json,
-	serialize,
-	deserialize as oc_deserialize,
-	generate_opsi_host_key as generateOpsiHostKey,
-	timestamp as oc_timestamp,
 	monkeypatch_subprocess_for_frozen,  # pylint: disable=unused-import
 )
+from opsicommon.utils import Singleton
+from opsicommon.utils import deserialize as oc_deserialize
+from opsicommon.utils import from_json
+from opsicommon.utils import generate_opsi_host_key as generateOpsiHostKey
+from opsicommon.utils import serialize
+from opsicommon.utils import timestamp as oc_timestamp
+from opsicommon.utils import to_json
 
 __all__ = (
 	"BLOWFISH_IV",
@@ -93,6 +101,7 @@ RANDOM_DEVICE = "/dev/urandom"
 UNIT_REGEX = re.compile(r"^(\d+\.*\d*)\s*(\w{0,4})$")
 _ACCEPTED_CHARACTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
+logger = get_logger("opsi.general")
 Version = namedtuple("Version", "product package")
 
 

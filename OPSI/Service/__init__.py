@@ -7,14 +7,17 @@ Service functionality.
 """
 
 import os
+
 from OpenSSL import SSL
+from opsicommon.logging import get_logger
+
 from OPSI.Service.Session import SessionHandler
 
-from opsicommon.logging import logger
+logger = get_logger("opsi.general")
 
 
 class SSLContext(object):
-	def __init__(self, sslServerKeyFile, sslServerCertFile, acceptedCiphers=''):
+	def __init__(self, sslServerKeyFile, sslServerCertFile, acceptedCiphers=""):
 		"""
 		Create a context for the usage of SSL in twisted.
 
@@ -33,11 +36,11 @@ is set.
 		self._acceptedCiphers = acceptedCiphers
 
 	def getContext(self):
-		'''
+		"""
 		Get an SSL context.
 
 		:rtype: OpenSSL.SSL.Context
-		'''
+		"""
 
 		# Test if server certificate and key file exist.
 		if not os.path.isfile(self._sslServerKeyFile):

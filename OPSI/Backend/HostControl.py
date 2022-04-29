@@ -15,7 +15,7 @@ import time
 from contextlib import closing
 
 from opsicommon.client.jsonrpc import JSONRPCClient
-from opsicommon.logging import logger
+from opsicommon.logging import get_logger
 from opsicommon.objects import Host
 
 from OPSI import __version__
@@ -33,6 +33,8 @@ from OPSI.Types import (
 from OPSI.Util.Thread import KillableThread
 
 __all__ = ("RpcThread", "ConnectionThread", "HostControlBackend")
+
+logger = get_logger("opsi.general")
 
 
 class RpcThread(KillableThread):  # pylint: disable=too-many-instance-attributes

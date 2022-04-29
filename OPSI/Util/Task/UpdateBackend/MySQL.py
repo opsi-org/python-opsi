@@ -14,15 +14,18 @@ from __future__ import absolute_import
 from collections import namedtuple
 from contextlib import contextmanager
 
-from OPSI.Backend.SQL import DATABASE_SCHEMA_VERSION, createSchemaVersionTable
+from opsicommon.logging import get_logger
+
 from OPSI.Backend.MySQL import MySQL, MySQLBackend
+from OPSI.Backend.SQL import DATABASE_SCHEMA_VERSION, createSchemaVersionTable
 from OPSI.Types import (
-	forceHardwareDeviceId, forceHardwareVendorId, forceLicenseContractId,
-	forceSoftwareLicenseId, forceLicensePoolId
+	forceHardwareDeviceId,
+	forceHardwareVendorId,
+	forceLicenseContractId,
+	forceLicensePoolId,
+	forceSoftwareLicenseId,
 )
 from OPSI.Util.Task.ConfigureBackend import getBackendConfiguration
-
-from opsicommon.logging import logger
 
 from . import BackendUpdateError
 
@@ -30,6 +33,8 @@ __all__ = (
 	'DatabaseMigrationUnfinishedError',
 	'disableForeignKeyChecks', 'getTableColumns', 'updateMySQLBackend'
 )
+
+logger = get_logger("opsi.general")
 
 
 class DatabaseMigrationUnfinishedError(BackendUpdateError):

@@ -7,35 +7,37 @@
 opsi python library - Windows
 """
 
+import difflib
+import locale
 import os
 import re
-import sys
-import time
 import shutil
-import locale
 import socket
-import difflib
 import subprocess
+import sys
 import threading
-from datetime import datetime
-from functools import lru_cache
-from ctypes import (
-	c_ulong,
-	c_char,
-	c_wchar,
-	c_uint,
-	c_ubyte,
-	sizeof,
-	byref,
-	POINTER,
-	Structure,
-	windll,
-)
+import time
 
 # Win32 imports
 # pyright: reportMissingImports=false
 import winreg  # pylint: disable=import-error
+from ctypes import (
+	POINTER,
+	Structure,
+	byref,
+	c_char,
+	c_ubyte,
+	c_uint,
+	c_ulong,
+	c_wchar,
+	sizeof,
+	windll,
+)
+from datetime import datetime
+from functools import lru_cache
+
 import ntsecuritycon  # pylint: disable=import-error
+import pefile
 import pywintypes  # pylint: disable=import-error
 import win32api  # pylint: disable=import-error
 import win32con  # pylint: disable=import-error
@@ -52,11 +54,15 @@ import win32security  # pylint: disable=import-error
 import win32service  # pylint: disable=import-error
 import win32ts  # pylint: disable=import-error
 import win32wnet  # pylint: disable=import-error
-
-import pefile
-
-from opsicommon.logging import logger, secret_filter
-from opsicommon.types import forceBool, forceInt, forceUnicode, forceUnicodeList, forceUnicodeLower, forceFilename
+from opsicommon.logging import get_logger, secret_filter
+from opsicommon.types import (
+	forceBool,
+	forceFilename,
+	forceInt,
+	forceUnicode,
+	forceUnicodeList,
+	forceUnicodeLower,
+)
 
 from OPSI.Exceptions import CommandNotFoundException
 
@@ -142,6 +148,8 @@ MAX_INTERFACE_NAME_LEN = 256
 MAXLEN_IFDESCR = 256
 MAXLEN_PHYSADDR = 8
 MAX_INTERFACES = 32
+
+logger = get_logger("opsi.general")
 
 
 class PROCESSENTRY32(Structure):  # pylint: disable=too-few-public-methods

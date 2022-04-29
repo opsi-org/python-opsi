@@ -9,36 +9,37 @@ This backend works edits the configuration of the DHCPD and restarts
 the daemon afterwards.
 """
 
-import os
-import sys
-import time
 import fcntl
+import os
 import socket
+import sys
 import threading
-from functools import lru_cache
+import time
 from contextlib import contextmanager
+from functools import lru_cache
 
-from opsicommon.logging import logger, secret_filter
+from opsicommon.logging import get_logger, secret_filter
 
 from OPSI import System
 from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import (
-	BackendIOError,
 	BackendBadValueError,
+	BackendIOError,
 	BackendMissingDataError,
 	BackendUnableToConnectError,
 	BackendUnaccomplishableError,
 )
-from OPSI.Object import OpsiClient, Host
+from OPSI.Object import Host, OpsiClient
 from OPSI.Types import forceBool, forceDict, forceHostId, forceObjectClass
-from OPSI.Util.File import DHCPDConfFile
 from OPSI.Util import getfqdn
-
+from OPSI.Util.File import DHCPDConfFile
 
 __all__ = ("DHCPDBackend",)
 
 WAIT_AFTER_RELOAD = 4.0
+
+logger = get_logger("opsi.general")
 
 
 @contextmanager

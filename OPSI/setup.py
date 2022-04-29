@@ -6,15 +6,23 @@
 setup tasks
 """
 
-import pwd
 import grp
+import pwd
 import subprocess
 
-from OPSI.Config import OPSI_ADMIN_GROUP, FILE_ADMIN_GROUP, DEFAULT_DEPOT_USER, DEFAULT_DEPOT_USER_HOME
+from opsicommon.logging import get_logger
+
+from OPSI.Config import (
+	DEFAULT_DEPOT_USER,
+	DEFAULT_DEPOT_USER_HOME,
+	FILE_ADMIN_GROUP,
+	OPSI_ADMIN_GROUP,
+)
 from OPSI.System import get_subprocess_environment
 from OPSI.Util.Task.Rights import set_rights
 
-from opsicommon.logging import logger
+logger = get_logger("opsi.general")
+
 
 def create_group(groupname: str, system: bool = False):
 	logger.notice("Creating group: %s", groupname)
@@ -25,6 +33,7 @@ def create_group(groupname: str, system: bool = False):
 	logger.info("Running command: %s", cmd)
 	subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=get_subprocess_environment())
 
+
 def create_user(username: str, primary_groupname: str, home: str, shell: str, system: bool = False):
 	logger.notice("Creating user: %s", username)
 	cmd = ["useradd", "-g", primary_groupname, "-d", home, "-s", shell]
@@ -34,11 +43,13 @@ def create_user(username: str, primary_groupname: str, home: str, shell: str, sy
 	logger.info("Running command: %s", cmd)
 	subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=get_subprocess_environment())
 
+
 def add_user_to_group(username: str, groupname: str):
 	logger.notice("Adding user '%s' to group '%s'", username, groupname)
 	cmd = ["usermod", "-a", "-G", groupname, username]
 	logger.info("Running command: %s", cmd)
 	subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=get_subprocess_environment())
+
 
 def set_primary_group(username: str, groupname: str):
 	logger.notice("Setting primary group of user '%s' to '%s'", username, groupname)
@@ -46,17 +57,20 @@ def set_primary_group(username: str, groupname: str):
 	logger.info("Running command: %s", cmd)
 	subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=get_subprocess_environment())
 
+
 def get_groups():
 	groups = {}
 	for group in grp.getgrall():
 		groups[group.gr_name] = group
 	return groups
 
+
 def get_users():
 	users = {}
 	for user in pwd.getpwall():
 		users[user.pw_name] = user
 	return users
+
 
 def setup_users_and_groups(ignore_errors: bool = False):
 	logger.info("Setup users and groups")
@@ -65,10 +79,7 @@ def setup_users_and_groups(ignore_errors: bool = False):
 		grp.getgrnam(OPSI_ADMIN_GROUP)
 	except KeyError:
 		try:
-			create_group(
-				groupname=OPSI_ADMIN_GROUP,
-				system=False
-			)
+			create_group(groupname=OPSI_ADMIN_GROUP, system=False)
 		except Exception as err:  # pylint: disable=broad-except
 			if not ignore_errors:
 				raise
@@ -78,10 +89,7 @@ def setup_users_and_groups(ignore_errors: bool = False):
 		grp.getgrnam(FILE_ADMIN_GROUP)
 	except KeyError:
 		try:
-			create_group(
-				groupname=FILE_ADMIN_GROUP,
-				system=True
-			)
+			create_group(groupname=FILE_ADMIN_GROUP, system=True)
 		except Exception as err:  # pylint: disable=broad-except
 			if not ignore_errors:
 				raise
@@ -96,15 +104,17 @@ def setup_users_and_groups(ignore_errors: bool = False):
 				primary_groupname=FILE_ADMIN_GROUP,
 				home=DEFAULT_DEPOT_USER_HOME,
 				shell="/bin/false",
-				system=True
+				system=True,
 			)
 		except Exception as err:  # pylint: disable=broad-except
 			if not ignore_errors:
 				raise
 			logger.info(err)
 
-def setup_file_permissions(path: str = '/'):
+
+def setup_file_permissions(path: str = "/"):
 	set_rights(path)
+
 
 def setup(ignore_errors: bool = False):
 	logger.notice("Running setup")

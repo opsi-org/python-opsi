@@ -10,15 +10,20 @@ import inspect
 import os
 import re
 import types
-from typing import List
 from functools import lru_cache
+from typing import List
 
-from opsicommon.logging import logger
+from opsicommon.logging import get_logger
 
-from OPSI.Backend.Base import ConfigDataBackend, ExtendedConfigDataBackend, getArgAndCallString
+from OPSI.Backend.Base import (
+	ConfigDataBackend,
+	ExtendedConfigDataBackend,
+	getArgAndCallString,
+)
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Backend.HostControlSafe import HostControlSafeBackend
+from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Exceptions import (
 	BackendAuthenticationError,
 	BackendConfigurationError,
@@ -27,13 +32,19 @@ from OPSI.Exceptions import (
 	BackendPermissionDeniedError,
 	BackendUnaccomplishableError,
 )
-from OPSI.Config import OPSI_ADMIN_GROUP
-from OPSI.Object import mandatoryConstructorArgs, BaseObject, Object, OpsiClient, OpsiDepotserver
+from OPSI.Object import (
+	BaseObject,
+	Object,
+	OpsiClient,
+	OpsiDepotserver,
+	mandatoryConstructorArgs,
+)
 from OPSI.Types import forceBool, forceList, forceUnicodeList, forceUnicodeLowerList
 from OPSI.Util.File.Opsi import BackendACLFile, OpsiConfFile
 
-
 __all__ = ("BackendAccessControl",)
+
+logger = get_logger("opsi.general")
 
 
 class UserStore:  # pylint: disable=too-few-public-methods

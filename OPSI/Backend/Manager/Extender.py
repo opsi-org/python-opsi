@@ -16,20 +16,25 @@ import os
 import types
 from functools import lru_cache
 
-from opsicommon.logging import logger
+from opsicommon.logging import get_logger
 
 from OPSI.Backend.Base import ExtendedBackend
 from OPSI.Backend.Manager.AccessControl import BackendAccessControl
-from OPSI.Exceptions import BackendConfigurationError
 from OPSI.Exceptions import *  # this is needed for dynamic extension loading  # pylint: disable=wildcard-import,unused-wildcard-import
+from OPSI.Exceptions import BackendConfigurationError
 from OPSI.Object import *  # this is needed for dynamic extension loading  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Types import *  # this is needed for dynamic extension loading  # pylint: disable=wildcard-import,unused-wildcard-import
-from OPSI.Util import objectToBeautifiedText, getfqdn  # used in extensions  # pylint: disable=unused-import
+from OPSI.Util import (  # used in extensions  # pylint: disable=unused-import
+	getfqdn,
+	objectToBeautifiedText,
+)
 
-from .Dispatcher import BackendDispatcher
 from .. import deprecated  # used in extensions  # pylint: disable=unused-import
+from .Dispatcher import BackendDispatcher
 
 __all__ = ('BackendExtender', )
+
+logger = get_logger("opsi.general")
 
 
 class BackendExtender(ExtendedBackend):

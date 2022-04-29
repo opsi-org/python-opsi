@@ -11,15 +11,16 @@ Functionality to automatically configure an OPSI MySQL backend.
 from contextlib import closing, contextmanager
 
 import MySQLdb
+from opsicommon.logging import get_logger
 
 import OPSI.Util.Task.ConfigureBackend as backendUtils
 from OPSI.Backend.MySQL import MySQLBackend
 
-from opsicommon.logging import logger
-
 DATABASE_EXISTS_ERROR_CODE = 1007
 ACCESS_DENIED_ERROR_CODE = 1044
 INVALID_DEFAULT_VALUE = 1067
+
+logger = get_logger("opsi.general")
 
 
 class DatabaseConnectionFailedException(Exception):

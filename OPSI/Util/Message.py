@@ -11,16 +11,21 @@ Working with subjects and progress information.
 import json
 import threading
 import time
+
+from opsicommon.logging import get_logger
+from twisted.internet import defer, reactor
+from twisted.internet.protocol import ClientFactory, ServerFactory
 from twisted.protocols.basic import LineReceiver
-from twisted.internet.protocol import ServerFactory, ClientFactory
-from twisted.internet import reactor, defer
 
 from OPSI.Types import (
-	forceBool, forceInt, forceIntList, forceIpAddress,
-	forceList, forceUnicode, forceUnicodeList
+	forceBool,
+	forceInt,
+	forceIntList,
+	forceIpAddress,
+	forceList,
+	forceUnicode,
+	forceUnicodeList,
 )
-
-from opsicommon.logging import logger
 
 __all__ = (
 	'Subject', 'MessageSubject', 'ChoiceSubject', 'ProgressSubject',
@@ -30,6 +35,8 @@ __all__ = (
 	'NotificationServer', 'NotificationClientProtocol',
 	'NotificationClientFactory', 'NotificationClient'
 )
+
+logger = get_logger("opsi.general")
 
 
 class Subject:

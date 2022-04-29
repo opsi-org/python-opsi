@@ -16,13 +16,15 @@ import os.path
 import time
 from contextlib import contextmanager
 
-from OPSI.Util.Task.ConfigureBackend import getBackendConfiguration
+from opsicommon.logging import get_logger
 
-from opsicommon.logging import logger
+from OPSI.Util.Task.ConfigureBackend import getBackendConfiguration
 
 from . import BackendUpdateError
 
-__all__ = ('FileBackendUpdateError', 'updateFileBackend')
+__all__ = ("FileBackendUpdateError", "updateFileBackend")
+
+logger = get_logger("opsi.general")
 
 
 class FileBackendUpdateError(BackendUpdateError):
@@ -31,10 +33,7 @@ class FileBackendUpdateError(BackendUpdateError):
 	"""
 
 
-def updateFileBackend(
-	backendConfigFile='/etc/opsi/backends/file.conf',
-	additionalBackendConfiguration={}
-):
+def updateFileBackend(backendConfigFile="/etc/opsi/backends/file.conf", additionalBackendConfiguration={}):
 	"""
 	Applies migrations to the file-based backend.
 
@@ -51,7 +50,7 @@ read from `backendConfigFile`.
 	config.update(additionalBackendConfiguration)
 	logger.info("Current file backend config: %s", config)
 
-	baseDirectory = config['baseDir']
+	baseDirectory = config["baseDir"]
 	schemaVersion = readBackendVersion(baseDirectory)
 
 	if schemaVersion is None:
@@ -85,10 +84,10 @@ started but never ended.
 		return None
 
 	for version, info in schemaConfig.items():
-		if 'start' not in info:
+		if "start" not in info:
 			raise FileBackendUpdateError(f"Update {version} gone wrong: start time missing.")
 
-		if 'end' not in info:
+		if "end" not in info:
 			raise FileBackendUpdateError(f"Update {version} gone wrong: end time missing.")
 
 	maximumVersion = max(schemaConfig)
@@ -124,14 +123,14 @@ def updateBackendVersion(baseDirectory, version):
 
 def _readVersionFile(baseDirectory):
 	"""
-	Read the version information from the file in `baseDirectory`.
+		Read the version information from the file in `baseDirectory`.
 
-	:param baseDirectory: The base directory of the backend.
-	:type baseDirectory: str
-	:return: The complete backend information. The key is the version,
-the value is a dict with two keys: `start` holds information about the
-time the update was started and `end` about the time the update finished.
-	:rtype: {int: {str: float}}
+		:param baseDirectory: The base directory of the backend.
+		:type baseDirectory: str
+		:return: The complete backend information. The key is the version,
+	the value is a dict with two keys: `start` holds information about the
+	time the update was started and `end` about the time the update finished.
+		:rtype: {int: {str: float}}
 	"""
 	schemaConfigFile = getVersionFilePath(baseDirectory)
 
@@ -156,7 +155,7 @@ def getVersionFilePath(baseDirectory):
 	:type baseDirectory: str
 	:rtype: str
 	"""
-	return os.path.join(os.path.dirname(baseDirectory), 'config', 'schema.json')
+	return os.path.join(os.path.dirname(baseDirectory), "config", "schema.json")
 
 
 def _writeVersionFile(baseDirectory, versionInfo):
@@ -170,5 +169,5 @@ def _writeVersionFile(baseDirectory, versionInfo):
 	"""
 	schemaConfigFile = getVersionFilePath(baseDirectory)
 
-	with open(schemaConfigFile, 'w', encoding="utf-8") as destination:
+	with open(schemaConfigFile, "w", encoding="utf-8") as destination:
 		json.dump(versionInfo, destination)

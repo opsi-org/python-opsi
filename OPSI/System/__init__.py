@@ -18,7 +18,9 @@ import os
 import platform
 import shutil
 
-from opsicommon.logging import logger
+from opsicommon.logging import get_logger
+
+logger = get_logger("opsi.general")
 
 from OPSI.Types import forceFilename
 from OPSI.Util import formatFileSize

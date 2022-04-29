@@ -13,7 +13,7 @@ import re
 import types
 from functools import lru_cache
 
-from opsicommon.logging import logger
+from opsicommon.logging import get_logger
 
 from OPSI.Backend.Base import Backend, ConfigDataBackend, getArgAndCallString
 from OPSI.Backend.Base.Extended import ExtendedConfigDataBackend
@@ -25,6 +25,8 @@ from OPSI.Util.File.Opsi import BackendDispatchConfigFile
 from .Config import loadBackendConfig
 
 __all__ = ("BackendDispatcher",)
+
+logger = get_logger("opsi.general")
 
 
 class BackendDispatcher(Backend):

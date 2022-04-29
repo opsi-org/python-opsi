@@ -8,11 +8,13 @@ Authentication helper.
 
 from typing import Set
 
-from opsicommon.logging import logger
+from opsicommon.logging import get_logger
 
-from OPSI.Exceptions import BackendAuthenticationError
 from OPSI.Config import OPSI_ADMIN_GROUP
+from OPSI.Exceptions import BackendAuthenticationError
 from OPSI.Util.File.Opsi import OpsiConfFile
+
+logger = get_logger("opsi.general")
 
 
 class AuthenticationModule:
@@ -32,7 +34,7 @@ class AuthenticationModule:
 		return OPSI_ADMIN_GROUP
 
 	def get_read_only_groupnames(self) -> Set[str]:  # pylint: disable=no-self-use
-		return set(OpsiConfFile().getOpsiGroups('readonly') or [])
+		return set(OpsiConfFile().getOpsiGroups("readonly") or [])
 
 	def user_is_admin(self, username: str) -> bool:
 		return self.get_admin_groupname() in self.get_groupnames(username)

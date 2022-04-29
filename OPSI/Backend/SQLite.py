@@ -10,17 +10,18 @@ import os
 import sqlite3
 import threading
 
+from opsicommon.logging import get_logger
 from sqlalchemy import create_engine
 from sqlalchemy.event import listen
-from sqlalchemy.orm import sessionmaker, scoped_session
-
-from opsicommon.logging import logger
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 from OPSI.Types import forceFilename
 
-
 __all__ = ('SQLite', 'SQLiteBackend', 'SQLiteObjectBackendModificationTracker')
+
+
+logger = get_logger("opsi.general")
 
 
 class SQLite(SQL):

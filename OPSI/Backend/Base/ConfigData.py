@@ -20,7 +20,7 @@ import time
 from functools import lru_cache
 
 from opsicommon.license import get_default_opsi_license_pool
-from opsicommon.logging import logger, secret_filter
+from opsicommon.logging import get_logger, secret_filter
 
 from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Exceptions import (
@@ -92,6 +92,9 @@ OPSI_HARDWARE_CLASSES = []
 DEFAULT_MAX_LOG_SIZE = 5000000
 DEFAULT_KEEP_ROTATED_LOGS = 0
 LOG_SIZE_HARD_LIMIT = 10000000
+
+
+logger = get_logger("opsi.general")
 
 
 class ConfigDataBackend(Backend):  # pylint: disable=too-many-public-methods

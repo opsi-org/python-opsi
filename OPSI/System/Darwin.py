@@ -12,56 +12,137 @@ import os
 import re
 import subprocess
 import time
-from typing import Dict, List, Any
-import pexpect
+from typing import Any, Dict, List
 
-from OPSI.Types import forceUnicode, forceFilename
-from OPSI.Util import  objectToBeautifiedText, removeUnit
+import pexpect
+from opsicommon.logging import get_logger
+
 from OPSI.System import Posix
 from OPSI.System.Posix import (
 	CommandNotFoundException,
-	Distribution, Harddisk, NetworkPerformanceCounter, SysInfo,
-	SystemSpecificHook, addSystemHook, auditHardware,
-	configureInterface, daemonize, execute, get_subprocess_environment, getActiveConsoleSessionId,
-	getActiveSessionId, getActiveSessionInformation, getSessionInformation, getBlockDeviceBusType,
-	getBlockDeviceContollerInfo, getDHCPDRestartCommand, getDHCPResult,
-	getDHCPServiceName, getDefaultNetworkInterfaceName, getDiskSpaceUsage,
-	getEthernetDevices, getFQDN, getHarddisks, getHostname,
-	getKernelParams, getNetworkDeviceConfig, getNetworkInterfaces,
-	getSambaServiceName, getServiceNames, getSystemProxySetting, halt,
-	hardwareExtendedInventory, hooks, ifconfig,
-	isCentOS, isDebian, isOpenSUSE, isRHEL, isSLES,
-	isUCS, isUbuntu, locateDHCPDConfig,
-	locateDHCPDInit, reboot, removeSystemHook,
-	runCommandInSession, setLocalSystemTime, shutdown,
-	terminateProcess, umount, which
+	Distribution,
+	Harddisk,
+	NetworkPerformanceCounter,
+	SysInfo,
+	SystemSpecificHook,
+	addSystemHook,
+	auditHardware,
+	configureInterface,
+	daemonize,
+	execute,
+	get_subprocess_environment,
+	getActiveConsoleSessionId,
+	getActiveSessionId,
+	getActiveSessionInformation,
+	getBlockDeviceBusType,
+	getBlockDeviceContollerInfo,
+	getDefaultNetworkInterfaceName,
+	getDHCPDRestartCommand,
+	getDHCPResult,
+	getDHCPServiceName,
+	getDiskSpaceUsage,
+	getEthernetDevices,
+	getFQDN,
+	getHarddisks,
+	getHostname,
+	getKernelParams,
+	getNetworkDeviceConfig,
+	getNetworkInterfaces,
+	getSambaServiceName,
+	getServiceNames,
+	getSessionInformation,
+	getSystemProxySetting,
+	halt,
+	hardwareExtendedInventory,
+	hooks,
+	ifconfig,
+	isCentOS,
+	isDebian,
+	isOpenSUSE,
+	isRHEL,
+	isSLES,
+	isUbuntu,
+	isUCS,
+	locateDHCPDConfig,
+	locateDHCPDInit,
+	reboot,
+	removeSystemHook,
+	runCommandInSession,
+	setLocalSystemTime,
+	shutdown,
+	terminateProcess,
+	umount,
+	which,
 )
-
-from opsicommon.logging import logger
+from OPSI.Types import forceFilename, forceUnicode
+from OPSI.Util import objectToBeautifiedText, removeUnit
 
 HIERARCHY_SEPARATOR = "//"
 
 __all__ = (
-	'CommandNotFoundException',
-	'Distribution', 'Harddisk', 'NetworkPerformanceCounter', 'SysInfo',
-	'SystemSpecificHook', 'addSystemHook', 'auditHardware',
-	'configureInterface', 'daemonize', 'execute', 'get_subprocess_environment', 'getActiveConsoleSessionId',
-	'getActiveSessionId', 'getActiveSessionIds', 'getActiveSessionInformation', 'getSessionInformation',
-	'getBlockDeviceBusType',
-	'getBlockDeviceContollerInfo', 'getDHCPDRestartCommand', 'getDHCPResult',
-	'getDHCPServiceName', 'getDefaultNetworkInterfaceName', 'getDiskSpaceUsage',
-	'getEthernetDevices', 'getFQDN', 'getHarddisks', 'getHostname',
-	'getKernelParams', 'getNetworkDeviceConfig', 'getNetworkInterfaces',
-	'getSambaServiceName', 'getServiceNames', 'getSystemProxySetting', 'halt',
-	'hardwareExtendedInventory', 'hardwareInventory', 'hooks', 'ifconfig',
-	'isCentOS', 'isDebian', 'isOpenSUSE', 'isRHEL', 'isSLES',
-	'isUCS', 'isUbuntu', 'locateDHCPDConfig',
-	'locateDHCPDInit', 'mount', 'reboot', 'removeSystemHook',
-	'runCommandInSession', 'setLocalSystemTime', 'shutdown',
-	'terminateProcess', 'umount', 'which'
+	"CommandNotFoundException",
+	"Distribution",
+	"Harddisk",
+	"NetworkPerformanceCounter",
+	"SysInfo",
+	"SystemSpecificHook",
+	"addSystemHook",
+	"auditHardware",
+	"configureInterface",
+	"daemonize",
+	"execute",
+	"get_subprocess_environment",
+	"getActiveConsoleSessionId",
+	"getActiveSessionId",
+	"getActiveSessionIds",
+	"getActiveSessionInformation",
+	"getSessionInformation",
+	"getBlockDeviceBusType",
+	"getBlockDeviceContollerInfo",
+	"getDHCPDRestartCommand",
+	"getDHCPResult",
+	"getDHCPServiceName",
+	"getDefaultNetworkInterfaceName",
+	"getDiskSpaceUsage",
+	"getEthernetDevices",
+	"getFQDN",
+	"getHarddisks",
+	"getHostname",
+	"getKernelParams",
+	"getNetworkDeviceConfig",
+	"getNetworkInterfaces",
+	"getSambaServiceName",
+	"getServiceNames",
+	"getSystemProxySetting",
+	"halt",
+	"hardwareExtendedInventory",
+	"hardwareInventory",
+	"hooks",
+	"ifconfig",
+	"isCentOS",
+	"isDebian",
+	"isOpenSUSE",
+	"isRHEL",
+	"isSLES",
+	"isUCS",
+	"isUbuntu",
+	"locateDHCPDConfig",
+	"locateDHCPDInit",
+	"mount",
+	"reboot",
+	"removeSystemHook",
+	"runCommandInSession",
+	"setLocalSystemTime",
+	"shutdown",
+	"terminateProcess",
+	"umount",
+	"which",
 )
 
-def set_tree_value(mydict: Dict, key_list : List, last_key : str, value : str) -> None:
+logger = get_logger("opsi.general")
+
+
+def set_tree_value(mydict: Dict, key_list: List, last_key: str, value: str) -> None:
 	"""
 	Assigns value to dict tree leaf.
 
@@ -89,7 +170,8 @@ def set_tree_value(mydict: Dict, key_list : List, last_key : str, value : str) -
 			subdict = sub
 	subdict[last_key] = value
 
-def get_tree_value(mydict : Dict, key_string : str) -> Any:
+
+def get_tree_value(mydict: Dict, key_string: str) -> Any:
 	"""
 	Obtain certain dictionary value.
 
@@ -112,6 +194,7 @@ def get_tree_value(mydict : Dict, key_string : str) -> Any:
 			return None
 		subdict = sub
 	return subdict
+
 
 def parse_profiler_output(lines: List) -> Dict:
 	"""
@@ -136,19 +219,20 @@ def parse_profiler_output(lines: List) -> Dict:
 		if len(parts) < 2:
 			continue
 
-		while indent <= indent_list[-1]:	# walk up tree
+		while indent <= indent_list[-1]:  # walk up tree
 			indent_list.pop()
 			key_list.pop()
-		if parts[1] == "":					# branch new subtree ...
+		if parts[1] == "":  # branch new subtree ...
 			indent_list.append(indent)
 			key_list.append(parts[0])
-		else:								# ... or fill in leaf
+		else:  # ... or fill in leaf
 			value = parts[1].strip(",")
 			value = removeUnit(value)
 			set_tree_value(hwdata, key_list, parts[0], value)
 	return hwdata
 
-def parse_sysctl_output(lines : List) -> Dict:
+
+def parse_sysctl_output(lines: List) -> Dict:
 	"""
 	Parses the output of sysctl -a.
 
@@ -164,12 +248,13 @@ def parse_sysctl_output(lines : List) -> Dict:
 	"""
 	hwdata = {}
 	for line in lines:
-		key_string, value = line.split(':', 1)
-		key_list = key_string.split('.')
+		key_string, value = line.split(":", 1)
+		key_list = key_string.split(".")
 		set_tree_value(hwdata, key_list[:-1], key_list[-1], value.strip())
 	return hwdata
 
-def parse_ioreg_output(lines : List) -> Dict:
+
+def parse_ioreg_output(lines: List) -> Dict:
 	"""
 	Parses the output of ioreg -l.
 
@@ -193,21 +278,24 @@ def parse_ioreg_output(lines : List) -> Dict:
 		indent = line.find("+-o ")
 		parts = [x.strip() for x in line.split("=", 1)]
 
-		if indent == -1: # fill in leafs
+		if indent == -1:  # fill in leafs
 			if len(parts) == 2:
 				value = removeUnit(parts[1])
 				set_tree_value(hwdata, key_list, parts[0], value)
 			continue
 
-		while indent <= indent_list[-1]: # walk up tree
+		while indent <= indent_list[-1]:  # walk up tree
 			indent_list.pop()
 			key_list.pop()
-		indent_list.append(indent) # branch new subtree
-		key = parts[0][indent+3:].split("<")[0]
+		indent_list.append(indent)  # branch new subtree
+		key = parts[0][indent + 3 :].split("<")[0]
 		key_list.append(key.strip())
 	return hwdata
 
-def hardwareInventory(config, progressSubject=None):  # pylint: disable=unused-argument, too-many-locals, too-many-branches, too-many-statements
+
+def hardwareInventory(
+	config, progressSubject=None
+):  # pylint: disable=unused-argument, too-many-locals, too-many-branches, too-many-statements
 	"""
 	Collect hardware information on OSX.
 
@@ -280,10 +368,10 @@ def hardwareInventory(config, progressSubject=None):  # pylint: disable=unused-a
 
 	# Build hw info structure
 	for hwClass in config:  # pylint: disable=too-many-nested-blocks
-		if not hwClass.get('Class'):
+		if not hwClass.get("Class"):
 			continue
-		opsiClass = hwClass['Class'].get('Opsi')
-		osxClass = hwClass['Class'].get('OSX')
+		opsiClass = hwClass["Class"].get("Opsi")
+		osxClass = hwClass["Class"].get("OSX")
 
 		if osxClass is None or opsiClass is None:
 			continue
@@ -291,14 +379,14 @@ def hardwareInventory(config, progressSubject=None):  # pylint: disable=unused-a
 		logger.info("Processing class '%s' : '%s'", opsiClass, osxClass)
 		opsiValues[opsiClass] = []
 
-		command, section = osxClass.split(']', 1)
+		command, section = osxClass.split("]", 1)
 		command = command[1:]
-		for singleclass in section.split('|'):
+		for singleclass in section.split("|"):
 			(filterAttr, filterExp) = (None, None)
-			if ':' in singleclass:
-				(singleclass, filter_string) = singleclass.split(':', 1)
-				if '.' in filter_string:
-					(filterAttr, filterExp) = filter_string.split('.', 1)
+			if ":" in singleclass:
+				(singleclass, filter_string) = singleclass.split(":", 1)
+				if "." in filter_string:
+					(filterAttr, filterExp) = filter_string.split(".", 1)
 
 			singleclassdata = None
 			if command == "profiler":
@@ -306,7 +394,7 @@ def hardwareInventory(config, progressSubject=None):  # pylint: disable=unused-a
 				singleclassdata = get_tree_value(profiler, singleclass)
 			elif command == "sysctl":
 				# produce dictionary with only contents from key singleclass
-				singleclassdata = { singleclass : get_tree_value(systcl, singleclass) }
+				singleclassdata = {singleclass: get_tree_value(systcl, singleclass)}
 			elif command == "ioreg":
 				# produce dictionary with only contents from key singleclass
 				singleclassdata = get_tree_value(ioreg, singleclass)
@@ -319,36 +407,39 @@ def hardwareInventory(config, progressSubject=None):  # pylint: disable=unused-a
 				if filterAttr and dev.get(filterAttr) and not eval(f"str(dev.get(filterAttr)).{filterExp}"):  # pylint: disable=eval-used
 					continue
 				device = {}
-				for attribute in hwClass['Values']:
-					if not attribute.get('OSX'):
+				for attribute in hwClass["Values"]:
+					if not attribute.get("OSX"):
 						continue
-					for aname in attribute['OSX'].split('||'):
+					for aname in attribute["OSX"].split("||"):
 						aname = aname.strip()
 						method = None
-						if '.' in aname:
-							(aname, method) = aname.split('.', 1)
+						if "." in aname:
+							(aname, method) = aname.split(".", 1)
 						value = get_tree_value(dev, aname)
 
 						if method:
 							try:
 								logger.debug("Eval: %s.%s", value, method)
-								device[attribute['Opsi']] = eval(f"value.{method}")  # pylint: disable=eval-used
+								device[attribute["Opsi"]] = eval(f"value.{method}")  # pylint: disable=eval-used
 							except Exception as err:  # pylint: disable=broad-except
-								device[attribute['Opsi']] = ''
+								device[attribute["Opsi"]] = ""
 								logger.warning("Class %s: Failed to excecute '%s.%s': %s", opsiClass, value, method, err)
 						else:
-							device[attribute['Opsi']] = value
-						if device[attribute['Opsi']]:
+							device[attribute["Opsi"]] = value
+						if device[attribute["Opsi"]]:
 							break
 				device["state"] = "1"
 				device["type"] = "AuditHardwareOnHost"
-				opsiValues[hwClass['Class']['Opsi']].append(device)
+				opsiValues[hwClass["Class"]["Opsi"]].append(device)
 
-	opsiValues['SCANPROPERTIES'] = [{"scantime": time.strftime("%Y-%m-%d %H:%M:%S")}]
+	opsiValues["SCANPROPERTIES"] = [{"scantime": time.strftime("%Y-%m-%d %H:%M:%S")}]
 	logger.debug("Result of hardware inventory:")
 	logger.debug(objectToBeautifiedText(opsiValues))
 	return opsiValues
+
+
 Posix.hardwareInventory = hardwareInventory
+
 
 def getActiveSessionIds():
 	"""
@@ -362,7 +453,10 @@ def getActiveSessionIds():
 	:rtype: [int, ]
 	"""
 	return [1]
+
+
 Posix.getActiveSessionIds = getActiveSessionIds
+
 
 def is_mounted(devOrMountpoint):
 	for line in execute("mount"):
@@ -371,7 +465,10 @@ def is_mounted(devOrMountpoint):
 		if match and devOrMountpoint.lower() in (match.group(1), match.group(2)):
 			return True
 	return False
+
+
 Posix.is_mounted = is_mounted
+
 
 def mount(dev, mountpoint, **options):
 	dev = forceUnicode(dev)
@@ -386,14 +483,14 @@ def mount(dev, mountpoint, **options):
 	for (key, value) in options.items():
 		options[key] = forceUnicode(value)
 
-	if dev.lower().startswith(('smb://', 'cifs://')):
+	if dev.lower().startswith(("smb://", "cifs://")):
 		# mount_smbfs '//<domain>;<username>[:<password>]@<server>/<share>' /mountpoint
-		match = re.search(r'^(smb|cifs)://([^/]+)/([^/].*)$', dev, re.IGNORECASE)
+		match = re.search(r"^(smb|cifs)://([^/]+)/([^/].*)$", dev, re.IGNORECASE)
 		if match:
 			server = match.group(2)
 			share = match.group(3)
 			username = re.sub(r"\\+", r"\\", options.get("username", "guest")).replace("\\", ";")
-			password = options.get("password")	#no urlencode needed for stdin
+			password = options.get("password")  # no urlencode needed for stdin
 
 			try:
 				# mount_smbfs on macos only reads password from stdin -> expect script
@@ -411,4 +508,6 @@ def mount(dev, mountpoint, **options):
 			raise ValueError(f"Bad smb/cifs uri '{dev}'")
 	else:
 		raise ValueError(f"Cannot mount unknown fs type '{dev}'")
+
+
 Posix.mount = mount

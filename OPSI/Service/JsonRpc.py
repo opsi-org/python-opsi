@@ -13,11 +13,14 @@ import sys
 import time
 import traceback
 
+from opsicommon.logging import get_logger
+
 from OPSI.Exceptions import OpsiBadRpcError, OpsiRpcError
 from OPSI.Types import forceUnicode
 from OPSI.Util import deserialize
 
-from opsicommon.logging import logger
+logger = get_logger("opsi.general")
+
 
 class JsonRpc:  # pylint: disable=too-many-instance-attributes
 	def __init__(self, instance, interface, rpc):

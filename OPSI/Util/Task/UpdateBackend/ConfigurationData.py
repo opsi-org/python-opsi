@@ -8,11 +8,13 @@ Updating backend data.
 This holds backend-independent migrations.
 """
 
+from opsicommon.logging import get_logger
+
 from OPSI.System.Posix import isOpenSUSE, isSLES
 
-from opsicommon.logging import logger
+__all__ = ("updateBackendData",)
 
-__all__ = ('updateBackendData', )
+logger = get_logger("opsi.general")
 
 
 def updateBackendData(backend):
@@ -34,10 +36,10 @@ def setDefaultWorkbenchLocation(backend):
 
 	if isSLES() or isOpenSUSE():
 		# On Suse
-		localWorkbenchPath = 'file:///var/lib/opsi/workbench'
+		localWorkbenchPath = "file:///var/lib/opsi/workbench"
 	else:
 		# On non-SUSE systems the path was usually /home/opsiproducts
-		localWorkbenchPath = 'file:///home/opsiproducts'
+		localWorkbenchPath = "file:///home/opsiproducts"
 
 	changedServers = set()
 	for server in servers:
@@ -48,7 +50,7 @@ def setDefaultWorkbenchLocation(backend):
 
 		if server.getWorkbenchRemoteUrl() is None:
 			depotAddress = getServerAddress(server.depotRemoteUrl)
-			remoteWorkbenchPath = f'smb://{depotAddress}/opsi_workbench'
+			remoteWorkbenchPath = f"smb://{depotAddress}/opsi_workbench"
 			logger.notice("Setting missing value for workbenchRemoteUrl on %s to %s", server.id, remoteWorkbenchPath)
 			server.setWorkbenchRemoteUrl(remoteWorkbenchPath)
 			changedServers.add(server)
@@ -65,5 +67,5 @@ def getServerAddress(depotRemoteUrl):
 	:type depotRemoteUrl: str
 	:rtype: str
 	"""
-	_, addressAndPath = depotRemoteUrl.split(':')
-	return addressAndPath.split('/')[2]
+	_, addressAndPath = depotRemoteUrl.split(":")
+	return addressAndPath.split("/")[2]

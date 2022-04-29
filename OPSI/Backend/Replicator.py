@@ -8,14 +8,16 @@ Backend-Replicator.
 The replicator allows replication from one backend into another.
 """
 
+from opsicommon.logging import get_logger
+
 from OPSI.Backend.Base import ExtendedConfigDataBackend
 from OPSI.Object import *
 from OPSI.Types import forceBool, forceHostId, forceList
 from OPSI.Util.Message import ProgressSubject
 
-from opsicommon.logging import logger
-
 __all__ = ('BackendReplicator', )
+
+logger = get_logger("opsi.general")
 
 
 class BackendReplicator:

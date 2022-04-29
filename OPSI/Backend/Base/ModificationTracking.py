@@ -6,13 +6,16 @@
 Backend that tracks modifications.
 """
 
-from opsicommon.logging import logger
+from opsicommon.logging import get_logger
 
 from .Extended import ExtendedBackend
 
 __all__ = (
 	'ModificationTrackingBackend', 'BackendModificationListener'
 )
+
+
+logger = get_logger("opsi.general")
 
 
 class ModificationTrackingBackend(ExtendedBackend):

@@ -10,23 +10,22 @@ import re
 import time
 from urllib.parse import quote, urlencode
 
+from opsicommon.logging import get_logger, secret_filter
 from sqlalchemy import create_engine
 from sqlalchemy.event import listen
-from sqlalchemy.orm import sessionmaker, scoped_session
-
-from opsicommon.logging import logger, secret_filter
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 from OPSI.Backend.Base import ConfigDataBackend
-from OPSI.Backend.SQL import (
-	SQL, SQLBackend, SQLBackendObjectModificationTracker
-)
-from OPSI.Types import forceInt, forceUnicode, forceHostIdList
-from OPSI.Util import compareVersions
+from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 from OPSI.Object import Product, ProductProperty
+from OPSI.Types import forceHostIdList, forceInt, forceUnicode
+from OPSI.Util import compareVersions
 
 __all__ = (
 	'MySQL', 'MySQLBackend', 'MySQLBackendObjectModificationTracker'
 )
+
+logger = get_logger("opsi.general")
 
 
 def retry_on_deadlock(func):

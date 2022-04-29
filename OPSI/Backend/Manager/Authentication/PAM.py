@@ -6,17 +6,19 @@
 PAM authentication.
 """
 
-from typing import Set
 import grp
-import pwd
 import os
-import pam
+import pwd
+from typing import Set
 
-from opsicommon.logging import logger
+import pam
+from opsicommon.logging import get_logger
 
 from OPSI.Backend.Manager.Authentication import AuthenticationModule
 from OPSI.Exceptions import BackendAuthenticationError
-from OPSI.System.Posix import isRHEL, isCentOS, isOpenSUSE, isSLES
+from OPSI.System.Posix import isCentOS, isOpenSUSE, isRHEL, isSLES
+
+logger = get_logger("opsi.general")
 
 
 class PAMAuthentication(AuthenticationModule):
@@ -26,19 +28,19 @@ class PAMAuthentication(AuthenticationModule):
 		if not self._pam_service:
 			if os.path.exists("/etc/pam.d/opsi-auth"):
 				# Prefering our own - if present.
-				self._pam_service = 'opsi-auth'
+				self._pam_service = "opsi-auth"
 			elif isSLES() or isOpenSUSE():
-				self._pam_service = 'sshd'
+				self._pam_service = "sshd"
 			elif isCentOS() or isRHEL():
-				self._pam_service = 'system-auth'
+				self._pam_service = "system-auth"
 			else:
-				self._pam_service = 'common-auth'
+				self._pam_service = "common-auth"
 
 	def get_instance(self):
 		return PAMAuthentication(self._pam_service)
 
 	def authenticate(self, username: str, password: str) -> None:
-		'''
+		"""
 		Authenticate a user by PAM (Pluggable Authentication Modules).
 		Important: the uid running this code needs access to /etc/shadow
 		if os uses traditional unix authentication mechanisms.
@@ -46,7 +48,7 @@ class PAMAuthentication(AuthenticationModule):
 		:param service: The PAM service to use. Leave None for autodetection.
 		:type service: str
 		:raises BackendAuthenticationError: If authentication fails.
-		'''
+		"""
 		logger.confidential("Trying to authenticate user %s with password %s by PAM", username, password)
 		logger.trace("Attempting PAM authentication as user %s (service=%s)...", username, self._pam_service)
 
@@ -58,9 +60,7 @@ class PAMAuthentication(AuthenticationModule):
 
 			logger.trace("PAM authentication successful.")
 		except Exception as err:
-			raise BackendAuthenticationError(
-				f"PAM authentication failed for user '{username}': {err}"
-			) from err
+			raise BackendAuthenticationError(f"PAM authentication failed for user '{username}': {err}") from err
 
 	def get_groupnames(self, username: str) -> Set[str]:
 		"""

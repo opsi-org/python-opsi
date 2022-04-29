@@ -10,18 +10,20 @@ It tracks all the present sessions.
 Sessions do timeout after a specified time.
 """
 
-import time
 import threading
+import time
 
-from opsicommon.logging import logger
+from opsicommon.logging import get_logger
 
 from OPSI.Exceptions import OpsiAuthenticationError
 from OPSI.Types import forceInt, forceUnicode
 from OPSI.Util import randomString
 
+logger = get_logger("opsi.general")
+
 
 class Session:  # pylint: disable=too-many-instance-attributes
-	def __init__(self, sessionHandler, name='OPSISID', sessionMaxInactiveInterval=120):
+	def __init__(self, sessionHandler, name="OPSISID", sessionMaxInactiveInterval=120):
 		self.sessionHandler = sessionHandler
 		self.name = forceUnicode(name)
 		self.sessionMaxInactiveInterval = forceInt(sessionMaxInactiveInterval)
@@ -29,11 +31,11 @@ class Session:  # pylint: disable=too-many-instance-attributes
 		self.lastModified = time.time()
 		self.sessionTimer = None
 		self.uid = randomString(32)
-		self.ip = ''  # pylint: disable=invalid-name
-		self.userAgent = ''
-		self.hostname = ''
-		self.user = ''
-		self.password = ''
+		self.ip = ""  # pylint: disable=invalid-name
+		self.userAgent = ""
+		self.hostname = ""
+		self.user = ""
+		self.password = ""
 		self.authenticated = False
 		self.postpath = []
 		self.usageCount = 0
@@ -110,7 +112,7 @@ class Session:  # pylint: disable=too-many-instance-attributes
 
 
 class SessionHandler:
-	def __init__(self, sessionName='OPSISID', sessionMaxInactiveInterval=120, maxSessionsPerIp=0, sessionDeletionTimeout=60):
+	def __init__(self, sessionName="OPSISID", sessionMaxInactiveInterval=120, maxSessionsPerIp=0, sessionDeletionTimeout=60):
 		self.sessionName = forceUnicode(sessionName)
 		self.sessionMaxInactiveInterval = forceInt(sessionMaxInactiveInterval)
 		self.maxSessionsPerIp = forceInt(maxSessionsPerIp)
@@ -140,14 +142,14 @@ the value holds the sesion.
 			session = self.sessions.get(uid)
 			if session:
 				if session.getMarkedForDeletion():
-					logger.info('Session found but marked for deletion')
+					logger.info("Session found but marked for deletion")
 				else:
 					# Set last modified to current time
 					session.increaseUsageCount()
 					logger.confidential("Returning session: %s (count: %d)", session.uid, session.usageCount)
 					return session
 			else:
-				logger.info('Failed to get session: session id %s not found', uid)
+				logger.info("Failed to get session: session id %s not found", uid)
 
 		if ip and self.maxSessionsPerIp > 0:
 			sessions = self.getSessions(ip)
@@ -175,7 +177,10 @@ the value holds the sesion.
 	def sessionExpired(self, session):
 		logger.notice(
 			"Session '%s' from ip '%s', application '%s' expired after %d seconds",
-			session.uid, session.ip, session.userAgent, (time.time() - session.lastModified)
+			session.uid,
+			session.ip,
+			session.userAgent,
+			(time.time() - session.lastModified),
 		)
 
 		if session.usageCount > 0:
@@ -192,10 +197,7 @@ the value holds the sesion.
 			timeout -= sleepInSeconds
 
 		if timeout == 0:
-			logger.warning(
-				"Session '%s': timeout occurred while waiting for session to get free for deletion",
-				session.uid
-			)
+			logger.warning("Session '%s': timeout occurred while waiting for session to get free for deletion", session.uid)
 
 		self.deleteSession(session.uid)
 		return True
@@ -203,7 +205,7 @@ the value holds the sesion.
 	def deleteSession(self, uid):
 		session = self.sessions.get(uid)
 		if not session:
-			logger.warning('No such session id: %s', uid)
+			logger.warning("No such session id: %s", uid)
 			return
 
 		try:
@@ -213,10 +215,7 @@ the value holds the sesion.
 
 		try:
 			del self.sessions[uid]
-			logger.notice(
-				"Session '%s' from ip '%s', application '%s' deleted",
-				session.uid, session.ip, session.userAgent
-			)
+			logger.notice("Session '%s' from ip '%s', application '%s' deleted", session.uid, session.ip, session.userAgent)
 			del session
 		except KeyError:
 			pass

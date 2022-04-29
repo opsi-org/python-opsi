@@ -6,9 +6,9 @@
 OpsiPXEConfd-Backend
 """
 
-import os
-import json
 import codecs
+import json
+import os
 import socket
 import tempfile
 import threading
@@ -16,11 +16,15 @@ import time
 from contextlib import closing, contextmanager
 from pipes import quote
 
-from opsicommon.logging import logger, secret_filter
+from opsicommon.logging import get_logger, secret_filter
 
 from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
-from OPSI.Exceptions import BackendMissingDataError, BackendUnableToConnectError, BackendUnaccomplishableError
+from OPSI.Exceptions import (
+	BackendMissingDataError,
+	BackendUnableToConnectError,
+	BackendUnaccomplishableError,
+)
 from OPSI.Object import ConfigState, OpsiClient, ProductPropertyState
 from OPSI.Types import forceHostId, forceInt, forceUnicode, forceUnicodeList
 from OPSI.Util import getfqdn, serialize
@@ -28,6 +32,8 @@ from OPSI.Util import getfqdn, serialize
 __all__ = ("ServerConnection", "OpsiPXEConfdBackend", "createUnixSocket")
 
 ERROR_MARKER = "(ERROR)"
+
+logger = get_logger("opsi.general")
 
 
 class ServerConnection:  # pylint: disable=too-few-public-methods

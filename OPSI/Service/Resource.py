@@ -6,12 +6,14 @@
 opsi python library - Resource
 """
 
+from opsicommon.logging import get_logger
 from twisted.internet import defer
-
-from OPSI.Service.Worker import WorkerOpsi, WorkerOpsiJsonRpc, WorkerOpsiJsonInterface
 from twisted.web import resource, server
 
-from opsicommon.logging import logger
+from OPSI.Service.Worker import WorkerOpsi, WorkerOpsiJsonInterface, WorkerOpsiJsonRpc
+
+logger = get_logger("opsi.general")
+
 
 class ResourceOpsi(resource.Resource):
 	WorkerClass = WorkerOpsi
@@ -35,7 +37,7 @@ class ResourceOpsi(resource.Resource):
 		return deferred
 
 	def render(self, request):
-		''' Process request. '''
+		"""Process request."""
 		try:
 			logger.trace("%s.render()", self.__class__.__name__)
 			if not self.WorkerClass:
@@ -55,7 +57,7 @@ class ResourceOpsiJsonRpc(ResourceOpsi):
 		ResourceOpsi.__init__(self, service)
 
 	def locateChild(self, request, segments):
-		return self, server.StopTraversal			#pylint: disable=no-member
+		return self, server.StopTraversal  # pylint: disable=no-member
 
 
 class ResourceOpsiJsonInterface(ResourceOpsiJsonRpc):

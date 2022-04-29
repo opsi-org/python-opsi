@@ -18,7 +18,7 @@ import inspect
 import random
 from types import MethodType
 
-from opsicommon.logging import logger
+from opsicommon.logging import get_logger
 
 import OPSI.SharedAlgorithm
 from OPSI.Exceptions import *  # this is needed for dynamic loading  # pylint: disable=wildcard-import,unused-wildcard-import
@@ -27,6 +27,9 @@ from OPSI.Types import *  # this is needed for dynamic loading  # pylint: disabl
 from OPSI.Util import timestamp
 
 from .Backend import Backend
+
+logger = get_logger("opsi.general")
+
 
 __all__ = (
 	"getArgAndCallString",

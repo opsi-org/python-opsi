@@ -7,12 +7,14 @@ LDAP authentication
 """
 
 from typing import Set
-import ldap3
 
-from opsicommon.logging import logger
+import ldap3
+from opsicommon.logging import get_logger
 
 from OPSI.Backend.Manager.Authentication import AuthenticationModule
 from OPSI.Exceptions import BackendAuthenticationError
+
+logger = get_logger("opsi.general")
 
 
 class LDAPAuthentication(AuthenticationModule):
@@ -44,13 +46,16 @@ class LDAPAuthentication(AuthenticationModule):
 		self._ldap = None
 		if self._bind_user is None:
 			if self._uri["base"]:
-				realm = '.'.join([dc.split('=')[1] for dc in self._uri["base"].split(",")])
+				realm = ".".join([dc.split("=")[1] for dc in self._uri["base"].split(",")])
 			else:
 				realm = self._uri["host"]
 			self._bind_user = "{username}@" + realm
 		logger.info(
 			"LDAP auth configuration: server_url=%s, base=%s, bind_user=%s, group_filter=%s",
-			self.server_url, self._uri["base"], self._bind_user, self._group_filter
+			self.server_url,
+			self._uri["base"],
+			self._bind_user,
+			self._group_filter,
 		)
 
 	@property
@@ -84,9 +89,7 @@ class LDAPAuthentication(AuthenticationModule):
 			# self._ldap.extend.standard.who_am_i()
 		except Exception as err:
 			logger.info("LDAP authentication failed for user '%s'", username, exc_info=True)
-			raise BackendAuthenticationError(
-				f"LDAP authentication failed for user '{username}': {err}"
-			) from err
+			raise BackendAuthenticationError(f"LDAP authentication failed for user '{username}': {err}") from err
 
 	def get_groupnames(self, username: str) -> Set[str]:  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 		groupnames = set()
@@ -96,10 +99,7 @@ class LDAPAuthentication(AuthenticationModule):
 		ldap_type = "openldap"
 		user_dn = None
 		group_dns = []
-		for uf in [
-			f"(&(objectclass=user)(sAMAccountName={username}))",
-			f"(&(objectclass=posixAccount)(uid={username}))"
-		]:
+		for uf in [f"(&(objectclass=user)(sAMAccountName={username}))", f"(&(objectclass=posixAccount)(uid={username}))"]:
 			try:
 				logger.debug("Searching user in ldap base=%s, filter=%s", self._uri["base"], uf)
 				self._ldap.search(self._uri["base"], uf, search_scope=ldap3.SUBTREE, attributes="*")

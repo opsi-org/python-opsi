@@ -6,13 +6,15 @@
 Utility functions for package updates.
 """
 
-from OPSI.Util import compareVersions
+from opsicommon.logging import get_logger
 
-from opsicommon.logging import logger
+from OPSI.Util import compareVersions
 
 from .Exceptions import NoActiveRepositoryError
 
-__all__ = ('getUpdatablePackages', )
+__all__ = ("getUpdatablePackages",)
+
+logger = get_logger("opsi.general")
 
 
 def getUpdatablePackages(updater):
@@ -39,16 +41,18 @@ _repository_.
 		downloadablePackages = updater._filterProducts(downloadablePackages)  # pylint: disable=protected-access
 
 		for availablePackage in downloadablePackages:
-			productId = availablePackage['productId']
+			productId = availablePackage["productId"]
 			for product in installedProducts:
-				if product['productId'] == productId:
+				if product["productId"] == productId:
 					logger.debug("Product '%s' is installed", productId)
 					logger.debug(
 						"Available product version is '%s', installed product version is '%s-%s'",
-						availablePackage['version'], product['productVersion'], product['packageVersion']
+						availablePackage["version"],
+						product["productVersion"],
+						product["packageVersion"],
 					)
 					updateAvailable = compareVersions(
-						availablePackage['version'], '>', f"{product['productVersion']}-{product['packageVersion']}"
+						availablePackage["version"], ">", f"{product['productVersion']}-{product['packageVersion']}"
 					)
 
 					if updateAvailable:
@@ -56,7 +60,7 @@ _repository_.
 							"productId": productId,
 							"newVersion": f"{availablePackage['version']}",
 							"oldVersion": f"{product['productVersion']}-{product['packageVersion']}",
-							"repository": availablePackage['repository'].name
+							"repository": availablePackage["repository"].name,
 						}
 					break
 	except Exception as error:

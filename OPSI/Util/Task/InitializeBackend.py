@@ -13,16 +13,18 @@ This holds backend-independent migrations.
 
 import os.path
 
-from opsicommon.logging import logger
+from opsicommon.logging import get_logger
 
+from OPSI.Backend.Base.ConfigData import OPSI_PASSWD_FILE
 from OPSI.Object import OpsiConfigserver
 from OPSI.System.Posix import getLocalFqdn, getNetworkConfiguration
 from OPSI.Types import forceList
 from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
 from OPSI.Util.Task.Rights import set_rights
-from OPSI.Backend.Base.ConfigData import OPSI_PASSWD_FILE
 
 __all__ = ("initializeBackends",)
+
+logger = get_logger("opsi.general")
 
 
 def initializeBackends(ipAddress=None, backendManagerConfig=None):
@@ -37,7 +39,9 @@ def initializeBackends(ipAddress=None, backendManagerConfig=None):
 	"""
 	_setupPasswdFile()
 
-	from OPSI.Backend.BackendManager import BackendManager  # pylint: disable=import-outside-toplevel
+	from OPSI.Backend.BackendManager import (
+		BackendManager,  # pylint: disable=import-outside-toplevel
+	)
 
 	managerConfig = {"depotBackend": False}
 	if backendManagerConfig:

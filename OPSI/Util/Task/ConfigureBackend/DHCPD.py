@@ -16,15 +16,24 @@ import pwd
 import shutil
 import time
 
-from opsicommon.logging import logger
+from opsicommon.logging import get_logger
 
-from OPSI.Config import OPSI_ADMIN_GROUP as ADMIN_GROUP, OPSICONFD_USER
+from OPSI.Config import OPSI_ADMIN_GROUP as ADMIN_GROUP
+from OPSI.Config import OPSICONFD_USER
 from OPSI.System import execute
-from OPSI.System.Posix import getDHCPDRestartCommand, locateDHCPDConfig
-from OPSI.System.Posix import getNetworkConfiguration
-from OPSI.System.Posix import isCentOS, isSLES, isRHEL, isOpenSUSE
-from OPSI.Util.File import DHCPDConfFile, DHCPDConf_Block, DHCPDConf_Parameter
+from OPSI.System.Posix import (
+	getDHCPDRestartCommand,
+	getNetworkConfiguration,
+	isCentOS,
+	isOpenSUSE,
+	isRHEL,
+	isSLES,
+	locateDHCPDConfig,
+)
+from OPSI.Util.File import DHCPDConf_Block, DHCPDConf_Parameter, DHCPDConfFile
 from OPSI.Util.Task.Sudoers import patchSudoersFileToAllowRestartingDHCPD
+
+logger = get_logger("opsi.general")
 
 DHCPD_CONF = locateDHCPDConfig(default="/etc/dhcp/dhcpd.conf")
 

@@ -19,7 +19,7 @@ import xml.etree.ElementTree as ET
 from urllib.parse import quote, unquote, urlparse
 
 import requests
-from opsicommon.logging import logger, secret_filter
+from opsicommon.logging import get_logger, secret_filter
 from opsicommon.utils import prepare_proxy_environment
 from requests.adapters import HTTPAdapter
 from requests.packages import urllib3
@@ -43,6 +43,7 @@ if os.name == "nt":
 	from OPSI.System.Windows import getFreeDrive
 
 urllib3.disable_warnings()
+logger = get_logger("opsi.general")
 
 
 def _(string):

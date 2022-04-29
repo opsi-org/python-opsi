@@ -7,15 +7,17 @@ PAM authentication.
 """
 
 from typing import Set
+
 # pyright: reportMissingImports=false
 import win32net  # pylint: disable=import-error
 import win32security  # pylint: disable=import-error
+from opsicommon.logging import get_logger
 
-from opsicommon.logging import logger
-
-from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Backend.Manager.Authentication import AuthenticationModule
+from OPSI.Config import OPSI_ADMIN_GROUP
 from OPSI.Exceptions import BackendAuthenticationError
+
+logger = get_logger("opsi.general")
 
 
 class NTAuthentication(AuthenticationModule):
@@ -25,9 +27,7 @@ class NTAuthentication(AuthenticationModule):
 		self._admin_groupname = OPSI_ADMIN_GROUP
 		if self._admin_group_sid is not None:
 			try:
-				self._admin_groupname = win32security.LookupAccountSid(
-					None, win32security.ConvertStringSidToSid(self._admin_group_sid)
-				)[0]
+				self._admin_groupname = win32security.LookupAccountSid(None, win32security.ConvertStringSidToSid(self._admin_group_sid))[0]
 			except Exception as err:  # pylint: disable=broad-except
 				logger.error("Failed to lookup group with sid '%s': %s", self._admin_group_sid, err)
 
@@ -35,22 +35,17 @@ class NTAuthentication(AuthenticationModule):
 		return NTAuthentication(self._admin_group_sid)
 
 	def authenticate(self, username: str, password: str) -> None:
-		'''
+		"""
 		Authenticate a user by Windows-Login on current machine
 
 		:raises BackendAuthenticationError: If authentication fails.
-		'''
+		"""
 		logger.confidential("Trying to authenticate user %s with password %s by win32security", username, password)
 
 		try:
-			win32security.LogonUser(
-				username, 'None', password,
-				win32security.LOGON32_LOGON_NETWORK, win32security.LOGON32_PROVIDER_DEFAULT
-			)
+			win32security.LogonUser(username, "None", password, win32security.LOGON32_LOGON_NETWORK, win32security.LOGON32_PROVIDER_DEFAULT)
 		except Exception as err:  # pylint: disable=broad-except
-			raise BackendAuthenticationError(
-				f"Win32security authentication failed for user '{username}': {err}"
-			) from err
+			raise BackendAuthenticationError(f"Win32security authentication failed for user '{username}': {err}") from err
 
 	def get_admin_groupname(self) -> str:
 		return self._admin_groupname.lower()
@@ -68,13 +63,13 @@ class NTAuthentication(AuthenticationModule):
 		while True:
 			(groups, gtotal, gresume) = win32net.NetLocalGroupEnum(None, 0, gresume)
 			logger.trace("Got %s groups, total=%s, resume=%s", len(groups), gtotal, gresume)
-			for groupname in (u['name'] for u in groups):
+			for groupname in (u["name"] for u in groups):
 				logger.trace("Found group '%s'", groupname)
 				uresume = 0
 				while True:
 					(users, utotal, uresume) = win32net.NetLocalGroupGetMembers(None, groupname, 0, uresume)
 					logger.trace("Got %s users, total=%s, resume=%s", len(users), utotal, uresume)
-					for sid in (u['sid'] for u in users):
+					for sid in (u["sid"] for u in users):
 						(group_username, _domain, _group_type) = win32security.LookupAccountSid(None, sid)
 						if group_username.lower() == username.lower():
 							collected_groupnames.add(groupname)

@@ -10,7 +10,7 @@ import os
 import re
 import shutil
 
-from opsicommon.logging import logger
+from opsicommon.logging import get_logger
 
 from OPSI.Config import FILE_ADMIN_GROUP as DEFAULT_CLIENT_DATA_GROUP
 from OPSI.Config import OPSICONFD_USER as DEFAULT_CLIENT_DATA_USER
@@ -28,6 +28,8 @@ DEFAULT_TMP_DIR = "/tmp"
 EXCLUDE_DIRS_ON_PACK_REGEX = re.compile(r"(^\.svn$)|(^\.git$)")
 EXCLUDE_FILES_ON_PACK_REGEX = re.compile(r"(~$)|(^[Tt]humbs\.db$)|(^\.[Dd][Ss]_[Ss]tore$)")
 PACKAGE_SCRIPT_TIMEOUT = 600
+
+logger = get_logger("opsi.general")
 
 
 def _(string):

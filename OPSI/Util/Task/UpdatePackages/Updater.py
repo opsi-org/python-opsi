@@ -18,7 +18,7 @@ from contextlib import contextmanager
 from urllib.parse import quote
 
 from OpenSSL.crypto import FILETYPE_PEM, load_certificate
-from opsicommon.logging import logger, secret_filter
+from opsicommon.logging import get_logger, secret_filter
 from opsicommon.ssl import install_ca
 from opsicommon.utils import prepare_proxy_environment
 from requests.packages import urllib3
@@ -41,6 +41,8 @@ from .Repository import LinksExtractor
 urllib3.disable_warnings()
 
 __all__ = ("OpsiPackageUpdater",)
+
+logger = get_logger("opsi.general")
 
 
 class HashsumMissmatchError(ValueError):
@@ -322,9 +324,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 				try:
 					shutdownProduct = backend.productOnDepot_getObjects(  # pylint: disable=no-member
 						depotId=self.depotId, productId="shutdownwanted"
-					)[
-						0
-					]
+					)[0]
 					logger.info("Found 'shutdownwanted' product on depot '%s': %s", self.depotId, shutdownProduct)
 				except IndexError:
 					logger.error("Product 'shutdownwanted' not avaliable on depot '%s'", self.depotId)

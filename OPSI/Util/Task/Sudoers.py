@@ -23,18 +23,20 @@ import codecs
 import shutil
 import time
 
+from opsicommon.logging import get_logger
+
 from OPSI.Config import FILE_ADMIN_GROUP
 from OPSI.System.Posix import Distribution, which
 
-from opsicommon.logging import logger
-
-SUDOERS_FILE = '/etc/sudoers'
+SUDOERS_FILE = "/etc/sudoers"
 _NO_TTY_REQUIRED_DEFAULT = "Defaults:opsiconfd !requiretty"
 
 try:
 	_NO_TTY_FOR_SERVICE_REQUIRED = f"Defaults!{which('service')} !requiretty"
 except Exception:  # pylint: disable=broad-except
 	_NO_TTY_FOR_SERVICE_REQUIRED = "Defaults!/sbin/service !requiretty"
+
+logger = get_logger("opsi.general")
 
 
 def patchSudoersFileForOpsi(sudoersFile=SUDOERS_FILE):
@@ -44,10 +46,7 @@ call opsi-set-rights.
 
 	:param sudoersFile: The path to the sudoers file.
 	"""
-	entries = [
-		"opsiconfd ALL=NOPASSWD: /usr/bin/opsi-set-rights",
-		f"%{FILE_ADMIN_GROUP} ALL=NOPASSWD: /usr/bin/opsi-set-rights"
-	]
+	entries = ["opsiconfd ALL=NOPASSWD: /usr/bin/opsi-set-rights", f"%{FILE_ADMIN_GROUP} ALL=NOPASSWD: /usr/bin/opsi-set-rights"]
 
 	_patchSudoersFileWithEntries(sudoersFile, entries)
 
@@ -60,9 +59,7 @@ def patchSudoersFileToAllowRestartingDHCPD(dhcpdRestartCommand, sudoersFile=SUDO
 	:param dhcpdRestartCommand: The command used to restart the DHCP daemon
 	:param sudoersFile: The path to the sudoers file.
 	"""
-	entries = [
-		f"opsiconfd ALL=NOPASSWD: {dhcpdRestartCommand}\n"
-	]
+	entries = [f"opsiconfd ALL=NOPASSWD: {dhcpdRestartCommand}\n"]
 
 	_patchSudoersFileWithEntries(sudoersFile, entries)
 
@@ -89,7 +86,7 @@ def _patchSudoersFileWithEntries(sudoersFile, entries):
 	ttyPatchRequired = True
 	servicePatchRequired = True
 
-	with codecs.open(sudoersFile, 'r', 'utf-8') as inputFile:
+	with codecs.open(sudoersFile, "r", "utf-8") as inputFile:
 		for line in inputFile:
 			if _NO_TTY_REQUIRED_DEFAULT in line:
 				ttyPatchRequired = False
@@ -117,13 +114,13 @@ def _patchSudoersFileWithEntries(sudoersFile, entries):
 		lines.append(f"{_NO_TTY_FOR_SERVICE_REQUIRED}\n")
 
 	if modifyFile:
-		lines.append('\n')
+		lines.append("\n")
 
 		logger.notice("   Creating backup of %s", sudoersFile)
 		shutil.copy(sudoersFile, f"{sudoersFile}.{time.strftime('%Y-%m-%d_%H:%M')}")
 
 		logger.notice("   Writing new %s", sudoersFile)
-		with codecs.open(sudoersFile, 'w', 'utf-8') as outputFile:
+		with codecs.open(sudoersFile, "w", "utf-8") as outputFile:
 			outputFile.writelines(lines)
 
 
@@ -137,4 +134,4 @@ def distributionRequiresNoTtyPatch():
 	"""
 	distributor = Distribution().distributor.lower()
 
-	return bool('redhat' in distributor or 'centos' in distributor)
+	return bool("redhat" in distributor or "centos" in distributor)

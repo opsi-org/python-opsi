@@ -8,16 +8,17 @@
 # librsync in c: http://rproxy.samba.org/doxygen/librsync/refman.pdf
 # notes: https://docs.python.org/2/library/ctypes.html
 
-import os
 import base64
 import ctypes
 import ctypes.util
+import os
 import tempfile
+
+from opsicommon.logging import get_logger
 
 from OPSI.Types import forceFilename, forceUnicode
 
-from opsicommon.logging import logger
-
+logger = get_logger("opsi.general")
 _librsync = None
 
 if os.name == "posix":
@@ -36,7 +37,7 @@ elif os.name == "nt":
 else:
 	raise NotImplementedError("Librsync is not supported on your platform")
 
-MAX_SPOOL = 1024 ** 2 * 5
+MAX_SPOOL = 1024**2 * 5
 
 RS_DONE = 0
 RS_BLOCKED = 1
@@ -53,63 +54,71 @@ RS_MD4_SIG_MAGIC = 0x72730136
 # librsync.h: rs_buffers_s
 class Buffer(ctypes.Structure):
 	_fields_ = [
-		('next_in', ctypes.c_char_p),
-		('avail_in', ctypes.c_size_t),
-		('eof_in', ctypes.c_int),
-
-		('next_out', ctypes.c_char_p),
-		('avail_out', ctypes.c_size_t),
+		("next_in", ctypes.c_char_p),
+		("avail_in", ctypes.c_size_t),
+		("eof_in", ctypes.c_int),
+		("next_out", ctypes.c_char_p),
+		("avail_out", ctypes.c_size_t),
 	]
+
 
 # char const *rs_strerror(rs_result r);
 _librsync.rs_strerror.restype = ctypes.c_char_p
-_librsync.rs_strerror.argtypes = (ctypes.c_int, )
+_librsync.rs_strerror.argtypes = (ctypes.c_int,)
 
 # rs_job_t *rs_sig_begin(size_t new_block_len, size_t strong_sum_len);
 _librsync.rs_sig_begin.restype = ctypes.c_void_p
-_librsync.rs_sig_begin.argtypes = (ctypes.c_size_t, ctypes.c_size_t, )
+_librsync.rs_sig_begin.argtypes = (
+	ctypes.c_size_t,
+	ctypes.c_size_t,
+)
 
 # rs_job_t *rs_loadsig_begin(rs_signature_t **);
 _librsync.rs_loadsig_begin.restype = ctypes.c_void_p
-_librsync.rs_loadsig_begin.argtypes = (ctypes.c_void_p, )
+_librsync.rs_loadsig_begin.argtypes = (ctypes.c_void_p,)
 
 # rs_job_t *rs_delta_begin(rs_signature_t *);
 _librsync.rs_delta_begin.restype = ctypes.c_void_p
-_librsync.rs_delta_begin.argtypes = (ctypes.c_void_p, )
+_librsync.rs_delta_begin.argtypes = (ctypes.c_void_p,)
 
 # rs_job_t *rs_patch_begin(rs_copy_cb *, void *copy_arg);
 _librsync.rs_patch_begin.restype = ctypes.c_void_p
-_librsync.rs_patch_begin.argtypes = (ctypes.c_void_p, ctypes.c_void_p, )
+_librsync.rs_patch_begin.argtypes = (
+	ctypes.c_void_p,
+	ctypes.c_void_p,
+)
 
 # rs_result rs_build_hash_table(rs_signature_t* sums);
 _librsync.rs_build_hash_table.restype = ctypes.c_size_t
-_librsync.rs_build_hash_table.argtypes = (ctypes.c_void_p, )
+_librsync.rs_build_hash_table.argtypes = (ctypes.c_void_p,)
 
 # rs_result rs_job_iter(rs_job_t *, rs_buffers_t *);
 _librsync.rs_job_iter.restype = ctypes.c_int
-_librsync.rs_job_iter.argtypes = (ctypes.c_void_p, ctypes.c_void_p, )
+_librsync.rs_job_iter.argtypes = (
+	ctypes.c_void_p,
+	ctypes.c_void_p,
+)
 
 # void rs_trace_set_level(rs_loglevel level);
 _librsync.rs_trace_set_level.restype = None
-_librsync.rs_trace_set_level.argtypes = (ctypes.c_int, )
+_librsync.rs_trace_set_level.argtypes = (ctypes.c_int,)
 
 # void rs_free_sumset(rs_signature_t *);
 _librsync.rs_free_sumset.restype = None
-_librsync.rs_free_sumset.argtypes = (ctypes.c_void_p, )
+_librsync.rs_free_sumset.argtypes = (ctypes.c_void_p,)
 
 # rs_result rs_job_free(rs_job_t *);
 _librsync.rs_job_free.restype = ctypes.c_int
-_librsync.rs_job_free.argtypes = (ctypes.c_void_p, )
+_librsync.rs_job_free.argtypes = (ctypes.c_void_p,)
 
 # A function declaration for our read callback.
-patch_callback = ctypes.CFUNCTYPE(
-	ctypes.c_int, ctypes.c_void_p, ctypes.c_longlong,
-	ctypes.c_size_t, ctypes.POINTER(Buffer)
-)
+patch_callback = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.c_longlong, ctypes.c_size_t, ctypes.POINTER(Buffer))
+
 
 class LibrsyncError(Exception):
 	def __init__(self, r):
 		super(LibrsyncError, self).__init__(_librsync.rs_strerror(ctypes.c_int(r)))
+
 
 def _execute(job, input_handle, output_handle=None):
 	"""
@@ -131,7 +140,7 @@ def _execute(job, input_handle, output_handle=None):
 		buff.avail_out = ctypes.c_size_t(RS_JOB_BLOCKSIZE)
 		res = _librsync.rs_job_iter(job, ctypes.byref(buff))
 		if output_handle:
-			output_handle.write(out.raw[:RS_JOB_BLOCKSIZE - buff.avail_out])
+			output_handle.write(out.raw[: RS_JOB_BLOCKSIZE - buff.avail_out])
 		if res == RS_DONE:
 			break
 		if res != RS_BLOCKED:
@@ -142,10 +151,11 @@ def _execute(job, input_handle, output_handle=None):
 			# next read. It would be better to simply tack data to the end of
 			# this buffer, but that is very difficult in Python.
 			input_handle.seek(input_handle.tell() - buff.avail_in)
-	if output_handle and callable(getattr(output_handle, 'seek', None)):
+	if output_handle and callable(getattr(output_handle, "seek", None)):
 		# As a matter of convenience, rewind the output file.
 		output_handle.seek(0)
 	return output_handle
+
 
 def librsyncSignature(filename, base64Encoded=True):
 	"""
@@ -156,7 +166,7 @@ def librsyncSignature(filename, base64Encoded=True):
 
 	try:
 		with open(filename, "rb") as filehandle:
-			sigfile_handle = tempfile.SpooledTemporaryFile(max_size=MAX_SPOOL, mode='wb+')
+			sigfile_handle = tempfile.SpooledTemporaryFile(max_size=MAX_SPOOL, mode="wb+")
 
 			job = None
 			if hasattr(_librsync, "RS_DEFAULT_STRONG_LEN"):
@@ -176,6 +186,7 @@ def librsyncSignature(filename, base64Encoded=True):
 				sigfile_handle.close()
 	except Exception as sigError:
 		raise RuntimeError(f"Failed to get librsync signature from {filename}: {forceUnicode(sigError)}")
+
 
 def librsyncDeltaFile(filename, signature, deltafile):
 	"""
@@ -217,6 +228,7 @@ def librsyncDeltaFile(filename, signature, deltafile):
 
 	except Exception as sigError:
 		raise RuntimeError(f"Failed to write delta file {deltafile}: {forceUnicode(sigError)}")
+
 
 def librsyncPatchFile(oldfile, deltafile, newfile):
 	"""

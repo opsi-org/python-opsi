@@ -9,31 +9,37 @@ Depotserver backend.
 import os
 from contextlib import contextmanager
 
+from opsicommon.logging import get_logger, log_context
+
 from OPSI.Backend.Base import ExtendedBackend
+from OPSI.Config import FILE_ADMIN_GROUP
 from OPSI.Exceptions import (
-	BackendBadValueError, BackendConfigurationError,
-	BackendError, BackendIOError, BackendMissingDataError,
-	BackendTemporaryError, BackendUnaccomplishableError,
-	BackendReferentialIntegrityError
+	BackendBadValueError,
+	BackendConfigurationError,
+	BackendError,
+	BackendIOError,
+	BackendMissingDataError,
+	BackendReferentialIntegrityError,
+	BackendTemporaryError,
+	BackendUnaccomplishableError,
 )
-from OPSI.Types import (
-	forceBool, forceDict, forceFilename, forceHostId,
-	forceUnicode, forceUnicodeLower
-)
-from OPSI.Types import forceProductId as forceProductIdFunc
 from OPSI.Object import ProductOnDepot, ProductPropertyState
 from OPSI.System import getDiskSpaceUsage
-from OPSI.Util.Product import ProductPackageFile
+from OPSI.Types import forceBool, forceDict, forceFilename, forceHostId
+from OPSI.Types import forceProductId as forceProductIdFunc
+from OPSI.Types import forceUnicode, forceUnicodeLower
 from OPSI.Util import compareVersions, getfqdn, md5sum, removeDirectory
 from OPSI.Util.File import ZsyncFile
-from OPSI.Config import FILE_ADMIN_GROUP
-
-from opsicommon.logging import logger, log_context
+from OPSI.Util.Product import ProductPackageFile
 
 if os.name == "posix":
 	import grp
 
 __all__ = ('DepotserverBackend', 'DepotserverPackageManager')
+
+
+logger = get_logger("opsi.general")
+
 
 class DepotserverBackend(ExtendedBackend):
 	def __init__(self, backend, **kwargs):
@@ -75,7 +81,9 @@ class DepotserverBackend(ExtendedBackend):
 			raise BackendIOError(f"Failed to get md5sum: {err}") from err
 
 	def depot_librsyncSignature(self, filename):  # pylint: disable=no-self-use
-		from OPSI.Util.Sync import librsyncSignature  # pylint: disable=import-outside-toplevel
+		from OPSI.Util.Sync import (
+			librsyncSignature,  # pylint: disable=import-outside-toplevel
+		)
 
 		try:
 			return librsyncSignature(filename)
@@ -83,7 +91,9 @@ class DepotserverBackend(ExtendedBackend):
 			raise BackendIOError(f"Failed to get librsync signature: {err}") from err
 
 	def depot_librsyncPatchFile(self, oldfile, deltafile, newfile):  # pylint: disable=no-self-use
-		from OPSI.Util.Sync import librsyncPatchFile  # pylint: disable=import-outside-toplevel
+		from OPSI.Util.Sync import (
+			librsyncPatchFile,  # pylint: disable=import-outside-toplevel
+		)
 
 		try:
 			return librsyncPatchFile(oldfile, deltafile, newfile)
@@ -91,7 +101,9 @@ class DepotserverBackend(ExtendedBackend):
 			raise BackendIOError(f"Failed to patch file: {err}") from err
 
 	def depot_librsyncDeltaFile(self, filename, signature, deltafile):  # pylint: disable=no-self-use
-		from OPSI.Util.Sync import librsyncDeltaFile  # pylint: disable=import-outside-toplevel
+		from OPSI.Util.Sync import (
+			librsyncDeltaFile,  # pylint: disable=import-outside-toplevel
+		)
 
 		try:
 			librsyncDeltaFile(filename, signature, deltafile)

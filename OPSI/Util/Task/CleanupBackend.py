@@ -18,6 +18,8 @@ For more specialised cleanup you should use the corresponding methods.
 
 import re
 
+from opsicommon.logging import get_logger
+
 import OPSI.Util.Task.ConfigureBackend as backendUtil
 from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Backend.MySQL import MySQL
@@ -25,9 +27,9 @@ from OPSI.Types import forceBool, forceUnicodeLower
 from OPSI.Util import chunk
 from OPSI.Util.File.Opsi import BackendDispatchConfigFile
 
-from opsicommon.logging import logger
-
 _CHUNK_SIZE = 500
+
+logger = get_logger("opsi.general")
 
 
 def cleanupBackend(backend=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements

@@ -11,15 +11,17 @@ import os
 import shutil
 import time
 
+from opsicommon.logging import get_logger
+
 from OPSI.System import execute, which
 from OPSI.System.Posix import getSambaServiceName
 from OPSI.Util.Task.Rights import getWorkbenchDirectory
 
-from opsicommon.logging import logger
+__all__ = ("configureSamba", "isSamba4")
 
-__all__ = ('configureSamba', 'isSamba4')
+SMB_CONF = "/etc/samba/smb.conf"
 
-SMB_CONF = '/etc/samba/smb.conf'
+logger = get_logger("opsi.general")
 
 
 def configureSamba(config=SMB_CONF):
@@ -39,7 +41,7 @@ def configureSamba(config=SMB_CONF):
 
 
 def _readConfig(config):
-	with codecs.open(config, 'r', 'utf-8') as readConf:
+	with codecs.open(config, "r", "utf-8") as readConf:
 		return readConf.readlines()
 
 
@@ -58,21 +60,21 @@ def _processConfig(lines):  # pylint: disable=too-many-locals,too-many-branches,
 
 	for line in lines:
 		currentLine = line.lower().strip()
-		if currentLine == '[opt_pcbin]':
+		if currentLine == "[opt_pcbin]":
 			optPcbinShareFound = True
-		elif currentLine == '[opsi_depot]':
+		elif currentLine == "[opsi_depot]":
 			depotShareFound = True
-		elif currentLine == '[opsi_depot_rw]':
+		elif currentLine == "[opsi_depot_rw]":
 			depotShareRWFound = True
-		elif currentLine == '[opsi_images]':
+		elif currentLine == "[opsi_images]":
 			opsiImagesFound = True
-		elif currentLine == '[opsi_workbench]':
+		elif currentLine == "[opsi_workbench]":
 			workbenchShareFound = True
-		elif currentLine == '[opsi_repository]':
+		elif currentLine == "[opsi_repository]":
 			repositoryFound = True
-		elif currentLine == '[opsi_logs]':
+		elif currentLine == "[opsi_logs]":
 			logsFound = True
-		elif 'oplocks' in currentLine:
+		elif "oplocks" in currentLine:
 			oplocksFound = True
 		newlines.append(line)
 
@@ -92,7 +94,7 @@ def _processConfig(lines):  # pylint: disable=too-many-locals,too-many-branches,
 			newlines.append("   acl allow execute always = true\n")
 		newlines.append("\n")
 
-		depotDir = '/var/lib/opsi/depot'
+		depotDir = "/var/lib/opsi/depot"
 		if not os.path.exists(depotDir):
 			try:
 				os.mkdir(depotDir)
@@ -107,11 +109,11 @@ def _processConfig(lines):  # pylint: disable=too-many-locals,too-many-branches,
 		tmp_lines = []
 		in_opsi_depot_section = False
 		for i, line in enumerate(newlines):
-			last_line_of_file = (i + 1 == len(newlines))
-			if line.lower().strip() == '[opsi_depot]':
+			last_line_of_file = i + 1 == len(newlines)
+			if line.lower().strip() == "[opsi_depot]":
 				in_opsi_depot_section = True
 			elif in_opsi_depot_section:
-				if line.lower().strip().startswith('[') or last_line_of_file:
+				if line.lower().strip().startswith("[") or last_line_of_file:
 					# next section or last line of file
 					logger.notice("   Adding 'acl allow execute always = true'")
 					tmp_lines.append("   acl allow execute always = true\n")
@@ -161,7 +163,7 @@ def _processConfig(lines):  # pylint: disable=too-many-locals,too-many-branches,
 			workbenchDirectory = None
 
 		if workbenchDirectory:
-			if workbenchDirectory.endswith('/'):
+			if workbenchDirectory.endswith("/"):
 				# Removing trailing slash
 				workbenchDirectory = workbenchDirectory[:-1]
 
@@ -227,23 +229,23 @@ def isSamba4():
 	samba4 = False
 
 	try:
-		smbd = which('smbd')
-		result = execute(f'{smbd} -V 2>/dev/null')
+		smbd = which("smbd")
+		result = execute(f"{smbd} -V 2>/dev/null")
 		for line in result:
 			if line.lower().startswith("version"):
-				samba4 = line.split()[1].startswith('4')
+				samba4 = line.split()[1].startswith("4")
 	except Exception as err:  # pylint: disable=broad-except
-		logger.debug('Getting Samba Version failed due to: %s', err)
+		logger.debug("Getting Samba Version failed due to: %s", err)
 
 	return samba4
 
 
 def _writeConfig(newlines, config):
 	logger.notice("   Creating backup of %s", config)
-	shutil.copy(config, config + '.' + time.strftime("%Y-%m-%d_%H:%M"))
+	shutil.copy(config, config + "." + time.strftime("%Y-%m-%d_%H:%M"))
 
 	logger.notice("   Writing new smb.conf")
-	with codecs.open(config, 'w', 'utf-8') as writeConf:
+	with codecs.open(config, "w", "utf-8") as writeConf:
 		writeConf.writelines(newlines)
 
 

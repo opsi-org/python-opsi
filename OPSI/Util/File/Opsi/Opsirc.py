@@ -30,11 +30,13 @@ The files should be encoded as utf-8.
 import codecs
 import os
 
+from opsicommon.logging import get_logger, secret_filter
+
 from OPSI.Types import forceUnicode, forceUrl
 
-from opsicommon.logging import logger, secret_filter
+__all__ = ("getOpsircPath", "readOpsirc")
 
-__all__ = ('getOpsircPath', 'readOpsirc')
+logger = get_logger("opsi.general")
 
 
 def readOpsirc(filename=None):
@@ -65,20 +67,20 @@ def getOpsircPath():
 	:return: The path of an opsirc file.
 	:rtype: str
 	"""
-	path = os.path.expanduser('~/.opsi.org/opsirc')
+	path = os.path.expanduser("~/.opsi.org/opsirc")
 	return path
 
 
 def _parseConfig(filename):
 	config = {}
-	with codecs.open(filename, mode='r', encoding='utf-8') as opsircfile:
+	with codecs.open(filename, mode="r", encoding="utf-8") as opsircfile:
 		for line in opsircfile:
 			line = line.strip()
-			if line.startswith(('#', ';')) or not line:
+			if line.startswith(("#", ";")) or not line:
 				continue
 
 			try:
-				key, value = line.split('=', 1)
+				key, value = line.split("=", 1)
 			except ValueError:
 				logger.trace("Unable to split line %s", line)
 				continue
@@ -87,37 +89,31 @@ def _parseConfig(filename):
 			value = value.strip()
 
 			if not value:
-				logger.warning(
-					"There is no value for %s in opsirc file %s, skipping.",
-					key, filename
-				)
+				logger.warning("There is no value for %s in opsirc file %s, skipping.", key, filename)
 				continue
 
-			if key == 'address':
+			if key == "address":
 				config[key] = forceUrl(value)
-			elif key == 'username':
+			elif key == "username":
 				config[key] = forceUnicode(value)
-			elif key == 'password':
+			elif key == "password":
 				value = forceUnicode(value)
 				secret_filter.add_secrets(value)
 				config[key] = value
-			elif key == 'password file':
+			elif key == "password file":
 				passwordFilePath = os.path.expanduser(value)
 				value = _readPasswordFile(passwordFilePath)
 				secret_filter.add_secrets(value)
-				config['password'] = value
+				config["password"] = value
 			else:
 				logger.debug("Ignoring unknown key %s", key)
 
-	logger.debug(
-		"Found the following usable keys in %s: %s",
-		filename, ", ".join(list(config.keys()))
-	)
+	logger.debug("Found the following usable keys in %s: %s", filename, ", ".join(list(config.keys())))
 	return config
 
 
 def _readPasswordFile(filename):
-	with codecs.open(filename, mode='r', encoding='utf-8') as pwfile:
+	with codecs.open(filename, mode="r", encoding="utf-8") as pwfile:
 		password = pwfile.read()
 
 	return password.strip()

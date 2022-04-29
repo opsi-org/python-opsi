@@ -10,14 +10,14 @@ This holds the basic backend classes.
 
 from __future__ import absolute_import
 
-import os
 import base64
 import codecs
 import inspect
+import os
 import re
 import time
-from typing import Union
 from hashlib import md5
+from typing import Union
 
 try:
 	# PyCryptodome from pypi installs into Crypto
@@ -29,19 +29,27 @@ except (ImportError, OSError):
 	from Cryptodome.Hash import MD5
 	from Cryptodome.Signature import pkcs1_15
 
-from opsicommon.logging import logger
+from opsicommon.logging import get_logger
 
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import BackendError
 from OPSI.Object import *  # this is needed for dynamic loading # pylint: disable=wildcard-import,unused-wildcard-import
-from OPSI.Types import forceDict, forceFilename, forceList, forceUnicode, forceUnicodeList
+from OPSI.Types import (
+	forceDict,
+	forceFilename,
+	forceList,
+	forceUnicode,
+	forceUnicodeList,
+)
 from OPSI.Util import compareVersions, getPublicKey
-
 
 __all__ = ("describeInterface", "Backend")
 
 OPSI_MODULES_FILE = "/etc/opsi/modules"
 OPSI_LICENSE_PATH = "/etc/opsi/licenses"
+
+
+logger = get_logger("opsi.general")
 
 
 def describeInterface(instance):

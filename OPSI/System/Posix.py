@@ -31,7 +31,7 @@ from itertools import islice
 from signal import SIGKILL
 
 import psutil
-from opsicommon.logging import LOG_NONE, logger, logging_config
+from opsicommon.logging import LOG_NONE, get_logger, logging_config
 from opsicommon.objects import *  # pylint: disable=wildcard-import,unused-wildcard-import
 from opsicommon.types import (
 	forceBool,
@@ -126,6 +126,8 @@ DHCLIENT_LEASES_FILE = "/var/lib/dhcp/dhclient.leases"
 _DHCP_SERVICE_NAME = None
 _SAMBA_SERVICE_NAME = None
 LD_LIBRARY_EXCLUDE_LIST = ["/usr/lib/opsiclientd"]
+
+logger = get_logger("opsi.general")
 
 hooks = []
 x86_64 = False  # pylint: disable=invalid-name
