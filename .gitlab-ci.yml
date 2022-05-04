@@ -51,14 +51,18 @@ pylint-pytest:
 apidoc:
   stage: doc
   when: manual
+  before_script:
+    - 'which ssh-agent || (apt update && apt -y install openssh-client)'
+    - 'which rsync || (apt update && apt -y install rsync)'
+    - mkdir -p ~/.ssh
+    - eval $(ssh-agent -s)
+    - ssh-add <(echo "$BLOG_PUBLISH_PRIVATE_KEY")
   script:
     - poetry lock --no-update
     - poetry install
-    - poetry run poetry run opsi-dev-cli apidoc makehtml
-  artifacts:
-    name: 'python-opsi-apidoc'
-    paths:
-      - apidoc
+    - poetry run poetry run opsi-dev-cli apidoc makehtml --output python-opsi
+    - ssh -o StrictHostKeyChecking=no "root@docker1.ext.uib.gmbh" "mkdir -p /var/lib/docker/volumes/docs_nginx_data/_data/python-docs"
+    - rsync -e "ssh -o StrictHostKeyChecking=no" --delete -azv python-opsi "root@docker1.ext.uib.gmbh:/var/lib/docker/volumes/docs_nginx_data/_data/python-docs/"
 
 
 uibpypi:
@@ -69,17 +73,3 @@ uibpypi:
     - poetry run opsi-dev-tool -l info --uib-pypi-publish
   only:
     - tags
-
-rsync_apidoc:
-  stage: publish
-  when: manual
-  image: docker.uib.gmbh/fabian/opsidoc-antora:latest
-  before_script:
-    - 'which ssh-agent || (apt update && apt -y install openssh-client)'
-    - 'which rsync || (apt update && apt -y install rsync)'
-    - mkdir -p ~/.ssh
-    - eval $(ssh-agent -s)
-    - ssh-add <(echo "$BLOG_PUBLISH_PRIVATE_KEY")
-  script:
-    - ssh -o StrictHostKeyChecking=no "root@docker1.ext.uib.gmbh" "mkdir -p /var/lib/docker/volumes/docs_nginx_data/_data/python-docs"
-    - rsync -e "ssh -o StrictHostKeyChecking=no" --delete -azv apidoc "root@docker1.ext.uib.gmbh:/var/lib/docker/volumes/docs_nginx_data/_data/python-docs/python-opsi"
