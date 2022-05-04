@@ -2,8 +2,8 @@ image: docker.uib.gmbh/opsi/dev/pybuilder:uib-python-3.10
 
 stages:
   - test
-  - publish
   - doc
+  - publish
 
 
 pylint-pytest:
@@ -48,16 +48,6 @@ pylint-pytest:
     expire_in: 14 days
 
 
-uibpypi:
-  stage: publish
-  script:
-    - poetry lock --no-update
-    - poetry install
-    - poetry run opsi-dev-tool -l info --uib-pypi-publish
-  only:
-    - tags
-
-
 apidoc:
   stage: doc
   when: manual
@@ -69,3 +59,27 @@ apidoc:
     name: 'python-opsi-apidoc'
     paths:
       - apidoc
+
+
+uibpypi:
+  stage: publish
+  script:
+    - poetry lock --no-update
+    - poetry install
+    - poetry run opsi-dev-tool -l info --uib-pypi-publish
+  only:
+    - tags
+
+rsync_apidoc:
+  stage: publish
+  when: manual
+  image: docker.uib.gmbh/fabian/opsidoc-antora:latest
+  before_script:
+    - 'which ssh-agent || (apt update && apt install -y openssh-client)'
+    - 'which rsync || (apt update && apt install -y rsync)'
+    - mkdir -p ~/.ssh
+    - eval $(ssh-agent -s)
+    - ssh-add <(echo "$DOCUSER_PRIVATE_KEY")
+  script:
+    - ssh "$DOCUSER_EXT@$DOCSERVER_EXT" "mkdir -p /var/lib/docker/volumes/docs_nginx_data/_data/python-docs"
+    - rsync -e "ssh -o StrictHostKeyChecking=no" --delete -azv apidoc "$DOCUSER_EXT@$DOCSERVER_EXT:/var/lib/docker/volumes/docs_nginx_data/_data/python-docs/python-opsi"
