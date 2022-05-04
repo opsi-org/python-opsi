@@ -81,5 +81,5 @@ rsync_apidoc:
     - eval $(ssh-agent -s)
     - ssh-add <(echo "$BLOG_PUBLISH_PRIVATE_KEY")
   script:
-    - ssh "root@docker1.ext.uib.gmbh" "mkdir -p /var/lib/docker/volumes/docs_nginx_data/_data/python-docs"
+    - ssh -o StrictHostKeyChecking=no "root@docker1.ext.uib.gmbh" "mkdir -p /var/lib/docker/volumes/docs_nginx_data/_data/python-docs"
     - rsync -e "ssh -o StrictHostKeyChecking=no" --delete -azv apidoc "root@docker1.ext.uib.gmbh:/var/lib/docker/volumes/docs_nginx_data/_data/python-docs/python-opsi"
