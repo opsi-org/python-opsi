@@ -2,10 +2,11 @@ image: docker.uib.gmbh/opsi/dev/pybuilder:uib-python-3.10
 
 stages:
   - test
-  - package
   - publish
+  - doc
 
-test:pylint-pytest:
+
+pylint-pytest:
   #when: manual
   services:
     - name: mysql:latest
@@ -46,7 +47,8 @@ test:pylint-pytest:
         junit: testreport.xml
     expire_in: 14 days
 
-publish:uibpypi:
+
+uibpypi:
   stage: publish
   script:
     - poetry lock --no-update
@@ -54,3 +56,16 @@ publish:uibpypi:
     - poetry run opsi-dev-tool -l info --uib-pypi-publish
   only:
     - tags
+
+
+apidoc:
+  stage: doc
+  when: manual
+  script:
+    - poetry lock --no-update
+    - poetry install
+    - poetry run poetry run opsi-dev-cli apidoc makehtml
+  artifacts:
+    name: 'python-opsi-apidoc'
+    paths:
+      - apidoc
