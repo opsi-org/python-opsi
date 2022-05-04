@@ -8,23 +8,34 @@ Testing extended backends features
 
 import random
 
+import pytest
+
 from OPSI.Backend.Backend import temporaryBackendOptions
 from OPSI.Exceptions import BackendError, BackendMissingDataError
 from OPSI.Object import (
-	BoolProductProperty, ConfigState, LocalbootProduct, OpsiClient,
-	OpsiDepotserver, ProductOnClient, ProductOnDepot, ProductPropertyState,
-	UnicodeConfig, UnicodeProductProperty)
+	BoolProductProperty,
+	ConfigState,
+	LocalbootProduct,
+	OpsiClient,
+	OpsiDepotserver,
+	ProductOnClient,
+	ProductOnDepot,
+	ProductPropertyState,
+	UnicodeConfig,
+	UnicodeProductProperty,
+)
 from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
 
 from .test_backend_replicator import fillBackend
 from .test_configs import getConfigs, getConfigStates
 from .test_hosts import getClients, getConfigServer, getDepotServers
 from .test_products import (
-	getLocalbootProducts, getNetbootProduct, getProductsOnClients,
-	getProductsOnDepot, getProductPropertyStates)
-
-import pytest
-
+	getLocalbootProducts,
+	getNetbootProduct,
+	getProductPropertyStates,
+	getProductsOnClients,
+	getProductsOnDepot,
+)
 
 # TODO: provide tests for these backend options:
 #	 extendedConfigDataBackend.backend_setOptions({
@@ -420,6 +431,8 @@ def testBackend_getInterface(extendedConfigDataBackend, methodSignature):
 
 	for result in extendedConfigDataBackend.backend_getInterface():
 		if result['name'] == methodSignature['name']:
+			assert "doc" in result
+			del result["doc"]
 			assert result == methodSignature
 			break
 	else:

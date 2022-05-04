@@ -17,6 +17,7 @@ import os
 import re
 import time
 from hashlib import md5
+from textwrap import dedent
 from typing import Union
 
 try:
@@ -88,6 +89,10 @@ def describeInterface(instance):
 				params.extend([f"{stars}{arg}" for arg in forceList(element)])
 
 		logger.trace("%s interface method: name %s, params %s", instance.__class__.__name__, methodName, params)
+		doc = function.__doc__
+		if doc:
+			doc = dedent(doc).lstrip() or None
+
 		methods[methodName] = {
 			"name": methodName,
 			"params": params,
@@ -97,6 +102,7 @@ def describeInterface(instance):
 			"defaults": defaults,
 			"deprecated": getattr(function, "deprecated", False),
 			"alternative_method": getattr(function, "alternative_method", None),
+			"doc": doc
 		}
 
 	return [methods[name] for name in sorted(list(methods.keys()))]
