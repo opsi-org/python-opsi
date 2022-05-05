@@ -8,16 +8,25 @@ Backends.
 
 from __future__ import absolute_import
 
-from .Backend import describeInterface, Backend
+from .Backend import Backend, describeInterface
 from .ConfigData import ConfigDataBackend
 from .Extended import (
-	getArgAndCallString, ExtendedBackend, ExtendedConfigDataBackend)
+	ExtendedBackend,
+	ExtendedConfigDataBackend,
+	get_function_signature_and_args,
+)
 from .ModificationTracking import (
-	ModificationTrackingBackend, BackendModificationListener)
+	BackendModificationListener,
+	ModificationTrackingBackend,
+)
 
 __all__ = (
-	'describeInterface', 'getArgAndCallString',
-	'Backend', 'ExtendedBackend', 'ConfigDataBackend',
-	'ExtendedConfigDataBackend',
-	'ModificationTrackingBackend', 'BackendModificationListener'
+	"describeInterface",
+	"get_function_signature_and_args",
+	"Backend",
+	"ExtendedBackend",
+	"ConfigDataBackend",
+	"ExtendedConfigDataBackend",
+	"ModificationTrackingBackend",
+	"BackendModificationListener",
 )

@@ -11,13 +11,18 @@ This holds the basic backend classes.
 import threading
 from contextlib import contextmanager
 
-from .Base import describeInterface, Backend
-from .Base import ConfigDataBackend
-from .Base import getArgAndCallString, ExtendedBackend, ExtendedConfigDataBackend
-from .Base import ModificationTrackingBackend, BackendModificationListener
+from .Base import (
+	Backend,
+	BackendModificationListener,
+	ConfigDataBackend,
+	ExtendedBackend,
+	ExtendedConfigDataBackend,
+	ModificationTrackingBackend,
+	describeInterface,
+)
 
 __all__ = (
-	'describeInterface', 'getArgAndCallString', 'temporaryBackendOptions',
+	'describeInterface', 'temporaryBackendOptions',
 	'DeferredCall', 'Backend', 'ExtendedBackend', 'ConfigDataBackend',
 	'ExtendedConfigDataBackend',
 	'ModificationTrackingBackend', 'BackendModificationListener'

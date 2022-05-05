@@ -404,14 +404,15 @@ def testGetIdentsWithWildcardFilter(extendedConfigDataBackend):
 
 
 @pytest.mark.parametrize("methodSignature", (
-	{'deprecated': False, 'alternative_method': None, 'name': 'backend_getInterface', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
-	{'deprecated': False, 'alternative_method': None, 'name': 'backend_getOptions', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
-	{'deprecated': False, 'alternative_method': None, 'name': 'backend_info', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None},
-	{'deprecated': False, 'alternative_method': None, 'name': 'configState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
-	{'deprecated': False, 'alternative_method': None, 'name': 'config_getIdents', 'args': ['self', 'returnType'], 'params': ['*returnType', '**filter'], 'defaults': ('unicode',), 'varargs': None, 'keywords': 'filter'},
-	{'deprecated': False, 'alternative_method': None, 'name': 'host_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
-	{'deprecated': False, 'alternative_method': None, 'name': 'productOnClient_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
-	{'deprecated': False, 'alternative_method': None, 'name': 'productPropertyState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter'},
+	{'deprecated': False, 'alternative_method': None, 'name': 'backend_getLicensingInfo', 'args': ['self', 'licenses', 'legacy_modules', 'dates', 'allow_cache'], 'params': ['*licenses', '*legacy_modules', '*dates', '*allow_cache'], 'defaults': (False, False, False, True), 'varargs': None, 'keywords': None, 'annotations': {'allow_cache': 'bool', 'dates': 'bool', 'legacy_modules': 'bool', 'licenses': 'bool'}},
+	{'deprecated': False, 'alternative_method': None, 'name': 'backend_getInterface', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None, 'annotations': {}},
+	{'deprecated': False, 'alternative_method': None, 'name': 'backend_getOptions', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None, 'annotations': {}},
+	{'deprecated': False, 'alternative_method': None, 'name': 'backend_info', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None, 'annotations': {}},
+	{'deprecated': False, 'alternative_method': None, 'name': 'configState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter', 'annotations': {}},
+	{'deprecated': False, 'alternative_method': None, 'name': 'config_getIdents', 'args': ['self', 'returnType'], 'params': ['*returnType', '**filter'], 'defaults': ('unicode',), 'varargs': None, 'keywords': 'filter', 'annotations': {}},
+	{'deprecated': False, 'alternative_method': None, 'name': 'host_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter', 'annotations': {}},
+	{'deprecated': False, 'alternative_method': None, 'name': 'productOnClient_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter', 'annotations': {}},
+	{'deprecated': False, 'alternative_method': None, 'name': 'productPropertyState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter', 'annotations': {}},
 ))
 def testBackend_getInterface(extendedConfigDataBackend, methodSignature):
 	"""

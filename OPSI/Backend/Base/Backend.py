@@ -72,10 +72,15 @@ def describeInterface(instance):
 			continue
 
 		spec = inspect.getfullargspec(function)
+		sig = inspect.signature(function)
 		args = spec.args
 		defaults = spec.defaults
-
 		params = [arg for arg in args if arg != "self"]
+		annotations = {}
+		for param in params:
+			str_param = str(sig.parameters[param])
+			if ": " in str_param:
+				annotations[param] = str_param.split(": ", 1)[1].split(" = ", 1)[0]
 
 		if defaults is not None:
 			offset = len(params) - len(defaults)
@@ -102,7 +107,8 @@ def describeInterface(instance):
 			"defaults": defaults,
 			"deprecated": getattr(function, "deprecated", False),
 			"alternative_method": getattr(function, "alternative_method", None),
-			"doc": doc
+			"doc": doc,
+			"annotations": annotations
 		}
 
 	return [methods[name] for name in sorted(list(methods.keys()))]

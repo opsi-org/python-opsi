@@ -32,48 +32,22 @@ logger = get_logger("opsi.general")
 
 
 __all__ = (
-	"getArgAndCallString",
 	"ExtendedBackend",
 	"ExtendedConfigDataBackend",
 )
 
 
-def getArgAndCallString(method):
+def get_function_signature_and_args(function):
 	"""
-	Inspects `method` to gain information about the method signature.
+	Inspects `function` and returns the function signature and arguments.
 
 	:type method: func
 	:rtype: (str, str)
 	"""
-	argString = []
-	callString = []
-	spec = inspect.getfullargspec(method)
-	_args = spec.args
-	argDefaults = spec.defaults
-
-	for element in _args:
-		if element == "self":
-			continue
-
-		callString.append("=".join((element, element)))
-		if isinstance(argDefaults, tuple) and (len(argDefaults) + _args.index(element) >= len(_args)):
-			default = argDefaults[len(argDefaults) - len(_args) + _args.index(element)]
-			if isinstance(default, str):
-				default = f"'{default}'"
-			elif isinstance(default, bytes):
-				default = f"b'{default}'"
-
-			argString.append("=".join((element, str(default))))
-		else:
-			argString.append(element)
-
-	for (index, element) in enumerate((spec.varargs, spec.varkw), start=1):
-		if element:
-			toAdd = f"{index * '*'}{element}"
-			argString.append(toAdd)
-			callString.append(toAdd)
-
-	return (", ".join(argString), ", ".join(callString))
+	return (
+		str(inspect.signature(function)),
+		",".join([f"{arg}={arg}" for arg in inspect.getfullargspec(function).args if arg != "self"])
+	)
 
 
 class ExtendedBackend(Backend):
@@ -113,10 +87,9 @@ class ExtendedBackend(Backend):
 					continue
 				logger.debug("%s: not overwriting method %s of backend instance %s", self.__class__.__name__, methodName, self._backend)
 
-			argString, callString = getArgAndCallString(functionRef)
-
+			sig, arg = get_function_signature_and_args(functionRef)
 			exec(  # pylint: disable=exec-used
-				f'def {methodName}(self, {argString}): return self._executeMethod("{methodName}", {callString})'
+				f'def {methodName}(self, {sig[1:]}: return self._executeMethod("{methodName}", {arg})'
 			)
 			new_function = eval(methodName)  # pylint: disable=eval-used
 			new_function.deprecated = getattr(functionRef, "deprecated", False)

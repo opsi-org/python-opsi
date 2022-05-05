@@ -15,7 +15,11 @@ from functools import lru_cache
 
 from opsicommon.logging import get_logger
 
-from OPSI.Backend.Base import Backend, ConfigDataBackend, getArgAndCallString
+from OPSI.Backend.Base import (
+	Backend,
+	ConfigDataBackend,
+	get_function_signature_and_args,
+)
 from OPSI.Backend.Base.Extended import ExtendedConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import BackendConfigurationError
@@ -182,10 +186,9 @@ class BackendDispatcher(Backend):
 				if not methodBackends:
 					continue
 
-				argString, callString = getArgAndCallString(functionRef)
-
+				sig, arg = get_function_signature_and_args(functionRef)
 				exec(  # pylint: disable=exec-used
-					f'def {methodName}(self, {argString}): return self._dispatchMethod({methodBackends}, "{methodName}", {callString})'
+					f'def {methodName}(self, {sig[1:]}: return self._dispatchMethod("{methodName}", {arg})'
 				)
 				new_function = eval(methodName)  # pylint: disable=eval-used
 				new_function.deprecated = getattr(functionRef, "deprecated", False)

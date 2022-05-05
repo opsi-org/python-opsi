@@ -18,7 +18,7 @@ from opsicommon.logging import get_logger
 from OPSI.Backend.Base import (
 	ConfigDataBackend,
 	ExtendedConfigDataBackend,
-	getArgAndCallString,
+	get_function_signature_and_args,
 )
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
@@ -303,17 +303,17 @@ class BackendAccessControl:
 				# Not a public method
 				continue
 
-			argString, callString = getArgAndCallString(functionRef)
+			sig, arg = get_function_signature_and_args(functionRef)
 
 			if methodName in protectedMethods:
 				logger.trace("Protecting method '%s'", methodName)
 				exec(  # pylint: disable=exec-used
-					f'def {methodName}(self, {argString}): return self._executeMethodProtected("{methodName}", {callString})'
+					f'def {methodName}(self, {sig[1:]}: return self._executeMethodProtected("{methodName}", {arg})'
 				)
 			else:
 				logger.trace("Not protecting method '%s'", methodName)
 				exec(  # pylint: disable=exec-used
-					f'def {methodName}(self, {argString}): return self._executeMethod("{methodName}", {callString})'
+					f'def {methodName}(self, {sig[1:]}: return self._executeMethod("{methodName}", {arg})'
 				)
 
 			new_function = eval(methodName)  # pylint: disable=eval-used
