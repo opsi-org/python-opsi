@@ -6,25 +6,27 @@
 Applications for the use of opsi in an twisted-application context.
 """
 
+from typing import Any, Dict
+
 from opsicommon.logging import get_logger
 
 logger = get_logger("opsi.general")
 
 
 class AppRunner:  # pylint: disable=too-few-public-methods
-	def __init__(self, app, config):
+	def __init__(self, app: Any, config: Dict[str, Any]) -> None:
 		self._app = app
 		self._config = config
 
-	def run(self):
+	def run(self) -> None:
 		self._app.run()
 
 
 class _BaseProfiler(AppRunner):  # pylint: disable=too-few-public-methods
-	def _getProfiler(self):
+	def _getProfiler(self) -> Any:
 		raise NotImplementedError("Subclass must implement this.")
 
-	def run(self):
+	def run(self) -> None:
 		try:
 			import pstats  # pylint: disable=import-outside-toplevel
 
@@ -49,14 +51,14 @@ class _BaseProfiler(AppRunner):  # pylint: disable=too-few-public-methods
 
 
 class ProfileRunner(_BaseProfiler):  # pylint: disable=too-few-public-methods
-	def _getProfiler(self):
+	def _getProfiler(self) -> Any:
 		import profile  # pylint: disable=import-outside-toplevel
 
 		return profile.Profile()
 
 
 class CProfileRunner(_BaseProfiler):  # pylint: disable=too-few-public-methods
-	def _getProfiler(self):
+	def _getProfiler(self) -> Any:
 		import cProfile  # pylint: disable=import-outside-toplevel
 
 		return cProfile.Profile()
@@ -66,7 +68,7 @@ class Application:  # pylint: disable=too-few-public-methods
 
 	profiler = {"profiler": ProfileRunner, "cprofiler": CProfileRunner}
 
-	def __init__(self, config):
+	def __init__(self, config: Dict[str, Any]) -> None:
 		self._config = config
 		self._app = self._getApplication()
 		self._runner = self._getRunner()
@@ -74,7 +76,7 @@ class Application:  # pylint: disable=too-few-public-methods
 	def _getApplication(self):
 		raise NotImplementedError("Subclass must implement this function.")
 
-	def _getRunner(self):
+	def _getRunner(self) -> AppRunner:
 		if self._config.get("profile", False):
 			profiler = self._config.get("profiler", "profiler").lower()
 			if profiler in self.profiler:
@@ -84,13 +86,13 @@ class Application:  # pylint: disable=too-few-public-methods
 
 		return AppRunner(self._app, self._config)
 
-	def setup(self):
+	def setup(self) -> None:
 		pass
 
-	def shutdown(self):
+	def shutdown(self) -> None:
 		pass
 
-	def run(self):
+	def run(self) -> None:
 		try:
 			self.setup()
 			return self._runner.run()

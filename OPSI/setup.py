@@ -9,6 +9,7 @@ setup tasks
 import grp
 import pwd
 import subprocess
+from typing import Dict
 
 from opsicommon.logging import get_logger
 
@@ -24,7 +25,7 @@ from OPSI.Util.Task.Rights import set_rights
 logger = get_logger("opsi.general")
 
 
-def create_group(groupname: str, system: bool = False):
+def create_group(groupname: str, system: bool = False) -> None:
 	logger.notice("Creating group: %s", groupname)
 	cmd = ["groupadd"]
 	if system:
@@ -34,7 +35,7 @@ def create_group(groupname: str, system: bool = False):
 	subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=get_subprocess_environment())
 
 
-def create_user(username: str, primary_groupname: str, home: str, shell: str, system: bool = False):
+def create_user(username: str, primary_groupname: str, home: str, shell: str, system: bool = False) -> None:
 	logger.notice("Creating user: %s", username)
 	cmd = ["useradd", "-g", primary_groupname, "-d", home, "-s", shell]
 	if system:
@@ -44,35 +45,35 @@ def create_user(username: str, primary_groupname: str, home: str, shell: str, sy
 	subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=get_subprocess_environment())
 
 
-def add_user_to_group(username: str, groupname: str):
+def add_user_to_group(username: str, groupname: str) -> None:
 	logger.notice("Adding user '%s' to group '%s'", username, groupname)
 	cmd = ["usermod", "-a", "-G", groupname, username]
 	logger.info("Running command: %s", cmd)
 	subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=get_subprocess_environment())
 
 
-def set_primary_group(username: str, groupname: str):
+def set_primary_group(username: str, groupname: str) -> None:
 	logger.notice("Setting primary group of user '%s' to '%s'", username, groupname)
 	cmd = ["usermod", "-g", groupname, username]
 	logger.info("Running command: %s", cmd)
 	subprocess.check_output(cmd, stderr=subprocess.STDOUT, env=get_subprocess_environment())
 
 
-def get_groups():
+def get_groups() -> Dict[str, grp.struct_group]:
 	groups = {}
 	for group in grp.getgrall():
 		groups[group.gr_name] = group
 	return groups
 
 
-def get_users():
+def get_users() -> Dict[str, pwd.struct_passwd]:
 	users = {}
 	for user in pwd.getpwall():
 		users[user.pw_name] = user
 	return users
 
 
-def setup_users_and_groups(ignore_errors: bool = False):
+def setup_users_and_groups(ignore_errors: bool = False) -> None:
 	logger.info("Setup users and groups")
 
 	try:
@@ -112,11 +113,11 @@ def setup_users_and_groups(ignore_errors: bool = False):
 			logger.info(err)
 
 
-def setup_file_permissions(path: str = "/"):
+def setup_file_permissions(path: str = "/") -> None:
 	set_rights(path)
 
 
-def setup(ignore_errors: bool = False):
+def setup(ignore_errors: bool = False) -> None:
 	logger.notice("Running setup")
 	setup_users_and_groups(ignore_errors)
 	setup_file_permissions()

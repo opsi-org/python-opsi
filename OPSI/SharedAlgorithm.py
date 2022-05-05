@@ -13,11 +13,12 @@ Algorithms to get a product order for an installation.
 """
 
 from collections import defaultdict
+from typing import Any, Dict, List, Optional, Tuple
 
 from opsicommon.logging import get_logger
 
 from OPSI.Exceptions import BackendUnaccomplishableError, OpsiProductOrderingError
-from OPSI.Object import ProductOnClient
+from OPSI.Object import Product, ProductDependency, ProductOnClient
 from OPSI.Types import forceBool, forceInt
 
 BOTTOM = -100
@@ -29,9 +30,13 @@ class CircularProductDependencyError(BackendUnaccomplishableError):
 	ExceptionShortDescription = "A circular dependency between products."
 
 
-def addActionRequest(
-	productOnClientByProductId, productId, productDependenciesByProductId, availableProductsByProductId, addedInfo=None
-):  # pylint: disable=too-many-branches,too-many-statements
+def addActionRequest(  # pylint: disable=too-many-branches,too-many-statements
+	productOnClientByProductId: Dict[str, ProductOnClient],
+	productId: str,
+	productDependenciesByProductId: Dict[str, ProductDependency],
+	availableProductsByProductId: Dict[str, Product],
+	addedInfo: Optional[Dict[str, Any]] = None,
+) -> None:
 	logger.debug("Checking dependencies for product %s, action %s", productId, productOnClientByProductId[productId].actionRequest)
 	addedInfo = addedInfo or {}
 
@@ -167,7 +172,9 @@ def addActionRequest(
 		)
 
 
-def addDependentProductOnClients(productOnClients, availableProducts, productDependencies):
+def addDependentProductOnClients(
+	productOnClients: List[ProductOnClient], availableProducts: List[Product], productDependencies: List[ProductDependency]
+) -> List[ProductOnClient]:
 	availableProductsByProductId = {}
 	for availableProduct in availableProducts:
 		availableProductsByProductId[availableProduct.id] = availableProduct
@@ -197,16 +204,16 @@ class XClassifiedProduct:
 	has String member id, int members priority, revisedPriority, and a member that is intendend to be a reference to a Product
 	"""
 
-	def __init__(self, product):
+	def __init__(self, product: Product) -> None:
 		self.id = product.id  # pylint: disable=invalid-name
 		self.priority = product.priority  # handle this variable as final
 		self.revisedPriority = product.priority  # start value which may be modified
 		self.product = product  # keep pointer to the original standard product structure
 
-	def __str__(self):
+	def __str__(self) -> str:
 		return f"<{self.__class__.__name__}(productId={self.id}, priority={self.priority}, revisedPriority={self.revisedPriority})>"
 
-	def __repr__(self):
+	def __repr__(self) -> str:
 		return self.__str__()
 
 
@@ -216,27 +223,27 @@ class OrderRequirement:
 	if it is fulfilled.
 	"""
 
-	def __init__(self, prior, posterior, fulfilled=False):
+	def __init__(self, prior: int, posterior: int, fulfilled: bool = False) -> None:
 		self.prior = forceInt(prior)
 		self.posterior = forceInt(posterior)
 		self.fulfilled = forceBool(fulfilled)
 
-	def __str__(self):
+	def __str__(self) -> str:
 		return f"<OrderRequirement(prior={self.prior!r}, posterior={self.posterior!r}, fulfilled={self.fulfilled!r}>"
 
-	def __repr__(self):
+	def __repr__(self) -> str:
 		return self.__str__()
 
 
 class Requirements:
-	# Comprises a list with ordering requirements and ordered lists of them
+	"""Comprises a list with ordering requirements and ordered lists of them"""
 
-	def __init__(self):
+	def __init__(self) -> None:
 		self.list = []
 		self.orderByPrior = []
 		self.orderByPosterior = []
 
-	def add(self, requirement):
+	def add(self, requirement: OrderRequirement) -> None:
 		assert isinstance(requirement, OrderRequirement), "not an OrderRequirement"
 		self.list.append(requirement)
 		# Extend the other lists by dummy valuesnoInListOrderedByPriors
@@ -307,8 +314,8 @@ class Requirements:
 			# If i = len(self.list) - 1 nothing is moved
 			self.orderByPosterior[i] = len(self.list) - 1
 
-	def posteriorIndexOf(self, posti):
-		# Searches first occurrence of posti as posterior value in the posterior-ordered sequence of requirements
+	def posteriorIndexOf(self, posti: int) -> int:
+		"""Searches first occurrence of posti as posterior value in the posterior-ordered sequence of requirements"""
 
 		j = 0
 		searching = True
@@ -331,7 +338,7 @@ class Requirements:
 		# There are no more possible occurrences of posterior
 		return -1
 
-	def indexOfFirstNotFulfilledRequirementOrderedByPrior(self):
+	def indexOfFirstNotFulfilledRequirementOrderedByPrior(self) -> int:
 		i = 0
 		found = False
 		while not found and (i < len(self.list)):
@@ -345,7 +352,7 @@ class Requirements:
 
 		return -1
 
-	def firstPriorNotOccurringAsPosterior(self, startI):
+	def firstPriorNotOccurringAsPosterior(self, startI: int) -> Tuple[Any, int]:
 		j = startI
 		found = False
 		candidate = self.list[self.orderByPrior[startI]].prior
@@ -377,23 +384,23 @@ class Requirements:
 		logger.error(errorMessage)
 		raise OpsiProductOrderingError(errorMessage, candidatesCausingProblemes)
 
-	def getCount(self):
+	def getCount(self) -> int:
 		return len(self.list)
 
-	def getRequList(self):
+	def getRequList(self) -> List[OrderRequirement]:
 		return self.list
 
-	def getOrderByPrior(self):
+	def getOrderByPrior(self) -> List[OrderRequirement]:
 		return self.orderByPrior
 
-	def getOrderByPosteriors(self):
+	def getOrderByPosteriors(self) -> List[OrderRequirement]:
 		return self.orderByPosterior
 
 
 class OrderBuild:  # pylint: disable=too-many-instance-attributes
-	# Describes the building of an ordering
+	"""Describes the building of an ordering"""
 
-	def __init__(self, elementCount, requs, completing):
+	def __init__(self, elementCount: int, requs: Requirements, completing: bool) -> None:
 		self.ordering = []
 		self.elementCount = elementCount
 		self.completing = completing
@@ -418,7 +425,7 @@ class OrderBuild:  # pylint: disable=too-many-instance-attributes
 		self.usedCount = 0
 		logger.trace("OrderBuild initialized")
 
-	def proceed(self):  # pylint: disable=too-many-branches
+	def proceed(self) -> bool:  # pylint: disable=too-many-branches
 		result = True
 		lastSortedCount = 0
 
@@ -501,11 +508,11 @@ class OrderBuild:  # pylint: disable=too-many-instance-attributes
 		logger.debug("proceed result %s", result)
 		return result
 
-	def getOrdering(self):
+	def getOrdering(self) -> List[Any]:
 		return self.ordering
 
 
-def generateProductOnClientSequence(productOnClients, sortedList):
+def generateProductOnClientSequence(productOnClients: List[ProductOnClient], sortedList: List[str]) -> List[ProductOnClient]:
 	pocsByClientIdAndProductId = defaultdict(dict)
 	for productOnClient in productOnClients:
 		pocsByClientIdAndProductId[productOnClient.clientId][productOnClient.productId] = productOnClient
@@ -530,7 +537,7 @@ def generateProductOnClientSequence(productOnClients, sortedList):
 	return productOnClients
 
 
-def generateProductOnClientSequenceX(productOnClients, sortedList):
+def generateProductOnClientSequenceX(productOnClients: List[ProductOnClient], sortedList: List[str]) -> List[ProductOnClient]:
 	fProductId2ProductOnClients = {}
 	for productOnClient in productOnClients:
 		if productOnClient.productId not in fProductId2ProductOnClients:
@@ -556,7 +563,7 @@ def generateProductOnClientSequenceX(productOnClients, sortedList):
 	return result
 
 
-def getSetupRequirements(productDependencies):
+def getSetupRequirements(productDependencies: List[ProductDependency]) -> List[Tuple[str, str]]:
 	# Requirements are list of pairs (install_prior, install_posterior)
 	# We treat only setup requirements
 	setupRequirements = []
@@ -574,14 +581,14 @@ def getSetupRequirements(productDependencies):
 	return setupRequirements
 
 
-def generateProductSequence_algorithm1(availableProducts, productDependencies):
+def generateProductSequence_algorithm1(availableProducts: List[Product], productDependencies: List[ProductDependency]) -> List[Product]:
 	logger.info("Generating product sequence by algorithm 1.")
 	setupRequirements = getSetupRequirements(productDependencies)
 
 	return generateProductSequenceFromRequPairs_algorithm1(availableProducts, setupRequirements)
 
 
-def modifySortingClassesForAlgorithm1(products, setupRequirements):  # pylint: disable=too-many-branches
+def modifySortingClassesForAlgorithm1(products: List[Product], setupRequirements: List[Any]) -> bool:  # pylint: disable=too-many-branches
 	# idea:
 	# we reconstruct the priority chain
 	# by pushing the products upwards into it when required by a dependency
@@ -642,7 +649,7 @@ def modifySortingClassesForAlgorithm1(products, setupRequirements):  # pylint: d
 	return recursionNecessary
 
 
-def generateProductSequenceFromRequPairs_algorithm1(availableProducts, setupRequirements):
+def generateProductSequenceFromRequPairs_algorithm1(availableProducts: List[Product], setupRequirements: List[Any]) -> List[Product]:
 	logger.debug("availableProducts %s", availableProducts)
 
 	xProducts = []
@@ -674,17 +681,17 @@ def generateProductSequenceFromRequPairs_algorithm1(availableProducts, setupRequ
 	return generateProductSequenceFromRequPairs_algorithm2(xProducts, setupRequirements)
 
 
-def generateProductSequence_algorithm2(availableProducts, productDependencies):
+def generateProductSequence_algorithm2(availableProducts: List[Product], productDependencies: List[ProductDependency]) -> List[Product]:
 	logger.info("Generating product sequence by algorithm 2:")
 	setupRequirements = getSetupRequirements(productDependencies)
 
 	return generateProductSequenceFromRequPairs_algorithm2(availableProducts, setupRequirements)
 
 
-def generateProductSequenceFromRequPairs_algorithm2(
-	availableProducts, setupRequirements
-):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
-	# Build priority classes and indices
+def generateProductSequenceFromRequPairs_algorithm2(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+	availableProducts: List[Product], setupRequirements: List[Any]
+) -> List[Product]:
+	"""Build priority classes and indices"""
 	logger.debug("availableProducts %s", availableProducts)
 
 	productIds = []
@@ -787,7 +794,9 @@ def generateProductSequenceFromRequPairs_algorithm2(
 	return sortedList
 
 
-def generateProductOnClientSequence_algorithm1(productOnClients, availableProducts, productDependencies):
+def generateProductOnClientSequence_algorithm1(
+	productOnClients: List[ProductOnClient], availableProducts: List[Product], productDependencies: List[ProductDependency]
+) -> List[ProductOnClient]:
 	logger.info("Generating productOnClient sequence with algorithm 1.")
 
 	setupRequirements = getSetupRequirements(productDependencies)
@@ -797,7 +806,9 @@ def generateProductOnClientSequence_algorithm1(productOnClients, availableProduc
 	return productOnClients
 
 
-def generateProductOnClientSequence_algorithm2(productOnClients, availableProducts, productDependencies):
+def generateProductOnClientSequence_algorithm2(
+	productOnClients: List[ProductOnClient], availableProducts: List[Product], productDependencies: List[ProductDependency]
+) -> List[ProductOnClient]:
 	logger.info("Generating productOnClient sequence with algorithm 2.")
 
 	setupRequirements = getSetupRequirements(productDependencies)
