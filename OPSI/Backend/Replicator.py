@@ -11,7 +11,7 @@ The replicator allows replication from one backend into another.
 from opsicommon.logging import get_logger
 
 from OPSI.Backend.Base import ExtendedConfigDataBackend
-from OPSI.Object import OpsiConfigserver, OpsiDepotserver
+from OPSI.Object import *  # pylint: disable=wildcard-import
 from OPSI.Types import forceBool, forceHostId, forceList
 from OPSI.Util.Message import ProgressSubject
 
