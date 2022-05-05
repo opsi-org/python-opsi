@@ -186,8 +186,10 @@ class BackendDispatcher(Backend):
 					continue
 
 				sig, arg = get_function_signature_and_args(functionRef)
+				if not sig.startswith("(self"):
+					sig = f"(self, {sig[1:]}"
 				exec(  # pylint: disable=exec-used
-					f'def {methodName}(self, {sig[1:]}: return self._dispatchMethod("{methodName}", {arg})'
+					f'def {methodName}{sig}: return self._dispatchMethod({methodBackends}, "{methodName}", {arg})'
 				)
 				new_function = eval(methodName)  # pylint: disable=eval-used
 				new_function.deprecated = getattr(functionRef, "deprecated", False)
