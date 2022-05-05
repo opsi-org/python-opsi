@@ -14,7 +14,8 @@ uib GmbH if this is not noted otherwise in the file itself.
 If you are looking for information on how to setup or configure an opsi
 system please get the _getting started_ from [opsi](http://www.opsi.org/).
 
-Also see [docs.opsi.org](http://docs.opsi.org/).
+Also see [docs.opsi.org](http://docs.opsi.org)
+and [the python-opsi documentation](http://docs.opsi.org/python-docs/python-opsi).
 
 
 ## Requirements
