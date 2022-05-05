@@ -186,8 +186,9 @@ class BackendDispatcher(Backend):
 					continue
 
 				sig, arg = get_function_signature_and_args(functionRef)
+				sig = "(self)" if sig == "()" else f"(self, {sig[1:]}"
 				exec(  # pylint: disable=exec-used
-					f'def {methodName}(self, {sig}): return self._dispatchMethod({methodBackends}, "{methodName}", {arg})'
+					f'def {methodName}{sig}: return self._dispatchMethod({methodBackends}, "{methodName}", {arg})'
 				)
 				new_function = eval(methodName)  # pylint: disable=eval-used
 				new_function.deprecated = getattr(functionRef, "deprecated", False)

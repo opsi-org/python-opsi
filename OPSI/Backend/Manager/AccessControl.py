@@ -301,15 +301,16 @@ class BackendAccessControl:
 				continue
 
 			sig, arg = get_function_signature_and_args(functionRef)
+			sig = "(self)" if sig == "()" else f"(self, {sig[1:]}"
 			if methodName in protectedMethods:
 				logger.trace("Protecting method '%s'", methodName)
 				exec(  # pylint: disable=exec-used
-					f'def {methodName}(self, {sig}): return self._executeMethodProtected("{methodName}", {arg})'
+					f'def {methodName}{sig}: return self._executeMethodProtected("{methodName}", {arg})'
 				)
 			else:
 				logger.trace("Not protecting method '%s'", methodName)
 				exec(  # pylint: disable=exec-used
-					f'def {methodName}(self, {sig}): return self._executeMethod("{methodName}", {arg})'
+					f'def {methodName}{sig}: return self._executeMethod("{methodName}", {arg})'
 				)
 
 			new_function = eval(methodName)  # pylint: disable=eval-used
