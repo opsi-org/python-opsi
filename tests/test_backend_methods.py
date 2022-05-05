@@ -6,134 +6,133 @@
 Testing unbound methods for the backends.
 """
 
-import OPSI.Backend.Backend as Backend
+from OPSI.Backend.Base.Extended import get_function_signature_and_args
 
 
-def testGettingSignatureForMethodWithoutArguments():
+def test_getting_signature_for_method_without_arguments():
 	def foo():
 		pass
 
-	args, kwargs = Backend.getArgAndCallString(foo)
+	sig, args = get_function_signature_and_args(foo)
 
+	assert sig == ""
 	assert not args
-	assert not kwargs
 
 
-def testGettingSignatureForMethodWithOnePositionalArgument():
+def test_getting_signature_for_method_with_one_positional_argument():
 	def foo(bar):
 		pass
 
-	args, kwargs = Backend.getArgAndCallString(foo)
+	sig, args = get_function_signature_and_args(foo)
 
-	assert 'bar' == args
-	assert 'bar=bar' == kwargs
+	assert sig == 'bar'
+	assert args == 'bar=bar'
 
 
-def testGettingSignatureForMethodWithMultiplePositionalArguments():
+def test_getting_signature_for_method_with_multiple_positional_arguments():
 	def foo(bar, baz):
 		pass
 
-	args, kwargs = Backend.getArgAndCallString(foo)
+	sig, args = get_function_signature_and_args(foo)
 
-	assert 'bar, baz' == args
-	assert 'bar=bar, baz=baz' == kwargs
+	assert sig == 'bar, baz'
+	assert args == 'bar=bar, baz=baz'
 
 
-def testGettingSignatureForMethodWithKeywordArgumentOnly():
+def test_getting_signature_for_method_with_keyword_argument_only():
 	def foo(bar=None):
 		pass
 
-	args, kwargs = Backend.getArgAndCallString(foo)
+	sig, args = get_function_signature_and_args(foo)
 
-	assert 'bar=None' == args
-	assert 'bar=bar' == kwargs
+	assert 'bar=None' == sig
+	assert 'bar=bar' == args
 
 
-def testGettingSignatureForMethodWithMultipleKeywordArgumentsOnly():
+def test_getting_signature_for_method_with_multiple_keyword_arguments_only():
 	def foo(bar=None, baz=None):
 		pass
 
-	args, kwargs = Backend.getArgAndCallString(foo)
+	sig, args = get_function_signature_and_args(foo)
 
-	assert 'bar=None, baz=None' == args
-	assert 'bar=bar, baz=baz' == kwargs
+	assert sig == 'bar=None, baz=None'
+	assert args == 'bar=bar, baz=baz'
 
 
-def testGettingSignatureForMethodWithMixedArguments():
+def test_getting_signature_for_method_with_mixed_arguments():
 	def foo(bar, baz=None):
 		pass
 
-	args, kwargs = Backend.getArgAndCallString(foo)
+	sig, args = get_function_signature_and_args(foo)
 
-	assert 'bar, baz=None' == args
-	assert 'bar=bar, baz=baz' == kwargs
+	assert sig == 'bar, baz=None'
+	assert args == 'bar=bar, baz=baz'
 
 
-def testSelfAsFirstArgumentIsIgnored():
+def test_self_as_first_argument_is_ignored():
 	def foo(self, bar=None):
 		pass
 
-	args, kwargs = Backend.getArgAndCallString(foo)
+	sig, args = get_function_signature_and_args(foo)
 
-	assert 'bar=None' == args
-	assert 'bar=bar' == kwargs
+	assert sig == 'bar=None'
+	assert args == 'bar=bar'
 
 
-def testArgumentWithStringDefault():
+def test_argument_with_string_default():
 	def foo(bar='baz'):
 		pass
 
-	args, kwargs = Backend.getArgAndCallString(foo)
+	sig, args = get_function_signature_and_args(foo)
 
-	assert "bar='baz'" == args
-	assert 'bar=bar' == kwargs
-
-
-def testArgumentWithUnicodeDefault():
-	def foo(bar=u'baz'):
-		pass
-
-	args, kwargs = Backend.getArgAndCallString(foo)
-
-	assert "bar='baz'" == args
-	assert 'bar=bar' == kwargs
+	assert sig == "bar='baz'"
+	assert args == 'bar=bar'
 
 
-def testArgumentWithVariableArgumentCount():
+def test_argument_with_variable_argument_count():
 	def foo(*bar):
 		pass
 
-	args, kwargs = Backend.getArgAndCallString(foo)
+	sig, args = get_function_signature_and_args(foo)
 
-	assert "*bar" == args
-	assert '*bar' == kwargs
+	assert sig == "*bar"
+	assert args == '*bar'
 
 
-def testArgumentWithPositionalArgumentAndVariableArgumentCount():
+def test_argument_with_positional_argument_and_variable_argument_count():
 	def foo(bar, *baz):
 		pass
 
-	args, kwargs = Backend.getArgAndCallString(foo)
+	sig, args = get_function_signature_and_args(foo)
 
-	assert "bar, *baz" == args
-	assert 'bar=bar, *baz' == kwargs
+	assert sig == "bar, *baz"
+	assert args == 'bar=bar, *baz'
 
 
-def testVariableKeywordArguments():
+def test_variable_keyword_arguments():
 	def foo(**bar):
 		pass
 
-	args, kwargs = Backend.getArgAndCallString(foo)
+	sig, args = get_function_signature_and_args(foo)
 
-	assert "**bar" == args
-	assert '**bar' == kwargs
+	assert sig == "**bar"
+	assert args == '**bar'
 
 
-def testMethodWithAllTypesOfArguments():
+def test_method_with_all_types_of_arguments():
 	def foo(ironman, blackWidow=True, *hulk, **deadpool):
 		pass
 
-	args, kwargs = Backend.getArgAndCallString(foo)
+	sig, args = get_function_signature_and_args(foo)
 
-	assert "ironman, blackWidow=True, *hulk, **deadpool" == args
-	assert 'ironman=ironman, blackWidow=blackWidow, *hulk, **deadpool' == kwargs
+	assert sig == "ironman, blackWidow=True, *hulk, **deadpool"
+	assert args == 'ironman=ironman, blackWidow=blackWidow, *hulk, **deadpool'
+
+def test_method_with_all_types_of_arguments_and_annotations():
+	def foo(ironman, blackWidow: bool = True, *hulk, **deadpool):
+		pass
+
+	sig, args = get_function_signature_and_args(foo)
+
+	assert sig == "ironman, blackWidow: bool = True, *hulk, **deadpool"
+	assert args == 'ironman=ironman, blackWidow=blackWidow, *hulk, **deadpool'

@@ -44,7 +44,7 @@ def get_function_signature_and_args(function):
 	:type method: func
 	:rtype: (str, str)
 	"""
-	sig = str(inspect.signature(function))
+	sig = str(inspect.signature(function))[1:-1].replace("self", "").lstrip(",").strip()
 	spec = inspect.getfullargspec(function)
 	args_ = [f"{arg}={arg}" for arg in spec.args if arg != "self"]
 	if spec.varargs:
@@ -92,10 +92,8 @@ class ExtendedBackend(Backend):
 				logger.debug("%s: not overwriting method %s of backend instance %s", self.__class__.__name__, methodName, self._backend)
 
 			sig, arg = get_function_signature_and_args(functionRef)
-			if not sig.startswith("(self"):
-				sig = f"(self, {sig[1:]}"
 			exec(  # pylint: disable=exec-used
-				f'def {methodName}{sig}: return self._executeMethod("{methodName}", {arg})'
+				f'def {methodName}(self, {sig}): return self._executeMethod("{methodName}", {arg})'
 			)
 			new_function = eval(methodName)  # pylint: disable=eval-used
 			new_function.deprecated = getattr(functionRef, "deprecated", False)
