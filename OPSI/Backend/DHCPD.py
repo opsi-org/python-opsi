@@ -142,11 +142,11 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 
 			@property
 			def isBusy(self):
-				return self._isReloading or self._reloadEvent.isSet()
+				return self._isReloading or self._reloadEvent.is_set()
 
 			def triggerReload(self):
 				logger.debug("Reload triggered")
-				if not self._reloadEvent.isSet():
+				if not self._reloadEvent.is_set():
 					self._reloadEvent.set()
 
 			def run(self):
