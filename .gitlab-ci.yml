@@ -2,10 +2,11 @@ image: docker.uib.gmbh/opsi/dev/pybuilder:uib-python-3.10
 
 stages:
   - test
-  - package
+  - doc
   - publish
 
-test:pylint-pytest:
+
+pylint-pytest:
   #when: manual
   services:
     - name: mysql:latest
@@ -34,7 +35,7 @@ test:pylint-pytest:
     apt-get --yes install default-libmysqlclient-dev librsync1
     poetry lock --no-update
     poetry install
-    poetry run pylint --disable=R,C,W OPSI
+    poetry run pylint --disable=R,C,fixme OPSI
     poetry run pytest --tb=short -o junit_family=xunit2 --junitxml=testreport.xml --cov-append --cov-report term --cov-report xml -v tests
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+)%/'
   artifacts:
@@ -46,7 +47,25 @@ test:pylint-pytest:
         junit: testreport.xml
     expire_in: 14 days
 
-publish:uibpypi:
+
+apidoc:
+  stage: doc
+  when: manual
+  before_script:
+    - 'which ssh-agent || (apt update && apt -y install openssh-client)'
+    - 'which rsync || (apt update && apt -y install rsync)'
+    - mkdir -p ~/.ssh
+    - eval $(ssh-agent -s)
+    - ssh-add <(echo "$BLOG_PUBLISH_PRIVATE_KEY")
+  script:
+    - poetry lock --no-update
+    - poetry install
+    - poetry run poetry run opsi-dev-cli apidoc makehtml --output python-opsi
+    - ssh -o StrictHostKeyChecking=no "root@docker1.ext.uib.gmbh" "mkdir -p /var/lib/docker/volumes/docs_nginx_data/_data/python-docs"
+    - rsync -e "ssh -o StrictHostKeyChecking=no" --delete -azv python-opsi "root@docker1.ext.uib.gmbh:/var/lib/docker/volumes/docs_nginx_data/_data/python-docs/"
+
+
+uibpypi:
   stage: publish
   script:
     - poetry lock --no-update

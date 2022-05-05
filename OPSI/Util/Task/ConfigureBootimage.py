@@ -11,7 +11,7 @@ import re
 
 from OPSI.Exceptions import BackendMissingDataError
 
-__all__ = ('patchServiceUrlInDefaultConfigs', )
+__all__ = ("patchServiceUrlInDefaultConfigs",)
 
 
 def patchServiceUrlInDefaultConfigs(backend):
@@ -22,15 +22,15 @@ def patchServiceUrlInDefaultConfigs(backend):
 	:type backend: ConfigDataBackend
 	"""
 	try:
-		configServer = backend.config_getObjects(attributes=["defaultValues"], id='clientconfig.configserver.url')[0]
+		configServer = backend.config_getObjects(attributes=["defaultValues"], id="clientconfig.configserver.url")[0]
 		configServer = configServer.defaultValues[0]
 	except IndexError:
-		raise BackendMissingDataError("Unable to get clientconfig.configserver.url")
+		raise BackendMissingDataError("Unable to get clientconfig.configserver.url") from IndexError
 
 	if configServer:
 		defaultMenu, grubMenu = getMenuFiles()
-		patchMenuFile(defaultMenu, 'append', configServer)
-		patchMenuFile(grubMenu, 'linux', configServer)
+		patchMenuFile(defaultMenu, "append", configServer)
+		patchMenuFile(grubMenu, "linux", configServer)
 
 
 def getMenuFiles():
@@ -41,12 +41,12 @@ def getMenuFiles():
 default.menu and second grub.cfg.
 	:rtype: (str, str)
 	"""
-	if os.path.exists('/tftpboot/linux/pxelinux.cfg/default.menu'):
-		defaultMenu = u'/tftpboot/linux/pxelinux.cfg/default.menu'
-		grubMenu = u'/tftpboot/grub/grub.cfg'
+	if os.path.exists("/tftpboot/linux/pxelinux.cfg/default.menu"):
+		defaultMenu = "/tftpboot/linux/pxelinux.cfg/default.menu"
+		grubMenu = "/tftpboot/grub/grub.cfg"
 	else:
-		defaultMenu = u'/var/lib/tftpboot/opsi/pxelinux.cfg/default.menu'
-		grubMenu = u'/var/lib/tftpboot/grub/grub.cfg'
+		defaultMenu = "/var/lib/tftpboot/opsi/pxelinux.cfg/default.menu"
+		grubMenu = "/var/lib/tftpboot/grub/grub.cfg"
 
 	return defaultMenu, grubMenu
 
@@ -67,15 +67,15 @@ into the file.
 	:type configServer: str
 	"""
 	newlines = []
-	with open(menufile) as readMenu:
+	with open(menufile, "r", encoding="utf-8") as readMenu:
 		for line in readMenu:
 			if line.strip().startswith(searchString):
-				if 'service=' in line:
-					line = re.sub(r'service=\S+', '', line.rstrip())
-				newlines.append('{} service={}\n'.format(line.rstrip(), configServer))
+				if "service=" in line:
+					line = re.sub(r"service=\S+", "", line.rstrip())
+				newlines.append("{} service={}\n".format(line.rstrip(), configServer))
 				continue
 
 			newlines.append(line)
 
-	with open(menufile, 'w') as writeMenu:
+	with open(menufile, "w", encoding="utf-8") as writeMenu:
 		writeMenu.writelines(newlines)

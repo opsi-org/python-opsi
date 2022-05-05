@@ -23,7 +23,7 @@ class ResourceOpsi(resource.Resource):
 		resource.Resource.__init__(self)
 		self._service = service
 
-	def checkPrivileges(self, request, privileges, recurse=False, principal=None, inherited_aces=None):
+	def checkPrivileges(self, request, privileges, recurse=False, principal=None, inherited_aces=None):  # pylint: disable=unused-argument
 		deferred = defer.Deferred()
 		deferred.callback(None)
 		return deferred
@@ -31,7 +31,7 @@ class ResourceOpsi(resource.Resource):
 	def isCollection(self):
 		return not self.isLeaf
 
-	def hasProperty(self, property, request):
+	def hasProperty(self, property, request):  # pylint: disable=unused-argument,redefined-builtin
 		deferred = defer.Deferred()
 		deferred.callback(None)
 		return deferred
@@ -45,7 +45,7 @@ class ResourceOpsi(resource.Resource):
 			worker = self.WorkerClass(self._service, request, self)
 			worker.process()
 			return server.NOT_DONE_YET
-		except Exception as err:
+		except Exception as err:  # pylint: disable=broad-except
 			logger.error(err, exc_info=True)
 
 
@@ -56,13 +56,13 @@ class ResourceOpsiJsonRpc(ResourceOpsi):
 	def __init__(self, service):
 		ResourceOpsi.__init__(self, service)
 
-	def locateChild(self, request, segments):
+	def locateChild(self, request, segments):  # pylint: disable=unused-argument
 		return self, server.StopTraversal  # pylint: disable=no-member
 
 
 class ResourceOpsiJsonInterface(ResourceOpsiJsonRpc):
 	WorkerClass = WorkerOpsiJsonInterface
 
-	def __init__(self, service):
-		ResourceOpsi.__init__(self, service)
+	def __init__(self, service):  # pylint: disable=super-init-not-called
+		ResourceOpsi.__init__(self, service)  # pylint: disable=non-parent-init-called
 		self._interface = service.getInterface()

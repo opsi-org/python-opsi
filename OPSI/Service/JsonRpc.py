@@ -124,8 +124,8 @@ class JsonRpc:  # pylint: disable=too-many-instance-attributes
 			try:
 				for tbInfo in traceback.format_tb(sys.exc_info()[2]):
 					self.traceback.append(tbInfo)
-			except AttributeError as err:
-				message = f"Failed to collect traceback: {err}"
+			except AttributeError as error:
+				message = f"Failed to collect traceback: {error}"
 				logger.warning(message)
 				self.traceback.append(message)
 		finally:

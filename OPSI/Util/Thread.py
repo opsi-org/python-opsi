@@ -151,7 +151,7 @@ class ThreadPool:
 			self.worker.append(Worker(self, len(self.worker) + 1))
 			num -= 1
 
-	def addJob(self, function, callback=None, *args, **kwargs):
+	def addJob(self, function, *args, callback=None, **kwargs):
 		logger.debug("New job added: %s(%s, %s)", callback, args, kwargs)
 		if not self.started:
 			raise ThreadPoolException("Pool is not running.")

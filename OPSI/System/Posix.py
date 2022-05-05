@@ -508,7 +508,7 @@ def getNetworkDeviceConfig(device):  # pylint: disable=too-many-branches
 			valList = execute('udevadm info /sys/class/net/%s | grep VENDOR_ID | cut -d "=" -f 2' % device)
 			result["vendorId"] = forceHardwareVendorId(f"{int(valList[0], 16):>04x}")
 			logger.notice(f'device {device} vendor ID is {result["vendorId"]}')
-		except Exception:
+		except Exception:  # pylint: disable=broad-except
 			logger.debug("Alternative failed, no vendor ID for device %s found", device)
 
 	try:
@@ -532,7 +532,7 @@ def getNetworkDeviceConfig(device):  # pylint: disable=too-many-branches
 
 			result["deviceId"] = forceHardwareDeviceId(f"{val:>04x}")
 			logger.notice(f'device {device} device ID is {result["deviceId"]}')
-		except Exception:
+		except Exception:  # pylint: disable=broad-except
 			logger.debug("alternative failed, no vendor ID for device %s found", device)
 
 	return result

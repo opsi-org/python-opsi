@@ -11,24 +11,11 @@ uib GmbH if this is not noted otherwise in the file itself.
 
 
 ## Documentation
-You can use [Sphinx](http://sphinx-doc.org/) to build the documentation.
 If you are looking for information on how to setup or configure an opsi
-system please get the _getting started_ from opsi.org.
+system please get the _getting started_ from [opsi](http://www.opsi.org/).
 
-### Building the documentation
-First we create the API documentation from the Python files:
-
-```bash
-sphinx-apidoc --separate --output-dir=doc/src OPSI/
-```
-
-After that we can build the documentation:
-
-```bash
-sphinx-build -b html -d doc/_build/doctrees doc/src/ doc/python-opsi/
-```
-
-After that you will find the documentation in the folder `doc/python-opsi`.
+Also see [docs.opsi.org](http://docs.opsi.org)
+and [the python-opsi documentation](http://docs.opsi.org/python-docs/python-opsi).
 
 
 ## Requirements

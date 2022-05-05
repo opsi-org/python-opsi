@@ -40,7 +40,7 @@ logger = get_logger("opsi.general")
 
 
 class Subject:
-	def __init__(self, id, type='', title='', **args):
+	def __init__(self, id, type='', title='', **args):  # pylint: disable=redefined-builtin,unused-argument
 		self._id = forceUnicode(id)
 		self._type = forceUnicode(type)
 		self._title = forceUnicode(title)
@@ -88,7 +88,7 @@ class Subject:
 
 
 class MessageSubject(Subject):
-	def __init__(self, id, type='', title='', **args):
+	def __init__(self, id, type='', title='', **args):  # pylint: disable=redefined-builtin
 		Subject.__init__(self, id, type, title, **args)
 		self.reset()
 		try:
@@ -131,7 +131,7 @@ class MessageSubject(Subject):
 
 
 class ChoiceSubject(MessageSubject):
-	def __init__(self, id, type='', title='', **args):
+	def __init__(self, id, type='', title='', **args):  # pylint: disable=redefined-builtin
 		MessageSubject.__init__(self, id, type, title, **args)
 		self.reset()
 		self._callbacks = []
@@ -169,7 +169,7 @@ class ChoiceSubject(MessageSubject):
 	def setSelectedIndexes(self, selectedIndexes):
 		self._selectedIndexes = []
 		for selectedIndex in forceIntList(selectedIndexes):
-			if (selectedIndex < 0) or (selectedIndex > len(self._choices)-1) or selectedIndex in self._selectedIndexes:
+			if (selectedIndex < 0) or (selectedIndex > len(self._choices) - 1) or selectedIndex in self._selectedIndexes:
 				continue
 			if self._multiValue:
 				self._selectedIndexes = [selectedIndex]
@@ -217,7 +217,7 @@ class ChoiceSubject(MessageSubject):
 
 
 class ProgressSubject(MessageSubject):
-	def __init__(self, id, type='', title='', **args):
+	def __init__(self, id, type='', title='', **args):  # pylint: disable=redefined-builtin,unused-argument
 		MessageSubject.__init__(self, id, type, title, **args)
 		self.reset()
 		self._fireAlways = True
@@ -388,7 +388,7 @@ class ChoiceObserver(MessageObserver):
 
 
 class ProgressObserver(MessageObserver):
-	def __init__(self):
+	def __init__(self):  # pylint: disable=super-init-not-called
 		pass
 
 	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
@@ -399,7 +399,7 @@ class ProgressObserver(MessageObserver):
 
 
 class SubjectsObserver(ChoiceObserver, ProgressObserver):
-	def __init__(self):
+	def __init__(self):  # pylint: disable=super-init-not-called
 		self._subjects = []
 
 	def setSubjects(self, subjects):
@@ -430,7 +430,7 @@ class SubjectsObserver(ChoiceObserver, ProgressObserver):
 
 
 class MessageSubjectProxy(ProgressSubject, ProgressObserver, ChoiceSubject, ChoiceObserver):
-	def __init__(self, id, type='', title='', **args):
+	def __init__(self, id, type='', title='', **args):  # pylint: disable=redefined-builtin
 		ChoiceSubject.__init__(self, id, type, title, **args)
 		ChoiceObserver.__init__(self)
 		ProgressSubject.__init__(self, id, type, title, **args)
@@ -453,20 +453,20 @@ class MessageSubjectProxy(ProgressSubject, ProgressObserver, ChoiceSubject, Choi
 
 
 class ChoiceSubjectProxy(MessageSubjectProxy):
-	def __init__(self, id, type='', title='', **args):
+	def __init__(self, id, type='', title='', **args):  # pylint: disable=redefined-builtin
 		MessageSubjectProxy.__init__(self, id, type, title, **args)
 
 
 class ProgressSubjectProxy(MessageSubjectProxy):
-	def __init__(self, id, type='', title='', **args):
+	def __init__(self, id, type='', title='', **args):  # pylint: disable=redefined-builtin
 		MessageSubjectProxy.__init__(self, id, type, title, **args)
 
 
-class NotificationServerProtocol(LineReceiver):
+class NotificationServerProtocol(LineReceiver):  # pylint: disable=abstract-method
 	def connectionMade(self):
 		self.factory.connectionMade(self)  # pylint: disable=no-member
 
-	def connectionLost(self, reason):
+	def connectionLost(self, reason=None):
 		self.factory.connectionLost(self, reason)
 
 	def lineReceived(self, line):
@@ -474,10 +474,11 @@ class NotificationServerProtocol(LineReceiver):
 		for rpc in line.split(b"\x1e"):
 			self.factory.rpc(self, rpc)
 
+
 class NotificationServerFactory(ServerFactory, SubjectsObserver):
 	protocol = NotificationServerProtocol
 
-	def __init__(self):
+	def __init__(self):  # pylint: disable=super-init-not-called
 		self.clients = []
 		self._subjects = []
 		self._rpcs = {}
@@ -500,13 +501,11 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 			client.transport, reason, self.connectionCount()
 		)
 
-	def rpc(self, client, line):
+	def rpc(self, client, line):  # pylint: disable=unused-argument
 		logger.info("Received rpc '%s'", line)
-		id = None
 		try:
 			rpc = json.loads(line)
 			method = rpc['method']
-			id = rpc['id']
 			params = rpc['params']
 
 			if method == 'setSelectedIndexes':
@@ -515,7 +514,7 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 				for subject in self.getSubjects():
 					if not isinstance(subject, ChoiceSubject) or (subject.getId() != subjectId):
 						continue
-					result = subject.setSelectedIndexes(selectedIndexes)
+					subject.setSelectedIndexes(selectedIndexes)
 					break
 
 			elif method == 'selectChoice':
@@ -524,11 +523,11 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 				for subject in self.getSubjects():
 					if not isinstance(subject, ChoiceSubject) or (subject.getId() != subjectId):
 						continue
-					result = subject.selectChoice()
+					subject.selectChoice()
 					break
 			else:
 				raise ValueError(f"Unknown method '{method}'")
-		except Exception as error:
+		except Exception as error:  # pylint: disable=broad-except
 			logger.error("Failed to execute rpc: %s", error)
 
 	def messageChanged(self, subject, message):
@@ -552,12 +551,18 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		logger.debug("choicesChanged: subject id '%s', choices %s", subject.getId(), choices)
 		self.notify(name="choicesChanged", params=[subject.serializable(), choices])
 
-	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):
+	def progressChanged(self, subject, state, percent, timeSpend, timeLeft, speed):  # pylint:disable=too-many-arguments
 		if subject not in self.getSubjects():
 			logger.info("Unknown subject %s passed to progressChanged, automatically adding subject", subject)
 			self.addSubject(subject)
-		logger.debug("progressChanged: subject id '%s', state %s, percent %s, timeSpend %s, timeLeft %s, speed %s",
-			subject.getId(), state, percent, timeSpend, timeLeft, speed
+		logger.debug(
+			"progressChanged: subject id '%s', state %s, percent %s, timeSpend %s, timeLeft %s, speed %s",
+			subject.getId(),
+			state,
+			percent,
+			timeSpend,
+			timeLeft,
+			speed
 		)
 		self.notify(name="progressChanged", params=[subject.serializable(), state, percent, timeSpend, timeLeft, speed])
 
@@ -573,12 +578,12 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 		param = [subject.serializable() for subject in subjects]
 		self.notify(name="subjectsChanged", params=[param])
 
-	def requestEndConnections(self, clientIds=[]):
+	def requestEndConnections(self, clientIds=None):
 		if not self.clients:
 			return
 		self.notify(name="endConnection", params=[clientIds])
 
-	def notify(self, name, params, clients=[]):
+	def notify(self, name, params, clients=None):
 		if not isinstance(params, list):
 			params = [params]
 		if not clients:
@@ -597,12 +602,12 @@ class NotificationServerFactory(ServerFactory, SubjectsObserver):
 			try:
 				logger.debug("Sending line '%s' to client %s", jsonBytes, client)
 				client.sendLine(jsonBytes)
-			except Exception as err:
+			except Exception as err:  # pylint: disable=broad-except
 				logger.warning("Failed to send line to client %s: %s", client, err)
 
 
 class NotificationServer(threading.Thread, SubjectsObserver):
-	def __init__(self, address, start_port, subjects):
+	def __init__(self, address, start_port, subjects):  # pylint: disable=super-init-not-called
 		threading.Thread.__init__(self)
 		self._address = forceIpAddress(address)
 		if not self._address:
@@ -644,7 +649,9 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 	def getSubjects(self):
 		return self._factory.getSubjects()
 
-	def requestEndConnections(self, clientIds=[]):
+	def requestEndConnections(self, clientIds=None):
+		if not clientIds:
+			clientIds = []
 		if self._factory:
 			self._factory.requestEndConnections(clientIds)
 
@@ -658,17 +665,17 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 			try:
 				logger.debug("Notification server - attempt %d, trying port %d", trynum, port)
 				if self._address == '0.0.0.0':
-					self._server = reactor.listenTCP(port, self._factory)		#pylint: disable=no-member
+					self._server = reactor.listenTCP(port, self._factory)  # pylint: disable=no-member
 				else:
-					self._server = reactor.listenTCP(port, self._factory, interface=self._address)		#pylint: disable=no-member
+					self._server = reactor.listenTCP(port, self._factory, interface=self._address)  # pylint: disable=no-member
 				self._port = port
 				self._listening = True
 				logger.info("Notification server is now listening on port %d after %d attempts", port, trynum)
-				if not reactor.running:						#pylint: disable=no-member
+				if not reactor.running:  # pylint: disable=no-member
 					logger.info("Starting reactor")
-					reactor.run(installSignalHandlers=0)	#pylint: disable=no-member
+					reactor.run(installSignalHandlers=0)  # pylint: disable=no-member
 				break
-			except Exception as error:
+			except Exception as error:  # pylint: disable=broad-except
 				logger.debug("Notification server - attempt %d, failed to listen on port %d: %s", trynum, port, error)
 				if trynum >= 20:
 					self._error = forceUnicode(error)
@@ -682,12 +689,12 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 		self._running_event.wait(timeout)
 		return self._listening
 
-	def _stopListeningCompleted(self, result):
+	def _stopListeningCompleted(self, result):  # pylint: disable=unused-argument
 		self._listening = False
 
 	def stop(self, stopReactor=True):
 		self.requestEndConnections()
-		reactor.callLater(3.0, self._stopServer, stopReactor)	#pylint: disable=no-member
+		reactor.callLater(3.0, self._stopServer, stopReactor)  # pylint: disable=no-member
 
 	def _stopServer(self, stopReactor=True):
 		if self._server:
@@ -697,25 +704,25 @@ class NotificationServer(threading.Thread, SubjectsObserver):
 			else:
 				self._listening = False
 		if stopReactor:
-			reactor.callLater(3.0, self._stopReactor)			#pylint: disable=no-member
+			reactor.callLater(3.0, self._stopReactor)  # pylint: disable=no-member
 		logger.info("Notification server stopped")
 
 	def _stopReactor(self):
-		if reactor and reactor.running:							#pylint: disable=no-member
+		if reactor and reactor.running:  # pylint: disable=no-member
 			try:
-				reactor.stop()									#pylint: disable=no-member
-			except Exception as error:
+				reactor.stop()  # pylint: disable=no-member
+			except Exception as error:  # pylint: disable=broad-except
 				logger.error("Failed to stop reactor: %s", error)
 
 
-class NotificationClientProtocol(LineReceiver):
+class NotificationClientProtocol(LineReceiver):  # pylint:disable=abstract-method
 	def connectionMade(self):
 		self.factory.connectionMade(self)
 
 	def lineReceived(self, line):
 		self.factory.receive(line)
 
-	def connectionLost(self, reason):
+	def connectionLost(self, reason=None):
 		self.factory.connectionLost(reason)
 
 
@@ -730,7 +737,7 @@ class NotificationClientFactory(ClientFactory):
 		self._rpcs = {}
 		self._timeout = 5
 
-	def connectionLost(self, reason):
+	def connectionLost(self, reason):  # pylint: disable=unused-argument
 		logger.info("Server connection lost")
 
 	def connectionMade(self, client):
@@ -746,7 +753,7 @@ class NotificationClientFactory(ClientFactory):
 
 	def receive(self, rpc):
 		logger.debug("Received rpc '%s'", rpc)
-		id = None
+		id = None  # pylint: disable=redefined-builtin
 		try:
 			rpc = json.loads(rpc)
 			id = rpc['id']
@@ -763,8 +770,8 @@ class NotificationClientFactory(ClientFactory):
 						self._notificationClient.endConnectionRequested()
 				else:
 					logger.debug("self._observer.%s(*params)", method)
-					eval("self._observer.%s(*params)", method)
-		except Exception as error:
+					eval("self._observer.%s(*params)", method)  # pylint: disable=eval-used
+		except Exception as error:  # pylint: disable=broad-except
 			logger.error(error)
 
 	def execute(self, method, params):
@@ -811,7 +818,7 @@ class NotificationClient(threading.Thread):
 		for endConnectionRequestedCallback in self._endConnectionRequestedCallbacks:
 			try:
 				endConnectionRequestedCallback()
-			except Exception as error:
+			except Exception as error:  # pylint: disable=broad-except
 				logger.error(error)
 
 	def getFactory(self):
@@ -821,17 +828,17 @@ class NotificationClient(threading.Thread):
 		logger.info("Notification client starting")
 		try:
 			logger.info("Connecting to %s:%s", self._address, self._port)
-			reactor.connectTCP(self._address, self._port, self._factory)	#pylint: disable=no-member
-			if not reactor.running:											#pylint: disable=no-member
-				reactor.run(installSignalHandlers=0)						#pylint: disable=no-member
-		except Exception as error:
+			reactor.connectTCP(self._address, self._port, self._factory)  # pylint: disable=no-member
+			if not reactor.running:  # pylint: disable=no-member
+				reactor.run(installSignalHandlers=0)  # pylint: disable=no-member
+		except Exception as error:  # pylint: disable=broad-except
 			logger.error(error, exc_info=True)
 
 	def stop(self, stopReactor=True):
 		if self._client:
 			self._client.disconnect()
-		if stopReactor and reactor and reactor.running:						#pylint: disable=no-member
-			reactor.stop()													#pylint: disable=no-member
+		if stopReactor and reactor and reactor.running:  # pylint: disable=no-member
+			reactor.stop()  # pylint: disable=no-member
 
 	def setSelectedIndexes(self, subjectId, selectedIndexes):
 		self._factory.execute(method='setSelectedIndexes', params=[subjectId, selectedIndexes])

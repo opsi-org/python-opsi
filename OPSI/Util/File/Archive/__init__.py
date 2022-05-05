@@ -12,7 +12,6 @@ This include functionality for using Tar-Files and their compression.
 	Control the usage of pigz via ``PIGZ_ENABLED``
 """
 
-import locale
 import os
 import re
 import subprocess
@@ -264,10 +263,10 @@ class TarArchive(BaseArchive, PigzMixin):
 		except Exception as err:
 			raise RuntimeError(f"Failed to get archive content '{self._filename}': {err}") from err
 
-	def extract(self, targetPath=".", patterns=[]):
+	def extract(self, targetPath=".", patterns=None):
 		try:
 			targetPath = os.path.abspath(forceFilename(targetPath))
-			patterns = forceUnicodeList(patterns)
+			patterns = forceUnicodeList(patterns or [])
 			if not os.path.isdir(targetPath):
 				try:
 					os.mkdir(targetPath)
@@ -365,10 +364,10 @@ class CpioArchive(BaseArchive, PigzMixin):
 		except Exception as err:  # pylint: disable=broad-except
 			raise RuntimeError(f"Failed to get archive content '{self._filename}': {err}") from err
 
-	def extract(self, targetPath=".", patterns=[]):
+	def extract(self, targetPath=".", patterns=None):
 		try:
 			targetPath = os.path.abspath(forceFilename(targetPath))
-			patterns = forceUnicodeList(patterns)
+			patterns = forceUnicodeList(patterns or [])
 			if not os.path.isdir(targetPath):
 				try:
 					os.mkdir(targetPath)
@@ -439,7 +438,7 @@ class CpioArchive(BaseArchive, PigzMixin):
 			raise RuntimeError(f"Failed to create archive '{self._filename}': {err}") from err
 
 
-def Archive(filename, format=None, compression=None, progressSubject=None):
+def Archive(filename, format=None, compression=None, progressSubject=None):  # pylint: disable=redefined-builtin
 	filename = forceFilename(filename)
 	Class = None
 	if format:

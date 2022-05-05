@@ -15,7 +15,6 @@ from collections import namedtuple
 from opsicommon.logging import get_logger
 
 import OPSI.Backend.BackendManager as bm
-from OPSI.Exceptions import BackendMissingDataError
 from OPSI.Object import BoolConfig, UnicodeConfig
 from OPSI.System import Posix
 from OPSI.Util.Task.Samba import SMB_CONF

@@ -84,11 +84,10 @@ $Rev: $
 $Author: $
 """
 
+import select
 import socket
 import struct
-import select
 import time
-
 
 # From /usr/include/linux/icmp.h; your milage may vary.
 ICMP_ECHO_REQUEST = 8  # Seems to be the same on Solaris.
@@ -97,26 +96,26 @@ ICMP_ECHO_REQUEST = 8  # Seems to be the same on Solaris.
 def checksum(source_bytes):
 	# I'm not too confident that this is right but testing seems
 	# to suggest that it gives the same answers as in_cksum in ping.c
-	sum = 0
+	sum = 0  # pylint: disable=redefined-builtin
 	countTo = (len(source_bytes) / 2) * 2
 	count = 0
 	while count < countTo:
 		thisVal = source_bytes[count + 1] * 256 + source_bytes[count]
 		sum = sum + thisVal
-		sum = sum & 0xffffffff  # Necessary?
+		sum = sum & 0xFFFFFFFF  # Necessary?
 		count = count + 2
 
 	if countTo < len(source_bytes):
 		sum = sum + source_bytes[len(source_bytes) - 1]
-		sum = sum & 0xffffffff  # Necessary?
+		sum = sum & 0xFFFFFFFF  # Necessary?
 
-	sum = (sum >> 16) + (sum & 0xffff)
+	sum = (sum >> 16) + (sum & 0xFFFF)
 	sum = sum + (sum >> 16)
 	answer = ~sum
-	answer = answer & 0xffff
+	answer = answer & 0xFFFF
 
 	# Swap bytes. Bugger me if I know why.
-	answer = answer >> 8 | (answer << 8 & 0xff00)
+	answer = answer >> 8 | (answer << 8 & 0xFF00)
 
 	return answer
 
@@ -132,21 +131,20 @@ def receive_one_ping(my_socket, ID, timeout):
 		whatReady = select.select([my_socket], [], [], timeLeft)
 		howLongInSelect = None
 
-		howLongInSelect = (	time.perf_counter() - startedSelect)
+		howLongInSelect = time.perf_counter() - startedSelect
 
 		if whatReady[0] == []:  # Timeout
 			return
 
 		timeReceived = time.perf_counter()
 
-		recPacket, addr = my_socket.recvfrom(1024)
+		recPacket, _ = my_socket.recvfrom(1024)
 		icmpHeader = recPacket[20:28]
-		type, code, checksum, packetID, sequence = struct.unpack(
-			"bbHHh", icmpHeader
-		)
+		# type, code, checksum, packetID, sequence
+		_, _, _, packetID, _ = struct.unpack("bbHHh", icmpHeader)
 		if packetID == ID:
 			bytesInDouble = struct.calcsize("d")
-			timeSent = struct.unpack("d", recPacket[28:28 + bytesInDouble])[0]
+			timeSent = struct.unpack("d", recPacket[28 : 28 + bytesInDouble])[0]
 			return timeReceived - timeSent
 
 		timeLeft = timeLeft - howLongInSelect
@@ -154,7 +152,7 @@ def receive_one_ping(my_socket, ID, timeout):
 			return
 
 
-def send_one_ping(my_socket, dest_addr, ID):
+def send_one_ping(my_socket, dest_addr, ID):  # pylint: disable=invalid-name
 	"""
 	Send one ping to the given >dest_addr<.
 	"""
@@ -174,9 +172,7 @@ def send_one_ping(my_socket, dest_addr, ID):
 
 	# Now that we have the right checksum, we put that in. It's just easier
 	# to make up a new header than to stuff it into the dummy.
-	header = struct.pack(
-		"bbHHh", ICMP_ECHO_REQUEST, 0, socket.htons(my_checksum), ID, 1
-	)
+	header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, socket.htons(my_checksum), ID, 1)
 	packet = header + data
 	my_socket.sendto(packet, (dest_addr, 1))  # Don't know about the 1
 
@@ -188,13 +184,10 @@ def ping(dest_addr, timeout=2):
 	icmp = socket.getprotobyname("icmp")
 	try:
 		my_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, icmp)
-	except OSError as error:		#Exception type changed from socket.error to OSError in python3.3
+	except OSError as error:  # Exception type changed from socket.error to OSError in python3.3
 		if error.errno == 1:
 			# Operation not permitted
-			msg = (
-				" - Note that ICMP messages can only be sent from processes"
-				" running as root."
-			)
+			msg = " - Note that ICMP messages can only be sent from processes running as root."
 			raise OSError(1, msg) from error
 		raise  # raise the original error
 
@@ -212,8 +205,8 @@ def verbose_ping(dest_addr, timeout=2, count=4):
 	Send >count< ping to >dest_addr< with the given >timeout< and display
 	the result.
 	"""
-	for i in range(count):
-		print("ping %s..." % dest_addr, end=' ')
+	for _ in range(count):
+		print("ping %s..." % dest_addr, end=" ")
 		try:
 			delay = ping(dest_addr, timeout)
 		except socket.gaierror as e:

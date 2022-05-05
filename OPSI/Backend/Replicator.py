@@ -11,7 +11,9 @@ The replicator allows replication from one backend into another.
 from opsicommon.logging import get_logger
 
 from OPSI.Backend.Base import ExtendedConfigDataBackend
-from OPSI.Object import *
+
+# wildcard import is necessary for eval-statement
+from OPSI.Object import *  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Types import forceBool, forceHostId, forceList
 from OPSI.Util.Message import ProgressSubject
 
@@ -57,11 +59,11 @@ class BackendReplicator:
 
 		self.__cleanupFirst = forceBool(cleanupFirst)
 		self.__strict = False
-		self.__serverIds = []
-		self.__depotIds = []
-		self.__clientIds = []
-		self.__groupIds = []
-		self.__productIds = []
+		self.__serverIds = []  # pylint: disable=unused-private-member
+		self.__depotIds = []  # pylint: disable=unused-private-member
+		self.__clientIds = []  # pylint: disable=unused-private-member
+		self.__groupIds = []  # pylint: disable=unused-private-member
+		self.__productIds = []  # pylint: disable=unused-private-member
 
 		if newServerId:
 			self.__newServerId = forceHostId(newServerId)
@@ -85,27 +87,41 @@ class BackendReplicator:
 	def getOverallProgressSubject(self):
 		return self.__overallProgressSubject
 
-	def replicate(self, serverIds=[], depotIds=[], clientIds=[], groupIds=[],
-			productIds=[], productTypes=[], audit=True, licenses=True):
+	def replicate(
+		self,
+		serverIds=None,
+		depotIds=None,
+		clientIds=None,
+		groupIds=None,
+		productIds=None,
+		productTypes=None,
+		audit=True,
+		licenses=True
+	):
 		'''
 		Replicate (a part) of a opsi configuration database
 		An empty list passed as a param means: replicate all known
 		None as the only element of a list means: replicate none
 		'''
-		serverIds = forceList(serverIds)
-		depotIds = forceList(depotIds)
-		clientIds = forceList(clientIds)
-		groupIds = forceList(serverIds)
-		productIds = forceList(productIds)
-		productTypes = forceList(productTypes)
+		serverIds = forceList(serverIds or [])
+		depotIds = forceList(depotIds or [])
+		clientIds = forceList(clientIds or [])
+		groupIds = forceList(serverIds or [])
+		productIds = forceList(productIds or [])
+		productTypes = forceList(productTypes or [])
 		audit = forceBool(audit)
 		licenses = forceBool(licenses)
 
 		logger.info(
-			"Replicating: serverIds={serverIds}, depotIds={depotIds}, "
-			"clientIds={clientIds}, groupIds={groupIds}, "
-			"productIds={productIds}, productTypes={productTypes}, "
-			"audit: {audit}, license: {licenses}".format(**locals())
+			"Replicating: serverIds=%s, depotIds=%s, clientIds=%s, groupIds=%s, productIds=%s, productTypes=%s, audit: %s, license: %s",
+			serverIds,
+			depotIds,
+			clientIds,
+			groupIds,
+			productIds,
+			productTypes,
+			audit,
+			licenses
 		)
 
 		rb = self._extendedReadBackend
@@ -151,7 +167,7 @@ class BackendReplicator:
 
 			productOnDepots = []
 			if depotIds:
-				productOnDepots = rb.productOnDepot_getObjects(depotId=depotIds, productId=productIds, productType=productTypes)#pylint: disable=no-member
+				productOnDepots = rb.productOnDepot_getObjects(depotId=depotIds, productId=productIds, productType=productTypes)  # pylint: disable=no-member
 				productIdsOnDepot = set()
 				for productOnDepot in productOnDepots:
 					productIdsOnDepot.add(productOnDepot.productId)
@@ -193,12 +209,12 @@ class BackendReplicator:
 				if objClass == 'Host':
 					subClasses = ['OpsiConfigserver', 'OpsiDepotserver', 'OpsiClient']
 
-				methodPrefix = eval(f"{objClass}.backendMethodPrefix")
+				methodPrefix = eval(f"{objClass}.backendMethodPrefix")  # pylint: disable=eval-used,unused-variable
 
 				self.__overallProgressSubject.setMessage(f"Replicating {objClass}")
 				self.__currentProgressSubject.setTitle(f"Replicating {objClass}")
 				for subClass in subClasses:
-					filter = {}
+					filter = {}  # pylint: disable=redefined-builtin
 					if subClass == 'OpsiConfigserver':
 						filter = {'type': subClass, 'id': serverIds}
 					elif subClass == 'OpsiDepotserver':
@@ -245,7 +261,7 @@ class BackendReplicator:
 					logger.notice("Replicating class '%s', filter: %s" % (objClass, filter))
 					if not subClass:
 						subClass = objClass
-					Class = eval(subClass)
+					Class = eval(subClass)  # pylint: disable=eval-used
 
 					self.__currentProgressSubject.reset()
 					self.__currentProgressSubject.setMessage("Reading objects")
@@ -308,7 +324,7 @@ class BackendReplicator:
 						for obj in objs:
 							try:
 								meth(obj)
-							except Exception as err:
+							except Exception as err:  # pylint: disable=broad-except
 								logger.debug(err, exc_info=True)
 								logger.error("Failed to replicate object %s: %s", obj, err)
 							self.__currentProgressSubject.addToState(1)
