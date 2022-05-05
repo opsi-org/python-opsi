@@ -95,7 +95,7 @@ on to. Defaults to ``logger.error``.
 		backend.backend_createBase()
 	except MySQLdb.OperationalError as err:
 		if err.args[0] == INVALID_DEFAULT_VALUE:
-			errorFunction(
+			errorFunction(  # pylint: disable=logging-fstring-interpolation
 				f"It seems you have the MySQL strict mode enabled. Please read the opsi handbook.\n{err}"
 			)
 		raise err
@@ -120,15 +120,15 @@ def initializeDatabase(
 		try:
 			with closing(MySQLdb.connect(**conConfig)) as db:
 				yield db
-		except Exception as err:
-			if  config['address'] == "127.0.0.1":
+		except Exception as err:  # pylint: disable=broad-except
+			if config['address'] == "127.0.0.1":
 				logger.info("Failed to connect with tcp/ip (%s), retrying with socket", err)
 				try:
 					conConfig["host"] = "localhost"
 					with closing(MySQLdb.connect(**conConfig)) as db:
 						yield db
-				except Exception as err:
-					raise DatabaseConnectionFailedException(err) from err
+				except Exception as error:  # pylint: disable=broad-except
+					raise DatabaseConnectionFailedException(error) from error
 			else:
 				raise DatabaseConnectionFailedException(err) from err
 
@@ -141,8 +141,8 @@ def initializeDatabase(
 			logger.debug(err)
 			try:
 				db.query(f"ALTER USER '{config['username']}'@'{host}' IDENTIFIED BY '{config['password']}'")
-			except Exception as err:  # pylint: disable=broad-except
-				logger.debug(err)
+			except Exception as error:  # pylint: disable=broad-except
+				logger.debug(error)
 				db.query(f"SET PASSWORD FOR'{config['username']}'@'{host}' = PASSWORD('{config['password']}')")
 		db.query(f"GRANT ALL ON {config['database']}.* TO '{config['username']}'@'{host}'")
 		db.query("FLUSH PRIVILEGES")
@@ -155,7 +155,7 @@ def initializeDatabase(
 		errorFunction = logger.error
 
 	if systemConfig is None:
-		systemConfig = backendUtils._getSysConfig()
+		systemConfig = backendUtils._getSysConfig()  # pylint: disable=protected-access
 
 	# Connect to database host
 	notificationFunction(

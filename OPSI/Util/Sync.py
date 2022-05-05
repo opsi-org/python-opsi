@@ -47,6 +47,7 @@ RS_DEFAULT_STRONG_LEN = 8
 RS_DEFAULT_BLOCK_LEN = 2048
 RS_MD4_SIG_MAGIC = 0x72730136
 
+
 #############################
 #  DEFINES FROM librsync.h  #
 #############################
@@ -132,12 +133,12 @@ def _execute(job, input_handle, output_handle=None):
 		block = input_handle.read(RS_JOB_BLOCKSIZE)
 		buff = Buffer()
 		# provide the data block via input buffer.
-		buff.next_in = ctypes.c_char_p(block)
-		buff.avail_in = ctypes.c_size_t(len(block))
-		buff.eof_in = ctypes.c_int(not block)
+		buff.next_in = ctypes.c_char_p(block)  # pylint: disable=attribute-defined-outside-init
+		buff.avail_in = ctypes.c_size_t(len(block))  # pylint: disable=attribute-defined-outside-init
+		buff.eof_in = ctypes.c_int(not block)  # pylint: disable=attribute-defined-outside-init
 		# Set up our buffer for output.
-		buff.next_out = ctypes.cast(out, ctypes.c_char_p)
-		buff.avail_out = ctypes.c_size_t(RS_JOB_BLOCKSIZE)
+		buff.next_out = ctypes.cast(out, ctypes.c_char_p)  # pylint: disable=attribute-defined-outside-init
+		buff.avail_out = ctypes.c_size_t(RS_JOB_BLOCKSIZE)  # pylint: disable=attribute-defined-outside-init
 		res = _librsync.rs_job_iter(job, ctypes.byref(buff))
 		if output_handle:
 			output_handle.write(out.raw[: RS_JOB_BLOCKSIZE - buff.avail_out])
@@ -185,7 +186,7 @@ def librsyncSignature(filename, base64Encoded=True):
 				_librsync.rs_job_free(job)
 				sigfile_handle.close()
 	except Exception as sigError:
-		raise RuntimeError(f"Failed to get librsync signature from {filename}: {forceUnicode(sigError)}")
+		raise RuntimeError(f"Failed to get librsync signature from {filename}: {forceUnicode(sigError)}") from sigError
 
 
 def librsyncDeltaFile(filename, signature, deltafile):
@@ -227,7 +228,7 @@ def librsyncDeltaFile(filename, signature, deltafile):
 			_librsync.rs_free_sumset(sig)
 
 	except Exception as sigError:
-		raise RuntimeError(f"Failed to write delta file {deltafile}: {forceUnicode(sigError)}")
+		raise RuntimeError(f"Failed to write delta file {deltafile}: {forceUnicode(sigError)}") from sigError
 
 
 def librsyncPatchFile(oldfile, deltafile, newfile):
@@ -268,4 +269,4 @@ def librsyncPatchFile(oldfile, deltafile, newfile):
 					finally:
 						_librsync.rs_job_free(job)
 	except Exception as patchError:
-		raise RuntimeError(f"Failed to patch file {oldfile}: {forceUnicode(patchError)}")
+		raise RuntimeError(f"Failed to patch file {oldfile}: {forceUnicode(patchError)}") from patchError

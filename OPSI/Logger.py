@@ -143,10 +143,6 @@ __all__ = (
 )
 
 
-class Logger:  # pylint: disable=too-few-public-methods
-	pass
-
-
 #
 # Compatibility functions.
 #

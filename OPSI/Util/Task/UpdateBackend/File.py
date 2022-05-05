@@ -33,7 +33,7 @@ class FileBackendUpdateError(BackendUpdateError):
 	"""
 
 
-def updateFileBackend(backendConfigFile="/etc/opsi/backends/file.conf", additionalBackendConfiguration={}):
+def updateFileBackend(backendConfigFile="/etc/opsi/backends/file.conf", additionalBackendConfiguration=None):
 	"""
 	Applies migrations to the file-based backend.
 
@@ -46,6 +46,7 @@ read from `backendConfigFile`.
 	:type additionalBackendConfiguration: dict
 	"""
 
+	additionalBackendConfiguration = additionalBackendConfiguration or {}
 	config = getBackendConfiguration(backendConfigFile)
 	config.update(additionalBackendConfiguration)
 	logger.info("Current file backend config: %s", config)
