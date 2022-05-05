@@ -15,11 +15,8 @@ from typing import List
 
 from opsicommon.logging import get_logger
 
-from OPSI.Backend.Base import (
-	ConfigDataBackend,
-	ExtendedConfigDataBackend,
-	get_function_signature_and_args,
-)
+from OPSI.Backend.Base import ConfigDataBackend, ExtendedConfigDataBackend
+from OPSI.Backend.Base.Extended import get_function_signature_and_args
 from OPSI.Backend.Depotserver import DepotserverBackend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Backend.HostControlSafe import HostControlSafeBackend

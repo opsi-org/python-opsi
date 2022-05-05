@@ -15,12 +15,11 @@ from functools import lru_cache
 
 from opsicommon.logging import get_logger
 
-from OPSI.Backend.Base import (
-	Backend,
-	ConfigDataBackend,
+from OPSI.Backend.Base import Backend, ConfigDataBackend
+from OPSI.Backend.Base.Extended import (
+	ExtendedConfigDataBackend,
 	get_function_signature_and_args,
 )
-from OPSI.Backend.Base.Extended import ExtendedConfigDataBackend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import BackendConfigurationError
 from OPSI.Types import forceList

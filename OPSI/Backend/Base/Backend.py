@@ -53,7 +53,7 @@ OPSI_LICENSE_PATH = "/etc/opsi/licenses"
 logger = get_logger("opsi.general")
 
 
-def describeInterface(instance):
+def describeInterface(instance):  # pylint: disable=too-many-locals
 	"""
 	Describes what public methods are available and the signatures they use.
 
