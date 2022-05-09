@@ -13,6 +13,7 @@ import re
 import types
 from functools import lru_cache
 
+import opsicommon  # this is needed for dynamic loading # pylint: disable=unused-import
 from opsicommon.logging import get_logger
 
 from OPSI.Backend.Base import Backend, ConfigDataBackend
