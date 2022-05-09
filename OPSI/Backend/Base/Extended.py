@@ -18,6 +18,14 @@ import inspect
 import random
 from types import MethodType
 
+# this is needed for dynamic loading
+from typing import Any  # pylint: disable=unused-import
+from typing import Callable  # pylint: disable=unused-import
+from typing import Dict  # pylint: disable=unused-import
+from typing import Generator  # pylint: disable=unused-import
+from typing import List  # pylint: disable=unused-import
+from typing import Union  # pylint: disable=unused-import
+
 import opsicommon  # this is needed for dynamic loading # pylint: disable=unused-import
 from opsicommon.logging import get_logger
 
