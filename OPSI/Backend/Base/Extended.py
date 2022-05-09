@@ -54,6 +54,7 @@ def get_function_signature_and_args(function):
 	:rtype: (str, str)
 	"""
 	sig = str(inspect.signature(function)).replace("(self, ", "(").replace("(self)", "()")
+	sig = sig.replace("NoneType", "None")
 	spec = inspect.getfullargspec(function)
 	args_ = [f"{arg}={arg}" for arg in spec.args if arg != "self"]
 	if spec.varargs:
@@ -103,8 +104,9 @@ class ExtendedBackend(Backend):
 			sig, arg = get_function_signature_and_args(functionRef)
 			sig = "(self)" if sig == "()" else f"(self, {sig[1:]}"
 
-			print(f"Adding {methodName} to current class - overwriting? {hasattr(self, methodName)}")
-			print(f"Signature: {sig}, Args: {arg}")
+			#print(f"Adding {methodName} to current class - overwriting? {hasattr(self, methodName)}")
+			#print(f"Signature: {sig}, Args: {arg}")
+			#print(f'def {methodName}{sig}: return self._executeMethod("{methodName}", {arg})')
 
 			exec(  # pylint: disable=exec-used
 				f'def {methodName}{sig}: return self._executeMethod("{methodName}", {arg})'
