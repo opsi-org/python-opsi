@@ -104,10 +104,6 @@ class ExtendedBackend(Backend):
 			sig, arg = get_function_signature_and_args(functionRef)
 			sig = "(self)" if sig == "()" else f"(self, {sig[1:]}"
 
-			#print(f"Adding {methodName} to current class - overwriting? {hasattr(self, methodName)}")
-			#print(f"Signature: {sig}, Args: {arg}")
-			#print(f'def {methodName}{sig}: return self._executeMethod("{methodName}", {arg})')
-
 			exec(  # pylint: disable=exec-used
 				f'def {methodName}{sig}: return self._executeMethod("{methodName}", {arg})'
 			)
