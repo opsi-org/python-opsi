@@ -346,7 +346,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			if option == "unique_hardware_addresses":
 				self.unique_hardware_addresses = forceBool(value)
 
-	def _setAuditHardwareConfig(self, config: Dict[Dict[str, Any]]) -> None:
+	def _setAuditHardwareConfig(self, config: Dict[str, Dict[str, Any]]) -> None:
 		self._auditHardwareConfig = {}
 		for conf in config:
 			hwClass = conf["Class"]["Opsi"]
