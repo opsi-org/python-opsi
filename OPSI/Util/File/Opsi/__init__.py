@@ -1508,7 +1508,7 @@ element of the tuple is replace with the second element.
 
 				if checksum != filesum.hexdigest():
 					logger.trace("Read %s bytes from file %s, resulting in checksum %s", count, member.name, filesum.hexdigest())
-					raise OpsiBackupFileError(f"Backup Archive is not valid: File {member.name} is corrupetd")
+					raise OpsiBackupFileError(f"Backup Archive is not valid: File {member.name} is corrupted")
 
 		return True
 
