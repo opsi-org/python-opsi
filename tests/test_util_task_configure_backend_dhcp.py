@@ -9,6 +9,8 @@ Testing the backend configuration.
 import os
 from contextlib import contextmanager
 
+import pytest
+
 import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 from OPSI.Util import md5sum
 from OPSI.Util.Task.ConfigureBackend.DHCPD import (
@@ -111,7 +113,16 @@ def testConfiguringCreatesBackupFile(tempDir):
 	assert len(os.listdir(tempDir)) == 2, "No backup was created"
 
 
-def testUpdatingDHCPDBackendConfigReplacesCurrentCommand(tempDir):
+@pytest.mark.parametrize(
+	"reload_command, expected_reload_command",
+	(
+		('u"sudo restart-dhcp-server"', "sudo service opsi-test-dhcpd restart"),
+		('"sudo restart-dhcp-server"', "sudo service opsi-test-dhcpd restart"),
+		('"restart-dhcp-server"', "service opsi-test-dhcpd restart"),
+		('u"restart-dhcp-server"', "service opsi-test-dhcpd restart"),
+	),
+)
+def testUpdatingDHCPDBackendConfigReplacesCurrentCommand(tempDir, reload_command, expected_reload_command):
 	target = os.path.join(tempDir, "dhcpd.test.conf")
 
 	with open(target, "w", encoding="utf-8") as file:
@@ -126,8 +137,10 @@ localip = socket.gethostbyname(socket.getfqdn())
 config = {
 "dhcpdOnDepot":			False,
 "dhcpdConfigFile":		 u"/etc/dhcp3/dhcpd.conf",
-# "reloadConfigCommand":	 "sudo break-things-now --hard",
-"reloadConfigCommand":	 u"sudo break-things-now --hard",
+# "reloadConfigCommand":	 "restart-dhcp-server",
+"reloadConfigCommand":	 """
+			+ reload_command
+			+ """,
 "fixedAddressFormat":	  u"IP", # or FQDN
 "defaultClientParameters": { "next-server": localip, "filename": u"linux/pxelinux.0" }
 }
@@ -142,7 +155,7 @@ config = {
 
 	config = backendConfigUtils.getBackendConfiguration(target)
 
-	assert "sudo " + FAKE_RESTART_COMMAND == config["reloadConfigCommand"]
+	assert expected_reload_command == config["reloadConfigCommand"]
 	assert not config["dhcpdOnDepot"]
 	assert "/etc/dhcp3/dhcpd.conf" == config["dhcpdConfigFile"]
 	assert "IP" == config["fixedAddressFormat"]
