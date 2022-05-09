@@ -165,17 +165,11 @@ def insertDHCPDRestartCommand(dhcpBackendConfigFile, restartCommand):
 
 	command = command.strip()
 	logger.debug("Found command: '%s'", command)
-	if command.startswith(""):
-		command = command[1:]
 
-	if command.endswith(","):
-		command = command[1:-2]
-	else:
-		command = command[1:-1]
-
+	command = command.strip('",')
 	if command.startswith("sudo "):
 		command = command[5:]
-	logger.debug("Processed command to be: '%s'", command)
+	logger.debug("Cleaned command: '%s'", command)
 
 	with open(dhcpBackendConfigFile, "w", encoding="utf-8") as configFile:
 		configFile.write(config.replace(command, restartCommand))
