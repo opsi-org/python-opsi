@@ -7,12 +7,15 @@ Backends.
 """
 
 import functools
+from typing import Callable
 
-def no_export(func):
+
+def no_export(func: Callable) -> Callable:
 	func.no_export = True
 	return func
 
-def deprecated(func=None, *, alternative_method=None):
+
+def deprecated(func: Callable = None, *, alternative_method: Callable = None) -> Callable:
 	if func is None:
 		return functools.partial(deprecated, alternative_method=alternative_method)
 

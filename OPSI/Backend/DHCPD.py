@@ -17,11 +17,13 @@ import threading
 import time
 from contextlib import contextmanager
 from functools import lru_cache
+from typing import Any, Callable, Generator, List
 
 from opsicommon.logging import get_logger, secret_filter
 
 from OPSI import System
 from OPSI.Backend.Base import ConfigDataBackend
+from OPSI.Backend.Base.Backend import Backend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import (
 	BackendBadValueError,
@@ -30,7 +32,7 @@ from OPSI.Exceptions import (
 	BackendUnableToConnectError,
 	BackendUnaccomplishableError,
 )
-from OPSI.Object import Host, OpsiClient
+from OPSI.Object import ConfigState, Host, OpsiClient
 from OPSI.Types import forceBool, forceDict, forceHostId, forceObjectClass
 from OPSI.Util import getfqdn
 from OPSI.Util.File import DHCPDConfFile
@@ -43,7 +45,7 @@ logger = get_logger("opsi.general")
 
 
 @contextmanager
-def dhcpd_lock(lock_type=""):
+def dhcpd_lock(lock_type: str = "") -> Generator[None, None, None]:
 	lock_file = "/var/lock/opsi-dhcpd-lock"
 	with open(lock_file, "a+", encoding="utf8") as lock_fh:
 		try:
@@ -77,7 +79,8 @@ def dhcpd_lock(lock_type=""):
 
 
 class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attributes
-	def __init__(self, **kwargs):
+	"""This Backend holds information for DHCP functionality"""
+	def __init__(self, **kwargs) -> None:
 		self._name = "dhcpd"
 
 		ConfigDataBackend.__init__(self, **kwargs)
@@ -112,7 +115,7 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 		self._opsiHostKey = None
 		self._depotConnections = {}
 
-	def _get_opsi_host_key(self, backend=None):
+	def _get_opsi_host_key(self, backend: Backend = None) -> None:
 		if backend is None:
 			backend = self._context
 		depots = backend.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
@@ -121,16 +124,17 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 		self._opsiHostKey = depots[0].getOpsiHostKey()
 		secret_filter.add_secrets(self._opsiHostKey)
 
-	def _init_backend(self, config_data_backend):
+	def _init_backend(self, config_data_backend: Backend) -> None:
 		try:
 			self._get_opsi_host_key(config_data_backend)
 		except Exception as err:  # pylint: disable=broad-except
 			# This can fail if backend is not yet initialized, continue!
 			logger.info(err)
 
-	def _startReloadThread(self):
+	def _startReloadThread(self) -> None:
 		class ReloadThread(threading.Thread):
-			def __init__(self, reloadConfigCommand):
+			"""This class implements a thread regularly reloading the dhcpd.conf file."""
+			def __init__(self, reloadConfigCommand: Callable) -> None:
 				threading.Thread.__init__(self)
 				self._reloadConfigCommand = reloadConfigCommand
 				self._reloadEvent = threading.Event()
@@ -141,15 +145,16 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 					)
 
 			@property
-			def isBusy(self):
+			def isBusy(self) -> bool:
 				return self._isReloading or self._reloadEvent.is_set()
 
-			def triggerReload(self):
+			def triggerReload(self) -> None:
+				"""Explicitely call a config file reload."""
 				logger.debug("Reload triggered")
 				if not self._reloadEvent.is_set():
 					self._reloadEvent.set()
 
-			def run(self):
+			def run(self) -> None:
 				while True:
 					if self._reloadEvent.wait(WAIT_AFTER_RELOAD):
 						with dhcpd_lock("config_reload"):
@@ -169,12 +174,12 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 		self._reloadThread.daemon = True
 		self._reloadThread.start()
 
-	def _triggerReload(self):
+	def _triggerReload(self) -> None:
 		if not self._reloadThread:
 			self._startReloadThread()
 		self._reloadThread.triggerReload()
 
-	def _getDepotConnection(self, depotId):
+	def _getDepotConnection(self, depotId: str) -> Backend:
 		depotId = forceHostId(depotId)
 		if depotId == self._depotId:
 			return self
@@ -190,7 +195,8 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 				raise BackendUnableToConnectError(f"Failed to connect to depot '{depotId}': {err}") from err
 		return self._depotConnections[depotId]
 
-	def _getResponsibleDepotId(self, clientId):
+	def _getResponsibleDepotId(self, clientId: str) -> str:
+		"""This method returns the depot a client is assigned to."""
 		configStates = self._context.configState_getObjects(
 			configId="clientconfig.depot.id", objectId=clientId
 		)  # pylint: disable=maybe-no-member
@@ -206,14 +212,14 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 
 		return depotId
 
-	def backend_exit(self):
+	def backend_exit(self) -> None:
 		if self._reloadThread:
 			logger.info("Waiting for reload thread")
 			for _i in range(10):
 				if self._reloadThread.isBusy:
 					time.sleep(1)
 
-	def _dhcpd_updateHost(self, host):
+	def _dhcpd_updateHost(self, host: Host) -> Any:
 		host = forceObjectClass(host, Host)
 
 		if self._dhcpdOnDepot:
@@ -225,7 +231,7 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 				return self._getDepotConnection(depotId).dhcpd_updateHost(host)  # pylint: disable=maybe-no-member
 		return self.dhcpd_updateHost(host)
 
-	def dhcpd_updateHost(self, host):  # pylint: disable=too-many-branches
+	def dhcpd_updateHost(self, host: Host) -> None:  # pylint: disable=too-many-branches
 		host = forceObjectClass(host, Host)
 
 		if not host.hardwareAddress:  # pylint: disable=maybe-no-member
@@ -301,7 +307,7 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 
 		self._triggerReload()
 
-	def _dhcpd_deleteHost(self, host):
+	def _dhcpd_deleteHost(self, host: Host) -> None:
 		host = forceObjectClass(host, Host)
 		if self._dhcpdOnDepot:
 			for depot in self._context.host_getObjects(id=self._depotId):  # pylint: disable=maybe-no-member
@@ -309,7 +315,7 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 					self._getDepotConnection(depot.id).dhcpd_deleteHost(host)  # pylint: disable=maybe-no-member
 		self.dhcpd_deleteHost(host)
 
-	def dhcpd_deleteHost(self, host):
+	def dhcpd_deleteHost(self, host: Host) -> None:
 		host = forceObjectClass(host, Host)
 
 		with dhcpd_lock("config_update"):
@@ -325,14 +331,14 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 
 		self._triggerReload()
 
-	def host_insertObject(self, host):
+	def host_insertObject(self, host: Host) -> None:
 		if not isinstance(host, OpsiClient):
 			return
 
 		logger.debug("Inserting host: %s", host)
 		self._dhcpd_updateHost(host)
 
-	def host_updateObject(self, host):
+	def host_updateObject(self, host: Host) -> None:
 		if not isinstance(host, OpsiClient):
 			return
 
@@ -346,7 +352,7 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 		except Exception as err:  # pylint: disable=broad-except
 			logger.error(err, exc_info=True)
 
-	def host_deleteObjects(self, hosts):
+	def host_deleteObjects(self, hosts: Host) -> None:
 		logger.debug("Deleting host: %s", hosts)
 
 		errors = []
@@ -362,21 +368,21 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 		if errors:
 			raise RuntimeError(", ".join(errors))
 
-	def configState_insertObject(self, configState):
+	def configState_insertObject(self, configState: ConfigState) -> None:
 		if configState.configId != "clientconfig.depot.id":
 			return
 
 		for host in self._context.host_getObjects(id=configState.objectId):
 			self.host_updateObject(host)
 
-	def configState_updateObject(self, configState):
+	def configState_updateObject(self, configState: ConfigState) -> None:
 		if configState.configId != "clientconfig.depot.id":
 			return
 
 		for host in self._context.host_getObjects(id=configState.objectId):
 			self.host_updateObject(host)
 
-	def configState_deleteObjects(self, configStates):
+	def configState_deleteObjects(self, configStates: List[ConfigState]) -> None:
 		for configState in configStates:
 			if configState.configId != "clientconfig.depot.id":
 				continue
@@ -386,7 +392,7 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 
 
 @lru_cache(maxsize=256)
-def _getHostname(fqdn):
+def _getHostname(fqdn: str) -> str:
 	"""
 	Return only the hostname of an FQDN.
 

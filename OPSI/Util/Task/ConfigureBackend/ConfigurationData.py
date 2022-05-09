@@ -11,11 +11,12 @@ import codecs
 import os
 import re
 from collections import namedtuple
+from typing import List
 
 from opsicommon.logging import get_logger
 
 import OPSI.Backend.BackendManager as bm
-from OPSI.Object import BoolConfig, UnicodeConfig
+from OPSI.Object import BoolConfig, Config, OpsiConfigserver, UnicodeConfig
 from OPSI.System import Posix
 from OPSI.Util.Task.Samba import SMB_CONF
 
@@ -25,18 +26,16 @@ SimpleBoolConfig = namedtuple("SimpleBoolConfig", ["id", "description", "value"]
 SimpleUnicodeConfig = namedtuple("SimpleUnicodeConfig", ["id", "description", "values"])
 
 
-def initializeConfigs(backend=None, configServer=None, pathToSMBConf=SMB_CONF):
+def initializeConfigs(backend: bm.BackendManager = None, configServer: OpsiConfigserver = None, pathToSMBConf: str = SMB_CONF) -> None:
 	"""
 	Adding default configurations to the backend.
 
-	:param backend: The backend to use. If this is ``None`` an backend \
+	:param backend: The backend to use. If this is ``None`` a backend \
 will be created.
 	:param configServer: The ConfigServer that should be used as \
 default. Supply this if ``clientconfig.configserver.url`` or \
 ``clientconfig.depot.id`` are not yet set.
-	:type configServer: OPSI.Object.OpsiConfigserver
 	:param pathToSMBConf: The path the samba configuration.
-	:type pathToSMBConf: str
 
 
 	.. versionchanged:: 4.0.6.1
@@ -73,7 +72,9 @@ default. Supply this if ``clientconfig.configserver.url`` or \
 		backend.backend_exit()
 
 
-def create_default_configs(backend, configServer=None, pathToSMBConf=SMB_CONF):  # pylint: disable=too-many-branches,too-many-statements
+def create_default_configs(  # pylint: disable=too-many-branches,too-many-statements
+	backend: bm.BackendManager, configServer: OpsiConfigserver = None, pathToSMBConf: str = SMB_CONF
+) -> None:
 	configIdents = set(backend.config_getIdents(returnType="unicode"))  # pylint: disable=maybe-no-member
 	configs = []
 	config_states = []
@@ -314,15 +315,13 @@ def create_default_configs(backend, configServer=None, pathToSMBConf=SMB_CONF): 
 		backend.configState_createObjects(config_states)
 
 
-def readWindowsDomainFromSambaConfig(pathToConfig=SMB_CONF):
+def readWindowsDomainFromSambaConfig(pathToConfig: str = SMB_CONF) -> str:
 	"""
 	Get the Windows domain (workgroup) from smb.conf.
 	If no workgroup can be found this returns an empty string.
 
 	:param pathToConfig: Path to the smb.conf
-	:type pathToConfig: str
 	:return: The Windows domain in uppercase letters.
-	:rtype: str
 	"""
 	winDomain = ""
 	if os.path.exists(pathToConfig):
@@ -337,13 +336,12 @@ def readWindowsDomainFromSambaConfig(pathToConfig=SMB_CONF):
 	return winDomain
 
 
-def readWindowsDomainFromUCR():
+def readWindowsDomainFromUCR() -> str:
 	"""
-	Get the Windows domain from Univention Config registry
+	Get the Windows domain from Univention Config registry.
 	If no domain can be found this returns an empty string.
 
 	:return: The Windows domain in uppercase letters.
-	:rtype: str
 	"""
 	domain = ""
 	try:
@@ -358,7 +356,7 @@ def readWindowsDomainFromUCR():
 	return domain
 
 
-def addDynamicDepotDriveSelection(backend):
+def addDynamicDepotDriveSelection(backend: bm.BackendManager):
 	config = backend.config_getObjects(id="clientconfig.depot.drive")[0]
 
 	if "dynamic" not in config.possibleValues:
@@ -368,7 +366,7 @@ def addDynamicDepotDriveSelection(backend):
 		backend.config_updateObject(config)
 
 
-def createWANconfigs(backend):
+def createWANconfigs(backend: bm.BackendManager) -> None:
 	"Create the configurations that are used by the WAN extension if missing."
 
 	configs = [
@@ -381,7 +379,7 @@ def createWANconfigs(backend):
 	_createBooleanConfigsIfMissing(backend, configs)
 
 
-def _createBooleanConfigsIfMissing(backend, configs):
+def _createBooleanConfigsIfMissing(backend: bm.BackendManager, configs: List[Config]) -> None:
 	availableConfigs = set(backend.config_getIdents())
 	for config in configs:
 		if config.id not in availableConfigs:
@@ -389,7 +387,7 @@ def _createBooleanConfigsIfMissing(backend, configs):
 			backend.config_createBool(config.id, config.description, config.value)
 
 
-def createInstallByShutdownConfig(backend):
+def createInstallByShutdownConfig(backend: bm.BackendManager) -> None:
 	"Create the configurations that are used by the InstallByShutdown extension if missing."
 
 	config = SimpleBoolConfig("clientconfig.install_by_shutdown.active", "install_by_shutdown active", False)
@@ -397,7 +395,7 @@ def createInstallByShutdownConfig(backend):
 	_createBooleanConfigsIfMissing(backend, [config])
 
 
-def createUserProfileManagementDefaults(backend):
+def createUserProfileManagementDefaults(backend: bm.BackendManager) -> None:
 	"Create the default configuration for the User Profile Management extension."
 
 	eventActiveConfig = SimpleBoolConfig("opsiclientd.event_user_login.active", "user_login active", False)

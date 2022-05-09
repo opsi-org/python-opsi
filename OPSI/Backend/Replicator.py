@@ -10,7 +10,7 @@ The replicator allows replication from one backend into another.
 
 from opsicommon.logging import get_logger
 
-from OPSI.Backend.Base import ExtendedConfigDataBackend
+from OPSI.Backend.Base import Backend, ExtendedConfigDataBackend
 
 # wildcard import is necessary for eval-statement
 from OPSI.Object import *  # pylint: disable=wildcard-import,unused-wildcard-import
@@ -22,7 +22,7 @@ __all__ = ('BackendReplicator', )
 logger = get_logger("opsi.general")
 
 
-class BackendReplicator:
+class BackendReplicator:  # pylint: disable=too-many-instance-attributes
 	OBJECT_CLASSES = [
 		'Host',
 		'Product',
@@ -47,7 +47,14 @@ class BackendReplicator:
 		'AuditSoftwareToLicensePool'
 	]
 
-	def __init__(self, readBackend, writeBackend, newServerId=None, oldServerId=None, cleanupFirst=True):
+	def __init__(  # pylint: disable=too-many-arguments
+		self,
+		readBackend: Backend,
+		writeBackend: Backend,
+		newServerId: str = None,
+		oldServerId: str = None,
+		cleanupFirst: bool = True
+	) -> None:
 		self.__readBackend = readBackend
 		self.__writeBackend = writeBackend
 
@@ -81,23 +88,23 @@ class BackendReplicator:
 			fireAlways=True
 		)
 
-	def getCurrentProgressSubject(self):
+	def getCurrentProgressSubject(self) -> ProgressSubject:
 		return self.__currentProgressSubject
 
-	def getOverallProgressSubject(self):
+	def getOverallProgressSubject(self) -> ProgressSubject:
 		return self.__overallProgressSubject
 
-	def replicate(
+	def replicate(  # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
 		self,
-		serverIds=None,
-		depotIds=None,
-		clientIds=None,
-		groupIds=None,
-		productIds=None,
-		productTypes=None,
-		audit=True,
-		licenses=True
-	):
+		serverIds: List[str] = None,
+		depotIds: List[str] = None,
+		clientIds: List[str] = None,
+		groupIds: List[str] = None,
+		productIds: List[str] = None,
+		productTypes: List[str] = None,
+		audit: bool = True,
+		licenses: bool = True
+	) -> None:
 		'''
 		Replicate (a part) of a opsi configuration database
 		An empty list passed as a param means: replicate all known
@@ -373,7 +380,7 @@ class BackendReplicator:
 			wb.backend_setOptions({'additionalReferentialIntegrityChecks': aric})
 
 	@classmethod
-	def _getNumberOfObjectClassesToProcess(cls, audit=True, licenses=True):
+	def _getNumberOfObjectClassesToProcess(cls, audit: bool = True, licenses: bool = True) -> int:
 		auditClasses = set([
 			'AuditHardware', 'AuditSoftware', 'AuditHardwareOnHost',
 			'AuditSoftwareOnClient'

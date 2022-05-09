@@ -9,6 +9,7 @@ SQLite backend.
 import os
 import sqlite3
 import threading
+from typing import Any, Dict, Generator
 
 from opsicommon.logging import get_logger
 from sqlalchemy import create_engine
@@ -25,6 +26,7 @@ logger = get_logger("opsi.general")
 
 
 class SQLite(SQL):
+	"""Class handling basic SQLite functionality."""
 	AUTOINCREMENT = ''
 	ALTER_TABLE_CHANGE_SUPPORTED = False
 	ESCAPED_BACKSLASH = "\\"
@@ -32,7 +34,7 @@ class SQLite(SQL):
 	ESCAPED_ASTERISK = "**"
 	_WRITE_LOCK = threading.Lock()
 
-	def __init__(self, **kwargs):
+	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
 
 		self._database = ":memory:"
@@ -57,14 +59,14 @@ class SQLite(SQL):
 			self.init_connection()
 
 	@staticmethod
-	def on_engine_connect(conn, branch):  # pylint: disable=unused-argument
+	def on_engine_connect(conn, branch) -> None:  # pylint: disable=unused-argument
 		# conn.execute('PRAGMA synchronous=OFF')
 		# conn.execute('PRAGMA temp_store=MEMORY')
 		# conn.execute('PRAGMA cache_size=5000')
 		# conn.execute('PRAGMA encoding="UTF-8"')
 		pass
 
-	def init_connection(self):
+	def init_connection(self) -> None:
 		uri = f'sqlite:///{self._database}'
 		logger.info("Connecting to %s", uri)
 
@@ -89,15 +91,15 @@ class SQLite(SQL):
 			self.getTables(session)
 		logger.debug('SQLite connected: %s', self)
 
-	def __repr__(self):
+	def __repr__(self) -> str:
 		return f"<{self.__class__.__name__}(database={self._database})>"
 
-	def delete_db(self):
+	def delete_db(self) -> None:
 		self.disconnect()
 		if os.path.exists(self._database):
 			os.remove(self._database)
 
-	def getTables(self, session):
+	def getTables(self, session: scoped_session) -> Dict[str, Any]:
 		"""
 		Get what tables are present in the database.
 
@@ -117,13 +119,14 @@ class SQLite(SQL):
 
 		return tables
 
-	def getTableCreationOptions(self, table):
+	def getTableCreationOptions(self, table: Any) -> str:
 		return ''
 
 
 class SQLiteBackend(SQLBackend):
+	"""Backend holding information in SQLite form."""
 
-	def __init__(self, **kwargs):
+	def __init__(self, **kwargs) -> None:
 		self._name = 'sqlite'
 
 		SQLBackend.__init__(self, **kwargs)
@@ -132,10 +135,10 @@ class SQLiteBackend(SQLBackend):
 
 		logger.debug('SQLiteBackend created: %s', self)
 
-	def _check_module(self, module: str):
+	def _check_module(self, module: str) -> None:
 		return
 
-	def backend_createBase(self):
+	def backend_createBase(self) -> None:
 		try:
 			return SQLBackend.backend_createBase(self)
 		except sqlite3.DatabaseError as dbError:
@@ -144,7 +147,7 @@ class SQLiteBackend(SQLBackend):
 			self._sql.connect()
 			return SQLBackend.backend_createBase(self)
 
-	def _createAuditHardwareTables(self):  # pylint: disable=too-many-statements
+	def _createAuditHardwareTables(self) -> str:  # pylint: disable=too-many-statements
 		"""
 		Creating tables for hardware audit data.
 
@@ -156,18 +159,18 @@ class SQLiteBackend(SQLBackend):
 			tables = self._sql.getTables(session)
 			existingTables = set(tables.keys())
 
-			def removeTrailingComma(query):
+			def removeTrailingComma(query: str) -> str:
 				if query.endswith(','):
 					return query[:-1]
 
 				return query
 
-			def finishSQLQuery(tableExists, tableName):
+			def finishSQLQuery(tableExists: bool, tableName: str) -> str:
 				if tableExists:
 					return ' ;\n'
 				return f'\n) {self._sql.getTableCreationOptions(tableName)};\n'
 
-			def getSQLStatements():  # pylint: disable=too-many-branches,too-many-statements
+			def getSQLStatements() -> Generator[str, None, None]:  # pylint: disable=too-many-branches,too-many-statements
 				for (hwClass, values) in self._auditHardwareConfig.items():  # pylint: disable=too-many-nested-blocks
 					logger.debug("Processing hardware class '%s'", hwClass)
 					hardwareDeviceTableName = f"HARDWARE_DEVICE_{hwClass}"
@@ -267,7 +270,7 @@ class SQLiteBackend(SQLBackend):
 
 
 class SQLiteObjectBackendModificationTracker(SQLBackendObjectModificationTracker):
-	def __init__(self, **kwargs):
+	def __init__(self, **kwargs) -> None:
 		SQLBackendObjectModificationTracker.__init__(self, **kwargs)
 		self._sql = SQLite(**kwargs)
 		self._createTables()

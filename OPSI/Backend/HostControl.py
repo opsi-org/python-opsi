@@ -13,6 +13,7 @@ import socket
 import struct
 import time
 from contextlib import closing
+from typing import Any, Dict, List
 
 from opsicommon.client.jsonrpc import JSONRPCClient
 from opsicommon.logging import get_logger
@@ -20,6 +21,7 @@ from opsicommon.objects import Host
 
 from OPSI import __version__
 from OPSI.Backend.Base import ExtendedBackend
+from OPSI.Backend.Base.Backend import Backend
 from OPSI.Exceptions import BackendMissingDataError, BackendUnaccomplishableError
 from OPSI.Types import (
 	forceBool,
@@ -41,14 +43,22 @@ class RpcThread(KillableThread):  # pylint: disable=too-many-instance-attributes
 
 	_USER_AGENT = f"opsi-RpcThread/{__version__}"
 
-	def __init__(
-		self, hostControlBackend, hostId, address, username, password, method, params=[], hostPort=0
-	):  # pylint: disable=dangerous-default-value,too-many-arguments
+	def __init__(  # pylint: disable=too-many-arguments
+		self,
+		hostControlBackend: ExtendedBackend,
+		hostId: str,
+		address: str,
+		username: str,
+		password: str,
+		method: str,
+		params: List = None,
+		hostPort: int = 0
+	) -> None:
 		KillableThread.__init__(self)
 		self.hostControlBackend = hostControlBackend
 		self.hostId = forceHostId(hostId)
 		self.method = forceUnicode(method)
-		self.params = forceList(params)
+		self.params = forceList(params or [])
 		self.address = address
 		self.error = None
 		self.result = None
@@ -70,7 +80,7 @@ class RpcThread(KillableThread):  # pylint: disable=too-many-instance-attributes
 			retry=0,
 		)
 
-	def run(self):
+	def run(self) -> None:
 		self.started = time.time()
 		try:
 			self.result = self.jsonrpc.execute_rpc(self.method, self.params)
@@ -81,7 +91,7 @@ class RpcThread(KillableThread):  # pylint: disable=too-many-instance-attributes
 
 
 class ConnectionThread(KillableThread):
-	def __init__(self, hostControlBackend, hostId, address):
+	def __init__(self, hostControlBackend: ExtendedBackend, hostId: str, address: str) -> None:
 		KillableThread.__init__(self)
 		self.hostControlBackend = hostControlBackend
 		self.hostId = forceHostId(hostId)
@@ -90,7 +100,7 @@ class ConnectionThread(KillableThread):
 		self.started = 0
 		self.ended = 0
 
-	def run(self):
+	def run(self) -> None:
 		self.started = time.time()
 		timeout = max(self.hostControlBackend._hostReachableTimeout, 0)  # pylint: disable=protected-access
 
@@ -110,7 +120,7 @@ class ConnectionThread(KillableThread):
 
 
 class HostControlBackend(ExtendedBackend):
-	def __init__(self, backend, **kwargs):
+	def __init__(self, backend: Backend, **kwargs) -> None:
 		self._name = "hostcontrol"
 
 		ExtendedBackend.__init__(self, backend, **kwargs)
@@ -141,14 +151,14 @@ class HostControlBackend(ExtendedBackend):
 
 		self._set_broadcast_addresses(broadcastAddresses)
 
-	def __repr__(self):
+	def __repr__(self) -> str:
 		try:
 			return f"<{self.__class__.__name__}(resolveHostAddress={self._resolveHostAddress}, maxConnections={self._maxConnections})>"
 		except AttributeError:
 			# Can happen during initialisation
 			return f"<{self.__class__.__name__}()>"
 
-	def _set_broadcast_addresses(self, value):
+	def _set_broadcast_addresses(self, value: Any) -> None:
 		self._broadcastAddresses = {}
 		old_format = False
 		if isinstance(value, list):
@@ -177,7 +187,7 @@ class HostControlBackend(ExtendedBackend):
 				'Example: { "0.0.0.0/0": { "255.255.255.255": [7, 9, 12287] } }'
 			)
 
-	def _getHostAddress(self, host):
+	def _getHostAddress(self, host: str) -> str:
 		address = None
 		if self._resolveHostAddress:
 			try:
@@ -196,13 +206,13 @@ class HostControlBackend(ExtendedBackend):
 		return address
 
 	def _opsiclientdRpc(
-		self, hostIds, method, params=[], timeout=None
-	):  # pylint: disable=dangerous-default-value,too-many-locals,too-many-branches,too-many-statements
+		self, hostIds: List[str], method: str, params: List = None, timeout: int = None
+	):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		if not hostIds:
 			raise BackendMissingDataError("No matching host ids found")
 		hostIds = forceHostIdList(hostIds)
 		method = forceUnicode(method)
-		params = forceList(params)
+		params = forceList(params or [])
 		if not timeout:
 			timeout = self._hostRpcTimeout
 		timeout = forceInt(timeout)
@@ -281,7 +291,7 @@ class HostControlBackend(ExtendedBackend):
 
 		return result
 
-	def _get_broadcast_addresses_for_host(self, host: Host):  # pylint: disable=inconsistent-return-statements
+	def _get_broadcast_addresses_for_host(self, host: Host) -> Any:  # pylint: disable=inconsistent-return-statements
 		if not self._broadcastAddresses:
 			return []
 
@@ -305,9 +315,9 @@ class HostControlBackend(ExtendedBackend):
 			for broadcast, ports in self._broadcastAddresses[network].items():
 				yield (broadcast.compressed, ports)
 
-	def hostControl_start(self, hostIds=[]):  # pylint: disable=dangerous-default-value
+	def hostControl_start(self, hostIds: List[str] = None) -> Dict[str, Any]:
 		"""Switches on remote computers using WOL."""
-		hosts = self._context.host_getObjects(attributes=["hardwareAddress", "ipAddress"], id=hostIds)  # pylint: disable=maybe-no-member
+		hosts = self._context.host_getObjects(attributes=["hardwareAddress", "ipAddress"], id=hostIds or [])  # pylint: disable=maybe-no-member
 		result = {}
 		for host in hosts:
 			try:
@@ -337,47 +347,63 @@ class HostControlBackend(ExtendedBackend):
 				result[host.id] = {"result": None, "error": str(err)}
 		return result
 
-	def hostControl_shutdown(self, hostIds=[]):  # pylint: disable=dangerous-default-value
+	def hostControl_shutdown(self, hostIds: List[str] = None) -> Dict[str, Any]:
 		if not hostIds:
 			raise BackendMissingDataError("No host ids given")
-		hostIds = self._context.host_getIdents(id=hostIds, returnType="unicode")  # pylint: disable=maybe-no-member
+		hostIds = self._context.host_getIdents(id=hostIds or [], returnType="unicode")  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method="shutdown", params=[])
 
-	def hostControl_reboot(self, hostIds=[]):  # pylint: disable=dangerous-default-value
+	def hostControl_reboot(self, hostIds: List[str] = None) -> Dict[str, Any]:
 		if not hostIds:
 			raise BackendMissingDataError("No host ids given")
-		hostIds = self._context.host_getIdents(id=hostIds, returnType="unicode")  # pylint: disable=maybe-no-member
+		hostIds = self._context.host_getIdents(id=hostIds or [], returnType="unicode")  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method="reboot", params=[])
 
-	def hostControl_fireEvent(self, event, hostIds=[]):  # pylint: disable=dangerous-default-value
+	def hostControl_fireEvent(self, event: str, hostIds: List[str] = None) -> Dict[str, Any]:
 		event = forceUnicode(event)
-		hostIds = self._context.host_getIdents(id=hostIds, returnType="unicode")  # pylint: disable=maybe-no-member
+		hostIds = self._context.host_getIdents(id=hostIds or [], returnType="unicode")  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method="fireEvent", params=[event])
 
-	def hostControl_showPopup(
-		self, message, hostIds=[], mode="prepend", addTimestamp=True, displaySeconds=None
-	):  # pylint: disable=dangerous-default-value,too-many-arguments
+	def hostControl_showPopup(  # pylint: disable=too-many-arguments
+		self, message: str, hostIds: List[str] = None, mode: str = "prepend", addTimestamp: bool = True, displaySeconds: float = None
+	) -> Dict[str, Any]:
+		"""
+		This rpc-call creates a popup-Window with a message on given clients.
+
+		:param message: The message to be displayed.
+		:param hostIds: A list of hosts to show the message on.
+		:param mode: Where to put message in relation to previous messages (prepend or append).
+		:param addTimestamp: Whether to add the current timestamp to the message.
+		:param displaySeconds: Number of seconds to show the message for (default None = intinity or until manually closed).
+		:return: Dictionary containing the result of the rpc-call
+		"""
 		message = forceUnicode(message)
-		hostIds = self._context.host_getIdents(id=hostIds, returnType="unicode")  # pylint: disable=maybe-no-member
+		hostIds = self._context.host_getIdents(id=hostIds or [], returnType="unicode")  # pylint: disable=maybe-no-member
 		params = [message, mode, addTimestamp]
 		if displaySeconds is not None:
 			params.append(forceInt(displaySeconds))
 		return self._opsiclientdRpc(hostIds=hostIds, method="showPopup", params=params)
 
-	def hostControl_uptime(self, hostIds=[]):  # pylint: disable=dangerous-default-value
-		hostIds = self._context.host_getIdents(id=hostIds, returnType="unicode")  # pylint: disable=maybe-no-member
+	def hostControl_uptime(self, hostIds: List[str] = None) -> Dict[str, Any]:
+		hostIds = self._context.host_getIdents(id=hostIds or [], returnType="unicode")  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method="uptime", params=[])
 
-	def hostControl_getActiveSessions(self, hostIds=[]):  # pylint: disable=dangerous-default-value
-		hostIds = self._context.host_getIdents(id=hostIds, returnType="unicode")  # pylint: disable=maybe-no-member
+	def hostControl_getActiveSessions(self, hostIds: List[str] = None) -> Dict[str, Any]:
+		hostIds = self._context.host_getIdents(id=hostIds or [], returnType="unicode")  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method="getActiveSessions", params=[])
 
-	def hostControl_opsiclientdRpc(self, method, params=[], hostIds=[], timeout=None):  # pylint: disable=dangerous-default-value
-		hostIds = self._context.host_getIdents(id=hostIds, returnType="unicode")  # pylint: disable=maybe-no-member
-		return self._opsiclientdRpc(hostIds=hostIds, method=method, params=params, timeout=timeout)
+	def hostControl_opsiclientdRpc(
+		self,
+		method: str,
+		params: List[Any] = None,
+		hostIds: List[str] = None,
+		timeout: int = None
+	) -> Dict[str, Any]:
+		hostIds = self._context.host_getIdents(id=hostIds or [], returnType="unicode")  # pylint: disable=maybe-no-member
+		return self._opsiclientdRpc(hostIds=hostIds, method=method, params=params or [], timeout=timeout)
 
-	def hostControl_reachable(self, hostIds=[], timeout=None):  # pylint: disable=dangerous-default-value,too-many-branches
-		hostIds = self._context.host_getIdents(id=hostIds, returnType="unicode")  # pylint: disable=maybe-no-member
+	def hostControl_reachable(self, hostIds: List[str] = None, timeout: int = None) -> Dict[str, Any]:  # pylint: disable=too-many-branches
+		hostIds = self._context.host_getIdents(id=hostIds or [], returnType="unicode")  # pylint: disable=maybe-no-member
 		if not hostIds:
 			raise BackendMissingDataError("No matching host ids found")
 		hostIds = forceHostIdList(hostIds)
@@ -433,9 +459,15 @@ class HostControlBackend(ExtendedBackend):
 			time.sleep(0.1)
 		return result
 
-	def hostControl_execute(
-		self, command, hostIds=[], waitForEnding=True, captureStderr=True, encoding=None, timeout=300
-	):  # pylint: disable=dangerous-default-value,too-many-arguments
+	def hostControl_execute(  # pylint: disable=too-many-arguments
+		self,
+		command: str,
+		hostIds: List[str] = None,
+		waitForEnding: bool = True,
+		captureStderr: bool = True,
+		encoding: str = None,
+		timeout: int = 300
+	) -> Dict[str, Any]:
 		command = forceUnicode(command)
 		hostIds = self._context.host_getIdents(id=hostIds, returnType="unicode")  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method="execute", params=[command, waitForEnding, captureStderr, encoding, timeout])

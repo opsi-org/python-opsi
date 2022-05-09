@@ -15,17 +15,19 @@ import threading
 import time
 from contextlib import closing, contextmanager
 from pipes import quote
+from typing import Any, Dict, Generator, List
 
 from opsicommon.logging import get_logger, secret_filter
 
 from OPSI.Backend.Base import ConfigDataBackend
+from OPSI.Backend.Base.Backend import Backend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import (
 	BackendMissingDataError,
 	BackendUnableToConnectError,
 	BackendUnaccomplishableError,
 )
-from OPSI.Object import ConfigState, OpsiClient, ProductPropertyState
+from OPSI.Object import ConfigState, OpsiClient, ProductOnClient, ProductPropertyState
 from OPSI.Types import forceHostId, forceInt, forceUnicode, forceUnicodeList
 from OPSI.Util import getfqdn, serialize
 
@@ -37,11 +39,11 @@ logger = get_logger("opsi.general")
 
 
 class ServerConnection:  # pylint: disable=too-few-public-methods
-	def __init__(self, port, timeout=10):
+	def __init__(self, port: int, timeout: int = 10) -> None:
 		self.port = port
 		self.timeout = forceInt(timeout)
 
-	def sendCommand(self, cmd):
+	def sendCommand(self, cmd: str) -> str:
 		with createUnixSocket(self.port, timeout=self.timeout) as unixSocket:
 			unixSocket.send(forceUnicode(cmd).encode("utf-8"))
 
@@ -60,7 +62,7 @@ class ServerConnection:  # pylint: disable=too-few-public-methods
 
 
 @contextmanager
-def createUnixSocket(port, timeout=5.0):
+def createUnixSocket(port: int, timeout: float = 5.0) -> Generator[socket.socket, None, None]:
 	logger.notice("Creating unix socket %s", port)
 	_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 	_socket.settimeout(timeout)
@@ -72,7 +74,7 @@ def createUnixSocket(port, timeout=5.0):
 		raise RuntimeError(f"Failed to connect to socket '{port}': {err}") from err
 
 
-def getClientCacheFilePath(clientId):
+def getClientCacheFilePath(clientId: str) -> str:
 	if os.path.exists("/var/run/opsipxeconfd"):
 		directory = "/var/run/opsipxeconfd"
 	else:
@@ -86,7 +88,9 @@ def getClientCacheFilePath(clientId):
 
 
 class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attributes
-	def __init__(self, **kwargs):
+	"""Backend holding information regarding PXE boot."""
+
+	def __init__(self, **kwargs) -> None:
 		ConfigDataBackend.__init__(self, **kwargs)
 
 		self._name = "opsipxeconfd"
@@ -99,7 +103,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 		self._updateThreadsLock = threading.Lock()
 		self._parseArguments(kwargs)
 
-	def _get_opsi_host_key(self, backend=None):
+	def _get_opsi_host_key(self, backend: Backend = None) -> None:
 		if backend is None:
 			backend = self._context
 		depots = backend.host_getObjects(id=self._depotId)  # pylint: disable=maybe-no-member
@@ -108,14 +112,14 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 		self._opsiHostKey = depots[0].getOpsiHostKey()
 		secret_filter.add_secrets(self._opsiHostKey)
 
-	def _init_backend(self, config_data_backend):
+	def _init_backend(self, config_data_backend: ConfigDataBackend) -> None:
 		try:
 			self._get_opsi_host_key(config_data_backend)
 		except Exception as err:  # pylint: disable=broad-except
 			# This can fail if backend is not yet initialized, continue!
 			logger.info(err)
 
-	def _parseArguments(self, kwargs):
+	def _parseArguments(self, kwargs: Dict[str, Any]) -> None:
 		for (option, value) in kwargs.items():
 			option = option.lower()
 			if option == "port":
@@ -134,14 +138,14 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 			self._depotConnections[depot] = self._getExternalBackendConnection(depot, self._depotId, self._opsiHostKey, port=port)
 		return self._depotConnections[depot]
 
-	def _getExternalBackendConnection(self, address: str, username: str, password: str, port: int = 4447):
+	def _getExternalBackendConnection(self, address: str, username: str, password: str, port: int = 4447) -> JSONRPCBackend:
 		secret_filter.add_secrets(password)
 		try:
 			return JSONRPCBackend(address=f"https://{address}:{port}/rpc/backend/{self._name}", username=username, password=password)
 		except Exception as err:
 			raise BackendUnableToConnectError(f"Failed to connect to depot '{address}': {err}") from err
 
-	def _getResponsibleDepotId(self, clientId):
+	def _getResponsibleDepotId(self, clientId: str) -> str:
 		configStates = self._context.configState_getObjects(
 			configId="clientconfig.depot.id", objectId=clientId
 		)  # pylint: disable=maybe-no-member
@@ -156,7 +160,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 			depotId = configs[0].defaultValues[0]
 		return depotId
 
-	def _pxeBootConfigurationUpdateNeeded(self, productOnClient):  # pylint: disable=no-self-use
+	def _pxeBootConfigurationUpdateNeeded(self, productOnClient: ProductOnClient) -> bool:  # pylint: disable=no-self-use
 		if productOnClient.productType != "NetbootProduct":
 			logger.debug("Not a netboot product: %s, nothing to do", productOnClient.productId)
 			return False
@@ -169,7 +173,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 
 		return True
 
-	def _collectDataForUpdate(self, clientId, depotId):  # pylint: disable=too-many-locals,too-many-branches
+	def _collectDataForUpdate(self, clientId: str, depotId: str) -> Any:  # pylint: disable=too-many-locals,too-many-branches
 		logger.debug("Collecting data for opsipxeconfd...")
 
 		try:  # pylint: disable=too-many-nested-blocks
@@ -257,7 +261,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 
 		return data
 
-	def _collectConfigStates(self, clientId):
+	def _collectConfigStates(self, clientId: str) -> List[ConfigState]:
 		configIds = [
 			"opsi-linux-bootimage.append",
 			"clientconfig.configserver.url",
@@ -283,7 +287,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 
 		return configStates
 
-	def _collectProductPropertyStates(self, clientId, productId, depotId):
+	def _collectProductPropertyStates(self, clientId: str, productId: str, depotId: str) -> Dict[str, str]:
 		productPropertyStates = self._context.productPropertyState_getObjects(objectId=clientId, productId=productId)
 
 		propertyStatePropertyIds = set(pps.propertyId for pps in productPropertyStates)
@@ -298,7 +302,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 
 		return {pps.propertyId: ",".join(forceUnicodeList(pps.getValues())) for pps in productPropertyStates}
 
-	def _updateByProductOnClient(self, productOnClient):
+	def _updateByProductOnClient(self, productOnClient: ProductOnClient) -> None:
 		if not self._pxeBootConfigurationUpdateNeeded(productOnClient):
 			return
 
@@ -335,15 +339,13 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 		else:
 			destination.opsipxeconfd_updatePXEBootConfiguration(productOnClient.clientId)
 
-	def opsipxeconfd_updatePXEBootConfiguration(self, clientId, data=None):
+	def opsipxeconfd_updatePXEBootConfiguration(self, clientId: str, data: Dict[str, Any] = None) -> None:
 		"""
 		Update the boot configuration of a specific client.
 		This method will relay calls to opsipxeconfd who does the handling.
 
 		:param clientId: The client whose boot configuration should be updated.
-		:type clientId: str
 		:param data: Collected data for opsipxeconfd.
-		:type data: dict
 		"""
 		clientId = forceHostId(clientId)
 		logger.debug("Updating PXE boot config of %s", clientId)
@@ -363,7 +365,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 				self._updateThreads[clientId].delay()
 
 	@staticmethod
-	def _cacheOpsiPXEConfdData(clientId, data):
+	def _cacheOpsiPXEConfdData(clientId: str, data: Any) -> str:
 		"""
 		Save data used by opsipxeconfd to a cache file.
 
@@ -386,7 +388,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 			logger.debug("Writing cache file %s failed: %s", destinationFile, dataFileError)
 		return None
 
-	def backend_exit(self):
+	def backend_exit(self) -> None:
 		for connection in self._depotConnections.values():
 			try:
 				connection.backend_exit()
@@ -397,7 +399,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 			for updateThread in self._updateThreads.values():
 				updateThread.join(5)
 
-	def host_updateObject(self, host):
+	def host_updateObject(self, host: OpsiClient) -> None:
 		if not isinstance(host, OpsiClient):
 			return
 
@@ -407,13 +409,13 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 
 		self.opsipxeconfd_updatePXEBootConfiguration(host.id)
 
-	def productOnClient_insertObject(self, productOnClient):
+	def productOnClient_insertObject(self, productOnClient: ProductOnClient) -> None:
 		self._updateByProductOnClient(productOnClient)
 
-	def productOnClient_updateObject(self, productOnClient):
+	def productOnClient_updateObject(self, productOnClient: ProductOnClient) -> None:
 		self._updateByProductOnClient(productOnClient)
 
-	def productOnClient_deleteObjects(self, productOnClients):
+	def productOnClient_deleteObjects(self, productOnClients: List[ProductOnClient]) -> None:
 		errors = []
 		for productOnClient in productOnClients:
 			try:
@@ -425,19 +427,19 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 		if errors:
 			raise RuntimeError(", ".join(errors))
 
-	def configState_insertObject(self, configState):
+	def configState_insertObject(self, configState: ConfigState) -> None:
 		if configState.configId != "clientconfig.depot.id":
 			return
 
 		self.opsipxeconfd_updatePXEBootConfiguration(configState.objectId)
 
-	def configState_updateObject(self, configState):
+	def configState_updateObject(self, configState: ConfigState) -> None:
 		if configState.configId != "clientconfig.depot.id":
 			return
 
 		self.opsipxeconfd_updatePXEBootConfiguration(configState.objectId)
 
-	def configState_deleteObjects(self, configStates):
+	def configState_deleteObjects(self, configStates: List[ConfigState]) -> None:
 		hosts = set(configState.objectId for configState in configStates if configState.configId == "clientconfig.depot.id")
 
 		errors = []
@@ -454,14 +456,14 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 class UpdateThread(threading.Thread):
 	_DEFAULT_DELAY = 3.0
 
-	def __init__(self, opsiPXEConfdBackend, clientId, command):
+	def __init__(self, opsiPXEConfdBackend: OpsiPXEConfdBackend, clientId: str, command: str) -> None:
 		threading.Thread.__init__(self)
 		self._opsiPXEConfdBackend = opsiPXEConfdBackend
 		self._clientId = clientId
 		self._command = command
 		self._delay = self._DEFAULT_DELAY
 
-	def run(self):
+	def run(self) -> None:
 		logger.debug("UpdateThread %s waiting until delay is done...", self.name)
 		delayReduction = 0.2
 		while self._delay > 0:
@@ -482,6 +484,6 @@ class UpdateThread(threading.Thread):
 			finally:
 				del self._opsiPXEConfdBackend._updateThreads[self._clientId]  # pylint: disable=protected-access
 
-	def delay(self):
+	def delay(self) -> None:
 		self._delay = self._DEFAULT_DELAY
 		logger.debug("Resetted delay for UpdateThread %s", self.name)
