@@ -13,6 +13,15 @@ import re
 import types
 from functools import lru_cache
 
+# this is needed for dynamic loading
+from typing import Any  # pylint: disable=unused-import
+from typing import Callable  # pylint: disable=unused-import
+from typing import Dict  # pylint: disable=unused-import
+from typing import Generator  # pylint: disable=unused-import
+from typing import List  # pylint: disable=unused-import
+from typing import Union  # pylint: disable=unused-import
+
+import opsicommon  # this is needed for dynamic loading # pylint: disable=unused-import
 from opsicommon.logging import get_logger
 
 from OPSI.Backend.Base import Backend, ConfigDataBackend
@@ -22,6 +31,7 @@ from OPSI.Backend.Base.Extended import (
 )
 from OPSI.Backend.JSONRPC import JSONRPCBackend
 from OPSI.Exceptions import BackendConfigurationError
+from OPSI.Object import *  # this is needed for dynamic loading  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Types import forceList
 from OPSI.Util.File.Opsi import BackendDispatchConfigFile
 

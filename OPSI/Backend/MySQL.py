@@ -8,6 +8,7 @@ MySQL-Backend
 
 import re
 import time
+from typing import Any, Callable, Dict, List
 from urllib.parse import quote, urlencode
 
 from opsicommon.logging import get_logger, secret_filter
@@ -28,7 +29,7 @@ __all__ = (
 logger = get_logger("opsi.general")
 
 
-def retry_on_deadlock(func):
+def retry_on_deadlock(func: Callable) -> Callable:
 	def wrapper(*args, **kwargs):
 		trynum = 0
 		while True:
@@ -43,14 +44,14 @@ def retry_on_deadlock(func):
 
 
 class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
-
+	"""Class handling basic MySQL functionality."""
 	AUTOINCREMENT = 'AUTO_INCREMENT'
 	ALTER_TABLE_CHANGE_SUPPORTED = True
 	ESCAPED_BACKSLASH = "\\\\"
 	ESCAPED_APOSTROPHE = "\\\'"
 	ESCAPED_ASTERISK = "\\*"
 
-	def __init__(self, **kwargs):
+	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
 		self._address = 'localhost'
 		self._username = 'opsi'
@@ -98,7 +99,7 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			self.init_connection()
 
 	@staticmethod
-	def on_engine_connect(conn, branch):  # pylint: disable=unused-argument
+	def on_engine_connect(conn, branch) -> None:  # pylint: disable=unused-argument
 		conn.execute("""
 			SET SESSION sql_mode=(SELECT
 				REPLACE(
@@ -117,7 +118,7 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 		conn.execute("SET SESSION group_concat_max_len = 1000000;")
 		# conn.execute("SHOW VARIABLES LIKE 'sql_mode';").fetchone()
 
-	def init_connection(self):
+	def init_connection(self) -> None:
 		password = quote(self._password)
 		secret_filter.add_secrets(password)
 
@@ -175,22 +176,22 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 					logger.error(error)
 					raise RuntimeError(error)
 
-	def __repr__(self):
+	def __repr__(self) -> str:
 		return f"<{self.__class__.__name__}(address={self._address})>"
 
 	@retry_on_deadlock
-	def insert(self, session, table, valueHash):  # pylint: disable=too-many-branches
+	def insert(self, session: scoped_session, table: str, valueHash: Any) -> Any:
 		return super().insert(session, table, valueHash)
 
 	@retry_on_deadlock
-	def update(self, session, table, where, valueHash, updateWhereNone=False):  # pylint: disable=too-many-branches,too-many-arguments
+	def update(self, session: scoped_session, table: str, where: str, valueHash: Any, updateWhereNone: bool = False) -> Any:  # pylint: disable=too-many-arguments
 		return super().update(session, table, where, valueHash, updateWhereNone)
 
 	@retry_on_deadlock
-	def delete(self, session, table, where):
+	def delete(self, session: scoped_session, table: str, where: str) -> Any:
 		return super().delete(session, table, where)
 
-	def getTables(self, session):
+	def getTables(self, session: scoped_session) -> Dict[str, Any]:
 		"""
 		Get what tables are present in the database.
 
@@ -211,15 +212,16 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 
 		return tables
 
-	def getTableCreationOptions(self, table):
+	def getTableCreationOptions(self, table: str) -> str:
 		if table in ('SOFTWARE', 'SOFTWARE_CONFIG') or table.startswith(('HARDWARE_DEVICE_', 'HARDWARE_CONFIG_')):
 			return 'ENGINE=MyISAM DEFAULT CHARSET utf8 COLLATE utf8_general_ci;'
 		return 'ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci'
 
 
 class MySQLBackend(SQLBackend):
+	"""Backend holding information in MySQL form."""
 
-	def __init__(self, **kwargs):  # pylint: disable=too-many-branches, too-many-statements
+	def __init__(self, **kwargs) -> None:
 		self._name = 'mysql'
 
 		SQLBackend.__init__(self, **kwargs)
@@ -228,7 +230,7 @@ class MySQLBackend(SQLBackend):
 
 		logger.debug('MySQLBackend created: %s', self)
 
-	def _createTableHost(self):
+	def _createTableHost(self) -> None:
 		logger.debug('Creating table HOST')
 		# MySQL uses some defaults for a row that specifies TIMESTAMP as
 		# type without giving DEFAULT or ON UPDATE constraints that
@@ -268,7 +270,7 @@ class MySQLBackend(SQLBackend):
 			self._sql.execute(session, table)
 			self._sql.execute(session, 'CREATE INDEX `index_host_type` on `HOST` (`type`);')
 
-	def _createTableSoftwareConfig(self):
+	def _createTableSoftwareConfig(self) -> None:
 		logger.debug('Creating table SOFTWARE_CONFIG')
 		# We want the primary key config_id to be of a bigint as
 		# regular int has been proven to be too small on some
@@ -302,7 +304,8 @@ class MySQLBackend(SQLBackend):
 			)
 
 	# Overwriting product_getObjects to use JOIN for speedup
-	def product_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def product_getObjects(self, attributes: List = None, **filter) -> List[Product]:  # pylint: disable=redefined-builtin,dangerous-default-value
+		attributes = attributes or []
 		ConfigDataBackend.product_getObjects(self, attributes=[], **filter)
 		logger.info("Getting products, filter: %s", filter)
 
@@ -344,7 +347,8 @@ class MySQLBackend(SQLBackend):
 		return products
 
 	# Overwriting productProperty_getObjects to use JOIN for speedup
-	def productProperty_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def productProperty_getObjects(self, attributes: List = None, **filter) -> List[ProductProperty]:  # pylint: disable=redefined-builtin
+		attributes = attributes or []
 		ConfigDataBackend.productProperty_getObjects(self, attributes=[], **filter)
 		logger.info("Getting product properties, filter: %s", filter)
 
@@ -391,7 +395,7 @@ class MySQLBackend(SQLBackend):
 				productProperties.append(ProductProperty.fromHash(productProperty))
 		return productProperties
 
-	def auditSoftwareOnClient_setObsolete(self, clientId):
+	def auditSoftwareOnClient_setObsolete(self, clientId: str) -> None:
 		if not clientId:
 			return
 		clientId = forceHostIdList(clientId)
@@ -402,7 +406,7 @@ class MySQLBackend(SQLBackend):
 				params={"clientIds": clientId}
 			)
 
-	def auditHardwareOnHost_setObsolete(self, hostId):
+	def auditHardwareOnHost_setObsolete(self, hostId: str) -> None:
 		if not hostId:
 			return
 		hostId = forceHostIdList(hostId)
@@ -415,7 +419,7 @@ class MySQLBackend(SQLBackend):
 
 
 class MySQLBackendObjectModificationTracker(SQLBackendObjectModificationTracker):
-	def __init__(self, **kwargs):
+	def __init__(self, **kwargs) -> None:
 		SQLBackendObjectModificationTracker.__init__(self, **kwargs)
 		self._sql = MySQL(**kwargs)
 		self._createTables()

@@ -15,6 +15,7 @@ import os
 import pwd
 import re
 import shutil
+from typing import Dict, Union
 
 from opsicommon.logging import get_logger
 
@@ -49,11 +50,14 @@ __all__ = ('FileBackend', )
 
 logger = get_logger("opsi.general")
 
+
 class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attributes,too-many-public-methods
+	"""Backend holding information in Plain textfile form."""
+
 	PRODUCT_FILENAME_REGEX = re.compile(r'^([a-zA-Z0-9_.-]+)_([\w.]+)-([\w.]+)\.(local|net)boot$')
 	PLACEHOLDER_REGEX = re.compile(r'^(.*)<([^>]+)>(.*)$')
 
-	def __init__(self, **kwargs):  # pylint: disable=too-many-statements
+	def __init__(self, **kwargs) -> None:  # pylint: disable=too-many-statements
 		self._name = 'file'
 
 		ConfigDataBackend.__init__(self, **kwargs)
@@ -221,10 +225,10 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		self._mappings['LocalbootProduct'].extend(self._mappings['Product'])
 		self._mappings['NetbootProduct'].extend(self._mappings['Product'])
 
-	def backend_exit(self):
+	def backend_exit(self) -> None:
 		pass
 
-	def backend_createBase(self):
+	def backend_createBase(self) -> None:
 		logger.notice("Creating base path: '%s'" % (self.__baseDir))
 		for dirname in (
 			self.__baseDir, self.__clientConfigDir, self.__depotConfigDir,
@@ -240,7 +244,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 				self._touch(filename)
 			self._setRights(filename)
 
-	def backend_deleteBase(self):
+	def backend_deleteBase(self) -> None:
 		logger.notice("Deleting base path: '%s'" % (self.__baseDir))
 		if os.path.exists(self.__baseDir):
 			shutil.rmtree(self.__baseDir)
@@ -261,7 +265,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		if os.path.exists(self.__productGroupsFile):
 			os.unlink(self.__productGroupsFile)
 
-	def _setRights(self, path):
+	def _setRights(self, path: str) -> None:
 		logger.debug("Setting rights for path '%s'", path)
 		try:
 			if os.path.isfile(path):
@@ -281,12 +285,12 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		except Exception as err:  # pylint: disable=broad-except
 			logger.warning("Failed to set rights for path '%s': %s", path, err)
 
-	def _mkdir(self, path):
+	def _mkdir(self, path: str) -> None:
 		logger.debug("Creating path: '%s'", path)
 		os.mkdir(path)
 		self._setRights(path)
 
-	def _touch(self, filename):
+	def _touch(self, filename: str) -> None:
 		logger.debug("Creating file: '%s'", filename)
 		if not os.path.exists(filename):
 			file = LockableFile(filename)
@@ -296,18 +300,18 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		self._setRights(filename)
 
 	@staticmethod
-	def __escape(string):
+	def __escape(string: str) -> str:
 		string = forceUnicode(string)
 		logger.trace("Escaping string: '%s'" % (string))
 		return string.replace('\n', '\\n').replace(';', '\\;').replace('#', '\\#').replace('%', '%%')
 
 	@staticmethod
-	def __unescape(string):
+	def __unescape(string: str) -> str:
 		string = forceUnicode(string)
 		logger.trace("Unescaping string: '%s'" % (string))
 		return string.replace('\\n', '\n').replace('\\;', ';').replace('\\#', '#').replace('%%', '%')
 
-	def _getConfigFile(self, objType, ident, fileType):  # pylint: disable=too-many-branches,too-many-statements
+	def _getConfigFile(self, objType: str, ident: Dict[str, Any], fileType: str) -> str:  # pylint: disable=too-many-branches,too-many-statements
 		logger.debug("Getting config file for '%s', '%s', '%s'", objType, ident, fileType)
 		filename = None
 
@@ -396,7 +400,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		logger.trace("Returning config file '%s'", filename)
 		return filename
 
-	def _getIdents(self, objType, **filter):  # pylint: disable=redefined-builtin,too-many-locals,too-many-branches,too-many-statements
+	def _getIdents(self, objType: str, **filter) -> List[Dict[str, Any]]:  # pylint: disable=redefined-builtin,too-many-locals,too-many-branches,too-many-statements
 		logger.debug("Getting idents for '%s' with filter '%s'", objType, filter)
 		objIdents = []
 
@@ -736,8 +740,8 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		]
 
 	@staticmethod
-	def _adaptObjectHashAttributes(objHash, ident, attributes):
-		logger.trace("Adapting objectHash with '%s', '%s', '%s'" % (objHash, ident, attributes))
+	def _adaptObjectHashAttributes(objHash: Dict[str, Any], ident: Dict[str, Any], attributes: List[str]) -> Dict[str, Any]:
+		logger.trace("Adapting objectHash with '%s', '%s', '%s'", objHash, ident, attributes)
 		if not attributes:
 			return objHash
 
@@ -751,7 +755,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 		return objHash
 
-	def _read(self, objType, attributes, **filter):  # pylint: disable=redefined-builtin,too-many-branches,too-many-locals,too-many-statements
+	def _read(self, objType: str, attributes: List[str], **filter) -> List[Any]:  # pylint: disable=redefined-builtin,too-many-branches,too-many-locals,too-many-statements
 		if filter.get('type'):
 			match = False
 			for objectType in forceList(filter['type']):
@@ -922,7 +926,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 		return objects
 
-	def _write(self, obj, mode='create'):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+	def _write(self, obj: Any, mode: str = 'create') -> None:  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		objType = obj.getType()
 
 		if objType == 'OpsiConfigserver':
@@ -1095,7 +1099,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 				packageControlFile.generate()
 
-	def _delete(self, objList):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+	def _delete(self, objList: List[Any]) -> None:  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		if not objList:
 			return
 
@@ -1260,28 +1264,29 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		else:
 			logger.warning("_delete(): unhandled objType: '%s' object: %s", objType, objList[0])
 
-	def getData(self, query):
+	def getData(self, query: str) -> Any:
 		raise BackendConfigurationError("You have tried to execute a method, that will not work with filebackend.")
 
-	def getRawData(self, query):
+	def getRawData(self, query: str) -> Any:
 		raise BackendConfigurationError("You have tried to execute a method, that will not work with filebackend.")
 
 	# Hosts
-	def host_insertObject(self, host):
+	def host_insertObject(self, host: Host) -> None:
 		host = forceObjectClass(host, Host)
 		ConfigDataBackend.host_insertObject(self, host)
 
 		logger.debug("Inserting host: '%s'", host.getIdent())  # pylint: disable=maybe-no-member
 		self._write(host, mode='create')
 
-	def host_updateObject(self, host):
+	def host_updateObject(self, host: Host) -> None:
 		host = forceObjectClass(host, Host)
 		ConfigDataBackend.host_updateObject(self, host)
 
 		logger.debug("Updating host: '%s'", host.getIdent())  # pylint: disable=maybe-no-member
 		self._write(host, mode='update')
 
-	def host_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def host_getObjects(self, attributes: List[str] = None, **filter) -> List[Host]:  # pylint: disable=redefined-builtin
+		attributes = attributes or []
 		ConfigDataBackend.host_getObjects(self, attributes, **filter)
 
 		logger.debug("Getting hosts ...")
@@ -1302,82 +1307,85 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 		return result
 
-	def host_deleteObjects(self, hosts):
+	def host_deleteObjects(self, hosts: List[Host]) -> None:
 		ConfigDataBackend.host_deleteObjects(self, hosts)
 
 		logger.debug("Deleting hosts ...")
 		self._delete(forceObjectClassList(hosts, Host))
 
 	# Configs
-	def config_insertObject(self, config):
+	def config_insertObject(self, config: Config) -> None:
 		config = forceObjectClass(config, Config)
 		ConfigDataBackend.config_insertObject(self, config)
 
 		logger.debug("Inserting config: '%s'", config.getIdent())
 		self._write(config, mode='create')
 
-	def config_updateObject(self, config):
+	def config_updateObject(self, config: Config) -> None:
 		config = forceObjectClass(config, Config)
 		ConfigDataBackend.config_updateObject(self, config)
 
 		logger.debug("Updating config: '%s'", config.getIdent())
 		self._write(config, mode='update')
 
-	def config_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def config_getObjects(self, attributes: List[str] = None, **filter):  # pylint: disable=redefined-builtin
+		attributes = attributes or []
 		ConfigDataBackend.config_getObjects(self, attributes, **filter)
 
 		logger.debug("Getting configs ...")
 		return self._read('Config', attributes, **filter)
 
-	def config_deleteObjects(self, configs):
+	def config_deleteObjects(self, configs: List[Config]) -> None:
 		ConfigDataBackend.config_deleteObjects(self, configs)
 
 		logger.debug("Deleting configs ...")
 		self._delete(forceObjectClassList(configs, Config))
 
 	# ConfigStates
-	def configState_insertObject(self, configState):
+	def configState_insertObject(self, configState: ConfigState) -> None:
 		configState = forceObjectClass(configState, ConfigState)
 		ConfigDataBackend.configState_insertObject(self, configState)
 
 		logger.debug("Inserting configState: '%s'", configState.getIdent())  # pylint: disable=maybe-no-member
 		self._write(configState, mode='create')
 
-	def configState_updateObject(self, configState):
+	def configState_updateObject(self, configState: ConfigState) -> None:
 		configState = forceObjectClass(configState, ConfigState)
 		ConfigDataBackend.configState_updateObject(self, configState)
 
 		logger.debug("Updating configState: '%s'", configState.getIdent())  # pylint: disable=maybe-no-member
 		self._write(configState, mode='update')
 
-	def configState_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def configState_getObjects(self, attributes: List[str] = None, **filter):  # pylint: disable=redefined-builtin
+		attributes = attributes or []
 		ConfigDataBackend.configState_getObjects(self, attributes, **filter)
 
 		logger.debug("Getting configStates ...")
 		return self._read('ConfigState', attributes, **filter)
 
-	def configState_deleteObjects(self, configStates):
+	def configState_deleteObjects(self, configStates: List[ConfigState]) -> None:
 		ConfigDataBackend.configState_deleteObjects(self, configStates)
 
 		logger.debug("Deleting configStates ...")
 		self._delete(forceObjectClassList(configStates, ConfigState))
 
 	# Products
-	def product_insertObject(self, product):
+	def product_insertObject(self, product: Product) -> None:
 		product = forceObjectClass(product, Product)
 		ConfigDataBackend.product_insertObject(self, product)
 
 		logger.debug("Inserting product: '%s'", product.getIdent())  # pylint: disable=maybe-no-member
 		self._write(product, mode='create')
 
-	def product_updateObject(self, product):
+	def product_updateObject(self, product: Product) -> None:
 		product = forceObjectClass(product, Product)
 		ConfigDataBackend.product_updateObject(self, product)
 
 		logger.debug("Updating product: '%s'", product.getIdent())  # pylint: disable=maybe-no-member
 		self._write(product, mode='update')
 
-	def product_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def product_getObjects(self, attributes: List[str] = None, **filter) -> List[Product]:  # pylint: disable=redefined-builtin
+		attributes = attributes or []
 		ConfigDataBackend.product_getObjects(self, attributes, **filter)
 
 		logger.debug("Getting products ...")
@@ -1386,203 +1394,210 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 		return result
 
-	def product_deleteObjects(self, products):
+	def product_deleteObjects(self, products: List[Product]) -> None:
 		ConfigDataBackend.product_deleteObjects(self, products)
 
 		logger.debug("Deleting products ...")
 		self._delete(forceObjectClassList(products, Product))
 
 	# ProductProperties
-	def productProperty_insertObject(self, productProperty):
+	def productProperty_insertObject(self, productProperty: ProductProperty) -> None:
 		productProperty = forceObjectClass(productProperty, ProductProperty)
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 
 		logger.debug("Inserting productProperty: '%s'", productProperty.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productProperty, mode='create')
 
-	def productProperty_updateObject(self, productProperty):
+	def productProperty_updateObject(self, productProperty: ProductProperty) -> None:
 		productProperty = forceObjectClass(productProperty, ProductProperty)
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
 
 		logger.debug("Updating productProperty: '%s'", productProperty.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productProperty, mode='update')
 
-	def productProperty_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def productProperty_getObjects(self, attributes: List[str] = None, **filter) -> List[ProductProperty]:  # pylint: disable=redefined-builtin
+		attributes = attributes or []
 		ConfigDataBackend.productProperty_getObjects(self, attributes, **filter)
 
 		logger.debug("Getting productProperties ...")
 		return self._read('ProductProperty', attributes, **filter)
 
-	def productProperty_deleteObjects(self, productProperties):
+	def productProperty_deleteObjects(self, productProperties: List[ProductProperty]) -> None:
 		ConfigDataBackend.productProperty_deleteObjects(self, productProperties)
 
 		logger.debug("Deleting productProperties ...")
 		self._delete(forceObjectClassList(productProperties, ProductProperty))
 
 	# ProductDependencies
-	def productDependency_insertObject(self, productDependency):
+	def productDependency_insertObject(self, productDependency: ProductDependency) -> None:
 		productDependency = forceObjectClass(productDependency, ProductDependency)
 		ConfigDataBackend.productDependency_insertObject(self, productDependency)
 
 		logger.debug("Inserting productDependency: '%s'", productDependency.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productDependency, mode='create')
 
-	def productDependency_updateObject(self, productDependency):
+	def productDependency_updateObject(self, productDependency: ProductDependency) -> None:
 		productDependency = forceObjectClass(productDependency, ProductDependency)
 		ConfigDataBackend.productDependency_updateObject(self, productDependency)
 
 		logger.debug("Updating productDependency: '%s'", productDependency.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productDependency, mode='update')
 
-	def productDependency_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def productDependency_getObjects(self, attributes: List[str] = None, **filter) -> List[ProductDependency]:  # pylint: disable=redefined-builtin
+		attributes = attributes or []
 		ConfigDataBackend.productDependency_getObjects(self, attributes=[], **filter)
 
 		logger.debug("Getting productDependencies ...")
 		return self._read('ProductDependency', attributes, **filter)
 
-	def productDependency_deleteObjects(self, productDependencies):
+	def productDependency_deleteObjects(self, productDependencies: List[ProductDependency]) -> None:
 		ConfigDataBackend.productDependency_deleteObjects(self, productDependencies)
 
 		logger.debug("Deleting productDependencies ...")
 		self._delete(forceObjectClassList(productDependencies, ProductDependency))
 
 	# ProductOnDepots
-	def productOnDepot_insertObject(self, productOnDepot):
+	def productOnDepot_insertObject(self, productOnDepot: ProductOnDepot) -> None:
 		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 
 		logger.debug("Inserting productOnDepot: '%s'", productOnDepot.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productOnDepot, mode='create')
 
-	def productOnDepot_updateObject(self, productOnDepot):
+	def productOnDepot_updateObject(self, productOnDepot: ProductOnDepot) -> None:
 		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
 
 		logger.debug("Updating productOnDepot: '%s'", productOnDepot.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productOnDepot, mode='update')
 
-	def productOnDepot_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def productOnDepot_getObjects(self, attributes: List[str] = None, **filter) -> List[ProductOnDepot]:  # pylint: disable=redefined-builtin
+		attributes = attributes or []
 		ConfigDataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
 
 		logger.debug("Getting productOnDepots ...")
 		return self._read('ProductOnDepot', attributes, **filter)
 
-	def productOnDepot_deleteObjects(self, productOnDepots):
+	def productOnDepot_deleteObjects(self, productOnDepots: List[ProductOnDepot]) -> None:
 		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
 
 		logger.debug("Deleting productOnDepots ...")
 		self._delete(forceObjectClassList(productOnDepots, ProductOnDepot))
 
 	# ProductOnClients
-	def productOnClient_insertObject(self, productOnClient):
+	def productOnClient_insertObject(self, productOnClient: ProductOnClient) -> None:
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 
 		logger.debug("Inserting productOnClient: '%s'", productOnClient.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productOnClient, mode='create')
 
-	def productOnClient_updateObject(self, productOnClient):
+	def productOnClient_updateObject(self, productOnClient: ProductOnClient) -> None:
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
 
 		logger.debug("Updating productOnClient: '%s'", productOnClient.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productOnClient, mode='update')
 
-	def productOnClient_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def productOnClient_getObjects(self, attributes: List[str] = None, **filter) -> List[ProductOnClient]:  # pylint: disable=redefined-builtin
+		attributes = attributes or []
 		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
 
 		logger.debug("Getting productOnClient ...")
 		return self._read('ProductOnClient', attributes, **filter)
 
-	def productOnClient_deleteObjects(self, productOnClients):
+	def productOnClient_deleteObjects(self, productOnClients: ProductOnClient) -> None:
 		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
 
 		logger.debug("Deleting productOnClients ...")
 		self._delete(forceObjectClassList(productOnClients, ProductOnClient))
 
 	# ProductPropertyStates
-	def productPropertyState_insertObject(self, productPropertyState):
+	def productPropertyState_insertObject(self, productPropertyState: ProductPropertyState) -> None:
 		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
 
 		logger.debug("Inserting productPropertyState: '%s'", productPropertyState.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productPropertyState, mode='create')
 
-	def productPropertyState_updateObject(self, productPropertyState):
+	def productPropertyState_updateObject(self, productPropertyState: ProductPropertyState) -> None:
 		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
 
 		logger.debug("Updating productPropertyState: '%s'", productPropertyState.getIdent())  # pylint: disable=maybe-no-member
 		self._write(productPropertyState, mode='update')
 
-	def productPropertyState_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def productPropertyState_getObjects(self, attributes: List[str] = None, **filter) -> List[ProductPropertyState]:  # pylint: disable=redefined-builtin
+		attributes = attributes or []
 		ConfigDataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
 
 		logger.debug("Getting productPropertyStates ...")
 		return self._read('ProductPropertyState', attributes, **filter)
 
-	def productPropertyState_deleteObjects(self, productPropertyStates):
+	def productPropertyState_deleteObjects(self, productPropertyStates: List[ProductPropertyState]) -> None:
 		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
 
 		logger.debug("Deleting productPropertyStates ...")
 		self._delete(forceObjectClassList(productPropertyStates, ProductPropertyState))
 
 	# Groups
-	def group_insertObject(self, group):
+	def group_insertObject(self, group: Group) -> None:
 		group = forceObjectClass(group, Group)
 		ConfigDataBackend.group_insertObject(self, group)
 
 		logger.debug("Inserting group: '%s'", group.getIdent())  # pylint: disable=maybe-no-member
 		self._write(group, mode='create')
 
-	def group_updateObject(self, group):
+	def group_updateObject(self, group: Group) -> None:
 		group = forceObjectClass(group, Group)
 		ConfigDataBackend.group_updateObject(self, group)
 
 		logger.debug("Updating group: '%s'", group.getIdent())  # pylint: disable=maybe-no-member
 		self._write(group, mode='update')
 
-	def group_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def group_getObjects(self, attributes: List[str] = None, **filter):  # pylint: disable=redefined-builtin
+		attributes = attributes or []
 		ConfigDataBackend.group_getObjects(self, attributes=[], **filter)
 
 		logger.debug("Getting groups ...")
 		return self._read('Group', attributes, **filter)
 
-	def group_deleteObjects(self, groups):
+	def group_deleteObjects(self, groups: List[Group]) -> None:
 		ConfigDataBackend.group_deleteObjects(self, groups)
 
 		logger.debug("Deleting groups ...")
 		self._delete(forceObjectClassList(groups, Group))
 
 	# ObjectToGroups
-	def objectToGroup_insertObject(self, objectToGroup):
+	def objectToGroup_insertObject(self, objectToGroup: ObjectToGroup) -> None:
 		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 
 		logger.debug("Inserting objectToGroup: '%s'", objectToGroup.getIdent())  # pylint: disable=maybe-no-member
 		self._write(objectToGroup, mode='create')
 
-	def objectToGroup_updateObject(self, objectToGroup):
+	def objectToGroup_updateObject(self, objectToGroup: ObjectToGroup) -> None:
 		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
 
 		logger.debug("Updating objectToGroup: '%s'", objectToGroup.getIdent())  # pylint: disable=maybe-no-member
 		self._write(objectToGroup, mode='update')
 
-	def objectToGroup_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def objectToGroup_getObjects(self, attributes: List[str] = None, **filter) -> List[ObjectToGroup]:  # pylint: disable=redefined-builtin
+		attributes = attributes or []
 		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
 
 		logger.debug("Getting objectToGroups ...")
 		return self._read('ObjectToGroup', attributes, **filter)
 
-	def objectToGroup_deleteObjects(self, objectToGroups):
+	def objectToGroup_deleteObjects(self, objectToGroups: List[ObjectToGroup]) -> None:
 		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
 
 		logger.debug("Deleting objectToGroups ...")
 		self._delete(forceObjectClassList(objectToGroups, ObjectToGroup))
 
 	# AuditSoftwares
-	def auditSoftware_insertObject(self, auditSoftware):  # pylint: disable=too-many-branches
+	def auditSoftware_insertObject(self, auditSoftware: AuditSoftware) -> None:  # pylint: disable=too-many-branches
 		auditSoftware = forceObjectClass(auditSoftware, AuditSoftware)
 		ConfigDataBackend.auditSoftware_insertObject(self, auditSoftware)
 
@@ -1637,7 +1652,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 			ini.set(section, attribute, value)
 		iniFile.generate(ini)
 
-	def auditSoftware_updateObject(self, auditSoftware):
+	def auditSoftware_updateObject(self, auditSoftware: AuditSoftware) -> None:
 		auditSoftware = forceObjectClass(auditSoftware, AuditSoftware)
 		ConfigDataBackend.auditSoftware_updateObject(self, auditSoftware)
 
@@ -1664,7 +1679,8 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 		raise BackendMissingDataError("AuditSoftware %s not found" % auditSoftware)
 
-	def auditSoftware_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def auditSoftware_getObjects(self, attributes: List[str] = None, **filter) -> List[AuditSoftware]:  # pylint: disable=redefined-builtin,unused-argument
+		attributes = attributes or []
 		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
 
 		logger.debug("Getting auditSoftwares ...")
@@ -1712,7 +1728,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 		return result
 
-	def auditSoftware_deleteObjects(self, auditSoftwares):
+	def auditSoftware_deleteObjects(self, auditSoftwares: List[AuditSoftware]) -> None:
 		ConfigDataBackend.auditSoftware_deleteObjects(self, auditSoftwares)
 
 		logger.debug("Deleting auditSoftwares ...")
@@ -1744,7 +1760,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 			iniFile.generate(ini)
 
 	# AuditSoftwareOnClients
-	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient):  # pylint: disable=too-many-branches
+	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient: AuditSoftwareOnClient) -> None:  # pylint: disable=too-many-branches
 		auditSoftwareOnClient = forceObjectClass(auditSoftwareOnClient, AuditSoftwareOnClient)
 		ConfigDataBackend.auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient)
 
@@ -1798,7 +1814,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 			ini.set(section, attribute, value)
 		iniFile.generate(ini)
 
-	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
+	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient: AuditSoftwareOnClient) -> None:
 		auditSoftwareOnClient = forceObjectClass(auditSoftwareOnClient, AuditSoftwareOnClient)
 		ConfigDataBackend.auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient)
 
@@ -1825,7 +1841,8 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 		raise BackendMissingDataError("auditSoftwareOnClient %s not found" % auditSoftwareOnClient)
 
-	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def auditSoftwareOnClient_getObjects(self, attributes: List[str] = None, **filter) -> List[AuditSoftwareOnClient]:  # pylint: disable=redefined-builtin,unused-argument
+		attributes = attributes or []
 		ConfigDataBackend.auditSoftwareOnClient_getObjects(self, attributes=[], **filter)
 
 		logger.debug("Getting auditSoftwareOnClients ...")
@@ -1868,7 +1885,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 		return result
 
-	def auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients):
+	def auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients: List[AuditSoftwareOnClient]) -> None:
 		ConfigDataBackend.auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients)
 
 		logger.debug("Deleting auditSoftwareOnClients ...")
@@ -1904,21 +1921,22 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 				iniFile.generate(ini)
 
 	# AuditHardwares
-	def auditHardware_insertObject(self, auditHardware):
+	def auditHardware_insertObject(self, auditHardware: AuditHardware) -> None:
 		auditHardware = forceObjectClass(auditHardware, AuditHardware)
 		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
 
 		logger.debug("Inserting auditHardware: '%s'", auditHardware.getIdent())
 		self.__doAuditHardwareObj(auditHardware, mode='insert')
 
-	def auditHardware_updateObject(self, auditHardware):
+	def auditHardware_updateObject(self, auditHardware: AuditHardware) -> None:
 		auditHardware = forceObjectClass(auditHardware, AuditHardware)
 		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
 
 		logger.debug("Updating auditHardware: '%s'", auditHardware.getIdent())
 		self.__doAuditHardwareObj(auditHardware, mode='update')
 
-	def auditHardware_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def auditHardware_getObjects(self, attributes: List[str] = None, **filter) -> List[AuditHardware]:  # pylint: disable=redefined-builtin,unused-argument
+		attributes = attributes or []
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
 
 		logger.debug("Getting auditHardwares ...")
@@ -1943,7 +1961,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 		return result
 
-	def auditHardware_deleteObjects(self, auditHardwares):
+	def auditHardware_deleteObjects(self, auditHardwares: List[AuditHardware]) -> None:
 		ConfigDataBackend.auditHardware_deleteObjects(self, auditHardwares)
 
 		logger.debug("Deleting auditHardwares ...")
@@ -1952,21 +1970,22 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 			self.__doAuditHardwareObj(auditHardware, mode='delete')
 
 	# AuditHardwareOnHosts
-	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
+	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost: AuditHardwareOnHost) -> None:
 		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
 		ConfigDataBackend.auditHardwareOnHost_insertObject(self, auditHardwareOnHost)
 
 		logger.debug("Inserting auditHardwareOnHost: '%s'", auditHardwareOnHost.getIdent())
 		self.__doAuditHardwareObj(auditHardwareOnHost, mode='insert')
 
-	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
+	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost: AuditHardwareOnHost) -> None:
 		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
 		ConfigDataBackend.auditHardwareOnHost_updateObject(self, auditHardwareOnHost)
 
 		logger.debug("Updating auditHardwareOnHost: '%s'", auditHardwareOnHost.getIdent())
 		self.__doAuditHardwareObj(auditHardwareOnHost, mode='update')
 
-	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):  # pylint: disable=dangerous-default-value,redefined-builtin
+	def auditHardwareOnHost_getObjects(self, attributes: List[str] = None, **filter) -> List[AuditHardwareOnHost]:  # pylint: disable=redefined-builtin, unused-argument
+		attributes = attributes or []
 		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
 
 		logger.debug("Getting auditHardwareOnHosts ...")
@@ -1998,7 +2017,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 		return result
 
-	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):
+	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts: List[AuditHardwareOnHost]) -> None:
 		ConfigDataBackend.auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts)
 
 		logger.debug("Deleting auditHardwareOnHosts ...")
@@ -2006,7 +2025,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
 			self.__doAuditHardwareObj(auditHardwareOnHost, mode='delete')
 
-	def __doAuditHardwareObj(self, auditHardwareObj, mode):  # pylint: disable=too-many-branches,too-many-statements
+	def __doAuditHardwareObj(self, auditHardwareObj: Union[AuditHardware, AuditHardwareOnHost], mode: str) -> None:  # pylint: disable=too-many-branches,too-many-statements
 		if mode not in ('insert', 'update', 'delete'):
 			raise ValueError("Unknown mode: %s" % mode)
 

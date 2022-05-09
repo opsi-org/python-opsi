@@ -16,10 +16,11 @@ import re
 import time
 from contextlib import contextmanager
 from datetime import datetime
+from typing import Any, Dict, Generator, List, Tuple
 
 from opsicommon.logging import get_logger
 
-from OPSI.Backend.Base import BackendModificationListener, ConfigDataBackend
+from OPSI.Backend.Base import Backend, BackendModificationListener, ConfigDataBackend
 from OPSI.Exceptions import (
 	BackendBadValueError,
 	BackendConfigurationError,
@@ -74,7 +75,7 @@ logger = get_logger("opsi.general")
 
 
 @contextmanager
-def timeQuery(query):
+def timeQuery(query: str) -> Generator[None, None, None]:
 	startingTime = datetime.now()
 	logger.debug("start query %s", query)
 	try:
@@ -83,12 +84,12 @@ def timeQuery(query):
 		logger.debug("ended query (duration: %s) %s", query, datetime.now() - startingTime)
 
 
-def onlyAllowSelect(query):
+def onlyAllowSelect(query: str) -> None:
 	if not forceUnicodeLower(query).strip().startswith(("select", "show", "pragma")):
 		raise ValueError("Only queries to SELECT/SHOW/PRAGMA data are allowed.")
 
 
-def createSchemaVersionTable(database, session):
+def createSchemaVersionTable(database: Any, session: Any) -> None:
 	logger.debug("Creating 'OPSI_SCHEMA' table.")
 	table = f"""CREATE TABLE `OPSI_SCHEMA` (
 		`version` integer NOT NULL,
@@ -102,6 +103,7 @@ def createSchemaVersionTable(database, session):
 
 
 class SQL:  # pylint: disable=too-many-public-methods
+	"""Class handling basic SQL functionality."""
 
 	AUTOINCREMENT = "AUTO_INCREMENT"
 	ALTER_TABLE_CHANGE_SUPPORTED = True
@@ -112,7 +114,7 @@ class SQL:  # pylint: disable=too-many-public-methods
 	ESCAPED_ASTERISK = "\\*"
 	ESCAPED_COLON = "\\:"
 
-	def __init__(self, **kwargs):  # pylint: disable=unused-argument
+	def __init__(self, **kwargs) -> None:  # pylint: disable=unused-argument
 		self.Session = lambda: None  # pylint: disable=invalid-name
 		self.session_factory = None
 		self.engine = None
@@ -124,18 +126,18 @@ class SQL:  # pylint: disable=too-many-public-methods
 				self.log_queries = forceBool(value)
 
 	@staticmethod
-	def on_engine_connect(conn, branch):  # pylint: disable=unused-argument
+	def on_engine_connect(conn, branch) -> None:  # pylint: disable=unused-argument
 		pass
 
-	def init_connection(self):  # pylint: disable=unused-argument
+	def init_connection(self) -> None:  # pylint: disable=unused-argument
 		pass
 
-	def disconnect(self):
+	def disconnect(self) -> None:
 		if self.engine:
 			self.engine.dispose()
 
 	@contextmanager
-	def session(self, commit=True):
+	def session(self, commit: bool = True) -> None:
 		session = self.Session()
 		try:
 			yield session
@@ -147,16 +149,16 @@ class SQL:  # pylint: disable=too-many-public-methods
 		finally:
 			self.Session.remove()  # pylint: disable=no-member
 
-	def connect(self, cursorType=None):  # pylint: disable=no-self-use,unused-argument
+	def connect(self, cursorType: Any = None) -> None:  # pylint: disable=no-self-use,unused-argument
 		logger.warning("Method 'connect' is deprecated")
 
-	def close(self, conn, cursor):  # pylint: disable=no-self-use,unused-argument
+	def close(self, conn: Any, cursor: Any) -> None:  # pylint: disable=no-self-use,unused-argument
 		logger.warning("Method 'close' is deprecated")
 
-	def execute(self, session, query):  # pylint: disable=no-self-use
+	def execute(self, session: Any, query: str) -> None:  # pylint: disable=no-self-use
 		session.execute(query)  # pylint: disable=no-member
 
-	def getSet(self, session, query):  # pylint: disable=no-self-use
+	def getSet(self, session: Any, query: str) -> List[Dict[str, Any]]:  # pylint: disable=no-self-use
 		"""
 		Return a list of rows, every row is a dict of key / values pairs
 		"""
@@ -167,7 +169,7 @@ class SQL:  # pylint: disable=too-many-public-methods
 			return []
 		return [dict(row) for row in result if row is not None]
 
-	def getRows(self, session, query):  # pylint: disable=no-self-use
+	def getRows(self, session: Any, query: str) -> List[List[Any]]:  # pylint: disable=no-self-use
 		"""
 		Return a list of rows, every row is a list of values
 		"""
@@ -178,7 +180,7 @@ class SQL:  # pylint: disable=too-many-public-methods
 			return []
 		return [list(row) for row in result if row is not None]
 
-	def getRow(self, session, query):  # pylint: disable=no-self-use
+	def getRow(self, session: Any, query: str) -> List[Any]:  # pylint: disable=no-self-use
 		"""
 		Return one row as value list
 		"""
@@ -189,7 +191,7 @@ class SQL:  # pylint: disable=too-many-public-methods
 			return []
 		return list(result)
 
-	def insert(self, session, table, valueHash):  # pylint: disable=no-self-use
+	def insert(self, session: Any, table: str, valueHash: Any) -> int:  # pylint: disable=no-self-use
 		if not valueHash:
 			raise BackendBadValueError("No values given")
 
@@ -200,7 +202,7 @@ class SQL:  # pylint: disable=too-many-public-methods
 		result = session.execute(query, valueHash)  # pylint: disable=no-member
 		return result.lastrowid
 
-	def update(self, session, table, where, valueHash, updateWhereNone=False):  # pylint: disable=no-self-use,too-many-arguments
+	def update(self, session: Any, table: str, where: str, valueHash: Any, updateWhereNone: bool = False) -> int:  # pylint: disable=no-self-use,too-many-arguments
 		if not valueHash:
 			raise BackendBadValueError("No values given")
 
@@ -216,39 +218,39 @@ class SQL:  # pylint: disable=too-many-public-methods
 		result = session.execute(query, valueHash)  # pylint: disable=no-member
 		return result.rowcount
 
-	def delete(self, session, table, where):  # pylint: disable=no-self-use
+	def delete(self, session: Any, table: str, where: str) -> int:  # pylint: disable=no-self-use
 		query = f"DELETE FROM `{table}` WHERE {where}"
 		logger.trace("delete: %s", query)
 		result = session.execute(query)  # pylint: disable=no-member
 		return result.rowcount
 
-	def getTables(self, session):  # pylint: disable=unused-argument,no-self-use
+	def getTables(self, session: Any) -> Dict:  # pylint: disable=unused-argument,no-self-use
 		return {}
 
-	def getTableCreationOptions(self, table):  # pylint: disable=unused-argument,no-self-use
+	def getTableCreationOptions(self, table: str) -> str:  # pylint: disable=unused-argument,no-self-use
 		return ""
 
-	def escapeBackslash(self, string):
+	def escapeBackslash(self, string: str) -> str:
 		return string.replace("\\", self.ESCAPED_BACKSLASH)
 
-	def escapeApostrophe(self, string):
+	def escapeApostrophe(self, string: str) -> str:
 		return string.replace("'", self.ESCAPED_APOSTROPHE)
 
-	def escapeUnderscore(self, string):
+	def escapeUnderscore(self, string: str) -> str:
 		return string.replace("_", self.ESCAPED_UNDERSCORE)
 
-	def escapePercent(self, string):
+	def escapePercent(self, string: str) -> str:
 		return string.replace("%", self.ESCAPED_PERCENT)
 
-	def escapeAsterisk(self, string):
+	def escapeAsterisk(self, string: str) -> str:
 		return string.replace("*", self.ESCAPED_ASTERISK)
 
-	def escapeColon(self, string):
+	def escapeColon(self, string: str) -> str:
 		return string.replace(":", self.ESCAPED_COLON)
 
 
 class SQLBackendObjectModificationTracker(BackendModificationListener):
-	def __init__(self, **kwargs):
+	def __init__(self, **kwargs) -> None:
 		BackendModificationListener.__init__(self)
 		self._sql = None
 		self._lastModificationOnly = False
@@ -257,7 +259,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 			if option == "lastmodificationonly":
 				self._lastModificationOnly = forceBool(value)
 
-	def _createTables(self):
+	def _createTables(self) -> None:
 		with self._sql.session() as session:
 			tables = self._sql.getTables(session)
 			if "OBJECT_MODIFICATION_TRACKER" not in tables:
@@ -277,7 +279,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 				self._sql.execute(session, "CREATE INDEX `ident` on `OBJECT_MODIFICATION_TRACKER` (`ident`);")
 				self._sql.execute(session, "CREATE INDEX `date` on `OBJECT_MODIFICATION_TRACKER` (`date`);")
 
-	def _trackModification(self, command, obj):
+	def _trackModification(self, command: str, obj: Any) -> None:
 		command = forceUnicodeLower(command)
 		if command not in ("insert", "update", "delete"):
 			raise ValueError(f"Unhandled command '{command}'")
@@ -298,14 +300,14 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 				data["ident"],
 			)
 
-	def getModifications(self, sinceDate=None):
+	def getModifications(self, sinceDate: str = None) -> Any:
 		where = ""
 		if sinceDate:
 			where = f" WHERE `date` >= '{forceOpsiTimestamp(sinceDate)}'"
 		with self._sql.session() as session:
 			return self._sql.getSet(session, f"SELECT * FROM `OBJECT_MODIFICATION_TRACKER`{where}")
 
-	def clearModifications(self, objectClass=None, sinceDate=None):
+	def clearModifications(self, objectClass: str = None, sinceDate: str = None) -> None:
 		where = "1 = 1"
 		if objectClass:
 			where = f" AND `objectClass` = '{objectClass}'"
@@ -314,22 +316,23 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 		with self._sql.session() as session:
 			self._sql.delete(session, "OBJECT_MODIFICATION_TRACKER", where=where)
 
-	def objectInserted(self, backend, obj):
+	def objectInserted(self, backend: Backend, obj: Any) -> None:  # pylint:disable=unused-argument
 		self._trackModification("insert", obj)
 
-	def objectUpdated(self, backend, obj):
+	def objectUpdated(self, backend: Backend, obj: Any) -> None:  # pylint:disable=unused-argument
 		self._trackModification("update", obj)
 
-	def objectsDeleted(self, backend, objs):
+	def objectsDeleted(self, backend: Backend, objs: List[Any]) -> None:  # pylint:disable=unused-argument
 		for obj in forceList(objs):
 			self._trackModification("delete", obj)
 
 
 class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
+	"""Backend holding information in MySQL form."""
 
 	_OPERATOR_IN_CONDITION_PATTERN = re.compile(r"^\s*([>=<]+)\s*(\d\.?\d*)")
 
-	def __init__(self, **kwargs):
+	def __init__(self, **kwargs) -> None:
 		self._name = "sql"
 
 		ConfigDataBackend.__init__(self, **kwargs)
@@ -343,7 +346,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			if option == "unique_hardware_addresses":
 				self.unique_hardware_addresses = forceBool(value)
 
-	def _setAuditHardwareConfig(self, config):
+	def _setAuditHardwareConfig(self, config: Dict[str, Dict[str, Any]]) -> None:
 		self._auditHardwareConfig = {}
 		for conf in config:
 			hwClass = conf["Class"]["Opsi"]
@@ -351,12 +354,13 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			for value in conf["Values"]:
 				self._auditHardwareConfig[hwClass][value["Opsi"]] = {"Type": value["Type"], "Scope": value["Scope"]}
 
-	def _filterToSql(self, filter={}, table=None):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def _filterToSql(self, filter: Dict[str, Any] = None, table: str = None) -> str:  # pylint: disable=redefined-builtin
 		"""
 		Creates a SQL condition out of the given filter.
 		"""
+		filter = filter or {}
 
-		def buildCondition():
+		def buildCondition() -> Generator[str, None, None]:
 			for key, values in filter.items():
 				if values is None:
 					continue
@@ -376,7 +380,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				else:
 					yield " or ".join(processValues(key, values, table))
 
-		def processValues(key, values, table=None):  # pylint: disable=too-many-branches
+		def processValues(key: str, values: List[Any], table: str = None) -> Generator[str, None, None]:  # pylint: disable=too-many-branches
 			if table:
 				key = f"`{table}`.`{key}`"
 			else:
@@ -410,16 +414,16 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 						value = value.replace("\uffff", self._sql.ESCAPED_ASTERISK)
 						yield f"{key} {operator} '{value}'"
 
-		def addParenthesis(conditions):
+		def addParenthesis(conditions: List[str]) -> str:
 			for condition in conditions:
 				yield f"({condition})"
 
 		return " and ".join(addParenthesis(buildCondition()))
 
-	def _createQuery(self, table, attributes=[], filter={}):  # pylint: disable=redefined-builtin,dangerous-default-value
-		select = ",".join(f"`{attribute}`" for attribute in attributes) or "*"
+	def _createQuery(self, table: str, attributes: List[str] = None, filter: Dict[str, Any] = None) -> str:  # pylint: disable=redefined-builtin
+		select = ",".join(f"`{attribute}`" for attribute in attributes or []) or "*"
 
-		condition = self._filterToSql(filter)
+		condition = self._filterToSql(filter or {})
 		if condition:
 			query = f"select {select} from `{table}` where {condition}"
 		else:
@@ -427,9 +431,9 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		logger.debug("Created query: %s", query)
 		return query
 
-	def _adjustAttributes(
-		self, objectClass, attributes, filter
-	):  # pylint: disable=redefined-builtin,dangerous-default-value,disable=too-many-branches
+	def _adjustAttributes(  # pylint: disable=redefined-builtin,disable=too-many-branches
+		self, objectClass: str, attributes: List[str], filter: Dict[str, Any]
+	):
 		possibleAttributes = getPossibleClassAttributes(objectClass)
 
 		newAttributes = []
@@ -477,7 +481,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		return (newAttributes, newFilter)
 
-	def _adjustResult(self, objectClass, result):
+	def _adjustResult(self, objectClass: str, result: Dict[str, Any]) -> Dict[str, Any]:
 		idAttribute = self._objectAttributeToDatabaseAttribute(objectClass, "id")
 
 		try:
@@ -488,7 +492,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		return result
 
-	def _objectToDatabaseHash(self, object):  # pylint: disable=redefined-builtin
+	def _objectToDatabaseHash(self, object: Any) -> Dict[str, Any]:  # pylint: disable=redefined-builtin
 		_hash = object.toHash()
 		if object.getType() == "ProductOnClient":
 			try:
@@ -531,7 +535,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		return _hash
 
-	def _objectAttributeToDatabaseAttribute(self, objectClass, attribute):  # pylint: disable=too-many-return-statements,no-self-use
+	def _objectAttributeToDatabaseAttribute(self, objectClass: str, attribute: str) -> str:  # pylint: disable=too-many-return-statements,no-self-use
 		if attribute == "id":
 			# A class is considered a subclass of itself
 			if issubclass(objectClass, Product):
@@ -550,7 +554,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				return "licensePoolId"
 		return attribute
 
-	def _uniqueCondition(self, object):  # pylint: disable=redefined-builtin
+	def _uniqueCondition(self, object: Any) -> str:  # pylint: disable=redefined-builtin
 		"""
 		Creates an unique condition that can be used in the WHERE part
 		of an SQL query to identify an object.
@@ -558,10 +562,9 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		Objects must have an attribute named like the parameter.
 
 		:param object: The object to create an condition for.
-		:rtype: str
 		"""
 
-		def createCondition():
+		def createCondition() -> Generator[str, None, None]:
 			for argument in mandatoryConstructorArgs(object.__class__):
 				value = getattr(object, argument)
 				if value is None:
@@ -583,13 +586,13 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		return " and ".join(createCondition())
 
-	def backend_exit(self):
+	def backend_exit(self) -> None:
 		logger.debug("%s backend_exit", self)
 		if self._sql and self._sql.engine:
 			logger.debug("%s dispose engine", self)
 			self._sql.engine.dispose()
 
-	def backend_deleteBase(self):
+	def backend_deleteBase(self) -> None:
 		ConfigDataBackend.backend_deleteBase(self)
 
 		# Drop database
@@ -610,7 +613,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 						if error_count > 99:
 							raise
 
-	def backend_createBase(self):  # pylint: disable=too-many-branches,too-many-statements
+	def backend_createBase(self) -> None:  # pylint: disable=too-many-branches,too-many-statements
 		ConfigDataBackend.backend_createBase(self)
 
 		with self._sql.session() as session:
@@ -1005,7 +1008,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				"""
 				self._sql.execute(session, query)
 
-	def _createTableHost(self):
+	def _createTableHost(self) -> None:
 		logger.debug("Creating table HOST")
 		table = f"""CREATE TABLE `HOST` (
 				`hostId` varchar(255) NOT NULL,
@@ -1039,7 +1042,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			self._sql.execute(session, table)
 			self._sql.execute(session, "CREATE INDEX `index_host_type` on `HOST` (`type`);")
 
-	def _createTableSoftwareConfig(self):
+	def _createTableSoftwareConfig(self) -> None:
 		logger.debug("Creating table SOFTWARE_CONFIG")
 		table = f"""CREATE TABLE `SOFTWARE_CONFIG` (
 				`config_id` integer NOT NULL {self._sql.AUTOINCREMENT},
@@ -1071,7 +1074,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				"`SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);",
 			)
 
-	def _createAuditHardwareTables(self):  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
+	def _createAuditHardwareTables(self) -> None:  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 		with self._sql.session() as session:
 			tables = self._sql.getTables(session)
 			existingTables = set(tables.keys())
@@ -1172,7 +1175,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def _host_check_duplicates(self, host, session):
+	def _host_check_duplicates(self, host: Host, session: Any) -> None:
 		if self.unique_hardware_addresses and host.hardwareAddress and not host.hardwareAddress.startswith("00:00:00"):
 			res = self._sql.getRow(
 				session,
@@ -1185,7 +1188,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			if res:
 				raise BackendBadValueError(f"Hardware address {host.hardwareAddress!r} is already used by host {res[0]!r}")
 
-	def host_insertObject(self, host):
+	def host_insertObject(self, host: Host) -> None:
 		ConfigDataBackend.host_insertObject(self, host)
 		data = self._objectToDatabaseHash(host)
 		where = self._uniqueCondition(host)
@@ -1196,7 +1199,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			else:
 				self._sql.insert(session, "HOST", data)
 
-	def host_updateObject(self, host):
+	def host_updateObject(self, host: Host) -> None:
 		ConfigDataBackend.host_updateObject(self, host)
 		data = self._objectToDatabaseHash(host)
 		where = self._uniqueCondition(host)
@@ -1204,7 +1207,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			self._host_check_duplicates(host, session)
 			self._sql.update(session, "HOST", where, data)
 
-	def host_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def host_getObjects(self, attributes: List[str] = None, **filter) -> List[Host]:  # pylint: disable=redefined-builtin
 		ConfigDataBackend.host_getObjects(self, attributes=[], **filter)
 		logger.info("Getting hosts, filter: %s", filter)
 
@@ -1214,7 +1217,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			filter["type"] = hostType
 
 		hosts = []
-		(attributes, filter) = self._adjustAttributes(Host, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(Host, attributes or [], filter)
 		with self._sql.session() as session:
 			for res in self._sql.getSet(session, self._createQuery("HOST", attributes, filter)):
 				self._adjustResult(Host, res)
@@ -1222,7 +1225,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		return hosts
 
-	def host_deleteObjects(self, hosts):
+	def host_deleteObjects(self, hosts: List[Host]) -> None:
 		ConfigDataBackend.host_deleteObjects(self, hosts)
 
 		with self._sql.session() as session:
@@ -1241,7 +1244,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def config_insertObject(self, config):
+	def config_insertObject(self, config: Config) -> None:
 		ConfigDataBackend.config_insertObject(self, config)
 		data = self._objectToDatabaseHash(config)
 		possibleValues = data["possibleValues"]
@@ -1266,7 +1269,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					session, "CONFIG_VALUE", {"configId": data["configId"], "value": value, "isDefault": (value in defaultValues)}
 				)
 
-	def config_updateObject(self, config):
+	def config_updateObject(self, config: Config) -> None:
 		ConfigDataBackend.config_updateObject(self, config)
 		data = self._objectToDatabaseHash(config)
 		where = self._uniqueCondition(config)
@@ -1283,11 +1286,11 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					session, "CONFIG_VALUE", {"configId": data["configId"], "value": value, "isDefault": (value in defaultValues)}
 				)
 
-	def config_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def config_getObjects(self, attributes: List[str] = None, **filter) -> List[Config]:  # pylint: disable=redefined-builtin
 		ConfigDataBackend.config_getObjects(self, attributes=[], **filter)
 		logger.info("Getting configs, filter: %s", filter)
 		configs = []
-		(attributes, filter) = self._adjustAttributes(Config, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(Config, attributes or [], filter)
 
 		with self._sql.session() as session:
 			try:
@@ -1343,7 +1346,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				configs.append(Config.fromHash(res))
 			return configs
 
-	def config_deleteObjects(self, configs):
+	def config_deleteObjects(self, configs: List[Config]) -> None:
 		ConfigDataBackend.config_deleteObjects(self, configs)
 		with self._sql.session() as session:
 			for config in forceObjectClassList(configs, Config):
@@ -1355,7 +1358,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ConfigStates
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def configState_insertObject(self, configState):
+	def configState_insertObject(self, configState: ConfigState) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.configState_insertObject(self, configState)
 		data = self._objectToDatabaseHash(configState)
@@ -1368,7 +1371,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			else:
 				self._sql.insert(session, "CONFIG_STATE", data)
 
-	def configState_updateObject(self, configState):
+	def configState_updateObject(self, configState: ConfigState) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.configState_updateObject(self, configState)
 		data = self._objectToDatabaseHash(configState)
@@ -1377,10 +1380,10 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		with self._sql.session() as session:
 			self._sql.update(session, "CONFIG_STATE", where, data)
 
-	def configState_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def configState_getObjects(self, attributes: List[str] = None, **filter) -> List[ConfigState]:  # pylint: disable=redefined-builtin
 		ConfigDataBackend.configState_getObjects(self, attributes=[], **filter)
 		logger.info("Getting configStates, filter: %s", filter)
-		(attributes, filter) = self._adjustAttributes(ConfigState, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(ConfigState, attributes or [], filter)
 
 		configStates = []
 		with self._sql.session() as session:
@@ -1393,7 +1396,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				configStates.append(ConfigState.fromHash(res))
 		return configStates
 
-	def configState_deleteObjects(self, configStates):
+	def configState_deleteObjects(self, configStates: List[ConfigState]) -> None:
 		ConfigDataBackend.configState_deleteObjects(self, configStates)
 		with self._sql.session() as session:
 			for configState in forceObjectClassList(configStates, ConfigState):
@@ -1404,7 +1407,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Products
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def product_insertObject(self, product):  # pylint: disable=too-many-branches,too-many-locals
+	def product_insertObject(self, product: Product) -> None:  # pylint: disable=too-many-branches,too-many-locals
 		self._check_module("mysql_backend")
 		ConfigDataBackend.product_insertObject(self, product)
 		data = self._objectToDatabaseHash(product)
@@ -1425,7 +1428,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				mapping = {"windowsSoftwareId": windowsSoftwareId, "productId": data["productId"]}
 				self._sql.insert(session, "WINDOWS_SOFTWARE_ID_TO_PRODUCT", mapping)
 
-	def product_updateObject(self, product):
+	def product_updateObject(self, product: Product) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.product_updateObject(self, product)
 		data = self._objectToDatabaseHash(product)
@@ -1442,10 +1445,10 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				mapping = {"windowsSoftwareId": windowsSoftwareId, "productId": data["productId"]}
 				self._sql.insert(session, "WINDOWS_SOFTWARE_ID_TO_PRODUCT", mapping)
 
-	def product_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def product_getObjects(self, attributes: List[str] = None, **filter) -> List[Product]:  # pylint: disable=redefined-builtin
 		ConfigDataBackend.product_getObjects(self, attributes=[], **filter)
 		logger.info("Getting products, filter: %s", filter)
-		(attributes, filter) = self._adjustAttributes(Product, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(Product, attributes or [], filter)
 
 		readWindowsSoftwareIDs = not attributes or "windowsSoftwareIds" in attributes
 		products = []
@@ -1467,7 +1470,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				products.append(Product.fromHash(res))
 		return products
 
-	def product_deleteObjects(self, products):
+	def product_deleteObjects(self, products: List[Product]) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.product_deleteObjects(self, products)
 		with self._sql.session() as session:
@@ -1480,7 +1483,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductProperties
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def productProperty_insertObject(self, productProperty):
+	def productProperty_insertObject(self, productProperty: ProductProperty) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 		data = self._objectToDatabaseHash(productProperty)
@@ -1515,7 +1518,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					},
 				)
 
-	def productProperty_updateObject(self, productProperty):
+	def productProperty_updateObject(self, productProperty: ProductProperty) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
 		data = self._objectToDatabaseHash(productProperty)
@@ -1546,10 +1549,10 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 					},
 				)
 
-	def productProperty_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def productProperty_getObjects(self, attributes: List[str] = None, **filter) -> List[ProductProperty]:  # pylint: disable=redefined-builtin
 		ConfigDataBackend.productProperty_getObjects(self, attributes=[], **filter)
 		logger.info("Getting product properties, filter: %s", filter)
-		(attributes, filter) = self._adjustAttributes(ProductProperty, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(ProductProperty, attributes or [], filter)
 
 		readValues = not attributes or "possibleValues" in attributes or "defaultValues" in attributes
 
@@ -1577,7 +1580,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		return productProperties
 
-	def productProperty_deleteObjects(self, productProperties):
+	def productProperty_deleteObjects(self, productProperties: List[ProductProperty]) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.productProperty_deleteObjects(self, productProperties)
 		with self._sql.session() as session:
@@ -1590,7 +1593,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductDependencies
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def productDependency_insertObject(self, productDependency):
+	def productDependency_insertObject(self, productDependency: ProductDependency) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.productDependency_insertObject(self, productDependency)
 		data = self._objectToDatabaseHash(productDependency)
@@ -1602,7 +1605,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			else:
 				self._sql.insert(session, "PRODUCT_DEPENDENCY", data)
 
-	def productDependency_updateObject(self, productDependency):
+	def productDependency_updateObject(self, productDependency: ProductDependency) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.productDependency_updateObject(self, productDependency)
 		data = self._objectToDatabaseHash(productDependency)
@@ -1610,17 +1613,17 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		with self._sql.session() as session:
 			self._sql.update(session, "PRODUCT_DEPENDENCY", where, data)
 
-	def productDependency_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def productDependency_getObjects(self, attributes: List[str] = None, **filter) -> List[ProductDependency]:  # pylint: disable=redefined-builtin
 		ConfigDataBackend.productDependency_getObjects(self, attributes=[], **filter)
 		logger.info("Getting product dependencies, filter: %s", filter)
-		(attributes, filter) = self._adjustAttributes(ProductDependency, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(ProductDependency, attributes or [], filter)
 		with self._sql.session() as session:
 			return [
 				ProductDependency.fromHash(res)
 				for res in self._sql.getSet(session, self._createQuery("PRODUCT_DEPENDENCY", attributes, filter))
 			]
 
-	def productDependency_deleteObjects(self, productDependencies):
+	def productDependency_deleteObjects(self, productDependencies: List[ProductDependency]) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.productDependency_deleteObjects(self, productDependencies)
 		with self._sql.session() as session:
@@ -1632,7 +1635,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnDepots
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def productOnDepot_insertObject(self, productOnDepot):
+	def productOnDepot_insertObject(self, productOnDepot: ProductOnDepot) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 		data = self._objectToDatabaseHash(productOnDepot)
@@ -1648,7 +1651,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			else:
 				self._sql.insert(session, "PRODUCT_ON_DEPOT", data)
 
-	def productOnDepot_updateObject(self, productOnDepot):
+	def productOnDepot_updateObject(self, productOnDepot: ProductOnDepot) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
 		data = self._objectToDatabaseHash(productOnDepot)
@@ -1656,15 +1659,15 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		with self._sql.session() as session:
 			self._sql.update(session, "PRODUCT_ON_DEPOT", where, data)
 
-	def productOnDepot_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def productOnDepot_getObjects(self, attributes: List[str] = None, **filter) -> List[ProductOnDepot]:  # pylint: disable=redefined-builtin
 		ConfigDataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
-		(attributes, filter) = self._adjustAttributes(ProductOnDepot, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(ProductOnDepot, attributes or [], filter)
 		with self._sql.session() as session:
 			return [
 				ProductOnDepot.fromHash(res) for res in self._sql.getSet(session, self._createQuery("PRODUCT_ON_DEPOT", attributes, filter))
 			]
 
-	def productOnDepot_deleteObjects(self, productOnDepots):
+	def productOnDepot_deleteObjects(self, productOnDepots: List[ProductOnDepot]) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
 		with self._sql.session() as session:
@@ -1676,7 +1679,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnClients
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def productOnClient_insertObject(self, productOnClient):
+	def productOnClient_insertObject(self, productOnClient: ProductOnClient) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 		data = self._objectToDatabaseHash(productOnClient)
@@ -1693,7 +1696,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			else:
 				self._sql.insert(session, "PRODUCT_ON_CLIENT", data)
 
-	def productOnClient_updateObject(self, productOnClient):
+	def productOnClient_updateObject(self, productOnClient: ProductOnClient) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
 		data = self._objectToDatabaseHash(productOnClient)
@@ -1701,17 +1704,17 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		with self._sql.session() as session:
 			self._sql.update(session, "PRODUCT_ON_CLIENT", where, data)
 
-	def productOnClient_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def productOnClient_getObjects(self, attributes: List[str] = None, **filter) -> List[ProductOnClient]:  # pylint: disable=redefined-builtin
 		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
 		logger.info("Getting productOnClients, filter: %s", filter)
-		(attributes, filter) = self._adjustAttributes(ProductOnClient, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(ProductOnClient, attributes or [], filter)
 		with self._sql.session() as session:
 			return [
 				ProductOnClient.fromHash(res)
 				for res in self._sql.getSet(session, self._createQuery("PRODUCT_ON_CLIENT", attributes, filter))
 			]
 
-	def productOnClient_deleteObjects(self, productOnClients):
+	def productOnClient_deleteObjects(self, productOnClients: List[ProductOnClient]) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
 		with self._sql.session() as session:
@@ -1723,7 +1726,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductPropertyStates
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def productPropertyState_insertObject(self, productPropertyState):
+	def productPropertyState_insertObject(self, productPropertyState: ProductPropertyState) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
 		with self._sql.session() as session:
@@ -1738,7 +1741,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			else:
 				self._sql.insert(session, "PRODUCT_PROPERTY_STATE", data)
 
-	def productPropertyState_updateObject(self, productPropertyState):
+	def productPropertyState_updateObject(self, productPropertyState: ProductPropertyState) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
 		data = self._objectToDatabaseHash(productPropertyState)
@@ -1747,11 +1750,11 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		with self._sql.session() as session:
 			self._sql.update(session, "PRODUCT_PROPERTY_STATE", where, data)
 
-	def productPropertyState_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def productPropertyState_getObjects(self, attributes: List[str] = None, **filter) -> List[ProductPropertyState]:  # pylint: disable=redefined-builtin
 		ConfigDataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
 		logger.info("Getting productPropertyStates, filter: %s", filter)
 		productPropertyStates = []
-		(attributes, filter) = self._adjustAttributes(ProductPropertyState, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(ProductPropertyState, attributes or [], filter)
 		with self._sql.session() as session:
 			for res in self._sql.getSet(session, self._createQuery("PRODUCT_PROPERTY_STATE", attributes, filter)):
 				try:
@@ -1761,7 +1764,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				productPropertyStates.append(ProductPropertyState.fromHash(res))
 		return productPropertyStates
 
-	def productPropertyState_deleteObjects(self, productPropertyStates):
+	def productPropertyState_deleteObjects(self, productPropertyStates: List[ProductPropertyState]) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
 		with self._sql.session() as session:
@@ -1773,7 +1776,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Groups
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def group_insertObject(self, group):
+	def group_insertObject(self, group: Group) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.group_insertObject(self, group)
 		data = self._objectToDatabaseHash(group)
@@ -1785,7 +1788,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			else:
 				self._sql.insert(session, "GROUP", data)
 
-	def group_updateObject(self, group):
+	def group_updateObject(self, group: Group) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.group_updateObject(self, group)
 		data = self._objectToDatabaseHash(group)
@@ -1793,18 +1796,18 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		with self._sql.session() as session:
 			self._sql.update(session, "GROUP", where, data)
 
-	def group_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def group_getObjects(self, attributes: List[str] = None, **filter) -> List[Group]:  # pylint: disable=redefined-builtin
 		ConfigDataBackend.group_getObjects(self, attributes=[], **filter)
 		logger.info("Getting groups, filter: %s", filter)
 		groups = []
-		(attributes, filter) = self._adjustAttributes(Group, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(Group, attributes or [], filter)
 		with self._sql.session() as session:
 			for res in self._sql.getSet(session, self._createQuery("GROUP", attributes, filter)):
 				self._adjustResult(Group, res)
 				groups.append(Group.fromHash(res))
 		return groups
 
-	def group_deleteObjects(self, groups):
+	def group_deleteObjects(self, groups: List[Group]) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.group_deleteObjects(self, groups)
 		with self._sql.session() as session:
@@ -1816,7 +1819,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ObjectToGroups
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def objectToGroup_insertObject(self, objectToGroup):
+	def objectToGroup_insertObject(self, objectToGroup: ObjectToGroup) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 		data = self._objectToDatabaseHash(objectToGroup)
@@ -1828,7 +1831,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			else:
 				self._sql.insert(session, "OBJECT_TO_GROUP", data)
 
-	def objectToGroup_updateObject(self, objectToGroup):
+	def objectToGroup_updateObject(self, objectToGroup: ObjectToGroup) -> None:
 		self._check_module("mysql_backend")
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
 		data = self._objectToDatabaseHash(objectToGroup)
@@ -1836,16 +1839,16 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		with self._sql.session() as session:
 			self._sql.update(session, "OBJECT_TO_GROUP", where, data)
 
-	def objectToGroup_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def objectToGroup_getObjects(self, attributes: List[str] = None, **filter) -> List[ObjectToGroup]:  # pylint: disable=redefined-builtin,
 		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
 		logger.info("Getting objectToGroups, filter: %s", filter)
-		(attributes, filter) = self._adjustAttributes(ObjectToGroup, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(ObjectToGroup, attributes or [], filter)
 		with self._sql.session() as session:
 			return [
 				ObjectToGroup.fromHash(res) for res in self._sql.getSet(session, self._createQuery("OBJECT_TO_GROUP", attributes, filter))
 			]
 
-	def objectToGroup_deleteObjects(self, objectToGroups):
+	def objectToGroup_deleteObjects(self, objectToGroups: List[ObjectToGroup]) -> None:
 		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
 		with self._sql.session() as session:
 			for objectToGroup in forceObjectClassList(objectToGroups, ObjectToGroup):
@@ -1856,7 +1859,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicenseContracts
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def licenseContract_insertObject(self, licenseContract):
+	def licenseContract_insertObject(self, licenseContract: LicenseContract) -> None:
 		self._check_module("license_management")
 
 		ConfigDataBackend.licenseContract_insertObject(self, licenseContract)
@@ -1869,7 +1872,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			else:
 				self._sql.insert(session, "LICENSE_CONTRACT", data)
 
-	def licenseContract_updateObject(self, licenseContract):
+	def licenseContract_updateObject(self, licenseContract: LicenseContract) -> None:
 		self._check_module("license_management")
 
 		ConfigDataBackend.licenseContract_updateObject(self, licenseContract)
@@ -1878,18 +1881,18 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		with self._sql.session() as session:
 			self._sql.update(session, "LICENSE_CONTRACT", where, data)
 
-	def licenseContract_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def licenseContract_getObjects(self, attributes: List[str] = None, **filter) -> List[LicenseContract]:  # pylint: disable=redefined-builtin
 		ConfigDataBackend.licenseContract_getObjects(self, attributes=[], **filter)
 		logger.info("Getting licenseContracts, filter: %s", filter)
 		licenseContracts = []
-		(attributes, filter) = self._adjustAttributes(LicenseContract, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(LicenseContract, attributes or [], filter)
 		with self._sql.session() as session:
 			for res in self._sql.getSet(session, self._createQuery("LICENSE_CONTRACT", attributes, filter)):
 				self._adjustResult(LicenseContract, res)
 				licenseContracts.append(LicenseContract.fromHash(res))
 		return licenseContracts
 
-	def licenseContract_deleteObjects(self, licenseContracts):
+	def licenseContract_deleteObjects(self, licenseContracts: List[LicenseContract]) -> None:
 		self._check_module("license_management")
 
 		ConfigDataBackend.licenseContract_deleteObjects(self, licenseContracts)
@@ -1902,7 +1905,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   SoftwareLicenses
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def softwareLicense_insertObject(self, softwareLicense):
+	def softwareLicense_insertObject(self, softwareLicense: SoftwareLicense) -> None:
 		self._check_module("license_management")
 
 		ConfigDataBackend.softwareLicense_insertObject(self, softwareLicense)
@@ -1915,7 +1918,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			else:
 				self._sql.insert(session, "SOFTWARE_LICENSE", data)
 
-	def softwareLicense_updateObject(self, softwareLicense):
+	def softwareLicense_updateObject(self, softwareLicense: SoftwareLicense) -> None:
 		self._check_module("license_management")
 
 		ConfigDataBackend.softwareLicense_updateObject(self, softwareLicense)
@@ -1924,18 +1927,18 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		with self._sql.session() as session:
 			self._sql.update(session, "SOFTWARE_LICENSE", where, data)
 
-	def softwareLicense_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def softwareLicense_getObjects(self, attributes: List[str] = None, **filter) -> None:  # pylint: disable=redefined-builtin
 		ConfigDataBackend.softwareLicense_getObjects(self, attributes=[], **filter)
 		logger.info("Getting softwareLicenses, filter: %s", filter)
 		softwareLicenses = []
-		(attributes, filter) = self._adjustAttributes(SoftwareLicense, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(SoftwareLicense, attributes or [], filter)
 		with self._sql.session() as session:
 			for res in self._sql.getSet(session, self._createQuery("SOFTWARE_LICENSE", attributes, filter)):
 				self._adjustResult(SoftwareLicense, res)
 				softwareLicenses.append(SoftwareLicense.fromHash(res))
 		return softwareLicenses
 
-	def softwareLicense_deleteObjects(self, softwareLicenses):
+	def softwareLicense_deleteObjects(self, softwareLicenses: List[SoftwareLicense]) -> None:
 		ConfigDataBackend.softwareLicense_deleteObjects(self, softwareLicenses)
 		with self._sql.session() as session:
 			for softwareLicense in forceObjectClassList(softwareLicenses, SoftwareLicense):
@@ -1946,7 +1949,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicensePools
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def licensePool_insertObject(self, licensePool):  # pylint: disable=too-many-branches,too-many-locals
+	def licensePool_insertObject(self, licensePool: LicensePool) -> None:  # pylint: disable=too-many-branches,too-many-locals
 		self._check_module("license_management")
 
 		ConfigDataBackend.licensePool_insertObject(self, licensePool)
@@ -1967,7 +1970,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				mapping = {"productId": productId, "licensePoolId": data["licensePoolId"]}
 				self._sql.insert(session, "PRODUCT_ID_TO_LICENSE_POOL", mapping)
 
-	def licensePool_updateObject(self, licensePool):
+	def licensePool_updateObject(self, licensePool: LicensePool) -> None:
 		self._check_module("license_management")
 
 		ConfigDataBackend.licensePool_updateObject(self, licensePool)
@@ -1983,10 +1986,10 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				mapping = {"productId": productId, "licensePoolId": data["licensePoolId"]}
 				self._sql.insert(session, "PRODUCT_ID_TO_LICENSE_POOL", mapping)
 
-	def licensePool_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def licensePool_getObjects(self, attributes: List[str] = None, **filter) -> None:  # pylint: disable=redefined-builtin
 		ConfigDataBackend.licensePool_getObjects(self, attributes=[], **filter)
 		logger.info("Getting licensePools, filter: %s", filter)
-		(attributes, filter) = self._adjustAttributes(LicensePool, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(LicensePool, attributes or [], filter)
 
 		with self._sql.session() as session:
 			try:
@@ -2022,7 +2025,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				licensePools.append(LicensePool.fromHash(res))
 			return licensePools
 
-	def licensePool_deleteObjects(self, licensePools):
+	def licensePool_deleteObjects(self, licensePools: List[LicensePool]) -> None:
 		self._check_module("license_management")
 
 		ConfigDataBackend.licensePool_deleteObjects(self, licensePools)
@@ -2036,7 +2039,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   SoftwareLicenseToLicensePools
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool):
+	def softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool: SoftwareLicenseToLicensePool) -> None:
 		self._check_module("license_management")
 
 		ConfigDataBackend.softwareLicenseToLicensePool_insertObject(self, softwareLicenseToLicensePool)
@@ -2049,7 +2052,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			else:
 				self._sql.insert(session, "SOFTWARE_LICENSE_TO_LICENSE_POOL", data)
 
-	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):
+	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool: SoftwareLicenseToLicensePool) -> None:
 		self._check_module("license_management")
 
 		ConfigDataBackend.softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool)
@@ -2058,17 +2061,17 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		with self._sql.session() as session:
 			self._sql.update(session, "SOFTWARE_LICENSE_TO_LICENSE_POOL", where, data)
 
-	def softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def softwareLicenseToLicensePool_getObjects(self, attributes: List[str] = None, **filter) -> List[SoftwareLicenseToLicensePool]:  # pylint: disable=redefined-builtin
 		ConfigDataBackend.softwareLicenseToLicensePool_getObjects(self, attributes=[], **filter)
 		logger.info("Getting softwareLicenseToLicensePool, filter: %s", filter)
-		(attributes, filter) = self._adjustAttributes(SoftwareLicenseToLicensePool, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(SoftwareLicenseToLicensePool, attributes or [], filter)
 		with self._sql.session() as session:
 			return [
 				SoftwareLicenseToLicensePool.fromHash(res)
 				for res in self._sql.getSet(session, self._createQuery("SOFTWARE_LICENSE_TO_LICENSE_POOL", attributes, filter))
 			]
 
-	def softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools):
+	def softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools: List[SoftwareLicenseToLicensePool]) -> None:
 		self._check_module("license_management")
 
 		ConfigDataBackend.softwareLicenseToLicensePool_deleteObjects(self, softwareLicenseToLicensePools)
@@ -2081,7 +2084,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicenseOnClients
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def licenseOnClient_insertObject(self, licenseOnClient):
+	def licenseOnClient_insertObject(self, licenseOnClient: LicenseOnClient) -> None:
 		self._check_module("license_management")
 
 		ConfigDataBackend.licenseOnClient_insertObject(self, licenseOnClient)
@@ -2094,7 +2097,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			else:
 				self._sql.insert(session, "LICENSE_ON_CLIENT", data)
 
-	def licenseOnClient_updateObject(self, licenseOnClient):
+	def licenseOnClient_updateObject(self, licenseOnClient: LicenseOnClient) -> None:
 		self._check_module("license_management")
 
 		ConfigDataBackend.licenseOnClient_updateObject(self, licenseOnClient)
@@ -2103,17 +2106,17 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		with self._sql.session() as session:
 			self._sql.update(session, "LICENSE_ON_CLIENT", where, data)
 
-	def licenseOnClient_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def licenseOnClient_getObjects(self, attributes: List[str] = None, **filter) -> None:  # pylint: disable=redefined-builtin
 		ConfigDataBackend.licenseOnClient_getObjects(self, attributes=[], **filter)
 		logger.info("Getting licenseOnClient, filter: %s", filter)
-		(attributes, filter) = self._adjustAttributes(LicenseOnClient, attributes, filter)
+		(attributes, filter) = self._adjustAttributes(LicenseOnClient, attributes or [], filter)
 		with self._sql.session() as session:
 			return [
 				LicenseOnClient.fromHash(res)
 				for res in self._sql.getSet(session, self._createQuery("LICENSE_ON_CLIENT", attributes, filter))
 			]
 
-	def licenseOnClient_deleteObjects(self, licenseOnClients):
+	def licenseOnClient_deleteObjects(self, licenseOnClients: List[LicenseOnClient]) -> None:
 		ConfigDataBackend.licenseOnClient_deleteObjects(self, licenseOnClients)
 		with self._sql.session() as session:
 			for licenseOnClient in forceObjectClassList(licenseOnClients, LicenseOnClient):
@@ -2124,7 +2127,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwares
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def auditSoftware_insertObject(self, auditSoftware):
+	def auditSoftware_insertObject(self, auditSoftware: AuditSoftware) -> None:
 		ConfigDataBackend.auditSoftware_insertObject(self, auditSoftware)
 		data = self._objectToDatabaseHash(auditSoftware)
 
@@ -2135,24 +2138,25 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			else:
 				self._sql.insert(session, "SOFTWARE", data)
 
-	def auditSoftware_updateObject(self, auditSoftware):
+	def auditSoftware_updateObject(self, auditSoftware: AuditSoftware) -> None:
 		ConfigDataBackend.auditSoftware_updateObject(self, auditSoftware)
 		data = self._objectToDatabaseHash(auditSoftware)
 		where = self._uniqueCondition(auditSoftware)
 		with self._sql.session() as session:
 			self._sql.update(session, "SOFTWARE", where, data)
 
-	def auditSoftware_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		(attributes, filter) = self._adjustAttributes(AuditSoftware, attributes, filter)
+	def auditSoftware_getHashes(self, attributes: List[str] = None, **filter) -> List[Dict[str, Any]]:  # pylint: disable=redefined-builtin
+		(attributes, filter) = self._adjustAttributes(AuditSoftware, attributes or [], filter)
 		with self._sql.session() as session:
 			return self._sql.getSet(session, self._createQuery("SOFTWARE", attributes, filter))
 
-	def auditSoftware_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def auditSoftware_getObjects(self, attributes: List[str] = None, **filter) -> List[AuditSoftware]:  # pylint: disable=redefined-builtin
+		attributes = attributes or []
 		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
 		logger.info("Getting auditSoftware, filter: %s", filter)
 		return [AuditSoftware.fromHash(h) for h in self.auditSoftware_getHashes(attributes, **filter)]
 
-	def auditSoftware_deleteObjects(self, auditSoftwares):
+	def auditSoftware_deleteObjects(self, auditSoftwares: List[AuditSoftware]) -> None:
 		ConfigDataBackend.auditSoftware_deleteObjects(self, auditSoftwares)
 		with self._sql.session() as session:
 			for auditSoftware in forceObjectClassList(auditSoftwares, AuditSoftware):
@@ -2163,7 +2167,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwareToLicensePools
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def auditSoftwareToLicensePool_insertObject(self, auditSoftwareToLicensePool):
+	def auditSoftwareToLicensePool_insertObject(self, auditSoftwareToLicensePool: AuditSoftwareToLicensePool) -> None:
 		ConfigDataBackend.auditSoftwareToLicensePool_insertObject(self, auditSoftwareToLicensePool)
 		data = self._objectToDatabaseHash(auditSoftwareToLicensePool)
 
@@ -2174,24 +2178,25 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			else:
 				self._sql.insert(session, "AUDIT_SOFTWARE_TO_LICENSE_POOL", data)
 
-	def auditSoftwareToLicensePool_updateObject(self, auditSoftwareToLicensePool):
+	def auditSoftwareToLicensePool_updateObject(self, auditSoftwareToLicensePool: AuditSoftwareToLicensePool) -> None:
 		ConfigDataBackend.auditSoftwareToLicensePool_updateObject(self, auditSoftwareToLicensePool)
 		data = self._objectToDatabaseHash(auditSoftwareToLicensePool)
 		where = self._uniqueCondition(auditSoftwareToLicensePool)
 		with self._sql.session() as session:
 			self._sql.update(session, "AUDIT_SOFTWARE_TO_LICENSE_POOL", where, data)
 
-	def auditSoftwareToLicensePool_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		(attributes, filter) = self._adjustAttributes(AuditSoftwareToLicensePool, attributes, filter)
+	def auditSoftwareToLicensePool_getHashes(self, attributes: List[str] = None, **filter) -> List[Dict[str, Any]]:  # pylint: disable=redefined-builtin
+		(attributes, filter) = self._adjustAttributes(AuditSoftwareToLicensePool, attributes or [], filter)
 		with self._sql.session() as session:
 			return self._sql.getSet(session, self._createQuery("AUDIT_SOFTWARE_TO_LICENSE_POOL", attributes, filter))
 
-	def auditSoftwareToLicensePool_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def auditSoftwareToLicensePool_getObjects(self, attributes: List[str] = None, **filter) -> List[AuditSoftwareToLicensePool]:  # pylint: disable=redefined-builtin
+		attributes = attributes or []
 		ConfigDataBackend.auditSoftwareToLicensePool_getObjects(self, attributes=[], **filter)
 		logger.info("Getting auditSoftwareToLicensePool, filter: %s", filter)
 		return [AuditSoftwareToLicensePool.fromHash(h) for h in self.auditSoftwareToLicensePool_getHashes(attributes, **filter)]
 
-	def auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools):
+	def auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools: List[AuditSoftwareToLicensePool]) -> None:
 		ConfigDataBackend.auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools)
 		with self._sql.session() as session:
 			for auditSoftwareToLicensePool in forceObjectClassList(auditSoftwareToLicensePools, AuditSoftwareToLicensePool):
@@ -2202,7 +2207,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwareOnClients
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient):
+	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient: AuditSoftwareOnClient) -> None:
 		ConfigDataBackend.auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient)
 		data = self._objectToDatabaseHash(auditSoftwareOnClient)
 
@@ -2213,24 +2218,25 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			else:
 				self._sql.insert(session, "SOFTWARE_CONFIG", data)
 
-	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
+	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient: AuditSoftwareOnClient) -> None:
 		ConfigDataBackend.auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient)
 		data = self._objectToDatabaseHash(auditSoftwareOnClient)
 		where = self._uniqueCondition(auditSoftwareOnClient)
 		with self._sql.session() as session:
 			self._sql.update(session, "SOFTWARE_CONFIG", where, data)
 
-	def auditSoftwareOnClient_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		(attributes, filter) = self._adjustAttributes(AuditSoftwareOnClient, attributes, filter)
+	def auditSoftwareOnClient_getHashes(self, attributes: List[str] = None, **filter) -> List[Dict[str, Any]]:  # pylint: disable=redefined-builtin
+		(attributes, filter) = self._adjustAttributes(AuditSoftwareOnClient, attributes or [], filter)
 		with self._sql.session() as session:
 			return self._sql.getSet(session, self._createQuery("SOFTWARE_CONFIG", attributes, filter))
 
-	def auditSoftwareOnClient_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def auditSoftwareOnClient_getObjects(self, attributes: List[str] = None, **filter) -> List[AuditSoftwareOnClient]:  # pylint: disable=redefined-builtin
+		attributes = attributes or []
 		ConfigDataBackend.auditSoftwareOnClient_getObjects(self, attributes=[], **filter)
 		logger.info("Getting auditSoftwareOnClient, filter: %s", filter)
 		return [AuditSoftwareOnClient.fromHash(h) for h in self.auditSoftwareOnClient_getHashes(attributes, **filter)]
 
-	def auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients):
+	def auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients: List[AuditSoftwareOnClient]) -> None:
 		ConfigDataBackend.auditSoftwareOnClient_deleteObjects(self, auditSoftwareOnClients)
 		with self._sql.session() as session:
 			for auditSoftwareOnClient in forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient):
@@ -2241,7 +2247,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwares
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def _uniqueAuditHardwareCondition(self, auditHardware):
+	def _uniqueAuditHardwareCondition(self, auditHardware: AuditHardware) -> str:
 		try:
 			auditHardware = auditHardware.toHash()
 		except AttributeError:
@@ -2263,7 +2269,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		return " and ".join(createCondition())
 
-	def _getHardwareIds(self, auditHardware):
+	def _getHardwareIds(self, auditHardware: AuditHardware) -> List[str]:
 		try:
 			auditHardware = auditHardware.toHash()
 		except AttributeError:  # Method not present
@@ -2280,7 +2286,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		logger.debug("Found hardware ids: %s", hardwareIds)
 		return hardwareIds
 
-	def auditHardware_insertObject(self, auditHardware):
+	def auditHardware_insertObject(self, auditHardware: AuditHardware) -> None:
 		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
 
 		logger.info("Inserting auditHardware: %s", auditHardware)
@@ -2304,7 +2310,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		with self._sql.session() as session:
 			self._sql.insert(session, table, hardwareHash)
 
-	def auditHardware_updateObject(self, auditHardware):
+	def auditHardware_updateObject(self, auditHardware: AuditHardware) -> None:
 		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
 
 		logger.info("Updating auditHardware: %s", auditHardware)
@@ -2316,18 +2322,20 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		if not self.auditHardware_getObjects(**filter):
 			raise BackendMissingDataError(f"AuditHardware '{auditHardware.getIdent()}' not found")
 
-	def auditHardware_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def auditHardware_getObjects(self, attributes: List[str] = None, **filter) -> List[AuditHardware]:  # pylint: disable=redefined-builtin
+		attributes = attributes or []
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
 
 		logger.info("Getting auditHardwares, filter: %s", filter)
 		return [AuditHardware.fromHash(h) for h in self.auditHardware_getHashes(attributes, **filter)]
 
-	def auditHardware_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
-		return self._auditHardware_search(returnHardwareIds=False, attributes=attributes, **filter)
+	def auditHardware_getHashes(self, attributes: List[str] = None, **filter) -> List[Dict[str, Any]]:  # pylint: disable=redefined-builtin
+		return self._auditHardware_search(returnHardwareIds=False, attributes=attributes or [], **filter)
 
-	def _auditHardware_search(
-		self, returnHardwareIds=False, attributes=[], **filter
-	):  # pylint: disable=redefined-builtin,dangerous-default-value,too-many-branches,too-many-locals,too-many-statements
+	def _auditHardware_search(  # pylint: disable=redefined-builtin,too-many-branches,too-many-locals,too-many-statements
+		self, returnHardwareIds: bool = False, attributes: List[str] = None, **filter
+	):
+		attributes = attributes or []
 		hardwareClasses = set()
 		hardwareClass = filter.get("hardwareClass")
 		if hardwareClass not in ([], None):
@@ -2411,7 +2419,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		return results
 
-	def auditHardware_deleteObjects(self, auditHardwares):
+	def auditHardware_deleteObjects(self, auditHardwares: AuditHardware) -> None:
 		ConfigDataBackend.auditHardware_deleteObjects(self, auditHardwares)
 		with self._sql.session() as session:
 			for auditHardware in forceObjectClassList(auditHardwares, AuditHardware):
@@ -2427,7 +2435,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwareOnHosts
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def _extractAuditHardwareHash(self, auditHardwareOnHost):
+	def _extractAuditHardwareHash(self, auditHardwareOnHost: AuditHardwareOnHost) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 		try:
 			auditHardwareOnHost = auditHardwareOnHost.toHash()
 		except AttributeError:
@@ -2461,7 +2469,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		return (auditHardware, auditHardwareOnHostNew)
 
-	def _uniqueAuditHardwareOnHostCondition(self, auditHardwareOnHost):
+	def _uniqueAuditHardwareOnHostCondition(self, auditHardwareOnHost: AuditHardwareOnHost) -> str:
 		(auditHardware, auditHardwareOnHost) = self._extractAuditHardwareHash(auditHardwareOnHost)
 
 		del auditHardwareOnHost["hardwareClass"]
@@ -2485,7 +2493,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		return " and ".join((where, hwIdswhere.join(("(", ")"))))
 
-	def _auditHardwareOnHostObjectToDatabaseHash(self, auditHardwareOnHost):
+	def _auditHardwareOnHostObjectToDatabaseHash(self, auditHardwareOnHost: AuditHardwareOnHost) -> Dict[str, Any]:
 		(auditHardware, auditHardwareOnHost) = self._extractAuditHardwareHash(auditHardwareOnHost)
 
 		data = {attribute: value for attribute, value in auditHardwareOnHost.items() if attribute not in ("hardwareClass", "type")}
@@ -2499,7 +2507,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		data["hardware_id"] = hardwareIds[0]
 		return data
 
-	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost):
+	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost: AuditHardwareOnHost) -> None:
 		ConfigDataBackend.auditHardwareOnHost_insertObject(self, auditHardwareOnHost)
 
 		table = f"HARDWARE_CONFIG_{auditHardwareOnHost.getHardwareClass()}"
@@ -2510,7 +2518,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				data = self._auditHardwareOnHostObjectToDatabaseHash(auditHardwareOnHost)
 				self._sql.insert(session, table, data)
 
-	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
+	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost: AuditHardwareOnHost) -> None:
 		ConfigDataBackend.auditHardwareOnHost_updateObject(self, auditHardwareOnHost)
 
 		logger.info("Updating auditHardwareOnHost: %s", auditHardwareOnHost)
@@ -2531,9 +2539,10 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			with self._sql.session() as session:
 				self._sql.update(session, f"HARDWARE_CONFIG_{auditHardwareOnHost.hardwareClass}", where, update)
 
-	def auditHardwareOnHost_getHashes(
-		self, attributes=[], **filter
-	):  # pylint: disable=redefined-builtin,dangerous-default-value,too-many-branches,too-many-locals,too-many-statements
+	def auditHardwareOnHost_getHashes(  # pylint: disable=redefined-builtin,too-many-branches,too-many-locals,too-many-statements
+		self, attributes: List[str] = None, **filter
+	) -> List[Dict[str, Any]]:
+		attributes = attributes or []
 		hardwareClasses = set()
 		hardwareClass = filter.get("hardwareClass")
 		if hardwareClass not in ([], None):
@@ -2631,13 +2640,14 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		return hashes
 
-	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
+	def auditHardwareOnHost_getObjects(self, attributes: List[str] = None, **filter) -> List[AuditHardwareOnHost]:  # pylint: disable=redefined-builtin
 		ConfigDataBackend.auditHardwareOnHost_getObjects(self, attributes=[], **filter)
+		attributes = attributes or []
 
 		logger.info("Getting auditHardwareOnHosts, filter: %s", filter)
 		return [AuditHardwareOnHost.fromHash(h) for h in self.auditHardwareOnHost_getHashes(attributes, **filter)]
 
-	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):
+	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts: List[AuditHardwareOnHost]) -> None:
 		ConfigDataBackend.auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts)
 		with self._sql.session() as session:
 			for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
@@ -2648,7 +2658,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Extension for direct connect to db
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def getData(self, query):
+	def getData(self, query: str) -> Generator[Any, None, None]:
 		onlyAllowSelect(query)
 
 		with self._sql.session() as session:
@@ -2659,7 +2669,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 							row[key] = val.strftime("%Y-%m-%d %H:%M:%S")
 					yield row
 
-	def getRawData(self, query):
+	def getRawData(self, query: str) -> Generator[Any, None, None]:
 		onlyAllowSelect(query)
 
 		with self._sql.session() as session:

@@ -18,6 +18,15 @@ import inspect
 import random
 from types import MethodType
 
+# this is needed for dynamic loading
+from typing import Any  # pylint: disable=unused-import
+from typing import Callable  # pylint: disable=unused-import
+from typing import Dict  # pylint: disable=unused-import
+from typing import Generator  # pylint: disable=unused-import
+from typing import List  # pylint: disable=unused-import
+from typing import Union  # pylint: disable=unused-import
+
+import opsicommon  # this is needed for dynamic loading # pylint: disable=unused-import
 from opsicommon.logging import get_logger
 
 import OPSI.SharedAlgorithm
@@ -45,6 +54,7 @@ def get_function_signature_and_args(function):
 	:rtype: (str, str)
 	"""
 	sig = str(inspect.signature(function)).replace("(self, ", "(").replace("(self)", "()")
+	sig = sig.replace("NoneType", "None")
 	spec = inspect.getfullargspec(function)
 	args_ = [f"{arg}={arg}" for arg in spec.args if arg != "self"]
 	if spec.varargs:
@@ -93,6 +103,7 @@ class ExtendedBackend(Backend):
 
 			sig, arg = get_function_signature_and_args(functionRef)
 			sig = "(self)" if sig == "()" else f"(self, {sig[1:]}"
+
 			exec(  # pylint: disable=exec-used
 				f'def {methodName}{sig}: return self._executeMethod("{methodName}", {arg})'
 			)

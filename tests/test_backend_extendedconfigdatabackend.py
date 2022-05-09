@@ -410,7 +410,7 @@ def testGetIdentsWithWildcardFilter(extendedConfigDataBackend):
 	{'deprecated': False, 'alternative_method': None, 'name': 'backend_info', 'args': ['self'], 'params': [], 'defaults': None, 'varargs': None, 'keywords': None, 'annotations': {}},
 	{'deprecated': False, 'alternative_method': None, 'name': 'configState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter', 'annotations': {}},
 	{'deprecated': False, 'alternative_method': None, 'name': 'config_getIdents', 'args': ['self', 'returnType'], 'params': ['*returnType', '**filter'], 'defaults': ('unicode',), 'varargs': None, 'keywords': 'filter', 'annotations': {}},
-	{'deprecated': False, 'alternative_method': None, 'name': 'host_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter', 'annotations': {}},
+	{'deprecated': False, 'alternative_method': None, 'name': 'host_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': (None,), 'varargs': None, 'keywords': 'filter', 'annotations': {'attributes': 'List[str]'}},
 	{'deprecated': False, 'alternative_method': None, 'name': 'productOnClient_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter', 'annotations': {}},
 	{'deprecated': False, 'alternative_method': None, 'name': 'productPropertyState_getObjects', 'args': ['self', 'attributes'], 'params': ['*attributes', '**filter'], 'defaults': ([],), 'varargs': None, 'keywords': 'filter', 'annotations': {}},
 ))

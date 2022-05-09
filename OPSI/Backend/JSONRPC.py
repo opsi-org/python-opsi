@@ -17,7 +17,10 @@ __all__ = ("JSONRPCBackend",)
 
 
 class JSONRPCBackend(Backend, JSONRPCClient):  # pylint: disable=too-many-instance-attributes
-	def __init__(self, address, **kwargs):  # pylint: disable=too-many-branches,too-many-statements
+	"""
+	This Backend gives remote access to a Backend reachable via jsonrpc.
+	"""
+	def __init__(self, address: str, **kwargs) -> None:  # pylint: disable=too-many-branches,too-many-statements
 		"""
 		Backend for JSON-RPC access to another opsi service.
 
@@ -41,8 +44,8 @@ class JSONRPCBackend(Backend, JSONRPCClient):  # pylint: disable=too-many-instan
 
 		self._application = f"opsi-jsonrpc-backend/{__version__}"
 
-	def jsonrpc_getSessionId(self):
+	def jsonrpc_getSessionId(self) -> str:
 		return self.session_id
 
-	def backend_exit(self):
+	def backend_exit(self) -> None:
 		self.disconnect()
