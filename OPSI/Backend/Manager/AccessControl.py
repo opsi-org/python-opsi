@@ -316,8 +316,12 @@ class BackendAccessControl:
 				)
 
 			new_function = eval(methodName)  # pylint: disable=eval-used
-			new_function.deprecated = getattr(functionRef, "deprecated", False)
-			new_function.alternative_method = getattr(functionRef, "alternative_method", None)
+			if getattr(functionRef, "deprecated", False):
+				new_function.deprecated = functionRef.deprecated
+			if getattr(functionRef, "alternative_method", None):
+				new_function.alternative_method = functionRef.alternative_method
+			if functionRef.__doc__:
+				new_function.__doc__ = functionRef.__doc__
 			setattr(self, methodName, types.MethodType(new_function, self))
 
 	def _isMemberOfGroup(self, ids):
