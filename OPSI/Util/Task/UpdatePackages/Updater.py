@@ -740,41 +740,60 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 		url = availablePackage["packageFile"]
 		outFile = os.path.join(self.config["packageDir"], availablePackage["filename"])
 
-		response = session.get(url, headers=self.httpHeaders, stream=True, timeout=3600 * 8)  # 8h timeout
-		if response.status_code < 200 or response.status_code > 299:
-			logger.error("Unable to download Package from %s: %s - %s", url, response.status_code, response.text)
-			raise ConnectionError(f"Unable to download Package from {url}: {response.status_code} - {response.text}")
-		size = int(response.headers.get("Content-length", 0))
+		def get_connection(_url, _headers):
+			response = session.get(_url, headers=_headers, stream=True, timeout=3600 * 8)  # 8h timeout
+			if response.status_code < 200 or response.status_code > 299:
+				logger.error("Unable to download Package from %s: %s - %s", url, response.status_code, response.text)
+				raise ConnectionError(f"Unable to download Package from {url}: {response.status_code} - {response.text}")
+			return response
+
+		response = get_connection(url, self.httpHeaders)
+
+		size = int(response.headers.get("Content-Length", 0))
 		if size:
 			logger.info("Downloading %s (%s MB) to %s", url, round(size / (1024.0 * 1024.0), 2), outFile)
 		else:
 			logger.info("Downloading %s to %s", url, outFile)
 
-		completed = 0.0
+		position = 0
 		percent = 0.0
-		lastTime = time.time()
-		lastCompleted = 0
-		lastPercent = 0
+		last_time = time.time()
+		last_position = 0
+		last_percent = 0
+		start_position = 0
 		speed = 0
 
 		with open(outFile, "wb") as out:
-			for chunk in response.iter_content(chunk_size=32768):
-				completed += len(chunk)
-				out.write(chunk)
+			for attempt in range(1, 11):  # pylint: disable=too-many-nested-blocks
+				for chunk in response.iter_content(chunk_size=32768):
+					position += len(chunk)
+					out.write(chunk)
 
-				if size > 0:
-					try:
-						percent = round(100 * completed / size, 1)
-						if lastPercent != percent:
-							lastPercent = percent
-							now = time.time()
-							if not speed or (now - lastTime) > 2:
-								speed = 8 * int(((completed - lastCompleted) / (now - lastTime)) / 1024)
-								lastTime = now
-								lastCompleted = completed
-							logger.debug("Downloading %s: %0.1f%% (%0.2f kbit/s)", url, percent, speed)
-					except Exception:  # pylint: disable=broad-except
-						pass
+					if size > 0:
+						try:
+							percent = round(100 * position / size, 1)
+							if last_percent != percent:
+								last_percent = percent
+								now = time.time()
+								if not speed or (now - last_time) > 2:
+									speed = 8 * int(((position - last_position) / (now - last_time)) / 1024)
+									last_time = now
+									last_position = position
+								logger.debug("Downloading %s: %0.1f%% (%0.2f kbit/s)", url, percent, speed)
+						except Exception:  # pylint: disable=broad-except
+							pass
+				if not size or size == position:
+					break
+				error = f"Failed to complete download, only {position} of {size} bytes transferred"
+				if start_position == position or attempt >= 10:
+					raise RuntimeError(error)
+				if not response.headers.get("Accept-Ranges"):
+					raise RuntimeError(f"{error}, server does not support range requests")
+				logger.warning("%s, restarting transfer at position %d", error, position)
+				headers = self.httpHeaders.copy()
+				start_position = position
+				headers["Range"] = f"bytes={start_position}-"
+				response = get_connection(url, headers)
 
 		if size:
 			message = f"Download of '{url}' completed (~{formatFileSize(size, base=10)})"
