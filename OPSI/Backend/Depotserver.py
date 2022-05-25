@@ -8,6 +8,7 @@ Depotserver backend.
 
 import os
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Any, Dict, Generator, List, Union
 
 from opsicommon.logging import get_logger, log_context
@@ -29,9 +30,9 @@ from OPSI.System import getDiskSpaceUsage
 from OPSI.Types import forceBool, forceDict, forceFilename, forceHostId
 from OPSI.Types import forceProductId as forceProductIdFunc
 from OPSI.Types import forceUnicode, forceUnicodeLower
-from OPSI.Util import compareVersions, getfqdn, md5sum, removeDirectory
+from OPSI.Util import compareVersions, findFiles, getfqdn, md5sum, removeDirectory
 from OPSI.Util.File import ZsyncFile
-from OPSI.Util.Product import ProductPackageFile
+from OPSI.Util.Product import PackageContentFile, ProductPackageFile
 
 if os.name == "posix":
 	import grp
@@ -150,6 +151,24 @@ class DepotserverBackend(ExtendedBackend):
 
 	def depot_uninstallPackage(self, productId: str, force: bool = False, deleteFiles: bool = True) -> None:
 		self._packageManager.uninstallPackage(productId, force, deleteFiles)
+
+	def depot_createPackageContentFile(self, productId: str) -> None:
+		client_data_path = Path(self._context.host_getObjects(id=self._depotId)[0].getDepotLocalUrl().replace('file://', ''))  # pylint: disable=protected-access
+		product_path = client_data_path / productId
+		if not product_path.is_dir():
+			raise BackendIOError(f"Product dir '{product_path}' not found")
+
+		package_content_path = product_path / f"{productId}.files"
+		logger.notice("Creating package content file '%s'", package_content_path)
+
+		if package_content_path.exists():
+			package_content_path.unlink()
+
+		package_content_file = PackageContentFile(str(package_content_path))
+		package_content_file.setProductClientDataDir(str(product_path))
+		client_data_files = findFiles(str(product_path))
+		package_content_file.setClientDataFiles(client_data_files)
+		package_content_file.generate()
 
 	def depot_createMd5SumFile(self, filename: str, md5sumFilename: str) -> None:  # pylint: disable=invalid-name,no-self-use
 		if not os.path.exists(filename):
