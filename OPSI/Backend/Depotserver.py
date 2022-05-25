@@ -153,6 +153,10 @@ class DepotserverBackend(ExtendedBackend):
 		self._packageManager.uninstallPackage(productId, force, deleteFiles)
 
 	def depot_createPackageContentFile(self, productId: str) -> None:
+		"""
+		Create a package content file in the products depot directory.
+		An existing file will be overriden.
+		"""
 		client_data_path = Path(self._context.host_getObjects(id=self._depotId)[0].getDepotLocalUrl().replace('file://', ''))  # pylint: disable=protected-access
 		product_path = client_data_path / productId
 		if not product_path.is_dir():
