@@ -169,6 +169,9 @@ class DepotserverBackend(ExtendedBackend):
 		client_data_files = findFiles(str(product_path))
 		package_content_file.setClientDataFiles(client_data_files)
 		package_content_file.generate()
+		if os.name == "posix":
+			os.chown(package_content_path, -1, grp.getgrnam(FILE_ADMIN_GROUP)[2])
+			os.chmod(package_content_path, 0o660)
 
 	def depot_createMd5SumFile(self, filename: str, md5sumFilename: str) -> None:  # pylint: disable=invalid-name,no-self-use
 		if not os.path.exists(filename):
