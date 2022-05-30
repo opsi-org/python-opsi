@@ -19,7 +19,7 @@ import shutil
 import time
 from functools import lru_cache
 
-from opsicommon.license import get_default_opsi_license_pool
+from opsicommon.license import OPSI_MODULE_IDS, get_default_opsi_license_pool
 from opsicommon.logging import get_logger, secret_filter
 
 from OPSI.Config import OPSI_ADMIN_GROUP
@@ -240,6 +240,7 @@ containing the localisation of the hardware audit.
 		modules = pool.get_modules()
 		info = {
 			"client_numbers": pool.client_numbers,
+			"known_modules": OPSI_MODULE_IDS,
 			"available_modules": [module_id for module_id, info in modules.items() if info["available"]],
 			"modules": modules,
 			"licenses_checksum": pool.get_licenses_checksum(),
