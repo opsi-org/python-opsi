@@ -9,6 +9,7 @@ OPSI.Util.Repository
 
 import ipaddress
 import os
+import posixpath
 import re
 import shutil
 import socket
@@ -732,8 +733,8 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 								sizeString = f"{float(item['size']) / 1000:0.2f} kByte"
 
 							overallProgressSubject.setMessage(
-								"[%s/%s] %s (%s)"
-								% (  # pylint: disable=consider-using-f-string
+								"[%s/%s] %s (%s)"  # pylint: disable=consider-using-f-string
+								% (
 									countLenFormat % fileCount,
 									totalFiles,
 									item["name"],
@@ -1179,7 +1180,7 @@ class WebDAVRepository(HTTPRepository):
 		for entry in getFileInfosFromDavXML(davxmldata=davxmldata, encoding=encoding):
 			if entry["path"].startswith("/"):
 				# Absolut path to realtive path
-				entry["path"] = os.path.relpath(entry["path"], start=self._path + source)
+				entry["path"] = posixpath.relpath(entry["path"], start=self._path + source)
 			if entry["path"] and entry["path"] not in (".", ".."):
 				content.append(entry)
 		logger.debug("fileinfo: %s", content)
