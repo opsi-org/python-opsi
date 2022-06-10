@@ -483,29 +483,35 @@ def mount(dev, mountpoint, **options):
 	for (key, value) in options.items():
 		options[key] = forceUnicode(value)
 
-	if dev.lower().startswith(("smb://", "cifs://")):
-		# mount_smbfs '//<domain>;<username>[:<password>]@<server>/<share>' /mountpoint
-		match = re.search(r"^(smb|cifs)://([^/]+)/([^/].*)$", dev, re.IGNORECASE)
+	if dev.lower().startswith(("smb://", "cifs://", "webdav://", "webdavs://", "http://", "https://")):
+		match = re.search(r"^(smb|cifs|webdav|webdavs|http|https)://([^/]+)/([^/].*)$", dev, re.IGNORECASE)
 		if match:
+			scheme = match.group(1).lower().replace("webdav", "http")
 			server = match.group(2)
 			share = match.group(3)
-			username = re.sub(r"\\+", r"\\", options.get("username", "guest")).replace("\\", ";")
-			password = options.get("password")  # no urlencode needed for stdin
-
-			try:
-				# mount_smbfs on macos only reads password from stdin -> expect script
-				command = f"mount_smbfs '//{username}@{server}/{share}' '{mountpoint}'"
-				process = pexpect.spawn(command)
-				if password:
-					process.expect("Password.*: ")
-					process.sendline(password)
-				process.expect(pexpect.EOF)
-				# if expect hits timeout it throws a TIMEOUT exception
-			except Exception as err:
-				logger.error("Failed to mount '%s': %s", dev, err)
-				raise RuntimeError(f"Failed to mount '{dev}': {err}") from err
 		else:
-			raise ValueError(f"Bad smb/cifs uri '{dev}'")
+			raise ValueError(f"Bad {match.group(1)} uri '{dev}'")
+
+		username = re.sub(r"\\+", r"\\", options.get("username", "guest")).replace("\\", ";")
+		password = options.get("password", "")  # no urlencode needed for stdin
+		command = f"mount_smbfs '//{username}@{server}/{share}' '{mountpoint}'"
+		if scheme in ("http", "https"):
+			command = f"mount_webdav -i '{scheme}://{server}/{share}' '{mountpoint}'"
+
+		try:
+			# Mount on macos only reads password from stdin -> expect script
+			process = pexpect.spawn(command)
+			if scheme in ("http", "https"):
+				process.expect("Username.*: ")
+				process.sendline(username)
+			process.expect("Password.*: ")
+			process.sendline(password)
+			process.expect(pexpect.EOF)
+			# If expect hits timeout it throws a TIMEOUT exception
+		except Exception as err:
+			# Exit code 19 on mount_webdav means ssl cert not accepted
+			logger.error("Failed to mount '%s': %s", dev, err)
+			raise RuntimeError(f"Failed to mount '{dev}': {err}") from err
 	else:
 		raise ValueError(f"Cannot mount unknown fs type '{dev}'")
 
