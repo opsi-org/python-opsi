@@ -508,7 +508,7 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals
 			process.expect("Password.*: ")
 			process.sendline(password)
 			process.expect(pexpect.EOF)
-			output = process.before
+			output = process.before.decode("utf-8", "replace")
 			process.close()
 			exit_code = process.exitstatus
 			logger.debug("Command exit code is %s, output: %s", exit_code, output)
