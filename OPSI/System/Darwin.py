@@ -470,7 +470,7 @@ def is_mounted(devOrMountpoint):
 Posix.is_mounted = is_mounted
 
 
-def mount(dev, mountpoint, **options):
+def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals
 	dev = forceUnicode(dev)
 	mountpoint = forceFilename(mountpoint)
 	if not os.path.isdir(mountpoint):
@@ -508,6 +508,12 @@ def mount(dev, mountpoint, **options):
 			process.expect("Password.*: ")
 			process.sendline(password)
 			process.expect(pexpect.EOF)
+			output = process.before
+			process.close()
+			exit_code = process.exitstatus
+			logger.debug("Command exit code is %s, output: %s", exit_code, output)
+			if exit_code != 0:
+				raise RuntimeError("Command {command!r} failed with exit code {exit_code}: {output}")
 			# If expect hits timeout it throws a TIMEOUT exception
 		except Exception as err:
 			# Exit code 19 on mount_webdav means ssl cert not accepted
