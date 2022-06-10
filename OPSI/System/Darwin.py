@@ -500,6 +500,7 @@ def mount(dev, mountpoint, **options):
 
 		try:
 			# Mount on macos only reads password from stdin -> expect script
+			logger.info("Executing: %s", command)
 			process = pexpect.spawn(command)
 			if scheme in ("http", "https"):
 				process.expect("Username.*: ")
