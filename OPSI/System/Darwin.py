@@ -513,7 +513,7 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals
 			exit_code = process.exitstatus
 			logger.debug("Command exit code is %s, output: %s", exit_code, output)
 			if exit_code != 0:
-				raise RuntimeError("Command {command!r} failed with exit code {exit_code}: {output}")
+				raise RuntimeError(f"Command {command!r} failed with exit code {exit_code}: {output}")
 			# If expect hits timeout it throws a TIMEOUT exception
 		except Exception as err:
 			# Exit code 19 on mount_webdav means ssl cert not accepted
