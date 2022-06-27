@@ -12,7 +12,7 @@ from opsicommon.logging import logger
 
 from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Backend.Replicator import BackendReplicator
-from OPSI.Exceptions import BackendConfigurationError
+from OPSI.Exceptions import BackendConfigurationError, BackendModuleDisabledError
 from OPSI.System import execute
 from OPSI.Util.Task.Backup import OpsiBackup
 from OPSI.Util.Task.Rights import setRights
@@ -63,6 +63,18 @@ def migrate_file_to_mysql(create_backup: bool = True, restart_services: bool = T
 	if "file" not in backends:
 		logger.info("File backend not active, nothing to do")
 		return
+
+	licensing_info = backend_manager.backend_getLicensingInfo()
+	mysql_module = licensing_info["modules"].get("mysql_backend")
+	clients = licensing_info["client_numbers"]["all"]
+	logger.info("Licensing info: clients=%d, MySQL module=%s", clients, mysql_module)
+	if not mysql_module or not mysql_module["available"]:
+		raise BackendModuleDisabledError("No license for MySQL backend available")
+
+	if mysql_module["client_number"] < clients:
+		raise BackendModuleDisabledError(
+			f"MySQL backend license not sufficient: {mysql_module['client_number']} clients licensed but {clients} in backend"
+		)
 
 	if create_backup:
 		backup_file = f"/var/lib/opsi/config/file-to-mysql-backup-{datetime.now().strftime('%Y%m%d%H%M%S')}.tar.bz2"
