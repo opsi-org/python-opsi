@@ -37,7 +37,7 @@ def patch_dispatch_conf():
 		file.writelines(lines)
 
 
-def migrate_file_to_mysql():
+def migrate_file_to_mysql(restart_services: bool = True):
 	bm_config = {
 		"dispatchConfigFile": "/etc/opsi/backendManager/dispatch.conf",
 		"backendConfigDir": "/etc/opsi/backends",
@@ -61,18 +61,19 @@ def migrate_file_to_mysql():
 		return
 
 	service_running = {}
-	for service in ("opsipxeconfd", "opsiconfd"):
-		try:
-			execute(["systemctl", "is-active", "--quiet", service])
-			service_running[service] = True
-		except RuntimeError:
-			service_running[service] = False
+	if restart_services:
+		for service in ("opsipxeconfd", "opsiconfd"):
+			try:
+				execute(["systemctl", "is-active", "--quiet", service])
+				service_running[service] = True
+			except RuntimeError:
+				service_running[service] = False
 
-		try:
-			logger.notice("Stopping service %r", service)
-			execute(["systemctl", "stop", service])
-		except RuntimeError as err:
-			logger.warning("Failed to stop service %r: %s", service, err)
+			try:
+				logger.notice("Stopping service %r", service)
+				execute(["systemctl", "stop", service])
+			except RuntimeError as err:
+				logger.warning("Failed to stop service %r: %s", service, err)
 
 	read_backend = backend_manager._loadBackend("file")  # pylint: disable=protected-access
 	read_backend.backend_createBase()
