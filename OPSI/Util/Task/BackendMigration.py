@@ -15,7 +15,7 @@ from OPSI.Backend.Replicator import BackendReplicator
 from OPSI.Exceptions import BackendConfigurationError, BackendModuleDisabledError
 from OPSI.System import execute
 from OPSI.Util.Task.Backup import OpsiBackup
-from OPSI.Util.Task.Rights import setRights
+from OPSI.Util.Task.Rights import set_rights
 
 
 def patch_dispatch_conf():
@@ -79,7 +79,7 @@ def migrate_file_to_mysql(create_backup: bool = True, restart_services: bool = T
 	if create_backup:
 		backup_file = f"/var/lib/opsi/config/file-to-mysql-backup-{datetime.now().strftime('%Y%m%d%H%M%S')}.tar.bz2"
 		OpsiBackup().create(backup_file)
-		setRights(backup_file)
+		set_rights(backup_file)
 
 	service_running = {}
 	if restart_services:

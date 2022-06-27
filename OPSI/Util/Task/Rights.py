@@ -50,7 +50,11 @@ class FilePermission:
 	@staticmethod
 	@lru_cache(maxsize=None)
 	def groupname_to_gid(groupname: str) -> int:
-		return grp.getgrnam(groupname)[2]
+		try:
+			return grp.getgrnam(groupname)[2]
+		except KeyError as err:
+			logger.debug(err)
+		return -1
 
 	@property
 	def uid(self) -> int:
