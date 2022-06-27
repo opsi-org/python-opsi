@@ -6,12 +6,16 @@
 Backend migration tasks
 """
 
+from datetime import datetime
+
 from opsicommon.logging import logger
 
 from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Backend.Replicator import BackendReplicator
 from OPSI.Exceptions import BackendConfigurationError
 from OPSI.System import execute
+from OPSI.Util.Task.Backup import OpsiBackup
+from OPSI.Util.Task.Rights import setRights
 
 
 def patch_dispatch_conf():
@@ -37,7 +41,7 @@ def patch_dispatch_conf():
 		file.writelines(lines)
 
 
-def migrate_file_to_mysql(restart_services: bool = True):
+def migrate_file_to_mysql(create_backup: bool = True, restart_services: bool = True):
 	bm_config = {
 		"dispatchConfigFile": "/etc/opsi/backendManager/dispatch.conf",
 		"backendConfigDir": "/etc/opsi/backends",
@@ -59,6 +63,11 @@ def migrate_file_to_mysql(restart_services: bool = True):
 	if "file" not in backends:
 		logger.info("File backend not active, nothing to do")
 		return
+
+	if create_backup:
+		backup_file = f"/var/lib/opsi/config/file-to-mysql-backup-{datetime.now().strftime('%Y%m%d%H%M%S')}.tar.bz2"
+		OpsiBackup().create(backup_file)
+		setRights(backup_file)
 
 	service_running = {}
 	if restart_services:
