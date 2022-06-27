@@ -11,6 +11,7 @@ from opsicommon.logging import logger
 from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Backend.Replicator import BackendReplicator
 from OPSI.Exceptions import BackendConfigurationError
+from OPSI.System import execute
 
 
 def patch_dispatch_conf():
@@ -59,6 +60,20 @@ def migrate_file_to_mysql():
 		logger.info("File backend not active, nothing to do")
 		return
 
+	service_running = {}
+	for service in ("opsipxeconfd", "opsiconfd"):
+		try:
+			execute(["systemctl", "is-active", "--quiet", service])
+			service_running[service] = True
+		except RuntimeError:
+			service_running[service] = False
+
+		try:
+			logger.notice("Stopping service %r", service)
+			execute(["systemctl", "stop", service])
+		except RuntimeError as err:
+			logger.warning("Failed to stop service %r: %s", service, err)
+
 	read_backend = backend_manager._loadBackend("file")  # pylint: disable=protected-access
 	read_backend.backend_createBase()
 
@@ -70,3 +85,11 @@ def migrate_file_to_mysql():
 	backend_replicator.replicate(audit=False)
 
 	patch_dispatch_conf()
+
+	for service, state in service_running.items():
+		if state:
+			try:
+				logger.notice("Starting service %r", service)
+				execute(["systemctl", "start", service])
+			except RuntimeError as err:
+				logger.warning("Failed to start service %r: %s", service, err)
