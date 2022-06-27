@@ -6,13 +6,15 @@
 Backend migration tasks
 """
 
+from opsicommon.logging import logger
+
 from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Backend.Replicator import BackendReplicator
 from OPSI.Exceptions import BackendConfigurationError
-from opsicommon.logging import logger
 
 
 def patch_dispatch_conf():
+	logger.notice("Patch dispatch.conf to use MySQL backend")
 	lines = []
 	with open("/etc/opsi/backendManager/dispatch.conf", encoding="utf-8") as file:
 		for line in file:
@@ -22,7 +24,7 @@ def patch_dispatch_conf():
 				if match == ".*":
 					lines.append(f"{match} : mysql\n")
 					continue
-				backends = list(set(["mysql" if b.strip() == "file" else b.strip() for b in backends.split(",")]))
+				backends = list({"mysql" if b.strip() == "file" else b.strip() for b in backends.split(",")})
 				if "mysql" in backends:
 					if len(backends) == 1:
 						continue
@@ -48,19 +50,19 @@ def migrate_file_to_mysql():
 	while getattr(backend, "_backend", None):
 		backend = backend._backend  # pylint: disable=protected-access
 		if backend.__class__.__name__ == "BackendDispatcher":
-			backends = backend._backends
+			backends = backend._backends  # pylint: disable=protected-access
 
 	if not backends:
-		raise BackendConfigurationError(f"Failed to get backends from dispatcher")
+		raise BackendConfigurationError("Failed to get backends from dispatcher")
 
-	if not "file" in backends:
-		# Nothing to do
+	if "file" not in backends:
+		logger.info("File backend not active, nothing to do")
 		return
 
-	read_backend = backend_manager._loadBackend("file")
+	read_backend = backend_manager._loadBackend("file")  # pylint: disable=protected-access
 	read_backend.backend_createBase()
 
-	write_backend = backend_manager._loadBackend("mysql")
+	write_backend = backend_manager._loadBackend("mysql")  # pylint: disable=protected-access
 	write_backend.unique_hardware_addresses = False
 	write_backend.backend_createBase()
 
@@ -68,4 +70,3 @@ def migrate_file_to_mysql():
 	backend_replicator.replicate(audit=False)
 
 	patch_dispatch_conf()
-
