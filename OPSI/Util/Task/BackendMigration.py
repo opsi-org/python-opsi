@@ -41,7 +41,7 @@ def patch_dispatch_conf():
 		file.writelines(lines)
 
 
-def migrate_file_to_mysql(create_backup: bool = True, restart_services: bool = True):  # pylint: disable=too-many-locals,too-many-branches
+def migrate_file_to_mysql(create_backup: bool = True, restart_services: bool = True) -> bool:  # pylint: disable=too-many-locals,too-many-branches
 	bm_config = {
 		"dispatchConfigFile": "/etc/opsi/backendManager/dispatch.conf",
 		"backendConfigDir": "/etc/opsi/backends",
@@ -62,7 +62,7 @@ def migrate_file_to_mysql(create_backup: bool = True, restart_services: bool = T
 
 	if "file" not in backends:
 		logger.info("File backend not active, nothing to do")
-		return
+		return False
 
 	licensing_info = backend_manager.backend_getLicensingInfo()  # pylint: disable=no-member
 	mysql_module = licensing_info["modules"].get("mysql_backend")
@@ -115,3 +115,5 @@ def migrate_file_to_mysql(create_backup: bool = True, restart_services: bool = T
 				execute(["systemctl", "start", service])
 			except RuntimeError as err:
 				logger.warning("Failed to start service %r: %s", service, err)
+
+	return True
