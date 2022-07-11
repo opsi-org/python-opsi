@@ -11,7 +11,6 @@ import time
 from typing import Any, Callable, Dict, List
 from urllib.parse import quote, urlencode
 
-from opsicommon.logging import get_logger, secret_filter
 from sqlalchemy import create_engine
 from sqlalchemy.event import listen
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -21,6 +20,7 @@ from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracke
 from OPSI.Object import Product, ProductProperty
 from OPSI.Types import forceHostIdList, forceInt, forceUnicode
 from OPSI.Util import compareVersions
+from opsicommon.logging import get_logger, secret_filter
 
 __all__ = (
 	'MySQL', 'MySQLBackend', 'MySQLBackendObjectModificationTracker'
@@ -193,22 +193,25 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 
 	def getTables(self, session: scoped_session) -> Dict[str, Any]:
 		"""
-		Get what tables are present in the database.
+		Get what tables are present in the database (do not return views).
 
 		Table names will always be uppercased.
 
-		:returns: A dict with the tablename as key and the field names as value.
+		:returns: A dict with the table_name as key and the field names as value.
 		:rtype: dict
 		"""
 		tables = {}
 		logger.trace("Current tables:")
-		for i in self.getSet(session, 'SHOW TABLES;'):
-			for tableName in i.values():
-				tableName = tableName.upper()
-				logger.trace(" [ %s ]", tableName)
-				fields = [j['Field'] for j in self.getSet(session, f'SHOW COLUMNS FROM `{tableName}`')]
-				tables[tableName] = fields
-				logger.trace("Fields in %s: %s", tableName, fields)
+		for i in self.getSet(
+			session,
+			f"SELECT table_name from information_schema.tables WHERE table_type != 'VIEW' AND table_schema = '{self._database}';"
+		):
+			for table_name in i.values():
+				table_name = table_name.upper()
+				logger.trace(" [ %s ]", table_name)
+				fields = [j['Field'] for j in self.getSet(session, f'SHOW COLUMNS FROM `{table_name}`')]
+				tables[table_name] = fields
+				logger.trace("Fields in %s: %s", table_name, fields)
 
 		return tables
 
