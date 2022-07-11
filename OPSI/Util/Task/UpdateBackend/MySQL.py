@@ -65,48 +65,29 @@ read from `backendConfigFile`.
 	mysql = MySQL(**config)
 
 	with mysql.session() as session:
-		schemaVersion = readSchemaVersion(mysql, session)
-		logger.debug("Found database schema version %s", schemaVersion)
+		schema_version = readSchemaVersion(mysql, session)
+		logger.debug("Found database schema version %s", schema_version)
 
-		if schemaVersion is None:
+		if schema_version is None:
 			logger.notice("Missing information about database schema. Creating...")
 			createSchemaVersionTable(mysql, session)
 			with updateSchemaVersion(mysql, session, version=0):
 				_processOpsi40migrations(mysql, session)
+			schema_version = readSchemaVersion(mysql, session)
 
-			schemaVersion = readSchemaVersion(mysql, session)
-
-		# The migrations that follow are each a function that will take the
-		# established database connection as first parameter.
-		# Do not change the order of the migrations once released, because
-		# this may lead to hard-to-debug inconsistent version numbers.
-		# migrations = [
-		# 	_dropTableBootconfiguration,
-		# 	_addIndexOnProductPropertyValues,
-		# 	_addWorkbenchAttributesToHosts,
-		# 	_adjustLengthOfGroupId,
-		# 	_increaseInventoryNumberLength,
-		# 	_changeSoftwareConfigConfigIdToBigInt,
-		# 	_addIndexProductIdOnProductAndWindowsSoftwareIDToProduct
-		# ]
-
-		# for newSchemaVersion, migration in enumerate(migrations, start=1):
-		# 	if schemaVersion < newSchemaVersion:
-		# 		with updateSchemaVersion(mysql, session, version=newSchemaVersion):
-		# 			migration(mysql, session)
-		if schemaVersion < 8:
-			with updateSchemaVersion(mysql, session, version=8):
+		if schema_version < DATABASE_SCHEMA_VERSION:
+			with updateSchemaVersion(mysql, session, version=DATABASE_SCHEMA_VERSION):
 				_process_opsi42_migrations(mysql, session)
 
 			logger.debug("Expected database schema version: %s", DATABASE_SCHEMA_VERSION)
 			if not readSchemaVersion(mysql, session) == DATABASE_SCHEMA_VERSION:
 				raise BackendUpdateError("Not all migrations have been run!")
 
-	with MySQLBackend(**config) as mysqlBackend:
+	with MySQLBackend(**config) as mysql_backend:
 		# We do this to make sure all tables that are currently
 		# non-existing will be created. That creation will give them
 		# the currently wanted schema.
-		mysqlBackend.backend_createBase()
+		mysql_backend.backend_createBase()
 
 
 def _process_opsi42_migrations(database, session):
