@@ -160,33 +160,34 @@ def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False, 
 			print("Failed to copy {0!r} to {1!r}: {2}".format(baseDataDir, backendDir, error))
 
 		with mock.patch("OPSI.Util.File.Opsi.OpsiBackupArchive.CONF_DIR", baseDir):
-			fakeDHCPDBackendConfig(baseDir, backendDir)
-			if dataBackend == "file":
-				backendDataDir, hostKeyFile = fakeFileBackendConfig(baseDir, backendDir)
-				fillFileBackendWithFakeFiles(backendDataDir, hostKeyFile)
-			elif "mysql" == dataBackend:
-				mySQLConnectionConfig = fakeMySQLBackend(backendDir)
-				fillMySQLBackend(mySQLConnectionConfig)
-			else:
-				raise RuntimeError("Unsupported backend: {0!r}".format(dataBackend))
-			dispatchConfig = fakeDispatchConfig(baseDir, dataBackend)
+			with mock.patch("OPSI.Util.File.Opsi.OpsiBackupArchive.BACKEND_CONF_DIR", backendDir):
+				fakeDHCPDBackendConfig(baseDir, backendDir)
+				if dataBackend == "file":
+					backendDataDir, hostKeyFile = fakeFileBackendConfig(baseDir, backendDir)
+					fillFileBackendWithFakeFiles(backendDataDir, hostKeyFile)
+				elif "mysql" == dataBackend:
+					mySQLConnectionConfig = fakeMySQLBackend(backendDir)
+					fillMySQLBackend(mySQLConnectionConfig)
+				else:
+					raise RuntimeError("Unsupported backend: {0!r}".format(dataBackend))
+				dispatchConfig = fakeDispatchConfig(baseDir, dataBackend)
 
-			with mock.patch("OPSI.Util.File.Opsi.OpsiBackupArchive.DISPATCH_CONF", dispatchConfig):
-				archive = OpsiBackupArchive(name=name, mode=mode, tempdir=tempDir)
-				try:
-					yield archive
-				finally:
+				with mock.patch("OPSI.Util.File.Opsi.OpsiBackupArchive.DISPATCH_CONF", dispatchConfig):
+					archive = OpsiBackupArchive(name=name, mode=mode, tempdir=tempDir)
 					try:
-						archive.close()
-					except IOError:
-						# Archive is probably already closed
-						pass
-
-					if not keepArchive:
+						yield archive
+					finally:
 						try:
-							os.remove(archive.name)
-						except OSError:
+							archive.close()
+						except IOError:
+							# Archive is probably already closed
 							pass
+
+						if not keepArchive:
+							try:
+								os.remove(archive.name)
+							except OSError:
+								pass
 
 
 def fakeDHCPDBackendConfig(baseDir, backendDir):
