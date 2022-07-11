@@ -1285,15 +1285,16 @@ class OpsiBackupArchive(tarfile.TarFile):
 	CONTENT_DIR = "CONTENT"
 	CONTROL_DIR = "CONTROL"
 
-	CONF_DIR = "/etc/opsi"
-	BACKEND_CONF_DIR = os.path.join(CONF_DIR, "backends")
-	DISPATCH_CONF = os.path.join(CONF_DIR, "backendManager", "dispatch.conf")
-
 	def __init__(self, name=None, mode=None, tempdir=tempfile.gettempdir(), fileobj=None, **kwargs):  # pylint: disable=too-many-branches
 		self.tempdir = tempdir
 		self.mode = mode
 		self.sysinfo = None
 		compression = None
+
+		self.conf_dir = os.path.realpath("/etc/opsi") # Can be a symlink
+
+		self.backend_conf_dir = os.path.join(self.conf_dir, "backends")
+		self.dispatch_conf = os.path.join(self.conf_dir, "backendManager", "dispatch.conf")
 
 		if mode and ":" in mode:
 			self.mode, compression = mode.split(":")
@@ -1336,27 +1337,27 @@ class OpsiBackupArchive(tarfile.TarFile):
 			self._backends = None
 
 	def _readBackendConfiguration(self):
-		if os.path.exists(self.CONF_DIR) and os.path.exists(self.DISPATCH_CONF):
+		if os.path.exists(self.conf_dir) and os.path.exists(self.dispatch_conf):
 			try:
-				dispatchedBackends = BackendDispatchConfigFile(self.DISPATCH_CONF).getUsedBackends()
+				dispatchedBackends = BackendDispatchConfigFile(self.dispatch_conf).getUsedBackends()
 			except Exception as err:  # pylint: disable=broad-except
 				logger.warning("Could not read dispatch configuration: %s", err)
 				dispatchedBackends = []
 
-		if not os.path.exists(self.BACKEND_CONF_DIR):
+		if not os.path.exists(self.backend_conf_dir):
 			raise OpsiBackupFileError(
-				f'Could not read backend configuration: Missing directory "{self.BACKEND_CONF_DIR}"'
+				f'Could not read backend configuration: Missing directory "{self.backend_conf_dir}"'
 			)
 
 		backends = {}
-		for entry in os.listdir(self.BACKEND_CONF_DIR):
+		for entry in os.listdir(self.backend_conf_dir):
 			if entry.endswith(".conf"):
 				name = entry.split(".")[0].lower()
 				if name in backends:
 					raise OpsiBackupFileError("Multiple backends with the same name are not supported.")
 
 				backendGlobals = {'config': {}, 'module': '', 'socket': socket}
-				backendFile = os.path.join(self.BACKEND_CONF_DIR, entry)
+				backendFile = os.path.join(self.backend_conf_dir, entry)
 				try:
 					with open(backendFile, encoding="utf-8") as confFile:
 						exec(confFile.read(), backendGlobals)  # pylint: disable=exec-used
@@ -1547,7 +1548,7 @@ element of the tuple is replace with the second element.
 			os.remove(path)
 
 	def backupConfiguration(self):
-		self._addContent(self.CONF_DIR, sub=(self.CONF_DIR, "CONF"))
+		self._addContent(self.conf_dir, sub=(self.conf_dir, "CONF"))
 
 	def hasConfiguration(self):
 		for member in self.getmembers():
@@ -1561,10 +1562,10 @@ element of the tuple is replace with the second element.
 		for member in self.getmembers():
 			if member.name.startswith(os.path.join(self.CONTENT_DIR, "CONF")):
 				if first:
-					shutil.rmtree(self.CONF_DIR, ignore_errors=True)
-					os.makedirs(self.CONF_DIR)
+					shutil.rmtree(self.conf_dir, ignore_errors=True)
+					os.makedirs(self.conf_dir)
 					first = False
-				dest = member.name.replace(os.path.join(self.CONTENT_DIR, "CONF"), self.CONF_DIR)
+				dest = member.name.replace(os.path.join(self.CONTENT_DIR, "CONF"), self.conf_dir)
 
 				if member.issym():
 					os.symlink(member.linkname, dest)
