@@ -718,7 +718,7 @@ def _add_index_product_property_value(database, session):
 
 def _add_workbench_attributes_hosts(database, session):
 	host_columns = []
-	for res in database.getSet(  # pylint: disable=use-list-copy
+	for res in database.getSet(
 		session, "SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='opsi' AND TABLE_NAME='HOST'"
 	):
 		host_columns.append(res.get("column_name"))
@@ -768,4 +768,3 @@ def _adjust_length_ipaddress(database, session):
 		'ALTER TABLE `HOST` '
 		'MODIFY COLUMN `ipAddress` varchar(255);'
 	)
-
