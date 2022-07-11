@@ -12,13 +12,16 @@ import pytest
 
 from OPSI.Backend.MySQL import MySQL, MySQLBackend
 from OPSI.Backend.SQL import DATABASE_SCHEMA_VERSION, createSchemaVersionTable
+from OPSI.Util.Task.ConfigureBackend import updateConfigFile
 from OPSI.Util.Task.UpdateBackend.MySQL import (
 	DatabaseMigrationUnfinishedError,
-	getTableColumns, readSchemaVersion, updateMySQLBackend, updateSchemaVersion
+	getTableColumns,
+	readSchemaVersion,
+	updateMySQLBackend,
+	updateSchemaVersion,
 )
-from OPSI.Util.Task.ConfigureBackend import updateConfigFile
 
-from .Backends.MySQL import MySQLconfiguration, getTableNames, cleanDatabase
+from .Backends.MySQL import MySQLconfiguration, cleanDatabase, getTableNames
 
 
 @pytest.fixture
@@ -86,6 +89,25 @@ def testCorrectingProductIdLength(mysqlBackendConfig, mySQLBackendConfigFile):
 				assert tableName in getTableNames(db, session)
 
 				assertColumnIsVarchar(db, session, tableName, 'productId', 255)
+
+
+def test_correcting_ipaddres_length(mysqlBackendConfig, mySQLBackendConfigFile):
+	"""
+	Test if host.ipAddress length is correctly set.
+	"""
+	with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+		createRequiredTables(db)
+
+		updateMySQLBackend(backendConfigFile=mySQLBackendConfigFile)
+
+		for tableName in ('HOST', ):
+			print("Checking {0}...".format(tableName))
+
+			with db.session() as session:
+				assert tableName in getTableNames(db, session)
+
+				assertColumnIsVarchar(db, session, tableName, 'ipAddress', 255)
+
 
 
 def testDropTableBootConfiguration(mysqlBackendConfig, mySQLBackendConfigFile):

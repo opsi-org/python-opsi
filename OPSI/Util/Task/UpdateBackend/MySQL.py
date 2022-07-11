@@ -709,7 +709,10 @@ def _add_index_product_property_value(database, session):
 	logger.info("Adding index on table PRODUCT_PROPERTY_VALUE.")
 	database.execute(
 		session,
-		"CREATE INDEX  IF NOT EXISTS `index_product_property_value` on `PRODUCT_PROPERTY_VALUE` (`productId`, `propertyId`, `productVersion`, `packageVersion`)",
+		"""
+		CREATE INDEX  IF NOT EXISTS `index_product_property_value` on
+		`PRODUCT_PROPERTY_VALUE` (`productId`, `propertyId`, `productVersion`, `packageVersion`)
+		"""
 	)
 
 
