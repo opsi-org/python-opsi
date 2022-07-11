@@ -707,10 +707,17 @@ def _drop_table_boot_configuration(database, session):
 
 def _add_index_product_property_value(database, session):
 	logger.info("Adding index on table PRODUCT_PROPERTY_VALUE.")
-	database.execute(
+	index_list = []
+	for idx in database.getSet(
 		session,
-		'CREATE INDEX IF NOT EXISTS index_product_property_value on PRODUCT_PROPERTY_VALUE (productId, propertyId, productVersion, packageVersion);'
-	)
+		"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_NAME = 'PRODUCT_PROPERTY_VALUE';"
+	):
+		index_list.append(idx.get("INDEX_NAME"))
+	if "index_product_property_value" not in index_list:
+		database.execute(
+			session,
+			'CREATE INDEX IF NOT EXISTS index_product_property_value on PRODUCT_PROPERTY_VALUE (productId, propertyId, productVersion, packageVersion);'
+		)
 
 
 def _add_workbench_attributes_hosts(database, session):
@@ -742,7 +749,7 @@ def _increase_inventory_number_length(database, session):
 	database.execute(
 		session,
 		'ALTER TABLE `HOST` '
-		'MODIFY COLUMN `inventoryNumber` varchar(64) NOT NULL;'
+		'MODIFY COLUMN `inventoryNumber` varchar(64) NOT NULL DEFAULT "";'
 	)
 
 
@@ -754,8 +761,23 @@ def _change_software_config_configid_to_bigint(database, session):
 
 def _add_index_productid_product_and_windows_softwareid_to_product(database, session):
 	logger.info("Adding productId index on PRODUCT and WINDOWS_SOFTWARE_ID_TO_PRODUCT")
-	database.execute(session, 'CREATE INDEX IF NOT EXISTS `index_productId` on `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (`productId`);')
-	database.execute(session, 'CREATE INDEX IF NOT EXISTS `index_productId` on `PRODUCT` (`productId`);')
+	index_list = []
+	for idx in database.getSet(
+		session,
+		"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_NAME = 'WINDOWS_SOFTWARE_ID_TO_PRODUCT';"
+	):
+		index_list.append(idx.get("INDEX_NAME"))
+	if "index_product_property_value" not in index_list:
+		database.execute(session, 'CREATE INDEX IF NOT EXISTS `index_productId` on `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (`productId`);')
+
+	index_list = []
+	for idx in database.getSet(
+		session,
+		"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_NAME = 'PRODUCT';"
+	):
+		index_list.append(idx.get("INDEX_NAME"))
+	if "index_product_property_value" not in index_list:
+		database.execute(session, 'CREATE INDEX IF NOT EXISTS `index_productId` on `PRODUCT` (`productId`);')
 
 
 def _adjust_length_ipaddress(database, session):
