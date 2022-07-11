@@ -11,8 +11,7 @@ import shutil
 import sys
 
 from OPSI.Util.Task.Backup import OpsiBackup
-from OPSI.Util.Task.ConfigureBackend import (
-	getBackendConfiguration, updateConfigFile)
+from OPSI.Util.Task.ConfigureBackend import getBackendConfiguration, updateConfigFile
 
 from .helpers import mock, workInTemporaryDirectory
 

@@ -7,14 +7,15 @@ Testing opsis backup functionality.
 """
 
 import os
-import pytest
 import shutil
 from contextlib import closing, contextmanager
 
+import pytest
+
 from OPSI.Exceptions import OpsiBackupBackendNotFound
 from OPSI.System import which
-from OPSI.Util.File.Opsi import OpsiBackupFileError, OpsiBackupArchive
 from OPSI.Util import md5sum, randomString
+from OPSI.Util.File.Opsi import OpsiBackupArchive, OpsiBackupFileError
 
 from .helpers import mock, workInTemporaryDirectory
 
@@ -159,34 +160,33 @@ def getOpsiBackupArchive(name=None, mode=None, tempdir=None, keepArchive=False, 
 			print("Failed to copy {0!r} to {1!r}: {2}".format(baseDataDir, backendDir, error))
 
 		with mock.patch("OPSI.Util.File.Opsi.OpsiBackupArchive.CONF_DIR", baseDir):
-			with mock.patch("OPSI.Util.File.Opsi.OpsiBackupArchive.BACKEND_CONF_DIR", backendDir):
-				fakeDHCPDBackendConfig(baseDir, backendDir)
-				if dataBackend == "file":
-					backendDataDir, hostKeyFile = fakeFileBackendConfig(baseDir, backendDir)
-					fillFileBackendWithFakeFiles(backendDataDir, hostKeyFile)
-				elif "mysql" == dataBackend:
-					mySQLConnectionConfig = fakeMySQLBackend(backendDir)
-					fillMySQLBackend(mySQLConnectionConfig)
-				else:
-					raise RuntimeError("Unsupported backend: {0!r}".format(dataBackend))
-				dispatchConfig = fakeDispatchConfig(baseDir, dataBackend)
+			fakeDHCPDBackendConfig(baseDir, backendDir)
+			if dataBackend == "file":
+				backendDataDir, hostKeyFile = fakeFileBackendConfig(baseDir, backendDir)
+				fillFileBackendWithFakeFiles(backendDataDir, hostKeyFile)
+			elif "mysql" == dataBackend:
+				mySQLConnectionConfig = fakeMySQLBackend(backendDir)
+				fillMySQLBackend(mySQLConnectionConfig)
+			else:
+				raise RuntimeError("Unsupported backend: {0!r}".format(dataBackend))
+			dispatchConfig = fakeDispatchConfig(baseDir, dataBackend)
 
-				with mock.patch("OPSI.Util.File.Opsi.OpsiBackupArchive.DISPATCH_CONF", dispatchConfig):
-					archive = OpsiBackupArchive(name=name, mode=mode, tempdir=tempDir)
+			with mock.patch("OPSI.Util.File.Opsi.OpsiBackupArchive.DISPATCH_CONF", dispatchConfig):
+				archive = OpsiBackupArchive(name=name, mode=mode, tempdir=tempDir)
+				try:
+					yield archive
+				finally:
 					try:
-						yield archive
-					finally:
-						try:
-							archive.close()
-						except IOError:
-							# Archive is probably already closed
-							pass
+						archive.close()
+					except IOError:
+						# Archive is probably already closed
+						pass
 
-						if not keepArchive:
-							try:
-								os.remove(archive.name)
-							except OSError:
-								pass
+					if not keepArchive:
+						try:
+							os.remove(archive.name)
+						except OSError:
+							pass
 
 
 def fakeDHCPDBackendConfig(baseDir, backendDir):
