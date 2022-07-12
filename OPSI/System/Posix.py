@@ -31,7 +31,6 @@ from itertools import islice
 from signal import SIGKILL
 
 import psutil
-from opsicommon.logging import LOG_NONE, get_logger, logging_config
 from opsicommon.objects import *  # pylint: disable=wildcard-import,unused-wildcard-import
 from opsicommon.types import (
 	forceBool,
@@ -48,10 +47,11 @@ from opsicommon.types import (
 	forceUnicode,
 	forceUnicodeLower,
 )
-from opsicommon.utils import frozen_lru_cache
 
 from OPSI.Exceptions import CommandNotFoundException
 from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
+from opsicommon.logging import LOG_NONE, get_logger, logging_config
+from opsicommon.utils import frozen_lru_cache
 
 distro_module = None  # pylint: disable=invalid-name
 if platform.system() == "Linux":
@@ -978,59 +978,59 @@ output will be returned.
 			return (subprocess.Popen(cmd, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=None, env=sp_env)).stdout
 
 		data = b""
-		proc = subprocess.Popen(  # pylint: disable=consider-using-with
+		with subprocess.Popen(
 			cmd,
 			shell=shell,
 			stdin=subprocess.PIPE if stdin_data else None,
 			stdout=subprocess.PIPE,
 			stderr=subprocess.PIPE if captureStderr else None,
 			env=sp_env,
-		)
+		) as proc:
 
-		if not encoding:
-			encoding = locale.getpreferredencoding()
-			if encoding == "ascii":
-				encoding = "utf-8"
-		logger.info("Using encoding '%s'", encoding)
+			if not encoding:
+				encoding = locale.getpreferredencoding()
+				if encoding == "ascii":
+					encoding = "utf-8"
+			logger.info("Using encoding '%s'", encoding)
 
-		flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
-		fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-
-		if captureStderr:
-			flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
-			fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-
-		if stdin_data:
-			proc.stdin.write(stdin_data)
-			proc.stdin.flush()
-
-		ret = None
-		while ret is None:
-			ret = proc.poll()
-			try:
-				chunk = proc.stdout.read()
-				if chunk:
-					data += chunk
-			except IOError as err:
-				if err.errno != 11:
-					raise
+			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
+			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
 			if captureStderr:
+				flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
+				fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+
+			if stdin_data:
+				proc.stdin.write(stdin_data)
+				proc.stdin.flush()
+
+			ret = None
+			while ret is None:
+				ret = proc.poll()
 				try:
-					chunk = proc.stderr.read()
+					chunk = proc.stdout.read()
 					if chunk:
-						if exitOnStderr:
-							raise RuntimeError(f"Command '{cmd}' failed: {chunk}")
 						data += chunk
 				except IOError as err:
 					if err.errno != 11:
 						raise
 
-			if time.time() - startTime >= timeout > 0:
-				_terminateProcess(proc)
-				raise RuntimeError(f"Command '{cmd}' timed out atfer {(time.time() - startTime)} seconds")
+				if captureStderr:
+					try:
+						chunk = proc.stderr.read()
+						if chunk:
+							if exitOnStderr:
+								raise RuntimeError(f"Command '{cmd}' failed: {chunk}")
+							data += chunk
+					except IOError as err:
+						if err.errno != 11:
+							raise
 
-			time.sleep(0.001)
+				if time.time() - startTime >= timeout > 0:
+					_terminateProcess(proc)
+					raise RuntimeError(f"Command '{cmd}' timed out atfer {(time.time() - startTime)} seconds")
+
+				time.sleep(0.001)
 
 		exitCode = ret
 		if data:
