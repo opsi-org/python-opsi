@@ -757,7 +757,7 @@ def removeDirectory(directory):
 		shutil.rmtree(directory)
 	except UnicodeDecodeError:
 		# See http://bugs.python.org/issue3616
-		logger.info("Client data directory seems to contain filenames " "with unicode characters. Trying fallback.")
+		logger.info("Client data directory seems to contain filenames with unicode characters. Trying fallback.")
 
 		# late import to avoid circular dependency
 		import OPSI.System  # pylint: disable=import-outside-toplevel

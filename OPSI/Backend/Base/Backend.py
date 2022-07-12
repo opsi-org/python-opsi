@@ -237,7 +237,7 @@ This defaults to ``self``.
 			matched = False
 
 			try:
-				logger.debug("Testing match of filter %s of attribute %s with " "value %s", filter[attribute], attribute, value)
+				logger.debug("Testing match of filter %s of attribute %s with value %s", filter[attribute], attribute, value)
 				filterValues = forceUnicodeList(filter[attribute])
 				if forceUnicodeList(value) == filterValues or forceUnicode(value) in filterValues:
 					matched = True

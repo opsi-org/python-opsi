@@ -31,6 +31,7 @@ from itertools import islice
 from signal import SIGKILL
 
 import psutil
+from opsicommon.logging import LOG_NONE, get_logger, logging_config
 from opsicommon.objects import *  # pylint: disable=wildcard-import,unused-wildcard-import
 from opsicommon.types import (
 	forceBool,
@@ -47,11 +48,10 @@ from opsicommon.types import (
 	forceUnicode,
 	forceUnicodeLower,
 )
+from opsicommon.utils import frozen_lru_cache
 
 from OPSI.Exceptions import CommandNotFoundException
 from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
-from opsicommon.logging import LOG_NONE, get_logger, logging_config
-from opsicommon.utils import frozen_lru_cache
 
 distro_module = None  # pylint: disable=invalid-name
 if platform.system() == "Linux":
@@ -726,7 +726,7 @@ def configureInterface(device, address, netmask=None):
 
 
 def ifconfig(device, address, netmask=None):
-	logger.warning("Method 'ifconfig' is deprecated. " "Use 'configureInterface' instead!")
+	logger.warning("Method 'ifconfig' is deprecated. Use 'configureInterface' instead!")
 	configureInterface(device, address, netmask)
 
 
@@ -1678,7 +1678,7 @@ class Harddisk:  # pylint: disable=too-many-instance-attributes,too-many-public-
 							partition["secSize"] = forceInt(match.group(5))
 							self.partitions[pnum] = partition
 							logger.debug(
-								"Partition sector values =>>> number: %s, " "start: %s sec, end: %s sec, size: %s sec ",
+								"Partition sector values =>>> number: %s, start: %s sec, end: %s sec, size: %s sec ",
 								partition["number"],
 								partition["secStart"],
 								partition["secEnd"],
@@ -2080,7 +2080,7 @@ class Harddisk:  # pylint: disable=too-many-instance-attributes,too-many-public-
 					raise RuntimeError(err)
 
 			logger.info(
-				"Setting Partition start sector to %s in NTFS boot record " "on partition '%s'",
+				"Setting Partition start sector to %s in NTFS boot record on partition '%s'",
 				sector,
 				self.getPartition(partition)["device"],
 			)
@@ -2096,7 +2096,7 @@ class Harddisk:  # pylint: disable=too-many-instance-attributes,too-many-public-
 				os.lseek(hd, 0x1C, 0)
 				start = os.read(hd, 4)
 				logger.debug(
-					"NTFS Boot Record currently using %s %s %s %s " "as partition start sector",
+					"NTFS Boot Record currently using %s %s %s %s as partition start sector",
 					hex(start[0]),
 					hex(start[1]),
 					hex(start[2]),
@@ -2120,7 +2120,7 @@ class Harddisk:  # pylint: disable=too-many-instance-attributes,too-many-public-
 				os.lseek(hd, 0x1C, 0)
 				start = os.read(hd, 4)
 				logger.debug(
-					"NTFS Boot Record now using %s %s %s %s as partition " "start sector",
+					"NTFS Boot Record now using %s %s %s %s as partition start sector",
 					hex(start[0]),
 					hex(start[1]),
 					hex(start[2]),
@@ -3780,7 +3780,7 @@ def getDHCPDRestartCommand(default=None):
 			return f"{filename} restart"
 
 	if default is not None:
-		logger.debug("Could not find dhcpd restart command but default is given. " "Making use of default: %s", default)
+		logger.debug("Could not find dhcpd restart command but default is given. Making use of default: %s", default)
 		return default
 
 	raise RuntimeError("Could not find DHCPD restart command.")

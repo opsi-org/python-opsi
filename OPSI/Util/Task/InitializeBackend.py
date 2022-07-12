@@ -156,7 +156,7 @@ def _setupDepotDirectory():
 
 	if os.path.exists("/opt/pcbin/install"):
 		logger.warning(
-			"You have an old depot directory present. " "Using /opt/pcbin/install is depracted, " "please use /var/lib/opsi/depot instead."
+			"You have an old depot directory present. Using /opt/pcbin/install is depracted, please use /var/lib/opsi/depot instead."
 		)
 
 

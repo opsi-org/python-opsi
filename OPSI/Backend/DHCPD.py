@@ -253,7 +253,7 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 					currentHostParams = self._dhcpdConfFile.getHost(hostname)
 
 				if currentHostParams:
-					logger.debug("Trying to use address for %s from existing DHCP " "configuration.", hostname)
+					logger.debug("Trying to use address for %s from existing DHCP configuration.", hostname)
 
 					if currentHostParams.get("fixed-address"):
 						ipAddress = currentHostParams["fixed-address"]

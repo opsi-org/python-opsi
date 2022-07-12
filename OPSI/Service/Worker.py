@@ -363,7 +363,7 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 
 		if sessionHandler and self.session.ip and (self.session.ip != self.request.getClientIP()):
 			logger.critical(
-				"Client ip '%s' does not match session ip '%s', " "deleting old session and creating a new one",
+				"Client ip '%s' does not match session ip '%s', deleting old session and creating a new one",
 				self.request.getClientIP(),
 				self.session.ip,
 			)

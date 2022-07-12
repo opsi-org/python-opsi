@@ -360,7 +360,7 @@ def addDynamicDepotDriveSelection(backend: bm.BackendManager):
 	config = backend.config_getObjects(id="clientconfig.depot.drive")[0]
 
 	if "dynamic" not in config.possibleValues:
-		logger.debug("Could not find possibility to select dynamic drive " "selection. Adding it to 'clientconfig.depot.drive'.")
+		logger.debug("Could not find possibility to select dynamic drive selection. Adding it to 'clientconfig.depot.drive'.")
 
 		config.possibleValues.append("dynamic")
 		backend.config_updateObject(config)
