@@ -18,7 +18,10 @@ import os
 import re
 import threading
 import time
-from configparser import RawConfigParser, SafeConfigParser
+from configparser import (  # pylint: disable=deprecated-class
+	RawConfigParser,
+	SafeConfigParser,
+)
 from io import StringIO
 from itertools import islice
 
