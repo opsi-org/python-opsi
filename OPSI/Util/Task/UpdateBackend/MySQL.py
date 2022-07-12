@@ -717,7 +717,8 @@ def _add_index_product_property_value(database, session):
 		database.execute(
 			session,
 			"""
-			CREATE INDEX index_product_property_value on PRODUCT_PROPERTY_VALUE (productId, propertyId, productVersion, packageVersion);
+			CREATE INDEX index_product_property_value on PRODUCT_PROPERTY_VALUE
+			(productId, propertyId, productVersion, packageVersion);
 			"""
 		)
 
@@ -769,7 +770,7 @@ def _add_index_productid_product_and_windows_softwareid_to_product(database, ses
 		"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_NAME = 'WINDOWS_SOFTWARE_ID_TO_PRODUCT';"
 	):
 		index_list.append(idx.get("INDEX_NAME"))
-	if "index_product_property_value" not in index_list:
+	if "index_productId" not in index_list:
 		database.execute(session, 'CREATE INDEX `index_productId` on `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (`productId`);')
 
 	index_list = []
@@ -778,7 +779,7 @@ def _add_index_productid_product_and_windows_softwareid_to_product(database, ses
 		"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_NAME = 'PRODUCT';"
 	):
 		index_list.append(idx.get("INDEX_NAME"))
-	if "index_product_property_value" not in index_list:
+	if "index_productId" not in index_list:
 		database.execute(session, 'CREATE INDEX `index_productId` on `PRODUCT` (`productId`);')
 
 
