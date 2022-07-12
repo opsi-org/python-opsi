@@ -16,6 +16,7 @@ from OPSI.Exceptions import BackendConfigurationError, BackendModuleDisabledErro
 from OPSI.System import execute
 from OPSI.Util.Task.Backup import OpsiBackup
 from OPSI.Util.Task.Rights import set_rights
+from OPSI.Util.Task.UpdateBackend.MySQL import updateMySQLBackend
 
 
 def patch_dispatch_conf():
@@ -95,6 +96,8 @@ def migrate_file_to_mysql(create_backup: bool = True, restart_services: bool = T
 				execute(["systemctl", "stop", service])
 			except RuntimeError as err:
 				logger.warning("Failed to stop service %r: %s", service, err)
+
+	updateMySQLBackend()
 
 	read_backend = backend_manager._loadBackend("file")  # pylint: disable=protected-access
 	read_backend.backend_createBase()
