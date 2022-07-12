@@ -25,7 +25,7 @@ distro = {platform = "linux", version = "^1.5"}
 ldap3 = "^2.9"
 lz4 = "^4.0"
 msgpack = "^1.0"
-mysqlclient = {platform = "linux", version = "^2.0"}
+mysqlclient = {platform = "linux", version = "^2.1"}
 pefile = "^2021.9"
 pexpect = "^4.8"
 psutil = "^5.8"
