@@ -14,8 +14,6 @@ from __future__ import absolute_import
 from collections import namedtuple
 from contextlib import contextmanager
 
-from opsicommon.logging import get_logger
-
 from OPSI.Backend.MySQL import MySQL, MySQLBackend
 from OPSI.Backend.SQL import DATABASE_SCHEMA_VERSION, createSchemaVersionTable
 from OPSI.Types import (
@@ -26,6 +24,7 @@ from OPSI.Types import (
 	forceSoftwareLicenseId,
 )
 from OPSI.Util.Task.ConfigureBackend import getBackendConfiguration
+from opsicommon.logging import get_logger
 
 from . import BackendUpdateError
 
@@ -43,10 +42,7 @@ class DatabaseMigrationUnfinishedError(BackendUpdateError):
 	"""
 
 
-def updateMySQLBackend(
-	backendConfigFile='/etc/opsi/backends/mysql.conf',
-	additionalBackendConfiguration=None
-):
+def updateMySQLBackend(backendConfigFile="/etc/opsi/backends/mysql.conf", additionalBackendConfiguration=None):
 	"""
 	Applies migrations to the MySQL backend.
 
@@ -58,58 +54,54 @@ settings for the backend that will extend / override the configuration \
 read from `backendConfigFile`.
 	:type additionalBackendConfiguration: dict
 	"""
+
 	additionalBackendConfiguration = additionalBackendConfiguration or {}
 
 	config = getBackendConfiguration(backendConfigFile)
 	config.update(additionalBackendConfiguration)
 	logger.info("Current mysql backend config: %s", config)
 
-	logger.notice(
-		"Connection to database '%s' on '%s' as user '%s'",
-		config['database'], config['address'], config['username']
-	)
+	logger.notice("Connection to database '%s' on '%s' as user '%s'", config["database"], config["address"], config["username"])
 	mysql = MySQL(**config)
 
 	with mysql.session() as session:
-		schemaVersion = readSchemaVersion(mysql, session)
-		logger.debug("Found database schema version %s", schemaVersion)
+		schema_version = readSchemaVersion(mysql, session)
+		logger.debug("Found database schema version %s", schema_version)
 
-		if schemaVersion is None:
+		if schema_version is None:
 			logger.notice("Missing information about database schema. Creating...")
 			createSchemaVersionTable(mysql, session)
 			with updateSchemaVersion(mysql, session, version=0):
 				_processOpsi40migrations(mysql, session)
+			schema_version = readSchemaVersion(mysql, session)
 
-			schemaVersion = readSchemaVersion(mysql, session)
+		if schema_version < DATABASE_SCHEMA_VERSION:
+			with updateSchemaVersion(mysql, session, version=DATABASE_SCHEMA_VERSION):
+				_process_opsi42_migrations(mysql, session)
 
-		# The migrations that follow are each a function that will take the
-		# established database connection as first parameter.
-		# Do not change the order of the migrations once released, because
-		# this may lead to hard-to-debug inconsistent version numbers.
-		migrations = [
-			_dropTableBootconfiguration,
-			_addIndexOnProductPropertyValues,
-			_addWorkbenchAttributesToHosts,
-			_adjustLengthOfGroupId,
-			_increaseInventoryNumberLength,
-			_changeSoftwareConfigConfigIdToBigInt,
-			_addIndexProductIdOnProductAndWindowsSoftwareIDToProduct
-		]
+			logger.debug("Expected database schema version: %s", DATABASE_SCHEMA_VERSION)
+			if not readSchemaVersion(mysql, session) == DATABASE_SCHEMA_VERSION:
+				raise BackendUpdateError("Not all migrations have been run!")
 
-		for newSchemaVersion, migration in enumerate(migrations, start=1):
-			if schemaVersion < newSchemaVersion:
-				with updateSchemaVersion(mysql, session, version=newSchemaVersion):
-					migration(mysql, session)
-
-		logger.debug("Expected database schema version: %s", DATABASE_SCHEMA_VERSION)
-		if not readSchemaVersion(mysql, session) == DATABASE_SCHEMA_VERSION:
-			raise BackendUpdateError("Not all migrations have been run!")
-
-	with MySQLBackend(**config) as mysqlBackend:
+	with MySQLBackend(**config) as mysql_backend:
 		# We do this to make sure all tables that are currently
 		# non-existing will be created. That creation will give them
 		# the currently wanted schema.
-		mysqlBackend.backend_createBase()
+		mysql_backend.backend_createBase()
+
+
+def _process_opsi42_migrations(database, session):
+	"""
+	Process migrations opsi 4.2
+	"""
+	_drop_table_boot_configuration(database, session)
+	_add_index_product_property_value(database, session)
+	_add_workbench_attributes_hosts(database, session)
+	_adjust_length_groupid(database, session)
+	_increase_inventory_number_length(database, session)
+	_change_software_config_configid_to_bigint(database, session)
+	_add_index_productid_product_and_windows_softwareid_to_product(database, session)
+	_adjust_length_ipaddress(database, session)
 
 
 def readSchemaVersion(database, session):
@@ -705,31 +697,48 @@ def _fixLengthOfLicenseKeys(database, session):
 def getTableColumns(database, session, tableName):
 	TableColumn = namedtuple("TableColumn", ["name", "type"])
 	return [TableColumn(column['Field'], column['Type']) for column
-			in database.getSet(session, 'SHOW COLUMNS FROM `{0}`;'.format(tableName))]
+		in database.getSet(session, 'SHOW COLUMNS FROM `{0}`;'.format(tableName))]
 
 
-def _dropTableBootconfiguration(database, session):
+def _drop_table_boot_configuration(database, session):
 	logger.info("Dropping table BOOT_CONFIGURATION.")
-	database.execute(session, "drop table BOOT_CONFIGURATION;")
+	database.execute(session, "DROP TABLE IF EXISTS BOOT_CONFIGURATION;")
 
 
-def _addIndexOnProductPropertyValues(database, session):
+def _add_index_product_property_value(database, session):
 	logger.info("Adding index on table PRODUCT_PROPERTY_VALUE.")
-	database.execute(session, '''
-		CREATE INDEX `index_product_property_value` on
-		`PRODUCT_PROPERTY_VALUE`
-		(`productId`, `propertyId`, `productVersion`, `packageVersion`);''')
+	index_list = []
+	for idx in database.getSet(
+		session,
+		"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_NAME = 'PRODUCT_PROPERTY_VALUE';"
+	):
+		index_list.append(idx.get("INDEX_NAME"))
+	if "index_product_property_value" not in index_list:
+		database.execute(
+			session,
+			"""
+			CREATE INDEX index_product_property_value on PRODUCT_PROPERTY_VALUE
+			(productId, propertyId, productVersion, packageVersion);
+			"""
+		)
 
 
-def _addWorkbenchAttributesToHosts(database, session):
-	logger.info("Adding column 'workbenchLocalUrl' on table HOST.")
-	database.execute(session, 'ALTER TABLE `HOST` add `workbenchLocalUrl` varchar(128);')
+def _add_workbench_attributes_hosts(database, session):
+	host_columns = []
+	for res in database.getSet(
+		session, "SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='opsi' AND TABLE_NAME='HOST'"
+	):
+		host_columns.append(res.get("column_name"))
 
-	logger.info("Adding column 'workbenchRemoteUrl' on table HOST.")
-	database.execute(session, 'ALTER TABLE `HOST` add `workbenchRemoteUrl` varchar(255);')
+	if "workbenchLocalUrl" not in host_columns:
+		logger.info("Adding column 'workbenchLocalUrl' on table HOST.")
+		database.execute(session, 'ALTER TABLE `HOST` add `workbenchLocalUrl` varchar(128);')
+	if "workbenchRemoteUrl" not in host_columns:
+		logger.info("Adding column 'workbenchRemoteUrl' on table HOST.")
+		database.execute(session, 'ALTER TABLE `HOST` add `workbenchRemoteUrl` varchar(255);')
 
 
-def _adjustLengthOfGroupId(database, session):
+def _adjust_length_groupid(database, session):
 	logger.info("Correcting length of column 'groupId' on table OBJECT_TO_GROUP")
 	database.execute(
 		session,
@@ -738,20 +747,46 @@ def _adjustLengthOfGroupId(database, session):
 	)
 
 
-def _increaseInventoryNumberLength(database, session):
+def _increase_inventory_number_length(database, session):
 	logger.info("Correcting length of column 'groupId' on table OBJECT_TO_GROUP")
 	database.execute(
 		session,
 		'ALTER TABLE `HOST` '
-		'MODIFY COLUMN `inventoryNumber` varchar(64) NOT NULL;'
+		'MODIFY COLUMN `inventoryNumber` varchar(64) NOT NULL DEFAULT "";'
 	)
 
 
-def _changeSoftwareConfigConfigIdToBigInt(database, session):
+def _change_software_config_configid_to_bigint(database, session):
 	logger.info("Changing the type of SOFTWARE_CONFIG.config_id to bigint")
 	database.execute(session, "ALTER TABLE `SOFTWARE_CONFIG` MODIFY COLUMN `config_id` bigint auto_increment;")
+	logger.info("Changing the type of SOFTWARE_CONFIG.config_id to bigint")
 
-def _addIndexProductIdOnProductAndWindowsSoftwareIDToProduct(database, session):
+
+def _add_index_productid_product_and_windows_softwareid_to_product(database, session):
 	logger.info("Adding productId index on PRODUCT and WINDOWS_SOFTWARE_ID_TO_PRODUCT")
-	database.execute(session, 'CREATE INDEX `index_productId` on `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (`productId`);')
-	database.execute(session, 'CREATE INDEX `index_productId` on `PRODUCT` (`productId`);')
+	index_list = []
+	for idx in database.getSet(
+		session,
+		"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_NAME = 'WINDOWS_SOFTWARE_ID_TO_PRODUCT';"
+	):
+		index_list.append(idx.get("INDEX_NAME"))
+	if "index_productId" not in index_list:
+		database.execute(session, 'CREATE INDEX `index_productId` on `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (`productId`);')
+
+	index_list = []
+	for idx in database.getSet(
+		session,
+		"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_NAME = 'PRODUCT';"
+	):
+		index_list.append(idx.get("INDEX_NAME"))
+	if "index_productId" not in index_list:
+		database.execute(session, 'CREATE INDEX `index_productId` on `PRODUCT` (`productId`);')
+
+
+def _adjust_length_ipaddress(database, session):
+	logger.info("Correcting length of column 'ipAddress' on table Host")
+	database.execute(
+		session,
+		'ALTER TABLE `HOST` '
+		'MODIFY COLUMN `ipAddress` varchar(255);'
+	)

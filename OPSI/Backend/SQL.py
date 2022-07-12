@@ -18,8 +18,6 @@ from contextlib import contextmanager
 from datetime import datetime
 from typing import Any, Dict, Generator, List, Tuple
 
-from opsicommon.logging import get_logger
-
 from OPSI.Backend.Base import Backend, BackendModificationListener, ConfigDataBackend
 from OPSI.Exceptions import (
 	BackendBadValueError,
@@ -66,10 +64,11 @@ from OPSI.Types import (
 	forceUnicodeLower,
 )
 from OPSI.Util import timestamp
+from opsicommon.logging import get_logger
 
 __all__ = ("timeQuery", "onlyAllowSelect", "SQL", "SQLBackend", "SQLBackendObjectModificationTracker")
 
-DATABASE_SCHEMA_VERSION = 7
+DATABASE_SCHEMA_VERSION = 8
 
 logger = get_logger("opsi.general")
 
@@ -91,7 +90,7 @@ def onlyAllowSelect(query: str) -> None:
 
 def createSchemaVersionTable(database: Any, session: Any) -> None:
 	logger.debug("Creating 'OPSI_SCHEMA' table.")
-	table = f"""CREATE TABLE `OPSI_SCHEMA` (
+	table = f"""CREATE TABLE IF NOT EXISTS `OPSI_SCHEMA` (
 		`version` integer NOT NULL,
 		`updateStarted` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		`updateEnded` TIMESTAMP NULL DEFAULT NULL,
