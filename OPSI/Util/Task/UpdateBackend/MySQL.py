@@ -713,12 +713,13 @@ def _drop_table_boot_configuration(database, session):
 
 def _add_index_product_property_value(database, session):
 	logger.info("Adding index on table PRODUCT_PROPERTY_VALUE.")
+	table_schema = database._database  # pylint: disable=protected-access
 	index_list = [
 		row[0] for row in database.getRows(
 			session,
 			f"""
 			SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE "
-			TABLE_SCHEMA = '{database._database}' AND TABLE_NAME = 'PRODUCT_PROPERTY_VALUE';
+			TABLE_SCHEMA = '{table_schema}' AND TABLE_NAME = 'PRODUCT_PROPERTY_VALUE';
 			"""
 		)
 	]
@@ -770,12 +771,13 @@ def _change_software_config_configid_to_bigint(database, session):
 
 def _add_index_productid_product_and_windows_softwareid_to_product(database, session):
 	logger.info("Adding productId index on PRODUCT and WINDOWS_SOFTWARE_ID_TO_PRODUCT")
+	table_schema = database._database  # pylint: disable=protected-access
 	index_list = [
 		row[0] for row in database.getRows(
 			session,
 			f"""
 			SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE "
-			TABLE_SCHEMA = '{database._database}' AND TABLE_NAME = 'WINDOWS_SOFTWARE_ID_TO_PRODUCT';
+			TABLE_SCHEMA = '{table_schema}' AND TABLE_NAME = 'WINDOWS_SOFTWARE_ID_TO_PRODUCT';
 			"""
 		)
 	]
@@ -787,7 +789,7 @@ def _add_index_productid_product_and_windows_softwareid_to_product(database, ses
 			session,
 			f"""
 			SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE "
-			TABLE_SCHEMA = '{database._database}' AND TABLE_NAME = 'PRODUCT';
+			TABLE_SCHEMA = '{table_schema}' AND TABLE_NAME = 'PRODUCT';
 			"""
 		)
 	]
