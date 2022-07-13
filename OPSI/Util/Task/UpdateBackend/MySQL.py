@@ -116,7 +116,7 @@ started but never ended.
 	"""
 	try:
 		# Remove migration markers for failed migrations before schema version 8
-		database.execute(session, "DELETE FROM OPSI_SCHEMA WHERE version < 8 AND updateEnded IS NULL;")
+		database.execute(session, "DELETE FROM OPSI_SCHEMA WHERE version < 8 AND (updateEnded IS NULL OR updateEnded = '0000-00-00 00:00:00');")
 		for result in database.getSet(session, "SELECT `version`, `updateStarted`, `updateEnded` FROM OPSI_SCHEMA ORDER BY `version` DESC;"):
 			version = result['version']
 			start = result['updateStarted']
