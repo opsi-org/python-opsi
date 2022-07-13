@@ -14,6 +14,8 @@ from __future__ import absolute_import
 from collections import namedtuple
 from contextlib import contextmanager
 
+from opsicommon.logging import get_logger
+
 from OPSI.Backend.MySQL import MySQL, MySQLBackend
 from OPSI.Backend.SQL import DATABASE_SCHEMA_VERSION, createSchemaVersionTable
 from OPSI.Types import (
@@ -24,7 +26,6 @@ from OPSI.Types import (
 	forceSoftwareLicenseId,
 )
 from OPSI.Util.Task.ConfigureBackend import getBackendConfiguration
-from opsicommon.logging import get_logger
 
 from . import BackendUpdateError
 
@@ -189,16 +190,16 @@ def _processOpsi40migrations(mysql, session):  # pylint: disable=too-many-locals
 		logger.info("Updating table SOFTWARE_CONFIG")
 		mysql.execute(session, "alter table SOFTWARE_CONFIG add `hostId` varchar(50) NOT NULL;")
 		mysql.execute(session, "alter table SOFTWARE_CONFIG add `softwareId` varchar(100) NOT NULL;")
-		for res in mysql.getSet(session, "SELECT hostId,host_id FROM `HOST` WHERE `hostId` != ''"):
+		for res in mysql.getSet(session, "SELECT hostId, host_id FROM `HOST` WHERE `hostId` != ''"):
 			mysql.execute(
 				session,
-				"update SOFTWARE_CONFIG set `hostId`='%s' where `host_id`=%s;" % \
+				"update SOFTWARE_CONFIG set `hostId`='%s' where `host_id`=%s;" %
 				(res['hostId'].replace("'", "\\'"), res['host_id'])
 			)
-		for res in mysql.getSet(session, "SELECT softwareId,software_id FROM `SOFTWARE` WHERE `softwareId` != ''"):
+		for res in mysql.getSet(session, "SELECT softwareId, software_id FROM `SOFTWARE` WHERE `softwareId` != ''"):
 			mysql.execute(
 				session,
-				"update SOFTWARE_CONFIG set `softwareId`='%s' where `software_id`=%s;" % \
+				"update SOFTWARE_CONFIG set `softwareId`='%s' where `software_id`=%s;" %
 				(res['softwareId'].replace("'", "\\'"), res['software_id'])
 			)
 		mysql.execute(session, "alter table SOFTWARE_CONFIG drop `host_id`;")
@@ -211,11 +212,11 @@ def _processOpsi40migrations(mysql, session):  # pylint: disable=too-many-locals
 		if key.startswith('HARDWARE_CONFIG') and 'host_id' in tables[key]:
 			logger.info("Updating database table %s from opsi 3.3 to 3.4", key)
 			mysql.execute(session, "alter table %s add `hostId` varchar(50) NOT NULL;" % key)
-			for res in mysql.getSet(session, "SELECT hostId,host_id FROM `HOST` WHERE `hostId` != ''"):
+			for res in mysql.getSet(session, "SELECT hostId, host_id FROM `HOST` WHERE `hostId` != ''"):
 				mysql.execute(
 					session,
-					"update %s set `hostId` = '%s' where `host_id` = %s;" \
-						% (key, res['hostId'].replace("'", "\\'"), res['host_id'])
+					"update %s set `hostId` = '%s' where `host_id` = %s;" %
+					(key, res['hostId'].replace("'", "\\'"), res['host_id'])
 				)
 			mysql.execute(session, "alter table %s drop `host_id`;" % key)
 			mysql.execute(session, "alter table %s DEFAULT CHARACTER set utf8;" % key)
@@ -226,11 +227,11 @@ def _processOpsi40migrations(mysql, session):  # pylint: disable=too-many-locals
 		# HARDWARE_INFO
 		logger.info("Updating table HARDWARE_INFO")
 		mysql.execute(session, "alter table HARDWARE_INFO add `hostId` varchar(50) NOT NULL;")
-		for res in mysql.getSet(session, "SELECT hostId,host_id FROM `HOST` WHERE `hostId` != ''"):
+		for res in mysql.getSet(session, "SELECT hostId, host_id FROM `HOST` WHERE `hostId` != ''"):
 			mysql.execute(
 				session,
-				"update HARDWARE_INFO set `hostId` = '%s' where `host_id` = %s;" \
-					% (res['hostId'].replace("'", "\\'"), res['host_id'])
+				"update HARDWARE_INFO set `hostId` = '%s' where `host_id` = %s;" %
+				(res['hostId'].replace("'", "\\'"), res['host_id'])
 			)
 		mysql.execute(session, "alter table HARDWARE_INFO drop `host_id`;")
 		mysql.execute(session, "alter table HARDWARE_INFO DEFAULT CHARACTER set utf8;")
@@ -503,18 +504,20 @@ def _processOpsi40migrations(mysql, session):  # pylint: disable=too-many-locals
 		# AUDIT_SOFTWARE_TO_LICENSE_POOL
 		logger.info("Updating table WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL to AUDIT_SOFTWARE_TO_LICENSE_POOL")
 
-		mysql.execute(session,
-				'''CREATE TABLE `AUDIT_SOFTWARE_TO_LICENSE_POOL` (
-					`licensePoolId` VARCHAR(100) NOT NULL,
-					FOREIGN KEY ( `licensePoolId` ) REFERENCES LICENSE_POOL( `licensePoolId` ),
-					`name` varchar(100) NOT NULL,
-					`version` varchar(100) NOT NULL,
-					`subVersion` varchar(100) NOT NULL,
-					`language` varchar(10) NOT NULL,
-					`architecture` varchar(3) NOT NULL,
-					PRIMARY KEY( `name`, `version`, `subVersion`, `language`, `architecture` )
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-				''')
+		mysql.execute(
+			session,
+			'''CREATE TABLE `AUDIT_SOFTWARE_TO_LICENSE_POOL` (
+				`licensePoolId` VARCHAR(100) NOT NULL,
+				FOREIGN KEY ( `licensePoolId` ) REFERENCES LICENSE_POOL( `licensePoolId` ),
+				`name` varchar(100) NOT NULL,
+				`version` varchar(100) NOT NULL,
+				`subVersion` varchar(100) NOT NULL,
+				`language` varchar(10) NOT NULL,
+				`architecture` varchar(3) NOT NULL,
+				PRIMARY KEY( `name`, `version`, `subVersion`, `language`, `architecture` )
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+			'''
+		)
 
 		for res in mysql.getSet(session, "SELECT * FROM `WINDOWS_SOFTWARE_ID_TO_LICENSE_POOL`"):
 			res2 = mysql.getSet(session, "SELECT * FROM `SOFTWARE` where `windowsSoftwareId` = '%s'" % res['windowsSoftwareId'].replace("'", "\\'"))
@@ -696,8 +699,10 @@ def _fixLengthOfLicenseKeys(database, session):
 
 def getTableColumns(database, session, tableName):
 	TableColumn = namedtuple("TableColumn", ["name", "type"])
-	return [TableColumn(column['Field'], column['Type']) for column
-		in database.getSet(session, 'SHOW COLUMNS FROM `{0}`;'.format(tableName))]
+	return [
+		TableColumn(column['Field'], column['Type']) for column in
+		database.getSet(session, 'SHOW COLUMNS FROM `{0}`;'.format(tableName))
+	]
 
 
 def _drop_table_boot_configuration(database, session):
@@ -707,12 +712,12 @@ def _drop_table_boot_configuration(database, session):
 
 def _add_index_product_property_value(database, session):
 	logger.info("Adding index on table PRODUCT_PROPERTY_VALUE.")
-	index_list = []
-	for idx in database.getSet(
-		session,
-		"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_NAME = 'PRODUCT_PROPERTY_VALUE';"
-	):
-		index_list.append(idx.get("INDEX_NAME"))
+	index_list = [
+		row[0] for row in database.getRows(
+			session,
+			"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_NAME = 'PRODUCT_PROPERTY_VALUE';"
+		)
+	]
 	if "index_product_property_value" not in index_list:
 		database.execute(
 			session,
@@ -724,12 +729,11 @@ def _add_index_product_property_value(database, session):
 
 
 def _add_workbench_attributes_hosts(database, session):
-	host_columns = []
-	for res in database.getSet(
-		session, "SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='opsi' AND TABLE_NAME='HOST'"
-	):
-		host_columns.append(res.get("column_name"))
-
+	host_columns = [
+		row[0] for row in database.getRows(
+			session, "SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='opsi' AND TABLE_NAME='HOST'"
+		)
+	]
 	if "workbenchLocalUrl" not in host_columns:
 		logger.info("Adding column 'workbenchLocalUrl' on table HOST.")
 		database.execute(session, 'ALTER TABLE `HOST` add `workbenchLocalUrl` varchar(128);')
@@ -764,21 +768,21 @@ def _change_software_config_configid_to_bigint(database, session):
 
 def _add_index_productid_product_and_windows_softwareid_to_product(database, session):
 	logger.info("Adding productId index on PRODUCT and WINDOWS_SOFTWARE_ID_TO_PRODUCT")
-	index_list = []
-	for idx in database.getSet(
-		session,
-		"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_NAME = 'WINDOWS_SOFTWARE_ID_TO_PRODUCT';"
-	):
-		index_list.append(idx.get("INDEX_NAME"))
+	index_list = [
+		row[0] for row in database.getRows(
+			session,
+			"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_NAME = 'WINDOWS_SOFTWARE_ID_TO_PRODUCT';"
+		)
+	]
 	if "index_productId" not in index_list:
 		database.execute(session, 'CREATE INDEX `index_productId` on `WINDOWS_SOFTWARE_ID_TO_PRODUCT` (`productId`);')
 
-	index_list = []
-	for idx in database.getSet(
-		session,
-		"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_NAME = 'PRODUCT';"
-	):
-		index_list.append(idx.get("INDEX_NAME"))
+	index_list = [
+		row[0] for row in database.getRows(
+			session,
+			"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_NAME = 'PRODUCT';"
+		)
+	]
 	if "index_productId" not in index_list:
 		database.execute(session, 'CREATE INDEX `index_productId` on `PRODUCT` (`productId`);')
 
