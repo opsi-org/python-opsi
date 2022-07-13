@@ -11,6 +11,7 @@ import time
 from typing import Any, Callable, Dict, List
 from urllib.parse import quote, urlencode
 
+from opsicommon.logging import get_logger, secret_filter
 from sqlalchemy import create_engine
 from sqlalchemy.event import listen
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -20,7 +21,6 @@ from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracke
 from OPSI.Object import Product, ProductProperty
 from OPSI.Types import forceHostIdList, forceInt, forceUnicode
 from OPSI.Util import compareVersions
-from opsicommon.logging import get_logger, secret_filter
 
 __all__ = (
 	'MySQL', 'MySQLBackend', 'MySQLBackendObjectModificationTracker'

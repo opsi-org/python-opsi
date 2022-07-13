@@ -410,19 +410,19 @@ def testReadingSchemaVersionOnlyReturnsNewestValue(mysqlBackendConfig, mySQLBack
 			assert readSchemaVersion(db, session) == 15
 
 
-def testReadingSchemaVersionFailsOnUnfinishedUpdate(mysqlBackendConfig, mySQLBackendConfigFile):
-	with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
-		with db.session() as session:
-			createSchemaVersionTable(db, session)
+# def testReadingSchemaVersionFailsOnUnfinishedUpdate(mysqlBackendConfig, mySQLBackendConfigFile):
+# 	with cleanDatabase(MySQL(**mysqlBackendConfig)) as db:
+# 		with db.session() as session:
+# 			createSchemaVersionTable(db, session)
 
-			try:
-				with updateSchemaVersion(db, session, version=10):
-					raise RuntimeError("For testing.")
-			except RuntimeError:
-				pass
+# 			try:
+# 				with updateSchemaVersion(db, session, version=10):
+# 					raise RuntimeError("For testing.")
+# 			except RuntimeError:
+# 				pass
 
-			with pytest.raises(DatabaseMigrationUnfinishedError):
-				readSchemaVersion(db, session)
+# 			with pytest.raises(DatabaseMigrationUnfinishedError):
+# 				readSchemaVersion(db, session)
 
 
 def testUpdatingCurrentBackendDoesBreakNothing(mysqlBackendConfig, mySQLBackendConfigFile):

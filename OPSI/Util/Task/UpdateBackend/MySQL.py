@@ -115,8 +115,8 @@ started but never ended.
 	:rtype: int or None
 	"""
 	try:
-		# Remove migration markers for failed migrations before schema version 8
-		database.execute(session, "DELETE FROM OPSI_SCHEMA WHERE version < 8 AND (updateEnded IS NULL OR updateEnded = '0000-00-00 00:00:00');")
+		# Remove migration markers for failed migrations
+		database.execute(session, "DELETE FROM OPSI_SCHEMA WHERE updateEnded IS NULL OR updateEnded = '0000-00-00 00:00:00';")
 		for result in database.getSet(session, "SELECT `version`, `updateStarted`, `updateEnded` FROM OPSI_SCHEMA ORDER BY `version` DESC;"):
 			version = result['version']
 			start = result['updateStarted']
@@ -716,7 +716,10 @@ def _add_index_product_property_value(database, session):
 	index_list = [
 		row[0] for row in database.getRows(
 			session,
-			"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_NAME = 'PRODUCT_PROPERTY_VALUE';"
+			f"""
+			SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE "
+			TABLE_SCHEMA = '{database._database}' AND TABLE_NAME = 'PRODUCT_PROPERTY_VALUE';
+			"""
 		)
 	]
 	if "index_product_property_value" not in index_list:
@@ -731,9 +734,7 @@ def _add_index_product_property_value(database, session):
 
 def _add_workbench_attributes_hosts(database, session):
 	host_columns = [
-		row[0] for row in database.getRows(
-			session, "SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='opsi' AND TABLE_NAME='HOST'"
-		)
+		row.name for row in getTableColumns(database, session, "HOST")
 	]
 	if "workbenchLocalUrl" not in host_columns:
 		logger.info("Adding column 'workbenchLocalUrl' on table HOST.")
@@ -772,7 +773,10 @@ def _add_index_productid_product_and_windows_softwareid_to_product(database, ses
 	index_list = [
 		row[0] for row in database.getRows(
 			session,
-			"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_NAME = 'WINDOWS_SOFTWARE_ID_TO_PRODUCT';"
+			f"""
+			SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE "
+			TABLE_SCHEMA = '{database._database}' AND TABLE_NAME = 'WINDOWS_SOFTWARE_ID_TO_PRODUCT';
+			"""
 		)
 	]
 	if "index_productId" not in index_list:
@@ -781,7 +785,10 @@ def _add_index_productid_product_and_windows_softwareid_to_product(database, ses
 	index_list = [
 		row[0] for row in database.getRows(
 			session,
-			"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_NAME = 'PRODUCT';"
+			f"""
+			SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE "
+			TABLE_SCHEMA = '{database._database}' AND TABLE_NAME = 'PRODUCT';
+			"""
 		)
 	]
 	if "index_productId" not in index_list:
