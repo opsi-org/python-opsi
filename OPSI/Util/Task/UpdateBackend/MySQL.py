@@ -115,6 +115,8 @@ started but never ended.
 	:rtype: int or None
 	"""
 	try:
+		# Remove migration markers for failed migrations before schema version 8
+		database.execute(session, "DELETE FROM OPSI_SCHEMA WHERE version < 8 AND updateEnded IS NULL;")
 		for result in database.getSet(session, "SELECT `version`, `updateStarted`, `updateEnded` FROM OPSI_SCHEMA ORDER BY `version` DESC;"):
 			version = result['version']
 			start = result['updateStarted']
@@ -125,8 +127,7 @@ started but never ended.
 				assert end
 			except (AssertionError, ValueError) as err:
 				raise DatabaseMigrationUnfinishedError(
-					"Migration to version {version} started at {start} "
-					"but no end time found.".format(version=version, start=start)
+					f"Migration to version {version} started at {start} but no end time found."
 				) from err
 
 			break
