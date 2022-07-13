@@ -718,7 +718,7 @@ def _add_index_product_property_value(database, session):
 		row[0] for row in database.getRows(
 			session,
 			f"""
-			SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE "
+			SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE
 			TABLE_SCHEMA = '{table_schema}' AND TABLE_NAME = 'PRODUCT_PROPERTY_VALUE';
 			"""
 		)
@@ -776,7 +776,7 @@ def _add_index_productid_product_and_windows_softwareid_to_product(database, ses
 		row[0] for row in database.getRows(
 			session,
 			f"""
-			SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE "
+			SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE
 			TABLE_SCHEMA = '{table_schema}' AND TABLE_NAME = 'WINDOWS_SOFTWARE_ID_TO_PRODUCT';
 			"""
 		)
@@ -788,7 +788,7 @@ def _add_index_productid_product_and_windows_softwareid_to_product(database, ses
 		row[0] for row in database.getRows(
 			session,
 			f"""
-			SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE "
+			SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE
 			TABLE_SCHEMA = '{table_schema}' AND TABLE_NAME = 'PRODUCT';
 			"""
 		)
