@@ -416,7 +416,7 @@ def testReadingSchemaVersionFailsOnUnfinishedUpdate(mysqlBackendConfig, mySQLBac
 			createSchemaVersionTable(db, session)
 
 			try:
-				with updateSchemaVersion(db, session, version=1):
+				with updateSchemaVersion(db, session, version=10):
 					raise RuntimeError("For testing.")
 			except RuntimeError:
 				pass
