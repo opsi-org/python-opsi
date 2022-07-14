@@ -304,7 +304,11 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 				user = user.strip().lower()
 				logger.confidential("Client supplied username '%s' and password '%s'", user, password)
 			except Exception as err:  # pylint: disable=broad-except
-				logger.error("Bad Authorization header from '%s': %s", self.request.getClientIP(), err, exc_info=True)
+				request_address = self.request.getClientAddress()
+				request_ip = None  # mimic getClientIP behaviour
+				if hasattr(request_address, "host"):
+					request_ip = request_address.host
+				logger.error("Bad Authorization header from '%s': %s", request_ip, err, exc_info=True)
 
 		return (user, password)
 
@@ -315,7 +319,11 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 		try:
 			userAgent = self.request.getHeader("user-agent")
 		except Exception:  # pylint: disable=broad-except
-			logger.info("Client '%s' did not supply user-agent", self.request.getClientIP())
+			request_address = self.request.getClientAddress()
+			request_ip = None  # mimic getClientIP behaviour
+			if hasattr(request_address, "host"):
+				request_ip = request_address.host
+			logger.info("Client '%s' did not supply user-agent", request_ip)
 			userAgent = None
 
 		if not userAgent:
@@ -352,26 +360,30 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 		sessionHandler = self._getSessionHandler()
 		sessionId = self._getSessionId()
 
+		request_address = self.request.getClientAddress()
+		request_ip = None  # mimic getClientIP behaviour
+		if hasattr(request_address, "host"):
+			request_ip = request_address.host
 		# Get Session object
-		self.session = sessionHandler.getSession(sessionId, self.request.getClientIP())
+		self.session = sessionHandler.getSession(sessionId, request_ip)
 		if sessionId == self.session.uid:
-			logger.info("Reusing session for client '%s', application '%s'", self.request.getClientIP(), userAgent)
+			logger.info("Reusing session for client '%s', application '%s'", request_ip, userAgent)
 		elif sessionId:
 			logger.notice(
-				"Application '%s' on client '%s' supplied non existing session id: %s", userAgent, self.request.getClientIP(), sessionId
+				"Application '%s' on client '%s' supplied non existing session id: %s", userAgent, request_ip, sessionId
 			)
 
-		if sessionHandler and self.session.ip and (self.session.ip != self.request.getClientIP()):
+		if sessionHandler and self.session.ip and (self.session.ip != request_ip):
 			logger.critical(
 				"Client ip '%s' does not match session ip '%s', deleting old session and creating a new one",
-				self.request.getClientIP(),
+				request_ip,
 				self.session.ip,
 			)
 			sessionHandler.deleteSession(self.session.uid)
 			self.session = sessionHandler.getSession()
 
 		# Set ip
-		self.session.ip = self.request.getClientIP()
+		self.session.ip = request_ip
 
 		# Set user-agent / application
 		if self.session.userAgent and (self.session.userAgent != userAgent):
@@ -379,12 +391,12 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 				"Application changed from '%s' to '%s' for existing session of client '%s'",
 				self.session.userAgent,
 				userAgent,
-				self.request.getClientIP(),
+				request_ip,
 			)
 		self.session.userAgent = userAgent
 
 		logger.confidential(
-			"Session id is %s for client %s, application %s", self.session.uid, self.request.getClientIP(), self.session.userAgent
+			"Session id is %s for client %s, application %s", self.session.uid, request_ip, self.session.userAgent
 		)
 
 		logger.confidential("Session content: %s", self.session.__dict__)
