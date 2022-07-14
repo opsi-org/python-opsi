@@ -132,78 +132,78 @@ class BaseArchive:
 
 		with cd(baseDir):
 			logger.info("Executing: %s", command)
-			proc = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			with subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
 
-			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
-			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-			flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
-			fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+				flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
+				fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+				flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
+				fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
-			if self._progressSubject:
-				self._progressSubject.setEnd(len(fileList))
-				self._progressSubject.setState(0)
+				if self._progressSubject:
+					self._progressSubject.setEnd(len(fileList))
+					self._progressSubject.setState(0)
 
-			error = ""
-			ret = None
-			for filename in fileList:
-				if not filename:
-					continue
-				if not os.path.exists(filename):
-					raise IOError(f"File '{filename}' not found")
-				if filename.startswith(baseDir):
-					filename = filename[len(baseDir) :]
-					while filename.startswith("/"):
-						filename = filename[1:]
-				logger.info("Adding file '%s'", filename)
-				proc.stdin.write(("%s\n" % filename).encode())
+				error = ""
+				ret = None
+				for filename in fileList:
+					if not filename:
+						continue
+					if not os.path.exists(filename):
+						raise IOError(f"File '{filename}' not found")
+					if filename.startswith(baseDir):
+						filename = filename[len(baseDir) :]
+						while filename.startswith("/"):
+							filename = filename[1:]
+					logger.info("Adding file '%s'", filename)
+					proc.stdin.write(("%s\n" % filename).encode())
 
-				try:
-					chunk = proc.stdout.read()
-					if chunk:
-						filesAdded = chunk.count("\n")
-						if filesAdded > 0:
+					try:
+						chunk = proc.stdout.read()
+						if chunk:
+							filesAdded = chunk.count("\n")
+							if filesAdded > 0:
+								if self._progressSubject:
+									self._progressSubject.addToState(filesAdded)
+					except Exception:  # pylint: disable=broad-except
+						pass
+
+					try:
+						chunk = proc.stderr.read()
+						if chunk:
+							error += chunk
+							filesAdded = chunk.count("\n")
+							if filesAdded > 0:
+								if self._progressSubject:
+									self._progressSubject.addToState(filesAdded)
+					except Exception:  # pylint: disable=broad-except
+						time.sleep(0.001)
+
+				proc.stdin.close()
+
+				while ret is None:
+					ret = proc.poll()
+					try:
+						chunk = proc.stdout.read()
+					except Exception:  # pylint: disable=broad-except
+						pass
+
+					try:
+						chunk = proc.stderr.read()
+						if chunk:
 							if self._progressSubject:
-								self._progressSubject.addToState(filesAdded)
-				except Exception:  # pylint: disable=broad-except
-					pass
+								self._progressSubject.addToState(chunk.count("\n"))
+							error += chunk
+					except Exception:  # pylint: disable=broad-except
+						pass
 
-				try:
-					chunk = proc.stderr.read()
-					if chunk:
-						error += chunk
-						filesAdded = chunk.count("\n")
-						if filesAdded > 0:
-							if self._progressSubject:
-								self._progressSubject.addToState(filesAdded)
-				except Exception:  # pylint: disable=broad-except
-					time.sleep(0.001)
+				logger.info("Exit code: %s", ret)
 
-			proc.stdin.close()
-
-			while ret is None:
-				ret = proc.poll()
-				try:
-					chunk = proc.stdout.read()
-				except Exception:  # pylint: disable=broad-except
-					pass
-
-				try:
-					chunk = proc.stderr.read()
-					if chunk:
-						if self._progressSubject:
-							self._progressSubject.addToState(chunk.count("\n"))
-						error += chunk
-				except Exception:  # pylint: disable=broad-except
-					pass
-
-			logger.info("Exit code: %s", ret)
-
-			if ret != 0:
-				error = error.decode()
-				logger.error(error)
-				raise RuntimeError("Command '%s' failed with code %s: %s" % (command, ret, error))
-			if self._progressSubject:
-				self._progressSubject.setState(len(fileList))
+				if ret != 0:
+					error = error.decode()
+					logger.error(error)
+					raise RuntimeError("Command '%s' failed with code %s: %s" % (command, ret, error))
+				if self._progressSubject:
+					self._progressSubject.setState(len(fileList))
 
 
 class PigzMixin:
