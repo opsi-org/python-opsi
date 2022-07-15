@@ -1117,6 +1117,11 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 
 	def disconnect(self):
 		Repository.disconnect(self)
+		if self._session:
+			try:
+				self._session.close()
+			except Exception:  # pylint: disable=broad-except
+				pass
 
 
 class FileProgessWrapper:  # pylint: disable=too-few-public-methods
