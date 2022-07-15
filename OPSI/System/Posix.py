@@ -2682,37 +2682,37 @@ class Harddisk:  # pylint: disable=too-many-instance-attributes,too-many-public-
 
 			head = ""
 			if pipe:
-				proc = subprocess.Popen(  # pylint: disable=consider-using-with
+				with subprocess.Popen(
 					pipe[:-1] + " 2>/dev/null",
 					shell=True,
 					stdin=subprocess.PIPE,
 					stdout=subprocess.PIPE,
 					stderr=None,
-				)
-				pid = proc.pid
+				) as proc:
+					pid = proc.pid
 
-				head = proc.stdout.read(128)
-				logger.debug("Read 128 Bytes from pipe '%s': %s", pipe, head.decode("ascii", "replace"))
+					head = proc.stdout.read(128)
+					logger.debug("Read 128 Bytes from pipe '%s': %s", pipe, head.decode("ascii", "replace"))
 
-				proc.stdout.close()
-				proc.stdin.close()
+					proc.stdout.close()
+					proc.stdin.close()
 
-				while proc.poll() is None:
-					pids = os.listdir("/proc")
-					for pid_ in pids:
-						if not os.path.exists(os.path.join("/proc", pid_, "status")):
-							continue
-						with open(os.path.join("/proc", pid_, "status"), encoding="utf-8") as file:
-							for line in file:
-								if line.startswith("PPid:"):
-									ppid = line.split()[1].strip()
-									if ppid == str(pid):
-										logger.info("Killing process %s", pid_)
-										os.kill(int(pid_), SIGKILL)
+					while proc.poll() is None:
+						pids = os.listdir("/proc")
+						for pid_ in pids:
+							if not os.path.exists(os.path.join("/proc", pid_, "status")):
+								continue
+							with open(os.path.join("/proc", pid_, "status"), encoding="utf-8") as file:
+								for line in file:
+									if line.startswith("PPid:"):
+										ppid = line.split()[1].strip()
+										if ppid == str(pid):
+											logger.info("Killing process %s", pid_)
+											os.kill(int(pid_), SIGKILL)
 
-					logger.info("Killing process %s", pid)
-					os.kill(pid, SIGKILL)
-					time.sleep(1)
+						logger.info("Killing process %s", pid)
+						os.kill(pid, SIGKILL)
+						time.sleep(1)
 			else:
 				with open(imageFile, "rb") as image:
 					head = image.read(128)
