@@ -26,10 +26,8 @@ from hashlib import sha1
 from io import BytesIO, StringIO
 from operator import itemgetter
 
-import ruyaml
-from opsicommon.logging import get_logger
-
 import OPSI.System
+import ruyaml
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import (
 	OpsiBackupBackendNotFound,
@@ -71,6 +69,7 @@ from OPSI.Types import (
 )
 from OPSI.Util import fromJson, md5sum, toJson
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
+from opsicommon.logging import get_logger
 
 if os.name == 'posix':
 	import fcntl
@@ -1747,9 +1746,9 @@ element of the tuple is replace with the second element.
 		for backend in self._getBackends("mysql"):
 			if not auto or backend["dispatch"]:
 				fd, name = tempfile.mkstemp(dir=self.tempdir)
-				os.chmod(name, 0o770)
-
+				defaultsFile = None
 				try:
+					os.chmod(name, 0o770)
 					for member in self.getmembers():
 						if member.name == os.path.join(self.CONTENT_DIR, f"BACKENDS/MYSQL/{backend['name']}/database.sql"):
 							self._extractFile(member, name)
@@ -1776,45 +1775,45 @@ element of the tuple is replace with the second element.
 						address
 					]
 					logger.trace("Running command: '%s'", cmd)
-					proc = subprocess.Popen(  # pylint: disable=consider-using-with
+					with subprocess.Popen(
 						cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=get_subprocess_environment()
-					)
-					proc.stdin.write(
-						f"DROP DATABASE IF EXISTS {backend['config']['database']}; CREATE DATABASE {backend['config']['database']};".encode()
-					)
-					proc.stdin.close()
+					) as proc:
+						proc.stdin.write(
+							f"DROP DATABASE IF EXISTS {backend['config']['database']}; CREATE DATABASE {backend['config']['database']};".encode()
+						)
+						proc.stdin.close()
 
-					out = proc.stdout.readline()
-					while proc.poll() is None:
-						line = proc.stdout.readline()
-						if line:
-							out += line
-						else:
-							time.sleep(0.01)
+						out = proc.stdout.readline()
+						while proc.poll() is None:
+							line = proc.stdout.readline()
+							if line:
+								out += line
+							else:
+								time.sleep(0.01)
 
-					if proc.returncode not in (0, None):
-						raise OpsiBackupFileError(f"Failed to restore MySQL Backend: {out.decode()}")
+						if proc.returncode not in (0, None):
+							raise OpsiBackupFileError(f"Failed to restore MySQL Backend: {out.decode()}")
 
 					cmd.append(backend["config"]["database"])
 					logger.trace("Running command: '%s'", cmd)
-					proc = subprocess.Popen(  # pylint: disable=consider-using-with
+					with subprocess.Popen(
 						cmd, stdin=fd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=get_subprocess_environment()
-					)
+					) as proc:
+						out = proc.stdout.readline()
+						while proc.poll() is None:
+							line = proc.stdout.readline()
+							if line:
+								out += line
+							else:
+								time.sleep(0.01)
 
-					out = proc.stdout.readline()
-					while proc.poll() is None:
-						line = proc.stdout.readline()
-						if line:
-							out += line
-						else:
-							time.sleep(0.01)
-
-					if proc.returncode not in (0, None):
-						raise OpsiBackupFileError(f"Failed to restore MySQL Backend: {out.decode()}")
+						if proc.returncode not in (0, None):
+							raise OpsiBackupFileError(f"Failed to restore MySQL Backend: {out.decode()}")
 				finally:
 					os.close(fd)
 					os.remove(name)
-					os.remove(defaultsFile)
+					if defaultsFile:
+						os.remove(defaultsFile)
 
 
 def createMySQLDefaultsFile(program, username, password):
