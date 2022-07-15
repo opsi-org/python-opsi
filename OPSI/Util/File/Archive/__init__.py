@@ -78,40 +78,40 @@ class BaseArchive:
 	def _extract(self, command, fileCount):
 		try:
 			logger.info("Executing: %s", command)
-			proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			with subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
 
-			flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
-			fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-			flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
-			fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+				flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
+				fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+				flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
+				fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
-			if self._progressSubject:
-				self._progressSubject.setEnd(fileCount)
-				self._progressSubject.setState(0)
+				if self._progressSubject:
+					self._progressSubject.setEnd(fileCount)
+					self._progressSubject.setState(0)
 
-			error = ""
-			ret = None
-			while ret is None:
-				try:
-					chunk = proc.stdout.read()
-					if chunk:
-						filesExtracted = chunk.count("\n")
-						if filesExtracted > 0:
-							if self._progressSubject:
-								self._progressSubject.addToState(filesExtracted)
-				except Exception:  # pylint: disable=broad-except
-					pass
-				try:
-					chunk = proc.stderr.read()
-					if chunk:
-						error = chunk
-						filesExtracted = chunk.count("\n")
-						if filesExtracted > 0:
-							if self._progressSubject:
-								self._progressSubject.addToState(filesExtracted)
-				except Exception:  # pylint: disable=broad-except
-					time.sleep(0.001)
-				ret = proc.poll()
+				error = ""
+				ret = None
+				while ret is None:
+					try:
+						chunk = proc.stdout.read()
+						if chunk:
+							filesExtracted = chunk.count("\n")
+							if filesExtracted > 0:
+								if self._progressSubject:
+									self._progressSubject.addToState(filesExtracted)
+					except Exception:  # pylint: disable=broad-except
+						pass
+					try:
+						chunk = proc.stderr.read()
+						if chunk:
+							error = chunk
+							filesExtracted = chunk.count("\n")
+							if filesExtracted > 0:
+								if self._progressSubject:
+									self._progressSubject.addToState(filesExtracted)
+					except Exception:  # pylint: disable=broad-except
+						time.sleep(0.001)
+					ret = proc.poll()
 
 			logger.info("Exit code: %s", ret)
 
