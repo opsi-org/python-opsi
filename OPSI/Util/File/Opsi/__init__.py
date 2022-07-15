@@ -1695,47 +1695,46 @@ element of the tuple is replace with the second element.
 
 				fd, name = tempfile.mkstemp(dir=self.tempdir)
 				try:
-					proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=get_subprocess_environment())  # pylint: disable=consider-using-with
+					with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=get_subprocess_environment()) as proc:
+						flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
+						fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
-					flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
-					fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-
-					out = proc.stdout.readline()
-
-					try:
-						collectedErrors = [proc.stderr.readline().decode("utf-8", "replace")]
-					except Exception:  # pylint: disable=broad-except
-						collectedErrors = []
-					lastErrors = collections.deque(collectedErrors, maxlen=10)
-
-					while not proc.poll() and out:
-						os.write(fd, out)
 						out = proc.stdout.readline()
 
 						try:
-							currentError = proc.stderr.readline().decode("utf-8", "replace").strip()
-							if currentError:
-								lastErrors.append(currentError)
-								collectedErrors.append(currentError)
+							collectedErrors = [proc.stderr.readline().decode("utf-8", "replace")]
 						except Exception:  # pylint: disable=broad-except
-							continue
+							collectedErrors = []
+						lastErrors = collections.deque(collectedErrors, maxlen=10)
 
-						if lastErrors.maxlen == len(lastErrors):
-							only_one_err_on_last_errors = True
-							firstError = lastErrors[0]
-							for err in list(lastErrors)[1:]:
-								if firstError != err:
-									only_one_err_on_last_errors = False
+						while not proc.poll() and out:
+							os.write(fd, out)
+							out = proc.stdout.readline()
+
+							try:
+								currentError = proc.stderr.readline().decode("utf-8", "replace").strip()
+								if currentError:
+									lastErrors.append(currentError)
+									collectedErrors.append(currentError)
+							except Exception:  # pylint: disable=broad-except
+								continue
+
+							if lastErrors.maxlen == len(lastErrors):
+								only_one_err_on_last_errors = True
+								firstError = lastErrors[0]
+								for err in list(lastErrors)[1:]:
+									if firstError != err:
+										only_one_err_on_last_errors = False
+										break
+
+								if only_one_err_on_last_errors:
+									logger.debug("Aborting: Only one message in stderr: '%s'", firstError)
 									break
 
-							if only_one_err_on_last_errors:
-								logger.debug("Aborting: Only one message in stderr: '%s'", firstError)
-								break
+						if proc.returncode not in (0, None):
+							raise OpsiBackupFileError(f"MySQL dump failed for backend {backend['name']}: {''.join(collectedErrors)}")
 
-					if proc.returncode not in (0, None):
-						raise OpsiBackupFileError(f"MySQL dump failed for backend {backend['name']}: {''.join(collectedErrors)}")
-
-					self._addContent(name, (name, f"BACKENDS/MYSQL/{backend['name']}/database.sql"))
+						self._addContent(name, (name, f"BACKENDS/MYSQL/{backend['name']}/database.sql"))
 				finally:
 					os.close(fd)
 					os.remove(name)
