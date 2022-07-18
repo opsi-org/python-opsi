@@ -6,6 +6,7 @@
 Backend migration tasks
 """
 
+import time
 from datetime import datetime
 
 from opsicommon.logging import logger
@@ -83,19 +84,32 @@ def migrate_file_to_mysql(create_backup: bool = True, restart_services: bool = T
 		set_rights(backup_file)
 
 	service_running = {}
-	if restart_services:
+	if restart_services:  # pylint: disable=too-many-nested-blocks
 		for service in ("opsipxeconfd", "opsiconfd"):
 			try:
 				execute(["systemctl", "is-active", "--quiet", service])
 				service_running[service] = True
-			except RuntimeError:
+			except RuntimeError as err:
+				logger.debug(err)
 				service_running[service] = False
 
-			try:
-				logger.notice("Stopping service %r", service)
-				execute(["systemctl", "stop", service])
-			except RuntimeError as err:
-				logger.warning("Failed to stop service %r: %s", service, err)
+			logger.info("Service %r is %s", service, "running" if service_running[service] else "not running")
+
+			if service_running[service]:
+				try:
+					logger.notice("Stopping service %r", service)
+					execute(["systemctl", "stop", service])
+				except RuntimeError as err:
+					logger.warning("Failed to stop service %r: %s", service, err)
+				else:
+					for _ in range(10):
+						try:
+							logger.debug("Checking if service %r is running", service)
+							execute(["systemctl", "is-active", "--quiet", service])
+							time.sleep(2)
+						except RuntimeError as err:
+							logger.info("Service %r stopped", service)
+							break
 
 	updateMySQLBackend()
 
