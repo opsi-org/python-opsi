@@ -232,6 +232,9 @@ class HostControlBackend(ExtendedBackend):
 					logger.warning("Failed to read custom opsiclientd port for %s: %s", host.id, err)
 
 				address = self._getHostAddress(host)
+				if ":" in address:
+					# IPv6
+					address = f"[{address}]"
 				logger.debug("Using address '%s' for host '%s'", address, host)
 				rpcts.append(
 					RpcThread(
