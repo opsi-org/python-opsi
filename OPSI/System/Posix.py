@@ -945,7 +945,10 @@ on Windows.
 output will be returned.
 	:rtype: list
 	"""
-	if not isinstance(cmd, list):
+	if isinstance(cmd, list):
+		if shell:
+			logger.warning("Cmd as list should not be combined with shell=True")
+	else:
 		cmd = forceUnicode(cmd)
 	nowait = forceBool(nowait)
 	getHandle = forceBool(getHandle)

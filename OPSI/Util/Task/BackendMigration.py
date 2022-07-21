@@ -43,7 +43,7 @@ def patch_dispatch_conf():
 		file.writelines(lines)
 
 
-def migrate_file_to_mysql(create_backup: bool = True, restart_services: bool = True) -> bool:  # pylint: disable=too-many-locals,too-many-branches
+def migrate_file_to_mysql(create_backup: bool = True, restart_services: bool = True) -> bool:  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 	bm_config = {
 		"dispatchConfigFile": "/etc/opsi/backendManager/dispatch.conf",
 		"backendConfigDir": "/etc/opsi/backends",
@@ -87,7 +87,7 @@ def migrate_file_to_mysql(create_backup: bool = True, restart_services: bool = T
 	if restart_services:  # pylint: disable=too-many-nested-blocks
 		for service in ("opsipxeconfd", "opsiconfd"):
 			try:
-				execute(["systemctl", "is-active", "--quiet", service])
+				execute(["systemctl", "is-active", "--quiet", service], shell=False)
 				service_running[service] = True
 			except RuntimeError as err:
 				logger.debug(err)
@@ -98,18 +98,26 @@ def migrate_file_to_mysql(create_backup: bool = True, restart_services: bool = T
 			if service_running[service]:
 				try:
 					logger.notice("Stopping service %r", service)
-					execute(["systemctl", "stop", service])
+					execute(["systemctl", "stop", service], shell=False)
 				except RuntimeError as err:
 					logger.warning("Failed to stop service %r: %s", service, err)
 				else:
+					stopped = False
 					for _ in range(10):
 						try:
 							logger.debug("Checking if service %r is running", service)
-							execute(["systemctl", "is-active", "--quiet", service])
+							execute(["systemctl", "is-active", "--quiet", service], shell=False)
 							time.sleep(2)
 						except RuntimeError as err:
 							logger.info("Service %r stopped", service)
+							stopped = True
 							break
+					if not stopped:
+						try:
+							logger.debug("Killing service %r", service)
+							execute(["killall", "-9", service], shell=False)
+						except RuntimeError:
+							pass
 
 	updateMySQLBackend()
 
@@ -129,7 +137,7 @@ def migrate_file_to_mysql(create_backup: bool = True, restart_services: bool = T
 		if state:
 			try:
 				logger.notice("Starting service %r", service)
-				execute(["systemctl", "start", service])
+				execute(["systemctl", "start", service], shell=False)
 			except RuntimeError as err:
 				logger.warning("Failed to start service %r: %s", service, err)
 
