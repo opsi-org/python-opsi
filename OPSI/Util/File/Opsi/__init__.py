@@ -26,8 +26,10 @@ from hashlib import sha1
 from io import BytesIO, StringIO
 from operator import itemgetter
 
-import OPSI.System
 import ruyaml
+from opsicommon.logging import get_logger
+
+import OPSI.System
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import (
 	OpsiBackupBackendNotFound,
@@ -69,7 +71,6 @@ from OPSI.Types import (
 )
 from OPSI.Util import fromJson, md5sum, toJson
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
-from opsicommon.logging import get_logger
 
 if os.name == 'posix':
 	import fcntl
@@ -1597,7 +1598,7 @@ element of the tuple is replace with the second element.
 				hostKeyFile = backend["config"]["hostKeyFile"]
 				if baseDir not in os.path.dirname(hostKeyFile):
 					# File resides outside of baseDir
-					self._addContent(hostKeyFile, sub=(os.path.dirname(hostKeyFile), "BACKENDS/FILE_HOSTKEYS/%{backend['name']}"))
+					self._addContent(hostKeyFile, sub=(os.path.dirname(hostKeyFile), f"BACKENDS/FILE_HOSTKEYS/{backend['name']}"))
 
 	def restoreFileBackend(self, auto=False):
 		if not self.hasFileBackend():
