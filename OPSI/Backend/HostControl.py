@@ -87,6 +87,10 @@ class RpcThread(KillableThread):  # pylint: disable=too-many-instance-attributes
 		except Exception as err:  # pylint: disable=broad-except
 			self.error = str(err)
 		finally:
+			try:
+				self.jsonrpc.disconnect()
+			except Exception as err:  # pylint: disable=broad-except
+				logger.warning("Failed to clean up jsonrpc connection: %s", err, exc_info=True)
 			self.ended = time.time()
 
 
