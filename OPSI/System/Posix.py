@@ -3506,6 +3506,9 @@ def hardwareInventory(
 													break
 										except Exception:  # pylint: disable=broad-except
 											pass
+						# Also consider nodes with matching class
+						if re.search(hwid, dev.getAttribute("class")) and not filter:
+							filtered.append(dev)
 					devs = filtered
 
 				logger.trace("Found matching devices: %s", devs)
@@ -3539,12 +3542,18 @@ def hardwareInventory(
 									try:
 										if child.nodeName == part:
 											nextElements.append(child)
-										elif child.hasAttributes() and (
-											child.getAttribute("class") == part or child.getAttribute("id").split(":")[0] == part
-										):
+										elif child.hasAttributes() and child.getAttribute("id").split(":")[0] == part:
 											nextElements.append(child)
 									except Exception:  # pylint: disable=broad-except
 										pass
+								# Prefer matching child.id over matching child.class
+								if not nextElements:
+									for child in element.childNodes:
+										try:
+											if child.hasAttributes() and child.getAttribute("class") == part:
+												nextElements.append(child)
+										except Exception:  # pylint: disable=broad-except
+											pass
 							if not nextElements:
 								logger.warning("Attribute part '%s' not found", part)
 								break
