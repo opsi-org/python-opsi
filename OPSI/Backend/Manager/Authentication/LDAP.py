@@ -172,6 +172,6 @@ class LDAPAuthentication(AuthenticationModule):
 	def __del__(self):
 		if self._ldap:
 			try:
-				self._ldap.close()
+				self._ldap.unbind()
 			except Exception as err:  # pylint: disable=broad-except
 				logger.warning(err)
