@@ -168,3 +168,10 @@ class LDAPAuthentication(AuthenticationModule):
 							groupnames.add(group_name)
 							break
 		return {g.lower() for g in groupnames}
+
+	def __del__(self):
+		if self._ldap:
+			try:
+				self._ldap.close()
+			except Exception as err:  # pylint: disable=broad-except
+				logger.warning(err)
