@@ -18,6 +18,8 @@ from contextlib import contextmanager
 from datetime import datetime
 from typing import Any, Dict, Generator, List, Tuple
 
+from opsicommon.logging import get_logger
+
 from OPSI.Backend.Base import Backend, BackendModificationListener, ConfigDataBackend
 from OPSI.Exceptions import (
 	BackendBadValueError,
@@ -64,7 +66,6 @@ from OPSI.Types import (
 	forceUnicodeLower,
 )
 from OPSI.Util import timestamp
-from opsicommon.logging import get_logger
 
 __all__ = ("timeQuery", "onlyAllowSelect", "SQL", "SQLBackend", "SQLBackendObjectModificationTracker")
 
@@ -1470,7 +1471,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		return products
 
 	def product_deleteObjects(self, products: List[Product]) -> None:
-		self._check_module("mysql_backend")
 		ConfigDataBackend.product_deleteObjects(self, products)
 		with self._sql.session() as session:
 			for product in forceObjectClassList(products, Product):
@@ -1580,7 +1580,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		return productProperties
 
 	def productProperty_deleteObjects(self, productProperties: List[ProductProperty]) -> None:
-		self._check_module("mysql_backend")
 		ConfigDataBackend.productProperty_deleteObjects(self, productProperties)
 		with self._sql.session() as session:
 			for productProperty in forceObjectClassList(productProperties, ProductProperty):
@@ -1623,7 +1622,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			]
 
 	def productDependency_deleteObjects(self, productDependencies: List[ProductDependency]) -> None:
-		self._check_module("mysql_backend")
 		ConfigDataBackend.productDependency_deleteObjects(self, productDependencies)
 		with self._sql.session() as session:
 			for productDependency in forceObjectClassList(productDependencies, ProductDependency):
@@ -1667,7 +1665,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			]
 
 	def productOnDepot_deleteObjects(self, productOnDepots: List[ProductOnDepot]) -> None:
-		self._check_module("mysql_backend")
 		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
 		with self._sql.session() as session:
 			for productOnDepot in forceObjectClassList(productOnDepots, ProductOnDepot):
@@ -1714,7 +1711,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			]
 
 	def productOnClient_deleteObjects(self, productOnClients: List[ProductOnClient]) -> None:
-		self._check_module("mysql_backend")
 		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
 		with self._sql.session() as session:
 			for productOnClient in forceObjectClassList(productOnClients, ProductOnClient):
@@ -1764,7 +1760,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		return productPropertyStates
 
 	def productPropertyState_deleteObjects(self, productPropertyStates: List[ProductPropertyState]) -> None:
-		self._check_module("mysql_backend")
 		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
 		with self._sql.session() as session:
 			for productPropertyState in forceObjectClassList(productPropertyStates, ProductPropertyState):
@@ -1807,7 +1802,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		return groups
 
 	def group_deleteObjects(self, groups: List[Group]) -> None:
-		self._check_module("mysql_backend")
 		ConfigDataBackend.group_deleteObjects(self, groups)
 		with self._sql.session() as session:
 			for group in forceObjectClassList(groups, Group):
