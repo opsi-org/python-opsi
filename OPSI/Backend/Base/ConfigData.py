@@ -229,19 +229,20 @@ containing the localisation of the hardware audit.
 			license_file_path=self._opsi_license_path, modules_file_path=self._opsiModulesFile, client_info=self._get_client_info
 		)
 
-		try:
-			pool.client_limit_warning_percent = int(
-				self.config_getObjects(id="licensing.client_limit_warning_percent")[0].getDefaultValues()[0]
-			)
-		except Exception as err:  # pylint: disable=broad-except
-			logger.debug(err)
+		for config in ("client_limit_warning_percent", "client_limit_warning_absolute"):
+			try:
+				setattr(pool, config, int(self.config_getObjects(id=f"licensing.{config}")[0].getDefaultValues()[0]))
+			except Exception as err:  # pylint: disable=broad-except
+				logger.debug(err)
 
 		try:
-			pool.client_limit_warning_absolute = int(
-				self.config_getObjects(id="licensing.client_limit_warning_absolute")[0].getDefaultValues()[0]
-			)
+			disable_warning_for_modules = [
+				m for m in self.config_getObjects(id="licensing.disable_warning_for_modules")[0].getDefaultValues()
+				if m in OPSI_MODULE_IDS
+			]
 		except Exception as err:  # pylint: disable=broad-except
 			logger.debug(err)
+			disable_warning_for_modules = []
 
 		try:
 			client_limit_warning_days = int(
@@ -262,7 +263,8 @@ containing the localisation of the hardware audit.
 			"config": {
 				"client_limit_warning_percent": pool.client_limit_warning_percent,
 				"client_limit_warning_absolute": pool.client_limit_warning_absolute,
-				"client_limit_warning_days": client_limit_warning_days
+				"client_limit_warning_days": client_limit_warning_days,
+				"disable_warning_for_modules": disable_warning_for_modules
 			}
 		}
 		if licenses:
