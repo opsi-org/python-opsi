@@ -231,13 +231,13 @@ containing the localisation of the hardware audit.
 
 		for config in ("client_limit_warning_percent", "client_limit_warning_absolute"):
 			try:
-				setattr(pool, config, int(self.config_getObjects(id=f"licensing.{config}")[0].getDefaultValues()[0]))
+				setattr(pool, config, int(self._context.config_getObjects(id=f"licensing.{config}")[0].getDefaultValues()[0]))
 			except Exception as err:  # pylint: disable=broad-except
 				logger.debug(err)
 
 		try:
 			disable_warning_for_modules = [
-				m for m in self.config_getObjects(id="licensing.disable_warning_for_modules")[0].getDefaultValues()
+				m for m in self._context.config_getObjects(id="licensing.disable_warning_for_modules")[0].getDefaultValues()
 				if m in OPSI_MODULE_IDS
 			]
 		except Exception as err:  # pylint: disable=broad-except
@@ -246,7 +246,7 @@ containing the localisation of the hardware audit.
 
 		try:
 			client_limit_warning_days = int(
-				self.config_getObjects(id="licensing.client_limit_warning_days")[0].getDefaultValues()[0]
+				self._context.config_getObjects(id="licensing.client_limit_warning_days")[0].getDefaultValues()[0]
 			)
 		except Exception as err:  # pylint: disable=broad-except
 			logger.debug(err)
