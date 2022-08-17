@@ -250,7 +250,7 @@ containing the localisation of the hardware audit.
 			)
 		except Exception as err:  # pylint: disable=broad-except
 			logger.debug(err)
-			client_limit_warning_days = 60
+			client_limit_warning_days = 30
 
 		modules = pool.get_modules()
 		info = {
