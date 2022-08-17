@@ -260,6 +260,8 @@ containing the localisation of the hardware audit.
 			"modules": modules,
 			"licenses_checksum": pool.get_licenses_checksum(),
 			"config": {
+				"client_limit_warning_percent": pool.client_limit_warning_percent,
+				"client_limit_warning_absolute": pool.client_limit_warning_absolute,
 				"client_limit_warning_days": client_limit_warning_days
 			}
 		}
