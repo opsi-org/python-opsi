@@ -19,7 +19,11 @@ import shutil
 import time
 from functools import lru_cache
 
-from opsicommon.license import OPSI_MODULE_IDS, get_default_opsi_license_pool
+from opsicommon.license import (
+	OPSI_MODULE_IDS,
+	OPSI_OBSOLETE_MODULE_IDS,
+	get_default_opsi_license_pool,
+)
 from opsicommon.logging import get_logger, secret_filter
 
 from OPSI.Config import OPSI_ADMIN_GROUP
@@ -224,12 +228,14 @@ containing the localisation of the hardware audit.
 		pool = get_default_opsi_license_pool(
 			license_file_path=self._opsi_license_path, modules_file_path=self._opsiModulesFile, client_info=self._get_client_info
 		)
+
 		try:
 			pool.client_limit_warning_percent = int(
 				self.config_getObjects(id="licensing.client_limit_warning_percent")[0].getDefaultValues()[0]
 			)
 		except Exception as err:  # pylint: disable=broad-except
 			logger.debug(err)
+
 		try:
 			pool.client_limit_warning_absolute = int(
 				self.config_getObjects(id="licensing.client_limit_warning_absolute")[0].getDefaultValues()[0]
@@ -237,13 +243,25 @@ containing the localisation of the hardware audit.
 		except Exception as err:  # pylint: disable=broad-except
 			logger.debug(err)
 
+		try:
+			client_limit_warning_days = int(
+				self.config_getObjects(id="licensing.client_limit_warning_days")[0].getDefaultValues()[0]
+			)
+		except Exception as err:  # pylint: disable=broad-except
+			logger.debug(err)
+			client_limit_warning_days = 60
+
 		modules = pool.get_modules()
 		info = {
 			"client_numbers": pool.client_numbers,
 			"known_modules": OPSI_MODULE_IDS,
+			"obsolete_modules": OPSI_OBSOLETE_MODULE_IDS,
 			"available_modules": [module_id for module_id, info in modules.items() if info["available"]],
 			"modules": modules,
 			"licenses_checksum": pool.get_licenses_checksum(),
+			"config": {
+				"client_limit_warning_days": client_limit_warning_days
+			}
 		}
 		if licenses:
 			licenses = pool.get_licenses()
