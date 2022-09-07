@@ -491,7 +491,7 @@ reference = "uibpypi"
 name = "packaging"
 version = "21.3"
 description = "Core utilities for Python packages"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6"
 
@@ -757,7 +757,7 @@ reference = "uibpypi"
 name = "pyparsing"
 version = "3.0.9"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.6.8"
 
@@ -1198,7 +1198,7 @@ reference = "uibpypi"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "db3932551f2c5b29b019f240295ab8f15c5b785e97086d79fb13e96e35a6d1e5"
+content-hash = "2823e765d4110008185aae2553d9ac3884d99752296788cec62bc7e4159facbd"
 
 [metadata.files]
 astroid = [
