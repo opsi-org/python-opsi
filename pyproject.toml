@@ -44,7 +44,6 @@ wmi = {platform = "win32", version = "^1.5"}
 [tool.poetry.dev-dependencies]
 flake8 = "^4.0"
 mock = "^4.0"
-opsi-dev-tools = "^1.1"
 pylint = "^2.7"
 pytest = "^7.0"
 pytest-asyncio = "^0.18"

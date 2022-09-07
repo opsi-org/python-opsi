@@ -60,7 +60,7 @@ apidoc:
   script:
     - poetry lock --no-update
     - poetry install
-    - poetry run poetry run opsi-dev-cli apidoc makehtml --output python-opsi
+    - poetry run opsi-dev-cli apidoc makehtml --output python-opsi
     - ssh -o StrictHostKeyChecking=no "root@docker1.ext.uib.gmbh" "mkdir -p /var/lib/docker/volumes/docs_nginx_data/_data/python-docs"
     - rsync -e "ssh -o StrictHostKeyChecking=no" --delete -azv python-opsi "root@docker1.ext.uib.gmbh:/var/lib/docker/volumes/docs_nginx_data/_data/python-docs/"
 
