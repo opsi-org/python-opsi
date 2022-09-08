@@ -9,6 +9,7 @@ Depotserver backend.
 import os
 from contextlib import contextmanager
 from pathlib import Path
+from posixpath import isabs
 from typing import Any, Dict, Generator, List, Union
 
 from opsicommon.logging import get_logger, log_context
@@ -27,12 +28,23 @@ from OPSI.Exceptions import (
 )
 from OPSI.Object import ProductOnDepot, ProductProperty, ProductPropertyState
 from OPSI.System import getDiskSpaceUsage
-from OPSI.Types import forceBool, forceDict, forceFilename, forceHostId
+from OPSI.Types import (
+	forceBool,
+	forceDict,
+	forceFilename,
+	forceHostId,
+	forcePackageVersion,
+)
 from OPSI.Types import forceProductId as forceProductIdFunc
-from OPSI.Types import forceUnicode, forceUnicodeLower
+from OPSI.Types import forceProductVersion, forceUnicode, forceUnicodeLower
 from OPSI.Util import compareVersions, findFiles, getfqdn, md5sum, removeDirectory
 from OPSI.Util.File import ZsyncFile
-from OPSI.Util.Product import PackageContentFile, ProductPackageFile
+from OPSI.Util.File.Opsi import PackageControlFile
+from OPSI.Util.Product import (
+	PackageContentFile,
+	ProductPackageFile,
+	ProductPackageSource,
+)
 
 if os.name == "posix":
 	import grp
@@ -57,11 +69,11 @@ class DepotserverBackend(ExtendedBackend):
 			raise BackendMissingDataError(f"Depot '{self._depotId}' not found in backend")
 		self._packageManager = DepotserverPackageManager(self)
 
-	def depot_getHostRSAPublicKey(self) -> str:
+	def depot_getHostRSAPublicKey(self) -> str:  # pylint: disable=invalid-name
 		with open(self._sshRSAPublicKeyFile, 'r', encoding="utf-8") as publicKey:
 			return forceUnicode(publicKey.read())
 
-	def depot_getMD5Sum(self, filename: str, forceCalculation: bool = False) -> str:  # pylint: disable=invalid-name,no-self-use
+	def depot_getMD5Sum(self, filename: str, forceCalculation: bool = False) -> str:  # pylint: disable=invalid-name
 		"""
 		This method calculates the md5-sum of a file.
 		:param filename: File to compute checksum for.
@@ -88,7 +100,7 @@ class DepotserverBackend(ExtendedBackend):
 		except Exception as err:
 			raise BackendIOError(f"Failed to get md5sum: {err}") from err
 
-	def depot_librsyncSignature(self, filename: str) -> Union[str, Any]:  # pylint: disable=no-self-use
+	def depot_librsyncSignature(self, filename: str) -> Union[str, Any]:  # pylint: disable=invalid-name
 		from OPSI.Util.Sync import (  # pylint: disable=import-outside-toplevel
 			librsyncSignature,
 		)
@@ -98,7 +110,7 @@ class DepotserverBackend(ExtendedBackend):
 		except Exception as err:
 			raise BackendIOError(f"Failed to get librsync signature: {err}") from err
 
-	def depot_librsyncPatchFile(self, oldfile: str, deltafile: str, newfile: str) -> None:  # pylint: disable=no-self-use
+	def depot_librsyncPatchFile(self, oldfile: str, deltafile: str, newfile: str) -> None:  # pylint: disable=invalid-name
 		from OPSI.Util.Sync import (  # pylint: disable=import-outside-toplevel
 			librsyncPatchFile,
 		)
@@ -108,7 +120,7 @@ class DepotserverBackend(ExtendedBackend):
 		except Exception as err:
 			raise BackendIOError(f"Failed to patch file: {err}") from err
 
-	def depot_librsyncDeltaFile(self, filename: str, signature: str, deltafile: str) -> None:  # pylint: disable=no-self-use
+	def depot_librsyncDeltaFile(self, filename: str, signature: str, deltafile: str) -> None:    # pylint: disable=invalid-name
 		from OPSI.Util.Sync import (  # pylint: disable=import-outside-toplevel
 			librsyncDeltaFile,
 		)
@@ -118,7 +130,7 @@ class DepotserverBackend(ExtendedBackend):
 		except Exception as err:
 			raise BackendIOError(f"Failed to create librsync delta file: {err}") from err
 
-	def depot_getDiskSpaceUsage(self, path: str) -> Dict[str, Any]:  # pylint: disable=no-self-use
+	def depot_getDiskSpaceUsage(self, path: str) -> Dict[str, Any]:  # pylint: disable=invalid-name
 		if os.name != 'posix':
 			raise NotImplementedError("Not implemented for non-posix os")
 
@@ -127,7 +139,7 @@ class DepotserverBackend(ExtendedBackend):
 		except Exception as err:
 			raise BackendIOError("Failed to get disk space usage: {err}") from err
 
-	def depot_installPackage(  # pylint: disable=too-many-arguments
+	def depot_installPackage(  # pylint: disable=invalid-name,too-many-arguments
 		self,
 		filename: str,
 		force: bool = False,
@@ -149,10 +161,10 @@ class DepotserverBackend(ExtendedBackend):
 				suppressPackageContentFileGeneration=suppressPackageContentFileGeneration
 			)
 
-	def depot_uninstallPackage(self, productId: str, force: bool = False, deleteFiles: bool = True) -> None:
+	def depot_uninstallPackage(self, productId: str, force: bool = False, deleteFiles: bool = True) -> None:  # pylint: disable=invalid-name
 		self._packageManager.uninstallPackage(productId, force, deleteFiles)
 
-	def depot_createPackageContentFile(self, productId: str) -> None:
+	def depot_createPackageContentFile(self, productId: str) -> None:  # pylint: disable=invalid-name
 		"""
 		Create a package content file in the products depot directory.
 		An existing file will be overriden.
@@ -177,7 +189,7 @@ class DepotserverBackend(ExtendedBackend):
 			os.chown(package_content_path, -1, grp.getgrnam(FILE_ADMIN_GROUP)[2])
 			os.chmod(package_content_path, 0o660)
 
-	def depot_createMd5SumFile(self, filename: str, md5sumFilename: str) -> None:  # pylint: disable=invalid-name,no-self-use
+	def depot_createMd5SumFile(self, filename: str, md5sumFilename: str) -> None:  # pylint: disable=invalid-name
 		if not os.path.exists(filename):
 			raise BackendIOError(f"File not found: {filename}")
 		logger.info("Creating md5sum file '%s'", md5sumFilename)
@@ -188,7 +200,7 @@ class DepotserverBackend(ExtendedBackend):
 			os.chown(md5sumFilename, -1, grp.getgrnam(FILE_ADMIN_GROUP)[2])
 			os.chmod(md5sumFilename, 0o660)
 
-	def depot_createZsyncFile(self, filename: str, zsyncFilename: str) -> None:  # pylint: disable=no-self-use
+	def depot_createZsyncFile(self, filename: str, zsyncFilename: str) -> None:  # pylint: disable=invalid-name
 		if not os.path.exists(filename):
 			raise BackendIOError(f"File not found: {filename}")
 		logger.info("Creating zsync file '%s'", zsyncFilename)
@@ -197,6 +209,31 @@ class DepotserverBackend(ExtendedBackend):
 		if os.name == "posix":
 			os.chown(zsyncFilename, -1, grp.getgrnam(FILE_ADMIN_GROUP)[2])
 			os.chmod(zsyncFilename, 0o660)
+
+	def workbench_buildPackage(self, product_id: str) -> str:  # pylint: disable=invalid-name
+		product_id = forceProductIdFunc(product_id)
+		workbench_path = Path(self._context.host_getObjects(id=self._depotId)[0].getWorkbenchLocalUrl().replace('file://', ''))
+		package_path = workbench_path / product_id
+		if not package_path.is_dir():
+			raise BackendIOError(f"Package source dir '{package_path}' does not exist")
+		pps = ProductPackageSource(
+			packageSourceDir=str(package_path),
+			packageFileDestDir=str(package_path),
+			format="tar",
+			compression="gzip",
+			dereference=False
+		)
+		return pps.pack()
+
+	def workbench_installPackage(self, package_file: str) -> None:  # pylint: disable=invalid-name
+		package_file = Path(package_file)
+		workbench_path = Path(self._context.host_getObjects(id=self._depotId)[0].getWorkbenchLocalUrl().replace('file://', ''))
+		if not package_file.is_absolute():
+			package_file = workbench_path / package_file
+		package_file = package_file.resolve()
+		if not package_file.is_relative_to(workbench_path):
+			raise ValueError(f"Invalid package file path '{package_file}'")
+		self.depot_installPackage(str(package_file))
 
 
 class DepotserverPackageManager:
