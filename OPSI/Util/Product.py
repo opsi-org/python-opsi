@@ -503,7 +503,7 @@ class ProductPackageSource:  # pylint: disable=too-many-instance-attributes
 		if not compression:
 			self.compression = None
 		else:
-			if compression not in ("gzip", "bzip2"):
+			if compression not in ("gzip", "bzip2", "zstd"):
 				raise ValueError(f"Compression '{compression}' not supported")
 			self.compression = compression
 

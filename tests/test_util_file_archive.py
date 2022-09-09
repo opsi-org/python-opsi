@@ -30,7 +30,7 @@ def testRaisingExceptionIfFiletypeCanNotBeDetermined():
 		Archive(__file__)
 
 
-def testDisablingPigz(dumbArchive):
+def testDisablingPigz():
 	"""
 	Disabling the usage of pigz by setting PIGZ_ENABLED to False.
 	"""

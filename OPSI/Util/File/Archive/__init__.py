@@ -33,17 +33,14 @@ from OPSI.Util.Path import cd
 logger = get_logger("opsi.general")
 
 
+@lru_cache()
 def is_pigz_available() -> bool:
 	try:
 		if not OPSI.Util.File.Opsi.OpsiConfFile().isPigzEnabled():
 			return False
 	except IOError:
 		pass
-	return _is_pigz_executable_available()
 
-
-@lru_cache()
-def _is_pigz_executable_available() -> bool:
 	try:
 		ver = System.execute("pigz --version")[0][5:]
 		logger.debug("Detected pigz version: %s", ver)
@@ -60,10 +57,6 @@ def is_zstd_available() -> bool:
 	try:
 		ver = System.execute("zstd --version")
 		logger.debug("Detected zstd version: %s", ver)
-		ver = System.execute("tar --version")[0].strip().split()[-1]
-		logger.debug("Detected tar version: %s", ver)
-		if compareVersions(ver, "<", "1.31"):
-			raise RuntimeError("tar version >= 1.31 supports zstd, but {ver} found")
 		return True
 	except Exception as err:  # pylint: disable=broad-except
 		logger.debug("zstd not available: %s", err)
@@ -264,7 +257,7 @@ class TarArchive(BaseArchive):
 			elif self._compression == "zstd":
 				if not is_zstd_available():
 					raise RuntimeError("Zstd not available")
-				options += "--zstd"
+				options += "--use-compress-program=zstd"
 
 			for line in System.execute('%s %s --list --file "%s"' % (System.which("tar"), options, self._filename)):
 				if line:
@@ -295,7 +288,7 @@ class TarArchive(BaseArchive):
 			elif self._compression == "zstd":
 				if not is_zstd_available():
 					raise RuntimeError("Zstd not available")
-				options += "--zstd"
+				options += "--use-compress-program=zstd"
 
 			fileCount = 0
 			for filename in self.content():
