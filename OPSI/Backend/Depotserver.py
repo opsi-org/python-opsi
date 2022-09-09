@@ -9,7 +9,6 @@ Depotserver backend.
 import os
 from contextlib import contextmanager
 from pathlib import Path
-from posixpath import isabs
 from typing import Any, Dict, Generator, List, Union
 
 from opsicommon.logging import get_logger, log_context
@@ -28,15 +27,9 @@ from OPSI.Exceptions import (
 )
 from OPSI.Object import ProductOnDepot, ProductProperty, ProductPropertyState
 from OPSI.System import getDiskSpaceUsage
-from OPSI.Types import (
-	forceBool,
-	forceDict,
-	forceFilename,
-	forceHostId,
-	forcePackageVersion,
-)
+from OPSI.Types import forceBool, forceDict, forceFilename, forceHostId
 from OPSI.Types import forceProductId as forceProductIdFunc
-from OPSI.Types import forceProductVersion, forceUnicode, forceUnicodeLower
+from OPSI.Types import forceUnicode, forceUnicodeLower
 from OPSI.Util import compareVersions, findFiles, getfqdn, md5sum, removeDirectory
 from OPSI.Util.File import ZsyncFile
 from OPSI.Util.File.Opsi import PackageControlFile
@@ -210,10 +203,19 @@ class DepotserverBackend(ExtendedBackend):
 			os.chown(zsyncFilename, -1, grp.getgrnam(FILE_ADMIN_GROUP)[2])
 			os.chmod(zsyncFilename, 0o660)
 
-	def workbench_buildPackage(self, product_id: str) -> str:  # pylint: disable=invalid-name
-		product_id = forceProductIdFunc(product_id)
+	def workbench_buildPackage(self, package_dir: str) -> str:  # pylint: disable=invalid-name
+		"""
+		Creates an opsi package from an opsi package source directory.
+		The function creates an opsi, md5 and zsync file in the source directory.
+		The full path to the created opsi package is returned.
+		"""
+		package_path = Path(package_dir)
 		workbench_path = Path(self._context.host_getObjects(id=self._depotId)[0].getWorkbenchLocalUrl().replace('file://', ''))
-		package_path = workbench_path / product_id
+		if not package_path.is_absolute():
+			package_path = workbench_path / package_path
+		package_path = package_path.resolve()
+		if not package_path.is_relative_to(workbench_path):
+			raise ValueError(f"Invalid package dir '{package_path}'")
 		if not package_path.is_dir():
 			raise BackendIOError(f"Package source dir '{package_path}' does not exist")
 		pps = ProductPackageSource(
@@ -223,17 +225,34 @@ class DepotserverBackend(ExtendedBackend):
 			compression="gzip",
 			dereference=False
 		)
-		return pps.pack()
+		package_file = pps.pack()
+		self.depot_createMd5SumFile(package_file, f"{package_file}.md5")
+		self.depot_createZsyncFile(package_file, f"{package_file}.zsync")
+		if os.name == "posix":
+			for file in (package_file, f"{package_file}.md5", f"{package_file}.zsync"):
+				try:  # pylint: disable=loop-try-except-usage
+					os.chown(file, -1, grp.getgrnam(FILE_ADMIN_GROUP)[2])  # pylint: disable=dotted-import-in-loop
+					os.chmod(file, 0o660)  # pylint: disable=dotted-import-in-loop
+				except Exception as err:  # pylint: disable=broad-except
+					logger.warning(err)  # pylint: disable=loop-global-usage
+		return package_file
 
-	def workbench_installPackage(self, package_file: str) -> None:  # pylint: disable=invalid-name
-		package_file = Path(package_file)
+	def workbench_installPackage(self, package_file_or_dir: str) -> None:  # pylint: disable=invalid-name
+		"""
+		Install an opsi package into the repository.
+		If the path points to an opsi source directory,
+		an opsi package is automatically created and then installed.
+		"""
+		package_path = Path(package_file_or_dir)
 		workbench_path = Path(self._context.host_getObjects(id=self._depotId)[0].getWorkbenchLocalUrl().replace('file://', ''))
-		if not package_file.is_absolute():
-			package_file = workbench_path / package_file
-		package_file = package_file.resolve()
-		if not package_file.is_relative_to(workbench_path):
-			raise ValueError(f"Invalid package file path '{package_file}'")
-		self.depot_installPackage(str(package_file))
+		if not package_path.is_absolute():
+			package_path = workbench_path / package_path
+		package_path = package_path.resolve()
+		if not package_path.is_relative_to(workbench_path):
+			raise ValueError(f"Invalid package file '{package_path}'")
+		if package_path.is_dir():
+			package_path = Path(self.workbench_buildPackage(str(package_path)))
+		self.depot_installPackage(str(package_path))
 
 
 class DepotserverPackageManager:

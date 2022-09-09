@@ -636,6 +636,7 @@ class ProductPackageSource:  # pylint: disable=too-many-instance-attributes
 				progressSubject.reset()
 				progressSubject.setMessage(f"Creating archive {os.path.basename(archive.getFilename())}")
 			archive.create(fileList=archives, baseDir=self.tmpPackDir)
+			return archive.getFilename()
 		except Exception as err:
 			self.cleanup()
 			raise RuntimeError(f"Failed to create package '{self.packageFile}': {err}") from err
