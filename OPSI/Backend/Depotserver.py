@@ -32,7 +32,6 @@ from OPSI.Types import forceProductId as forceProductIdFunc
 from OPSI.Types import forceUnicode, forceUnicodeLower
 from OPSI.Util import compareVersions, findFiles, getfqdn, md5sum, removeDirectory
 from OPSI.Util.File import ZsyncFile
-from OPSI.Util.File.Opsi import PackageControlFile
 from OPSI.Util.Product import (
 	PackageContentFile,
 	ProductPackageFile,
@@ -230,11 +229,11 @@ class DepotserverBackend(ExtendedBackend):
 		self.depot_createZsyncFile(package_file, f"{package_file}.zsync")
 		if os.name == "posix":
 			for file in (package_file, f"{package_file}.md5", f"{package_file}.zsync"):
-				try:  # pylint: disable=loop-try-except-usage
-					os.chown(file, -1, grp.getgrnam(FILE_ADMIN_GROUP)[2])  # pylint: disable=dotted-import-in-loop
-					os.chmod(file, 0o660)  # pylint: disable=dotted-import-in-loop
+				try:
+					os.chown(file, -1, grp.getgrnam(FILE_ADMIN_GROUP)[2])
+					os.chmod(file, 0o660)
 				except Exception as err:  # pylint: disable=broad-except
-					logger.warning(err)  # pylint: disable=loop-global-usage
+					logger.warning(err)
 		return package_file
 
 	def workbench_installPackage(self, package_file_or_dir: str) -> None:  # pylint: disable=invalid-name
