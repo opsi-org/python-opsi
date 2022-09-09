@@ -20,6 +20,8 @@ import time
 if os.name == "posix":
 	import fcntl
 
+from functools import lru_cache
+
 from opsicommon.logging import get_logger
 
 import OPSI.Util.File.Opsi
@@ -28,19 +30,50 @@ from OPSI.Types import forceBool, forceFilename, forceUnicodeList, forceUnicodeL
 from OPSI.Util import compareVersions
 from OPSI.Util.Path import cd
 
-try:
-	PIGZ_ENABLED = OPSI.Util.File.Opsi.OpsiConfFile().isPigzEnabled()
-except IOError:
-	PIGZ_ENABLED = True
-
 logger = get_logger("opsi.general")
+
+
+@lru_cache()
+def is_pigz_available() -> bool:
+	try:
+		if not OPSI.Util.File.Opsi.OpsiConfFile().isPigzEnabled():
+			return False
+	except IOError:
+		pass
+
+	try:
+		ver = System.execute("pigz --version")[0][5:]
+		logger.debug("Detected pigz version: %s", ver)
+		if compareVersions(ver, "<", "2.2.3"):
+			raise RuntimeError("pigz version >= 2.2.3 needed, but {ver} found")
+		return True
+	except Exception as err:  # pylint: disable=broad-except
+		logger.debug("pigz not available: %s", err)
+	return False
+
+
+@lru_cache()
+def is_zstd_available() -> bool:
+	try:
+		ver = System.execute("zstd --version")
+		logger.debug("Detected zstd version: %s", ver)
+		ver = System.execute("tar --version")[0].strip().split()[-1]
+		logger.debug("Detected tar version: %s", ver)
+		if compareVersions(ver, "<", "1.31"):
+			raise RuntimeError("tar version >= 1.31 supports zstd, but {ver} found")
+		return True
+	except Exception as err:  # pylint: disable=broad-except
+		logger.debug("zstd not available: %s", err)
+	return False
 
 
 def getFileType(filename):
 	filename = forceFilename(filename)
-	with open(filename, "rb") as f:
-		head = f.read(257 + 5)
+	with open(filename, "rb") as file:
+		head = file.read(257 + 5)
 
+	if head[1:4] == b"\xb5\x2f\xfd":
+		return ".zst"
 	if head[:3] == b"\x1f\x8b\x08" or head[:8] == b"\x5c\x30\x33\x37\x5c\x32\x31\x33":
 		return ".gz"
 	if head[:3] == b"\x42\x5a\x68":
@@ -49,7 +82,7 @@ def getFileType(filename):
 		return ".cpio"
 	if head[257 : 257 + 5] == b"\x75\x73\x74\x61\x72":
 		return ".tar"
-	raise NotImplementedError("getFileType only accepts .gz .bzip2 .cpio .tar archive types.")
+	raise NotImplementedError("getFileType only accepts .gz, .bzip2, .zst, .cpio and .tar files.")
 
 
 class BaseArchive:
@@ -59,7 +92,7 @@ class BaseArchive:
 		self._compression = None
 		if compression:
 			compression = forceUnicodeLower(compression)
-			if compression not in ("gzip", "bzip2"):
+			if compression not in ("gzip", "bzip2", "zstd"):
 				raise ValueError("Compression '%s' not supported" % compression)
 			self._compression = compression
 		elif os.path.exists(self._filename):
@@ -69,6 +102,8 @@ class BaseArchive:
 				self._compression = "gzip"
 			elif "bzip2" in fileType.lower():
 				self._compression = "bzip2"
+			elif "zst" in fileType.lower():
+				self._compression = "zstd"
 			else:
 				self._compression = None
 
@@ -199,44 +234,14 @@ class BaseArchive:
 				logger.info("Exit code: %s", ret)
 
 				if ret != 0:
+					error = error.decode()
 					logger.error(error)
 					raise RuntimeError("Command '%s' failed with code %s: %s" % (command, ret, error))
 				if self._progressSubject:
 					self._progressSubject.setState(len(fileList))
 
 
-class PigzMixin:
-	@property
-	def pigz_detected(self):
-		if not hasattr(self, "_pigz_detected"):
-			self._pigz_detected = self.is_pigz_available()
-
-		return self._pigz_detected
-
-	@staticmethod
-	def is_pigz_available():
-		def is_correct_pigz_version():
-			ver = System.execute("pigz --version")[0][5:]
-
-			logger.debug("Detected pigz version: %s", ver)
-			versionMatches = compareVersions(ver, ">=", "2.2.3")
-			logger.debug("pigz version is compatible? %s", versionMatches)
-			return versionMatches
-
-		if not PIGZ_ENABLED:
-			return False
-
-		try:
-			System.which("pigz")
-			logger.debug('Detected "pigz".')
-
-			return is_correct_pigz_version()
-		except Exception:  # pylint: disable=broad-except
-			logger.debug('Did not detect "pigz".')
-			return False
-
-
-class TarArchive(BaseArchive, PigzMixin):
+class TarArchive(BaseArchive):
 	def __init__(self, filename, compression=None, progressSubject=None):
 		BaseArchive.__init__(self, filename, compression, progressSubject)
 
@@ -247,12 +252,16 @@ class TarArchive(BaseArchive, PigzMixin):
 			names = []
 			options = ""
 			if self._compression == "gzip":
-				if self.pigz_detected:
+				if is_pigz_available():
 					options += "--use-compress-program=pigz"
 				else:
 					options += "--gunzip"
 			elif self._compression == "bzip2":
 				options += "--bzip2"
+			elif self._compression == "zstd":
+				if not is_zstd_available():
+					raise RuntimeError("Zstd not available")
+				options += "--zstd"
 
 			for line in System.execute('%s %s --list --file "%s"' % (System.which("tar"), options, self._filename)):
 				if line:
@@ -274,12 +283,16 @@ class TarArchive(BaseArchive, PigzMixin):
 
 			options = ""
 			if self._compression == "gzip":
-				if self.pigz_detected:
+				if is_pigz_available():
 					options += "--use-compress-program=pigz"
 				else:
 					options += "--gunzip"
 			elif self._compression == "bzip2":
 				options += "--bzip2"
+			elif self._compression == "zstd":
+				if not is_zstd_available():
+					raise RuntimeError("Zstd not available")
+				options += "--zstd"
 
 			fileCount = 0
 			for filename in self.content():
@@ -320,12 +333,16 @@ class TarArchive(BaseArchive, PigzMixin):
 			if dereference:
 				command += " --dereference"
 			if self._compression == "gzip":
-				if self.pigz_detected:
+				if is_pigz_available():
 					command += " | %s --rsyncable" % System.which("pigz")
 				else:
 					command += " | %s --rsyncable" % System.which("gzip")
 			elif self._compression == "bzip2":
 				command += " | %s" % System.which("bzip2")
+			elif self._compression == "zstd":
+				if not is_zstd_available():
+					raise RuntimeError("Zstd not available")
+				command += " | %s --rsyncable" % System.which("zstd")
 			command += ' > "%s"' % self._filename
 
 			self._create(fileList, baseDir, command)
@@ -333,7 +350,7 @@ class TarArchive(BaseArchive, PigzMixin):
 			raise RuntimeError(f"Failed to create archive '{self._filename}': {err}") from err
 
 
-class CpioArchive(BaseArchive, PigzMixin):
+class CpioArchive(BaseArchive):
 	def __init__(self, filename, compression=None, progressSubject=None):
 		BaseArchive.__init__(self, filename, compression, progressSubject)
 
@@ -344,13 +361,16 @@ class CpioArchive(BaseArchive, PigzMixin):
 
 			cat = System.which("cat")
 			if self._compression == "gzip":
-				if self.pigz_detected:
+				if is_pigz_available():
 					cat = "{pigz} --stdout --decompress".format(pigz=System.which("pigz"))
 				else:
 					cat = System.which("zcat")
 			elif self._compression == "bzip2":
 				cat = System.which("bzcat")
-
+			elif self._compression == "zstd":
+				if not is_zstd_available():
+					raise RuntimeError("Zstd not available")
+				cat = System.which("zstdcat")
 			return [
 				line
 				for line in System.execute(
@@ -375,12 +395,16 @@ class CpioArchive(BaseArchive, PigzMixin):
 
 			cat = System.which("cat")
 			if self._compression == "gzip":
-				if self.pigz_detected:
+				if is_pigz_available():
 					cat = "%s --stdout --decompress" % (System.which("pigz"),)
 				else:
 					cat = System.which("zcat")
 			elif self._compression == "bzip2":
 				cat = System.which("bzcat")
+			elif self._compression == "zstd":
+				if not is_zstd_available():
+					raise RuntimeError("Zstd not available")
+				cat = System.which("zstdcat")
 
 			fileCount = 0
 			for filename in self.content():
@@ -424,12 +448,14 @@ class CpioArchive(BaseArchive, PigzMixin):
 			if dereference:
 				command += " --dereference"
 			if self._compression == "gzip":
-				if self.pigz_detected:
+				if is_pigz_available():
 					command += " | %s --rsyncable" % System.which("pigz")
 				else:
 					command += " | %s --rsyncable" % System.which("gzip")
 			elif self._compression == "bzip2":
 				command += " | %s" % System.which("bzip2")
+			elif self._compression == "zstd":
+				command += " | %s" % System.which("zstd")
 			command += ' > "%s"' % self._filename
 
 			self._create(fileList, baseDir, command)
@@ -456,7 +482,7 @@ def Archive(filename, format=None, compression=None, progressSubject=None):  # p
 			Class = TarArchive
 		elif "cpio" in fileType.lower():
 			Class = CpioArchive
-		elif filename.lower().endswith(("tar", "tar.gz")):
+		elif filename.lower().endswith(("tar", "tar.gz", "tar.zst")):
 			Class = TarArchive
 		elif filename.lower().endswith(("cpio", "cpio.gz")):
 			Class = CpioArchive
