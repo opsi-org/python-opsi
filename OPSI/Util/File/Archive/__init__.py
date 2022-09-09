@@ -33,14 +33,17 @@ from OPSI.Util.Path import cd
 logger = get_logger("opsi.general")
 
 
-@lru_cache()
 def is_pigz_available() -> bool:
 	try:
 		if not OPSI.Util.File.Opsi.OpsiConfFile().isPigzEnabled():
 			return False
 	except IOError:
 		pass
+	return _is_pigz_executable_available()
 
+
+@lru_cache()
+def _is_pigz_executable_available() -> bool:
 	try:
 		ver = System.execute("pigz --version")[0][5:]
 		logger.debug("Detected pigz version: %s", ver)
