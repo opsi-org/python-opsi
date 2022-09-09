@@ -10,7 +10,7 @@ import os
 
 import pytest
 
-from OPSI.Util.File.Archive import Archive, TarArchive, getFileType, is_pigz_available
+from OPSI.Util.File.Archive import Archive, is_pigz_available
 
 from .helpers import mock
 
@@ -34,5 +34,5 @@ def testDisablingPigz():
 	"""
 	Disabling the usage of pigz by setting PIGZ_ENABLED to False.
 	"""
-	with mock.patch("OPSI.Util.File.Archive.PIGZ_ENABLED", False):
+	with mock.patch("OPSI.Util.File.Opsi.OpsiConfFile.isPigzEnabled", lambda x: False):
 		assert is_pigz_available() is False
