@@ -31,7 +31,6 @@ from itertools import islice
 from signal import SIGKILL
 
 import psutil
-from opsicommon.logging import LOG_NONE, get_logger, logging_config
 from opsicommon.objects import *  # pylint: disable=wildcard-import,unused-wildcard-import
 from opsicommon.types import (
 	forceBool,
@@ -48,10 +47,11 @@ from opsicommon.types import (
 	forceUnicode,
 	forceUnicodeLower,
 )
-from opsicommon.utils import frozen_lru_cache
 
 from OPSI.Exceptions import CommandNotFoundException
 from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
+from opsicommon.logging import LOG_NONE, get_logger, logging_config
+from opsicommon.utils import frozen_lru_cache
 
 distro_module = None  # pylint: disable=invalid-name
 if platform.system() == "Linux":
@@ -3443,232 +3443,245 @@ def hardwareInventory(
 			continue
 
 		opsiClass = hwClass["Class"]["Opsi"]
-		linuxClass = hwClass["Class"]["Linux"]
+		linuxClasses = sorted(hwClass["Class"]["Linux"].split(";"), reverse=True)
 
-		logger.debug("Processing class '%s' : '%s'", opsiClass, linuxClass)
+		for linuxClass in linuxClasses:
+			logger.debug("Processing class '%s' : '%s'", opsiClass, linuxClass)
 
-		if linuxClass.startswith("[lshw]"):
-			# Get matching xml nodes
-			devices = []
-			for hwclass in linuxClass[6:].split("|"):
-				hwid = ""
-				filter = None  # pylint: disable=redefined-builtin
-				if ":" in hwclass:
-					(hwclass, hwid) = hwclass.split(":", 1)
-					if ":" in hwid:
-						(hwid, filter) = hwid.split(":", 1)
+			if linuxClass.startswith("[lshw]"):
+				# Get matching xml nodes
+				devices = []
+				for hwclass in linuxClass[6:].split("|"):
+					hwid = ""
+					filter = None  # pylint: disable=redefined-builtin
+					if ":" in hwclass:
+						(hwclass, hwid) = hwclass.split(":", 1)
+						if ":" in hwid:
+							(hwid, filter) = hwid.split(":", 1)
 
-				logger.debug("Class is '%s', id is '%s', filter is: %s", hwClass, hwid, filter)
+					logger.debug("Class is '%s', id is '%s', filter is: %s", hwClass, hwid, filter)
 
-				if hwclass == "system":
-					# system nodes can appear nested... only working with root system here
-					devs = getElementsByAttributeValue(dom, "node", "class", hwclass, onlyHighest=True)
-				else:
-					devs = getElementsByAttributeValue(dom, "node", "class", hwclass)
+					if hwclass == "system":
+						# system nodes can appear nested... only working with root system here
+						devs = getElementsByAttributeValue(dom, "node", "class", hwclass, onlyHighest=True)
+					else:
+						devs = getElementsByAttributeValue(dom, "node", "class", hwclass)
 
-				for dev in devs:
-					if dev.hasChildNodes():
-						for child in dev.childNodes:
-							if child.nodeName == "businfo":
-								busInfo = child.firstChild.data.strip()
-								if busInfo.startswith("pci@"):
-									logger.debug("Getting pci bus info for '%s'", busInfo)
-									pciBusId = busInfo.split("@")[1]
-									if pciBusId.startswith("0000:"):
-										pciBusId = pciBusId[5:]
-									pciInfo = lspci.get(pciBusId, {})
-									for (key, value) in pciInfo.items():
-										elem = dom.createElement(key)
-										elem.childNodes.append(dom.createTextNode(value))
-										dev.childNodes.append(elem)
-								break
-				if hwid:
-					filtered = []
 					for dev in devs:
-						if re.search(hwid, dev.getAttribute("id")):
-							if not filter:
-								filtered.append(dev)
-							else:
-								(attr, method) = filter.split(".", 1)
-								if dev.getAttribute(attr):
-									if eval(f"dev.getAttribute(attr).{method}"):  # pylint: disable=eval-used
-										filtered.append(dev)
-								elif dev.hasChildNodes():
-									for child in dev.childNodes:
-										if (child.nodeName == attr) and child.hasChildNodes():
-											if eval(f"child.firstChild.data.strip().{method}"):  # pylint: disable=eval-used
-												filtered.append(dev)
-												break
-										try:
-											if child.hasAttributes() and child.getAttribute(attr):
-												if eval(f"child.getAttribute(attr).{method}"):  # pylint: disable=eval-used
+						if dev.hasChildNodes():
+							for child in dev.childNodes:
+								if child.nodeName == "businfo":
+									busInfo = child.firstChild.data.strip()
+									if busInfo.startswith("pci@"):
+										logger.debug("Getting pci bus info for '%s'", busInfo)
+										pciBusId = busInfo.split("@")[1]
+										if pciBusId.startswith("0000:"):
+											pciBusId = pciBusId[5:]
+										pciInfo = lspci.get(pciBusId, {})
+										for (key, value) in pciInfo.items():
+											elem = dom.createElement(key)
+											elem.childNodes.append(dom.createTextNode(value))
+											dev.childNodes.append(elem)
+									break
+					if hwid:
+						filtered = []
+						for dev in devs:
+							if re.search(hwid, dev.getAttribute("id")):
+								if not filter:
+									filtered.append(dev)
+								else:
+									(attr, method) = filter.split(".", 1)
+									if dev.getAttribute(attr):
+										if eval(f"dev.getAttribute(attr).{method}"):  # pylint: disable=eval-used
+											filtered.append(dev)
+									elif dev.hasChildNodes():
+										for child in dev.childNodes:
+											if (child.nodeName == attr) and child.hasChildNodes():
+												if eval(f"child.firstChild.data.strip().{method}"):  # pylint: disable=eval-used
 													filtered.append(dev)
 													break
-										except Exception:  # pylint: disable=broad-except
-											pass
-						# Also consider nodes with matching class
-						if re.search(hwid, dev.getAttribute("class")) and not filter:
-							filtered.append(dev)
-					devs = filtered
+											try:
+												if child.hasAttributes() and child.getAttribute(attr):
+													if eval(f"child.getAttribute(attr).{method}"):  # pylint: disable=eval-used
+														filtered.append(dev)
+														break
+											except Exception:  # pylint: disable=broad-except
+												pass
+							# Also consider nodes with matching class
+							if re.search(hwid, dev.getAttribute("class")) and not filter:
+								filtered.append(dev)
+						devs = filtered
 
-				logger.trace("Found matching devices: %s", devs)
-				devices.extend(devs)
+					logger.trace("Found matching devices: %s", devs)
+					devices.extend(devs)
 
-			# Process matching xml nodes
-			for i, device in enumerate(devices):
-				if opsiClass not in opsiValues:
-					opsiValues[opsiClass] = []
-				opsiValues[opsiClass].append({})
+				# Process matching xml nodes
+				for i, device in enumerate(devices):
+					if opsiClass not in opsiValues:
+						opsiValues[opsiClass] = []
+					opsiValues[opsiClass].append({})
 
-				if not hwClass.get("Values"):
-					break
+					if not hwClass.get("Values"):
+						break
 
-				for attribute in hwClass["Values"]:
-					elements = [device]
-					if not attribute.get("Opsi") or not attribute.get("Linux"):
-						continue
+					for attribute in hwClass["Values"]:
+						elements = [device]
+						if not attribute.get("Opsi") or not attribute.get("Linux"):
+							continue
 
-					logger.trace("Processing attribute '%s' : '%s'", attribute["Linux"], attribute["Opsi"])
-					for attr in attribute["Linux"].split("||"):
-						attr = attr.strip()
-						method = None
-						data = None
-						for part in attr.split("/"):
-							if "." in part:
-								(part, method) = part.split(".", 1)
-							nextElements = []
-							for element in elements:
-								for child in element.childNodes:
-									try:
-										if child.nodeName == part:
-											nextElements.append(child)
-										elif child.hasAttributes() and child.getAttribute("id").split(":")[0] == part:
-											nextElements.append(child)
-									except Exception:  # pylint: disable=broad-except
-										pass
-								# Prefer matching child.id over matching child.class
-								if not nextElements:
+						logger.trace("Processing attribute '%s' : '%s'", attribute["Linux"], attribute["Opsi"])
+						for attr in attribute["Linux"].split("||"):
+							attr = attr.strip()
+							method = None
+							data = None
+							for part in attr.split("/"):
+								if "." in part:
+									(part, method) = part.split(".", 1)
+								nextElements = []
+								for element in elements:
 									for child in element.childNodes:
 										try:
-											if child.hasAttributes() and child.getAttribute("class") == part:
+											if child.nodeName == part:
+												nextElements.append(child)
+											elif child.hasAttributes() and child.getAttribute("id").split(":")[0] == part:
 												nextElements.append(child)
 										except Exception:  # pylint: disable=broad-except
 											pass
-							if not nextElements:
-								logger.warning("Attribute part '%s' not found", part)
-								break
-							elements = nextElements
+									# Prefer matching child.id over matching child.class
+									if not nextElements:
+										for child in element.childNodes:
+											try:
+												if child.hasAttributes() and child.getAttribute("class") == part:
+													nextElements.append(child)
+											except Exception:  # pylint: disable=broad-except
+												pass
+								if not nextElements:
+									logger.warning("Attribute part '%s' not found", part)
+									break
+								elements = nextElements
 
-						if not data:
-							if not elements:
-								opsiValues[opsiClass][i][attribute["Opsi"]] = ""
-								logger.warning("No data found for attribute '%s' : '%s'", attribute["Linux"], attribute["Opsi"])
+							if not data:
+								if not elements:
+									opsiValues[opsiClass][i][attribute["Opsi"]] = ""
+									logger.warning("No data found for attribute '%s' : '%s'", attribute["Linux"], attribute["Opsi"])
+									continue
+
+								for element in elements:
+									if element.getAttribute(attr):
+										data = element.getAttribute(attr).strip()
+									elif element.getAttribute("value"):
+										data = element.getAttribute("value").strip()
+									elif element.hasChildNodes():
+										data = element.firstChild.data.strip()
+							if method and data:
+								try:
+									logger.debug("Eval: %s.%s", data, method)
+									data = eval(f"data.{method}")  # pylint: disable=eval-used
+								except Exception as err:  # pylint: disable=broad-except
+									logger.error("Failed to excecute '%s.%s': %s", data, method, err)
+							logger.trace("Data: %s", data)
+							opsiValues[opsiClass][i][attribute["Opsi"]] = data
+							if data:
+								break
+
+			# Get hw info from dmidecode
+			elif linuxClass.startswith("[dmidecode]"):
+				if not opsiValues.get(opsiClass):
+					opsiValues[opsiClass] = []
+				for hwclass in linuxClass[11:].split("|"):
+					(filterAttr, filterExp) = (None, None)
+					if ":" in hwclass:
+						(hwclass, filter) = hwclass.split(":", 1)
+						if "." in filter:
+							(filterAttr, filterExp) = filter.split(".", 1)
+
+					for dev in dmidecode.get(hwclass, []):
+						if (
+							filterAttr
+							and dev.get(filterAttr)
+							and not eval(f"str(dev.get(filterAttr)).{filterExp}")  # pylint: disable=eval-used
+						):
+							continue
+						device = {}
+						for attribute in hwClass["Values"]:
+							if not attribute.get("Linux"):
 								continue
 
-							for element in elements:
-								if element.getAttribute(attr):
-									data = element.getAttribute(attr).strip()
-								elif element.getAttribute("value"):
-									data = element.getAttribute("value").strip()
-								elif element.hasChildNodes():
-									data = element.firstChild.data.strip()
-						if method and data:
-							try:
-								logger.debug("Eval: %s.%s", data, method)
-								data = eval(f"data.{method}")  # pylint: disable=eval-used
-							except Exception as err:  # pylint: disable=broad-except
-								logger.error("Failed to excecute '%s.%s': %s", data, method, err)
-						logger.trace("Data: %s", data)
-						opsiValues[opsiClass][i][attribute["Opsi"]] = data
-						if data:
-							break
+							for aname in attribute["Linux"].split("||"):
 
-		# Get hw info from dmidecode
-		elif linuxClass.startswith("[dmidecode]"):
-			opsiValues[opsiClass] = []
-			for hwclass in linuxClass[11:].split("|"):
-				(filterAttr, filterExp) = (None, None)
-				if ":" in hwclass:
-					(hwclass, filter) = hwclass.split(":", 1)
-					if "." in filter:
-						(filterAttr, filterExp) = filter.split(".", 1)
+								aname = aname.strip()
+								method = None
+								if "." in aname:
+									(aname, method) = aname.split(".", 1)
+								if method:
+									try:
+										logger.debug("Eval: %s.%s", dev.get(aname, ""), method)
+										device[attribute["Opsi"]] = eval(f"dev.get(aname, '').{method}")  # pylint: disable=eval-used
+									except Exception as err:  # pylint: disable=broad-except
+										if not device.get(attribute["Opsi"]):
+											device[attribute["Opsi"]] = ""
+										logger.error("Failed to excecute '%s.%s': %s", dev.get(aname, ""), method, err)
+								else:
+									if not device.get(attribute["Opsi"]):
+										device[attribute["Opsi"]] = dev.get(aname)
+								# if len(devices) == 1 and len(opsiValues[hwClass["Class"]["Opsi"]]) == 1:
+								# 	opsiValues[hwClass["Class"]["Opsi"]][0][attribute["Opsi"]] = dev.get(aname)
+								if device[attribute["Opsi"]]:
+									break
 
-				for dev in dmidecode.get(hwclass, []):
-					if (
-						filterAttr
-						and dev.get(filterAttr)
-						and not eval(f"str(dev.get(filterAttr)).{filterExp}")  # pylint: disable=eval-used
-					):
-						continue
+						if len(devices) == 1 and opsiValues[hwClass["Class"]["Opsi"]]:
+							for attr in device.keys():
+								if device[attr]:
+									opsiValues[hwClass["Class"]["Opsi"]][0][attr] = device[attr]
+						else:
+							opsiValues[hwClass["Class"]["Opsi"]].append(device)
+
+			# Get hw info from alsa hdaudio info
+			elif linuxClass.startswith("[hdaudio]"):
+				opsiValues[opsiClass] = []
+				for (hdaudioId, dev) in hdaudio.items():
+					device = {}
+					for attribute in hwClass["Values"]:
+						if not attribute.get("Linux") or attribute["Linux"] not in dev:
+							continue
+
+						try:
+							device[attribute["Opsi"]] = dev[attribute["Linux"]]
+						except Exception as err:  # pylint: disable=broad-except
+							logger.warning(err)
+							device[attribute["Opsi"]] = ""
+					opsiValues[opsiClass].append(device)
+
+			# Get hw info from lsusb
+			elif linuxClass.startswith("[lsusb]"):
+				opsiValues[opsiClass] = []
+				for (busId, dev) in lsusb.items():
 					device = {}
 					for attribute in hwClass["Values"]:
 						if not attribute.get("Linux"):
 							continue
 
-						for aname in attribute["Linux"].split("||"):
-							aname = aname.strip()
-							method = None
-							if "." in aname:
-								(aname, method) = aname.split(".", 1)
-							if method:
-								try:
-									logger.debug("Eval: %s.%s", dev.get(aname, ""), method)
-									device[attribute["Opsi"]] = eval(f"dev.get(aname, '').{method}")  # pylint: disable=eval-used
-								except Exception as err:  # pylint: disable=broad-except
-									device[attribute["Opsi"]] = ""
-									logger.error("Failed to excecute '%s.%s': %s", dev.get(aname, ""), method, err)
-							else:
-								device[attribute["Opsi"]] = dev.get(aname)
-							if device[attribute["Opsi"]]:
-								break
-					opsiValues[hwClass["Class"]["Opsi"]].append(device)
+						try:
+							value = pycopy.deepcopy(dev)
+							for key in attribute["Linux"].split("/"):
+								method = None
+								if "." in key:
+									(key, method) = key.split(".", 1)
+								if not isinstance(value, dict) or key not in value:
+									logger.error("Key '%s' not found", key)
+									value = ""
+									break
+								value = value[key]
+								if isinstance(value, list):
+									value = ", ".join(value)
+								if method:
+									value = eval(f"value.{method}")  # pylint: disable=eval-used
 
-		# Get hw info from alsa hdaudio info
-		elif linuxClass.startswith("[hdaudio]"):
-			opsiValues[opsiClass] = []
-			for (hdaudioId, dev) in hdaudio.items():
-				device = {}
-				for attribute in hwClass["Values"]:
-					if not attribute.get("Linux") or attribute["Linux"] not in dev:
-						continue
-
-					try:
-						device[attribute["Opsi"]] = dev[attribute["Linux"]]
-					except Exception as err:  # pylint: disable=broad-except
-						logger.warning(err)
-						device[attribute["Opsi"]] = ""
-				opsiValues[opsiClass].append(device)
-
-		# Get hw info from lsusb
-		elif linuxClass.startswith("[lsusb]"):
-			opsiValues[opsiClass] = []
-			for (busId, dev) in lsusb.items():
-				device = {}
-				for attribute in hwClass["Values"]:
-					if not attribute.get("Linux"):
-						continue
-
-					try:
-						value = pycopy.deepcopy(dev)
-						for key in attribute["Linux"].split("/"):
-							method = None
-							if "." in key:
-								(key, method) = key.split(".", 1)
-							if not isinstance(value, dict) or key not in value:
-								logger.error("Key '%s' not found", key)
-								value = ""
-								break
-							value = value[key]
-							if isinstance(value, list):
-								value = ", ".join(value)
-							if method:
-								value = eval(f"value.{method}")  # pylint: disable=eval-used
-
-						device[attribute["Opsi"]] = value
-					except Exception as err:  # pylint: disable=broad-except
-						logger.warning(err)
-						device[attribute["Opsi"]] = ""
-				opsiValues[opsiClass].append(device)
+							device[attribute["Opsi"]] = value
+						except Exception as err:  # pylint: disable=broad-except
+							logger.warning(err)
+							device[attribute["Opsi"]] = ""
+					opsiValues[opsiClass].append(device)
 
 	opsiValues["SCANPROPERTIES"] = [{"scantime": time.strftime("%Y-%m-%d %H:%M:%S")}]
 	logger.debug("Result of hardware inventory: %s", objectToBeautifiedText(opsiValues))
