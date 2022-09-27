@@ -135,7 +135,7 @@ def writeImageInformation(backend, productId, imagenames, languages=None, defaul
 				productProperty[0].defaultValues = [defaultLanguage]
 
 			logger.debug("%s property is now: %s", productProperty[1], productProperty[0])
-			logger.debug("%s possibleValues are: %s", productProperty[0].possibleValues)
+			logger.debug("%s possibleValues are: %s", productProperty[1], productProperty[0].possibleValues)
 			backend.productProperty_updateObject(productProperty[0])
 			logger.notice("Wrote languages to property '%s' product on %s.", productProperty[1], productId)
 
