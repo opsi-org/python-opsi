@@ -94,5 +94,27 @@ def fill_backend(backend):
 		editable=True,
 		multiValue=False
 	)
+	winpeUilanguageProductProperty = UnicodeProductProperty(
+		productId=product.id,
+		productVersion=product.productVersion,
+		packageVersion=product.packageVersion,
+		propertyId=u"winpe_uilanguage",
+		possibleValues=["lel"],
+		defaultValues=["lel", "topkek"],
+		editable=True,
+		multiValue=False
+	)
+	winpeUilanguageFallbackProductProperty = UnicodeProductProperty(
+		productId=product.id,
+		productVersion=product.productVersion,
+		packageVersion=product.packageVersion,
+		propertyId=u"winpe_uilanguage_fallback",
+		possibleValues=["lachkadse"],
+		defaultValues=["lachkadse", "freuvieh"],
+		editable=True,
+		multiValue=False
+	)
 	backend.productProperty_insertObject(imagenameProductProperty)
 	backend.productProperty_insertObject(systemLanguageProductProperty)
+	backend.productProperty_insertObject(winpeUilanguageProductProperty)
+	backend.productProperty_insertObject(winpeUilanguageFallbackProductProperty)
