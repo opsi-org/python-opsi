@@ -126,17 +126,18 @@ def writeImageInformation(backend, productId, imagenames, languages=None, defaul
 
 	if languages:
 		logger.debug("Writing detected languages...")
-		productProperty = _getProductProperty(backend, productId, "system_language")
-		productProperty.possibleValues = forceList(languages)
+		productPropertyList = [(_getProductProperty(backend, productId, "system_language"), "system_language"), (_getProductProperty(backend, productId, "winpe_uilanguage"), "winpe_uilanguage"), (_getProductProperty(backend, productId, "winpe_uilanguage_fallback"), "winpe_uilanguage_fallback")]
+		for _, productProperty in enumerate(productPropertyList):
+			productProperty[0].possibleValues = forceList(languages)
 
-		if defaultLanguage and defaultLanguage in languages:
-			logger.debug("Setting language default to '%s'", defaultLanguage)
-			productProperty.defaultValues = [defaultLanguage]
+			if defaultLanguage and defaultLanguage in languages:
+				logger.debug("Setting language default to '%s'", defaultLanguage)
+				productProperty[0].defaultValues = [defaultLanguage]
 
-		logger.debug("system_language property is now: %s", productProperty)
-		logger.debug("system_language possibleValues are: %s", productProperty.possibleValues)
-		backend.productProperty_updateObject(productProperty)
-		logger.notice("Wrote languages to property 'system_language' product on %s.", productId)
+			logger.debug("%s property is now: %s", (productProperty[1], productProperty[0]))
+			logger.debug("%s possibleValues are: %s", (productProperty[0].possibleValues))
+			backend.productProperty_updateObject(productProperty[0])
+			logger.notice("Wrote languages to property '%s' product on %s.", (productProperty[1],productId))
 
 
 def _getProductProperty(backend, productId, propertyId):
