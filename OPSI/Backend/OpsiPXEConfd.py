@@ -14,10 +14,8 @@ import tempfile
 import threading
 import time
 from contextlib import closing, contextmanager
-from pipes import quote
+from shlex import quote
 from typing import Any, Dict, Generator, List
-
-from opsicommon.logging import get_logger, secret_filter
 
 from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.Base.Backend import Backend
@@ -30,6 +28,7 @@ from OPSI.Exceptions import (
 from OPSI.Object import ConfigState, OpsiClient, ProductOnClient, ProductPropertyState
 from OPSI.Types import forceHostId, forceInt, forceUnicode, forceUnicodeList
 from OPSI.Util import getfqdn, serialize
+from opsicommon.logging import get_logger, secret_filter
 
 __all__ = ("ServerConnection", "OpsiPXEConfdBackend", "createUnixSocket")
 
