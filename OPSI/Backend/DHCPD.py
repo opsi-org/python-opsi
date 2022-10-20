@@ -87,7 +87,12 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 		self._dhcpdConfigFile = System.Posix.locateDHCPDConfig("/etc/dhcp3/dhcpd.conf")
 		self._reloadConfigCommand = None
 		self._fixedAddressFormat = "IP"
-		self._defaultClientParameters = {"next-server": socket.gethostbyname(getfqdn()), "filename": "linux/pxelinux.0"}
+		next_server = None
+		for addr in socket.gethostbyname_ex(getfqdn())[2]:
+			if not addr.startswith("127"):
+				next_server = addr
+				break
+		self._defaultClientParameters = {"next-server": next_server, "filename": "linux/pxelinux.0"}
 		self._dhcpdOnDepot = False
 
 		# Parse arguments
