@@ -89,9 +89,10 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 		self._fixedAddressFormat = "IP"
 		next_server = None
 		for addr in socket.gethostbyname_ex(getfqdn())[2]:
+			next_server = addr
 			if not addr.startswith("127"):
-				next_server = addr
 				break
+
 		self._defaultClientParameters = {"next-server": next_server, "filename": "linux/pxelinux.0"}
 		self._dhcpdOnDepot = False
 
