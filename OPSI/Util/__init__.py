@@ -244,7 +244,7 @@ def fromJson(obj, objectType=None, preventObjectCreation=False):
 
 
 def toJson(obj, ensureAscii=False):
-	return to_json(obj, ensure_ascii=ensureAscii)
+	return to_json(obj, ensure_ascii=False)
 
 
 def deserialize(obj, preventObjectCreation=False):
