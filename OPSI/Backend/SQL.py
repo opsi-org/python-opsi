@@ -1279,12 +1279,12 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		del data["defaultValues"]
 
 		with self._sql.session() as session:
-			self._sql.update(session, "CONFIG", where, data)
-			self._sql.delete(session, "CONFIG_VALUE", where)
-			for value in possibleValues:
-				self._sql.insert(
-					session, "CONFIG_VALUE", {"configId": data["configId"], "value": value, "isDefault": (value in defaultValues)}
-				)
+			if self._sql.update(session, "CONFIG", where, data) > 0:
+				self._sql.delete(session, "CONFIG_VALUE", where)
+				for value in possibleValues:
+					self._sql.insert(
+						session, "CONFIG_VALUE", {"configId": data["configId"], "value": value, "isDefault": (value in defaultValues)}
+					)
 
 	def config_getObjects(self, attributes: List[str] = None, **filter) -> List[Config]:  # pylint: disable=redefined-builtin
 		ConfigDataBackend.config_getObjects(self, attributes=[], **filter)
