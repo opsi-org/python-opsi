@@ -1147,12 +1147,11 @@ class WebDAVRepository(HTTPRepository):
 
 		parts = self._url.split("/")
 		if len(parts) < 3 or parts[0].lower() not in ("webdav:", "webdavs:"):
-			raise RepositoryError(f"Bad http url: '{self._url}'")
+			raise RepositoryError(f"Bad webdav url: '{self._url}'")
 		self._contentCache = {}
 
 	def content(self, source="", recursive=False):
-		source = self._preProcessPath(source)
-		source_url = self.base_url.rstrip("/") + source
+		source_url = self.base_url.rstrip("/") + self._preProcessPath(source)
 		if not source_url.endswith("/"):
 			source_url += "/"
 
