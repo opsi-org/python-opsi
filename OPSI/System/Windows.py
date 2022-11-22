@@ -8,7 +8,6 @@ opsi python library - Windows
 """
 
 import difflib
-import locale
 import os
 import re
 import shutil
@@ -231,45 +230,14 @@ def getArchitecture():
 		return "x86"
 
 
-def getOpsiHotfixName(helper=None):  # pylint: disable=too-many-branches,too-many-statements
+def getOpsiHotfixName(helper=None):  # pylint: disable=too-many-branches,too-many-statements,unused-argument
 	arch = getArchitecture()
 	major = sys.getwindowsversion().major  # pylint: disable=no-member
 	minor = sys.getwindowsversion().minor  # pylint: disable=no-member
-	loc = locale.getdefaultlocale()[0].split("_")[0]
 	_os = "unknown"
-	lang = "unknown"
+	lang = "glb"
 
-	if helper:
-		logger.notice("Using version helper: %s", helper)
-		try:
-			result = execute(helper, shell=False)
-			minor = int(result[0].split(".")[1])
-			major = int(result[0].split(".")[0])
-		except Exception as err:  # pylint: disable=broad-except
-			logger.warning("Version helper failed: %s, using getwindowsversion()", err)
-
-	if major == 5:
-		if loc == "en":
-			lang = "en"
-		elif loc == "de":
-			lang = "de"
-		elif loc == "fr":
-			lang = "fra"
-		elif loc == "it":
-			lang = "ita"
-		elif loc == "ch":
-			lang = "chs"
-
-		if minor == 1:
-			_os = "winxp"
-		elif minor == 2:
-			if arch == "x86":
-				_os = "win2003"
-			else:
-				_os = "win2003-winxp"
-
-	elif major == 6:
-		lang = "glb"
+	if major == 6:
 		if minor == 0:
 			_os = "vista-win2008"
 		elif minor == 1:
@@ -289,11 +257,13 @@ def getOpsiHotfixName(helper=None):  # pylint: disable=too-many-branches,too-man
 				_os = "win81-win2012r2"
 
 	elif major == 10:
-		lang = "glb"
 		if arch == "x86":
 			_os = "win10"
 		else:
 			_os = "win10-win2016"
+
+	elif major == 11:
+		_os = "win11"
 
 	return f"mshotfix-{_os}-{arch}-{lang}"
 
