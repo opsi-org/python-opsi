@@ -31,6 +31,9 @@ from itertools import islice
 from signal import SIGKILL
 
 import psutil
+from OPSI.Exceptions import CommandNotFoundException
+from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
+from opsicommon.logging import LOG_NONE, get_logger, logging_config
 from opsicommon.objects import *  # pylint: disable=wildcard-import,unused-wildcard-import
 from opsicommon.types import (
 	forceBool,
@@ -47,10 +50,6 @@ from opsicommon.types import (
 	forceUnicode,
 	forceUnicodeLower,
 )
-
-from OPSI.Exceptions import CommandNotFoundException
-from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
-from opsicommon.logging import LOG_NONE, get_logger, logging_config
 from opsicommon.utils import frozen_lru_cache
 
 distro_module = None  # pylint: disable=invalid-name
@@ -3444,7 +3443,6 @@ def hardwareInventory(
 
 		opsiClass = hwClass["Class"]["Opsi"]
 		linuxClasses = sorted(hwClass["Class"]["Linux"].split(";"), reverse=True)
-
 		for linuxClass in linuxClasses:
 			logger.debug("Processing class '%s' : '%s'", opsiClass, linuxClass)
 
@@ -3682,6 +3680,12 @@ def hardwareInventory(
 							logger.warning(err)
 							device[attribute["Opsi"]] = ""
 					opsiValues[opsiClass].append(device)
+
+	# rm duplicates from opsiValues
+	for hwClass in config:
+		opsiClass = hwClass["Class"]["Opsi"]
+		if opsiValues.get(opsiClass):
+			opsiValues[opsiClass] = [dict(value_tuple) for value_tuple in {tuple(value_dict.items()) for value_dict in opsiValues[opsiClass]}]
 
 	opsiValues["SCANPROPERTIES"] = [{"scantime": time.strftime("%Y-%m-%d %H:%M:%S")}]
 	logger.debug("Result of hardware inventory: %s", objectToBeautifiedText(opsiValues))
