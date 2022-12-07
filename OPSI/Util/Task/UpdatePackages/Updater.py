@@ -18,11 +18,6 @@ from contextlib import contextmanager
 from urllib.parse import quote
 
 from OpenSSL.crypto import FILETYPE_PEM, load_certificate
-from opsicommon.logging import get_logger, secret_filter
-from opsicommon.ssl import install_ca
-from opsicommon.utils import prepare_proxy_environment
-from requests.packages import urllib3
-
 from OPSI import System
 from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Object import NetbootProduct, ProductOnClient
@@ -33,6 +28,10 @@ from OPSI.Util.File.Opsi import parseFilename
 from OPSI.Util.Path import cd
 from OPSI.Util.Product import ProductPackageFile
 from OPSI.Util.Task.Rights import setRights
+from opsicommon.logging import get_logger, secret_filter
+from opsicommon.ssl import install_ca
+from opsicommon.utils import prepare_proxy_environment
+from requests.packages import urllib3
 
 from .Config import DEFAULT_USER_AGENT, ConfigurationParser
 from .Notifier import DummyNotifier, EmailNotifier
@@ -314,10 +313,6 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 			if not installedPackages:
 				logger.notice("No new packages installed")
 				return
-
-			logger.debug("Mark redis product cache as dirty for depot: %s", self.depotId)
-			config_id = f"opsiconfd.{self.depotId}.product.cache.outdated"
-			backend.config_createBool(id=config_id, description="", defaultValues=[True])  # pylint: disable=no-member
 
 			shutdownProduct = None
 			if self.config["wolAction"] and self.config["wolShutdownWanted"]:
