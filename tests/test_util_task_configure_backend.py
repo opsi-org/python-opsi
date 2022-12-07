@@ -8,10 +8,9 @@ Testing the backend configuration.
 
 import os
 
-import pytest
-
 import OPSI.Util.Task.ConfigureBackend as backendConfigUtils
 import OPSI.Util.Task.ConfigureBackend.ConfigurationData as confData
+import pytest
 from OPSI.Object import UnicodeConfig
 from OPSI.System.Posix import CommandNotFoundException
 
@@ -77,7 +76,6 @@ def testReadingWindowsDomainFromSambaConfig(test_data_path):
 		"license-management.use",
 		"software-on-demand.active",
 		"software-on-demand.product-group-ids",
-		"product_sort_algorithm",
 		"clientconfig.dhcpd.filename",
 		pytest.param("software-on-demand.show-details", marks=pytest.mark.xfail),
 		"opsiclientd.event_user_login.active",
