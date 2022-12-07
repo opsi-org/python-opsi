@@ -1151,9 +1151,9 @@ class WebDAVRepository(HTTPRepository):
 		self._contentCache = {}
 
 	def content(self, source="", recursive=False):
+		source = "/" + source.lstrip("/")
 		source_url = self.base_url.rstrip("/") + self._preProcessPath(source)
-		if not source_url.endswith("/"):
-			source_url += "/"
+		source_url = source_url.rstrip("/") + "/"
 
 		if recursive and source in self._contentCache:
 			if time.time() - self._contentCache[source]["time"] > 60:
