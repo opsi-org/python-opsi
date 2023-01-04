@@ -37,7 +37,7 @@ python-pam = "^2.0"
 pywin32 = {platform = "win32", version = "^303"}
 ruyaml = "^0.91"
 service-identity = "^21.1"
-sqlalchemy = "^1.4"
+sqlalchemy = ">=1.4,<2.0"
 twisted = {extras = ["tls"], version = "^22.1"}
 wmi = {platform = "win32", version = "^1.5"}
 packaging = "^22.0"
