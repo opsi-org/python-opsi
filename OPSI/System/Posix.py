@@ -3715,7 +3715,7 @@ def daemonize():
 	except OSError as err:
 		raise RuntimeError(f"Second fork failed: {err}") from err
 
-	logging_config(LOG_NONE)
+	logging_config(stderr_level=LOG_NONE)
 
 	# Close standard output and standard error.
 	os.close(0)

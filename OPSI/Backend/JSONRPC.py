@@ -97,7 +97,7 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 
 	def _create_instance_methods(self) -> None:  # pylint: disable=too-many-locals
 		for method in self.interface:
-			try:  # pylint: disable=loop-try-except-usage
+			try:
 				method_name = method["name"]
 
 				if method_name in (
@@ -107,7 +107,7 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 				):
 					continue
 
-				logger.debug("Creating instance method: %s", method_name)  # pylint: disable=loop-global-usage
+				logger.debug("Creating instance method: %s", method_name)
 
 				args = method["args"]
 				varargs = method["varargs"]
@@ -120,8 +120,8 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 					if argument == "self":
 						continue
 
-					if isinstance(defaults, (tuple, list)) and len(defaults) + i >= len(args):  # pylint: disable=loop-invariant-statement
-						default = defaults[len(defaults) - len(args) + i]  # pylint: disable=loop-invariant-statement
+					if isinstance(defaults, (tuple, list)) and len(defaults) + i >= len(args):
+						default = defaults[len(defaults) - len(args) + i]
 						if isinstance(default, str):
 							default = "{0!r}".format(default).replace('"', "'")  # pylint: disable=consider-using-f-string
 						arg_list.append(f"{argument}={default}")
@@ -141,12 +141,12 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 				arg_string = ", ".join(arg_list)
 				call_string = ", ".join(call_list)
 
-				logger.trace("%s: arg string is: %s", method_name, arg_string)  # pylint: disable=loop-global-usage
-				logger.trace("%s: call string is: %s", method_name, call_string)  # pylint: disable=loop-global-usage
-				with warnings.catch_warnings():  # pylint: disable=dotted-import-in-loop
+				logger.trace("%s: arg string is: %s", method_name, arg_string)
+				logger.trace("%s: call string is: %s", method_name, call_string)
+				with warnings.catch_warnings():
 					exec(  # pylint: disable=exec-used
 						f'def {method_name}(self, {arg_string}): return self.execute_rpc("{method_name}", [{call_string}])'
 					)
-					setattr(self, method_name, MethodType(eval(method_name), self))  # pylint: disable=eval-used,dotted-import-in-loop
+					setattr(self, method_name, MethodType(eval(method_name), self))  # pylint: disable=eval-used
 			except Exception as err:  # pylint: disable=broad-except
-				logger.error("Failed to create instance method '%s': %s", method, err, exc_info=True)  # pylint: disable=loop-global-usage
+				logger.error("Failed to create instance method '%s': %s", method, err, exc_info=True)
