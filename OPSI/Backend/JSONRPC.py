@@ -40,6 +40,8 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 
 		Backend.__init__(self, **kwargs)  # type: ignore[misc]
 
+		self.interface = []
+
 		service_args = {
 			"address": address,
 			"user_agent": f"opsi-jsonrpc-backend/{__version__}",
@@ -82,15 +84,20 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 		return self.service.disconnect()
 
 	def connection_established(self, service_client: "ServiceClient") -> None:
+		self.interface = self.service.jsonrpc("backend_getInterface")
 		self._create_instance_methods()
 
+	def backend_getInterface(self) -> list[dict[str, Any]]:  # pylint: disable=invalid-name
+		return self.interface
+
 	def _create_instance_methods(self) -> None:  # pylint: disable=too-many-locals
-		for method in self.service.jsonrpc("backend_getInterface"):
+		for method in self.interface:
 			try:  # pylint: disable=loop-try-except-usage
 				method_name = method["name"]
 
 				if method_name in (
 					"backend_exit",
+					"backend_getInterface",
 					"jsonrpc_getSessionId",
 				):
 					continue
