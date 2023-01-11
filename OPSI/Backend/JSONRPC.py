@@ -72,20 +72,20 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 			elif option == "connecttimeout":
 				service_args["connect_timeout"] = int(value)
 
-		self._service_client = ServiceClient(**service_args)
-		self._service_client.register_connection_listener(self)
+		self.service = ServiceClient(**service_args)
+		self.service.register_connection_listener(self)
 
 	def jsonrpc_getSessionId(self) -> str:  # pylint: disable=invalid-name
-		return self._service_client.session_cookie
+		return self.service.session_cookie
 
 	def backend_exit(self) -> None:
-		return self._service_client.disconnect()
+		return self.service.disconnect()
 
 	def connection_established(self, service_client: "ServiceClient") -> None:
 		self._create_instance_methods()
 
 	def _create_instance_methods(self) -> None:  # pylint: disable=too-many-locals
-		for method in self._service_client.jsonrpc("backend_getInterface"):
+		for method in self.service.jsonrpc("backend_getInterface"):
 			try:  # pylint: disable=loop-try-except-usage
 				method_name = method["name"]
 
