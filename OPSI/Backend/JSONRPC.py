@@ -8,19 +8,27 @@ JSONRPC backend.
 This backend executes the calls on a remote backend via JSONRPC.
 """
 
-from opsicommon.client.jsonrpc import JSONRPCClient
+from __future__ import annotations
+
+import warnings
+from types import MethodType
+from typing import Any
 
 from OPSI import __version__
 from OPSI.Backend.Base import Backend
+from opsicommon.client.opsiservice import ServiceClient, ServiceConnectionListener
+from opsicommon.logging import get_logger
+
+logger = get_logger("opsi.general")
 
 __all__ = ("JSONRPCBackend",)
 
 
-class JSONRPCBackend(Backend, JSONRPCClient):  # pylint: disable=too-many-instance-attributes
+class JSONRPCBackend(Backend, ServiceConnectionListener):
 	"""
 	This Backend gives remote access to a Backend reachable via jsonrpc.
 	"""
-	def __init__(self, address: str, **kwargs) -> None:  # pylint: disable=too-many-branches,too-many-statements
+	def __init__(self, address: str, **kwargs: Any) -> None:  # pylint: disable=too-many-branches,too-many-statements
 		"""
 		Backend for JSON-RPC access to another opsi service.
 
@@ -30,22 +38,103 @@ class JSONRPCBackend(Backend, JSONRPCClient):  # pylint: disable=too-many-instan
 
 		self._name = "jsonrpc"
 
-		Backend.__init__(self, **kwargs)
+		Backend.__init__(self, **kwargs)  # type: ignore[misc]
 
-		connection_pool_size = 250
-		for option, value in kwargs.copy().items():
-			if option.lower().replace("_", "") in ("connectionpoolsize", "httppoolmaxsize"):
+		service_args = {
+			"address": address,
+			"user_agent": f"opsi-jsonrpc-backend/{__version__}",
+			"verify": "accept_all"
+		}
+		for option, value in kwargs.items():
+			option = option.lower().replace("_", "")
+			if option == "username":
+				service_args["username"] = str(value or "")
+			elif option == "password":
+				service_args["password"] = str(value or "")
+			elif option == "cacertfile":
 				if value not in (None, ""):
-					connection_pool_size = int(value)
-				del kwargs[option]
-		kwargs["connection_pool_size"] = connection_pool_size
+					service_args["ca_cert_file"] = str(value)
+			elif option == "verifyservercert":
+				if value:
+					service_args["verify"] = ["opsi_ca", "uib_opsi_ca"]
+				else:
+					service_args["verify"] = "accept_all"
+			elif option == "sessionid":
+				if value:
+					service_args["session_cookie"] = str(value)
+			elif option == "sessionlifetime":
+				if value:
+					service_args["session_lifetime"] = int(value)
+			elif option == "proxyurl":
+				service_args["proxy_url"] = str(value) if value else None
+			elif option == "application":
+				service_args["user_agent"] = str(value)
+			elif option == "connecttimeout":
+				service_args["connect_timeout"] = int(value)
 
-		JSONRPCClient.__init__(self, address, **kwargs)
+		self._service_client = ServiceClient(**service_args)
+		self._service_client.register_connection_listener(self)
 
-		self._application = f"opsi-jsonrpc-backend/{__version__}"
-
-	def jsonrpc_getSessionId(self) -> str:
-		return self.session_id
+	def jsonrpc_getSessionId(self) -> str:  # pylint: disable=invalid-name
+		return self._service_client.session_cookie
 
 	def backend_exit(self) -> None:
-		self.disconnect()
+		return self._service_client.disconnect()
+
+	def connection_established(self, service_client: "ServiceClient") -> None:
+		self._create_instance_methods()
+
+	def _create_instance_methods(self) -> None:  # pylint: disable=too-many-locals
+		for method in self._service_client.jsonrpc("backend_getInterface"):
+			try:  # pylint: disable=loop-try-except-usage
+				method_name = method["name"]
+
+				if method_name in (
+					"backend_exit",
+					"jsonrpc_getSessionId",
+				):
+					continue
+
+				logger.debug("Creating instance method: %s", method_name)  # pylint: disable=loop-global-usage
+
+				args = method["args"]
+				varargs = method["varargs"]
+				keywords = method["keywords"]
+				defaults = method["defaults"]
+
+				arg_list = []
+				call_list = []
+				for i, argument in enumerate(args):
+					if argument == "self":
+						continue
+
+					if isinstance(defaults, (tuple, list)) and len(defaults) + i >= len(args):  # pylint: disable=loop-invariant-statement
+						default = defaults[len(defaults) - len(args) + i]  # pylint: disable=loop-invariant-statement
+						if isinstance(default, str):
+							default = "{0!r}".format(default).replace('"', "'")  # pylint: disable=consider-using-f-string
+						arg_list.append(f"{argument}={default}")
+					else:
+						arg_list.append(argument)
+					call_list.append(argument)
+
+				if varargs:
+					for vararg in varargs:
+						arg_list.append(f"*{vararg}")
+						call_list.append(vararg)
+
+				if keywords:
+					arg_list.append(f"**{keywords}")
+					call_list.append(keywords)
+
+				arg_string = ", ".join(arg_list)
+				call_string = ", ".join(call_list)
+
+				logger.trace("%s: arg string is: %s", method_name, arg_string)  # pylint: disable=loop-global-usage
+				logger.trace("%s: call string is: %s", method_name, call_string)  # pylint: disable=loop-global-usage
+				with warnings.catch_warnings():  # pylint: disable=dotted-import-in-loop
+					exec(  # pylint: disable=exec-used
+						f'def {method_name}(self, {arg_string}): return self.execute_rpc("{method_name}", [{call_string}])'
+					)
+					setattr(self, method_name, MethodType(eval(method_name), self))  # pylint: disable=eval-used,dotted-import-in-loop
+			except Exception as err:  # pylint: disable=broad-except
+				logger.error("Failed to create instance method '%s': %s", method, err, exc_info=True)  # pylint: disable=loop-global-usage
