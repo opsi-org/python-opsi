@@ -13,6 +13,7 @@ from __future__ import annotations
 import warnings
 from types import MethodType
 from typing import Any
+from urllib.parse import urlparse
 
 from OPSI import __version__
 from OPSI.Backend.Base import Backend
@@ -76,6 +77,10 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 
 		self.service = ServiceClient(**service_args)
 		self.service.register_connection_listener(self)
+
+	@property
+	def hostname(self) -> str:
+		return urlparse(self.service.base_url).hostname
 
 	def jsonrpc_getSessionId(self) -> str:  # pylint: disable=invalid-name
 		return self.service.session_cookie
