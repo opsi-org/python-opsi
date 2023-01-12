@@ -39,6 +39,7 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 
 		Backend.__init__(self, **kwargs)  # type: ignore[misc]
 
+		connect_on_init = True
 		service_args = {
 			"address": address,
 			"user_agent": f"opsi-jsonrpc-backend/{__version__}",
@@ -70,9 +71,13 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 				service_args["user_agent"] = str(value)
 			elif option == "connecttimeout":
 				service_args["connect_timeout"] = int(value)
+			elif option == "connectoninit":
+				connect_on_init = bool(value)
 
 		self.service = ServiceClient(**service_args)
 		self.service.register_connection_listener(self)
+		if connect_on_init:
+			self.service.connect()
 
 	@property
 	def hostname(self) -> str:
