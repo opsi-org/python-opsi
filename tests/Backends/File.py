@@ -16,8 +16,8 @@ from contextlib import contextmanager
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Backend.File import FileBackend
 
-from . import BackendMixin
 from ..helpers import workInTemporaryDirectory
+from . import BackendMixin
 
 
 class FileBackendMixin(BackendMixin):

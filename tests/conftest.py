@@ -18,21 +18,19 @@ be skipped if it does not exist.
 
 import os
 import shutil
-from contextlib import contextmanager
 import warnings
-import urllib3
+from contextlib import contextmanager
 
 import pytest
+import urllib3
 from _pytest.logging import LogCaptureHandler
-
 from OPSI.Backend.Backend import ExtendedConfigDataBackend
 from OPSI.Backend.BackendManager import BackendManager
 
 from .Backends.File import getFileBackend
-from .Backends.SQLite import getSQLiteBackend
 from .Backends.MySQL import getMySQLBackend
-from .helpers import workInTemporaryDirectory, createTemporaryTestfile
-
+from .Backends.SQLite import getSQLiteBackend
+from .helpers import createTemporaryTestfile, workInTemporaryDirectory
 
 _LICENSE_FILE = os.path.exists(os.path.join("/etc", "opsi", "licenses", "test.opsilic"))
 

@@ -11,7 +11,6 @@ import shutil
 from contextlib import closing, contextmanager
 
 import pytest
-
 from OPSI.Exceptions import OpsiBackupBackendNotFound
 from OPSI.System import which
 from OPSI.Util import md5sum, randomString

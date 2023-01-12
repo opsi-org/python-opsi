@@ -8,17 +8,16 @@ Testing BackendManager.
 
 import os
 
+import pytest
 from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Backend.Base import ConfigDataBackend
 
-from .helpers import getLocalFQDN
 from .Backends.File import getFileBackend
+from .helpers import getLocalFQDN
 from .test_configs import getConfigs
 from .test_groups import fillBackendWithGroups
 from .test_hosts import getClients, getConfigServer, getDepotServers
 from .test_products import getProducts, getProductsOnDepot
-
-import pytest
 
 
 def testBackendManagerDispatchesCallsToExtensionClass():
