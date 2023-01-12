@@ -43,7 +43,8 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 		service_args = {
 			"address": address,
 			"user_agent": f"opsi-jsonrpc-backend/{__version__}",
-			"verify": "accept_all"
+			"verify": "accept_all",
+			"jsonrpc_create_objects": True
 		}
 		for option, value in kwargs.items():
 			option = option.lower().replace("_", "")
