@@ -10,8 +10,6 @@ This backend executes the calls on a remote backend via JSONRPC.
 
 from __future__ import annotations
 
-import warnings
-from types import MethodType
 from typing import Any
 from urllib.parse import urlparse
 
@@ -40,8 +38,6 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 		self._name = "jsonrpc"
 
 		Backend.__init__(self, **kwargs)  # type: ignore[misc]
-
-		self.interface = []
 
 		service_args = {
 			"address": address,
@@ -82,71 +78,5 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 	def hostname(self) -> str:
 		return urlparse(self.service.base_url).hostname
 
-	def jsonrpc_getSessionId(self) -> str:  # pylint: disable=invalid-name
-		return self.service.session_cookie
-
-	def backend_exit(self) -> None:
-		return self.service.disconnect()
-
-	def connection_established(self, service_client: "ServiceClient") -> None:
-		self.interface = self.service.jsonrpc("backend_getInterface")
-		self._create_instance_methods()
-
-	def backend_getInterface(self) -> list[dict[str, Any]]:  # pylint: disable=invalid-name
-		return self.interface
-
-	def _create_instance_methods(self) -> None:  # pylint: disable=too-many-locals
-		for method in self.interface:
-			try:
-				method_name = method["name"]
-
-				if method_name in (
-					"backend_exit",
-					"backend_getInterface",
-					"jsonrpc_getSessionId",
-				):
-					continue
-
-				logger.debug("Creating instance method: %s", method_name)
-
-				args = method["args"]
-				varargs = method["varargs"]
-				keywords = method["keywords"]
-				defaults = method["defaults"]
-
-				arg_list = []
-				call_list = []
-				for i, argument in enumerate(args):
-					if argument == "self":
-						continue
-
-					if isinstance(defaults, (tuple, list)) and len(defaults) + i >= len(args):
-						default = defaults[len(defaults) - len(args) + i]
-						if isinstance(default, str):
-							default = "{0!r}".format(default).replace('"', "'")  # pylint: disable=consider-using-f-string
-						arg_list.append(f"{argument}={default}")
-					else:
-						arg_list.append(argument)
-					call_list.append(argument)
-
-				if varargs:
-					for vararg in varargs:
-						arg_list.append(f"*{vararg}")
-						call_list.append(vararg)
-
-				if keywords:
-					arg_list.append(f"**{keywords}")
-					call_list.append(keywords)
-
-				arg_string = ", ".join(arg_list)
-				call_string = ", ".join(call_list)
-
-				logger.trace("%s: arg string is: %s", method_name, arg_string)
-				logger.trace("%s: call string is: %s", method_name, call_string)
-				with warnings.catch_warnings():
-					exec(  # pylint: disable=exec-used
-						f'def {method_name}(self, {arg_string}): return self.execute_rpc("{method_name}", [{call_string}])'
-					)
-					setattr(self, method_name, MethodType(eval(method_name), self))  # pylint: disable=eval-used
-			except Exception as err:  # pylint: disable=broad-except
-				logger.error("Failed to create instance method '%s': %s", method, err, exc_info=True)
+	def connection_established(self, service_client: ServiceClient) -> None:
+		self.service.create_jsonrpc_methods(self)
