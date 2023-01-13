@@ -30,8 +30,6 @@ except (ImportError, OSError):
 	from Cryptodome.Hash import MD5
 	from Cryptodome.Signature import pkcs1_15
 
-from opsicommon.logging import get_logger
-
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import BackendError
 from OPSI.Object import *  # this is needed for dynamic loading # pylint: disable=wildcard-import,unused-wildcard-import
@@ -43,6 +41,7 @@ from OPSI.Types import (
 	forceUnicodeList,
 )
 from OPSI.Util import compareVersions, getPublicKey
+from opsicommon.logging import get_logger
 
 __all__ = ("describeInterface", "Backend")
 
@@ -76,11 +75,11 @@ def describeInterface(instance):  # pylint: disable=too-many-locals
 		args = spec.args
 		defaults = spec.defaults
 		params = [arg for arg in args if arg != "self"]
-		annotations = {}
+		annotations_ = {}
 		for param in params:
 			str_param = str(sig.parameters[param])
 			if ": " in str_param:
-				annotations[param] = str_param.split(": ", 1)[1].split(" = ", 1)[0]
+				annotations_[param] = str_param.split(": ", 1)[1].split(" = ", 1)[0]
 
 		if defaults is not None:
 			offset = len(params) - len(defaults)
@@ -108,7 +107,7 @@ def describeInterface(instance):  # pylint: disable=too-many-locals
 			"deprecated": getattr(function, "deprecated", False),
 			"alternative_method": getattr(function, "alternative_method", None),
 			"doc": doc,
-			"annotations": annotations
+			"annotations": annotations_
 		}
 
 	return [methods[name] for name in sorted(list(methods.keys()))]
