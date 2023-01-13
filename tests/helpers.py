@@ -37,10 +37,10 @@ be deleted if given.
 
 @contextmanager
 def createTemporaryTestfile(original, tempDir=None):
-	'''Copy `original` to a temporary directory and \
+	"""Copy `original` to a temporary directory and \
 yield the path to the new file.
 
-	The temporary directory can be specified overridden with `tempDir`.'''
+	The temporary directory can be specified overridden with `tempDir`."""
 
 	with workInTemporaryDirectory(tempDir) as targetDir:
 		shutil.copy(original, targetDir)
@@ -51,7 +51,7 @@ yield the path to the new file.
 
 
 def getLocalFQDN():
-	'Get the FQDN of the local machine.'
+	"Get the FQDN of the local machine."
 	# Lazy imports to not hinder other tests.
 	from OPSI.Types import forceHostId  # pylint: disable=import-outside-toplevel
 	from OPSI.Util import getfqdn  # pylint: disable=import-outside-toplevel
@@ -76,8 +76,8 @@ as hostname.
 	def gethostbyaddr(*_):
 		return (fqdn, [hostname], [address])
 
-	with mock.patch('socket.getfqdn', getfqdn):
-		with mock.patch('socket.gethostbyaddr', gethostbyaddr):
+	with mock.patch("socket.getfqdn", getfqdn):
+		with mock.patch("socket.gethostbyaddr", gethostbyaddr):
 			yield
 
 
@@ -103,15 +103,9 @@ def fakeGlobalConf(fqdn="opsi.test.invalid", dir=None):  # pylint: disable=redef
 	"Fake a global.conf and return the path to the file."
 
 	with workInTemporaryDirectory(dir) as tempDir:
-		configPath = os.path.join(tempDir, 'global.conf')
+		configPath = os.path.join(tempDir, "global.conf")
 
 		with open(configPath, "w", encoding="utf-8") as conf:
 			conf.write("[global]\n")
 			conf.write(f"hostname = {fqdn}\n")
 		yield configPath
-
-
-@contextmanager
-def cleanMandatoryConstructorArgsCache():
-	with mock.patch('opsicommon.objects._MANDATORY_CONSTRUCTOR_ARGS_CACHE', {}):
-		yield

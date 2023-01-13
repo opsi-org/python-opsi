@@ -8,12 +8,10 @@ Testing opsi SQL backend.
 
 import os.path
 
-import pytest
-
 import OPSI.Backend.SQL as sql
 import OPSI.Object as ob
+import pytest
 
-from .helpers import cleanMandatoryConstructorArgsCache as cmcac
 from .helpers import createTemporaryTestfile
 
 
@@ -26,29 +24,29 @@ def sqlBackendWithoutConnection():
 
 
 def testCreatingFilterWithoutParameters(sqlBackendWithoutConnection):
-	assert '' == sqlBackendWithoutConnection._filterToSql()
+	assert "" == sqlBackendWithoutConnection._filterToSql()
 
 
 def testCreatingFilterHasParentheses(sqlBackendWithoutConnection):
-	query = sqlBackendWithoutConnection._filterToSql({'lol': False})
-	assert '`lol` = 0' in query
-	assert query.startswith('(')
-	assert query.endswith(')')
+	query = sqlBackendWithoutConnection._filterToSql({"lol": False})
+	assert "`lol` = 0" in query
+	assert query.startswith("(")
+	assert query.endswith(")")
 
 
 def testCreatingNoFilterForNone(sqlBackendWithoutConnection):
-	result = sqlBackendWithoutConnection._filterToSql({'a': False, 'b': None})
-	assert 'a' in result
-	assert 'b' not in result
-	assert 'NULL' not in result
-	assert 'None' not in result
+	result = sqlBackendWithoutConnection._filterToSql({"a": False, "b": None})
+	assert "a" in result
+	assert "b" not in result
+	assert "NULL" not in result
+	assert "None" not in result
 
 
 def testCreatingFilterForNoneInList(sqlBackendWithoutConnection):
-	assert '`a` is NULL' in sqlBackendWithoutConnection._filterToSql({'a': [None]})
+	assert "`a` is NULL" in sqlBackendWithoutConnection._filterToSql({"a": [None]})
 
 
-@pytest.mark.parametrize("filterExpression", [{'a': []}])
+@pytest.mark.parametrize("filterExpression", [{"a": []}])
 def testFilterCreationSkiptsEmptyLists(sqlBackendWithoutConnection, filterExpression):
 	resultingQuery = sqlBackendWithoutConnection._filterToSql(filterExpression)
 
@@ -56,122 +54,119 @@ def testFilterCreationSkiptsEmptyLists(sqlBackendWithoutConnection, filterExpres
 	for key in filterExpression:
 		assert key not in resultingQuery
 
-	assert '' == resultingQuery
+	assert "" == resultingQuery
 
 
-@pytest.mark.parametrize("expectedConversion, filterExpression", [
-	('0', {'a': False}),
-	('1', {'a': True})
-])
+@pytest.mark.parametrize("expectedConversion, filterExpression", [("0", {"a": False}), ("1", {"a": True})])
 def testBoolValueRepresentation(sqlBackendWithoutConnection, expectedConversion, filterExpression):
 	assert expectedConversion in sqlBackendWithoutConnection._filterToSql(filterExpression)
 
 
 def testCreateFilterForMultipleBools(sqlBackendWithoutConnection):
-	condition = sqlBackendWithoutConnection._filterToSql({'a': True, 'b': False})
-	first, second = condition.split(' and ', 1)
+	condition = sqlBackendWithoutConnection._filterToSql({"a": True, "b": False})
+	first, second = condition.split(" and ", 1)
 
-	assert (first == '(`a` = 1)' and second == '(`b` = 0)') or (second == '(`a` = 1)' and first == '(`b` = 0)')
+	assert (first == "(`a` = 1)" and second == "(`b` = 0)") or (second == "(`a` = 1)" and first == "(`b` = 0)")
 
 
 def testCreatingFilterAddsMultipleValuesWithAnAnd(sqlBackendWithoutConnection):
-	assert u' and ' in sqlBackendWithoutConnection._filterToSql({'a': True, 'b': False})
+	assert " and " in sqlBackendWithoutConnection._filterToSql({"a": True, "b": False})
 
 
-@pytest.mark.parametrize("result, filterExpression", [
-	('(`a` = 1)', {'a': 1}),
-	('(`b` = 2.3)', {'b': 2.3}),
-	('(`c` = 4)', {'c': 4}),
-])
+@pytest.mark.parametrize(
+	"result, filterExpression",
+	[
+		("(`a` = 1)", {"a": 1}),
+		("(`b` = 2.3)", {"b": 2.3}),
+		("(`c` = 4)", {"c": 4}),
+	],
+)
 def testCreatingFilterForNumberRepresentation(sqlBackendWithoutConnection, result, filterExpression):
 	assert result == sqlBackendWithoutConnection._filterToSql(filterExpression)
 
 
 def testCreatingFilterForStringValue(sqlBackendWithoutConnection):
-	assert "(`a` = 'b')" == sqlBackendWithoutConnection._filterToSql({'a': "b"})
+	assert "(`a` = 'b')" == sqlBackendWithoutConnection._filterToSql({"a": "b"})
 
 
 def testCreatingFilterWithListOfValuesCreatesAnOrExpression(sqlBackendWithoutConnection):
-	assert '(`a` = 1 or `a` = 2)' == sqlBackendWithoutConnection._filterToSql({'a': [1, 2]})
+	assert "(`a` = 1 or `a` = 2)" == sqlBackendWithoutConnection._filterToSql({"a": [1, 2]})
 
 
 def testCreatingFilterWithMultipleParameters(sqlBackendWithoutConnection):
 	# Expected is something like: '(`a` = 1 or `a` = 2) and (`b` = 0)'
-	result = sqlBackendWithoutConnection._filterToSql({'a': [1, 2], 'b': False})
+	result = sqlBackendWithoutConnection._filterToSql({"a": [1, 2], "b": False})
 
-	first, second = result.split(' and ')
+	first, second = result.split(" and ")
 
 	def testOrCondition(condition):
-		ffirst, fsecond = condition.split(' or ')
-		assert ffirst == '(`a` = 1'
-		assert fsecond == '`a` = 2)'
+		ffirst, fsecond = condition.split(" or ")
+		assert ffirst == "(`a` = 1"
+		assert fsecond == "`a` = 2)"
 
-	if second == '(`b` = 0)':
+	if second == "(`b` = 0)":
 		testOrCondition(first)
-	elif first == '(`b` = 0)':
+	elif first == "(`b` = 0)":
 		testOrCondition(second)
 	else:
 		raise RuntimeError("We should never get here!")
 
 
 def testCreatingFilterWithWildcard(sqlBackendWithoutConnection):
-	assert u"(`a` LIKE '%bc')" == sqlBackendWithoutConnection._filterToSql({'a': '*bc'})
+	assert "(`a` LIKE '%bc')" == sqlBackendWithoutConnection._filterToSql({"a": "*bc"})
 
 
-@pytest.mark.parametrize("result, filterExpression", [
-	(u"(`a` > 1)", {'a': '> 1'}),
-	(u"(`a` < 1)", {'a': '< 1'}),
-	(u"(`a` = 1)", {'a': '= 1'}),
-	(u"(`a` <=> 1)", {'a': '<=> 1'}),
-])
+@pytest.mark.parametrize(
+	"result, filterExpression",
+	[
+		("(`a` > 1)", {"a": "> 1"}),
+		("(`a` < 1)", {"a": "< 1"}),
+		("(`a` = 1)", {"a": "= 1"}),
+		("(`a` <=> 1)", {"a": "<=> 1"}),
+	],
+)
 def testCreatingFilterWithGreaterOrLowerOrEqualSign(sqlBackendWithoutConnection, result, filterExpression):
 	assert result == sqlBackendWithoutConnection._filterToSql(filterExpression)
 
 
 def testCreatingQueryIncludesTableName(sqlBackendWithoutConnection):
-	assert "foo" in sqlBackendWithoutConnection._createQuery('foo')
+	assert "foo" in sqlBackendWithoutConnection._createQuery("foo")
 
 
 def testQueryCreationWithoutAttributesEverythingIsSelected(sqlBackendWithoutConnection):
-	assert u'select * from' in sqlBackendWithoutConnection._createQuery('foo')
+	assert "select * from" in sqlBackendWithoutConnection._createQuery("foo")
 
 
 def testQueryCreationDefiningColumnsToSelect(sqlBackendWithoutConnection):
-	assert u'`first`,`second`' in sqlBackendWithoutConnection._createQuery('foo', ['first', 'second'])
+	assert "`first`,`second`" in sqlBackendWithoutConnection._createQuery("foo", ["first", "second"])
 
 
 def testQueryCreationHavingFilterAddsWhereClause(sqlBackendWithoutConnection):
-	assert u'where' not in sqlBackendWithoutConnection._createQuery('foo')
-	assert u'where' in sqlBackendWithoutConnection._createQuery('foo', filter={'a': 1})
+	assert "where" not in sqlBackendWithoutConnection._createQuery("foo")
+	assert "where" in sqlBackendWithoutConnection._createQuery("foo", filter={"a": 1})
 
 
-@pytest.fixture
-def cleanMandatoryConstructorArgsCache():
-	with cmcac():
-		yield
-
-
-def testUniqueConditionForHostObject(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
-	host = ob.Host('foo.bar.baz')
+def testUniqueConditionForHostObject(sqlBackendWithoutConnection):
+	host = ob.Host("foo.bar.baz")
 	assert "`hostId` = 'foo.bar.baz'" == sqlBackendWithoutConnection._uniqueCondition(host)
 
 
-def testUniqueConditionOptionalParametersAreIgnored(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
-	host = ob.Host('foo.bar.baz', inventoryNumber='ABC+333')
+def testUniqueConditionOptionalParametersAreIgnored(sqlBackendWithoutConnection):
+	host = ob.Host("foo.bar.baz", inventoryNumber="ABC+333")
 
 	assert "`hostId` = 'foo.bar.baz'" == sqlBackendWithoutConnection._uniqueCondition(host)
 
 
-def testUniqueConditionMultipleParametersAreJoinedWithAnAnd(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
-	softwareLicense = ob.SoftwareLicense('a', 'b')
+def testUniqueConditionMultipleParametersAreJoinedWithAnAnd(sqlBackendWithoutConnection):
+	softwareLicense = ob.SoftwareLicense("a", "b")
 	condition = sqlBackendWithoutConnection._uniqueCondition(softwareLicense)
 
-	assert ' and ' in condition
+	assert " and " in condition
 	assert "`softwareLicenseId` = 'a' and `licenseContractId` = 'b'" == condition
 
 
-def testUniqueConditionForHostGroupHasTypeAppended(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
-	group = ob.ProductGroup('t')
+def testUniqueConditionForHostGroupHasTypeAppended(sqlBackendWithoutConnection):
+	group = ob.ProductGroup("t")
 	condition = sqlBackendWithoutConnection._uniqueCondition(group)
 
 	assert "`groupId` = 't'" in condition
@@ -179,8 +174,8 @@ def testUniqueConditionForHostGroupHasTypeAppended(sqlBackendWithoutConnection, 
 	assert "`type` = 'ProductGroup'" in condition
 
 
-def testUniqueConditionForProductGroupHasTypeAppended(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
-	group = ob.HostGroup('hg')
+def testUniqueConditionForProductGroupHasTypeAppended(sqlBackendWithoutConnection):
+	group = ob.HostGroup("hg")
 	condition = sqlBackendWithoutConnection._uniqueCondition(group)
 
 	assert "`groupId` = 'hg'" in condition
@@ -188,7 +183,7 @@ def testUniqueConditionForProductGroupHasTypeAppended(sqlBackendWithoutConnectio
 	assert "`type` = 'HostGroup'" in condition
 
 
-def testUniqueConditionForBooleanParameters(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
+def testUniqueConditionForBooleanParameters(sqlBackendWithoutConnection):
 	class Foo:
 		def __init__(self, true, false):
 			self.true = true
@@ -201,7 +196,7 @@ def testUniqueConditionForBooleanParameters(sqlBackendWithoutConnection, cleanMa
 	assert "`false` = 0" in condition
 
 
-def testAccessingParametersWithAttributenamesFails(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
+def testAccessingParametersWithAttributenamesFails(sqlBackendWithoutConnection):
 	class Foo2:
 		def __init__(self, something):
 			self._something = something
@@ -210,13 +205,13 @@ def testAccessingParametersWithAttributenamesFails(sqlBackendWithoutConnection, 
 		sqlBackendWithoutConnection._uniqueCondition(Foo2(True))
 
 
-def testUniqueConditionMandatoryParametersAreSkippedIfValueIsNone(sqlBackendWithoutConnection, cleanMandatoryConstructorArgsCache):
-	assert '' == sqlBackendWithoutConnection._uniqueCondition(FooParam(None))
+def testUniqueConditionMandatoryParametersAreSkippedIfValueIsNone(sqlBackendWithoutConnection):
+	assert "" == sqlBackendWithoutConnection._uniqueCondition(FooParam(None))
 
 
 @pytest.mark.parametrize("number", [1, 2.3, 4])
-def testParameterIsNumber(sqlBackendWithoutConnection, number, cleanMandatoryConstructorArgsCache):
-	assert '`param` = {0!s}'.format(number) == sqlBackendWithoutConnection._uniqueCondition(FooParam(number))
+def testParameterIsNumber(sqlBackendWithoutConnection, number):
+	assert "`param` = {0!s}".format(number) == sqlBackendWithoutConnection._uniqueCondition(FooParam(number))
 
 
 class FooParam:
@@ -225,36 +220,27 @@ class FooParam:
 
 
 def testCreatingUniqueHardwareConditionIgnoresHardwareClassAndType(sqlBackendWithoutConnection):
-	hwDict = {
-		"hardwareClass": "abc",
-		"type": 'def'
-	}
+	hwDict = {"hardwareClass": "abc", "type": "def"}
 
-	assert '' == sqlBackendWithoutConnection._uniqueAuditHardwareCondition(hwDict)
+	assert "" == sqlBackendWithoutConnection._uniqueAuditHardwareCondition(hwDict)
 
 
 def testCreatingConditionWithNoneTypes(sqlBackendWithoutConnection):
-	testDict = {
-		"abc": None,
-		'def': [None]
-	}
+	testDict = {"abc": None, "def": [None]}
 
 	condition = sqlBackendWithoutConnection._uniqueAuditHardwareCondition(testDict)
-	assert u'`abc` is NULL' in condition
-	assert u' and ' in condition
-	assert u'`def` is NULL' in condition
+	assert "`abc` is NULL" in condition
+	assert " and " in condition
+	assert "`def` is NULL" in condition
 
 
 def testAddingMultipleParametersWithAnd(sqlBackendWithoutConnection):
-	testDict = {
-		"abc": None,
-		'def': [None]
-	}
+	testDict = {"abc": None, "def": [None]}
 
 	condition = sqlBackendWithoutConnection._uniqueAuditHardwareCondition(testDict)
-	assert u' and ' in condition
-	assert not condition.strip().endswith('and')
-	assert not condition.strip().startswith('and')
+	assert " and " in condition
+	assert not condition.strip().endswith("and")
+	assert not condition.strip().startswith("and")
 
 
 def testCreatingQueryWithVariousTypes(sqlBackendWithoutConnection):
@@ -268,13 +254,13 @@ def testCreatingQueryWithVariousTypes(sqlBackendWithoutConnection):
 	}
 
 	condition = sqlBackendWithoutConnection._uniqueAuditHardwareCondition(testDict)
-	assert u' and ' in condition
-	assert u'`int` = 1' in condition
-	assert u'`float` = 2.3' in condition
-	assert u'`long` = 4' in condition
-	assert u'`bool_false` = False' in condition
-	assert u'`bool_true` = True' in condition
-	assert u"`string` = 'caramba'" in condition
+	assert " and " in condition
+	assert "`int` = 1" in condition
+	assert "`float` = 2.3" in condition
+	assert "`long` = 4" in condition
+	assert "`bool_false` = False" in condition
+	assert "`bool_true` = True" in condition
+	assert "`string` = 'caramba'" in condition
 
 
 @pytest.mark.parametrize("query", ["SELECT something"])
@@ -282,10 +268,7 @@ def testAvoidingMaliciousQueryOnlySelectAllowed(query):
 	assert query == returnQueryAfterCheck(query)
 
 
-@pytest.mark.parametrize("query", [
-	"ALTER TABLE blabla",
-	"DROP TABLE blabla"
-])
+@pytest.mark.parametrize("query", ["ALTER TABLE blabla", "DROP TABLE blabla"])
 def testOnlySelectAllowedRaisesExceptionWithNonSelectQuery(query):
 	with pytest.raises(ValueError):
 		returnQueryAfterCheck(query)
@@ -304,9 +287,9 @@ def testAlteringTableAfterChangeOfHardwareAuditConfig(test_data_path, sqlBackend
 	audit configuration took place. This is a commong operation during
 	updates.
 	"""
-	configDir = os.path.join(test_data_path, 'backend')
-	pathToOldConfig = os.path.join(configDir, 'small_hwaudit.conf')
-	pathToNewConfig = os.path.join(configDir, 'small_extended_hwaudit.conf')
+	configDir = os.path.join(test_data_path, "backend")
+	pathToOldConfig = os.path.join(configDir, "small_hwaudit.conf")
+	pathToNewConfig = os.path.join(configDir, "small_extended_hwaudit.conf")
 
 	with createTemporaryTestfile(pathToOldConfig) as oldConfig:
 		with sqlBackendCreationContextManager(auditHardwareConfigFile=oldConfig) as backend:

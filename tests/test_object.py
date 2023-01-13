@@ -7,15 +7,22 @@ Testing OPSI.Objects
 """
 
 import pytest
-
 from OPSI.Object import (
-	AuditHardwareOnHost, BoolProductProperty, Host, LocalbootProduct,
-	OpsiConfigserver, OpsiDepotserver, Product, ProductDependency,
-	ProductProperty, ProductPropertyState, UnicodeConfig,
+	AuditHardwareOnHost,
+	BoolProductProperty,
+	Host,
+	LocalbootProduct,
+	OpsiConfigserver,
+	OpsiDepotserver,
+	Product,
+	ProductDependency,
+	ProductProperty,
+	ProductPropertyState,
+	UnicodeConfig,
 	UnicodeProductProperty,
-	getPossibleClassAttributes, mandatoryConstructorArgs)
-
-from .helpers import cleanMandatoryConstructorArgsCache
+	getPossibleClassAttributes,
+	mandatoryConstructorArgs,
+)
 
 
 def testGetPossibleClassAttributes():
@@ -227,8 +234,7 @@ def testGetMandatoryConstructorArgsFromConstructorWithNoArguments():
 			pass
 
 	n = NoArgs()
-	with cleanMandatoryConstructorArgsCache():
-		args = mandatoryConstructorArgs(n.__class__)
+	args = mandatoryConstructorArgs(n.__class__)
 
 	assert [] == args
 
@@ -239,8 +245,7 @@ def testGetMandatoryConstructorArgsFromConstructorWithOnlyMandatoryArguments():
 			pass
 
 	om = OnlyMandatory(1, 1, 1)
-	with cleanMandatoryConstructorArgsCache():
-		args = mandatoryConstructorArgs(om.__class__)
+	args = mandatoryConstructorArgs(om.__class__)
 
 	assert ['give', 'me', 'this'] == args
 
@@ -251,8 +256,7 @@ def testGetMandatoryConstructorArgsFromConstructorWithOnlyOptionalArguments():
 			pass
 
 	oo = OnlyOptional()
-	with cleanMandatoryConstructorArgsCache():
-		args = mandatoryConstructorArgs(oo.__class__)
+	args = mandatoryConstructorArgs(oo.__class__)
 
 	assert [] == args
 
@@ -263,8 +267,7 @@ def testGetMandatoryConstructorArgsFromConstructorWithMixedArguments():
 			pass
 
 	ma = MixedArgs(True, True, True)
-	with cleanMandatoryConstructorArgsCache():
-		args = mandatoryConstructorArgs(ma.__class__)
+	args = mandatoryConstructorArgs(ma.__class__)
 
 	assert ['i', 'want', 'this'] == args
 
@@ -275,8 +278,7 @@ def testGetMandatoryConstructorArgsFromConstructorWithWildcardArguments():
 			pass
 
 	wo = WildcardOnly("yeah", "great", "thing")
-	with cleanMandatoryConstructorArgsCache():
-		args = mandatoryConstructorArgs(wo.__class__)
+	args = mandatoryConstructorArgs(wo.__class__)
 
 	assert [] == args
 
@@ -287,8 +289,7 @@ def testGetMandatoryConstructorArgsFromConstructorWithKeywordArguments():
 			pass
 
 	kw = Kwargz(go=1, get="asdf", them=[], girl=True)
-	with cleanMandatoryConstructorArgsCache():
-		args = mandatoryConstructorArgs(kw.__class__)
+	args = mandatoryConstructorArgs(kw.__class__)
 
 	assert [] == args
 
@@ -299,8 +300,7 @@ def testGetMandatoryConstructorArgsFromConstructorWithMixedWithArgsAndKwargs():
 			pass
 
 	kwam = KwargzAndMore(False, True, "some", "more", things="here")
-	with cleanMandatoryConstructorArgsCache():
-		args = mandatoryConstructorArgs(kwam.__class__)
+	args = mandatoryConstructorArgs(kwam.__class__)
 
 	assert ["crosseyed", "heart"] == args
 
