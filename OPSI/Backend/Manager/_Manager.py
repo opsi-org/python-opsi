@@ -23,6 +23,7 @@ from OPSI.Backend.HostControlSafe import HostControlSafeBackend
 from OPSI.Exceptions import BackendConfigurationError
 from OPSI.Types import forceBool
 from opsicommon.logging import get_logger
+from opsicommon.objects import BaseObject
 
 from .AccessControl import BackendAccessControl
 from .Config import loadBackendConfig
@@ -87,6 +88,8 @@ class BackendManager(ExtendedBackend):
 		:param aclfile: Load the ACL from this file.
 		:type aclfile: str
 		"""
+		BaseObject.copy_from_hash = True
+
 		self._backend = None
 		self._backendConfigDir = None
 		self._overwrite = True

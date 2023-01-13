@@ -34,7 +34,9 @@ from .helpers import createTemporaryTestfile, workInTemporaryDirectory
 
 _LICENSE_FILE = os.path.exists(os.path.join("/etc", "opsi", "licenses", "test.opsilic"))
 
+# Path to test data dir
 TEST_DATA_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), "data"))
+# Path to dist data dir (data/etc from opsi-server)
 DIST_DATA_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "data"))
 
 
