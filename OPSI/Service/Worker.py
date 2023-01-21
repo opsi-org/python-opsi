@@ -16,7 +16,7 @@ from opsicommon.logging import get_logger
 from twisted.internet import defer, threads
 from twisted.python.failure import Failure
 
-from OPSI.Exceptions import OpsiAuthenticationError, OpsiBadRpcError
+from OPSI.Exceptions import OpsiServiceAuthenticationError, OpsiBadRpcError
 from OPSI.Service.JsonRpc import JsonRpc
 from OPSI.Types import forceList, forceUnicode
 from OPSI.Util import fromJson, objectToHtml, serialize, toJson
@@ -257,7 +257,7 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 
 		try:
 			failure.raiseException()
-		except OpsiAuthenticationError as err:
+		except OpsiServiceAuthenticationError as err:
 			logger.warning(err, exc_info=True)
 			self.request.setResponseCode(401)
 			self.request.setHeader("www-authenticate", f"basic realm={self.authRealm}")
@@ -427,7 +427,7 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 			logger.info(err, exc_info=True)
 			self._freeSession(result)
 			self._getSessionHandler().deleteSession(self.session.uid)
-			raise OpsiAuthenticationError(f"Forbidden: {err}") from err
+			raise OpsiServiceAuthenticationError(f"Forbidden: {err}") from err
 
 		return result
 

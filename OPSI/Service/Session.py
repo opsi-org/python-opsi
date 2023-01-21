@@ -15,7 +15,7 @@ import time
 
 from opsicommon.logging import get_logger
 
-from OPSI.Exceptions import OpsiAuthenticationError
+from OPSI.Exceptions import OpsiServiceAuthenticationError
 from OPSI.Types import forceInt, forceUnicode
 from OPSI.Util import randomString
 
@@ -162,7 +162,7 @@ the value holds the sesion.
 					self.deleteSession(sessionUid)
 
 				if len(self.getSessions(ip)) >= self.maxSessionsPerIp:
-					raise OpsiAuthenticationError(f"Session limit for ip '{ip}' reached")
+					raise OpsiServiceAuthenticationError(f"Session limit for ip '{ip}' reached")
 
 		session = self.createSession()
 		session.increaseUsageCount()

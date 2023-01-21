@@ -10,7 +10,7 @@ import time
 from contextlib import contextmanager
 
 from OPSI.Service.Session import Session, SessionHandler
-from OPSI.Exceptions import OpsiAuthenticationError
+from OPSI.Exceptions import OpsiServiceAuthenticationError
 
 import pytest
 
@@ -185,7 +185,7 @@ def testGetSessionsByIP():
 		assert len(handler.getSessions()) == 4
 		assert {session.uid: session} == handler.getSessions(ip=testIP)
 
-		with pytest.raises(OpsiAuthenticationError):
+		with pytest.raises(OpsiServiceAuthenticationError):
 			handler.getSession(ip=testIP)
 
 
