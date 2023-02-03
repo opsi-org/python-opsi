@@ -437,6 +437,8 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 			self.query = urllib.parse.urlparse(urllib.parse.unquote(self.request.uri.decode("ascii"))).query
 		elif self.request.method == b"POST":
 			self.query = self.request.content.read()
+		elif self.request.method == b"HEAD":
+			pass
 		else:
 			raise ValueError(f"Unhandled method '{self.request.method}'")
 		return result
