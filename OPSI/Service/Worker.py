@@ -12,15 +12,14 @@ import tempfile
 import urllib
 import uuid
 
-from opsicommon.logging import get_logger
-from twisted.internet import defer, threads
-from twisted.python.failure import Failure
-
-from OPSI.Exceptions import OpsiServiceAuthenticationError, OpsiBadRpcError
+from OPSI.Exceptions import OpsiBadRpcError, OpsiServiceAuthenticationError
 from OPSI.Service.JsonRpc import JsonRpc
 from OPSI.Types import forceList, forceUnicode
 from OPSI.Util import fromJson, objectToHtml, serialize, toJson
 from OPSI.Util.HTTP import deflateDecode, deflateEncode, gzipDecode, gzipEncode
+from opsicommon.logging import get_logger
+from twisted.internet import defer, threads
+from twisted.python.failure import Failure
 
 INTERFACE_PAGE = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -229,8 +228,9 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 		deferred = defer.Deferred()
 		deferred.addCallback(self._getSession)
 		deferred.addCallback(self._authenticate)
-		deferred.addCallback(self._getQuery)
-		deferred.addCallback(self._processQuery)
+		if self.request.method != b"HEAD":
+			deferred.addCallback(self._getQuery)
+			deferred.addCallback(self._processQuery)
 		deferred.addCallback(self._setCookie)
 		deferred.addCallback(self._setResponse)
 		deferred.addCallback(self._finishRequest)
@@ -369,9 +369,7 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 		if sessionId == self.session.uid:
 			logger.info("Reusing session for client '%s', application '%s'", request_ip, userAgent)
 		elif sessionId:
-			logger.notice(
-				"Application '%s' on client '%s' supplied non existing session id: %s", userAgent, request_ip, sessionId
-			)
+			logger.notice("Application '%s' on client '%s' supplied non existing session id: %s", userAgent, request_ip, sessionId)
 
 		if sessionHandler and self.session.ip and (self.session.ip != request_ip):
 			logger.critical(
@@ -395,9 +393,7 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 			)
 		self.session.userAgent = userAgent
 
-		logger.confidential(
-			"Session id is %s for client %s, application %s", self.session.uid, request_ip, self.session.userAgent
-		)
+		logger.confidential("Session id is %s for client %s, application %s", self.session.uid, request_ip, self.session.userAgent)
 
 		logger.confidential("Session content: %s", self.session.__dict__)
 		return result
@@ -437,8 +433,6 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 			self.query = urllib.parse.urlparse(urllib.parse.unquote(self.request.uri.decode("ascii"))).query
 		elif self.request.method == b"POST":
 			self.query = self.request.content.read()
-		elif self.request.method == b"HEAD":
-			pass
 		else:
 			raise ValueError(f"Unhandled method '{self.request.method}'")
 		return result
