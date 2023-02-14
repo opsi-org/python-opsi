@@ -42,6 +42,8 @@ except (ImportError, OSError):
 	from Cryptodome.Util.number import bytes_to_long
 
 from opsicommon.logging import get_logger
+from opsicommon.objects import deserialize as oc_deserialize
+from opsicommon.objects import from_json, serialize, to_json
 from opsicommon.types import (
 	_PACKAGE_VERSION_REGEX,
 	_PRODUCT_VERSION_REGEX,
@@ -54,12 +56,8 @@ from opsicommon.utils import (
 	monkeypatch_subprocess_for_frozen,  # pylint: disable=unused-import
 )
 from opsicommon.utils import Singleton
-from opsicommon.utils import deserialize as oc_deserialize
-from opsicommon.utils import from_json
 from opsicommon.utils import generate_opsi_host_key as generateOpsiHostKey
-from opsicommon.utils import serialize
 from opsicommon.utils import timestamp as oc_timestamp
-from opsicommon.utils import to_json
 
 __all__ = (
 	"BLOWFISH_IV",
