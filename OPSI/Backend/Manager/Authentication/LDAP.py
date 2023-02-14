@@ -9,10 +9,9 @@ LDAP authentication
 from typing import Set
 
 import ldap3
-from opsicommon.logging import get_logger
-
 from OPSI.Backend.Manager.Authentication import AuthenticationModule
 from OPSI.Exceptions import BackendAuthenticationError
+from opsicommon.logging import get_logger
 
 logger = get_logger("opsi.general")
 
@@ -85,7 +84,7 @@ class LDAPAuthentication(AuthenticationModule):
 			# self._ldap = ldap3.Connection(server=self.server_url, client_strategy=ldap3.SAFE_SYNC, user=bind_user, password=password)
 			self._ldap = ldap3.Connection(server=self.server_url, user=bind_user, password=password)
 			if not self._ldap.bind():
-				raise Exception(f"bind failed: {self._ldap.result}")
+				raise RuntimeError(f"bind failed: {self._ldap.result}")
 			# self._ldap.extend.standard.who_am_i()
 		except Exception as err:
 			logger.info("LDAP authentication failed for user '%s'", username, exc_info=True)
@@ -118,7 +117,7 @@ class LDAPAuthentication(AuthenticationModule):
 				break
 
 		if not user_dn:
-			raise Exception(f"User {username} not found in {ldap_type} ldap")
+			raise RuntimeError(f"User {username} not found in {ldap_type} ldap")
 
 		logger.info("User %s found in %s ldap: %s", username, ldap_type, user_dn)
 

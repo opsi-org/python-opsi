@@ -13,14 +13,13 @@ This holds backend-independent migrations.
 
 import os.path
 
-from opsicommon.logging import get_logger
-
 from OPSI.Backend.Base.ConfigData import OPSI_PASSWD_FILE
 from OPSI.Object import OpsiConfigserver
 from OPSI.System.Posix import getLocalFqdn, getNetworkConfiguration
 from OPSI.Types import forceList
 from OPSI.Util.Task.ConfigureBackend.ConfigurationData import initializeConfigs
 from OPSI.Util.Task.Rights import set_rights
+from opsicommon.logging import get_logger
 
 __all__ = ("initializeBackends",)
 
@@ -81,7 +80,7 @@ def initializeBackends(ipAddress=None, backendManagerConfig=None):
 				try:
 					configServer = backend.host_getObjects(type="OpsiConfigserver")[0]  # pylint: disable=no-member
 				except IndexError as err:
-					raise Exception(f"Config server '{fqdn}' not found") from err
+					raise RuntimeError(f"Config server '{fqdn}' not found") from err
 
 				if networkConfig["ipAddress"]:
 					configServer.setIpAddress(networkConfig["ipAddress"])
