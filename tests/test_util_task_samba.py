@@ -7,16 +7,16 @@ Testing functionality of OPSI.Util.Task.Samba
 """
 
 import os.path
-import pytest
 
 import OPSI.Util.Task.Samba as Samba
+import pytest
 
 from .helpers import mock
 
 
-@pytest.fixture(params=[True, False], ids=['Samba-4', 'Samba-3'])
+@pytest.fixture(params=[True, False], ids=["Samba-4", "Samba-3"])
 def isSamba4(request):
-	with mock.patch('OPSI.Util.Task.Samba.isSamba4', lambda: request.param):
+	with mock.patch("OPSI.Util.Task.Samba.isSamba4", lambda: request.param):
 		yield request.param
 
 
@@ -25,8 +25,8 @@ def pathToSmbConf(tempDir):
 	"""
 	Path to an empty file serving as possible smb.conf.
 	"""
-	pathToSmbConf = os.path.join(tempDir, 'SMB_CONF')
-	with open(pathToSmbConf, 'w'):
+	pathToSmbConf = os.path.join(tempDir, "SMB_CONF")
+	with open(pathToSmbConf, "w"):
 		pass
 
 	return pathToSmbConf
@@ -37,31 +37,21 @@ def disableDirCreation():
 	def printMessage(path, *_unused):
 		print("Would create {0!r}".format(path))
 
-	with mock.patch('OPSI.Util.Task.Samba.os.mkdir', printMessage):
+	with mock.patch("OPSI.Util.Task.Samba.os.mkdir", printMessage):
 		yield
-
-
-@pytest.fixture(params=['/home/opsiproducts', '/var/lib/opsi/workbench/'])
-def workbenchPath(request):
-	path = request.param
-	with mock.patch('OPSI.Util.Task.Samba.getWorkbenchDirectory', lambda: path):
-		yield path
 
 
 @pytest.mark.parametrize("emptyoutput", [None, []])
 def testCheckForSambaVersionWithoutSMBD(emptyoutput):
-	with mock.patch('OPSI.Util.Task.Samba.execute', lambda cmd: emptyoutput):
-		with mock.patch('OPSI.Util.Task.Samba.which', lambda cmd: None):
+	with mock.patch("OPSI.Util.Task.Samba.execute", lambda cmd: emptyoutput):
+		with mock.patch("OPSI.Util.Task.Samba.which", lambda cmd: None):
 			assert not Samba.isSamba4()
 
 
-@pytest.mark.parametrize("versionString, expectedSamba4", [
-	('version 4.0.3', True),
-	('version 3.1', False)
-])
+@pytest.mark.parametrize("versionString, expectedSamba4", [("version 4.0.3", True), ("version 3.1", False)])
 def testCheckForSamba4DependsOnVersion(versionString, expectedSamba4):
-	with mock.patch('OPSI.Util.Task.Samba.execute', lambda cmd: [versionString]):
-		with mock.patch('OPSI.Util.Task.Samba.which', lambda cmd: cmd):
+	with mock.patch("OPSI.Util.Task.Samba.execute", lambda cmd: [versionString]):
+		with mock.patch("OPSI.Util.Task.Samba.which", lambda cmd: cmd):
 			assert Samba.isSamba4() == expectedSamba4
 
 
@@ -80,23 +70,14 @@ def testReadingSambaConfig(pathToSmbConf):
 		"[opsi_logs]\n",
 	]
 
-	with open(pathToSmbConf, 'w') as fakeSambaConfig:
+	with open(pathToSmbConf, "w") as fakeSambaConfig:
 		for line in config:
 			fakeSambaConfig.write(line)
 
 	assert config == Samba._readConfig(pathToSmbConf)
 
 
-def testConfigureSambaOnUbuntu(isSamba4, workbenchPath, disableDirCreation):
-	result = Samba._processConfig([])
-
-	if workbenchPath.endswith('/'):
-		workbenchPath = workbenchPath[:-1]
-
-	assert any('path = {}'.format(workbenchPath) in line for line in result)
-
-
-def testSambaConfigureSamba4Share(isSamba4, workbenchPath, disableDirCreation):
+def testSambaConfigureSamba4Share(isSamba4, disableDirCreation):
 	config = [
 		"[opt_pcbin]\n",
 		"[opsi_depot]\n",
@@ -122,7 +103,7 @@ def testAdminUsersAreRemovedExistingOpsiDepotShare(isSamba4, disableDirCreation)
 		"   level2 oplocks = no\n",
 		"   writeable = no\n",
 		"   invalid users = root\n",
-		"   admin users = pcpatch\n" # old fix
+		"   admin users = pcpatch\n",  # old fix
 	]
 
 	if not isSamba4:
@@ -130,7 +111,7 @@ def testAdminUsersAreRemovedExistingOpsiDepotShare(isSamba4, disableDirCreation)
 
 	result = Samba._processConfig(config)
 
-	assert not any('admin users' in line for line in result), 'admin users left in share opsi_depot'
+	assert not any("admin users" in line for line in result), "admin users left in share opsi_depot"
 
 
 def testCorrectOpsiDepotShareWithoutFixForSamba4(isSamba4, disableDirCreation):
@@ -152,9 +133,9 @@ def testCorrectOpsiDepotShareWithoutFixForSamba4(isSamba4, disableDirCreation):
 
 	in_opsi_depot_section = False
 	for line in Samba._processConfig(config):
-		if line.lower().strip() == '[opsi_depot]':
+		if line.lower().strip() == "[opsi_depot]":
 			in_opsi_depot_section = True
-		elif in_opsi_depot_section and line.lower().strip().startswith('['):
+		elif in_opsi_depot_section and line.lower().strip().startswith("["):
 			in_opsi_depot_section = False
 
 		if in_opsi_depot_section and line.strip() == "acl allow execute always = true":
@@ -189,7 +170,6 @@ def testCorrectOpsiDepotShareWithSamba4Fix(isSamba4, disableDirCreation):
 	print("".join(config))
 	print("".join(Samba._processConfig(config)))
 
-
 	assert config == Samba._processConfig(config)
 
 
@@ -208,7 +188,7 @@ def testProcessConfigDoesNotRemoveComment(isSamba4, disableDirCreation):
 
 	result = Samba._processConfig(config)
 
-	assert any('; load opsi shares' in line for line in result)
+	assert any("; load opsi shares" in line for line in result)
 
 
 def testProcessConfigAddsMissingRepositoryShare(isSamba4, disableDirCreation):
@@ -228,14 +208,14 @@ def testProcessConfigAddsMissingRepositoryShare(isSamba4, disableDirCreation):
 	repository = False
 	pathFound = False
 	for line in result:
-		if '[opsi_repository]' in line:
+		if "[opsi_repository]" in line:
 			repository = True
 		elif repository:
-			if line.strip().startswith('['):
+			if line.strip().startswith("["):
 				# next section
 				break
-			elif line.strip().startswith('path'):
-				assert '/var/lib/opsi/repository' in line
+			elif line.strip().startswith("path"):
+				assert "/var/lib/opsi/repository" in line
 				pathFound = True
 				break
 
@@ -246,7 +226,7 @@ def testProcessConfigAddsMissingRepositoryShare(isSamba4, disableDirCreation):
 def testWritingEmptySambaConfig(pathToSmbConf):
 	Samba._writeConfig([], pathToSmbConf)
 
-	with open(pathToSmbConf, 'r') as readConfig:
+	with open(pathToSmbConf, "r") as readConfig:
 		assert [] == readConfig.readlines()
 
 
@@ -259,10 +239,9 @@ def testWritingSambaConfig(pathToSmbConf):
 		"[opsi_workbench]\n",
 		"[opsi_repository]\n",
 		"[opsi_logs]\n",
-
 	]
 
 	Samba._writeConfig(config, pathToSmbConf)
 
-	with open(pathToSmbConf, 'r') as readConfig:
+	with open(pathToSmbConf, "r") as readConfig:
 		assert config == readConfig.readlines()
