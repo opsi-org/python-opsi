@@ -11,11 +11,9 @@ import os
 import shutil
 import time
 
-from opsicommon.logging import get_logger
-
 from OPSI.System import execute, which
 from OPSI.System.Posix import getSambaServiceName
-from OPSI.Util.Task.Rights import getWorkbenchDirectory
+from opsicommon.logging import get_logger
 
 __all__ = ("configureSamba", "isSamba4")
 
@@ -93,17 +91,6 @@ def _processConfig(lines):  # pylint: disable=too-many-locals,too-many-branches,
 		if samba4:
 			newlines.append("   acl allow execute always = true\n")
 		newlines.append("\n")
-
-		depotDir = "/var/lib/opsi/depot"
-		if not os.path.exists(depotDir):
-			try:
-				os.mkdir(depotDir)
-				if os.path.exists("/opt/pcbin/install"):
-					logger.warning(
-						"You have an old depot configuration. Using /opt/pcbin/install is deprecated, please use /var/lib/opsi/depot instead."
-					)
-			except Exception as err:  # pylint: disable=broad-except
-				logger.warning("Failed to create depot directory '%s': %s", depotDir, err)
 	elif samba4:
 		logger.notice("   Share opsi_depot found and samba 4 is detected. Setting executable fix on opsi_depot share")
 		tmp_lines = []
@@ -156,33 +143,16 @@ def _processConfig(lines):  # pylint: disable=too-many-locals,too-many-branches,
 			os.mkdir("/var/lib/opsi/ntfs-images")
 
 	if not workbenchShareFound:
-		try:
-			workbenchDirectory = getWorkbenchDirectory()
-		except Exception as err:  # pylint: disable=broad-except
-			logger.warning("Failed to read the location of the workbench: %s", err)
-			workbenchDirectory = None
-
-		if workbenchDirectory:
-			if workbenchDirectory.endswith("/"):
-				# Removing trailing slash
-				workbenchDirectory = workbenchDirectory[:-1]
-
-			try:
-				os.mkdir(workbenchDirectory)
-				logger.notice("Created missing workbench directory %s", workbenchDirectory)
-			except OSError as mkdirErr:
-				logger.trace("Did not create workbench %s: '%s", workbenchDirectory, mkdirErr)
-
-			logger.notice("   Adding share [opsi_workbench]")
-			newlines.append("[opsi_workbench]\n")
-			newlines.append("   available = yes\n")
-			newlines.append("   comment = opsi workbench\n")
-			newlines.append(f"   path = {workbenchDirectory}\n")
-			newlines.append("   writeable = yes\n")
-			newlines.append("   invalid users = root\n")
-			newlines.append("   create mask = 0660\n")
-			newlines.append("   directory mask = 0770\n")
-			newlines.append("\n")
+		logger.notice("   Adding share [opsi_workbench]")
+		newlines.append("[opsi_workbench]\n")
+		newlines.append("   available = yes\n")
+		newlines.append("   comment = opsi workbench\n")
+		newlines.append("   path = /var/lib/opsi/workbench\n")
+		newlines.append("   writeable = yes\n")
+		newlines.append("   invalid users = root\n")
+		newlines.append("   create mask = 0660\n")
+		newlines.append("   directory mask = 0770\n")
+		newlines.append("\n")
 
 	if not repositoryFound:
 		logger.notice("  Adding share [opsi_repository]")
@@ -194,9 +164,6 @@ def _processConfig(lines):  # pylint: disable=too-many-locals,too-many-branches,
 		newlines.append("   writeable = no\n")
 		newlines.append("   invalid users = root\n")
 		newlines.append("\n")
-		if not os.path.exists("/var/lib/opsi/repository"):
-			logger.debug("Path:  /var/lib/opsi/repository not found: creating.")
-			os.mkdir("/var/lib/opsi/repository")
 
 	if not logsFound:
 		logger.notice("  Adding share [opsi_logs]")

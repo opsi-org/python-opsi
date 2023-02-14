@@ -25,7 +25,7 @@ from OPSI.Config import (
 	OPSI_ADMIN_GROUP,
 	OPSICONFD_USER,
 )
-from OPSI.System.Posix import getLocalFqdn, isOpenSUSE, isSLES
+from OPSI.System.Posix import isOpenSUSE, isSLES
 from opsicommon.logging import get_logger
 from opsicommon.utils import Singleton
 
