@@ -257,7 +257,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 				"productPropertyStates": productPropertyStates,
 			}
 
-			data = serialize(data)
+			data = serialize(data, deep=True)
 			logger.debug("Collected data for opsipxeconfd (client %r): %s", clientId, data)
 		except Exception as err:  # pylint: disable=broad-except
 			logger.error("Failed to collect data for opsipxeconfd (client %r): %s", clientId, err, exc_info=True)

@@ -7,31 +7,36 @@ Testing opsipxeconfd backend.
 """
 
 import pytest
-
 from OPSI.Backend.OpsiPXEConfd import OpsiPXEConfdBackend, getClientCacheFilePath
-from OPSI.Object import (NetbootProduct, OpsiClient, OpsiDepotserver,
-	ProductOnClient, ProductOnDepot, UnicodeConfig)
+from OPSI.Object import (
+	NetbootProduct,
+	OpsiClient,
+	OpsiDepotserver,
+	ProductOnClient,
+	ProductOnDepot,
+	UnicodeConfig,
+)
 
 from .helpers import patchAddress
 
 
 @pytest.fixture()
 def client():
-	return OpsiClient(id='foo.test.invalid')
+	return OpsiClient(id="foo.test.invalid")
 
 
 @pytest.fixture()
 def depot():
-	return OpsiDepotserver(id='depotserver1.test.invalid')
+	return OpsiDepotserver(id="depotserver1.test.invalid")
 
 
 def testGetClientCachePath():
-	clientId = 'foo.bar.baz'
+	clientId = "foo.bar.baz"
 
 	path = getClientCacheFilePath(clientId)
 
 	assert clientId in path
-	assert path.endswith('.json')
+	assert path.endswith(".json")
 
 
 def testCacheDataCollectionWithPxeConfigTemplate(backendManager, client, depot):
@@ -40,36 +45,34 @@ def testCacheDataCollectionWithPxeConfigTemplate(backendManager, client, depot):
 	"""
 	backendManager.host_createObjects([client, depot])
 
-	backendManager.config_createObjects([
-		UnicodeConfig(
-			id=u'opsi-linux-bootimage.append',
-			possibleValues=[
-				u'acpi=off', u'irqpoll', u'noapic', u'pci=nomsi',
-				u'vga=normal', u'reboot=b', u'mem=2G', u'nomodeset',
-				u'ramdisk_size=2097152'
-			],
-			defaultValues=[u''],
-		),
-		UnicodeConfig(
-			id=u'clientconfig.configserver.url',
-			description=u'URL(s) of opsi config service(s) to use',
-			possibleValues=[u'https://%s:4447/rpc' % depot.id],
-			defaultValues=[u'https://%s:4447/rpc' % depot.id],
-		),
-		UnicodeConfig(
-			id=u'clientconfig.depot.id',
-			description=u'Depotserver to use',
-			possibleValues=[],
-			defaultValues=[depot.id]
-		)
-	])
-
-	product = NetbootProduct(
-		'mytest86',
-		productVersion=1,
-		packageVersion=1,
-		pxeConfigTemplate='scaredOfNothing'
+	backendManager.config_createObjects(
+		[
+			UnicodeConfig(
+				id="opsi-linux-bootimage.append",
+				possibleValues=[
+					"acpi=off",
+					"irqpoll",
+					"noapic",
+					"pci=nomsi",
+					"vga=normal",
+					"reboot=b",
+					"mem=2G",
+					"nomodeset",
+					"ramdisk_size=2097152",
+				],
+				defaultValues=[""],
+			),
+			UnicodeConfig(
+				id="clientconfig.configserver.url",
+				description="URL(s) of opsi config service(s) to use",
+				possibleValues=["https://%s:4447/rpc" % depot.id],
+				defaultValues=["https://%s:4447/rpc" % depot.id],
+			),
+			UnicodeConfig(id="clientconfig.depot.id", description="Depotserver to use", possibleValues=[], defaultValues=[depot.id]),
+		]
 	)
+
+	product = NetbootProduct("mytest86", productVersion=1, packageVersion=1, pxeConfigTemplate="scaredOfNothing")
 	backendManager.product_insertObject(product)
 
 	productOnDepot = ProductOnDepot(
@@ -77,25 +80,19 @@ def testCacheDataCollectionWithPxeConfigTemplate(backendManager, client, depot):
 		productType=product.getType(),
 		productVersion=product.getProductVersion(),
 		packageVersion=product.getPackageVersion(),
-		depotId=depot.id
+		depotId=depot.id,
 	)
 	backendManager.productOnDepot_createObjects([productOnDepot])
 
-	poc = ProductOnClient(
-		product.id,
-		product.getType(),
-		client.id,
-		actionRequest="setup"
-	)
+	poc = ProductOnClient(product.id, product.getType(), client.id, actionRequest="setup")
 	backendManager.productOnClient_insertObject(poc)
 
 	with patchAddress(fqdn=depot.id):
 		backend = OpsiPXEConfdBackend(context=backendManager)
 
 		data = backend._collectDataForUpdate(client.id, depot.id)
-
 		assert data
-		assert data['product']['pxeConfigTemplate'] == product.pxeConfigTemplate
+		assert data["product"]["pxeConfigTemplate"] == product.pxeConfigTemplate
 
 
 def testCacheDataCollectionWithChangingPxeConfigTemplate(backendManager, client, depot):
@@ -104,42 +101,37 @@ def testCacheDataCollectionWithChangingPxeConfigTemplate(backendManager, client,
 	"""
 	backendManager.host_createObjects([client, depot])
 
-	backendManager.config_createObjects([
-		UnicodeConfig(
-			id=u'opsi-linux-bootimage.append',
-			possibleValues=[
-				u'acpi=off', u'irqpoll', u'noapic', u'pci=nomsi',
-				u'vga=normal', u'reboot=b', u'mem=2G', u'nomodeset',
-				u'ramdisk_size=2097152'
-			],
-			defaultValues=[u''],
-		),
-		UnicodeConfig(
-			id=u'clientconfig.configserver.url',
-			description=u'URL(s) of opsi config service(s) to use',
-			possibleValues=[u'https://%s:4447/rpc' % depot.id],
-			defaultValues=[u'https://%s:4447/rpc' % depot.id],
-		),
-		UnicodeConfig(
-			id=u'clientconfig.depot.id',
-			description=u'Depotserver to use',
-			possibleValues=[],
-			defaultValues=[depot.id]
-		)
-	])
-
-	oldProduct = NetbootProduct(
-		'mytest86',
-		productVersion=1,
-		packageVersion=1,
-		pxeConfigTemplate='old'
+	backendManager.config_createObjects(
+		[
+			UnicodeConfig(
+				id="opsi-linux-bootimage.append",
+				possibleValues=[
+					"acpi=off",
+					"irqpoll",
+					"noapic",
+					"pci=nomsi",
+					"vga=normal",
+					"reboot=b",
+					"mem=2G",
+					"nomodeset",
+					"ramdisk_size=2097152",
+				],
+				defaultValues=[""],
+			),
+			UnicodeConfig(
+				id="clientconfig.configserver.url",
+				description="URL(s) of opsi config service(s) to use",
+				possibleValues=["https://%s:4447/rpc" % depot.id],
+				defaultValues=["https://%s:4447/rpc" % depot.id],
+			),
+			UnicodeConfig(id="clientconfig.depot.id", description="Depotserver to use", possibleValues=[], defaultValues=[depot.id]),
+		]
 	)
+
+	oldProduct = NetbootProduct("mytest86", productVersion=1, packageVersion=1, pxeConfigTemplate="old")
 	backendManager.product_insertObject(oldProduct)
 	newProduct = NetbootProduct(
-		oldProduct.id,
-		productVersion=oldProduct.productVersion,
-		packageVersion=int(oldProduct.packageVersion) + 1,
-		pxeConfigTemplate='new'
+		oldProduct.id, productVersion=oldProduct.productVersion, packageVersion=int(oldProduct.packageVersion) + 1, pxeConfigTemplate="new"
 	)
 	backendManager.product_insertObject(newProduct)
 
@@ -148,7 +140,7 @@ def testCacheDataCollectionWithChangingPxeConfigTemplate(backendManager, client,
 		productType=oldProduct.getType(),
 		productVersion=oldProduct.getProductVersion(),
 		packageVersion=oldProduct.getPackageVersion(),
-		depotId=depot.id
+		depotId=depot.id,
 	)
 	backendManager.productOnDepot_createObjects([productOnDepot])
 
@@ -158,28 +150,23 @@ def testCacheDataCollectionWithChangingPxeConfigTemplate(backendManager, client,
 		productType=newProduct.getType(),
 		productVersion=newProduct.getProductVersion(),
 		packageVersion=newProduct.getPackageVersion(),
-		depotId=depot.id
+		depotId=depot.id,
 	)
 
-	poc = ProductOnClient(
-		oldProduct.id,
-		oldProduct.getType(),
-		client.id,
-		actionRequest="setup"
-	)
+	poc = ProductOnClient(oldProduct.id, oldProduct.getType(), client.id, actionRequest="setup")
 	backendManager.productOnClient_insertObject(poc)
 
 	with patchAddress(fqdn=depot.id):
 		backend = OpsiPXEConfdBackend(context=backendManager)
 
 		data = backend._collectDataForUpdate(client.id, depot.id)
-		assert data['product']['pxeConfigTemplate'] == oldProduct.pxeConfigTemplate
+		assert data["product"]["pxeConfigTemplate"] == oldProduct.pxeConfigTemplate
 
 		# Switching to new version on depot
 		backendManager.productOnDepot_createObjects([productOnDepot2])
 
 		data = backend._collectDataForUpdate(client.id, depot.id)
-		assert data['product']['pxeConfigTemplate'] == newProduct.pxeConfigTemplate
+		assert data["product"]["pxeConfigTemplate"] == newProduct.pxeConfigTemplate
 
 
 def testCacheDataCollectionWithMultiplePxeConfigTemplates(backendManager, client, depot):
@@ -188,51 +175,43 @@ def testCacheDataCollectionWithMultiplePxeConfigTemplates(backendManager, client
 	"""
 	backendManager.host_createObjects([client, depot])
 
-	backendManager.config_createObjects([
-		UnicodeConfig(
-			id=u'opsi-linux-bootimage.append',
-			possibleValues=[
-				u'acpi=off', u'irqpoll', u'noapic', u'pci=nomsi',
-				u'vga=normal', u'reboot=b', u'mem=2G', u'nomodeset',
-				u'ramdisk_size=2097152'
-			],
-			defaultValues=[u''],
-		),
-		UnicodeConfig(
-			id=u'clientconfig.configserver.url',
-			description=u'URL(s) of opsi config service(s) to use',
-			possibleValues=[u'https://%s:4447/rpc' % depot.id],
-			defaultValues=[u'https://%s:4447/rpc' % depot.id],
-		),
-		UnicodeConfig(
-			id=u'clientconfig.depot.id',
-			description=u'Depotserver to use',
-			possibleValues=[],
-			defaultValues=[depot.id]
-		)
-	])
-
-	oldProduct = NetbootProduct(
-		'mytest86',
-		productVersion=1,
-		packageVersion=1,
-		pxeConfigTemplate='old'
+	backendManager.config_createObjects(
+		[
+			UnicodeConfig(
+				id="opsi-linux-bootimage.append",
+				possibleValues=[
+					"acpi=off",
+					"irqpoll",
+					"noapic",
+					"pci=nomsi",
+					"vga=normal",
+					"reboot=b",
+					"mem=2G",
+					"nomodeset",
+					"ramdisk_size=2097152",
+				],
+				defaultValues=[""],
+			),
+			UnicodeConfig(
+				id="clientconfig.configserver.url",
+				description="URL(s) of opsi config service(s) to use",
+				possibleValues=["https://%s:4447/rpc" % depot.id],
+				defaultValues=["https://%s:4447/rpc" % depot.id],
+			),
+			UnicodeConfig(id="clientconfig.depot.id", description="Depotserver to use", possibleValues=[], defaultValues=[depot.id]),
+		]
 	)
+
+	oldProduct = NetbootProduct("mytest86", productVersion=1, packageVersion=1, pxeConfigTemplate="old")
 	backendManager.product_insertObject(oldProduct)
 	newProduct = NetbootProduct(
-		oldProduct.id,
-		productVersion=oldProduct.productVersion,
-		packageVersion=int(oldProduct.packageVersion) + 1,
-		pxeConfigTemplate='new'
+		oldProduct.id, productVersion=oldProduct.productVersion, packageVersion=int(oldProduct.packageVersion) + 1, pxeConfigTemplate="new"
 	)
 	backendManager.product_insertObject(newProduct)
 
 	# The following product exists but is not available on the depot.
 	newerProduct = NetbootProduct(
-		oldProduct.id,
-		productVersion=oldProduct.productVersion,
-		packageVersion=int(oldProduct.packageVersion) + 2,
-		pxeConfigTemplate='new'
+		oldProduct.id, productVersion=oldProduct.productVersion, packageVersion=int(oldProduct.packageVersion) + 2, pxeConfigTemplate="new"
 	)
 	backendManager.product_insertObject(newerProduct)
 
@@ -241,16 +220,11 @@ def testCacheDataCollectionWithMultiplePxeConfigTemplates(backendManager, client
 		productType=newProduct.getType(),
 		productVersion=newProduct.getProductVersion(),
 		packageVersion=newProduct.getPackageVersion(),
-		depotId=depot.id
+		depotId=depot.id,
 	)
 	backendManager.productOnDepot_createObjects([productOnDepot])
 
-	poc = ProductOnClient(
-		oldProduct.id,
-		oldProduct.getType(),
-		client.id,
-		actionRequest="setup"
-	)
+	poc = ProductOnClient(oldProduct.id, oldProduct.getType(), client.id, actionRequest="setup")
 	backendManager.productOnClient_insertObject(poc)
 
 	with patchAddress(fqdn=depot.id):
@@ -258,4 +232,4 @@ def testCacheDataCollectionWithMultiplePxeConfigTemplates(backendManager, client
 
 		data = backend._collectDataForUpdate(client.id, depot.id)
 
-		assert data['product']['pxeConfigTemplate'] == newProduct.pxeConfigTemplate
+		assert data["product"]["pxeConfigTemplate"] == newProduct.pxeConfigTemplate
