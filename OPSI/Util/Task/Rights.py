@@ -156,17 +156,12 @@ class PermissionRegistry(metaclass=Singleton):
 			DirPermission("/etc/opsi", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o660, 0o770),
 			DirPermission("/var/log/opsi", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o660, 0o770),
 			DirPermission("/var/lib/opsi", OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o770),
-		)
-		self.register_permission(
 			DirPermission("/etc/opsi/ssl", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o600, 0o750),
 			FilePermission("/etc/opsi/ssl/opsi-ca-cert.pem", OPSICONFD_USER, OPSI_ADMIN_GROUP, 0o644),
-		)
-		depot_dirs = getDepotDirectories()
-		self.register_permission(
-			DirPermission(depot_dirs["public"], OPSICONFD_USER, FILE_ADMIN_GROUP, 0o664, 0o2775, modify_file_exe=False),
-			DirPermission(depot_dirs["depot"], OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o2770, modify_file_exe=False),
-			DirPermission(depot_dirs["repository"], OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o2770),
-			DirPermission(depot_dirs["workbench"], OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o2770, modify_file_exe=False),
+			DirPermission("/var/lib/opsi/public", OPSICONFD_USER, FILE_ADMIN_GROUP, 0o664, 0o2775, modify_file_exe=False),
+			DirPermission("/var/lib/opsi/depot", OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o2770, modify_file_exe=False),
+			DirPermission("/var/lib/opsi/repository", OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o2770),
+			DirPermission("/var/lib/opsi/depot/workbench", OPSICONFD_USER, FILE_ADMIN_GROUP, 0o660, 0o2770, modify_file_exe=False),
 		)
 
 		pxe_dir = getPxeDirectory()
@@ -271,51 +266,6 @@ def setPasswdRights():
 	Setting correct permissions on ``/etc/opsi/passwd``.
 	"""
 	return set_rights(OPSI_PASSWD_FILE)
-
-
-CACHED_DEPOT_DIRS = {}
-
-
-def getDepotDirectories():
-	global CACHED_DEPOT_DIRS  # pylint: disable=global-statement
-	if not CACHED_DEPOT_DIRS:
-		CACHED_DEPOT_DIRS = {
-			"depot": "/var/lib/opsi/depot",
-			"repository": "/var/lib/opsi/repository",
-			"workbench": "/var/lib/opsi/workbench",
-			"public": "/var/lib/opsi/public",
-		}
-		try:
-			from OPSI.Backend.BackendManager import (
-				BackendManager,  # pylint: disable=import-outside-toplevel
-			)
-
-			with BackendManager() as backend:
-				depot = backend.host_getObjects(type="OpsiDepotserver", id=getLocalFqdn())[0]  # pylint: disable=no-member
-				for name, url in (
-					("depot", depot.getDepotLocalUrl()),
-					("repository", depot.getRepositoryLocalUrl()),
-					("workbench", depot.getWorkbenchLocalUrl()),
-				):
-					if url and url.startswith("file:///"):
-						CACHED_DEPOT_DIRS[name] = url[7:]
-		except IndexError:
-			logger.warning("Failed to get directories from depot: No depots found")
-		except Exception as err:  # pylint: disable=broad-except
-			logger.warning("Failed to get directories from depot: %s", err)
-	return CACHED_DEPOT_DIRS
-
-
-def getDepotDirectory():
-	return getDepotDirectories()["depot"]
-
-
-def getRepositoryDirectory():
-	return getDepotDirectories()["repository"]
-
-
-def getWorkbenchDirectory():
-	return getDepotDirectories()["workbench"]
 
 
 def getPxeDirectory():

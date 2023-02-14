@@ -26,21 +26,6 @@ OS_CHECK_FUNCTIONS = ["isRHEL", "isCentOS", "isSLES", "isOpenSUSE", "isUCS"]
 
 
 @pytest.fixture
-def depotDirectories():
-	"""Returning fixed dirs"""
-	with mock.patch(
-		"OPSI.Util.Task.Rights.getDepotDirectories",
-		return_value={
-			"depot": "/var/lib/opsi/depot",
-			"repository": "/var/lib/opsi/repository",
-			"workbench": "/var/lib/opsi/workbench",
-			"public": "/var/lib/opsi/public",
-		},
-	):
-		yield
-
-
-@pytest.fixture
 def patchUserInfo():
 	"Calls to find uid / gid will always succeed."
 	uid = 1234
@@ -223,15 +208,6 @@ def test_set_rights_file_in_dir(tempDir):
 	assert os.stat(fil2).st_mode & 0o7777 == 0o600
 
 
-def testGettingDirectories(patchUserInfo, depotDirectories):
-	registry = PermissionRegistry()
-	registry.reinit()
-	directories = list(registry.permissions)
-	assert "/var/lib/opsi/depot" in directories
-	assert "/var/lib/opsi/repository" in directories
-	assert "/var/lib/opsi/workbench" in directories
-
-
 @pytest.fixture(scope="session")
 def currentUserId():
 	yield os.getuid()
@@ -280,14 +256,6 @@ def nonRootGroupId(currentGroupId):
 		except KeyError:
 			pass
 	pytest.skip("No group for test found. Aborting.")
-
-
-def testImports():
-	from OPSI.Util.Task.Rights import (
-		getDepotDirectory,
-		getRepositoryDirectory,
-		getWorkbenchDirectory,
-	)
 
 
 @contextmanager
