@@ -15,7 +15,6 @@ from collections import defaultdict
 from contextlib import contextmanager
 
 import pytest
-
 from OPSI.Object import ConfigState, LocalbootProduct, OpsiClient
 from OPSI.Util import (
 	BlowfishError,
@@ -111,7 +110,6 @@ def generateLocalbootProducts(amount):
 @pytest.mark.parametrize("objectCount", [128, 1024])
 def testObjectToHtmlProcessesGenerators(objectCount):
 	text = objectToHtml(generateLocalbootProducts(objectCount))
-
 	assert text.lstrip().startswith("[")
 	assert text.rstrip().endswith("]")
 
