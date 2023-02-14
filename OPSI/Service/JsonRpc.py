@@ -13,11 +13,10 @@ import sys
 import time
 import traceback
 
+from opsicommon.exceptions import OpsiBadRpcError, OpsiRpcError
 from opsicommon.logging import get_logger
-
-from OPSI.Exceptions import OpsiBadRpcError, OpsiRpcError
-from OPSI.Types import forceUnicode
-from OPSI.Util import deserialize
+from opsicommon.objects import deserialize
+from opsicommon.types import forceUnicode
 
 logger = get_logger("opsi.general")
 
@@ -28,12 +27,12 @@ class JsonRpc:  # pylint: disable=too-many-instance-attributes
 		self._interface = interface
 		self.started = None
 		self.ended = None
-		self.type = rpc.get('type')
-		self.rpcVersion = rpc.get('jsonrpc', None)
-		self.tid = rpc.get('tid', rpc.get('id'))
-		self.action = rpc.get('action')
-		self.method = rpc.get('method')
-		self.params = rpc.get('params', rpc.get('data')) or []
+		self.type = rpc.get("type")
+		self.rpcVersion = rpc.get("jsonrpc", None)
+		self.tid = rpc.get("tid", rpc.get("id"))
+		self.action = rpc.get("action")
+		self.method = rpc.get("method")
+		self.params = rpc.get("params", rpc.get("data")) or []
 		self.result = None
 		self.exception = None
 		self.traceback = None
@@ -70,7 +69,7 @@ class JsonRpc:  # pylint: disable=too-many-instance-attributes
 		try:
 			methodName = self.getMethodName()
 			for method in self._interface:
-				if methodName == method['name']:
+				if methodName == method["name"]:
 					methodInterface = method
 					break
 			else:
@@ -80,12 +79,12 @@ class JsonRpc:  # pylint: disable=too-many-instance-attributes
 				raise OpsiRpcError(f"Method '{methodName}' is not valid")
 
 			keywords = {}
-			if methodInterface['keywords']:
+			if methodInterface["keywords"]:
 				parameterCount = 0
-				if methodInterface['args']:
-					parameterCount += len(methodInterface['args'])
-				if methodInterface['varargs']:
-					parameterCount += len(methodInterface['varargs'])
+				if methodInterface["args"]:
+					parameterCount += len(methodInterface["args"])
+				if methodInterface["varargs"]:
+					parameterCount += len(methodInterface["varargs"])
 
 				if len(params) >= parameterCount:
 					kwargs = params.pop(-1)
@@ -101,10 +100,10 @@ class JsonRpc:  # pylint: disable=too-many-instance-attributes
 
 			pString = forceUnicode(params)[1:-1]
 			if keywords:
-				pString = f'{pString}, {keywords}'
+				pString = f"{pString}, {keywords}"
 
 			if len(pString) > 200:
-				pString = f'{pString[:200]}...'
+				pString = f"{pString[:200]}..."
 
 			logger.notice("-----> Executing: %s(%s)", methodName, pString)
 
@@ -118,7 +117,7 @@ class JsonRpc:  # pylint: disable=too-many-instance-attributes
 			logger.trace("RPC ID %s: %s", self.tid, self.result)
 		except Exception as err:  # pylint: disable=broad-except
 			logger.info(err, exc_info=True)
-			logger.error('Execution error: %s', err)
+			logger.error("Execution error: %s", err)
 			self.exception = err
 			self.traceback = []
 			try:
@@ -133,54 +132,48 @@ class JsonRpc:  # pylint: disable=too-many-instance-attributes
 
 	def getResponse(self):
 		response = {}
-		if self.type == 'rpc':
-			response['tid'] = self.tid
-			response['action'] = self.action
-			response['method'] = self.method
+		if self.type == "rpc":
+			response["tid"] = self.tid
+			response["action"] = self.action
+			response["method"] = self.method
 			if self.exception:
-				response['type'] = 'exception'
-				response['message'] = {
-					'class': self.exception.__class__.__name__,
-					'message': forceUnicode(self.exception)
-				}
-				response['where'] = self.traceback
+				response["type"] = "exception"
+				response["message"] = {"class": self.exception.__class__.__name__, "message": forceUnicode(self.exception)}
+				response["where"] = self.traceback
 			else:
-				response['type'] = 'rpc'
-				response['result'] = self.result
+				response["type"] = "rpc"
+				response["result"] = self.result
 		else:
-			response['id'] = self.tid
-			if self.rpcVersion == '2.0':
-				response['jsonrpc'] = '2.0'
+			response["id"] = self.tid
+			if self.rpcVersion == "2.0":
+				response["jsonrpc"] = "2.0"
 
 			if self.exception:
-				if self.rpcVersion == '2.0':
+				if self.rpcVersion == "2.0":
 					try:
-						code = int(getattr(self.exception, 'errno'))
+						code = int(getattr(self.exception, "errno"))
 					except Exception:  # pylint: disable=broad-except
 						code = 0
 
-					response['error'] = {
-						'code': code,
-						'message': forceUnicode(self.exception),
-						'data': {'class': self.exception.__class__.__name__}
+					response["error"] = {
+						"code": code,
+						"message": forceUnicode(self.exception),
+						"data": {"class": self.exception.__class__.__name__},
 					}
 				else:
-					response['error'] = {
-						'class': self.exception.__class__.__name__,
-						'message': forceUnicode(self.exception)
-					}
+					response["error"] = {"class": self.exception.__class__.__name__, "message": forceUnicode(self.exception)}
 
-				if self.rpcVersion != '2.0':
-					response['result'] = None
+				if self.rpcVersion != "2.0":
+					response["result"] = None
 			else:
-				if self.rpcVersion != '2.0':
-					response['error'] = None
-				response['result'] = self.result
+				if self.rpcVersion != "2.0":
+					response["error"] = None
+				response["result"] = self.result
 
 		return response
 
 	def __getstate__(self):
 		state = self.__dict__
-		state['_instance'] = None
-		state['_interface'] = None
+		state["_instance"] = None
+		state["_interface"] = None
 		return state

@@ -20,15 +20,21 @@ from typing import Any, Dict, Generator, List
 from OPSI.Backend.Base import ConfigDataBackend
 from OPSI.Backend.Base.Backend import Backend
 from OPSI.Backend.JSONRPC import JSONRPCBackend
-from OPSI.Exceptions import (
+from opsicommon.exceptions import (
 	BackendMissingDataError,
 	BackendUnableToConnectError,
 	BackendUnaccomplishableError,
 )
-from OPSI.Object import ConfigState, OpsiClient, ProductOnClient, ProductPropertyState
-from OPSI.Types import forceHostId, forceInt, forceUnicode, forceUnicodeList
-from OPSI.Util import getfqdn, serialize
 from opsicommon.logging import get_logger, secret_filter
+from opsicommon.objects import (
+	ConfigState,
+	OpsiClient,
+	ProductOnClient,
+	ProductPropertyState,
+	serialize,
+)
+from opsicommon.types import forceHostId, forceInt, forceUnicode, forceUnicodeList
+from opsicommon.utils import get_fqdn
 
 __all__ = ("ServerConnection", "OpsiPXEConfdBackend", "createUnixSocket")
 
@@ -95,7 +101,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 		self._name = "opsipxeconfd"
 		self._port = "/var/run/opsipxeconfd/opsipxeconfd.socket"
 		self._timeout = 10
-		self._depotId = forceHostId(getfqdn())
+		self._depotId = forceHostId(get_fqdn())
 		self._opsiHostKey = None
 		self._depotConnections = {}
 		self._updateThreads = {}
