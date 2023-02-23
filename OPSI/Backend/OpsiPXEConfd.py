@@ -33,8 +33,8 @@ from opsicommon.objects import (
 	ProductPropertyState,
 	serialize,
 )
+from opsicommon.system.network import get_fqdn
 from opsicommon.types import forceHostId, forceInt, forceUnicode, forceUnicodeList
-from opsicommon.utils import get_fqdn
 
 __all__ = ("ServerConnection", "OpsiPXEConfdBackend", "createUnixSocket")
 
