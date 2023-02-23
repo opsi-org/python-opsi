@@ -242,7 +242,7 @@ def fromJson(obj, objectType=None, preventObjectCreation=False):
 
 
 def toJson(obj):
-	return to_json(obj)
+	return to_json(obj, deep=True)
 
 
 def deserialize(obj, preventObjectCreation=False):
