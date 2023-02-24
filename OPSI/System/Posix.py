@@ -985,7 +985,7 @@ output will be returned.
 			shell=shell,
 			stdin=subprocess.PIPE if stdin_data else None,
 			stdout=subprocess.PIPE,
-			stderr=subprocess.PIPE if captureStderr else None,
+			stderr=subprocess.PIPE if captureStderr else subprocess.DEVNULL,
 			env=sp_env,
 		) as proc:
 
