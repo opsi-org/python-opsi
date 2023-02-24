@@ -10,6 +10,7 @@ This backend executes the calls on a remote backend via JSONRPC.
 
 from __future__ import annotations
 
+from threading import Event
 from typing import Any
 from urllib.parse import urlparse
 
@@ -27,6 +28,7 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 	"""
 	This Backend gives remote access to a Backend reachable via jsonrpc.
 	"""
+
 	def __init__(self, address: str, **kwargs: Any) -> None:  # pylint: disable=too-many-branches,too-many-statements
 		"""
 		Backend for JSON-RPC access to another opsi service.
@@ -36,6 +38,8 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 		"""
 
 		self._name = "jsonrpc"
+		self._connection_result_event = Event()
+		self._connection_error: Exception | None = None
 
 		Backend.__init__(self, **kwargs)  # type: ignore[misc]
 
@@ -44,7 +48,7 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 			"address": address,
 			"user_agent": f"opsi-jsonrpc-backend/{__version__}",
 			"verify": "accept_all",
-			"jsonrpc_create_objects": True
+			"jsonrpc_create_objects": True,
 		}
 		for option, value in kwargs.items():
 			option = option.lower().replace("_", "")
@@ -79,6 +83,9 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 		self.service.register_connection_listener(self)
 		if connect_on_init:
 			self.service.connect()
+			self._connection_result_event.wait()
+			if self._connection_error:
+				raise self._connection_error
 
 	@property
 	def hostname(self) -> str:
@@ -86,3 +93,9 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 
 	def connection_established(self, service_client: ServiceClient) -> None:
 		self.service.create_jsonrpc_methods(self)
+		self._connection_error = None
+		self._connection_result_event.set()
+
+	def connection_failed(self, service_client: ServiceClient, exception: Exception) -> None:
+		self._connection_error = exception
+		self._connection_result_event.set()
