@@ -1231,7 +1231,7 @@ def getBlockDeviceContollerInfo(device, lshwoutput=None):  # pylint: disable=too
 		lines = lshwoutput
 	else:
 		proc_env = get_subprocess_environment(add_lc_all_C=True, add_path_sbin=True)
-		lines = execute(f"{which('lshw', env={'PATH' : proc_env['PATH']})} -short -numeric", captureStderr=False, env=proc_env)
+		lines = execute("lshw -short -numeric", captureStderr=False, env=proc_env)
 	# example:
 	# ...
 	# /0/100                      bridge     440FX - 82441FX PMC [Natoma] [8086:1237]
@@ -1373,9 +1373,9 @@ class Harddisk:  # pylint: disable=too-many-instance-attributes,too-many-public-
 	def useBIOSGeometry(self):
 		# Make sure your kernel supports edd (CONFIG_EDD=y/m) and module is loaded if not compiled in
 		try:
-			execute(f"{which('modprobe')} edd")
+			execute("modprobe edd")
 		except Exception as err:  # pylint: disable=broad-except
-			logger.error(err)
+			logger.debug(err)
 			return
 
 		# geo_override.so will affect all devices !
@@ -3199,16 +3199,14 @@ def hardwareInventory(
 					element
 					for element in dom.getElementsByTagName(tagName)
 					if re.search(attributeValue, element.getAttribute(attributeName))
-				][
-					0
-				]
+				][0]
 			]
 
 		return [element for element in dom.getElementsByTagName(tagName) if re.search(attributeValue, element.getAttribute(attributeName))]
 
 	# Read output from lshw
 	proc_env = get_subprocess_environment(add_lc_all_C=True, add_path_sbin=True)
-	xmlOut = "\n".join(execute(f"{which('lshw', env={'PATH' : proc_env['PATH']})} -xml", env=proc_env, captureStderr=False))
+	xmlOut = "\n".join(execute("lshw -xml", env=proc_env, captureStderr=False))
 	xmlOut = re.sub(
 		"[%c%c%c%c%c%c%c%c%c%c%c%c%c]"  # pylint: disable=consider-using-f-string
 		% (0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0xBD, 0xBF, 0xEF, 0xDD),
@@ -3223,7 +3221,7 @@ def hardwareInventory(
 	devRegex = re.compile(r"([\d.:a-f]+)\s+([\da-f]+):\s+([\da-f]+):([\da-f]+)\s*(\(rev ([^\)]+)\)|)")
 	subRegex = re.compile(r"\s*Subsystem:\s+([\da-f]+):([\da-f]+)\s*")
 	proc_env = get_subprocess_environment(add_path_sbin=True)
-	for line in execute(f"{which('lspci', env={'PATH': proc_env['PATH']})} -vn", captureStderr=False, env=proc_env):
+	for line in execute("lspci -vn", captureStderr=False, env=proc_env):
 		if not line.strip():
 			continue
 		match = re.search(devRegex, line)
@@ -3294,7 +3292,7 @@ def hardwareInventory(
 
 	try:
 		proc_env = get_subprocess_environment(add_path_sbin=True)
-		for line in execute(f"{which('lsusb', env={'PATH': proc_env['PATH']})} -v", captureStderr=False, env=proc_env):
+		for line in execute("lsusb -v", captureStderr=False, env=proc_env):
 			if not line.strip() or (line.find("** UNAVAILABLE **") != -1):
 				continue
 			# line = line.decode('ISO-8859-15', 'replace').encode('utf-8', 'replace')
@@ -3398,9 +3396,7 @@ def hardwareInventory(
 	option = None
 	optRegex = re.compile(r"(\s+)([^:]+):(.*)")
 	proc_env = get_subprocess_environment(add_path_sbin=True)
-	for line in execute(  # pylint: disable=too-many-nested-blocks
-		which("dmidecode", env={"PATH": proc_env["PATH"]}), captureStderr=False, env=proc_env
-	):
+	for line in execute("dmidecode", captureStderr=False, env=proc_env):  # pylint: disable=too-many-nested-blocks
 		try:
 			if not line.strip():
 				continue
@@ -3685,7 +3681,9 @@ def hardwareInventory(
 	for hwClass in config:
 		opsiClass = hwClass["Class"]["Opsi"]
 		if opsiValues.get(opsiClass):
-			opsiValues[opsiClass] = [dict(value_tuple) for value_tuple in {tuple(value_dict.items()) for value_dict in opsiValues[opsiClass]}]
+			opsiValues[opsiClass] = [
+				dict(value_tuple) for value_tuple in {tuple(value_dict.items()) for value_dict in opsiValues[opsiClass]}
+			]
 
 	opsiValues["SCANPROPERTIES"] = [{"scantime": time.strftime("%Y-%m-%d %H:%M:%S")}]
 	logger.debug("Result of hardware inventory: %s", objectToBeautifiedText(opsiValues))
