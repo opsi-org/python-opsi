@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "python-opsi"
-version = "4.3.0.9"
+version = "4.3.0.10"
 description = "The opsi python library"
 homepage = "https://www.opsi.org"
 license = "AGPL-3.0"
@@ -32,9 +32,9 @@ psutil = "^5.8"
 pyasn1 = "^0.4"
 pycryptodome = "^3.10"
 pyopenssl = "^23.0"
-python-opsi-common = "^4.3.0.2"
+python-opsi-common = "^4.3.0.16"
 python-pam = "^2.0"
-pywin32 = {platform = "win32", version = "^303"}
+pywin32 = {platform = "win32", version = "^305"}
 ruyaml = "^0.91"
 service-identity = "^21.1"
 sqlalchemy = ">=1.4,<2.0"

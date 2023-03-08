@@ -27,8 +27,6 @@ from functools import lru_cache
 from hashlib import md5
 from itertools import islice
 
-import packaging.version
-
 try:
 	# PyCryptodome from pypi installs into Crypto
 	from Crypto.Cipher import Blowfish
@@ -55,7 +53,7 @@ from opsicommon.types import (
 from opsicommon.utils import (
 	monkeypatch_subprocess_for_frozen,  # pylint: disable=unused-import
 )
-from opsicommon.utils import Singleton
+from opsicommon.utils import Singleton, compare_versions
 from opsicommon.utils import generate_opsi_host_key as generateOpsiHostKey
 from opsicommon.utils import timestamp as oc_timestamp
 
@@ -101,59 +99,6 @@ _ACCEPTED_CHARACTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123
 
 logger = get_logger("opsi.general")
 Version = namedtuple("Version", "product package")
-
-
-def _legacy_cmpkey(version: str):
-	_legacy_version_component_re = re.compile(r"(\d+ | [a-z]+ | \.| -)", re.VERBOSE)
-	_legacy_version_replacement_map = {
-		"pre": "c",
-		"preview": "c",
-		"-": "final-",
-		"rc": "c",
-		"dev": "@",
-	}
-
-	def _parse_version_parts(instring: str):
-		for part in _legacy_version_component_re.split(instring):
-			part = _legacy_version_replacement_map.get(part, part)
-
-			if not part or part == ".":
-				continue
-
-			if part[:1] in "0123456789":
-				# pad for numeric comparison
-				yield part.zfill(8)
-			else:
-				yield "*" + part
-
-		# ensure that alpha/beta/candidate are before final
-		yield "*final"
-
-	parts = []
-	for part in _parse_version_parts(version.lower()):
-		if part.startswith("*"):
-			# remove "-" before a prerelease tag
-			if part < "*final":
-				while parts and parts[-1] == "*final-":
-					parts.pop()
-
-			# remove trailing zeros from each series of numeric parts
-			while parts and parts[-1] == "00000000":
-				parts.pop()
-
-		parts.append(part)
-
-	return tuple(parts)
-
-
-# inspired by packaging.version.LegacyVersion (Deprecated)
-class LegacyVersion(packaging.version.Version):
-	def __init__(self, version: str):  # pylint: disable=super-init-not-called
-		self._version = str(version)
-		self._key = _legacy_cmpkey(self._version)
-
-	def __str__(self) -> str:
-		return self._version
 
 
 class CryptoError(ValueError):
@@ -377,58 +322,7 @@ def replaceSpecialHTMLCharacters(text):
 	)
 
 
-def compareVersions(v1, condition, v2):  # pylint: disable=invalid-name,too-many-locals
-	"""
-	Compare the versions `v1` and `v2` with the given `condition`.
-
-	`condition` may be one of `==`, `<`, `<=`, `>`, `>=`.
-
-	:raises ValueError: If invalid value for version or condition if given.
-	:rtype: bool
-	:return: If the comparison matches this will return True.
-	"""
-	# Kept removePartAfterWave to not break current behaviour
-	def removePartAfterWave(versionString):
-		if "~" in versionString:
-			return versionString[: versionString.find("~")]
-		return versionString
-
-	first = removePartAfterWave(v1)
-	second = removePartAfterWave(v2)
-	for version in (first, second):
-		parts = version.split("-")
-		if (
-			not _PRODUCT_VERSION_REGEX.search(parts[0])
-			or (len(parts) == 2 and not _PACKAGE_VERSION_REGEX.search(parts[1]))
-			or len(parts) > 2
-		):
-			raise ValueError(f"Bad package version provided: '{version}'")
-
-	try:
-		# Don't use packaging.version.parse() here as packaging.version.Version cannot handle legacy formats
-		first = LegacyVersion(first)
-		second = LegacyVersion(second)
-	except packaging.version.InvalidVersion as version_error:
-		raise ValueError("Invalid version provided to compareVersions") from version_error
-
-	if condition in ("==", "=") or not condition:
-		result = first == second
-	elif condition == "<":
-		result = first < second
-	elif condition == "<=":
-		result = first <= second
-	elif condition == ">":
-		result = first > second
-	elif condition == ">=":
-		result = first >= second
-	else:
-		raise ValueError(f"Bad condition {condition} provided to compareVersions")
-
-	if result:
-		logger.debug("Fulfilled condition: %s %s %s", v1, condition, v2)
-	else:
-		logger.debug("Unfulfilled condition: %s %s %s", v1, condition, v2)
-	return result
+compareVersions = compare_versions
 
 
 def removeUnit(value: str) -> int:  # pylint: disable=invalid-name,too-many-return-statements
