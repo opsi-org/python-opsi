@@ -26,10 +26,8 @@ from hashlib import sha1
 from io import BytesIO, StringIO
 from operator import itemgetter
 
-import tomlkit
-from opsicommon.logging import get_logger
-
 import OPSI.System
+import tomlkit
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import (
 	OpsiBackupBackendNotFound,
@@ -71,8 +69,9 @@ from OPSI.Types import (
 )
 from OPSI.Util import fromJson, md5sum, toJson
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
+from opsicommon.logging import get_logger
 
-if os.name == 'posix':
+if os.name == "posix":
 	import fcntl
 	import grp
 	import pwd
@@ -81,7 +80,7 @@ if os.name == 'posix':
 
 
 logger = get_logger("opsi.general")
-FileInfo = namedtuple('FileInfo', 'productId version')
+FileInfo = namedtuple("FileInfo", "productId version")
 
 
 def multiline_string(value: str) -> tomlkit.items.String:
@@ -97,11 +96,11 @@ If no information can be extracted returns None.
 	:rtype: namedtuple with attributes `productId`, `version`.
 	"""
 	filename = os.path.basename(filename)
-	parts = filename.rsplit('.opsi', 1)[0]
-	parts = parts.split('_')
+	parts = filename.rsplit(".opsi", 1)[0]
+	parts = parts.split("_")
 
-	productId = '_'.join(parts[:-1])
-	version = '_'.join(parts[-1:])
+	productId = "_".join(parts[:-1])
+	version = "_".join(parts[-1:])
 
 	if not (productId and version):
 		return None
@@ -111,10 +110,10 @@ If no information can be extracted returns None.
 
 class HostKeyFile(ConfigFile):
 
-	lineRegex = re.compile(r'^\s*([^:]+)\s*:\s*([0-9a-fA-F]{32})\s*$')
+	lineRegex = re.compile(r"^\s*([^:]+)\s*:\s*([0-9a-fA-F]{32})\s*$")
 
 	def __init__(self, filename, lockFailTimeout=2000):
-		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '/', '#'])
+		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[";", "/", "#"])
 		self._opsiHostKeys = {}
 
 	def parse(self, lines=None):
@@ -143,13 +142,9 @@ class HostKeyFile(ConfigFile):
 		return self._opsiHostKeys
 
 	def generate(self):
-		self._lines = [
-			f'{hostId}:{hostkey}'
-			for hostId, hostkey
-			in sorted(self._opsiHostKeys.items(), key=itemgetter(1))
-		]
+		self._lines = [f"{hostId}:{hostkey}" for hostId, hostkey in sorted(self._opsiHostKeys.items(), key=itemgetter(1))]
 
-		self.open('w')
+		self.open("w")
 		self.writelines()
 		self.close()
 
@@ -175,16 +170,17 @@ class HostKeyFile(ConfigFile):
 
 class BackendACLFile(ConfigFile):
 
-	aclEntryRegex = re.compile(r'^([^:]+)+\s*:\s*(\S.*)$')
+	aclEntryRegex = re.compile(r"^([^:]+)+\s*:\s*(\S.*)$")
 
 	def __init__(self, filename, lockFailTimeout=2000):
-		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=['#'])
+		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=["#"])
 
 	def parse(self, lines=None):  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 		from OPSI.Config import (  # pylint: disable=import-outside-toplevel
 			FILE_ADMIN_GROUP,
 			OPSI_ADMIN_GROUP,
 		)
+
 		if lines:
 			self._lines = forceUnicodeList(lines)
 		else:
@@ -202,68 +198,68 @@ class BackendACLFile(ConfigFile):
 				raise ValueError(f"Found bad formatted line '{line}' in acl file '{self._filename}'")
 			method = match.group(1).strip()
 			acl.append([method, []])
-			for entry in match.group(2).split(';'):
+			for entry in match.group(2).split(";"):
 				entry = entry.strip()
 				aclType = entry
-				aclTypeParams = ''
-				if entry.find('(') != -1:
-					(aclType, aclTypeParams) = entry.split('(', 1)
-					if aclTypeParams[-1] != ')':
+				aclTypeParams = ""
+				if entry.find("(") != -1:
+					(aclType, aclTypeParams) = entry.split("(", 1)
+					if aclTypeParams[-1] != ")":
 						raise ValueError(f"Bad formatted acl entry '{entry}': trailing ')' missing")
 					aclType = aclType.strip()
 					aclTypeParams = aclTypeParams[:-1]
 
-				if aclType not in ('all', 'self', 'opsi_depotserver', 'opsi_client', 'sys_group', 'sys_user'):
+				if aclType not in ("all", "self", "opsi_depotserver", "opsi_client", "sys_group", "sys_user"):
 					raise ValueError(f"Unhandled acl type: '{aclType}'")
-				entry = {'type': aclType, 'allowAttributes': [], 'denyAttributes': [], 'ids': []}
+				entry = {"type": aclType, "allowAttributes": [], "denyAttributes": [], "ids": []}
 				if not aclTypeParams:
-					if aclType in ('sys_group', 'sys_user'):
+					if aclType in ("sys_group", "sys_user"):
 						raise ValueError(f"Bad formatted acl type '{aclType}': no params given")
 				else:
-					aclTypeParam = ''
-					aclTypeParamValues = ['']
+					aclTypeParam = ""
+					aclTypeParamValues = [""]
 					inAclTypeParamValues = False
 					for idx, char in enumerate(aclTypeParams):
-						if char == '(':
+						if char == "(":
 							if inAclTypeParamValues:
 								raise ValueError(f"Bad formatted acl type params '{aclTypeParams}'")
 							inAclTypeParamValues = True
-						elif char == ')':
+						elif char == ")":
 							if not inAclTypeParamValues or not aclTypeParam:
 								raise ValueError(f"Bad formatted acl type params '{aclTypeParams}'")
 							inAclTypeParamValues = False
-						elif char != ',' or idx == len(aclTypeParams) - 1:
+						elif char != "," or idx == len(aclTypeParams) - 1:
 							if inAclTypeParamValues:
 								aclTypeParamValues[-1] += char
 							else:
 								aclTypeParam += char
 
-						if char == ',' or idx == len(aclTypeParams) - 1:
+						if char == "," or idx == len(aclTypeParams) - 1:
 							if inAclTypeParamValues:
 								if idx == len(aclTypeParams) - 1:
 									raise ValueError(f"Bad formatted acl type params '{aclTypeParams}'")
-								aclTypeParamValues.append('')
+								aclTypeParamValues.append("")
 							else:
 								aclTypeParam = aclTypeParam.strip()
 								aclTypeParamValues = [t.strip() for t in aclTypeParamValues if t.strip()]
-								if aclTypeParam == 'attributes':
+								if aclTypeParam == "attributes":
 									for val in aclTypeParamValues:
 										if not val:
 											continue
-										if val.startswith('!'):
-											entry['denyAttributes'].append(val[1:].strip())
+										if val.startswith("!"):
+											entry["denyAttributes"].append(val[1:].strip())
 										else:
-											entry['allowAttributes'].append(val)
-								elif aclType in ('sys_group', 'sys_user', 'opsi_depotserver', 'opsi_client'):
+											entry["allowAttributes"].append(val)
+								elif aclType in ("sys_group", "sys_user", "opsi_depotserver", "opsi_client"):
 									val = aclTypeParam.strip()
-									if aclType == 'sys_group':
+									if aclType == "sys_group":
 										val = val.replace("{admingroup}", OPSI_ADMIN_GROUP)
 										val = val.replace("{fileadmingroup}", FILE_ADMIN_GROUP)
-									entry['ids'].append(val)
+									entry["ids"].append(val)
 								else:
 									raise ValueError(f"Unhandled acl type param '{aclTypeParam}' for acl type '{aclType}'")
-								aclTypeParam = ''
-								aclTypeParamValues = ['']
+								aclTypeParam = ""
+								aclTypeParamValues = [""]
 
 				acl[-1][1].append(entry)
 		self._parsed = True
@@ -272,7 +268,7 @@ class BackendACLFile(ConfigFile):
 
 class BackendDispatchConfigFile(ConfigFile):
 
-	DISPATCH_ENTRY_REGEX = re.compile(r'^([^:]+)+\s*:\s*(\S.*)$')
+	DISPATCH_ENTRY_REGEX = re.compile(r"^([^:]+)+\s*:\s*(\S.*)$")
 
 	def parse(self, lines=None):
 		"""
@@ -296,7 +292,7 @@ class BackendDispatchConfigFile(ConfigFile):
 				continue
 
 			method = match.group(1).strip()
-			backends = (entry.strip() for entry in match.group(2).strip(',').split(','))
+			backends = (entry.strip() for entry in match.group(2).strip(",").split(","))
 			backends = tuple(backend for backend in backends if backend)
 			used_backends.update(backends)
 			dispatch.append((method, backends))
@@ -350,12 +346,13 @@ class PackageContentFile(TextFile):
 	element	will be treated like a regular file or directory - whatever
 	the destination is.
 	"""
+
 	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
 		self._parsed = False
-		self._productClientDataDir = '/'
+		self._productClientDataDir = "/"
 		self._clientDataFiles = []
-		self._productServerDataDir = '/'
+		self._productServerDataDir = "/"
 		self._serverDataFiles = []
 
 	def getClientDataFiles(self):
@@ -383,12 +380,12 @@ class PackageContentFile(TextFile):
 		for line in self._lines:
 			(entryType, tmp) = line.strip().split(None, 1)
 
-			filename = ''
+			filename = ""
 			idx = 0
 			for idx, currentElement in enumerate(tmp):
 				if currentElement == "'":
 					if idx > 0:
-						if tmp[idx - 1] == '\\':
+						if tmp[idx - 1] == "\\":
 							filename = filename[:-1] + "'"
 							continue
 						break
@@ -396,23 +393,23 @@ class PackageContentFile(TextFile):
 				filename += currentElement
 
 			size = 0
-			target = ''
-			md5 = ''
+			target = ""
+			md5 = ""
 
-			tmp = tmp[idx + 2:]
-			if ' ' in tmp:
+			tmp = tmp[idx + 2 :]
+			if " " in tmp:
 				parts = tmp.split(None, 1)
-				tmp = ''
+				tmp = ""
 				size = parts[0]
 				if len(parts) > 1:
 					tmp = parts[1]
 
-			if entryType == 'f':
+			if entryType == "f":
 				md5 = tmp
-			elif entryType == 'l':
-				target = tmp[1:-1].replace('\\\'', '\'')
+			elif entryType == "l":
+				target = tmp[1:-1].replace("\\'", "'")
 
-			fileInfo[filename] = {'type': entryType, 'size': int(size), 'md5sum': md5, 'target': target}
+			fileInfo[filename] = {"type": entryType, "size": int(size), "md5sum": md5, "target": target}
 
 		self._parsed = True
 		return fileInfo
@@ -420,15 +417,15 @@ class PackageContentFile(TextFile):
 	def generate(self):
 		def maskQuoteChars(string):
 			"Prefixes single quotes in string with a single backslash."
-			return string.replace('\'', '\\\'')
+			return string.replace("'", "\\'")
 
 		def handleDirectory(path):
 			logger.trace("Processing '%s' as directory", path)
-			return 'd', 0, ''
+			return "d", 0, ""
 
 		def handleFile(path):
 			logger.trace("Processing '%s' as file", path)
-			return 'f', os.path.getsize(path), md5sum(path)
+			return "f", os.path.getsize(path), md5sum(path)
 
 		self._lines = []
 		for filename in self._clientDataFiles:
@@ -443,16 +440,16 @@ class PackageContentFile(TextFile):
 			except Exception as err:  # pylint: disable=broad-except
 				logger.error(err, exc_info=True)
 
-		self.open('w')
+		self.open("w")
 		self.writelines()
 		self.close()
 
 
 class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attributes
 
-	sectionRegex = re.compile(r'^\s*\[([^\]]+)\]\s*$')
-	valueContinuationRegex = re.compile(r'^\s(.*)$')
-	optionRegex = re.compile(r'^([^\:]+)\s*\:\s*(.*)$')
+	sectionRegex = re.compile(r"^\s*\[([^\]]+)\]\s*$")
+	valueContinuationRegex = re.compile(r"^\s(.*)$")
+	optionRegex = re.compile(r"^([^\:]+)\s*\:\s*(.*)$")
 
 	def __init__(self, filename, lockFailTimeout=2000):
 		TextFile.__init__(self, filename, lockFailTimeout)
@@ -481,39 +478,58 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 		self._productProperties = []
 		self._packageDependencies = []
 
-		productAttributes = set([
-			'id', 'type', 'name', 'description', 'advice', 'version',
-			'packageversion', 'priority', 'licenserequired', 'productclasses',
-			'pxeconfigtemplate', 'setupscript', 'uninstallscript',
-			'updatescript', 'alwaysscript', 'oncescript', 'customscript',
-			'userloginscript'
-		])
-		dependencyAttributes = set([
-			'action', 'requiredproduct', 'requiredproductversion',
-			'requiredpackageversion', 'requiredclass', 'requiredstatus',
-			'requiredaction', 'requirementtype'
-		])
-		propertyAttributes = set([
-			'type', 'name', 'default', 'values', 'description', 'editable',
-			'multivalue'
-		])
+		productAttributes = set(
+			[
+				"id",
+				"type",
+				"name",
+				"description",
+				"advice",
+				"version",
+				"packageversion",
+				"priority",
+				"licenserequired",
+				"productclasses",
+				"pxeconfigtemplate",
+				"setupscript",
+				"uninstallscript",
+				"updatescript",
+				"alwaysscript",
+				"oncescript",
+				"customscript",
+				"userloginscript",
+			]
+		)
+		dependencyAttributes = set(
+			[
+				"action",
+				"requiredproduct",
+				"requiredproductversion",
+				"requiredpackageversion",
+				"requiredclass",
+				"requiredstatus",
+				"requiredaction",
+				"requirementtype",
+			]
+		)
+		propertyAttributes = set(["type", "name", "default", "values", "description", "editable", "multivalue"])
 
 		sectionType = None
 		option = None
 		for lineNum, line in enumerate(self._lines, start=1):
-			if line and line.startswith((';', '#')):
+			if line and line.startswith((";", "#")):
 				# Comment
 				continue
 
-			line = line.replace('\r', '')
+			line = line.replace("\r", "")
 
 			match = self.sectionRegex.search(line)
 			if match:
 				sectionType = match.group(1).strip().lower()
-				if sectionType not in ('package', 'product', 'windows', 'productdependency', 'productproperty', 'changelog'):
+				if sectionType not in ("package", "product", "windows", "productdependency", "productproperty", "changelog"):
 					raise ValueError(f"Parse error in line {lineNum}: unknown section '{sectionType}'")
-				if sectionType == 'changelog':
-					self._sections[sectionType] = ''
+				if sectionType == "changelog":
+					self._sections[sectionType] = ""
 				else:
 					if sectionType in self._sections:
 						self._sections[sectionType].append({})
@@ -524,9 +540,9 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 			if not sectionType and line:
 				raise ValueError(f"Parse error in line {lineNum}: not in a section")
 
-			if sectionType == 'changelog':
+			if sectionType == "changelog":
 				if self._sections[sectionType]:
-					self._sections[sectionType] += '\n'
+					self._sections[sectionType] += "\n"
 				self._sections[sectionType] += line.rstrip()
 				continue
 
@@ -541,92 +557,92 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 					key = match.group(1).lower()
 					value = match.group(2).strip()
 
-			if sectionType == 'package':
+			if sectionType == "package":
 				option = key
-				if key == 'version':
+				if key == "version":
 					value = forceUnicodeLower(value)
-				elif key == 'depends':
+				elif key == "depends":
 					value = forceUnicodeLower(value)
 				else:  # Unsupported key
 					continue
 
-			elif sectionType == 'product' and key in productAttributes:
+			elif sectionType == "product" and key in productAttributes:
 				option = key
-				if key == 'id':
+				if key == "id":
 					value = forceProductId(value)
-				elif key == 'type':
+				elif key == "type":
 					value = forceProductType(value)
-				elif key == 'name':
+				elif key == "name":
 					value = forceUnicode(value)
-				elif key == 'description':
+				elif key == "description":
 					value = forceUnicode(value)
-				elif key == 'advice':
+				elif key == "advice":
 					value = forceUnicode(value)
-				elif key == 'version':
+				elif key == "version":
 					value = forceProductVersion(value)
-				elif key == 'packageversion':
+				elif key == "packageversion":
 					value = forcePackageVersion(value)
-				elif key == 'priority':
+				elif key == "priority":
 					value = forceProductPriority(value)
-				elif key == 'licenserequired':
+				elif key == "licenserequired":
 					value = forceBool(value)
-				elif key == 'productclasses':
+				elif key == "productclasses":
 					value = forceUnicodeLower(value)
-				elif key == 'pxeconfigtemplate':
+				elif key == "pxeconfigtemplate":
 					value = forceFilename(value)
-				elif key == 'setupscript':
+				elif key == "setupscript":
 					value = forceFilename(value)
-				elif key == 'uninstallscript':
+				elif key == "uninstallscript":
 					value = forceFilename(value)
-				elif key == 'updatescript':
+				elif key == "updatescript":
 					value = forceFilename(value)
-				elif key == 'alwaysscript':
+				elif key == "alwaysscript":
 					value = forceFilename(value)
-				elif key == 'oncescript':
+				elif key == "oncescript":
 					value = forceFilename(value)
-				elif key == 'customscript':
+				elif key == "customscript":
 					value = forceFilename(value)
-				elif key == 'userloginscript':
+				elif key == "userloginscript":
 					value = forceFilename(value)
 
-			elif sectionType == 'windows' and key in ('softwareids', ):
+			elif sectionType == "windows" and key in ("softwareids",):
 				option = key
 				value = forceUnicodeLower(value)
 
-			elif sectionType == 'productdependency' and key in dependencyAttributes:
+			elif sectionType == "productdependency" and key in dependencyAttributes:
 				option = key
-				if key == 'action':
+				if key == "action":
 					value = forceActionRequest(value)
-				elif key == 'requiredproduct':
+				elif key == "requiredproduct":
 					value = forceProductId(value)
-				elif key == 'requiredproductversion':
+				elif key == "requiredproductversion":
 					value = forceProductVersion(value)
-				elif key == 'requiredpackageversion':
+				elif key == "requiredpackageversion":
 					value = forcePackageVersion(value)
-				elif key == 'requiredclass':
+				elif key == "requiredclass":
 					value = forceUnicodeLower(value)
-				elif key == 'requiredstatus':
+				elif key == "requiredstatus":
 					value = forceInstallationStatus(value)
-				elif key == 'requiredaction':
+				elif key == "requiredaction":
 					value = forceActionRequest(value)
-				elif key == 'requirementtype':
+				elif key == "requirementtype":
 					value = forceRequirementType(value)
 
-			elif sectionType == 'productproperty' and key in propertyAttributes:
+			elif sectionType == "productproperty" and key in propertyAttributes:
 				option = key
-				if key == 'type':
+				if key == "type":
 					value = forceProductPropertyType(value)
-				elif key == 'name':
+				elif key == "name":
 					value = forceUnicodeLower(value)
-				elif key == 'default':
+				elif key == "default":
 					value = forceUnicode(value)
-				elif key == 'values':
+				elif key == "values":
 					value = forceUnicode(value)
-				elif key == 'description':
+				elif key == "description":
 					value = forceUnicode(value)
-				elif key == 'editable':
+				elif key == "editable":
 					value = forceBool(value)
-				elif key == 'multivalue':
+				elif key == "multivalue":
 					value = forceBool(value)
 
 			else:
@@ -639,38 +655,38 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 				self._sections[sectionType][-1][option] = value
 			else:
 				if isinstance(self._sections[sectionType][-1][option], str):
-					if not self._sections[sectionType][-1][option].endswith('\n'):
-						self._sections[sectionType][-1][option] += '\n'
+					if not self._sections[sectionType][-1][option].endswith("\n"):
+						self._sections[sectionType][-1][option] += "\n"
 					self._sections[sectionType][-1][option] += value.lstrip()
 
 		for (sectionType, secs) in self._sections.items():  # pylint: disable=too-many-nested-blocks
-			if sectionType == 'changelog':
+			if sectionType == "changelog":
 				continue
 
 			for i, currentSection in enumerate(secs):
 				for (option, value) in currentSection.items():
 					if (  # pylint: disable=too-many-boolean-expressions
-						(sectionType == 'product' and option == 'productclasses') or
-						(sectionType == 'package' and option == 'depends') or
-						(sectionType == 'productproperty' and option in ('default', 'values')) or
-						(sectionType == 'windows' and option == 'softwareids')
+						(sectionType == "product" and option == "productclasses")
+						or (sectionType == "package" and option == "depends")
+						or (sectionType == "productproperty" and option in ("default", "values"))
+						or (sectionType == "windows" and option == "softwareids")
 					):
 
 						try:
-							if not value.strip().startswith(('{', '[')):
-								raise ValueError('Not trying to read json string because value does not start with { or [')
+							if not value.strip().startswith(("{", "[")):
+								raise ValueError("Not trying to read json string because value does not start with { or [")
 							value = fromJson(value.strip())
 							# Remove duplicates
 							value = forceUniqueList(value)
 						except Exception as err:  # pylint: disable=broad-except
 							logger.trace("Failed to read json string '%s': %s", value.strip(), err)
-							value = value.replace('\n', '')
-							value = value.replace('\t', '')
-							if not (sectionType == 'productproperty' and option == 'default'):
-								value = [v.strip() for v in value.split(',')]
+							value = value.replace("\n", "")
+							value = value.replace("\t", "")
+							if not (sectionType == "productproperty" and option == "default"):
+								value = [v.strip() for v in value.split(",")]
 
 							# Remove duplicates
-							value = [v for v in forceList(value) if v not in ('', None)]
+							value = [v for v in forceList(value) if v not in ("", None)]
 							value = forceUniqueList(value)
 
 					if isinstance(value, str):
@@ -678,14 +694,14 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 
 					self._sections[sectionType][i][option] = value  # pylint: disable=unnecessary-dict-index-lookup
 
-		if not self._sections.get('product'):
+		if not self._sections.get("product"):
 			raise ValueError(f"Error in control file '{self._filename}': 'product' section not found")
 
 		# Get package info
-		for (option, value) in self._sections.get('package', [{}])[0].items():
-			if option == 'depends':
+		for (option, value) in self._sections.get("package", [{}])[0].items():
+			if option == "depends":
 				for dep in value:
-					match = re.search(r'^\s*([^\(]+)\s*\(*\s*([^\)]*)\s*\)*', dep)
+					match = re.search(r"^\s*([^\(]+)\s*\(*\s*([^\)]*)\s*\)*", dep)
 					if not match.group(1):
 						raise ValueError(f"Bad package dependency '{dep}' in control file")
 
@@ -693,85 +709,85 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 					version = match.group(2)
 					condition = None
 					if version:
-						match = re.search(r'^\s*([<>]?=?)\s*([\w\.]+-*[\w\.]*)\s*$', version)
+						match = re.search(r"^\s*([<>]?=?)\s*([\w\.]+-*[\w\.]*)\s*$", version)
 						if not match:
 							raise ValueError(f"Bad version string '{version}' in package dependency")
 
 						condition = match.group(1)
 						if not condition:
-							condition = '='
-						if condition not in ('=', '<', '<=', '>', '>='):
+							condition = "="
+						if condition not in ("=", "<", "<=", ">", ">="):
 							raise ValueError(f"Bad condition string '{condition}' in package dependency")
 						version = match.group(2)
 					else:
 						version = None
-					self._packageDependencies.append({'package': package, 'condition': condition, 'version': version})
+					self._packageDependencies.append({"package": package, "condition": condition, "version": version})
 
 		# Create Product object
-		product = self._sections['product'][0]
+		product = self._sections["product"][0]
 		Class = None
-		if product.get('type') == 'NetbootProduct':
+		if product.get("type") == "NetbootProduct":
 			Class = NetbootProduct
-		elif product.get('type') == 'LocalbootProduct':
+		elif product.get("type") == "LocalbootProduct":
 			Class = LocalbootProduct
 		else:
 			raise ValueError(f"Error in control file '{self._filename}': unknown product type '{product.get('type')}'")
 
-		productVersion = product.get('version')
+		productVersion = product.get("version")
 		if not productVersion:
 			logger.warning("No product version given! Assuming 1.0.")
 			productVersion = 1.0
-		packageVersion = self._sections.get('package', [{}])[0].get('version') or product.get('packageversion')
+		packageVersion = self._sections.get("package", [{}])[0].get("version") or product.get("packageversion")
 		if not packageVersion:
 			logger.warning("No package version given! Assuming 1.")
 			packageVersion = 1
 
 		self._product = Class(
-			id=product.get('id'),
-			name=product.get('name'),
+			id=product.get("id"),
+			name=product.get("name"),
 			productVersion=productVersion,
 			packageVersion=packageVersion,
-			licenseRequired=product.get('licenserequired'),
-			setupScript=product.get('setupscript'),
-			uninstallScript=product.get('uninstallscript'),
-			updateScript=product.get('updatescript'),
-			alwaysScript=product.get('alwaysscript'),
-			onceScript=product.get('oncescript'),
-			customScript=product.get('customscript'),
-			priority=product.get('priority'),
-			description=product.get('description'),
-			advice=product.get('advice'),
-			productClassIds=product.get('productclasses'),
-			windowsSoftwareIds=self._sections.get('windows', [{}])[0].get('softwareids', []),
-			changelog=self._sections.get('changelog')
+			licenseRequired=product.get("licenserequired"),
+			setupScript=product.get("setupscript"),
+			uninstallScript=product.get("uninstallscript"),
+			updateScript=product.get("updatescript"),
+			alwaysScript=product.get("alwaysscript"),
+			onceScript=product.get("oncescript"),
+			customScript=product.get("customscript"),
+			priority=product.get("priority"),
+			description=product.get("description"),
+			advice=product.get("advice"),
+			productClassIds=product.get("productclasses"),
+			windowsSoftwareIds=self._sections.get("windows", [{}])[0].get("softwareids", []),
+			changelog=self._sections.get("changelog"),
 		)
-		if isinstance(self._product, NetbootProduct) and product.get('pxeconfigtemplate') is not None:
-			self._product.setPxeConfigTemplate(product.get('pxeconfigtemplate'))
+		if isinstance(self._product, NetbootProduct) and product.get("pxeconfigtemplate") is not None:
+			self._product.setPxeConfigTemplate(product.get("pxeconfigtemplate"))
 
-		if isinstance(self._product, LocalbootProduct) and product.get('userloginscript') is not None:
-			self._product.setUserLoginScript(product.get('userloginscript'))
+		if isinstance(self._product, LocalbootProduct) and product.get("userloginscript") is not None:
+			self._product.setUserLoginScript(product.get("userloginscript"))
 		self._product.setDefaults()
 
 		# Create ProductDependency objects
-		for productDependency in self._sections.get('productdependency', []):
+		for productDependency in self._sections.get("productdependency", []):
 			self._productDependencies.append(
 				ProductDependency(
 					productId=self._product.getId(),
 					productVersion=self._product.getProductVersion(),
 					packageVersion=self._product.getPackageVersion(),
-					productAction=productDependency.get('action'),
-					requiredProductId=productDependency.get('requiredproduct'),
-					requiredProductVersion=productDependency.get('requiredproductversion'),
-					requiredPackageVersion=productDependency.get('requiredpackageversion'),
-					requiredAction=productDependency.get('requiredaction'),
-					requiredInstallationStatus=productDependency.get('requiredstatus'),
-					requirementType=productDependency.get('requirementtype')
+					productAction=productDependency.get("action"),
+					requiredProductId=productDependency.get("requiredproduct"),
+					requiredProductVersion=productDependency.get("requiredproductversion"),
+					requiredPackageVersion=productDependency.get("requiredpackageversion"),
+					requiredAction=productDependency.get("requiredaction"),
+					requiredInstallationStatus=productDependency.get("requiredstatus"),
+					requirementType=productDependency.get("requirementtype"),
 				)
 			)
 			self._productDependencies[-1].setDefaults()
 
 		# Create ProductProperty objects
-		for productProperty in self._sections.get('productproperty', []):
+		for productProperty in self._sections.get("productproperty", []):
 			self.parse_product_property(productProperty)
 
 		self._parsed = True
@@ -781,9 +797,9 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 		data_dict = tomlkit.loads("".join(self._lines)).unwrap()
 
 		# kept _section stuff for compatibility
-		self._sections['product'] = [data_dict['Product'].get('id')]
-		self._sections['productproperty'] = []
-		self._sections['productdependency'] = []
+		self._sections["product"] = [data_dict["Product"].get("id")]
+		self._sections["productproperty"] = []
+		self._sections["productdependency"] = []
 
 		product = None
 		# changelog key in changelog section... better idea?
@@ -795,13 +811,13 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 					changelog = file.read()
 			else:
 				changelog = ""
-		self._sections['changelog'] = changelog
+		self._sections["changelog"] = changelog
 
-		windows_section = data_dict.get('windows')
+		windows_section = data_dict.get("windows")
 		if windows_section:
-			softwareids = windows_section.get('softwareids', [])
+			softwareids = windows_section.get("softwareids", [])
 		else:
-			softwareids = data_dict['Product'].get('windowsSoftwareIds', [])
+			softwareids = data_dict["Product"].get("windowsSoftwareIds", [])
 
 		emptystring_entries = (
 			"advice",
@@ -815,16 +831,16 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 			"customScript",
 			"userLoginScript",
 		)
-		product_dict = data_dict['Product']
+		product_dict = data_dict["Product"]
 		for key in emptystring_entries:
 			if not product_dict.get(key):
-				data_dict['Product'][key] = ""
+				data_dict["Product"][key] = ""
 
 		if product_dict["type"] in ("netboot", "NetbootProduct"):
 			product = NetbootProduct(
 				forceProductId(product_dict["id"]),
 				forceProductVersion(product_dict["version"]),
-				forcePackageVersion(data_dict['Package']["version"]),
+				forcePackageVersion(data_dict["Package"]["version"]),
 				name=forceUnicode(product_dict["name"]),
 				licenseRequired=forceBool(product_dict.get("licenseRequired")),
 				setupScript=forceFilename(product_dict.get("setupScript")),
@@ -840,9 +856,9 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 				changelog=changelog,
 				productClassIds=forceUnicodeList(product_dict.get("productClasses")),
 				windowsSoftwareIds=softwareids,
-				pxeConfigTemplate=forceFilename(product_dict.get("pxeConfigTemplate"))
+				pxeConfigTemplate=forceFilename(product_dict.get("pxeConfigTemplate")),
 			)
-		elif product_dict['type'] in ("localboot", "LocalbootProduct"):
+		elif product_dict["type"] in ("localboot", "LocalbootProduct"):
 			product = LocalbootProduct(
 				forceProductId(product_dict["id"]),
 				forceProductVersion(product_dict["version"]),
@@ -870,8 +886,8 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 
 		dep_list = []
 		for dep in data_dict.get("ProductDependency", []):
-			req_prod_vers = forceProductVersion(dep.get('required_product_version')) if dep.get('required_product_version') else None
-			req_pack_vers = forcePackageVersion(dep.get('required_package_version')) if dep.get('required_package_version') else None
+			req_prod_vers = forceProductVersion(dep.get("required_product_version")) if dep.get("required_product_version") else None
+			req_pack_vers = forcePackageVersion(dep.get("required_package_version")) if dep.get("required_package_version") else None
 			req_act = forceActionRequest(dep.get("required_action", "setup"))
 			req_inst_stat = forceInstallationStatus(dep.get("required_status", "installed"))
 			req_type = forceRequirementType(dep.get("requirement_type", "before"))
@@ -879,28 +895,28 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 				forceProductId(product_dict["id"]),
 				forceProductVersion(product_dict["version"]),
 				forcePackageVersion(data_dict["Package"]["version"]),
-				forceActionRequest(dep.get('action')),
-				forceProductId(dep.get('requiredProduct')),
+				forceActionRequest(dep.get("action")),
+				forceProductId(dep.get("requiredProduct")),
 				requiredProductVersion=req_prod_vers,
 				requiredPackageVersion=req_pack_vers,
 				requiredAction=req_act,
 				requiredInstallationStatus=req_inst_stat,
-				requirementType=req_type
+				requirementType=req_type,
 			)
 			dep_list.append(dependency)
-			self._sections['productdependency'].append(dep.get('product_id'))  # kept for compatibility
+			self._sections["productdependency"].append(dep.get("product_id"))  # kept for compatibility
 		self.setProductDependencies(dep_list)
 
 		for prop in data_dict.get("ProductProperty", []):
-			self._sections['productproperty'].append(prop.get('name'))  # kept for compatibility
+			self._sections["productproperty"].append(prop.get("name"))  # kept for compatibility
 			self.parse_product_property(prop)
 
 	def parse_product_property(self, productProperty):
 		Class = UnicodeProductProperty
 
-		if productProperty.get('type', '').lower() in ('unicodeproductproperty', 'unicode', ''):
+		if productProperty.get("type", "").lower() in ("unicodeproductproperty", "unicode", ""):
 			Class = UnicodeProductProperty
-		elif productProperty.get('type', '').lower() in ('boolproductproperty', 'bool'):
+		elif productProperty.get("type", "").lower() in ("boolproductproperty", "bool"):
 			Class = BoolProductProperty
 		else:
 			raise ValueError(f"Error in control file '{self._filename}': unknown product property type '{productProperty.get('type')}'")
@@ -909,27 +925,27 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 				productId=self._product.getId(),
 				productVersion=self._product.getProductVersion(),
 				packageVersion=self._product.getPackageVersion(),
-				propertyId=productProperty.get('name', ''),
-				description=productProperty.get('description', ''),
-				defaultValues=productProperty.get('default', [])
+				propertyId=productProperty.get("name", ""),
+				description=productProperty.get("description", ""),
+				defaultValues=productProperty.get("default", []),
 			)
 		)
 		if isinstance(self._productProperties[-1], UnicodeProductProperty):
-			if productProperty.get('values') is not None:
-				self._productProperties[-1].setPossibleValues(productProperty.get('values'))
+			if productProperty.get("values") is not None:
+				self._productProperties[-1].setPossibleValues(productProperty.get("values"))
 			else:
 				self._productProperties[-1].possibleValues = []
 
-			if productProperty.get('editable') is not None:
-				self._productProperties[-1].setEditable(productProperty['editable'])
+			if productProperty.get("editable") is not None:
+				self._productProperties[-1].setEditable(productProperty["editable"])
 			else:
-				if not productProperty.get('values') in (None, []):
+				if not productProperty.get("values") in (None, []):
 					self._productProperties[-1].setEditable(False)
 				else:
 					self._productProperties[-1].setEditable(True)
 
-			if productProperty.get('multivalue') is not None:
-				self._productProperties[-1].setMultiValue(productProperty['multivalue'])
+			if productProperty.get("multivalue") is not None:
+				self._productProperties[-1].setMultiValue(productProperty["multivalue"])
 
 		self._productProperties[-1].setDefaults()
 
@@ -963,16 +979,16 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 		if not packageDependencies:
 			return
 		for packageDependency in forceDictList(packageDependencies):
-			if not packageDependency.get('package'):
+			if not packageDependency.get("package"):
 				raise ValueError(f"No package given: {packageDependency}")
 
-			if not packageDependency.get('version'):
-				packageDependency['version'] = None
-				packageDependency['condition'] = None
+			if not packageDependency.get("version"):
+				packageDependency["version"] = None
+				packageDependency["condition"] = None
 			else:
-				if not packageDependency.get('condition'):
-					packageDependency['condition'] = '='
-				if packageDependency['condition'] not in ('=', '<', '<=', '>', '>='):
+				if not packageDependency.get("condition"):
+					packageDependency["condition"] = "="
+				if packageDependency["condition"] not in ("=", "<", "<=", ">", ">="):
 					raise ValueError(f"Bad condition string '{packageDependency['condition']}' in package dependency")
 
 			self._packageDependencies.append(packageDependency)
@@ -988,113 +1004,113 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 			self.generate_old()
 
 	def generate_old(self):  # pylint: disable=too-many-branches,too-many-statements
-		self._lines = ['[Package]']
-		self._lines.append(f'version: {self._product.getPackageVersion()}')
-		depends = ''
+		self._lines = ["[Package]"]
+		self._lines.append(f"version: {self._product.getPackageVersion()}")
+		depends = ""
 		for packageDependency in self._packageDependencies:
 			if depends:
-				depends += ', '
+				depends += ", "
 
-			depends += packageDependency['package']
-			if packageDependency['version']:
+			depends += packageDependency["package"]
+			if packageDependency["version"]:
 				depends += f" ({packageDependency['condition']} {packageDependency['version']})"
 
-		self._lines.append(f'depends: {depends}')
-		self._lines.append('')
+		self._lines.append(f"depends: {depends}")
+		self._lines.append("")
 
-		self._lines.append('[Product]')
+		self._lines.append("[Product]")
 		productType = self._product.getType()
-		if productType == 'LocalbootProduct':
-			productType = 'localboot'
-		elif productType == 'NetbootProduct':
-			productType = 'netboot'
+		if productType == "LocalbootProduct":
+			productType = "localboot"
+		elif productType == "NetbootProduct":
+			productType = "netboot"
 		else:
 			raise ValueError(f"Unhandled product type '{productType}'")
 
-		self._lines.append(f'type: {productType}')
-		self._lines.append(f'id: {self._product.getId()}')
-		self._lines.append(f'name: {self._product.getName()}')
-		self._lines.append('description: ')
-		descLines = self._product.getDescription().split('\n')
+		self._lines.append(f"type: {productType}")
+		self._lines.append(f"id: {self._product.getId()}")
+		self._lines.append(f"name: {self._product.getName()}")
+		self._lines.append("description: ")
+		descLines = self._product.getDescription().split("\n")
 		if len(descLines) > 0:
 			self._lines[-1] += descLines[0]
 			if len(descLines) > 1:
 				for line in descLines[1:]:
-					self._lines.append(f' {line}')
-		self._lines.append(f'advice: {self._product.getAdvice()}')
-		self._lines.append(f'version: {self._product.getProductVersion()}')
-		self._lines.append(f'priority: {self._product.getPriority()}')
-		self._lines.append(f'licenseRequired: {self._product.getLicenseRequired()}')
+					self._lines.append(f" {line}")
+		self._lines.append(f"advice: {self._product.getAdvice()}")
+		self._lines.append(f"version: {self._product.getProductVersion()}")
+		self._lines.append(f"priority: {self._product.getPriority()}")
+		self._lines.append(f"licenseRequired: {self._product.getLicenseRequired()}")
 		if self._product.getProductClassIds() is not None:
 			self._lines.append(f'productClasses: {", ".join(self._product.getProductClassIds())}')
-		self._lines.append(f'setupScript: {self._product.getSetupScript()}')
-		self._lines.append(f'uninstallScript: {self._product.getUninstallScript()}')
-		self._lines.append(f'updateScript: {self._product.getUpdateScript()}')
-		self._lines.append(f'alwaysScript: {self._product.getAlwaysScript()}')
-		self._lines.append(f'onceScript: {self._product.getOnceScript()}')
-		self._lines.append(f'customScript: {self._product.getCustomScript()}')
+		self._lines.append(f"setupScript: {self._product.getSetupScript()}")
+		self._lines.append(f"uninstallScript: {self._product.getUninstallScript()}")
+		self._lines.append(f"updateScript: {self._product.getUpdateScript()}")
+		self._lines.append(f"alwaysScript: {self._product.getAlwaysScript()}")
+		self._lines.append(f"onceScript: {self._product.getOnceScript()}")
+		self._lines.append(f"customScript: {self._product.getCustomScript()}")
 		if isinstance(self._product, LocalbootProduct):
-			self._lines.append(f'userLoginScript: {self._product.getUserLoginScript()}')
+			self._lines.append(f"userLoginScript: {self._product.getUserLoginScript()}")
 		if isinstance(self._product, NetbootProduct):
 			pxeConfigTemplate = self._product.getPxeConfigTemplate()
 			if not pxeConfigTemplate:
-				pxeConfigTemplate = ''
-			self._lines.append(f'pxeConfigTemplate: {pxeConfigTemplate}')
-		self._lines.append('')
+				pxeConfigTemplate = ""
+			self._lines.append(f"pxeConfigTemplate: {pxeConfigTemplate}")
+		self._lines.append("")
 
 		if self._product.getWindowsSoftwareIds():
-			self._lines.append('[Windows]')
+			self._lines.append("[Windows]")
 			self._lines.append(f'softwareIds: {", ".join(self._product.getWindowsSoftwareIds())}')
-			self._lines.append('')
+			self._lines.append("")
 
 		for dependency in self._productDependencies:
-			self._lines.append('[ProductDependency]')
-			self._lines.append(f'action: {dependency.getProductAction()}')
+			self._lines.append("[ProductDependency]")
+			self._lines.append(f"action: {dependency.getProductAction()}")
 			if dependency.getRequiredProductId():
-				self._lines.append(f'requiredProduct: {dependency.getRequiredProductId()}')
+				self._lines.append(f"requiredProduct: {dependency.getRequiredProductId()}")
 			if dependency.getRequiredProductVersion():
-				self._lines.append(f'requiredProductVersion: {dependency.getRequiredProductVersion()}')
+				self._lines.append(f"requiredProductVersion: {dependency.getRequiredProductVersion()}")
 			if dependency.getRequiredPackageVersion():
-				self._lines.append(f'requiredPackageVersion: {dependency.getRequiredPackageVersion()}')
+				self._lines.append(f"requiredPackageVersion: {dependency.getRequiredPackageVersion()}")
 			if dependency.getRequiredAction():
-				self._lines.append(f'requiredAction: {dependency.getRequiredAction()}')
+				self._lines.append(f"requiredAction: {dependency.getRequiredAction()}")
 			if dependency.getRequiredInstallationStatus():
-				self._lines.append(f'requiredStatus: {dependency.getRequiredInstallationStatus()}')
+				self._lines.append(f"requiredStatus: {dependency.getRequiredInstallationStatus()}")
 			if dependency.getRequirementType():
-				self._lines.append(f'requirementType: {dependency.getRequirementType()}')
-			self._lines.append('')
+				self._lines.append(f"requirementType: {dependency.getRequirementType()}")
+			self._lines.append("")
 
 		for productProperty in self._productProperties:
-			self._lines.append('[ProductProperty]')
-			productPropertyType = 'unicode'
+			self._lines.append("[ProductProperty]")
+			productPropertyType = "unicode"
 			if isinstance(productProperty, BoolProductProperty):
-				productPropertyType = 'bool'
-			self._lines.append(f'type: {productPropertyType}')
-			self._lines.append(f'name: {productProperty.getPropertyId()}')
+				productPropertyType = "bool"
+			self._lines.append(f"type: {productPropertyType}")
+			self._lines.append(f"name: {productProperty.getPropertyId()}")
 			if not isinstance(productProperty, BoolProductProperty):
-				self._lines.append(f'multivalue: {productProperty.getMultiValue()}')
-				self._lines.append(f'editable: {productProperty.getEditable()}')
+				self._lines.append(f"multivalue: {productProperty.getMultiValue()}")
+				self._lines.append(f"editable: {productProperty.getEditable()}")
 			if productProperty.getDescription():
-				self._lines.append('description: ')
-				descLines = productProperty.getDescription().split('\n')
+				self._lines.append("description: ")
+				descLines = productProperty.getDescription().split("\n")
 				if len(descLines) > 0:
 					self._lines[-1] += descLines[0]
 					if len(descLines) > 1:
 						for line in descLines[1:]:
-							self._lines.append(f' {line}')
+							self._lines.append(f" {line}")
 
 			if not isinstance(productProperty, BoolProductProperty) and productProperty.getPossibleValues() is not None:
-				self._lines.append(f'values: {toJson(productProperty.getPossibleValues())}')
+				self._lines.append(f"values: {toJson(productProperty.getPossibleValues())}")
 			if productProperty.getDefaultValues() is not None:
 				if isinstance(productProperty, BoolProductProperty):
-					self._lines.append(f'default: {productProperty.getDefaultValues()[0]}')
+					self._lines.append(f"default: {productProperty.getDefaultValues()[0]}")
 				else:
-					self._lines.append(f'default: {toJson(productProperty.getDefaultValues())}')
-			self._lines.append('')
+					self._lines.append(f"default: {toJson(productProperty.getDefaultValues())}")
+			self._lines.append("")
 
 		if self._product.getChangelog():
-			self._lines.append('[Changelog]')
-			self._lines.extend(self._product.getChangelog().split('\n'))
+			self._lines.append("[Changelog]")
+			self._lines.extend(self._product.getChangelog().split("\n"))
 
 		old_path = self._filename
 		try:
@@ -1108,9 +1124,9 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 
 	def generate_toml(self):
 		data_dict = tomlkit.document()
-		data_dict['Package'] = {
+		data_dict["Package"] = {
 			"version": self._product.getPackageVersion(),
-			"depends": self._packageDependencies  # Do not use getPackageDependencies() as it requires parsing
+			"depends": self._packageDependencies,  # Do not use getPackageDependencies() as it requires parsing
 		}
 		product_dict = {
 			"type": self._product.getType(),
@@ -1129,11 +1145,11 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 			"onceScript": self._product.getOnceScript() or None,
 			"customScript": self._product.getCustomScript() or None,
 			"userLoginScript": self._product.getUserLoginScript() or None,
-			"windowsSoftwareIds": self._product.getWindowsSoftwareIds()
+			"windowsSoftwareIds": self._product.getWindowsSoftwareIds(),
 		}
-		if product_dict['type'] == "netboot":
-			product_dict['pxeConfigTemplate'] = self._product.getPxeConfigTemplate()
-		data_dict['Product'] = {key: value for key, value in product_dict.items() if value is not None}
+		if product_dict["type"] == "netboot":
+			product_dict["pxeConfigTemplate"] = self._product.getPxeConfigTemplate()
+		data_dict["Product"] = {key: value for key, value in product_dict.items() if value is not None}
 
 		properties_list = []
 		for prop in self._productProperties:  # Do not use getPackageDependencies() as it requires parsing
@@ -1144,7 +1160,7 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 				"editable": prop.getEditable(),
 				"description": prop.getDescription(),
 				"values": prop.getPossibleValues(),
-				"default": prop.getDefaultValues()
+				"default": prop.getDefaultValues(),
 			}
 			properties_list.append({key: value for key, value in property_dict.items() if value is not None})
 		if properties_list:
@@ -1159,7 +1175,7 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 				"action": dep.getProductAction(),
 				"requirementType": dep.getRequirementType(),
 				"requiredAction": dep.getRequiredAction(),
-				"requiredStatus": dep.getRequiredInstallationStatus()
+				"requiredStatus": dep.getRequiredInstallationStatus(),
 			}
 			dependencies_list.append({key: value for key, value in dependency_dict.items() if value is not None})
 		if dependencies_list:
@@ -1184,11 +1200,11 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 
 class OpsiConfFile(IniFile):
 
-	sectionRegex = re.compile(r'^\s*\[([^\]]+)\]\s*$')
-	optionRegex = re.compile(r'^([^\:]+)\s*\=\s*(.*)$')
+	sectionRegex = re.compile(r"^\s*\[([^\]]+)\]\s*$")
+	optionRegex = re.compile(r"^([^\:]+)\s*\=\s*(.*)$")
 
-	def __init__(self, filename='/etc/opsi/opsi.conf', lockFailTimeout=2000):  # pylint: disable=super-init-not-called
-		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[';', '#'])  # pylint: disable=non-parent-init-called
+	def __init__(self, filename="/etc/opsi/opsi.conf", lockFailTimeout=2000):  # pylint: disable=super-init-not-called
+		ConfigFile.__init__(self, filename, lockFailTimeout, commentChars=[";", "#"])  # pylint: disable=non-parent-init-called
 		self._parsed = False
 		self._sections = {}
 		self._opsiGroups = {}
@@ -1208,11 +1224,11 @@ class OpsiConfFile(IniFile):
 
 		for lineNum, line in enumerate(self._lines, start=1):
 			line = line.strip()
-			if line and line.startswith((';', '#')):
+			if line and line.startswith((";", "#")):
 				# This is a comment
 				continue
 
-			line = line.replace('\r', '')
+			line = line.replace("\r", "")
 
 			match = self.sectionRegex.search(line)
 			if match:
@@ -1236,21 +1252,19 @@ class OpsiConfFile(IniFile):
 				elif key == "fileadmingroup":
 					value = forceUnicodeLower(value)
 				elif value:
-					value = forceUnicodeList(
-						[part.strip().lower() for part in value.split(",")]
-					)
+					value = forceUnicodeList([part.strip().lower() for part in value.split(",")])
 
 				if "groups" not in self._opsiConfig:
 					self._opsiConfig["groups"] = {}
 
 				if key and value:
 					self._opsiConfig["groups"][key] = value
-			elif sectionType == 'packages':
-				if 'packages' not in self._opsiConfig:
-					self._opsiConfig['packages'] = {}
+			elif sectionType == "packages":
+				if "packages" not in self._opsiConfig:
+					self._opsiConfig["packages"] = {}
 
-				if key == 'use_pigz':
-					self._opsiConfig['packages'][key] = forceBool(value)
+				if key == "use_pigz":
+					self._opsiConfig["packages"][key] = forceBool(value)
 
 			elif sectionType == "ldap_auth":
 				if "ldap_auth" not in self._opsiConfig:
@@ -1325,7 +1339,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 		if name is None:
 			self.sysinfo = self.getSysInfo()
 			name = self._generateNewArchive(suffix=compression)
-			self.mode = 'w'
+			self.mode = "w"
 		elif not os.path.exists(name):
 			if self.mode and not self.mode.startswith("w"):
 				raise OpsiBackupFileNotFound("Cannot read from nonexisting file.")
@@ -1367,9 +1381,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 				dispatchedBackends = []
 
 		if not os.path.exists(self.BACKEND_CONF_DIR):
-			raise OpsiBackupFileError(
-				f'Could not read backend configuration: Missing directory "{self.BACKEND_CONF_DIR}"'
-			)
+			raise OpsiBackupFileError(f'Could not read backend configuration: Missing directory "{self.BACKEND_CONF_DIR}"')
 
 		backends = {}
 		for entry in os.listdir(self.BACKEND_CONF_DIR):
@@ -1378,7 +1390,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 				if name in backends:
 					raise OpsiBackupFileError("Multiple backends with the same name are not supported.")
 
-				backendGlobals = {'config': {}, 'module': '', 'socket': socket}
+				backendGlobals = {"config": {}, "module": "", "socket": socket}
 				backendFile = os.path.join(self.BACKEND_CONF_DIR, entry)
 				try:
 					with open(backendFile, encoding="utf-8") as confFile:
@@ -1387,8 +1399,8 @@ class OpsiBackupArchive(tarfile.TarFile):
 					backends[name] = {
 						"name": name,
 						"config": backendGlobals["config"],
-						"module": backendGlobals['module'],
-						"dispatch": (name in dispatchedBackends)
+						"module": backendGlobals["module"],
+						"dispatch": (name in dispatchedBackends),
 					}
 				except Exception as err:  # pylint: disable=broad-except
 					logger.warning('Failed to read backend config "%s": %s', entry, err)
@@ -1433,7 +1445,7 @@ class OpsiBackupArchive(tarfile.TarFile):
 			"distribution": sysinfo.distribution,
 			"sysVersion": sysinfo.sysVersion,
 			"distributionId": sysinfo.distributionId,
-			"opsiVersion": LIBRARY_VERSION
+			"opsiVersion": LIBRARY_VERSION,
 		}
 
 	def _readSysInfo(self):
@@ -1482,7 +1494,7 @@ element of the tuple is replace with the second element.
 				return
 
 			checksum = sha1()
-			with open(path, 'rb') as file:
+			with open(path, "rb") as file:
 				for chunk in file:
 					checksum.update(chunk)
 
@@ -1655,8 +1667,9 @@ element of the tuple is replace with the second element.
 				if not backend["dispatch"]:
 					logger.warning("Backing up backend %s although it's currently not in use.", backend["name"])
 
-				dhcpdConfigFile = backend["config"]['dhcpdConfigFile']
-				self._addContent(dhcpdConfigFile, sub=(os.path.dirname(dhcpdConfigFile), f"BACKENDS/DHCP/{backend['name']}"))
+				dhcpdConfigFile = backend["config"].get("dhcpdConfigFile")
+				if dhcpdConfigFile:
+					self._addContent(dhcpdConfigFile, sub=(os.path.dirname(dhcpdConfigFile), f"BACKENDS/DHCP/{backend['name']}"))
 
 	def hasDHCPBackend(self, name=None):
 		return self._hasBackend("DHCP", name=name)
@@ -1669,13 +1682,13 @@ element of the tuple is replace with the second element.
 			if not auto or backend["dispatch"]:
 				members = self.getmembers()
 
-				file = backend["config"]['dhcpdConfigFile']
+				file = backend["config"]["dhcpdConfigFile"]
 				if os.path.exists(file):
 					os.remove(file)
 
 				for member in members:
 					if member.name.startswith(os.path.join(self.CONTENT_DIR, f"BACKENDS/DHCP/{backend['name']}")):
-						self._extractFile(member, backend["config"]['dhcpdConfigFile'])
+						self._extractFile(member, backend["config"]["dhcpdConfigFile"])
 
 	def hasMySQLBackend(self, name=None):
 		return self._hasBackend("MYSQL", name=name)
@@ -1690,13 +1703,9 @@ element of the tuple is replace with the second element.
 				# credentials if mysqldump is missing
 				mysqldumpCmd = OPSI.System.which("mysqldump")
 
-				defaultsFile = createMySQLDefaultsFile(
-					"mysqldump",
-					backend["config"]["username"],
-					backend["config"]["password"]
-				)
+				defaultsFile = createMySQLDefaultsFile("mysqldump", backend["config"]["username"], backend["config"]["password"])
 
-				address = backend['config']['address']
+				address = backend["config"]["address"]
 				if address.startswith("/"):
 					address = f"--socket={address}"
 				else:
@@ -1708,7 +1717,7 @@ element of the tuple is replace with the second element.
 					f"--defaults-file={defaultsFile}",
 					address,
 					"--lock-tables",
-					"--add-drop-table"
+					"--add-drop-table",
 				]
 				if flushLogs:
 					logger.debug("Flushing mysql table logs.")
@@ -1780,13 +1789,9 @@ element of the tuple is replace with the second element.
 					# Early check for available command to not leak
 					# credentials if mysqldump is missing
 					mysqlCmd = OPSI.System.which("mysql")
-					defaultsFile = createMySQLDefaultsFile(
-						"mysql",
-						backend["config"]["username"],
-						backend["config"]["password"]
-					)
+					defaultsFile = createMySQLDefaultsFile("mysql", backend["config"]["username"], backend["config"]["password"])
 
-					address = backend['config']['address']
+					address = backend["config"]["address"]
 					if address.startswith("/"):
 						address = f"--socket={address}"
 					else:
@@ -1796,7 +1801,7 @@ element of the tuple is replace with the second element.
 						mysqlCmd,
 						# --defaults-file has to be the first argument
 						f"--defaults-file={defaultsFile}",
-						address
+						address,
 					]
 					logger.trace("Running command: '%s'", cmd)
 					with subprocess.Popen(
@@ -1863,10 +1868,6 @@ def createMySQLDefaultsFile(program, username, password):
 		raise ValueError("Double quotation marks not allowed in password")
 
 	# password enclosed in double quotes (not allowed in MySQL passwords) to avoid special character interpretation
-	with tempfile.NamedTemporaryFile(mode='wt', delete=False) as cFile:
-		cFile.write((
-			f'[{program}]\n'
-			f'user = "{username}"\n'
-			f'password = "{password}"\n'
-		))
+	with tempfile.NamedTemporaryFile(mode="wt", delete=False) as cFile:
+		cFile.write((f"[{program}]\n" f'user = "{username}"\n' f'password = "{password}"\n'))
 		return cFile.name
