@@ -64,6 +64,8 @@ class JSONRPCBackend(Backend, ServiceConnectionListener):
 					service_args["verify"] = ["opsi_ca", "uib_opsi_ca"]
 				else:
 					service_args["verify"] = "accept_all"
+			elif option == "verify":
+				service_args["verify"] = value
 			elif option == "sessionid":
 				if value:
 					service_args["session_cookie"] = str(value)
