@@ -32,6 +32,7 @@ from opsicommon.logging import get_logger, secret_filter
 from opsicommon.ssl import install_ca
 from opsicommon.utils import prepare_proxy_environment
 from requests.packages import urllib3
+from requests.exceptions import ChunkedEncodingError
 
 from .Config import DEFAULT_USER_AGENT, ConfigurationParser
 from .Notifier import DummyNotifier, EmailNotifier
@@ -760,23 +761,27 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 
 		with open(outFile, "wb") as out:
 			for attempt in range(1, 11):  # pylint: disable=too-many-nested-blocks
-				for chunk in response.iter_content(chunk_size=32768):
-					position += len(chunk)
-					out.write(chunk)
+				try:
+					for chunk in response.iter_content(chunk_size=32768):
+						position += len(chunk)
+						out.write(chunk)
 
-					if size > 0:
-						try:
-							percent = round(100 * position / size, 1)
-							if last_percent != percent:
-								last_percent = percent
-								now = time.time()
-								if not speed or (now - last_time) > 2:
-									speed = 8 * int(((position - last_position) / (now - last_time)) / 1024)
-									last_time = now
-									last_position = position
-								logger.debug("Downloading %s: %0.1f%% (%0.2f kbit/s)", url, percent, speed)
-						except Exception:  # pylint: disable=broad-except
-							pass
+						if size > 0:
+							try:
+								percent = round(100 * position / size, 1)
+								if last_percent != percent:
+									last_percent = percent
+									now = time.time()
+									if not speed or (now - last_time) > 2:
+										speed = 8 * int(((position - last_position) / (now - last_time)) / 1024)
+										last_time = now
+										last_position = position
+									logger.debug("Downloading %s: %0.1f%% (%0.2f kbit/s)", url, percent, speed)
+							except Exception:  # pylint: disable=broad-except
+								pass
+				except ChunkedEncodingError as err:
+					raise RuntimeError(f"Failed to complete download: {err}") from err
+
 				if not size or size == position:
 					break
 				error = f"Failed to complete download, only {position} of {size} bytes transferred"
