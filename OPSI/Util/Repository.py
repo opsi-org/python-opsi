@@ -1380,6 +1380,9 @@ class DepotToLocalDirectorySychronizer:  # pylint: disable=too-few-public-method
 				if self._fileInfo[relSource]["type"] == "f":
 					size = int(self._fileInfo[relSource]["size"])
 					exists = os.path.exists(destinationPath)
+					if exists and os.path.isdir(destinationPath):
+						shutil.rmtree(destinationPath)
+						exists = False
 					if exists:
 						md5s = md5sum(destinationPath)
 						logger.debug("Destination file '%s' already exists (size: %s, md5sum: %s)", destinationPath, size, md5s)
