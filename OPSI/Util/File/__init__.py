@@ -24,6 +24,9 @@ from configparser import (  # pylint: disable=deprecated-class
 )
 from io import StringIO
 from itertools import islice
+from pathlib import Path
+
+from pyzsync import create_zsync_file
 
 from opsicommon.logging import get_logger
 
@@ -519,7 +522,6 @@ class ConfigFile(TextFile):
 
 
 class IniFile(ConfigFile):
-
 	optionMatch = re.compile(r"^([^:=]+)\s*([:=].*)$")
 
 	def __init__(self, filename, lockFailTimeout=2000, ignoreCase=True, raw=True):
@@ -689,7 +691,6 @@ class IniFile(ConfigFile):
 
 
 class InfFile(ConfigFile):
-
 	sectionRegex = re.compile(r"\[\s*([^\]]+)\s*\]")
 	pciDeviceRegex = re.compile(r"VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)", re.IGNORECASE)
 	hdaudioDeviceRegex = re.compile(r"HDAUDIO\\.*VEN_([\da-fA-F]+)&DEV_([\da-fA-F]+)", re.IGNORECASE)
@@ -974,7 +975,6 @@ UsbidsFile = PciidsFile
 
 
 class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attributes
-
 	sectionRegex = re.compile(r"\[\s*([^\]]+)\s*\]")
 	pciDeviceRegex = re.compile(r"VEN_([\da-fA-F]+)(&DEV_([\da-fA-F]+))?(\S*)\s*$")
 	usbDeviceRegex = re.compile(r"USB.*VID_([\da-fA-F]+)(&PID_([\da-fA-F]+))?(\S*)\s*$", re.IGNORECASE)
@@ -1132,7 +1132,7 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 
 		# Search for component options
 		logger.info("Searching for component names and options")
-		for (section, sec_lines) in sections.items():
+		for section, sec_lines in sections.items():
 			if section.lower() not in ("computer", "display", "keyboard", "mouse", "scsi"):
 				continue
 			componentName = section
@@ -1161,7 +1161,7 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 
 		# Search for default component ids
 		logger.info("Searching for default component ids")
-		for (section, sec_lines) in sections.items():
+		for section, sec_lines in sections.items():
 			if section.lower() != "defaults":
 				continue
 
@@ -1174,7 +1174,7 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 
 		# Search for hardware ids
 		logger.info("Searching for devices")
-		for (section, sec_lines) in sections.items():
+		for section, sec_lines in sections.items():
 			match = re.search(self.hardwareIdsRegex, section)
 			if not match:
 				continue
@@ -1224,7 +1224,7 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 
 		# Search for disks
 		logger.info("Searching for disks")
-		for (section, sec_lines) in sections.items():
+		for section, sec_lines in sections.items():
 			if section.lower() != "disks":
 				continue
 
@@ -1252,7 +1252,7 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 
 		# Search for files
 		logger.info("Searching for files")
-		for (section, sec_lines) in sections.items():
+		for section, sec_lines in sections.items():
 			match = re.search(self.filesRegex, section)
 			if not match:
 				continue
@@ -1283,7 +1283,7 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 
 		# Search for configs
 		logger.info("Searching for configs")
-		for (section, sec_lines) in sections.items():
+		for section, sec_lines in sections.items():
 			match = re.search(self.configsRegex, section)
 			if not match:
 				continue
@@ -1369,7 +1369,7 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 				configComponents[config["componentId"]] = []
 			configComponents[config["componentId"]].append(config)
 
-		for (componentId, configs) in configComponents.items():
+		for componentId, configs in configComponents.items():
 			lines.append("\r\n")
 			lines.append(f"[Config.{componentId}]\r\n")
 			for conf in configs:
@@ -1406,12 +1406,7 @@ class ZsyncFile(LockableFile):
 
 	def generate(self, dataFile=None):
 		if dataFile:
-			zsyncmake = which("zsyncmake-curl")
-			if not zsyncmake:
-				zsyncmake = which("zsyncmake")
-			if not zsyncmake:
-				raise FileNotFoundError("zsyncmake(-curl) binary not found in PATH")
-			execute(f"{zsyncmake} -u '{os.path.basename(dataFile)}' -o '{self._filename}' '{dataFile}'")
+			create_zsync_file(Path(dataFile), Path(self._filename))
 			self.parse()
 
 		with open(self._filename, "wb") as file:
@@ -1474,7 +1469,6 @@ class DHCPDConf_Parameter(DHCPDConf_Component):  # pylint: disable=invalid-name
 			or re.match(r"^\w+\.\w+$", value)
 			or self.key.endswith("-name")
 		):
-
 			value = f'"{value}"'
 		return f"{self.getShifting()}{self.key} {value};"
 
@@ -1516,7 +1510,6 @@ class DHCPDConf_Option(DHCPDConf_Component):  # pylint: disable=invalid-name
 		text = []
 		for value in self.value:
 			if re.match(r".*['/\\].*", value) or re.match(r"^\w+\.\w+$", value) or self.key.endswith(quotedOptions):
-
 				text.append(f'"{value}"')
 			else:
 				text.append(value)
@@ -1592,7 +1585,7 @@ class DHCPDConf_Block(DHCPDConf_Component):  # pylint: disable=invalid-name
 			options[component.key] = component.value
 
 		if inherit and (self.type != inherit) and self.parentBlock:
-			for (key, value) in self.parentBlock.getOptions_hash(inherit).items():
+			for key, value in self.parentBlock.getOptions_hash(inherit).items():
 				if key not in options:
 					options[key] = value
 
@@ -1618,7 +1611,7 @@ class DHCPDConf_Block(DHCPDConf_Component):  # pylint: disable=invalid-name
 			parameters[component.key] = component.value
 
 		if inherit and self.type != inherit and self.parentBlock:
-			for (key, value) in self.parentBlock.getParameters_hash(inherit).items():
+			for key, value in self.parentBlock.getParameters_hash(inherit).items():
 				if key not in parameters:
 					parameters[key] = value
 		return parameters
@@ -1778,7 +1771,7 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 			if block.settings[1].lower() == hostname:
 				existingHost = block
 			else:
-				for (key, value) in block.getParameters_hash().items():
+				for key, value in block.getParameters_hash().items():
 					if key == "fixed-address" and value.lower() == fixedAddress:
 						raise BackendBadValueError(f"Host '{block.settings[1]}' uses the same fixed address")
 					if key == "hardware" and value.lower() == f"ethernet {hardwareAddress}":
@@ -1798,7 +1791,7 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 			self._filename,
 		)
 
-		for (key, value) in parameters.items():
+		for key, value in parameters.items():
 			parameters[key] = DHCPDConf_Parameter(-1, None, key, value).asHash()[key]
 
 		# Default parent block is global
@@ -1818,7 +1811,7 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 			blockParameters = block.getParameters_hash(inherit="global")
 			if blockParameters:
 				# Block has parameters set, check if they match the hosts parameters
-				for (key, value) in blockParameters.items():
+				for key, value in blockParameters.items():
 					if key not in parameters:
 						continue
 
@@ -1837,7 +1830,7 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 		# Remove parameters which are already defined in parents
 		blockParameters = parentBlock.getParameters_hash(inherit="global")
 		if blockParameters:
-			for (key, value) in blockParameters.items():
+			for key, value in blockParameters.items():
 				if key in parameters and parameters[key] == value:
 					del parameters[key]
 
@@ -1846,7 +1839,7 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 		hostBlock.addComponent(
 			DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key="hardware", value=f"ethernet {hardwareAddress}")
 		)
-		for (key, value) in parameters.items():
+		for key, value in parameters.items():
 			hostBlock.addComponent(DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key=key, value=value))
 
 		parentBlock.addComponent(hostBlock)
@@ -1870,7 +1863,7 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 			if block.settings[1] == hostname:
 				hostBlocks.append(block)
 			else:
-				for (key, value) in block.getParameters_hash().items():
+				for key, value in block.getParameters_hash().items():
 					if key == "fixed-address" and value == hostname:
 						hostBlocks.append(block)
 
@@ -1893,7 +1886,7 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 			if block.settings[1] == hostname:
 				hostBlocks.append(block)
 			else:
-				for (key, value) in block.getParameters_hash().items():
+				for key, value in block.getParameters_hash().items():
 					if key == "fixed-address" and value == hostname:
 						hostBlocks.append(block)
 					elif key == "hardware" and value.lower() == parameters.get("hardware"):
@@ -1905,17 +1898,17 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 		hostBlock = hostBlocks[0]
 		hostBlock.removeComponents()
 
-		for (key, value) in parameters.items():
+		for key, value in parameters.items():
 			parameters[key] = DHCPDConf_Parameter(-1, None, key, value).asHash()[key]
 
-		for (key, value) in hostBlock.parentBlock.getParameters_hash(inherit="global").items():
+		for key, value in hostBlock.parentBlock.getParameters_hash(inherit="global").items():
 			if key not in parameters:
 				continue
 
 			if parameters[key] == value:
 				del parameters[key]
 
-		for (key, value) in parameters.items():
+		for key, value in parameters.items():
 			hostBlock.addComponent(DHCPDConf_Parameter(startLine=-1, parentBlock=hostBlock, key=key, value=value))
 
 	def _getNewData(self):
