@@ -80,6 +80,7 @@ def dhcpd_lock(lock_type: str = "") -> Generator[None, None, None]:
 
 class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attributes
 	"""This Backend holds information for DHCP functionality"""
+
 	def __init__(self, **kwargs) -> None:
 		self._name = "dhcpd"
 
@@ -97,7 +98,7 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 		self._dhcpdOnDepot = False
 
 		# Parse arguments
-		for (option, value) in kwargs.items():
+		for option, value in kwargs.items():
 			option = option.lower()
 			if option == "dhcpdconfigfile":
 				self._dhcpdConfigFile = value
@@ -113,7 +114,9 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 				self._dhcpdOnDepot = forceBool(value)
 
 		if self._defaultClientParameters.get("next-server") and self._defaultClientParameters["next-server"].startswith("127"):
-			raise BackendBadValueError("Refusing to use ip address {self._defaultClientParameters['next-server']!r} as default next-server")
+			raise BackendBadValueError(
+				f"Refusing to use ip address {self._defaultClientParameters['next-server']!r} as default next-server"
+			)
 
 		self._dhcpdConfFile = DHCPDConfFile(self._dhcpdConfigFile)
 		self._reloadThread = None
@@ -140,6 +143,7 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 	def _startReloadThread(self) -> None:
 		class ReloadThread(threading.Thread):
 			"""This class implements a thread regularly reloading the dhcpd.conf file."""
+
 			def __init__(self, reloadConfigCommand: Callable) -> None:
 				threading.Thread.__init__(self)
 				self._reloadConfigCommand = reloadConfigCommand
@@ -296,7 +300,6 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 					and (currentHostParams.get("fixed-address") == fixedAddress)
 					and (currentHostParams.get("next-server") == parameters.get("next-server"))
 				):
-
 					logger.debug("DHCPD config of host '%s' unchanged, no need to update config file", host)
 					return
 
