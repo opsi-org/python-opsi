@@ -505,9 +505,11 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals
 			if scheme in ("http", "https"):
 				process.expect("Username.*: ")
 				process.sendline(username)
-			process.expect("Password.*: ")
-			process.sendline(password)
-			process.expect(pexpect.EOF)
+			index = process.expect(["Password.*: ", pexpect.EOF])
+			if index == 0:
+				# It is possible that mount_smbfs caches a password and does not prompt for it again.
+				process.sendline(password)
+				process.expect(pexpect.EOF)
 			output = process.before.decode("utf-8", "replace")
 			process.close()
 			exit_code = process.exitstatus
