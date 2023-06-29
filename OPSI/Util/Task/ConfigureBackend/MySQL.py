@@ -10,7 +10,12 @@ Functionality to automatically configure an OPSI MySQL backend.
 
 from contextlib import closing, contextmanager
 
-import MySQLdb
+MySQLdb = None
+try:
+	import MySQLdb
+except ImportError:
+	pass
+
 from opsicommon.logging import get_logger
 
 import OPSI.Util.Task.ConfigureBackend as backendUtils
@@ -28,13 +33,15 @@ class DatabaseConnectionFailedException(Exception):
 
 
 def configureMySQLBackend(
-	dbAdminUser, dbAdminPass,
+	dbAdminUser,
+	dbAdminPass,
 	config=None,
 	systemConfiguration=None,
 	additionalBackendConfig=None,
-	backendConfigFile='/etc/opsi/backends/mysql.conf',
+	backendConfigFile="/etc/opsi/backends/mysql.conf",
 	notificationFunction=None,
-	errorFunction=None):
+	errorFunction=None,
+):
 	"""
 	Does the initial configuration of an MySQL backend.
 
@@ -72,16 +79,9 @@ on to. Defaults to ``logger.error``.
 		config.update(additionalBackendConfig)
 
 	try:
-		initializeDatabase(
-			dbAdminUser, dbAdminPass, config,
-			systemConfig=systemConfiguration,
-			notificationFunction=notificationFunction
-		)
+		initializeDatabase(dbAdminUser, dbAdminPass, config, systemConfig=systemConfiguration, notificationFunction=notificationFunction)
 	except DatabaseConnectionFailedException as err:
-		errorFunction(
-			"Failed to connect to host '%s' as user '%s': %s",
-			config['address'], dbAdminUser, err
-		)
+		errorFunction("Failed to connect to host '%s' as user '%s': %s", config["address"], dbAdminUser, err)
 		raise err
 	except Exception as err:
 		errorFunction(err)
@@ -93,7 +93,7 @@ on to. Defaults to ``logger.error``.
 	backend = MySQLBackend(**config)
 	try:
 		backend.backend_createBase()
-	except MySQLdb.OperationalError as err:
+	except Exception as err:  # pylint: disable=broad-except
 		if err.args[0] == INVALID_DEFAULT_VALUE:
 			errorFunction(  # pylint: disable=logging-fstring-interpolation
 				f"It seems you have the MySQL strict mode enabled. Please read the opsi handbook.\n{err}"
@@ -103,25 +103,23 @@ on to. Defaults to ``logger.error``.
 	notificationFunction("Finished initializing mysql backend.")
 
 
-def initializeDatabase(
-	dbAdminUser, dbAdminPass, config,
-	systemConfig=None, notificationFunction=None, errorFunction=None):
+def initializeDatabase(dbAdminUser, dbAdminPass, config, systemConfig=None, notificationFunction=None, errorFunction=None):
 	"""
 	Create a database and grant the OPSI user the needed rights on it.
 	"""
+
+	if not MySQLdb:
+		raise ModuleNotFoundError("Missing mysqlclient module to perform initializeDatabase operation.")
+
 	@contextmanager
 	def connectAsDBA():
-		conConfig = {
-			"host": config['address'],
-			"user": dbAdminUser,
-			"passwd": dbAdminPass
-		}
+		conConfig = {"host": config["address"], "user": dbAdminUser, "passwd": dbAdminPass}
 
 		try:
 			with closing(MySQLdb.connect(**conConfig)) as db:
 				yield db
 		except Exception as err:  # pylint: disable=broad-except
-			if config['address'] == "127.0.0.1":
+			if config["address"] == "127.0.0.1":
 				logger.info("Failed to connect with tcp/ip (%s), retrying with socket", err)
 				try:
 					conConfig["host"] = "localhost"
@@ -158,21 +156,14 @@ def initializeDatabase(
 		systemConfig = backendUtils._getSysConfig()  # pylint: disable=protected-access
 
 	# Connect to database host
-	notificationFunction(
-		"Connecting to host '{0[address]}' as user '{username}'".format(
-			config, username=dbAdminUser
-		)
-	)
+	notificationFunction("Connecting to host '{0[address]}' as user '{username}'".format(config, username=dbAdminUser))
 	with connectAsDBA() as db:
-		notificationFunction(
-			"Successfully connected to host '{0[address]}'"
-			" as user '{username}'".format(config, username=dbAdminUser)
-		)
+		notificationFunction("Successfully connected to host '{0[address]}'" " as user '{username}'".format(config, username=dbAdminUser))
 
 		# Create opsi database and user
 		notificationFunction("Creating database '{database}'".format(**config))
 		try:
-			db.query('CREATE DATABASE {database} DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_bin;'.format(**config))
+			db.query("CREATE DATABASE {database} DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_bin;".format(**config))
 		except MySQLdb.OperationalError as err:
 			if err.args[0] == ACCESS_DENIED_ERROR_CODE:
 				raise DatabaseConnectionFailedException(str(err)) from err
@@ -182,34 +173,23 @@ def initializeDatabase(
 				raise err
 		notificationFunction("Database '{database}' created".format(**config))
 
-		if config['address'] in ("localhost", "127.0.0.1", systemConfig['hostname'], systemConfig['fqdn']):
+		if config["address"] in ("localhost", "127.0.0.1", systemConfig["hostname"], systemConfig["fqdn"]):
 			createUser("localhost")
-			if config['address'] not in ("localhost", "127.0.0.1"):
-				createUser(config['address'])
+			if config["address"] not in ("localhost", "127.0.0.1"):
+				createUser(config["address"])
 		else:
-			createUser(systemConfig['ipAddress'])
-			createUser(systemConfig['fqdn'])
-			createUser(systemConfig['hostname'])
+			createUser(systemConfig["ipAddress"])
+			createUser(systemConfig["fqdn"])
+			createUser(systemConfig["hostname"])
 
 	# Test connection / credentials
-	notificationFunction(
-		"Testing connection to database '{database}' as "
-		"user '{username}'".format(**config)
-	)
+	notificationFunction("Testing connection to database '{database}' as " "user '{username}'".format(**config))
 
-	userConnectionSettings = {
-		"host": config['address'],
-		"user": config['username'],
-		"passwd": config['password'],
-		"db": config['database']
-	}
+	userConnectionSettings = {"host": config["address"], "user": config["username"], "passwd": config["password"], "db": config["database"]}
 	try:
 		with closing(MySQLdb.connect(**userConnectionSettings)):
 			pass
 	except Exception as err:  # pylint: disable=broad-except
 		raise DatabaseConnectionFailedException(err) from err
 
-	notificationFunction(
-		"Successfully connected to host '{address}' as user"
-		" '{username}'".format(**config)
-	)
+	notificationFunction("Successfully connected to host '{address}' as user" " '{username}'".format(**config))
