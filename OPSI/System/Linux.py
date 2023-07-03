@@ -193,16 +193,28 @@ Posix.getSessionInformation = getSessionInformation
 def grant_session_access(username: str, session_id: str):
 	session_username = None
 	session_env = {}
+	# trying to find process with XAUTHORITY and matching user
 	for proc in psutil.process_iter():
 		env = proc.environ()
 		if env.get("DISPLAY") == session_id:
-			if env.get("XAUTHORITY"):
+			if env.get("XAUTHORITY") and proc.username() == username:
 				session_username = proc.username()
 				session_env = env
 				break
-			if env.get("USER") != "root":
-				session_username = proc.username()
-				session_env = env
+
+	# falling back to trying to get process with XAUTHORITY and any user except root
+	if not session_env:
+		for proc in psutil.process_iter():
+			env = proc.environ()
+			if env.get("DISPLAY") == session_id:
+				if env.get("XAUTHORITY"):
+					session_username = proc.username()
+					session_env = env
+					break
+				if env.get("USER") != "root":
+					session_username = proc.username()
+					session_env = env
+
 	if not session_env:
 		raise ValueError(f"Session {session_id} not found")
 
