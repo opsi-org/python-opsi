@@ -194,14 +194,13 @@ def grant_session_access(username: str, session_id: str):
 	session_username = None
 	session_env = {}
 
-	# trying to find process with XAUTHORITY
+	# trying to find process with XAUTHORITY (prefer non-greeter)
 	for proc in psutil.process_iter():
 		env = proc.environ()
 		if env.get("DISPLAY") == session_id and env.get("XAUTHORITY"):
-			if proc.username() != "root":
-				session_username = proc.username()
-				session_env = proc.environ()
-				logger.debug("Found process of user %s with XDG_SESSION_CLASS %s", session_username, session_env.get("XDG_SESSION_CLASS"))
+			session_username = proc.username()
+			session_env = env
+			logger.debug("Found process of user %s with XDG_SESSION_CLASS %s", session_username, session_env.get("XDG_SESSION_CLASS"))
 			if env.get("XDG_SESSION_CLASS") != "greeter":
 				break
 
