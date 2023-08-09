@@ -193,26 +193,17 @@ Posix.getSessionInformation = getSessionInformation
 def grant_session_access(username: str, session_id: str):
 	session_username = None
 	session_env = {}
-	procs_on_greeter: list[psutil.Process] = []  # login screen desktop
-	procs_not_on_greeter: list[psutil.Process] = []
 
-	# trying to find process with XAUTHORITY and matching user
+	# trying to find process with XAUTHORITY
 	for proc in psutil.process_iter():
 		env = proc.environ()
 		if env.get("DISPLAY") == session_id and env.get("XAUTHORITY"):
-			if env.get("XDG_SESSION_CLASS") == "greeter":
-				procs_on_greeter.append(proc)
-			else:
-				procs_not_on_greeter.append(proc)
-
-	for proc in procs_not_on_greeter + procs_on_greeter:  # search non greeter procs first
-		if proc.username() != "root" or not session_username:  # find non-root process (if any)
-			session_username = proc.username()
-			session_env = proc.environ()
-		if proc.username() == username:  # prefer process with matching user
-			session_username = proc.username()
-			session_env = proc.environ()
-			break
+			if proc.username() != "root":
+				session_username = proc.username()
+				session_env = proc.environ()
+				logger.debug("Found process of user %s with XDG_SESSION_CLASS %s", session_username, session_env.get("XDG_SESSION_CLASS"))
+			if env.get("XDG_SESSION_CLASS") != "greeter":
+				break
 
 	if not session_env:
 		raise ValueError(f"Session {session_id} not found")
