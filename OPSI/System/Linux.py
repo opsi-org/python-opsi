@@ -155,9 +155,10 @@ def getActiveSessionIds(protocol=None, states=None):  # pylint: disable=unused-a
 	for proc in psutil.process_iter():
 		try:
 			env = proc.environ()
-			# Filter out gdm/1024
-			if env.get("USER") and env.get("DISPLAY") and env["DISPLAY"] != ":1024" and env["DISPLAY"] not in sessions:
-				sessions.append(env["DISPLAY"])
+			# Filter out gdm/1024 and other greeter processes
+			if env.get("USER") and env.get("DISPLAY") and env.get("DISPLAY") != ":1024" and env.get("XDG_SESSION_CLASS") != "greeter":
+				if env["DISPLAY"] not in sessions:
+					sessions.append(env["DISPLAY"])
 		except psutil.AccessDenied as err:
 			logger.debug(err)
 	sessions = sorted(sessions, key=lambda s: int(re.sub(r"\D", "", s)))
