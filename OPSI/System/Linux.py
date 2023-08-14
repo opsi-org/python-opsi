@@ -141,6 +141,7 @@ logger = get_logger("opsi.general")
 def getActiveSessionIds(protocol=None, states=None):  # pylint: disable=unused-argument
 	"""
 	Getting the IDs of the currently active sessions.
+	Prefer user sessions, fallback to gdm/1024 and other greeter processes.
 
 	.. versionadded:: 4.0.5
 
@@ -151,18 +152,21 @@ def getActiveSessionIds(protocol=None, states=None):  # pylint: disable=unused-a
 	"""
 	if states is None:
 		states = ["active", "disconnected"]
-	sessions = []
+	user_sessions = set()
+	login_sessions = set()
 	for proc in psutil.process_iter():
 		try:
 			env = proc.environ()
-			# Filter out gdm/1024 and other greeter processes
-			if env.get("USER") and env.get("DISPLAY") and env.get("DISPLAY") != ":1024" and env.get("XDG_SESSION_CLASS") != "greeter":
-				if env["DISPLAY"] not in sessions:
-					sessions.append(env["DISPLAY"])
+			if env.get("USER") and env.get("DISPLAY"):
+				if env.get("DISPLAY") == ":1024" or env.get("XDG_SESSION_CLASS") == "greeter":
+					login_sessions.add(env["DISPLAY"])
+				else:
+					user_sessions.add(env["DISPLAY"])
 		except psutil.AccessDenied as err:
 			logger.debug(err)
-	sessions = sorted(sessions, key=lambda s: int(re.sub(r"\D", "", s)))
-	return sessions
+
+	sessions = list(user_sessions if user_sessions else login_sessions)
+	return sorted(sessions, key=lambda s: int(re.sub(r"\D", "", s)))
 
 
 Posix.getActiveSessionIds = getActiveSessionIds
@@ -338,7 +342,7 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals,too-ma
 		raise ValueError(f"Cannot mount unknown fs type '{dev}'")
 
 	mount_options = []
-	for (key, value) in options.items():
+	for key, value in options.items():
 		if key in ("trust_ca_cert", "ca_cert_file", "verify_server_cert"):
 			continue
 		if value:
