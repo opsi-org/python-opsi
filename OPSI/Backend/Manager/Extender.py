@@ -74,7 +74,9 @@ class BackendExtender(ExtendedBackend):
 				if methodName.startswith("_"):
 					continue
 				logger.trace("Extending %s with instancemethod: %s", self._backend.__class__.__name__, methodName)
-				new_function = types.FunctionType(functionRef.__code__, functionRef.__globals__, functionRef.__name__)
+				new_function = types.FunctionType(
+					functionRef.__code__, functionRef.__globals__, functionRef.__name__, functionRef.__defaults__
+				)
 				new_method = types.MethodType(new_function, self)
 				setattr(self, methodName, new_method)
 
