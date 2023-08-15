@@ -25,6 +25,7 @@ from typing import Dict  # pylint: disable=unused-import
 from typing import Generator  # pylint: disable=unused-import
 from typing import List  # pylint: disable=unused-import
 from typing import Union  # pylint: disable=unused-import
+import typing  # pylint: disable=unused-import
 
 import OPSI.SharedAlgorithm
 import opsicommon  # this is needed for dynamic loading # pylint: disable=unused-import
@@ -103,9 +104,7 @@ class ExtendedBackend(Backend):
 			sig, arg = get_function_signature_and_args(functionRef)
 			sig = "(self)" if sig == "()" else f"(self, {sig[1:]}"
 
-			exec(  # pylint: disable=exec-used
-				f'def {methodName}{sig}: return self._executeMethod("{methodName}", {arg})'
-			)
+			exec(f'def {methodName}{sig}: return self._executeMethod("{methodName}", {arg})')  # pylint: disable=exec-used
 			new_function = eval(methodName)  # pylint: disable=eval-used
 			if getattr(functionRef, "deprecated", False):
 				new_function.deprecated = functionRef.deprecated
@@ -967,7 +966,7 @@ into the IDs of these depots are to be found in the list behind \
 				poDepotsByDepotIdAndProductId[pod.depotId] = {pod.productId: pod}
 
 		pHash = {}
-		for (depotId, productOnDepotsByProductId) in poDepotsByDepotIdAndProductId.items():
+		for depotId, productOnDepotsByProductId in poDepotsByDepotIdAndProductId.items():
 			productString = [
 				f"|{productId};{productOnDepotsByProductId[productId].productVersion};{productOnDepotsByProductId[productId].packageVersion}"
 				for productId in sorted(productOnDepotsByProductId.keys())
@@ -1305,7 +1304,6 @@ into the IDs of these depots are to be found in the list behind \
 				productAction=productDependency.productAction,
 				requiredProductId=productDependency.requiredProductId,
 			):
-
 				self._backend.productDependency_updateObject(productDependency)
 			else:
 				logger.info("ProductDependency %s does not exist, creating", productDependency)
@@ -1442,8 +1440,8 @@ into the IDs of these depots are to be found in the list behind \
 		ret = self._backend.productOnDepot_deleteObjects(productOnDepots)
 
 		if products:
-			for (productId, versions) in products.items():
-				for (productVersion, packageVersions) in versions.items():
+			for productId, versions in products.items():
+				for productVersion, packageVersions in versions.items():
 					for packageVersion in packageVersions:
 						if not self.productOnDepot_getIdents(
 							productId=productId, productVersion=productVersion, packageVersion=packageVersion
@@ -1533,7 +1531,7 @@ into the IDs of these depots are to be found in the list behind \
 						addDependencies(product, products, productDependencies, productByProductIdAndVersion, pDepsByProductIdAndVersion)
 
 		productOnClients = []
-		for (depotId, clientIds) in depotToClients.items():
+		for depotId, clientIds in depotToClients.items():
 			products = set()
 			productDependencies = set()
 
@@ -1701,7 +1699,7 @@ into the IDs of these depots are to be found in the list behind \
 			#   for (productId, poc) in pocs.items():
 			#       logger.trace("      [%s] %s: %s", clientId, productId, poc.toHash())
 
-			for (depotId, depotClientIds) in depotToClients.items():
+			for depotId, depotClientIds in depotToClients.items():
 				for clientId in depotClientIds:
 					for pod in productOnDepots[depotId]:
 						if pod.productId not in pocByClientIdAndProductId[clientId]:
@@ -1890,7 +1888,7 @@ into the IDs of these depots are to be found in the list behind \
 			ppss[pps.objectId][pps.productId].append(pps.propertyId)
 
 		# Create missing product property states
-		for (depotId, clientIds) in depotToClients.items():
+		for depotId, clientIds in depotToClients.items():
 			depotFilter = dict(filter)
 			depotFilter["objectId"] = depotId
 			for pps in self._backend.productPropertyState_getObjects(attributes, **depotFilter):
@@ -1929,7 +1927,6 @@ into the IDs of these depots are to be found in the list behind \
 			if self.productPropertyState_getIdents(
 				productId=productPropertyState.productId, objectId=productPropertyState.objectId, propertyId=productPropertyState.propertyId
 			):
-
 				self._backend.productPropertyState_updateObject(productPropertyState)
 			else:
 				logger.info("ProductPropertyState %s does not exist, creating", productPropertyState)
