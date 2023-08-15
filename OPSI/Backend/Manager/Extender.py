@@ -32,7 +32,7 @@ from OPSI.Util import (  # used in extensions  # pylint: disable=unused-import
 from .. import deprecated  # used in extensions  # pylint: disable=unused-import
 from .Dispatcher import BackendDispatcher
 
-__all__ = ('BackendExtender', )
+__all__ = ("BackendExtender",)
 
 logger = get_logger("opsi.general")
 
@@ -40,9 +40,9 @@ logger = get_logger("opsi.general")
 class BackendExtender(ExtendedBackend):
 	def __init__(self, backend, **kwargs):
 		if (
-			not isinstance(backend, ExtendedBackend) and
-			not isinstance(backend, BackendDispatcher) and
-			not isinstance(backend, BackendAccessControl)
+			not isinstance(backend, ExtendedBackend)
+			and not isinstance(backend, BackendDispatcher)
+			and not isinstance(backend, BackendAccessControl)
 		):
 			raise TypeError(
 				"BackendExtender needs instance of ExtendedBackend , BackendDispatcher or BackendAccessControl"
@@ -53,13 +53,16 @@ class BackendExtender(ExtendedBackend):
 
 		self._extensionConfigDir = None
 		self._extensionClass = None
+		self._extensionReplaceMethods = True
 
-		for (option, value) in kwargs.items():
+		for option, value in kwargs.items():
 			option = option.lower()
-			if option == 'extensionconfigdir':
+			if option == "extensionconfigdir":
 				self._extensionConfigDir = value
-			elif option == 'extensionclass':
+			elif option == "extensionclass":
 				self._extensionClass = value
+			elif option == "extensionreplacemethods":
+				self._extensionReplaceMethods = forceBool(value)
 
 		self.__createExtensions()
 
@@ -68,7 +71,7 @@ class BackendExtender(ExtendedBackend):
 			for methodName, functionRef in inspect.getmembers(self._extensionClass, inspect.isfunction):
 				if getattr(functionRef, "no_export", False):
 					continue
-				if methodName.startswith('_'):
+				if methodName.startswith("_"):
 					continue
 				logger.trace("Extending %s with instancemethod: %s", self._backend.__class__.__name__, methodName)
 				new_function = types.FunctionType(functionRef.__code__, functionRef.__globals__, functionRef.__name__)
@@ -89,12 +92,12 @@ class BackendExtender(ExtendedBackend):
 						if key == "backend_getLicensingInfo":
 							raise RuntimeError(f"Error reading file {confFile!r}")
 						if isinstance(val, types.FunctionType):  # TODO: find a better way
+							if hasattr(self, key) and not self._extensionReplaceMethods:
+								continue
 							logger.trace("Extending %s with instancemethod: '%s'", self._backend.__class__.__name__, key)
 							setattr(self, key, types.MethodType(val, self))
 			except Exception as err:
-				raise BackendConfigurationError(
-					f"Failed to read extensions from '{self._extensionConfigDir}': {err}"
-				) from err
+				raise BackendConfigurationError(f"Failed to read extensions from '{self._extensionConfigDir}': {err}") from err
 
 
 @lru_cache(maxsize=None)
@@ -102,11 +105,7 @@ def _getExtensionFiles(directory) -> list:
 	if not os.path.exists(directory):
 		raise OSError(f"No extensions loaded: extension directory {directory} does not exist")
 
-	return [
-		os.path.join(directory, filename)
-		for filename in sorted(os.listdir(directory))
-		if filename.endswith('.conf')
-	]
+	return [os.path.join(directory, filename) for filename in sorted(os.listdir(directory)) if filename.endswith(".conf")]
 
 
 @lru_cache(maxsize=None)
