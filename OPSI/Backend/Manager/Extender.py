@@ -19,6 +19,7 @@ from functools import lru_cache
 from opsicommon.logging import get_logger
 
 from OPSI.Backend.Base import ExtendedBackend
+from OPSI.Backend.Base.Extended import get_function_signature_and_args
 from OPSI.Backend.Manager.AccessControl import BackendAccessControl
 from OPSI.Exceptions import *  # this is needed for dynamic extension loading  # pylint: disable=wildcard-import,unused-wildcard-import
 from OPSI.Exceptions import BackendConfigurationError
@@ -74,11 +75,13 @@ class BackendExtender(ExtendedBackend):
 				if methodName.startswith("_"):
 					continue
 				logger.trace("Extending %s with instancemethod: %s", self._backend.__class__.__name__, methodName)
-				new_function = types.FunctionType(
-					functionRef.__code__, functionRef.__globals__, functionRef.__name__, functionRef.__defaults__
-				)
-				new_method = types.MethodType(new_function, self)
-				setattr(self, methodName, new_method)
+
+				sig = get_function_signature_and_args(functionRef)[0]
+				sig = "(self)" if sig == "()" else f"(self, {sig[1:]}"
+				new_function = exec(f"def {methodName}{sig}: pass")  # pylint: disable=exec-used
+				new_function = eval(methodName)  # pylint: disable=eval-used
+				new_function.__code__ = functionRef.__code__
+				setattr(self, methodName, types.MethodType(new_function, self))
 
 		if self._extensionConfigDir:
 			try:
