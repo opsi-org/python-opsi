@@ -69,6 +69,11 @@ class BackendExtender(ExtendedBackend):
 
 		self.__createExtensions()
 
+	def _executeMethodOnExtensionClass(self, methodName, **kwargs):
+		logger.debug("BackendExtender %s: executing %s on extension class %s", self, methodName, self._extensionClass)
+		meth = getattr(self._extensionClass, methodName)
+		return meth(self, **kwargs)
+
 	def __createExtensions(self):
 		if self._extensionClass:
 			for methodName, functionRef in inspect.getmembers(self._extensionClass, inspect.isfunction):
@@ -76,12 +81,13 @@ class BackendExtender(ExtendedBackend):
 					continue
 				if methodName.startswith("_"):
 					continue
-				logger.trace("Extending %s with instancemethod: %s", self._backend.__class__.__name__, methodName)
+				logger.trace("Extending %s with extension class method: %s", self._backend.__class__.__name__, methodName)
 
 				sig, arg = get_function_signature_and_args(functionRef)
 				sig = "(self)" if sig == "()" else f"(self, {sig[1:]}"
-
-				exec(f'def {methodName}{sig}: return self._executeMethod("{methodName}", {arg})')  # pylint: disable=exec-used
+				exec(
+					f'def {methodName}{sig}: return self._executeMethodOnExtensionClass("{methodName}", {arg})'
+				)  # pylint: disable=exec-used
 				new_function = eval(methodName)  # pylint: disable=eval-used
 				setattr(self, methodName, types.MethodType(new_function, self))
 
