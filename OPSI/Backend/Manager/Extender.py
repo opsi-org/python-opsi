@@ -18,6 +18,7 @@ from functools import lru_cache
 
 from opsicommon.logging import get_logger
 
+import typing  # this is needed exec in __createExtensions  # pylint: disable=unused-import
 from OPSI.Backend.Base import ExtendedBackend
 from OPSI.Backend.Base.Extended import get_function_signature_and_args
 from OPSI.Backend.Manager.AccessControl import BackendAccessControl
