@@ -85,9 +85,9 @@ class BackendExtender(ExtendedBackend):
 
 				sig, arg = get_function_signature_and_args(functionRef)
 				sig = "(self)" if sig == "()" else f"(self, {sig[1:]}"
-				exec(
+				exec(  # pylint: disable=exec-used
 					f'def {methodName}{sig}: return self._executeMethodOnExtensionClass("{methodName}", {arg})'
-				)  # pylint: disable=exec-used
+				)
 				new_function = eval(methodName)  # pylint: disable=eval-used
 				setattr(self, methodName, types.MethodType(new_function, self))
 
