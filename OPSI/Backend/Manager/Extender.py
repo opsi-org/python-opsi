@@ -78,11 +78,11 @@ class BackendExtender(ExtendedBackend):
 					continue
 				logger.trace("Extending %s with instancemethod: %s", self._backend.__class__.__name__, methodName)
 
-				sig = get_function_signature_and_args(functionRef)[0]
+				sig, arg = get_function_signature_and_args(functionRef)
 				sig = "(self)" if sig == "()" else f"(self, {sig[1:]}"
-				new_function = exec(f"def {methodName}{sig}: pass")  # pylint: disable=exec-used
+
+				exec(f'def {methodName}{sig}: return self._executeMethod("{methodName}", {arg})')  # pylint: disable=exec-used
 				new_function = eval(methodName)  # pylint: disable=eval-used
-				new_function.__code__ = functionRef.__code__
 				setattr(self, methodName, types.MethodType(new_function, self))
 
 		if self._extensionConfigDir:
