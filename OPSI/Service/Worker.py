@@ -17,7 +17,7 @@ import lz4
 from OPSI.Exceptions import OpsiBadRpcError, OpsiServiceAuthenticationError
 from OPSI.Service.JsonRpc import JsonRpc
 from OPSI.Types import forceList, forceUnicode
-from OPSI.Util import fromJson, objectToHtml, serialize, toJson
+from OPSI.Util import fromJson, objectToHtml, toJson
 from OPSI.Util.HTTP import deflateDecode, deflateEncode, gzipDecode, gzipEncode
 from opsicommon.logging import get_logger
 from opsicommon.objects import serialize, deserialize
