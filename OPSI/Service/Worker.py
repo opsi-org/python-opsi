@@ -11,6 +11,8 @@ import os
 import tempfile
 import urllib
 import uuid
+from msgspec import msgpack
+import lz4
 
 from OPSI.Exceptions import OpsiBadRpcError, OpsiServiceAuthenticationError
 from OPSI.Service.JsonRpc import JsonRpc
@@ -18,6 +20,7 @@ from OPSI.Types import forceList, forceUnicode
 from OPSI.Util import fromJson, objectToHtml, serialize, toJson
 from OPSI.Util.HTTP import deflateDecode, deflateEncode, gzipDecode, gzipEncode
 from opsicommon.logging import get_logger
+from opsicommon.objects import serialize, deserialize
 from twisted.internet import defer, threads
 from twisted.python.failure import Failure
 
@@ -270,7 +273,7 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 		self.request.finish()
 
 	def _renderError(self, failure):
-		self.request.setHeader("content-type", "text/html; charset=utf-8")
+		self.request.setHeader("Content-Type", "text/html; charset=utf-8")
 		error = "Unknown error"
 		try:
 			failure.raiseException()
@@ -443,11 +446,11 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 			if self.request.method == b"POST":
 				logger.trace("Request headers: %s", self.request.getAllHeaders())
 				try:
-					contentType = self.request.getHeader("content-type").lower()
+					contentType = self.request.getHeader("Content-Type").lower()
 				except Exception:  # pylint: disable=broad-except
 					contentType = None
 				try:
-					contentEncoding = self.request.getHeader("content-encoding").lower()
+					contentEncoding = self.request.getHeader("Content-Encoding").lower()
 				except Exception:  # pylint: disable=broad-except
 					contentEncoding = None
 
@@ -459,6 +462,8 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 					# we need to behave like we did before.
 					logger.debug("Expecting compressed data from client (backwards compatible)")
 					self.query = deflateDecode(self.query)
+				elif contentEncoding == "lz4":
+					self.query = lz4.frame.decompress(self.query)
 				elif contentEncoding == "gzip":
 					logger.debug("Expecting gzip compressed data from client")
 					self.query = gzipDecode(self.query)
@@ -480,7 +485,7 @@ class WorkerOpsi:  # pylint: disable=too-few-public-methods,too-many-instance-at
 
 	def _generateResponse(self, result):  # pylint: disable=unused-argument
 		self.request.setResponseCode(200)
-		self.request.setHeader("content-type", "text/html; charset=utf-8")
+		self.request.setHeader("Content-Type", "text/html; charset=utf-8")
 		self.request.write("")
 
 	def _setResponse(self, result):
@@ -508,8 +513,12 @@ class WorkerOpsiJsonRpc(WorkerOpsi):  # pylint: disable=too-few-public-methods
 		if not self._callInterface:
 			raise RuntimeError(f"Call interface not defined in {self}")
 
+		rpcs = []
 		try:
-			rpcs = fromJson(self.query, preventObjectCreation=True)
+			if self.request.getHeader("Content-Type") == "application/msgpack":
+				rpcs = deserialize(msgpack.decode(self.query), deep=True, prevent_object_creation=True)
+			else:
+				rpcs = fromJson(self.query, preventObjectCreation=True)
 			if not rpcs:
 				raise ValueError("Got no rpcs")
 		except Exception as err:
@@ -557,7 +566,9 @@ class WorkerOpsiJsonRpc(WorkerOpsi):  # pylint: disable=too-few-public-methods
 		invalidMime = False  # For handling the invalid MIME type "gzip-application/json-rpc"
 		encoding = None
 		try:
-			if "gzip" in self.request.getHeader("Accept-Encoding"):
+			if "lz4" in self.request.getHeader("Accept-Encoding"):
+				encoding = "lz4"
+			elif "gzip" in self.request.getHeader("Accept-Encoding"):
 				encoding = "gzip"
 			elif "deflate" in self.request.getHeader("Accept-Encoding"):
 				encoding = "deflate"
@@ -582,40 +593,58 @@ class WorkerOpsiJsonRpc(WorkerOpsi):  # pylint: disable=too-few-public-methods
 			response = ""
 
 		self.request.setResponseCode(200)
-		self.request.setHeader("content-type", "application/json; charset=utf-8")
+
+		data = b""
+		if self.request.getHeader("Content-Type") == "application/msgpack":
+			self.request.setHeader("Content-Type", "application/msgpack")
+			data = msgpack.encode(serialize(response, deep=True))
+		else:
+			self.request.setHeader("Content-Type", "application/json; charset=utf-8")
+			data = toJson(response).encode("utf-8")
 
 		if invalidMime:
 			# The invalid requests expect the encoding set to
 			# gzip but the content is deflated.
-			self.request.setHeader("content-encoding", "gzip")
-			self.request.setHeader("content-type", "gzip-application/json; charset=utf-8")
-			logger.debug("Sending deflated data (backwards compatible - with content-encoding 'gzip')")
-			response = deflateEncode(toJson(response))
+			self.request.setHeader("Content-Encoding", "gzip")
+			self.request.setHeader("Content-Type", "gzip-application/json; charset=utf-8")
+			logger.debug("Sending deflated data (backwards compatible - with Content-Encoding 'gzip')")
+			data = deflateEncode(data)
+		elif encoding == "lz4":
+			logger.debug("Sending lz4 compressed data")
+			self.request.setHeader("Content-Encoding", encoding)
+			data = lz4.frame.compress(data, compression_level=0, block_linked=True)
 		elif encoding == "deflate":
 			logger.debug("Sending deflated data")
-			self.request.setHeader("content-encoding", encoding)
-			response = deflateEncode(toJson(response))
+			self.request.setHeader("Content-Encoding", encoding)
+			data = deflateEncode(data)
 		elif encoding == "gzip":
 			logger.debug("Sending gzip compressed data")
-			self.request.setHeader("content-encoding", encoding)
-			response = gzipEncode(toJson(response))
+			self.request.setHeader("Content-Encoding", encoding)
+			data = gzipEncode(data)
 		else:
 			logger.debug("Sending plain data")
-			response = toJson(response).encode("utf-8")
 
-		logger.trace("Sending response: %s", response)
-		self.request.write(response)
+		logger.trace("Sending response: %s", data)
+		self.request.write(data)
 		return result
 
 	def _renderError(self, failure):
-		self.request.setHeader("content-type", "application/json; charset=utf-8")
 		error = "Unknown error"
 		try:
 			failure.raiseException()
 		except Exception as err:  # pylint: disable=broad-except
 			error = {"class": err.__class__.__name__, "message": str(err)}
-			error = toJson({"id": None, "result": None, "error": error})
-		self.request.write(error.encode("utf-8"))
+			error = {"id": None, "result": None, "error": error}
+
+		data = b""
+		if self.request.getHeader("Content-Type") == "application/msgpack":
+			self.request.setHeader("Content-Type", "application/msgpack")
+			data = msgpack.encode(error)
+		else:
+			self.request.setHeader("Content-Type", "application/json; charset=utf-8")
+			data = toJson(error).encode("utf-8")
+
+		self.request.write(data)
 		return failure
 
 
@@ -632,7 +661,7 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):  # pylint: disable=too-few-pub
 		if self._rpcs:
 			currentMethod = self._rpcs[0].getMethodName()
 			javascript.append(f"currentMethod = '{currentMethod}';")
-			for (index, param) in enumerate(self._rpcs[0].params):
+			for index, param in enumerate(self._rpcs[0].params):
 				javascript.append(f"currentParams[{index}] = '{toJson(param)}';")
 
 		selectMethod = []
@@ -641,7 +670,7 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):  # pylint: disable=too-few-pub
 				for method in self._callInterface:
 					methodName = method["name"]
 					javascript.append(f"parameters['{methodName}'] = new Array();")
-					for (index, param) in enumerate(method["params"]):
+					for index, param in enumerate(method["params"]):
 						javascript.append(f"parameters['{methodName}'][{index}]='{param}';")
 
 					selected = ""
@@ -677,7 +706,7 @@ class WorkerOpsiJsonInterface(WorkerOpsiJsonRpc):  # pylint: disable=too-few-pub
 			"result": "".join(results),
 		}
 
-		self.request.setHeader("content-type", "text/html; charset=utf-8")
+		self.request.setHeader("Content-Type", "text/html; charset=utf-8")
 		self.request.write(html.strip().encode("utf-8"))
 		return result
 
