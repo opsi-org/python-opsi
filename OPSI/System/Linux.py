@@ -158,7 +158,9 @@ def getActiveSessionIds(protocol=None, states=None):  # pylint: disable=unused-a
 		try:
 			env = proc.environ()
 			if env.get("USER") and env.get("DISPLAY"):
-				if env.get("DISPLAY") == ":1024" or env.get("XDG_SESSION_CLASS") == "greeter":
+				if env.get("DISPLAY") == ":1024":
+					continue  # never try to use :1024 session as it seems to break gdm!
+				if env.get("XDG_SESSION_CLASS") == "greeter":
 					login_sessions.add(env["DISPLAY"])
 				else:
 					user_sessions.add(env["DISPLAY"])
