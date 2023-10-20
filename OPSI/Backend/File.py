@@ -918,6 +918,19 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 			Class = eval(objType)  # pylint: disable=eval-used
 			if self._objectHashMatches(Class.fromHash(objHash).toHash(), **filter):
+				if Class is Config:
+					# logger.devel("Found config with hash", objHash)
+					if "possibleValues" in objHash and objHash["possibleValues"]:
+						if (
+							len(objHash["possibleValues"]) == 2
+							and True in objHash["possibleValues"]
+							and False in objHash["possibleValues"]
+							and not objHash["editable"]
+							and not objHash["multiValue"]
+						):
+							Class = BoolConfig
+						else:
+							Class = UnicodeConfig
 				objHash = self._adaptObjectHashAttributes(objHash, ident, attributes)
 				objects.append(Class.fromHash(objHash))
 
