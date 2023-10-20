@@ -16,12 +16,20 @@ from .test_groups import getHostGroups, getObjectToGroups, getProductGroup
 from .test_hosts import getClients, getConfigServer, getDepotServers
 from .test_license_management import getLicenseContracts
 from .test_products import (
-	getLocalbootProducts, getNetbootProduct,
-	getProductDepdencies, getProductProperties, getProductsOnDepot,
-	getProductsOnClients, getProductPropertyStates)
+	getLocalbootProducts,
+	getNetbootProduct,
+	getProductDepdencies,
+	getProductProperties,
+	getProductPropertyStates,
+	getProductsOnClients,
+	getProductsOnDepot,
+)
 from .test_software_and_hardware_audit import (
-	getAuditHardwares, getAuditHardwareOnHost, getAuditSoftwares,
-	getAuditSoftwareOnClient)
+	getAuditHardwareOnHost,
+	getAuditHardwares,
+	getAuditSoftwareOnClient,
+	getAuditSoftwares,
+)
 
 
 # TODO: there are some cases we should test
@@ -52,29 +60,29 @@ def testBackendReplication(replicationDestinationBackend, checkAuditData):
 
 
 def checkBackendDataIsEqual(first, second, checkAuditData=True):
-	compareResultsFromBackendMethod(first, second, 'host_getObjects')
-	compareResultsFromBackendMethod(first, second, 'product_getObjects')
-	compareResultsFromBackendMethod(first, second, 'config_getObjects')
-	compareResultsFromBackendMethod(first, second, 'group_getObjects')
-	compareResultsFromBackendMethod(first, second, 'licenseContract_getObjects')
-	compareResultsFromBackendMethod(first, second, 'licensePool_getObjects')
-	compareResultsFromBackendMethod(first, second, 'softwareLicense_getObjects')
-	compareResultsFromBackendMethod(first, second, 'productDependency_getObjects')
-	compareResultsFromBackendMethod(first, second, 'productProperty_getObjects')
-	compareResultsFromBackendMethod(first, second, 'productOnDepot_getObjects')
-	compareResultsFromBackendMethod(first, second, 'productOnClient_getObjects')
-	compareResultsFromBackendMethod(first, second, 'productPropertyState_getObjects')
-	compareResultsFromBackendMethod(first, second, 'configState_getObjects')
-	compareResultsFromBackendMethod(first, second, 'objectToGroup_getObjects')
-	compareResultsFromBackendMethod(first, second, 'softwareLicenseToLicensePool_getObjects')
-	compareResultsFromBackendMethod(first, second, 'licenseOnClient_getObjects')
-	compareResultsFromBackendMethod(first, second, 'auditSoftwareToLicensePool_getObjects')
+	compareResultsFromBackendMethod(first, second, "host_getObjects")
+	compareResultsFromBackendMethod(first, second, "product_getObjects")
+	compareResultsFromBackendMethod(first, second, "config_getObjects")
+	compareResultsFromBackendMethod(first, second, "group_getObjects")
+	compareResultsFromBackendMethod(first, second, "licenseContract_getObjects")
+	compareResultsFromBackendMethod(first, second, "licensePool_getObjects")
+	compareResultsFromBackendMethod(first, second, "softwareLicense_getObjects")
+	compareResultsFromBackendMethod(first, second, "productDependency_getObjects")
+	compareResultsFromBackendMethod(first, second, "productProperty_getObjects")
+	compareResultsFromBackendMethod(first, second, "productOnDepot_getObjects")
+	compareResultsFromBackendMethod(first, second, "productOnClient_getObjects")
+	compareResultsFromBackendMethod(first, second, "productPropertyState_getObjects")
+	compareResultsFromBackendMethod(first, second, "configState_getObjects")
+	compareResultsFromBackendMethod(first, second, "objectToGroup_getObjects")
+	compareResultsFromBackendMethod(first, second, "softwareLicenseToLicensePool_getObjects")
+	compareResultsFromBackendMethod(first, second, "licenseOnClient_getObjects")
+	compareResultsFromBackendMethod(first, second, "auditSoftwareToLicensePool_getObjects")
 
 	if checkAuditData:
-		compareResultsFromBackendMethod(first, second, 'auditHardware_getObjects')
-		compareResultsFromBackendMethod(first, second, 'auditSoftware_getObjects')
-		compareResultsFromBackendMethod(first, second, 'auditHardwareOnHost_getObjects')
-		compareResultsFromBackendMethod(first, second, 'auditSoftwareOnClient_getObjects')
+		compareResultsFromBackendMethod(first, second, "auditHardware_getObjects")
+		compareResultsFromBackendMethod(first, second, "auditSoftware_getObjects")
+		compareResultsFromBackendMethod(first, second, "auditHardwareOnHost_getObjects")
+		compareResultsFromBackendMethod(first, second, "auditSoftwareOnClient_getObjects")
 
 
 def compareResultsFromBackendMethod(firstBackend, secondBackend, methodname):
@@ -126,6 +134,9 @@ def checkIfBackendIsFilled(backend, licenseManagementData=False, auditData=False
 	assert len(backend.host_getObjects()) > 2
 	assert len(backend.product_getObjects()) > 2
 	assert len(backend.config_getObjects()) > 0
+	for config in backend.config_getObjects():
+		print(type(config), config.toHash())
+		assert type(config).__name__ in ("UnicodeConfig", "BoolConfig")
 	assert len(backend.group_getObjects()) > 2
 
 	if licenseManagementData:
