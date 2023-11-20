@@ -929,8 +929,6 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 						Class = BoolConfig
 					else:
 						Class = UnicodeConfig
-				objHash = self._adaptObjectHashAttributes(objHash, ident, attributes)
-				objects.append(Class.fromHash(objHash))
 
 				if Class is Group:
 					filename = self._getConfigFile(objType, ident, "ini")
@@ -938,8 +936,9 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 						Class = HostGroup
 					else:
 						Class = ProductGroup
-					objHash = self._adaptObjectHashAttributes(objHash, ident, attributes)
-					objects.append(Class.fromHash(objHash))
+				objHash = self._adaptObjectHashAttributes(objHash, ident, attributes)
+				objects.append(Class.fromHash(objHash))
+
 
 		for obj in objects:
 			logger.trace("Returning object: %s" % obj.getIdent())
