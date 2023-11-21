@@ -138,6 +138,10 @@ def checkIfBackendIsFilled(backend, licenseManagementData=False, auditData=False
 		print(type(config), config.toHash())
 		assert type(config).__name__ in ("UnicodeConfig", "BoolConfig")
 	assert len(backend.group_getObjects()) > 2
+	for group in backend.group_getObjects():
+		print(type(group), group.toHash())
+		assert type(group).__name__ in ("HostGroup", "ProductGroup")
+
 
 	if licenseManagementData:
 		# TODO: check licenseManagementData
