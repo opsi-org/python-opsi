@@ -930,6 +930,18 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 					else:
 						Class = UnicodeConfig
 
+				if Class is ProductProperty and "possibleValues" in objHash and objHash["possibleValues"]:
+					if (
+						len(objHash["possibleValues"]) == 2
+						and True in objHash["possibleValues"]
+						and False in objHash["possibleValues"]
+						and not objHash["editable"]
+						and not objHash["multiValue"]
+					):
+						Class = BoolProductProperty
+					else:
+						Class = UnicodeProductProperty
+
 				if Class is Group:
 					filename = self._getConfigFile(objType, ident, "ini")
 					if "clientgroups" in filename:
