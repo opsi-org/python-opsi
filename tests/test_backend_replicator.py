@@ -151,6 +151,9 @@ def checkIfBackendIsFilled(backend, licenseManagementData=False, auditData=False
 
 	assert len(backend.productDependency_getObjects()) > 0
 	assert len(backend.productProperty_getObjects()) > 0
+	for product_property in backend.productProperty_getObjects():
+		print(type(product_property), product_property.toHash())
+		assert type(product_property).__name__ in ("UnicodeProductProperty", "BoolProductProperty")
 	assert len(backend.productOnDepot_getObjects()) > 0
 	assert len(backend.productOnClient_getObjects()) > 0
 	assert len(backend.productPropertyState_getObjects()) > 0
