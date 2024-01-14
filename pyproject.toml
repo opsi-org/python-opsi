@@ -24,7 +24,7 @@ name = "PyPI"
 priority = "primary"
 
 [tool.poetry.dependencies]
-python = ">=3.11,<3.12"
+python = ">=3.11,<3.13"
 attrs = "^23.1"
 colorlog = "^6.6"
 distro = {platform = "linux", version = "^1.5"}
@@ -37,7 +37,7 @@ psutil = "^5.8"
 pyasn1 = "^0.4"
 pycryptodome = "^3.10"
 pyopenssl = "^23.0"
-python-opsi-common = "^4.3.0.60"
+python-opsi-common = "^4.3.2.0"
 python-pam = "^2.0"
 pywin32 = {platform = "win32", version = ">=303"}
 ruyaml = "^0.91"
