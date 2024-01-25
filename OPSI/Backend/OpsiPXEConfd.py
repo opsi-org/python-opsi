@@ -45,7 +45,7 @@ logger = get_logger("opsi.general")
 
 
 class ServerConnection:  # pylint: disable=too-few-public-methods
-	def __init__(self, port: int, timeout: int = 10) -> None:
+	def __init__(self, port: str, timeout: int = 10) -> None:
 		self.port = port
 		self.timeout = forceInt(timeout)
 
@@ -477,7 +477,7 @@ class UpdateThread(threading.Thread):
 			try:
 				logger.info("Updating pxe boot configuration for client '%s'", self._clientId)
 				sc = ServerConnection(
-					self._opsiPXEConfdBackend._port,
+					self._opsiPXEConfdBackend._port,  # pylint: disable=protected-access
 					self._opsiPXEConfdBackend._timeout,  # pylint: disable=protected-access
 				)
 				logger.debug("Sending command %s", self._command)

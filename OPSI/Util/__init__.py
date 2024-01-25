@@ -115,7 +115,7 @@ class PickleString(str):
 		return base64.standard_b64encode(self)
 
 	def __setstate__(self, state):
-		self = base64.standard_b64decode(state)  # noqa
+		self = base64.standard_b64decode(state)  # noqa # pylint: disable=self-cls-assignment
 
 
 def formatFileSize(sizeInBytes, base: int = 2):  # pylint: disable=too-many-return-statements
