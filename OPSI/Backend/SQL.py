@@ -463,8 +463,9 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		if "type" in newFilter:
 			for oc in forceList(newFilter["type"]):
 				if objectClass.__name__ == oc:
-					newFilter["type"] = forceList(newFilter["type"])
-					newFilter["type"].append(list(objectClass.subClasses.values()))
+					newFilter["type"] = forceList(  # pylint: disable=assignment-from-no-return
+						newFilter["type"]
+					).append(list(objectClass.subClasses.values()))
 					break
 
 		if newAttributes:
