@@ -18,6 +18,8 @@ from contextlib import contextmanager
 from datetime import datetime
 from typing import Any, Dict, Generator, List, Tuple
 
+from opsicommon.logging import get_logger
+
 from OPSI.Backend.Base import Backend, BackendModificationListener, ConfigDataBackend
 from OPSI.Exceptions import (
 	BackendBadValueError,
@@ -64,7 +66,6 @@ from OPSI.Types import (
 	forceUnicodeLower,
 )
 from OPSI.Util import timestamp
-from opsicommon.logging import get_logger
 
 __all__ = ("timeQuery", "onlyAllowSelect", "SQL", "SQLBackend", "SQLBackendObjectModificationTracker")
 
@@ -119,7 +120,7 @@ class SQL:  # pylint: disable=too-many-public-methods
 		self.engine = None
 		self.log_queries = False
 		# Parse arguments
-		for (option, value) in kwargs.items():
+		for option, value in kwargs.items():
 			option = option.lower()
 			if option == "log_queries":
 				self.log_queries = forceBool(value)
@@ -148,16 +149,16 @@ class SQL:  # pylint: disable=too-many-public-methods
 		finally:
 			self.Session.remove()  # pylint: disable=no-member
 
-	def connect(self, cursorType: Any = None) -> None:  # pylint: disable=no-self-use,unused-argument
+	def connect(self, cursorType: Any = None) -> None:  # pylint: disable=unused-argument
 		logger.warning("Method 'connect' is deprecated")
 
-	def close(self, conn: Any, cursor: Any) -> None:  # pylint: disable=no-self-use,unused-argument
+	def close(self, conn: Any, cursor: Any) -> None:  # pylint: disable=unused-argument
 		logger.warning("Method 'close' is deprecated")
 
-	def execute(self, session: Any, query: str) -> None:  # pylint: disable=no-self-use
+	def execute(self, session: Any, query: str) -> None:
 		session.execute(query)  # pylint: disable=no-member
 
-	def getSet(self, session: Any, query: str) -> List[Dict[str, Any]]:  # pylint: disable=no-self-use
+	def getSet(self, session: Any, query: str) -> List[Dict[str, Any]]:
 		"""
 		Return a list of rows, every row is a dict of key / values pairs
 		"""
@@ -168,7 +169,7 @@ class SQL:  # pylint: disable=too-many-public-methods
 			return []
 		return [dict(row) for row in result if row is not None]
 
-	def getRows(self, session: Any, query: str) -> List[List[Any]]:  # pylint: disable=no-self-use
+	def getRows(self, session: Any, query: str) -> List[List[Any]]:
 		"""
 		Return a list of rows, every row is a list of values
 		"""
@@ -179,7 +180,7 @@ class SQL:  # pylint: disable=too-many-public-methods
 			return []
 		return [list(row) for row in result if row is not None]
 
-	def getRow(self, session: Any, query: str) -> List[Any]:  # pylint: disable=no-self-use
+	def getRow(self, session: Any, query: str) -> List[Any]:
 		"""
 		Return one row as value list
 		"""
@@ -190,7 +191,7 @@ class SQL:  # pylint: disable=too-many-public-methods
 			return []
 		return list(result)
 
-	def insert(self, session: Any, table: str, valueHash: Any) -> int:  # pylint: disable=no-self-use
+	def insert(self, session: Any, table: str, valueHash: Any) -> int:
 		if not valueHash:
 			raise BackendBadValueError("No values given")
 
@@ -201,12 +202,12 @@ class SQL:  # pylint: disable=too-many-public-methods
 		result = session.execute(query, valueHash)  # pylint: disable=no-member
 		return result.lastrowid
 
-	def update(self, session: Any, table: str, where: str, valueHash: Any, updateWhereNone: bool = False) -> int:  # pylint: disable=no-self-use,too-many-arguments
+	def update(self, session: Any, table: str, where: str, valueHash: Any, updateWhereNone: bool = False) -> int:  # pylint: disable=too-many-arguments
 		if not valueHash:
 			raise BackendBadValueError("No values given")
 
 		updates = []
-		for (key, value) in valueHash.items():
+		for key, value in valueHash.items():
 			if value is None and not updateWhereNone:
 				continue
 			updates.append(f"`{key}` = :{key}")
@@ -217,16 +218,16 @@ class SQL:  # pylint: disable=too-many-public-methods
 		result = session.execute(query, valueHash)  # pylint: disable=no-member
 		return result.rowcount
 
-	def delete(self, session: Any, table: str, where: str) -> int:  # pylint: disable=no-self-use
+	def delete(self, session: Any, table: str, where: str) -> int:
 		query = f"DELETE FROM `{table}` WHERE {where}"
 		logger.trace("delete: %s", query)
 		result = session.execute(query)  # pylint: disable=no-member
 		return result.rowcount
 
-	def getTables(self, session: Any) -> Dict:  # pylint: disable=unused-argument,no-self-use
+	def getTables(self, session: Any) -> Dict:  # pylint: disable=unused-argument
 		return {}
 
-	def getTableCreationOptions(self, table: str) -> str:  # pylint: disable=unused-argument,no-self-use
+	def getTableCreationOptions(self, table: str) -> str:  # pylint: disable=unused-argument
 		return ""
 
 	def escapeBackslash(self, string: str) -> str:
@@ -253,7 +254,7 @@ class SQLBackendObjectModificationTracker(BackendModificationListener):
 		BackendModificationListener.__init__(self)
 		self._sql = None
 		self._lastModificationOnly = False
-		for (option, value) in kwargs.items():
+		for option, value in kwargs.items():
 			option = option.lower()
 			if option == "lastmodificationonly":
 				self._lastModificationOnly = forceBool(value)
@@ -341,7 +342,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		self.unique_hardware_addresses = True
 		self._setAuditHardwareConfig(self.auditHardware_getConfig())
 		# Parse arguments
-		for (option, value) in kwargs.items():
+		for option, value in kwargs.items():
 			if option == "unique_hardware_addresses":
 				self.unique_hardware_addresses = forceBool(value)
 
@@ -462,7 +463,8 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		if "type" in newFilter:
 			for oc in forceList(newFilter["type"]):
 				if objectClass.__name__ == oc:
-					newFilter["type"] = forceList(newFilter["type"]).append(list(objectClass.subClasses.values()))
+					newFilter["type"] = forceList(newFilter["type"])
+					newFilter["type"].append(list(objectClass.subClasses.values()))
 					break
 
 		if newAttributes:
@@ -534,7 +536,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		return _hash
 
-	def _objectAttributeToDatabaseAttribute(self, objectClass: str, attribute: str) -> str:  # pylint: disable=too-many-return-statements,no-self-use
+	def _objectAttributeToDatabaseAttribute(self, objectClass: str, attribute: str) -> str:  # pylint: disable=too-many-return-statements
 		if attribute == "id":
 			# A class is considered a subclass of itself
 			if issubclass(objectClass, Product):
@@ -1078,7 +1080,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 			tables = self._sql.getTables(session)
 			existingTables = set(tables.keys())
 
-			for (hwClass, values) in self._auditHardwareConfig.items():  # pylint: disable=too-many-nested-blocks
+			for hwClass, values in self._auditHardwareConfig.items():  # pylint: disable=too-many-nested-blocks
 				logger.debug("Processing hardware class '%s'", hwClass)
 				hardwareDeviceTableName = f"HARDWARE_DEVICE_{hwClass}"
 				hardwareConfigTableName = f"HARDWARE_CONFIG_{hwClass}"
@@ -1108,7 +1110,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 				hardwareDeviceValuesProcessed = 0
 				hardwareConfigValuesProcessed = 0
-				for (value, valueInfo) in values.items():
+				for value, valueInfo in values.items():
 					logger.debug("  Processing value '%s'", value)
 					if valueInfo["Scope"] == "g":
 						if hardwareDeviceTableExists:
@@ -2269,7 +2271,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		except AttributeError:  # Method not present
 			pass
 
-		for (attribute, value) in auditHardware.items():
+		for attribute, value in auditHardware.items():
 			if value is None:
 				auditHardware[attribute] = [None]
 			elif isinstance(value, str):
@@ -2309,7 +2311,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		logger.info("Updating auditHardware: %s", auditHardware)
 		filter = {}  # pylint: disable=redefined-builtin
-		for (attribute, value) in auditHardware.toHash().items():
+		for attribute, value in auditHardware.toHash().items():
 			if value is None:
 				filter[attribute] = [None]
 
@@ -2367,7 +2369,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		with self._sql.session() as session:
 			for hardwareClass in hardwareClasses:  # pylint: disable=too-many-nested-blocks
 				classFilter = {}
-				for (attribute, value) in filter.items():
+				for attribute, value in filter.items():
 					valueInfo = self._auditHardwareConfig[hardwareClass].get(attribute)
 					if not valueInfo:
 						logger.debug("Skipping hardwareClass '%s', because of missing info for attribute '%s'", hardwareClass, attribute)
@@ -2399,7 +2401,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 							pass
 
 						res["hardwareClass"] = hardwareClass
-						for (attribute, valueInfo) in self._auditHardwareConfig[hardwareClass].items():
+						for attribute, valueInfo in self._auditHardwareConfig[hardwareClass].items():
 							try:
 								if valueInfo["Scope"] == "i":
 									continue
@@ -2439,7 +2441,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		auditHardware = {"type": "AuditHardware"}
 		auditHardwareOnHostNew = {}
-		for (attribute, value) in auditHardwareOnHost.items():
+		for attribute, value in auditHardwareOnHost.items():
 			if attribute == "type":
 				continue
 
@@ -2469,7 +2471,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		del auditHardwareOnHost["hardwareClass"]
 
 		hardwareFilter = {}
-		for (attribute, value) in auditHardwareOnHost.items():
+		for attribute, value in auditHardwareOnHost.items():
 			if value is None:
 				hardwareFilter[attribute] = [None]
 			elif isinstance(value, str):
@@ -2492,7 +2494,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 
 		data = {attribute: value for attribute, value in auditHardwareOnHost.items() if attribute not in ("hardwareClass", "type")}
 
-		for (key, value) in auditHardware.items():
+		for key, value in auditHardware.items():
 			if value is None:
 				auditHardware[key] = [None]
 		hardwareIds = self._getHardwareIds(auditHardware)
@@ -2519,7 +2521,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 		data = auditHardwareOnHost.toHash()
 		update = {}
 		toDelete = set()
-		for (attribute, value) in data.items():
+		for attribute, value in data.items():
 			if attribute in ("state", "lastseen", "firstseen"):
 				if value is not None:
 					update[attribute] = value

@@ -30,6 +30,8 @@ except (ImportError, OSError):
 	from Cryptodome.Hash import MD5
 	from Cryptodome.Signature import pkcs1_15
 
+from opsicommon.logging import get_logger
+
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import BackendError
 from OPSI.Object import *  # this is needed for dynamic loading # pylint: disable=wildcard-import,unused-wildcard-import
@@ -41,7 +43,6 @@ from OPSI.Types import (
 	forceUnicodeList,
 )
 from OPSI.Util import compareVersions, getPublicKey
-from opsicommon.logging import get_logger
 
 __all__ = ("describeInterface", "Backend")
 
@@ -107,7 +108,7 @@ def describeInterface(instance):  # pylint: disable=too-many-locals
 			"deprecated": getattr(function, "deprecated", False),
 			"alternative_method": getattr(function, "alternative_method", None),
 			"doc": doc,
-			"annotations": annotations_
+			"annotations": annotations_,
 		}
 
 	return [methods[name] for name in sorted(list(methods.keys()))]
@@ -187,7 +188,7 @@ This defaults to ``self``.
 		self._opsi_license_path = OPSI_LICENSE_PATH
 		option_store = {}
 
-		for (option, value) in kwargs.items():
+		for option, value in kwargs.items():
 			option = option.lower()
 			if option == "name":
 				self._name = value
@@ -224,7 +225,7 @@ This defaults to ``self``.
 		"""Getting the context backend."""
 		return self._context
 
-	def _objectHashMatches(self, objHash, **filter):  # pylint: disable=redefined-builtin,too-many-branches,no-self-use
+	def _objectHashMatches(self, objHash, **filter):  # pylint: disable=redefined-builtin,too-many-branches
 		"""
 		Checks if the opsi object hash matches the filter.
 
@@ -302,7 +303,7 @@ This defaults to ``self``.
 		:type options: dict
 		"""
 		options = forceDict(options)
-		for (key, value) in options.items():
+		for key, value in options.items():
 			if key not in self._options:
 				continue
 

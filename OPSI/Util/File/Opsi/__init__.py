@@ -26,8 +26,10 @@ from hashlib import sha1
 from io import BytesIO, StringIO
 from operator import itemgetter
 
-import OPSI.System
 import tomlkit
+from opsicommon.logging import get_logger
+
+import OPSI.System
 from OPSI import __version__ as LIBRARY_VERSION
 from OPSI.Exceptions import (
 	OpsiBackupBackendNotFound,
@@ -69,7 +71,6 @@ from OPSI.Types import (
 )
 from OPSI.Util import fromJson, md5sum, toJson
 from OPSI.Util.File import ConfigFile, IniFile, TextFile, requiresParsing
-from opsicommon.logging import get_logger
 
 if os.name == "posix":
 	import fcntl
@@ -109,7 +110,6 @@ If no information can be extracted returns None.
 
 
 class HostKeyFile(ConfigFile):
-
 	lineRegex = re.compile(r"^\s*([^:]+)\s*:\s*([0-9a-fA-F]{32})\s*$")
 
 	def __init__(self, filename, lockFailTimeout=2000):
@@ -169,7 +169,6 @@ class HostKeyFile(ConfigFile):
 
 
 class BackendACLFile(ConfigFile):
-
 	aclEntryRegex = re.compile(r"^([^:]+)+\s*:\s*(\S.*)$")
 
 	def __init__(self, filename, lockFailTimeout=2000):
@@ -267,7 +266,6 @@ class BackendACLFile(ConfigFile):
 
 
 class BackendDispatchConfigFile(ConfigFile):
-
 	DISPATCH_ENTRY_REGEX = re.compile(r"^([^:]+)+\s*:\s*(\S.*)$")
 
 	def parse(self, lines=None):
@@ -319,7 +317,7 @@ class BackendDispatchConfigFile(ConfigFile):
 		collectedBackends = set()
 
 		dispatchConfig = self.parse(lines=lines)
-		for (_, backends) in dispatchConfig:
+		for _, backends in dispatchConfig:
 			collectedBackends.update(backends)
 
 		return collectedBackends
@@ -446,7 +444,6 @@ class PackageContentFile(TextFile):
 
 
 class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attributes
-
 	sectionRegex = re.compile(r"^\s*\[([^\]]+)\]\s*$")
 	valueContinuationRegex = re.compile(r"^\s(.*)$")
 	optionRegex = re.compile(r"^([^\:]+)\s*\:\s*(.*)$")
@@ -659,19 +656,18 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 						self._sections[sectionType][-1][option] += "\n"
 					self._sections[sectionType][-1][option] += value.lstrip()
 
-		for (sectionType, secs) in self._sections.items():  # pylint: disable=too-many-nested-blocks
+		for sectionType, secs in self._sections.items():  # pylint: disable=too-many-nested-blocks
 			if sectionType == "changelog":
 				continue
 
 			for i, currentSection in enumerate(secs):
-				for (option, value) in currentSection.items():
+				for option, value in currentSection.items():
 					if (  # pylint: disable=too-many-boolean-expressions
 						(sectionType == "product" and option == "productclasses")
 						or (sectionType == "package" and option == "depends")
 						or (sectionType == "productproperty" and option in ("default", "values"))
 						or (sectionType == "windows" and option == "softwareids")
 					):
-
 						try:
 							if not value.strip().startswith(("{", "[")):
 								raise ValueError("Not trying to read json string because value does not start with { or [")
@@ -698,7 +694,7 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 			raise ValueError(f"Error in control file '{self._filename}': 'product' section not found")
 
 		# Get package info
-		for (option, value) in self._sections.get("package", [{}])[0].items():
+		for option, value in self._sections.get("package", [{}])[0].items():
 			if option == "depends":
 				for dep in value:
 					match = re.search(r"^\s*([^\(]+)\s*\(*\s*([^\)]*)\s*\)*", dep)
@@ -877,7 +873,7 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 				advice=forceUnicode(product_dict.get("advice")),
 				changelog=changelog,
 				productClassIds=forceUnicodeList(product_dict.get("productClasses")),
-				windowsSoftwareIds=softwareids
+				windowsSoftwareIds=softwareids,
 				# pxeConfigTemplate=forceFilename(product_dict.get("pxeConfigTemplate"))
 			)
 		self.setProduct(product)
@@ -939,7 +935,7 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 			if productProperty.get("editable") is not None:
 				self._productProperties[-1].setEditable(productProperty["editable"])
 			else:
-				if not productProperty.get("values") in (None, []):
+				if productProperty.get("values") not in (None, []):
 					self._productProperties[-1].setEditable(False)
 				else:
 					self._productProperties[-1].setEditable(True)
@@ -1199,7 +1195,6 @@ class PackageControlFile(TextFile):  # pylint: disable=too-many-instance-attribu
 
 
 class OpsiConfFile(IniFile):
-
 	sectionRegex = re.compile(r"^\s*\[([^\]]+)\]\s*$")
 	optionRegex = re.compile(r"^([^\:]+)\s*\=\s*(.*)$")
 
@@ -1318,7 +1313,6 @@ class OpsiConfFile(IniFile):
 
 
 class OpsiBackupArchive(tarfile.TarFile):
-
 	CONTENT_DIR = "CONTENT"
 	CONTROL_DIR = "CONTROL"
 

@@ -26,9 +26,8 @@ from io import StringIO
 from itertools import islice
 from pathlib import Path
 
-from pyzsync import create_zsync_file
-
 from opsicommon.logging import get_logger
+from pyzsync import create_zsync_file
 
 from OPSI.Exceptions import BackendBadValueError, BackendMissingDataError
 from OPSI.System import execute, which
@@ -320,12 +319,12 @@ class ChangelogFile(TextFile):
 	These follow the Debian style changelogs:
 
 	package (version) distribution(s); urgency=urgency
-		[optional blank line(s), stripped]
+	        [optional blank line(s), stripped]
 	  * change details
-		 more change details
-		  [blank line(s), included]
+	         more change details
+	          [blank line(s), included]
 	  * even more change details
-		  [optional blank line(s), stripped]
+	          [optional blank line(s), stripped]
 	[one space]-- maintainer name <email address>[two spaces]date
 	"""
 
@@ -539,9 +538,7 @@ class IniFile(ConfigFile):
 	def setKeepOrdering(self, keepOrdering):
 		self._keepOrdering = forceBool(keepOrdering)
 
-	def parse(
-		self, lines=None, returnComments=False
-	):  # pylint: disable=arguments-differ,too-many-branches,too-many-statements,too-many-locals
+	def parse(self, lines=None, returnComments=False):  # pylint: disable=arguments-differ,too-many-branches,too-many-statements,too-many-locals
 		logger.debug("Parsing ini file '%s'", self._filename)
 		start = time.time()
 		if lines:
@@ -1046,9 +1043,7 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 			raise ValueError(f"Device '{vendorId}:{deviceId}' not found in txtsetup.oem file '{self._filename}'")
 		return device
 
-	def getFilesForDevice(
-		self, vendorId, deviceId, deviceType=None, fileTypes=[], architecture="x86"
-	):  # pylint: disable=dangerous-default-value,too-many-arguments
+	def getFilesForDevice(self, vendorId, deviceId, deviceType=None, fileTypes=[], architecture="x86"):  # pylint: disable=dangerous-default-value,too-many-arguments
 		vendorId = forceHardwareVendorId(vendorId)
 		deviceId = forceHardwareDeviceId(deviceId)
 		fileTypes = forceUnicodeLowerList(fileTypes)
@@ -1150,7 +1145,7 @@ class TxtSetupOemFile(ConfigFile):  # pylint: disable=too-many-instance-attribut
 				description = description.strip()
 				if description.startswith('"') and description.endswith('"'):
 					description = description[1:-1]
-				if not componentName in self._componentNames:
+				if componentName not in self._componentNames:
 					self._componentNames.append(componentName)
 				self._componentOptions.append(
 					{"componentName": componentName, "description": description, "componentId": componentId, "optionName": optionName}
@@ -1754,9 +1749,7 @@ class DHCPDConfFile(TextFile):  # pylint: disable=too-many-instance-attributes
 		self.close()
 
 	@requiresParsing
-	def addHost(
-		self, hostname, hardwareAddress, ipAddress, fixedAddress, parameters=None
-	):  # pylint: disable=too-many-branches,too-many-locals,too-many-arguments
+	def addHost(self, hostname, hardwareAddress, ipAddress, fixedAddress, parameters=None):  # pylint: disable=too-many-branches,too-many-locals,too-many-arguments
 		if not parameters:
 			parameters = {}
 

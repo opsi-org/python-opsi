@@ -31,29 +31,32 @@ try:
 	sp = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 	if os.path.exists(os.path.join(sp, "site-packages")):
 		sp = os.path.join(sp, "site-packages")
-	sp = os.path.join(sp, 'python-opsi_data', 'locale')
-	translation = gettext.translation('python-opsi', sp)
+	sp = os.path.join(sp, "python-opsi_data", "locale")
+	translation = gettext.translation("python-opsi", sp)
 	_ = translation.gettext
 except Exception as lerr:  # pylint: disable=broad-except
 	logger.debug("Failed to load locale from %s: %s", sp, lerr)
 
 	def _(string):
-		""" Fallback function """
+		"""Fallback function"""
 		return string
 
 
-WARNING_DIFF = _("""WARNING: Your system config is different from the one recorded with this backup.
+WARNING_DIFF = _(
+	"""WARNING: Your system config is different from the one recorded with this backup.
 This means the backup was probably taken for another machine and restoring it might leave this opsi installation unusable.
-Do you wish to continue? [y/N] """)
+Do you wish to continue? [y/N] """
+)
 
-WARNING_SYSCONFIG = _("""WARNING: A problem occurred while reading the sysconfig: %s
+WARNING_SYSCONFIG = _(
+	"""WARNING: A problem occurred while reading the sysconfig: %s
 This means the backup was probably taken for another machine and restoring it might leave this opsi installation unusable.
-Do you wish to continue? [y/N] """)
+Do you wish to continue? [y/N] """
+)
 
 
 class OpsiBackup:
-
-	SUPPORTED_BACKENDS = set(['auto', 'all', 'file', 'mysql', 'dhcp'])
+	SUPPORTED_BACKENDS = set(["auto", "all", "file", "mysql", "dhcp"])
 
 	def __init__(self, stdout=None):
 		if stdout is None:
@@ -61,7 +64,7 @@ class OpsiBackup:
 		else:
 			self.stdout = stdout
 
-	def _getArchive(self, mode, file=None, compression=None):  # pylint: disable=no-self-use
+	def _getArchive(self, mode, file=None, compression=None):
 		fileobj = None
 		if file and os.path.exists(file):
 			try:
@@ -80,7 +83,7 @@ class OpsiBackup:
 			except IOError:
 				fileobj = None
 
-		if compression not in ('none', None):
+		if compression not in ("none", None):
 			mode = ":".join((mode, compression))
 
 		return OpsiBackupArchive(name=file, mode=mode, fileobj=fileobj)
@@ -156,12 +159,12 @@ class OpsiBackup:
 					"configuration": archive.hasConfiguration(),
 					"dhcp": archive.hasDHCPBackend(),
 					"file": archive.hasFileBackend(),
-					"mysql": archive.hasMySQLBackend()
+					"mysql": archive.hasMySQLBackend(),
 				}
 				existingData = [btype for btype, exists in data.items() if exists]
 				existingData.sort()
 
-				logger.notice("%s contains: %s", archive.name, ', '.join(existingData))
+				logger.notice("%s contains: %s", archive.name, ", ".join(existingData))
 
 	def verify(self, file, **kwargs):  # pylint: disable=unused-argument
 		"""
@@ -235,10 +238,7 @@ If this is `None` information will be read from the current system.
 
 			logger.debug("Comparing '%s' (archive) with '%s (system)...", value, sysValue)
 			if sysValue.strip() != value.strip():
-				logger.debug(
-					"Found difference (System != Archive) at %s: %s vs. %s",
-					key, sysValue, value
-				)
+				logger.debug("Found difference (System != Archive) at %s: %s vs. %s", key, sysValue, value)
 				differences[key] = value
 
 		return differences
@@ -283,7 +283,7 @@ If this is `None` information will be read from the current system.
 					backendMapping = {
 						"file": (archive.hasFileBackend, archive.restoreFileBackend),
 						"mysql": (archive.hasMySQLBackend, archive.restoreMySQLBackend),
-						"dhcp": (archive.hasDHCPBackend, archive.restoreDHCPBackend)
+						"dhcp": (archive.hasDHCPBackend, archive.restoreDHCPBackend),
 					}
 
 					for backend in backends:
@@ -300,7 +300,7 @@ If this is `None` information will be read from the current system.
 								logger.debug("Adding restore of %s backend.", name)
 								functions.append(restoreData)
 
-								if configuredBackends and (not configuration) and (backend not in configuredBackends and backend != 'auto'):
+								if configuredBackends and (not configuration) and (backend not in configuredBackends and backend != "auto"):
 									logger.warning("Backend %s is currently not in use!", backend)
 
 				if not functions:
@@ -331,23 +331,21 @@ If this is `None` information will be read from the current system.
 						from OPSI.Backend.BackendManager import (
 							BackendManager,  # pylint: disable=import-outside-toplevel
 						)
-						managerConfig = {
-							"depotBackend": False,
-							"dispatchIgnoreModules": ["OpsiPXEConfd", "DHCPD", "HostControl"]
-						}
+
+						managerConfig = {"depotBackend": False, "dispatchIgnoreModules": ["OpsiPXEConfd", "DHCPD", "HostControl"]}
 						with BackendManager(**managerConfig) as backend:
-							backend.backend_createBase()										#pylint: disable=no-member
-							configserver = backend.host_getObjects(type='OpsiConfigserver')		#pylint: disable=no-member
+							backend.backend_createBase()  # pylint: disable=no-member
+							configserver = backend.host_getObjects(type="OpsiConfigserver")  # pylint: disable=no-member
 							if len(configserver) == 0:
-								depotserver = backend.host_getObjects(type='OpsiDepotserver')	#pylint: disable=no-member
+								depotserver = backend.host_getObjects(type="OpsiDepotserver")  # pylint: disable=no-member
 								if len(depotserver) == 1:
 									configserver = depotserver
-							host = backend.host_getObjects(id=new_server_id)					#pylint: disable=no-member
+							host = backend.host_getObjects(id=new_server_id)  # pylint: disable=no-member
 							if not configserver:
 								raise RuntimeError("No config server found in backend")
 							if host and host != configserver:
-								backend.host_deleteObjects(host)								#pylint: disable=no-member
-							backend.host_renameOpsiDepotserver(oldId=configserver[0].id, newId=new_server_id)#pylint: disable=no-member
+								backend.host_deleteObjects(host)  # pylint: disable=no-member
+							backend.host_renameOpsiDepotserver(oldId=configserver[0].id, newId=new_server_id)  # pylint: disable=no-member
 					except Exception as err:
 						raise RuntimeError(f"Failed to rename config server to '{new_server_id}': {err}") from err
 
@@ -370,8 +368,8 @@ None if reading the configuration failed.
 
 	try:
 		dispatcher = BackendDispatcher(
-			dispatchConfigFile='/etc/opsi/backendManager/dispatch.conf',
-			backendconfigdir='/etc/opsi/backends/',
+			dispatchConfigFile="/etc/opsi/backendManager/dispatch.conf",
+			backendconfigdir="/etc/opsi/backends/",
 		)
 	except BackendConfigurationError as err:
 		logger.debug("Unable to read backends: %s", err)

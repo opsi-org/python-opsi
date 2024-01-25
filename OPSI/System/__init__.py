@@ -25,12 +25,16 @@ logger = get_logger("opsi.general")
 from OPSI.Types import forceFilename
 from OPSI.Util import formatFileSize
 
+SystemSpecificHook: type
 if platform.system().lower() == "linux":
 	from .Linux import *
+	from .Linux import SystemSpecificHook, hooks
 elif platform.system().lower() == "windows":
 	from .Windows import *
+	from .Windows import SystemSpecificHook, hooks
 elif platform.system().lower() == "darwin":
 	from .Darwin import *
+	from .Darwin import SystemSpecificHook, hooks
 else:
 	logger.error("Unable to import System library for system %s", platform.system().lower())
 
@@ -39,49 +43,49 @@ class SystemHook(SystemSpecificHook):
 	def __init__(self):  # pylint: disable=super-init-not-called
 		pass
 
-	def pre_getDirectorySize(self, path):  # pylint: disable=no-self-use
+	def pre_getDirectorySize(self, path):
 		return path
 
-	def post_getDirectorySize(self, path, result):  # pylint: disable=no-self-use,unused-argument
+	def post_getDirectorySize(self, path, result):  # pylint: disable=unused-argument
 		return result
 
-	def error_getDirectorySize(self, path, result, exception):  # pylint: disable=no-self-use
+	def error_getDirectorySize(self, path, result, exception):
 		pass
 
-	def pre_getSize(self, path):  # pylint: disable=no-self-use
+	def pre_getSize(self, path):
 		return path
 
-	def post_getSize(self, path, result):  # pylint: disable=no-self-use,unused-argument
+	def post_getSize(self, path, result):  # pylint: disable=unused-argument
 		return result
 
-	def error_getSize(self, path, result, exception):  # pylint: disable=no-self-use
+	def error_getSize(self, path, result, exception):
 		pass
 
-	def pre_countFiles(self, path):  # pylint: disable=no-self-use
+	def pre_countFiles(self, path):
 		return path
 
-	def post_countFiles(self, path, result):  # pylint: disable=no-self-use,unused-argument
+	def post_countFiles(self, path, result):  # pylint: disable=unused-argument
 		return result
 
-	def error_countFiles(self, path, result, exception):  # pylint: disable=no-self-use
+	def error_countFiles(self, path, result, exception):
 		pass
 
-	def pre_getCountAndSize(self, path):  # pylint: disable=no-self-use
+	def pre_getCountAndSize(self, path):
 		return path
 
-	def post_getCountAndSize(self, path, result):  # pylint: disable=no-self-use,unused-argument
+	def post_getCountAndSize(self, path, result):  # pylint: disable=unused-argument
 		return result
 
-	def error_getCountAndSize(self, path, result, exception):  # pylint: disable=no-self-use
+	def error_getCountAndSize(self, path, result, exception):
 		pass
 
-	def pre_copy(self, src, dst, progressSubject):  # pylint: disable=no-self-use
+	def pre_copy(self, src, dst, progressSubject):
 		return (src, dst, progressSubject)
 
-	def post_copy(self, src, dst, progressSubject):  # pylint: disable=no-self-use,unused-argument
+	def post_copy(self, src, dst, progressSubject):  # pylint: disable=unused-argument
 		return None
 
-	def error_copy(self, src, dst, progressSubject, exception):  # pylint: disable=no-self-use,unused-argument
+	def error_copy(self, src, dst, progressSubject, exception):  # pylint: disable=unused-argument
 		pass
 
 
@@ -270,9 +274,7 @@ def copy(src, dst, progressSubject=None):
 		hook.post_copy(src, dst, progressSubject)
 
 
-def _copy(
-	src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0, progressSubject=None
-):  # pylint: disable=too-many-arguments,too-many-branches
+def _copy(src, dst, copySrcContent=False, fileCount=0, totalFiles=0, totalSize=0, progressSubject=None):  # pylint: disable=too-many-arguments,too-many-branches
 	src = forceFilename(src)
 	dst = forceFilename(dst)
 

@@ -110,17 +110,13 @@ class RepositoryHook:
 	def __init__(self):
 		pass
 
-	def pre_Repository_copy(self, source, destination, overallProgressSubject, currentProgressSubject):  # pylint: disable=no-self-use
+	def pre_Repository_copy(self, source, destination, overallProgressSubject, currentProgressSubject):
 		return (source, destination, overallProgressSubject, currentProgressSubject)
 
-	def post_Repository_copy(
-		self, source, destination, overallProgressSubject, currentProgressSubject
-	):  # pylint: disable=unused-argument,no-self-use
+	def post_Repository_copy(self, source, destination, overallProgressSubject, currentProgressSubject):  # pylint: disable=unused-argument
 		return None
 
-	def error_Repository_copy(
-		self, source, destination, overallProgressSubject, currentProgressSubject, exception
-	):  # pylint: disable=unused-argument,too-many-arguments
+	def error_Repository_copy(self, source, destination, overallProgressSubject, currentProgressSubject, exception):  # pylint: disable=unused-argument,too-many-arguments
 		pass
 
 
@@ -478,9 +474,7 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 	def _transferUp(self, src, dst, size, progressSubject=None):
 		return self._transfer("out", src, dst, size, progressSubject)
 
-	def _transfer(
-		self, transferDirection, src, dst, size, progressSubject=None
-	):  # pylint: disable=redefined-builtin,too-many-arguments,too-many-branches
+	def _transfer(self, transferDirection, src, dst, size, progressSubject=None):  # pylint: disable=redefined-builtin,too-many-arguments,too-many-branches
 		logger.debug(
 			"Transfer %s from %s to %s (size=%s, dynamic bandwidth=%s, max bandwidth=%s)",
 			transferDirection,
@@ -549,10 +543,10 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 			logger.info(error, exc_info=True)
 			raise
 
-	def _preProcessPath(self, path):  # pylint: disable=no-self-use
+	def _preProcessPath(self, path):
 		return path
 
-	def content(self, source="", recursive=False):  # pylint: disable=no-self-use
+	def content(self, source="", recursive=False):
 		"""
 		List the content of the repository.
 
@@ -609,7 +603,7 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 
 		return True
 
-	def islink(self, source):  # pylint: disable=unused-argument,no-self-use
+	def islink(self, source):  # pylint: disable=unused-argument
 		return False
 
 	def isfile(self, source):
@@ -626,9 +620,7 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 		except Exception:  # pylint: disable=broad-except
 			return False
 
-	def copy(
-		self, source, destination, overallProgressSubject=None, currentProgressSubject=None
-	):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+	def copy(self, source, destination, overallProgressSubject=None, currentProgressSubject=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		"""
 		source = file,  destination = file              => overwrite destination
 		source = file,  destination = dir               => copy into destination
@@ -765,18 +757,16 @@ class Repository:  # pylint: disable=too-many-instance-attributes
 		for hook in self._hooks:
 			hook.post_Repository_copy(source, destination, overallProgressSubject, currentProgressSubject)
 
-	def upload(self, source, destination, progressSubject=None):  # pylint: disable=no-self-use
+	def upload(self, source, destination, progressSubject=None):
 		raise RepositoryError("Not implemented")
 
-	def download(
-		self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1
-	):  # pylint: disable=no-self-use,too-many-arguments
+	def download(self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1):  # pylint: disable=too-many-arguments
 		raise RepositoryError("Not implemented")
 
-	def delete(self, destination):  # pylint: disable=no-self-use
+	def delete(self, destination):
 		raise RepositoryError("Not implemented")
 
-	def makeDirectory(self, destination):  # pylint: disable=no-self-use
+	def makeDirectory(self, destination):
 		raise RepositoryError("Not implemented")
 
 	def disconnect(self):
@@ -867,9 +857,7 @@ class FileRepository(Repository):
 
 		return _recurse(path=source, content=content)
 
-	def download(
-		self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1
-	):  # pylint: disable=too-many-arguments
+	def download(self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1):  # pylint: disable=too-many-arguments
 		"""
 		startByteNumber: position of first byte to be read
 		endByteNumber:   position of last byte to be read
@@ -1070,9 +1058,7 @@ class HTTPRepository(Repository):  # pylint: disable=too-many-instance-attribute
 		path = "/" + forceUnicode(path).lstrip("/").rstrip("/")
 		return quote(path.encode("utf-8"))
 
-	def download(
-		self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1
-	):  # pylint: disable=too-many-arguments,too-many-locals,too-many-statements,too-many-branches
+	def download(self, source, destination, progressSubject=None, startByteNumber=-1, endByteNumber=-1):  # pylint: disable=too-many-arguments,too-many-locals,too-many-statements,too-many-branches
 		"""
 		startByteNumber: position of first byte to be read
 		endByteNumber:   position of last byte to be read
@@ -1317,9 +1303,7 @@ class CIFSRepository(FileRepository):  # pylint: disable=too-many-instance-attri
 
 
 class DepotToLocalDirectorySychronizer:  # pylint: disable=too-few-public-methods
-	def __init__(
-		self, sourceDepot, destinationDirectory, productIds=None, maxBandwidth=0, dynamicBandwidth=False
-	):  # pylint: disable=too-many-arguments
+	def __init__(self, sourceDepot, destinationDirectory, productIds=None, maxBandwidth=0, dynamicBandwidth=False):  # pylint: disable=too-many-arguments
 		productIds = productIds or []
 		self._sourceDepot = sourceDepot
 		self._destinationDirectory = forceUnicode(destinationDirectory)
@@ -1331,9 +1315,7 @@ class DepotToLocalDirectorySychronizer:  # pylint: disable=too-few-public-method
 			os.mkdir(self._destinationDirectory)
 		self._sourceDepot.setBandwidth(dynamicBandwidth=dynamicBandwidth, maxBandwidth=maxBandwidth)
 
-	def _synchronizeDirectories(
-		self, source, destination, progressSubject=None
-	):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+	def _synchronizeDirectories(self, source, destination, progressSubject=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		source = forceUnicode(source)
 		destination = forceUnicode(destination)
 		logger.debug("Syncing directory %s to %s", source, destination)
@@ -1452,9 +1434,7 @@ class DepotToLocalDirectorySychronizer:  # pylint: disable=too-few-public-method
 					logger.error(error)
 					raise RuntimeError(error)
 
-	def synchronize(
-		self, productProgressObserver=None, overallProgressObserver=None
-	):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+	def synchronize(self, productProgressObserver=None, overallProgressObserver=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		if not self._productIds:
 			logger.info("Getting product dirs of depot '%s'", self._sourceDepot)
 			for item in self._sourceDepot.content():

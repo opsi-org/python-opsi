@@ -132,7 +132,7 @@ containing the localisation of the hardware audit.
 		self._keep_rotated_logs = DEFAULT_KEEP_ROTATED_LOGS
 		self._depotId = None
 
-		for (option, value) in kwargs.items():
+		for option, value in kwargs.items():
 			option = option.lower().replace("_", "")
 			if option == "audithardwareconfigfile":
 				self._auditHardwareConfigFile = forceFilename(value)
@@ -151,7 +151,7 @@ containing the localisation of the hardware audit.
 			self._depotId = getfqdn()
 		self._depotId = forceHostId(self._depotId)
 
-	def _testFilterAndAttributes(self, Class, attributes, **filter):  # pylint: disable=redefined-builtin,invalid-name,no-self-use
+	def _testFilterAndAttributes(self, Class, attributes, **filter):  # pylint: disable=redefined-builtin,invalid-name
 		if not attributes:
 			if not filter:
 				return
@@ -183,7 +183,7 @@ containing the localisation of the hardware audit.
 *backend_createBase*.
 		"""
 
-	def backend_getSystemConfiguration(self):  # pylint: disable=no-self-use
+	def backend_getSystemConfiguration(self):
 		"""
 		Returns current system configuration.
 
@@ -201,7 +201,7 @@ containing the localisation of the hardware audit.
 		"""
 		return {"log": {"size_limit": self._max_log_size, "keep_rotated": self._keep_rotated_logs, "types": list(LOG_TYPES)}}
 
-	def getOpsiCACert(self) -> str:  # pylint: disable=invalid-name,no-self-use
+	def getOpsiCACert(self) -> str:  # pylint: disable=invalid-name
 		return None
 
 	def _check_module(self, module: str):
@@ -237,7 +237,8 @@ containing the localisation of the hardware audit.
 
 		try:
 			disable_warning_for_modules = [
-				m for m in self._context.config_getObjects(id="licensing.disable_warning_for_modules")[0].getDefaultValues()
+				m
+				for m in self._context.config_getObjects(id="licensing.disable_warning_for_modules")[0].getDefaultValues()
 				if m in OPSI_MODULE_IDS
 			]
 		except Exception as err:  # pylint: disable=broad-except
@@ -264,8 +265,8 @@ containing the localisation of the hardware audit.
 				"client_limit_warning_percent": pool.client_limit_warning_percent,
 				"client_limit_warning_absolute": pool.client_limit_warning_absolute,
 				"client_limit_warning_days": client_limit_warning_days,
-				"disable_warning_for_modules": disable_warning_for_modules
-			}
+				"disable_warning_for_modules": disable_warning_for_modules,
+			},
 		}
 		if licenses:
 			licenses = pool.get_licenses()
@@ -369,7 +370,7 @@ overwrite the log.
 		except Exception as err:  # pylint: disable=broad-except
 			logger.error("Failed to set file permissions on '%s': %s", log_file, err)
 
-	def log_read(self, logType, objectId=None, maxSize=0):  # pylint: disable=no-self-use
+	def log_read(self, logType, objectId=None, maxSize=0):
 		"""
 		Return the content of a log.
 
@@ -512,11 +513,11 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Hosts                                                                                     -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def host_insertObject(self, host):  # pylint: disable=no-self-use
+	def host_insertObject(self, host):
 		host = forceObjectClass(host, Host)
 		host.setDefaults()
 
-	def host_updateObject(self, host):  # pylint: disable=no-self-use
+	def host_updateObject(self, host):
 		host = forceObjectClass(host, Host)
 
 	def host_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -560,17 +561,17 @@ depot where the method is.
 					softwareLicense.boundToHost = None
 					self._context.softwareLicense_insertObject(softwareLicense)
 
-	def host_getTLSCertificate(self, hostId: str) -> str:  # pylint: disable=invalid-name,unused-argument,no-self-use
+	def host_getTLSCertificate(self, hostId: str) -> str:  # pylint: disable=invalid-name,unused-argument
 		return None
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Configs                                                                                   -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def config_insertObject(self, config):  # pylint: disable=no-self-use
+	def config_insertObject(self, config):
 		config = forceObjectClass(config, Config)
 		config.setDefaults()
 
-	def config_updateObject(self, config):  # pylint: disable=no-self-use
+	def config_updateObject(self, config):
 		config = forceObjectClass(config, Config)
 
 	def config_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -599,7 +600,7 @@ depot where the method is.
 			if configState.configId not in configIds:
 				raise BackendReferentialIntegrityError(f"Config with id '{configState.configId}' not found")
 
-	def configState_updateObject(self, configState):  # pylint: disable=no-self-use
+	def configState_updateObject(self, configState):
 		configState = forceObjectClass(configState, ConfigState)
 
 	def configState_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -609,17 +610,17 @@ depot where the method is.
 		self._testFilterAndAttributes(ConfigState, attributes, **filter)
 		return []
 
-	def configState_deleteObjects(self, configStates):  # pylint: disable=no-self-use
+	def configState_deleteObjects(self, configStates):
 		pass
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   Products                                                                                  -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def product_insertObject(self, product):  # pylint: disable=no-self-use
+	def product_insertObject(self, product):
 		product = forceObjectClass(product, Product)
 		product.setDefaults()
 
-	def product_updateObject(self, product):  # pylint: disable=no-self-use
+	def product_updateObject(self, product):
 		product = forceObjectClass(product, Product)
 
 	def product_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -650,7 +651,7 @@ depot where the method is.
 				)
 			)
 
-		for (productId, versions) in productByIdAndVersion.items():
+		for productId, versions in productByIdAndVersion.items():
 			allProductVersWillBeDeleted = True
 			for product in self._context.product_getObjects(attributes=["id", "productVersion", "packageVersion"], id=productId):
 				if product.packageVersion not in versions.get(product.productVersion, []):
@@ -685,7 +686,7 @@ depot where the method is.
 					f"packageVersion '{productProperty.packageVersion}' not found"
 				)
 
-	def productProperty_updateObject(self, productProperty):  # pylint: disable=no-self-use
+	def productProperty_updateObject(self, productProperty):
 		productProperty = forceObjectClass(productProperty, ProductProperty)
 
 	def productProperty_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -719,7 +720,7 @@ depot where the method is.
 					f"packageVersion '{productDependency.packageVersion}' not found"
 				)
 
-	def productDependency_updateObject(self, productDependency):  # pylint: disable=no-self-use
+	def productDependency_updateObject(self, productDependency):
 		productDependency = forceObjectClass(productDependency, ProductDependency)
 
 	def productDependency_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -746,7 +747,6 @@ depot where the method is.
 				productVersion=productOnDepot.productVersion,
 				packageVersion=productOnDepot.packageVersion,
 			):
-
 				raise BackendReferentialIntegrityError(
 					f"Product with id '{productOnDepot.productId}', "
 					f"productVersion '{productOnDepot.productVersion}', "
@@ -763,7 +763,6 @@ depot where the method is.
 				productVersion=productOnDepot.productVersion,
 				packageVersion=productOnDepot.packageVersion,
 			):
-
 				raise BackendReferentialIntegrityError(
 					f"Product with id '{productOnDepot.productId}', "
 					f"productVersion '{productOnDepot.productVersion}', "
@@ -783,7 +782,7 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ProductOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def productOnClient_insertObject(self, productOnClient):  # pylint: disable=no-self-use
+	def productOnClient_insertObject(self, productOnClient):
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		productOnClient.setDefaults()
 
@@ -799,7 +798,7 @@ depot where the method is.
 			productOnClient.productVersion = None
 			productOnClient.packageVersion = None
 
-	def productOnClient_updateObject(self, productOnClient):  # pylint: disable=no-self-use
+	def productOnClient_updateObject(self, productOnClient):
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 
 	def productOnClient_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -823,13 +822,12 @@ depot where the method is.
 			if not self._context.productProperty_getObjects(
 				attributes=["productId", "propertyId"], productId=productPropertyState.productId, propertyId=productPropertyState.propertyId
 			):
-
 				raise BackendReferentialIntegrityError(
 					f"ProductProperty with id '{productPropertyState.propertyId}' "
 					f"for product '{productPropertyState.productId}' not found"
 				)
 
-	def productPropertyState_updateObject(self, productPropertyState):  # pylint: disable=no-self-use
+	def productPropertyState_updateObject(self, productPropertyState):
 		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 
 	def productPropertyState_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -839,7 +837,7 @@ depot where the method is.
 		self._testFilterAndAttributes(ProductPropertyState, attributes, **filter)
 		return []
 
-	def productPropertyState_deleteObjects(self, productPropertyStates):  # pylint: disable=no-self-use
+	def productPropertyState_deleteObjects(self, productPropertyStates):
 		pass
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -853,7 +851,7 @@ depot where the method is.
 			if group.parentGroupId and not self._context.group_getObjects(attributes=["id"], id=group.parentGroupId):
 				raise BackendReferentialIntegrityError(f"Parent group '{group.parentGroupId}' of group '{group.id}' not found")
 
-	def group_updateObject(self, group):  # pylint: disable=no-self-use
+	def group_updateObject(self, group):
 		group = forceObjectClass(group, Group)
 
 	def group_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -871,11 +869,11 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   ObjectToGroups                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def objectToGroup_insertObject(self, objectToGroup):  # pylint: disable=no-self-use
+	def objectToGroup_insertObject(self, objectToGroup):
 		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
 		objectToGroup.setDefaults()
 
-	def objectToGroup_updateObject(self, objectToGroup):  # pylint: disable=no-self-use
+	def objectToGroup_updateObject(self, objectToGroup):
 		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
 
 	def objectToGroup_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -885,17 +883,17 @@ depot where the method is.
 		self._testFilterAndAttributes(ObjectToGroup, attributes, **filter)
 		return []
 
-	def objectToGroup_deleteObjects(self, objectToGroups):  # pylint: disable=no-self-use
+	def objectToGroup_deleteObjects(self, objectToGroups):
 		pass
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicenseContracts                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def licenseContract_insertObject(self, licenseContract):  # pylint: disable=no-self-use
+	def licenseContract_insertObject(self, licenseContract):
 		licenseContract = forceObjectClass(licenseContract, LicenseContract)
 		licenseContract.setDefaults()
 
-	def licenseContract_updateObject(self, licenseContract):  # pylint: disable=no-self-use
+	def licenseContract_updateObject(self, licenseContract):
 		licenseContract = forceObjectClass(licenseContract, LicenseContract)
 
 	def licenseContract_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -905,7 +903,7 @@ depot where the method is.
 		self._testFilterAndAttributes(LicenseContract, attributes, **filter)
 		return []
 
-	def licenseContract_deleteObjects(self, licenseContracts):  # pylint: disable=no-self-use
+	def licenseContract_deleteObjects(self, licenseContracts):
 		pass
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -921,7 +919,7 @@ depot where the method is.
 			if not self._context.licenseContract_getObjects(attributes=["id"], id=softwareLicense.licenseContractId):
 				raise BackendReferentialIntegrityError(f"License contract with id '{softwareLicense.licenseContractId}' not found")
 
-	def softwareLicense_updateObject(self, softwareLicense):  # pylint: disable=no-self-use
+	def softwareLicense_updateObject(self, softwareLicense):
 		softwareLicense = forceObjectClass(softwareLicense, SoftwareLicense)
 
 	def softwareLicense_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -941,11 +939,11 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicensePools                                                                              -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def licensePool_insertObject(self, licensePool):  # pylint: disable=no-self-use
+	def licensePool_insertObject(self, licensePool):
 		licensePool = forceObjectClass(licensePool, LicensePool)
 		licensePool.setDefaults()
 
-	def licensePool_updateObject(self, licensePool):  # pylint: disable=no-self-use
+	def licensePool_updateObject(self, licensePool):
 		licensePool = forceObjectClass(licensePool, LicensePool)
 
 	def licensePool_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -987,7 +985,7 @@ depot where the method is.
 			if not self._context.licensePool_getObjects(attributes=["id"], id=softwareLicenseToLicensePool.licensePoolId):
 				raise BackendReferentialIntegrityError(f"License with id '{softwareLicenseToLicensePool.licensePoolId}' not found")
 
-	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):  # pylint: disable=no-self-use
+	def softwareLicenseToLicensePool_updateObject(self, softwareLicenseToLicensePool):
 		softwareLicenseToLicensePool = forceObjectClass(softwareLicenseToLicensePool, SoftwareLicenseToLicensePool)
 
 	def softwareLicenseToLicensePool_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -1013,11 +1011,11 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   LicenseOnClients                                                                          -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def licenseOnClient_insertObject(self, licenseOnClient):  # pylint: disable=no-self-use
+	def licenseOnClient_insertObject(self, licenseOnClient):
 		licenseOnClient = forceObjectClass(licenseOnClient, LicenseOnClient)
 		licenseOnClient.setDefaults()
 
-	def licenseOnClient_updateObject(self, licenseOnClient):  # pylint: disable=no-self-use
+	def licenseOnClient_updateObject(self, licenseOnClient):
 		licenseOnClient = forceObjectClass(licenseOnClient, LicenseOnClient)
 
 	def licenseOnClient_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -1027,17 +1025,17 @@ depot where the method is.
 		self._testFilterAndAttributes(LicenseOnClient, attributes, **filter)
 		return []
 
-	def licenseOnClient_deleteObjects(self, licenseOnClients):  # pylint: disable=no-self-use
+	def licenseOnClient_deleteObjects(self, licenseOnClients):
 		pass
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwares                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def auditSoftware_insertObject(self, auditSoftware):  # pylint: disable=no-self-use
+	def auditSoftware_insertObject(self, auditSoftware):
 		auditSoftware = forceObjectClass(auditSoftware, AuditSoftware)
 		auditSoftware.setDefaults()
 
-	def auditSoftware_updateObject(self, auditSoftware):  # pylint: disable=no-self-use
+	def auditSoftware_updateObject(self, auditSoftware):
 		auditSoftware = forceObjectClass(auditSoftware, AuditSoftware)
 
 	def auditSoftware_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -1047,17 +1045,17 @@ depot where the method is.
 		self._testFilterAndAttributes(AuditSoftware, attributes, **filter)
 		return []
 
-	def auditSoftware_deleteObjects(self, auditSoftwares):  # pylint: disable=no-self-use
+	def auditSoftware_deleteObjects(self, auditSoftwares):
 		pass
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwareToLicensePools                                                               -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def auditSoftwareToLicensePool_insertObject(self, auditSoftwareToLicensePool):  # pylint: disable=no-self-use
+	def auditSoftwareToLicensePool_insertObject(self, auditSoftwareToLicensePool):
 		auditSoftwareToLicensePool = forceObjectClass(auditSoftwareToLicensePool, AuditSoftwareToLicensePool)
 		auditSoftwareToLicensePool.setDefaults()
 
-	def auditSoftwareToLicensePool_updateObject(self, auditSoftwareToLicensePool):  # pylint: disable=no-self-use
+	def auditSoftwareToLicensePool_updateObject(self, auditSoftwareToLicensePool):
 		auditSoftwareToLicensePool = forceObjectClass(auditSoftwareToLicensePool, AuditSoftwareToLicensePool)
 
 	def auditSoftwareToLicensePool_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -1067,17 +1065,17 @@ depot where the method is.
 		self._testFilterAndAttributes(AuditSoftwareToLicensePool, attributes, **filter)
 		return []
 
-	def auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools):  # pylint: disable=no-self-use
+	def auditSoftwareToLicensePool_deleteObjects(self, auditSoftwareToLicensePools):
 		pass
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditSoftwareOnClients                                                                    -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient):  # pylint: disable=no-self-use
+	def auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient):
 		auditSoftwareOnClient = forceObjectClass(auditSoftwareOnClient, AuditSoftwareOnClient)
 		auditSoftwareOnClient.setDefaults()
 
-	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):  # pylint: disable=no-self-use
+	def auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient):
 		auditSoftwareOnClient = forceObjectClass(auditSoftwareOnClient, AuditSoftwareOnClient)
 
 	def auditSoftwareOnClient_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
@@ -1093,29 +1091,27 @@ depot where the method is.
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   AuditHardwares                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def _checkHardwareClass(self, auditHardwareOrauditHardwareOnHost):  # pylint: disable=no-self-use
+	def _checkHardwareClass(self, auditHardwareOrauditHardwareOnHost):
 		hardwareClass = auditHardwareOrauditHardwareOnHost.getHardwareClass()
 		if not AuditHardware.hardware_attributes.get(hardwareClass):
 			raise ValueError(f"Attributes for hardware class '{hardwareClass}' not found, please check hwaudit.conf")
 
-	def auditHardware_insertObject(self, auditHardware):  # pylint: disable=no-self-use
+	def auditHardware_insertObject(self, auditHardware):
 		auditHardware = forceObjectClass(auditHardware, AuditHardware)
 		auditHardware.setDefaults()
 		self._checkHardwareClass(auditHardware)
 
-	def auditHardware_updateObject(self, auditHardware):  # pylint: disable=no-self-use
+	def auditHardware_updateObject(self, auditHardware):
 		auditHardware = forceObjectClass(auditHardware, AuditHardware)
 		self._checkHardwareClass(auditHardware)
 
 	def auditHardware_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
 		return [obj.toHash() for obj in self.auditHardware_getObjects(attributes, **filter)]
 
-	def auditHardware_getObjects(
-		self, attributes=[], **filter
-	):  # pylint: disable=redefined-builtin,dangerous-default-value,unused-argument,no-self-use
+	def auditHardware_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value,unused-argument
 		return []
 
-	def auditHardware_deleteObjects(self, auditHardwares):  # pylint: disable=no-self-use
+	def auditHardware_deleteObjects(self, auditHardwares):
 		pass
 
 	def auditHardware_getConfig(self, language=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
@@ -1237,26 +1233,24 @@ depot where the method is.
 		self._checkHardwareClass(auditHardwareOnHost)
 		self._context.auditHardware_insertObject(AuditHardware.fromHash(auditHardwareOnHost.toHash()))
 
-	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):  # pylint: disable=no-self-use
+	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost):
 		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
 		self._checkHardwareClass(auditHardwareOnHost)
 
 	def auditHardwareOnHost_getHashes(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value
 		return [obj.toHash() for obj in self.auditHardwareOnHost_getObjects(attributes, **filter)]
 
-	def auditHardwareOnHost_getObjects(
-		self, attributes=[], **filter
-	):  # pylint: disable=redefined-builtin,dangerous-default-value,unused-argument,no-self-use
+	def auditHardwareOnHost_getObjects(self, attributes=[], **filter):  # pylint: disable=redefined-builtin,dangerous-default-value,unused-argument
 		return []
 
-	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):  # pylint: disable=no-self-use
+	def auditHardwareOnHost_deleteObjects(self, auditHardwareOnHosts):
 		pass
 
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	# -   direct access                                                                            -
 	# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	def getData(self, query):  # pylint: disable=no-self-use
+	def getData(self, query):
 		return query
 
-	def getRawData(self, query):  # pylint: disable=no-self-use
+	def getRawData(self, query):
 		return query

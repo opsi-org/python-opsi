@@ -31,8 +31,6 @@ from itertools import islice
 from signal import SIGKILL
 
 import psutil
-from OPSI.Exceptions import CommandNotFoundException
-from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
 from opsicommon.logging import LOG_NONE, get_logger, logging_config
 from opsicommon.objects import *  # pylint: disable=wildcard-import,unused-wildcard-import
 from opsicommon.types import (
@@ -51,6 +49,9 @@ from opsicommon.types import (
 	forceUnicodeLower,
 )
 from opsicommon.utils import frozen_lru_cache
+
+from OPSI.Exceptions import CommandNotFoundException
+from OPSI.Util import getfqdn, objectToBeautifiedText, removeUnit
 
 distro_module = None  # pylint: disable=invalid-name
 if platform.system() == "Linux":
@@ -141,237 +142,211 @@ class SystemSpecificHook:  # pylint: disable=too-many-public-methods
 	def __init__(self):
 		pass
 
-	def pre_reboot(self, wait):  # pylint: disable=no-self-use
+	def pre_reboot(self, wait):
 		return wait
 
-	def post_reboot(self, wait):  # pylint: disable=unused-argument,no-self-use
+	def post_reboot(self, wait):  # pylint: disable=unused-argument
 		return None
 
-	def error_reboot(self, wait, exception):  # pylint: disable=no-self-use
+	def error_reboot(self, wait, exception):
 		pass
 
-	def pre_halt(self, wait):  # pylint: disable=no-self-use
+	def pre_halt(self, wait):
 		return wait
 
-	def post_halt(self, wait):  # pylint: disable=unused-argument,no-self-use
+	def post_halt(self, wait):  # pylint: disable=unused-argument
 		return None
 
-	def error_halt(self, wait, exception):  # pylint: disable=no-self-use
+	def error_halt(self, wait, exception):
 		pass
 
-	def pre_Harddisk_deletePartitionTable(self, harddisk):  # pylint: disable=unused-argument,no-self-use
+	def pre_Harddisk_deletePartitionTable(self, harddisk):  # pylint: disable=unused-argument
 		return None
 
-	def post_Harddisk_deletePartitionTable(self, harddisk):  # pylint: disable=unused-argument,no-self-use
+	def post_Harddisk_deletePartitionTable(self, harddisk):  # pylint: disable=unused-argument
 		return None
 
-	def error_Harddisk_deletePartitionTable(self, harddisk, exception):  # pylint: disable=no-self-use
+	def error_Harddisk_deletePartitionTable(self, harddisk, exception):
 		pass
 
-	def pre_Harddisk_writePartitionTable(self, harddisk):  # pylint: disable=unused-argument,no-self-use
+	def pre_Harddisk_writePartitionTable(self, harddisk):  # pylint: disable=unused-argument
 		return None
 
-	def post_Harddisk_writePartitionTable(self, harddisk):  # pylint: disable=unused-argument,no-self-use
+	def post_Harddisk_writePartitionTable(self, harddisk):  # pylint: disable=unused-argument
 		return None
 
-	def error_Harddisk_writePartitionTable(self, harddisk, exception):  # pylint: disable=no-self-use
+	def error_Harddisk_writePartitionTable(self, harddisk, exception):
 		pass
 
-	def pre_Harddisk_readPartitionTable(self, harddisk):  # pylint: disable=unused-argument,no-self-use
+	def pre_Harddisk_readPartitionTable(self, harddisk):  # pylint: disable=unused-argument
 		return None
 
-	def post_Harddisk_readPartitionTable(self, harddisk):  # pylint: disable=unused-argument,no-self-use
+	def post_Harddisk_readPartitionTable(self, harddisk):  # pylint: disable=unused-argument
 		return None
 
-	def error_Harddisk_readPartitionTable(self, harddisk, exception):  # pylint: disable=no-self-use
+	def error_Harddisk_readPartitionTable(self, harddisk, exception):
 		pass
 
-	def pre_Harddisk_setPartitionBootable(self, harddisk, partition, bootable):  # pylint: disable=unused-argument,no-self-use
+	def pre_Harddisk_setPartitionBootable(self, harddisk, partition, bootable):  # pylint: disable=unused-argument
 		return (partition, bootable)
 
-	def post_Harddisk_setPartitionBootable(self, harddisk, partition, bootable):  # pylint: disable=unused-argument,no-self-use
+	def post_Harddisk_setPartitionBootable(self, harddisk, partition, bootable):  # pylint: disable=unused-argument
 		return None
 
-	def error_Harddisk_setPartitionBootable(self, harddisk, partition, bootable, exception):  # pylint: disable=no-self-use
+	def error_Harddisk_setPartitionBootable(self, harddisk, partition, bootable, exception):
 		pass
 
-	def pre_Harddisk_setPartitionId(
-		self, harddisk, partition, id
-	):  # pylint: disable=unused-argument,redefined-builtin,no-self-use,invalid-name
+	def pre_Harddisk_setPartitionId(self, harddisk, partition, id):  # pylint: disable=unused-argument,redefined-builtin,invalid-name
 		return (partition, id)
 
-	def post_Harddisk_setPartitionId(
-		self, harddisk, partition, id
-	):  # pylint: disable=unused-argument,redefined-builtin,no-self-use,invalid-name
+	def post_Harddisk_setPartitionId(self, harddisk, partition, id):  # pylint: disable=unused-argument,redefined-builtin,invalid-name
 		return None
 
-	def error_Harddisk_setPartitionId(
-		self, harddisk, partition, id, exception
-	):  # pylint: disable=unused-argument,redefined-builtin,no-self-use,invalid-name
+	def error_Harddisk_setPartitionId(self, harddisk, partition, id, exception):  # pylint: disable=unused-argument,redefined-builtin,invalid-name
 		pass
 
-	def pre_Harddisk_readMasterBootRecord(self, harddisk):  # pylint: disable=unused-argument,no-self-use
+	def pre_Harddisk_readMasterBootRecord(self, harddisk):  # pylint: disable=unused-argument
 		return None
 
-	def post_Harddisk_readMasterBootRecord(self, harddisk, result):  # pylint: disable=unused-argument,no-self-use
+	def post_Harddisk_readMasterBootRecord(self, harddisk, result):  # pylint: disable=unused-argument
 		return result
 
-	def error_Harddisk_readMasterBootRecord(self, harddisk, exception):  # pylint: disable=no-self-use,no-self-use
+	def error_Harddisk_readMasterBootRecord(self, harddisk, exception):  # pylint: disable=unused-argument
 		pass
 
-	def pre_Harddisk_writeMasterBootRecord(self, harddisk, system):  # pylint: disable=unused-argument,no-self-use
+	def pre_Harddisk_writeMasterBootRecord(self, harddisk, system):  # pylint: disable=unused-argument
 		return system
 
-	def post_Harddisk_writeMasterBootRecord(self, harddisk, system):  # pylint: disable=unused-argument,no-self-use
+	def post_Harddisk_writeMasterBootRecord(self, harddisk, system):  # pylint: disable=unused-argument
 		return None
 
-	def error_Harddisk_writeMasterBootRecord(self, harddisk, system, exception):  # pylint: disable=no-self-use
+	def error_Harddisk_writeMasterBootRecord(self, harddisk, system, exception):
 		pass
 
-	def pre_Harddisk_readPartitionBootRecord(self, harddisk, partition):  # pylint: disable=unused-argument,no-self-use
+	def pre_Harddisk_readPartitionBootRecord(self, harddisk, partition):  # pylint: disable=unused-argument
 		return partition
 
-	def post_Harddisk_readPartitionBootRecord(self, harddisk, partition, result):  # pylint: disable=unused-argument,no-self-use
+	def post_Harddisk_readPartitionBootRecord(self, harddisk, partition, result):  # pylint: disable=unused-argument
 		return result
 
-	def error_Harddisk_readPartitionBootRecord(self, harddisk, partition, exception):  # pylint: disable=no-self-use
+	def error_Harddisk_readPartitionBootRecord(self, harddisk, partition, exception):
 		pass
 
-	def pre_Harddisk_writePartitionBootRecord(self, harddisk, partition, fsType):  # pylint: disable=unused-argument,no-self-use
+	def pre_Harddisk_writePartitionBootRecord(self, harddisk, partition, fsType):  # pylint: disable=unused-argument
 		return (partition, fsType)
 
-	def post_Harddisk_writePartitionBootRecord(self, harddisk, partition, fsType):  # pylint: disable=unused-argument,no-self-use
+	def post_Harddisk_writePartitionBootRecord(self, harddisk, partition, fsType):  # pylint: disable=unused-argument
 		return None
 
-	def error_Harddisk_writePartitionBootRecord(self, harddisk, partition, fsType, exception):  # pylint: disable=no-self-use
+	def error_Harddisk_writePartitionBootRecord(self, harddisk, partition, fsType, exception):
 		pass
 
-	def pre_Harddisk_setNTFSPartitionStartSector(self, harddisk, partition, sector):  # pylint: disable=unused-argument,no-self-use
+	def pre_Harddisk_setNTFSPartitionStartSector(self, harddisk, partition, sector):  # pylint: disable=unused-argument
 		return (partition, sector)
 
-	def post_Harddisk_setNTFSPartitionStartSector(self, harddisk, partition, sector):  # pylint: disable=unused-argument,no-self-use
+	def post_Harddisk_setNTFSPartitionStartSector(self, harddisk, partition, sector):  # pylint: disable=unused-argument
 		return None
 
-	def error_Harddisk_setNTFSPartitionStartSector(self, harddisk, partition, sector, exception):  # pylint: disable=no-self-use
+	def error_Harddisk_setNTFSPartitionStartSector(self, harddisk, partition, sector, exception):
 		pass
 
-	def pre_Harddisk_createPartition(
-		self, harddisk, start, end, fs, type, boot, lba
-	):  # pylint: disable=unused-argument,redefined-builtin,no-self-use,invalid-name,too-many-arguments
+	def pre_Harddisk_createPartition(self, harddisk, start, end, fs, type, boot, lba):  # pylint: disable=unused-argument,redefined-builtin,invalid-name,too-many-arguments
 		return (start, end, fs, type, boot, lba)
 
-	def post_Harddisk_createPartition(
-		self, harddisk, start, end, fs, type, boot, lba
-	):  # pylint: disable=unused-argument,redefined-builtin,no-self-use,invalid-name,too-many-arguments
+	def post_Harddisk_createPartition(self, harddisk, start, end, fs, type, boot, lba):  # pylint: disable=unused-argument,redefined-builtin,invalid-name,too-many-arguments
 		return None
 
-	def error_Harddisk_createPartition(
-		self, harddisk, start, end, fs, type, boot, lba, exception
-	):  # pylint: disable=unused-argument,redefined-builtin,no-self-use,invalid-name,too-many-arguments
+	def error_Harddisk_createPartition(self, harddisk, start, end, fs, type, boot, lba, exception):  # pylint: disable=unused-argument,redefined-builtin,invalid-name,too-many-arguments
 		pass
 
-	def pre_Harddisk_deletePartition(self, harddisk, partition):  # pylint: disable=unused-argument,no-self-use
+	def pre_Harddisk_deletePartition(self, harddisk, partition):  # pylint: disable=unused-argument
 		return partition
 
-	def post_Harddisk_deletePartition(self, harddisk, partition):  # pylint: disable=unused-argument,no-self-use
+	def post_Harddisk_deletePartition(self, harddisk, partition):  # pylint: disable=unused-argument
 		return None
 
-	def error_Harddisk_deletePartition(self, harddisk, partition, exception):  # pylint: disable=no-self-use
+	def error_Harddisk_deletePartition(self, harddisk, partition, exception):
 		pass
 
-	def pre_Harddisk_mountPartition(self, harddisk, partition, mountpoint, **options):  # pylint: disable=unused-argument,no-self-use
+	def pre_Harddisk_mountPartition(self, harddisk, partition, mountpoint, **options):  # pylint: disable=unused-argument
 		return (partition, mountpoint, options)
 
-	def post_Harddisk_mountPartition(self, harddisk, partition, mountpoint, **options):  # pylint: disable=unused-argument,no-self-use
+	def post_Harddisk_mountPartition(self, harddisk, partition, mountpoint, **options):  # pylint: disable=unused-argument
 		return None
 
-	def error_Harddisk_mountPartition(
-		self, harddisk, partition, mountpoint, exception, **options
-	):  # pylint: disable=unused-argument,no-self-use
+	def error_Harddisk_mountPartition(self, harddisk, partition, mountpoint, exception, **options):  # pylint: disable=unused-argument
 		pass
 
-	def pre_Harddisk_umountPartition(self, harddisk, partition):  # pylint: disable=unused-argument,no-self-use
+	def pre_Harddisk_umountPartition(self, harddisk, partition):  # pylint: disable=unused-argument
 		return partition
 
-	def post_Harddisk_umountPartition(self, harddisk, partition):  # pylint: disable=unused-argument,no-self-use
+	def post_Harddisk_umountPartition(self, harddisk, partition):  # pylint: disable=unused-argument
 		return None
 
-	def error_Harddisk_umountPartition(self, harddisk, partition, exception):  # pylint: disable=unused-argument,no-self-use
+	def error_Harddisk_umountPartition(self, harddisk, partition, exception):  # pylint: disable=unused-argument
 		pass
 
-	def pre_Harddisk_createFilesystem(self, harddisk, partition, fs):  # pylint: disable=unused-argument,no-self-use,invalid-name
+	def pre_Harddisk_createFilesystem(self, harddisk, partition, fs):  # pylint: disable=unused-argument,invalid-name
 		return (partition, fs)
 
-	def post_Harddisk_createFilesystem(self, harddisk, partition, fs):  # pylint: disable=unused-argument,no-self-use,invalid-name
+	def post_Harddisk_createFilesystem(self, harddisk, partition, fs):  # pylint: disable=unused-argument,invalid-name
 		return None
 
-	def error_Harddisk_createFilesystem(
-		self, harddisk, partition, fs, exception
-	):  # pylint: disable=unused-argument,no-self-use,invalid-name
+	def error_Harddisk_createFilesystem(self, harddisk, partition, fs, exception):  # pylint: disable=unused-argument,invalid-name
 		pass
 
-	def pre_Harddisk_resizeFilesystem(self, harddisk, partition, size, fs):  # pylint: disable=unused-argument,no-self-use,invalid-name
+	def pre_Harddisk_resizeFilesystem(self, harddisk, partition, size, fs):  # pylint: disable=unused-argument,invalid-name
 		return (partition, size, fs)
 
-	def post_Harddisk_resizeFilesystem(self, harddisk, partition, size, fs):  # pylint: disable=unused-argument,no-self-use,invalid-name
+	def post_Harddisk_resizeFilesystem(self, harddisk, partition, size, fs):  # pylint: disable=unused-argument,invalid-name
 		return None
 
-	def error_Harddisk_resizeFilesystem(
-		self, harddisk, partition, size, fs, exception
-	):  # pylint: disable=unused-argument,no-self-use,invalid-name,too-many-arguments
+	def error_Harddisk_resizeFilesystem(self, harddisk, partition, size, fs, exception):  # pylint: disable=unused-argument,invalid-name,too-many-arguments
 		pass
 
-	def pre_Harddisk_shred(self, harddisk, partition, iterations, progressSubject):  # pylint: disable=unused-argument,no-self-use
+	def pre_Harddisk_shred(self, harddisk, partition, iterations, progressSubject):  # pylint: disable=unused-argument
 		return (partition, iterations, progressSubject)
 
-	def post_Harddisk_shred(self, harddisk, partition, iterations, progressSubject):  # pylint: disable=unused-argument,no-self-use
+	def post_Harddisk_shred(self, harddisk, partition, iterations, progressSubject):  # pylint: disable=unused-argument
 		return None
 
-	def error_Harddisk_shred(
-		self, harddisk, partition, iterations, progressSubject, exception
-	):  # pylint: disable=unused-argument,no-self-use,too-many-arguments
+	def error_Harddisk_shred(self, harddisk, partition, iterations, progressSubject, exception):  # pylint: disable=unused-argument,too-many-arguments
 		pass
 
-	def pre_Harddisk_fill(self, harddisk, partition, infile, progressSubject):  # pylint: disable=unused-argument,no-self-use
+	def pre_Harddisk_fill(self, harddisk, partition, infile, progressSubject):  # pylint: disable=unused-argument
 		return (partition, infile, progressSubject)
 
-	def post_Harddisk_fill(self, harddisk, partition, infile, progressSubject):  # pylint: disable=unused-argument,no-self-use
+	def post_Harddisk_fill(self, harddisk, partition, infile, progressSubject):  # pylint: disable=unused-argument
 		return None
 
-	def error_Harddisk_fill(
-		self, harddisk, partition, infile, progressSubject, exception
-	):  # pylint: disable=unused-argument,no-self-use,too-many-arguments
+	def error_Harddisk_fill(self, harddisk, partition, infile, progressSubject, exception):  # pylint: disable=unused-argument,too-many-arguments
 		pass
 
-	def pre_Harddisk_saveImage(self, harddisk, partition, imageFile, progressSubject):  # pylint: disable=unused-argument,no-self-use
+	def pre_Harddisk_saveImage(self, harddisk, partition, imageFile, progressSubject):  # pylint: disable=unused-argument
 		return (partition, imageFile, progressSubject)
 
-	def post_Harddisk_saveImage(self, harddisk, partition, imageFile, progressSubject):  # pylint: disable=unused-argument,no-self-use
+	def post_Harddisk_saveImage(self, harddisk, partition, imageFile, progressSubject):  # pylint: disable=unused-argument
 		return None
 
-	def error_Harddisk_saveImage(
-		self, harddisk, partition, imageFile, progressSubject, exception
-	):  # pylint: disable=unused-argument,no-self-use,too-many-arguments
+	def error_Harddisk_saveImage(self, harddisk, partition, imageFile, progressSubject, exception):  # pylint: disable=unused-argument,too-many-arguments
 		pass
 
-	def pre_Harddisk_restoreImage(self, harddisk, partition, imageFile, progressSubject):  # pylint: disable=unused-argument,no-self-use
+	def pre_Harddisk_restoreImage(self, harddisk, partition, imageFile, progressSubject):  # pylint: disable=unused-argument
 		return (partition, imageFile, progressSubject)
 
-	def post_Harddisk_restoreImage(self, harddisk, partition, imageFile, progressSubject):  # pylint: disable=unused-argument,no-self-use
+	def post_Harddisk_restoreImage(self, harddisk, partition, imageFile, progressSubject):  # pylint: disable=unused-argument
 		return None
 
-	def error_Harddisk_restoreImage(
-		self, harddisk, partition, imageFile, progressSubject, exception
-	):  # pylint: disable=unused-argument,no-self-use,too-many-arguments
+	def error_Harddisk_restoreImage(self, harddisk, partition, imageFile, progressSubject, exception):  # pylint: disable=unused-argument,too-many-arguments
 		pass
 
-	def pre_auditHardware(self, config, hostId, progressSubject):  # pylint: disable=unused-argument,no-self-use
+	def pre_auditHardware(self, config, hostId, progressSubject):  # pylint: disable=unused-argument
 		return (config, hostId, progressSubject)
 
-	def post_auditHardware(self, config, hostId, result):  # pylint: disable=unused-argument,no-self-use
+	def post_auditHardware(self, config, hostId, result):  # pylint: disable=unused-argument
 		return result
 
-	def error_auditHardware(self, config, hostId, progressSubject, exception):  # pylint: disable=unused-argument,no-self-use
+	def error_auditHardware(self, config, hostId, progressSubject, exception):  # pylint: disable=unused-argument
 		pass
 
 
@@ -988,7 +963,6 @@ output will be returned.
 			stderr=subprocess.PIPE if captureStderr else subprocess.DEVNULL,
 			env=sp_env,
 		) as proc:
-
 			if not encoding:
 				encoding = locale.getpreferredencoding()
 				if encoding == "ascii":
@@ -2148,9 +2122,7 @@ class Harddisk:  # pylint: disable=too-many-instance-attributes,too-many-public-
 				return part
 		raise ValueError(f"Partition {number} does not exist")
 
-	def createPartition(
-		self, start, end, fs, type="primary", boot=False, lba=False, number=None
-	):  # pylint: disable=redefined-builtin,invalid-name,too-many-branches,too-many-statements,too-many-arguments,too-many-locals
+	def createPartition(self, start, end, fs, type="primary", boot=False, lba=False, number=None):  # pylint: disable=redefined-builtin,invalid-name,too-many-branches,too-many-statements,too-many-arguments,too-many-locals
 		for hook in hooks:
 			(start, end, fs, type, boot, lba) = hook.pre_Harddisk_createPartition(self, start, end, fs, type, boot, lba)
 		try:
@@ -2542,9 +2514,7 @@ class Harddisk:  # pylint: disable=too-many-instance-attributes,too-many-public-
 		for hook in hooks:
 			hook.post_Harddisk_resizeFilesystem(self, partition, size, fs)
 
-	def saveImage(
-		self, partition, imageFile, progressSubject=None
-	):  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
+	def saveImage(self, partition, imageFile, progressSubject=None):  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 		for hook in hooks:
 			(partition, imageFile, progressSubject) = hook.pre_Harddisk_saveImage(self, partition, imageFile, progressSubject)
 
@@ -2664,9 +2634,7 @@ class Harddisk:  # pylint: disable=too-many-instance-attributes,too-many-public-
 
 		return saveImageResult
 
-	def restoreImage(
-		self, partition, imageFile, progressSubject=None
-	):  # pylint: disable=too-many-branches,too-many-statements,too-many-statements,too-many-locals
+	def restoreImage(self, partition, imageFile, progressSubject=None):  # pylint: disable=too-many-branches,too-many-statements,too-many-statements,too-many-locals
 		for hook in hooks:
 			(partition, imageFile, progressSubject) = hook.pre_Harddisk_restoreImage(self, partition, imageFile, progressSubject)
 
@@ -3091,12 +3059,12 @@ def auditHardware(config, hostId, progressSubject=None):
 
 		info = hardwareInventory(config)
 		info = hardwareExtendedInventory(config, info)
-		for (hardwareClass, devices) in info.items():
+		for hardwareClass, devices in info.items():
 			if hardwareClass == "SCANPROPERTIES":
 				continue
 			for device in devices:
 				data = {"hardwareClass": hardwareClass}
-				for (attribute, value) in device.items():
+				for attribute, value in device.items():
 					data[str(attribute)] = value
 				data["hostId"] = hostId
 				auditHardwareOnHosts.append(AuditHardwareOnHost.fromHash(data))
@@ -3111,9 +3079,7 @@ def auditHardware(config, hostId, progressSubject=None):
 	return auditHardwareOnHosts
 
 
-def hardwareExtendedInventory(
-	config, opsiValues={}, progressSubject=None
-):  # pylint: disable=dangerous-default-value,unused-argument,too-many-branches,too-many-locals
+def hardwareExtendedInventory(config, opsiValues={}, progressSubject=None):  # pylint: disable=dangerous-default-value,unused-argument,too-many-branches,too-many-locals
 	if not config:
 		logger.error("hardwareInventory: no config given")
 		return {}
@@ -3158,7 +3124,7 @@ def hardwareExtendedInventory(
 					srcfields = match.group(2)
 					fieldsdict = eval(srcfields)  # pylint: disable=eval-used
 					attr = ""
-					for (key, value) in fieldsdict.items():
+					for key, value in fieldsdict.items():
 						for i in range(len(opsiValues.get(key, []))):
 							attr = opsiValues.get(key)[i].get(value, "")
 						if attr:
@@ -3175,9 +3141,7 @@ def hardwareExtendedInventory(
 	return opsiValues
 
 
-def hardwareInventory(
-	config, progressSubject=None
-):  # pylint: disable=unused-argument,too-many-branches,too-many-locals,too-many-statements
+def hardwareInventory(config, progressSubject=None):  # pylint: disable=unused-argument,too-many-branches,too-many-locals,too-many-statements
 	import xml.dom.minidom  # pylint: disable=import-outside-toplevel
 
 	if not config:
@@ -3472,7 +3436,7 @@ def hardwareInventory(
 										if pciBusId.startswith("0000:"):
 											pciBusId = pciBusId[5:]
 										pciInfo = lspci.get(pciBusId, {})
-										for (key, value) in pciInfo.items():
+										for key, value in pciInfo.items():
 											elem = dom.createElement(key)
 											elem.childNodes.append(dom.createTextNode(value))
 											dev.childNodes.append(elem)
@@ -3591,9 +3555,7 @@ def hardwareInventory(
 
 					for dev in dmidecode.get(hwclass, []):
 						if (
-							filterAttr
-							and dev.get(filterAttr)
-							and not eval(f"str(dev.get(filterAttr)).{filterExp}")  # pylint: disable=eval-used
+							filterAttr and dev.get(filterAttr) and not eval(f"str(dev.get(filterAttr)).{filterExp}")  # pylint: disable=eval-used
 						):
 							continue
 						device = {}
@@ -3602,7 +3564,6 @@ def hardwareInventory(
 								continue
 
 							for aname in attribute["Linux"].split("||"):
-
 								aname = aname.strip()
 								method = None
 								if "." in aname:
@@ -3633,7 +3594,7 @@ def hardwareInventory(
 			# Get hw info from alsa hdaudio info
 			elif linuxClass.startswith("[hdaudio]"):
 				opsiValues[opsiClass] = []
-				for (hdaudioId, dev) in hdaudio.items():
+				for hdaudioId, dev in hdaudio.items():
 					device = {}
 					for attribute in hwClass["Values"]:
 						if not attribute.get("Linux") or attribute["Linux"] not in dev:
@@ -3649,7 +3610,7 @@ def hardwareInventory(
 			# Get hw info from lsusb
 			elif linuxClass.startswith("[lsusb]"):
 				opsiValues[opsiClass] = []
-				for (busId, dev) in lsusb.items():
+				for busId, dev in lsusb.items():
 					device = {}
 					for attribute in hwClass["Values"]:
 						if not attribute.get("Linux"):
@@ -3922,8 +3883,8 @@ def getActiveConsoleSessionId():
 
 	.. warning::
 
-		This is currently only faked to have the function available for
-		the opsi-linux-client-agent!
+	        This is currently only faked to have the function available for
+	        the opsi-linux-client-agent!
 
 	"""
 	return getActiveSessionId()

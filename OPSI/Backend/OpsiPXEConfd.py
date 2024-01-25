@@ -17,9 +17,6 @@ from contextlib import closing, contextmanager
 from shlex import quote
 from typing import Any, Dict, Generator, List
 
-from OPSI.Backend.Base import ConfigDataBackend
-from OPSI.Backend.Base.Backend import Backend
-from OPSI.Backend.JSONRPC import JSONRPCBackend
 from opsicommon.exceptions import (
 	BackendMissingDataError,
 	BackendUnableToConnectError,
@@ -35,6 +32,10 @@ from opsicommon.objects import (
 )
 from opsicommon.system.network import get_fqdn
 from opsicommon.types import forceHostId, forceInt, forceUnicode, forceUnicodeList
+
+from OPSI.Backend.Base import ConfigDataBackend
+from OPSI.Backend.Base.Backend import Backend
+from OPSI.Backend.JSONRPC import JSONRPCBackend
 
 __all__ = ("ServerConnection", "OpsiPXEConfdBackend", "createUnixSocket")
 
@@ -125,7 +126,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 			logger.info(err)
 
 	def _parseArguments(self, kwargs: Dict[str, Any]) -> None:
-		for (option, value) in kwargs.items():
+		for option, value in kwargs.items():
 			option = option.lower()
 			if option == "port":
 				self._port = value
@@ -151,9 +152,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 			raise BackendUnableToConnectError(f"Failed to connect to depot '{address}': {err}") from err
 
 	def _getResponsibleDepotId(self, clientId: str) -> str:
-		configStates = self._context.configState_getObjects(
-			configId="clientconfig.depot.id", objectId=clientId
-		)  # pylint: disable=maybe-no-member
+		configStates = self._context.configState_getObjects(configId="clientconfig.depot.id", objectId=clientId)  # pylint: disable=maybe-no-member
 		if configStates and configStates[0].values:
 			depotId = configStates[0].values[0]
 		else:
@@ -165,7 +164,7 @@ class OpsiPXEConfdBackend(ConfigDataBackend):  # pylint: disable=too-many-instan
 			depotId = configs[0].defaultValues[0]
 		return depotId
 
-	def _pxeBootConfigurationUpdateNeeded(self, productOnClient: ProductOnClient) -> bool:  # pylint: disable=no-self-use
+	def _pxeBootConfigurationUpdateNeeded(self, productOnClient: ProductOnClient) -> bool:
 		if productOnClient.productType != "NetbootProduct":
 			logger.debug("Not a netboot product: %s, nothing to do", productOnClient.productId)
 			return False
@@ -478,7 +477,8 @@ class UpdateThread(threading.Thread):
 			try:
 				logger.info("Updating pxe boot configuration for client '%s'", self._clientId)
 				sc = ServerConnection(
-					self._opsiPXEConfdBackend._port, self._opsiPXEConfdBackend._timeout  # pylint: disable=protected-access
+					self._opsiPXEConfdBackend._port,
+					self._opsiPXEConfdBackend._timeout,  # pylint: disable=protected-access
 				)
 				logger.debug("Sending command %s", self._command)
 				result = sc.sendCommand(self._command)

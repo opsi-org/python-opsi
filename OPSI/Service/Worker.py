@@ -11,18 +11,19 @@ import os
 import tempfile
 import urllib
 import uuid
-from msgspec import msgpack
+
 import lz4
+from msgspec import msgpack
+from opsicommon.logging import get_logger
+from opsicommon.objects import deserialize, serialize
+from twisted.internet import defer, threads
+from twisted.python.failure import Failure
 
 from OPSI.Exceptions import OpsiBadRpcError, OpsiServiceAuthenticationError
 from OPSI.Service.JsonRpc import JsonRpc
 from OPSI.Types import forceList, forceUnicode
 from OPSI.Util import fromJson, objectToHtml, toJson
 from OPSI.Util.HTTP import deflateDecode, deflateEncode, gzipDecode, gzipEncode
-from opsicommon.logging import get_logger
-from opsicommon.objects import serialize, deserialize
-from twisted.internet import defer, threads
-from twisted.python.failure import Failure
 
 INTERFACE_PAGE = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -540,7 +541,7 @@ class WorkerOpsiJsonRpc(WorkerOpsi):  # pylint: disable=too-few-public-methods
 
 		return result
 
-	def _executeRpc(self, result, rpc):  # pylint: disable=unused-argument,no-self-use
+	def _executeRpc(self, result, rpc):  # pylint: disable=unused-argument
 		deferred = threads.deferToThread(rpc.execute)
 		return deferred
 

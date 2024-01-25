@@ -73,12 +73,12 @@ def _patchSudoersFileWithEntries(sudoersFile, entries):
 
 	.. versionchanged:: 4.0.5.15
 
-		Do not require a TTY for running the service command.
+	        Do not require a TTY for running the service command.
 
 
 	.. versionchanged:: 4.0.6.3
 
-		Add single entry if missing.
+	        Add single entry if missing.
 
 	"""
 	entries = [element.strip() for element in entries]
@@ -96,7 +96,7 @@ def _patchSudoersFileWithEntries(sudoersFile, entries):
 			lines.append(line)
 
 	# Stripping is important to avoid problems with newlines.
-	entriesToAdd = set(entries) - set(l.strip() for l in lines)
+	entriesToAdd = set(entries) - set(lin.strip() for lin in lines)
 
 	ttyPatchRequired = ttyPatchRequired and distributionRequiresNoTtyPatch()
 	modifyFile = ttyPatchRequired or servicePatchRequired or entriesToAdd

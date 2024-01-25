@@ -50,7 +50,7 @@ def migrate_file_to_mysql(create_backup: bool = True, restart_services: bool = T
 		"extensionConfigDir": "/etc/opsi/backendManager/extend.d",
 		"depotBackend": False,
 		"dispatchIgnoreModules": ["OpsiPXEConfd", "DHCPD", "HostControl"],
-		"unique_hardware_addresses": False
+		"unique_hardware_addresses": False,
 	}
 	backend_manager = backend = BackendManager(**bm_config)
 	backends = None
@@ -108,7 +108,7 @@ def migrate_file_to_mysql(create_backup: bool = True, restart_services: bool = T
 							logger.debug("Checking if service %r is running", service)
 							execute(["systemctl", "is-active", "--quiet", service], shell=False)
 							time.sleep(2)
-						except RuntimeError as err:
+						except RuntimeError:
 							logger.info("Service %r stopped", service)
 							stopped = True
 							break

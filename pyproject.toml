@@ -76,3 +76,10 @@ version = "^23.1"
 [tool.poetry.dependencies.wmi]
 platform = "win32"
 version = "^1.5"
+
+[tool.ruff.format]
+indent-style = "tab"
+
+[tool.ruff]
+line-length = 140
+ignore = [ "F401", "E402", "F403", "F405"]
