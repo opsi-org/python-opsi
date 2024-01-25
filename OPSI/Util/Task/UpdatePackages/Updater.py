@@ -17,7 +17,13 @@ import time
 from contextlib import contextmanager
 from urllib.parse import quote
 
-from OpenSSL.crypto import FILETYPE_PEM, load_certificate
+from cryptography import x509
+from opsicommon.logging import get_logger, secret_filter
+from opsicommon.ssl import install_ca
+from opsicommon.utils import prepare_proxy_environment
+from requests.exceptions import ChunkedEncodingError
+from requests.packages import urllib3
+
 from OPSI import System
 from OPSI.Backend.BackendManager import BackendManager
 from OPSI.Object import NetbootProduct, ProductOnClient
@@ -28,11 +34,6 @@ from OPSI.Util.File.Opsi import parseFilename
 from OPSI.Util.Path import cd
 from OPSI.Util.Product import ProductPackageFile
 from OPSI.Util.Task.Rights import setRights
-from opsicommon.logging import get_logger, secret_filter
-from opsicommon.ssl import install_ca
-from opsicommon.utils import prepare_proxy_environment
-from requests.packages import urllib3
-from requests.exceptions import ChunkedEncodingError
 
 from .Config import DEFAULT_USER_AGENT, ConfigurationParser
 from .Notifier import DummyNotifier, EmailNotifier
@@ -138,7 +139,7 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 			try:
 				jsonrpc = self.configBackend.get_jsonrpc_backend()
 				if jsonrpc:
-					ca_crt = load_certificate(FILETYPE_PEM, jsonrpc.getOpsiCACert())
+					ca_crt = x509.load_pem_x509_certificate(jsonrpc.getOpsiCACert())
 					install_ca(ca_crt)
 			except Exception as err:  # pylint: disable=broad-except
 				logger.info("Failed to update opsi CA: %s", err)
@@ -391,8 +392,9 @@ class OpsiPackageUpdater:  # pylint: disable=too-many-public-methods
 						backend.productOnClient_updateObjects(productOnClients)  # pylint: disable=no-member
 						notifier.appendLine(
 							(
-								f"Product {package['productId']} set to 'setup' on clients: "
-								", ".join(sorted(poc.clientId for poc in productOnClients))
+								f"Product {package['productId']} set to 'setup' on clients: " ", ".join(
+									sorted(poc.clientId for poc in productOnClients)
+								)
 							)
 						)
 
