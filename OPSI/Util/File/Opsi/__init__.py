@@ -1498,13 +1498,13 @@ element of the tuple is replace with the second element.
 
 	def _addChecksumFile(self):
 		string = StringIO()
-		size = 0
+
 		for path, checksum in self._filemap.items():
-			size += string.write(f"{checksum} {path}\n")
+			string.write(f"{checksum} {path}\n")
 		string.seek(0)
 
 		info = tarfile.TarInfo(name=f"{self.CONTROL_DIR}/checksums")
-		info.size = size
+		info.size = len(string.getvalue().encode())
 
 		self.addfile(info, BytesIO(string.getvalue().encode()))
 
