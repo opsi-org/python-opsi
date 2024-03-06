@@ -1367,12 +1367,12 @@ class OpsiBackupArchive(tarfile.TarFile):
 			self._backends = None
 
 	def _readBackendConfiguration(self):
+		dispatchedBackends = ["mysql"]
 		if os.path.exists(self.CONF_DIR) and os.path.exists(self.DISPATCH_CONF):
 			try:
 				dispatchedBackends = BackendDispatchConfigFile(self.DISPATCH_CONF).getUsedBackends()
 			except Exception as err:  # pylint: disable=broad-except
 				logger.warning("Could not read dispatch configuration: %s", err)
-				dispatchedBackends = []
 
 		if not os.path.exists(self.BACKEND_CONF_DIR):
 			raise OpsiBackupFileError(f'Could not read backend configuration: Missing directory "{self.BACKEND_CONF_DIR}"')
