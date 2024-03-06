@@ -1498,27 +1498,27 @@ element of the tuple is replace with the second element.
 
 	def _addChecksumFile(self):
 		string = StringIO()
-		size = 0
 		for path, checksum in self._filemap.items():
-			size += string.write(f"{checksum} {path}\n")
+			string.write(f"{checksum} {path}\n")
 		string.seek(0)
 
 		info = tarfile.TarInfo(name=f"{self.CONTROL_DIR}/checksums")
-		info.size = size
+		enc_string = string.getvalue().encode()
+		info.size = len(enc_string)
 
-		self.addfile(info, BytesIO(string.getvalue().encode()))
+		self.addfile(info, BytesIO(enc_string))
 
 	def _addSysInfoFile(self):
 		string = StringIO()
-		size = 0
 		for key, value in self.sysinfo.items():
-			size += string.write(f"{key}: {value}\n")
+			string.write(f"{key}: {value}\n")
 		string.seek(0)
 
 		info = tarfile.TarInfo(name=f"{self.CONTROL_DIR}/sysinfo")
-		info.size = size
+		enc_string = string.getvalue().encode()
+		info.size = len(enc_string)
 
-		self.addfile(info, BytesIO(string.getvalue().encode()))
+		self.addfile(info, BytesIO(enc_string))
 
 	def verify(self):
 		if self.mode.startswith("w"):
