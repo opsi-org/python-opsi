@@ -13,7 +13,6 @@ import json
 import threading
 import time
 from types import ModuleType
-from typing import TYPE_CHECKING
 
 from opsicommon.logging import get_logger
 from twisted.internet import defer
@@ -56,7 +55,7 @@ twisted_reactor: ModuleType | None = None
 
 
 def get_twisted_reactor() -> ModuleType:
-	global twisted_reactor
+	global twisted_reactor  # pylint: disable=global-statement
 	if twisted_reactor is None:
 		logger.info("Installing twisted reactor")
 		from twisted.internet import reactor
