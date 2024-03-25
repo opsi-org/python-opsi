@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import threading
 import time
+from types import ModuleType
 from typing import TYPE_CHECKING
 
 from opsicommon.logging import get_logger
@@ -28,9 +29,6 @@ from OPSI.Types import (
 	forceUnicode,
 	forceUnicodeList,
 )
-
-if TYPE_CHECKING:
-	from twisted.internet.posixbase import PosixReactorBase
 
 __all__ = (
 	"Subject",
@@ -54,14 +52,16 @@ __all__ = (
 
 logger = get_logger("opsi.general")
 
-twisted_reactor: PosixReactorBase | None = None
+twisted_reactor: ModuleType | None = None
 
 
-def get_twisted_reactor() -> PosixReactorBase:
+def get_twisted_reactor() -> ModuleType:
 	global twisted_reactor
 	if twisted_reactor is None:
 		logger.info("Installing twisted reactor")
-		from twisted.internet import reactor as twisted_reactor
+		from twisted.internet import reactor
+
+		twisted_reactor = reactor
 	assert twisted_reactor
 	return twisted_reactor
 
