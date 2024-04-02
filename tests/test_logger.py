@@ -9,9 +9,9 @@ This file is part of opsi - https://www.opsi.org
 import io
 import logging
 from contextlib import contextmanager
-import pytest
 
-from opsicommon.logging import logger, secret_filter, logging_config
+import pytest
+from opsicommon.logging import logger, logging_config, secret_filter
 from opsicommon.logging.constants import LOG_SECRET, LOG_TRACE
 
 from OPSI.Logger import Logger as LegacyLogger
@@ -57,8 +57,8 @@ def test_legacy_logger(utils):  # pylint: disable=redefined-outer-name
 	with utils.log_stream(LOG_TRACE) as stream:
 		legacy_logger = LegacyLogger()
 		assert legacy_logger == logger
-		#init_logging(file_level=logging.SECRET)
-		#legacy_logger.setLogFile("/tmp/test.log")
+		# init_logging(file_level=logging.SECRET)
+		# legacy_logger.setLogFile("/tmp/test.log")
 		# This method does nothing
 		legacy_logger.setLogFormat("xy")
 
@@ -117,7 +117,6 @@ def test_legacy_logger_calls(utils):  # pylint: disable=redefined-outer-name
 	legacy_logger.logFailure(None)
 	legacy_logger.logTraceback(None)
 	legacy_logger.logWarnings()
-	legacy_logger.startTwistedLogging()
 	legacy_logger.setConsoleLevel(9)
 
 	with utils.log_stream(LOG_SECRET) as stream:
@@ -135,7 +134,7 @@ def test_legacy_logger_calls(utils):  # pylint: disable=redefined-outer-name
 		legacy_logger.essential("mymessage %s", "fill-value")
 		legacy_logger.comment("mymessage %s", "fill-value")
 		# calling log still fails as method signature has changed with opsi 4.2
-		#legacy_logger.log(3, "text %s", raiseException=False, formatArgs=["some format arg"], formatKwargs={})
+		# legacy_logger.log(3, "text %s", raiseException=False, formatArgs=["some format arg"], formatKwargs={})
 		stream.seek(0)
 		log = stream.read()
 		assert log.count("fill-value") == 13

@@ -60,36 +60,6 @@ def testFileRepositoryFailsWithWrongURL():
 		FileRepository("nofile://nada")
 
 
-@pytest.fixture
-def twistedDAVXMLPath(test_data_path):
-	return os.path.join(test_data_path, "util", "davxml", "twisted-davxml.data")
-
-
-@pytest.fixture
-def twistedDAVXML(twistedDAVXMLPath):  # pylint: disable=redefined-outer-name
-	with open(twistedDAVXMLPath, "r", encoding="utf8") as file:
-		return file.read()
-
-
-def testGetFileInfosFromDavXML(twistedDAVXML):  # pylint: disable=redefined-outer-name
-	content = getFileInfosFromDavXML(twistedDAVXML)
-	assert len(content) == 4
-
-	dirs = 0
-	files = 0
-	for item in content:
-		assert isinstance(item["size"], int)
-		if item["type"] == "dir":
-			dirs = dirs + 1
-		elif item["type"] == "file":
-			files = files + 1
-		else:
-			raise ValueError(f"Unexpected type '{item['type']}' found. Maybe creepy testdata?")
-
-	assert dirs == 1
-	assert files == 3
-
-
 def test_file_repo_start_end(tmpdir):
 	src_dir = tmpdir.mkdir("src")
 	src = src_dir.join("test.txt")

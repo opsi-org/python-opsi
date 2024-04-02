@@ -149,6 +149,7 @@ __all__ = (
 # These functions realize the OPSI.Logger features utilizing python logging methods.
 #
 
+
 # Replace OPSI Logger
 def opsi_logger_factory(logFile: Any = None) -> logging.Logger:
 	warnings.warn("OPSI.Logger.Logger is deprecated, use opsicommon.logging.logger instead.", DeprecationWarning)
@@ -196,7 +197,9 @@ logger.addConfidentialString = addConfidentialString
 
 
 def setLogFormat(
-	logFormat: str, currentThread: bool = False, object: Any = None  # pylint: disable=unused-argument,redefined-builtin
+	logFormat: str,
+	currentThread: bool = False,
+	object: Any = None,  # pylint: disable=unused-argument,redefined-builtin
 ) -> None:
 	warnings.warn("OPSI.Logger.setLogFormat is deprecated, use opsicommon.logging.set_format instead.", DeprecationWarning)
 
@@ -205,7 +208,9 @@ logger.setLogFormat = setLogFormat
 
 
 def setConsoleFormat(
-	format: str, currentThread: bool = False, object: Any = None  # pylint: disable=unused-argument,redefined-builtin
+	format: str,
+	currentThread: bool = False,
+	object: Any = None,  # pylint: disable=unused-argument,redefined-builtin
 ) -> None:
 	warnings.warn("OPSI.Logger.setConsoleFormat is deprecated, use opsicommon.logging.set_format instead.", DeprecationWarning)
 
@@ -214,7 +219,9 @@ logger.setConsoleFormat = setConsoleFormat
 
 
 def setComponentName(
-	componentName: str, currentThread: bool = False, object: Any = None  # pylint: disable=unused-argument,redefined-builtin
+	componentName: str,
+	currentThread: bool = False,
+	object: Any = None,  # pylint: disable=unused-argument,redefined-builtin
 ) -> None:
 	warnings.warn("OPSI.Logger.setComponentName is deprecated, use opsicommon.logging.context instead.", DeprecationWarning)
 
@@ -230,7 +237,9 @@ logger.logToStdout = logToStdout
 
 
 def setSyslogFormat(
-	format: str, currentThread: bool = False, object: Any = None  # pylint: disable=unused-argument,redefined-builtin
+	format: str,
+	currentThread: bool = False,
+	object: Any = None,  # pylint: disable=unused-argument,redefined-builtin
 ) -> None:
 	warnings.warn("OPSI.Logger.setSyslogFormat is deprecated, use opsicommon.logging.set_format instead.", DeprecationWarning)
 
@@ -239,7 +248,9 @@ logger.setSyslogFormat = setSyslogFormat
 
 
 def setFileFormat(
-	format: str, currentThread: bool = False, object: Any = None  # pylint: disable=unused-argument,redefined-builtin
+	format: str,
+	currentThread: bool = False,
+	object: Any = None,  # pylint: disable=unused-argument,redefined-builtin
 ) -> None:
 	warnings.warn("OPSI.Logger.setFileFormat is deprecated, use opsicommon.logging.set_format instead.", DeprecationWarning)
 
@@ -248,7 +259,9 @@ logger.setFileFormat = setFileFormat
 
 
 def setUniventionFormat(
-	format: str, currentThread: bool = False, object: Any = None  # pylint: disable=unused-argument,redefined-builtin
+	format: str,
+	currentThread: bool = False,
+	object: Any = None,  # pylint: disable=unused-argument,redefined-builtin
 ) -> None:
 	warnings.warn("OPSI.Logger.setUniventionFormat is deprecated, use opsicommon.logging.set_format instead.", DeprecationWarning)
 
@@ -257,7 +270,9 @@ logger.setUniventionFormat = setUniventionFormat
 
 
 def setMessageSubjectFormat(
-	format: str, currentThread: bool = False, object: Any = None  # pylint: disable=unused-argument,redefined-builtin
+	format: str,
+	currentThread: bool = False,
+	object: Any = None,  # pylint: disable=unused-argument,redefined-builtin
 ) -> None:
 	warnings.warn("OPSI.Logger.setMessageSubjectFormat is deprecated", DeprecationWarning)
 
@@ -367,7 +382,9 @@ logger.setLogFile = setLogFile
 
 
 def linkLogFile(
-	linkFile: Any, currentThread: bool = False, object: Any = None  # pylint: disable=unused-argument,redefined-builtin
+	linkFile: Any,
+	currentThread: bool = False,
+	object: Any = None,  # pylint: disable=unused-argument,redefined-builtin
 ) -> None:
 	warnings.warn("OPSI.Logger.linkLogFile is deprecated", DeprecationWarning)
 
@@ -446,12 +463,6 @@ def logWarnings() -> None:
 
 logger.logWarnings = logWarnings
 
-
-def startTwistedLogging() -> None:
-	warnings.warn("OPSI.Logger.startTwistedLogging is deprecated", DeprecationWarning)
-
-
-logger.startTwistedLogging = startTwistedLogging
 
 logger.debug3 = logger.trace
 logger.err = logger.error
