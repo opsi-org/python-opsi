@@ -197,8 +197,8 @@ logger.addConfidentialString = addConfidentialString
 
 
 def setLogFormat(
-	logFormat: str,
-	currentThread: bool = False,
+	logFormat: str,  # pylint: disable=unused-argument
+	currentThread: bool = False,  # pylint: disable=unused-argument
 	object: Any = None,  # pylint: disable=unused-argument,redefined-builtin
 ) -> None:
 	warnings.warn("OPSI.Logger.setLogFormat is deprecated, use opsicommon.logging.set_format instead.", DeprecationWarning)
@@ -208,8 +208,8 @@ logger.setLogFormat = setLogFormat
 
 
 def setConsoleFormat(
-	format: str,
-	currentThread: bool = False,
+	format: str,  # pylint: disable=unused-argument,redefined-builtin
+	currentThread: bool = False,  # pylint: disable=unused-argument
 	object: Any = None,  # pylint: disable=unused-argument,redefined-builtin
 ) -> None:
 	warnings.warn("OPSI.Logger.setConsoleFormat is deprecated, use opsicommon.logging.set_format instead.", DeprecationWarning)
@@ -219,8 +219,8 @@ logger.setConsoleFormat = setConsoleFormat
 
 
 def setComponentName(
-	componentName: str,
-	currentThread: bool = False,
+	componentName: str,  # pylint: disable=unused-argument
+	currentThread: bool = False,  # pylint: disable=unused-argument
 	object: Any = None,  # pylint: disable=unused-argument,redefined-builtin
 ) -> None:
 	warnings.warn("OPSI.Logger.setComponentName is deprecated, use opsicommon.logging.context instead.", DeprecationWarning)
@@ -237,8 +237,8 @@ logger.logToStdout = logToStdout
 
 
 def setSyslogFormat(
-	format: str,
-	currentThread: bool = False,
+	format: str,  # pylint: disable=unused-argument,redefined-builtin
+	currentThread: bool = False,  # pylint: disable=unused-argument
 	object: Any = None,  # pylint: disable=unused-argument,redefined-builtin
 ) -> None:
 	warnings.warn("OPSI.Logger.setSyslogFormat is deprecated, use opsicommon.logging.set_format instead.", DeprecationWarning)
@@ -248,8 +248,8 @@ logger.setSyslogFormat = setSyslogFormat
 
 
 def setFileFormat(
-	format: str,
-	currentThread: bool = False,
+	format: str,  # pylint: disable=unused-argument,redefined-builtin
+	currentThread: bool = False,  # pylint: disable=unused-argument
 	object: Any = None,  # pylint: disable=unused-argument,redefined-builtin
 ) -> None:
 	warnings.warn("OPSI.Logger.setFileFormat is deprecated, use opsicommon.logging.set_format instead.", DeprecationWarning)
@@ -259,8 +259,8 @@ logger.setFileFormat = setFileFormat
 
 
 def setUniventionFormat(
-	format: str,
-	currentThread: bool = False,
+	format: str,  # pylint: disable=unused-argument,redefined-builtin
+	currentThread: bool = False,  # pylint: disable=unused-argument
 	object: Any = None,  # pylint: disable=unused-argument,redefined-builtin
 ) -> None:
 	warnings.warn("OPSI.Logger.setUniventionFormat is deprecated, use opsicommon.logging.set_format instead.", DeprecationWarning)
@@ -270,8 +270,8 @@ logger.setUniventionFormat = setUniventionFormat
 
 
 def setMessageSubjectFormat(
-	format: str,
-	currentThread: bool = False,
+	format: str,  # pylint: disable=unused-argument,redefined-builtin
+	currentThread: bool = False,  # pylint: disable=unused-argument
 	object: Any = None,  # pylint: disable=unused-argument,redefined-builtin
 ) -> None:
 	warnings.warn("OPSI.Logger.setMessageSubjectFormat is deprecated", DeprecationWarning)
@@ -382,8 +382,8 @@ logger.setLogFile = setLogFile
 
 
 def linkLogFile(
-	linkFile: Any,
-	currentThread: bool = False,
+	linkFile: Any,  # pylint: disable=unused-argument
+	currentThread: bool = False,  # pylint: disable=unused-argument
 	object: Any = None,  # pylint: disable=unused-argument,redefined-builtin
 ) -> None:
 	warnings.warn("OPSI.Logger.linkLogFile is deprecated", DeprecationWarning)
