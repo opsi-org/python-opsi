@@ -6,10 +6,12 @@
 PAM authentication.
 """
 
+from __future__ import annotations
+
 import grp
 import os
 import pwd
-from typing import Set
+from typing import Self
 
 import pam
 from opsicommon.logging import get_logger
@@ -22,10 +24,11 @@ logger = get_logger("opsi.general")
 
 
 class PAMAuthentication(AuthenticationModule):
-	def __init__(self, pam_service: str = None):
+	def __init__(self, pam_service: str | None = None):
 		super().__init__()
-		self._pam_service = pam_service
-		if not self._pam_service:
+		if pam_service:
+			self._pam_service = pam_service
+		else:
 			if os.path.exists("/etc/pam.d/opsi-auth"):
 				# Prefering our own - if present.
 				self._pam_service = "opsi-auth"
@@ -36,8 +39,8 @@ class PAMAuthentication(AuthenticationModule):
 			else:
 				self._pam_service = "common-auth"
 
-	def get_instance(self):
-		return PAMAuthentication(self._pam_service)
+	def get_instance(self) -> Self:
+		return self.__class__(self._pam_service)
 
 	def authenticate(self, username: str, password: str) -> None:
 		"""
@@ -62,7 +65,7 @@ class PAMAuthentication(AuthenticationModule):
 		except Exception as err:
 			raise BackendAuthenticationError(f"PAM authentication failed for user '{username}': {err}") from err
 
-	def get_groupnames(self, username: str) -> Set[str]:
+	def get_groupnames(self, username: str) -> set[str]:
 		"""
 		Read the groups of a user.
 

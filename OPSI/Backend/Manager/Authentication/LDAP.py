@@ -6,18 +6,21 @@
 LDAP authentication
 """
 
-from typing import Set
+from __future__ import annotations
+
+from typing import Self
 
 import ldap3
+from opsicommon.logging import get_logger
+
 from OPSI.Backend.Manager.Authentication import AuthenticationModule
 from OPSI.Exceptions import BackendAuthenticationError
-from opsicommon.logging import get_logger
 
 logger = get_logger("opsi.general")
 
 
 class LDAPAuthentication(AuthenticationModule):
-	def __init__(self, ldap_url: str, bind_user: str = None, group_filter: str = None):
+	def __init__(self, ldap_url: str, bind_user: str | None = None, group_filter: str | None = None) -> None:
 		"""
 		Authentication module using LDAP.
 
@@ -40,10 +43,11 @@ class LDAPAuthentication(AuthenticationModule):
 		super().__init__()
 		self._ldap_url = ldap_url
 		self._uri = ldap3.utils.uri.parse_uri(self._ldap_url)
-		self._bind_user = bind_user
 		self._group_filter = group_filter
-		self._ldap = None
-		if self._bind_user is None:
+		self._ldap: ldap3.Connection | None = None
+		if bind_user:
+			self._bind_user = bind_user
+		else:
 			if self._uri["base"]:
 				realm = ".".join([dc.split("=")[1] for dc in self._uri["base"].split(",")])
 			else:
@@ -58,7 +62,7 @@ class LDAPAuthentication(AuthenticationModule):
 		)
 
 	@property
-	def server_url(self):
+	def server_url(self) -> str:
 		url = self._uri["host"]
 		if self._uri["port"]:
 			url = url + ":" + str(self._uri["port"])
@@ -68,8 +72,8 @@ class LDAPAuthentication(AuthenticationModule):
 			url = "ldap://" + url
 		return url
 
-	def get_instance(self):
-		return LDAPAuthentication(self._ldap_url, self._bind_user, self._group_filter)
+	def get_instance(self) -> Self:
+		return self.__class__(self._ldap_url, self._bind_user, self._group_filter)
 
 	def authenticate(self, username: str, password: str) -> None:
 		"""
@@ -81,7 +85,6 @@ class LDAPAuthentication(AuthenticationModule):
 		try:
 			bind_user = self._bind_user.replace("{username}", username).replace("{base}", self._uri["base"])
 			logger.info("Binding as user %s to server %s", bind_user, self.server_url)
-			# self._ldap = ldap3.Connection(server=self.server_url, client_strategy=ldap3.SAFE_SYNC, user=bind_user, password=password)
 			self._ldap = ldap3.Connection(server=self.server_url, user=bind_user, password=password)
 			if not self._ldap.bind():
 				raise RuntimeError(f"bind failed: {self._ldap.result}")
@@ -90,7 +93,7 @@ class LDAPAuthentication(AuthenticationModule):
 			logger.info("LDAP authentication failed for user '%s'", username, exc_info=True)
 			raise BackendAuthenticationError(f"LDAP authentication failed for user '{username}': {err}") from err
 
-	def get_groupnames(self, username: str) -> Set[str]:  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
+	def get_groupnames(self, username: str) -> set[str]:  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 		groupnames = set()
 		if not self._ldap:
 			raise RuntimeError("Failed to get groupnames, not connected to ldap")
@@ -168,7 +171,7 @@ class LDAPAuthentication(AuthenticationModule):
 							break
 		return {g.lower() for g in groupnames}
 
-	def __del__(self):
+	def __del__(self) -> None:
 		if self._ldap:
 			try:
 				self._ldap.unbind()

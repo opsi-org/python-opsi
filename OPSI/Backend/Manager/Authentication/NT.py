@@ -5,8 +5,9 @@
 """
 PAM authentication.
 """
+from __future__ import annotations
 
-from typing import Set
+from typing import Self
 
 # pyright: reportMissingImports=false
 import win32net  # pylint: disable=import-error
@@ -21,7 +22,7 @@ logger = get_logger("opsi.general")
 
 
 class NTAuthentication(AuthenticationModule):
-	def __init__(self, admin_group_sid: str = None):
+	def __init__(self, admin_group_sid: str | None = None) -> None:
 		super().__init__()
 		self._admin_group_sid = admin_group_sid
 		self._admin_groupname = OPSI_ADMIN_GROUP
@@ -31,8 +32,8 @@ class NTAuthentication(AuthenticationModule):
 			except Exception as err:  # pylint: disable=broad-except
 				logger.error("Failed to lookup group with sid '%s': %s", self._admin_group_sid, err)
 
-	def get_instance(self):
-		return NTAuthentication(self._admin_group_sid)
+	def get_instance(self) -> Self:
+		return self.__class__(self._admin_group_sid)
 
 	def authenticate(self, username: str, password: str) -> None:
 		"""
@@ -55,7 +56,7 @@ class NTAuthentication(AuthenticationModule):
 	def get_admin_groupname(self) -> str:
 		return self._admin_groupname.lower()
 
-	def get_groupnames(self, username: str) -> Set[str]:
+	def get_groupnames(self, username: str) -> set[str]:
 		"""
 		Read the groups of a user.
 
