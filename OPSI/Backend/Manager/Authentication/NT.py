@@ -50,7 +50,7 @@ class NTAuthentication(AuthenticationModule):
 		try:
 			win32security.LogonUser(username, domain, password, win32security.LOGON32_LOGON_NETWORK, win32security.LOGON32_PROVIDER_DEFAULT)
 		except Exception as err:  # pylint: disable=broad-except
-			raise BackendAuthenticationError(f"Win32security authentication failed for user '{username}': {err}") from err
+			raise BackendAuthenticationError(f"Win32security authentication failed for user '{username}@{domain}': {err}") from err
 
 	def get_admin_groupname(self) -> str:
 		return self._admin_groupname.lower()
