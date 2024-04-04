@@ -42,8 +42,13 @@ class NTAuthentication(AuthenticationModule):
 		"""
 		logger.confidential("Trying to authenticate user %s with password %s by win32security", username, password)
 
+		domain = None
+		if "\\" in username:
+			domain, username = username.split("\\", 1)
+		elif "@" in username:
+			username, domain = username.split("@", 1)
 		try:
-			win32security.LogonUser(username, "None", password, win32security.LOGON32_LOGON_NETWORK, win32security.LOGON32_PROVIDER_DEFAULT)
+			win32security.LogonUser(username, domain, password, win32security.LOGON32_LOGON_NETWORK, win32security.LOGON32_PROVIDER_DEFAULT)
 		except Exception as err:  # pylint: disable=broad-except
 			raise BackendAuthenticationError(f"Win32security authentication failed for user '{username}': {err}") from err
 
