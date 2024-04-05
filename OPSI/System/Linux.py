@@ -201,10 +201,10 @@ def grant_session_access(username: str, session_id: str):
 	session_username = None
 	session_env = {}
 
-	# trying to find process with XAUTHORITY (prefer non-greeter)
+	# Trying to find process with XAUTHORITY or XDG_RUNTIME_DIR set (prefer non-greeter)
 	for proc in psutil.process_iter():
 		env = proc.environ()
-		if env.get("DISPLAY") == session_id and env.get("XAUTHORITY"):
+		if env.get("DISPLAY") == session_id and (env.get("XAUTHORITY") or env.get("XDG_RUNTIME_DIR")):
 			session_username = proc.username()
 			session_env = env
 			logger.debug("Found process of user %s with XDG_SESSION_CLASS %s", session_username, session_env.get("XDG_SESSION_CLASS"))
@@ -225,12 +225,14 @@ def grant_session_access(username: str, session_id: str):
 	sp_env = get_subprocess_environment(sp_env)
 	logger.debug("Using process env: %s", sp_env)
 
-	# Allow user to connect to X
-	xhost_cmd = ["sudo", "-u", session_username, "xhost", f"+si:localuser:{username}"]
-	logger.info("Running command %s", xhost_cmd)
-	process = subprocess.run(xhost_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=sp_env, check=False)
-	out = process.stdout.decode("utf-8", "replace") if process.stdout else ""
-	logger.debug("xhost output: %s", out)
+	if sp_env.get("XAUTHORITY"):
+		# Allow user to connect to X
+		xhost_cmd = ["sudo", "-u", session_username, "xhost", f"+si:localuser:{username}"]
+		logger.info("Running command %s", xhost_cmd)
+		process = subprocess.run(xhost_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=sp_env, check=False)
+		out = process.stdout.decode("utf-8", "replace") if process.stdout else ""
+		logger.debug("xhost output: %s", out)
+	# For wayland XDG_RUNTIME_DIR should be sufficient
 	return sp_env
 
 
