@@ -1024,6 +1024,7 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 				`lastSeen` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				`opsiHostKey` varchar(32),
 				`oneTimePassword` varchar(32),
+				`systemUUID` varchar(36) DEFAULT NULL,
 				`maxBandwidth` integer,
 				`depotLocalUrl` varchar(128),
 				`depotRemoteUrl` varchar(255),
