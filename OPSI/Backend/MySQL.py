@@ -22,9 +22,7 @@ from OPSI.Object import Product, ProductProperty
 from OPSI.Types import forceHostIdList, forceInt, forceUnicode
 from OPSI.Util import compareVersions
 
-__all__ = (
-	'MySQL', 'MySQLBackend', 'MySQLBackendObjectModificationTracker'
-)
+__all__ = ("MySQL", "MySQLBackend", "MySQLBackendObjectModificationTracker")
 
 logger = get_logger("opsi.general")
 
@@ -40,51 +38,53 @@ def retry_on_deadlock(func: Callable) -> Callable:
 				if trynum >= 10 or "deadlock" not in str(err).lower():
 					raise
 				time.sleep(0.1)
+
 	return wrapper
 
 
 class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 	"""Class handling basic MySQL functionality."""
-	AUTOINCREMENT = 'AUTO_INCREMENT'
+
+	AUTOINCREMENT = "AUTO_INCREMENT"
 	ALTER_TABLE_CHANGE_SUPPORTED = True
 	ESCAPED_BACKSLASH = "\\\\"
-	ESCAPED_APOSTROPHE = "\\\'"
+	ESCAPED_APOSTROPHE = "\\'"
 	ESCAPED_ASTERISK = "\\*"
 
 	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
-		self._address = 'localhost'
-		self._username = 'opsi'
-		self._password = 'opsi'
-		self._database = 'opsi'
-		self._databaseCharset = 'utf8'
+		self._address = "localhost"
+		self._username = "opsi"
+		self._password = "opsi"
+		self._database = "opsi"
+		self._databaseCharset = "utf8"
 		self._connectionPoolSize = 20
 		self._connectionPoolMaxOverflow = 10
 		self._connectionPoolTimeout = 30
 		self._connectionPoolRecyclingSeconds = -1
 
 		# Parse arguments
-		for (option, value) in kwargs.items():
+		for option, value in kwargs.items():
 			option = option.lower()
-			if option == 'address':
+			if option == "address":
 				self._address = forceUnicode(value)
 				if self._address == "::1":
 					self._address = "[::1]"
-			elif option == 'username':
+			elif option == "username":
 				self._username = forceUnicode(value)
-			elif option == 'password':
+			elif option == "password":
 				self._password = forceUnicode(value)
-			elif option == 'database':
+			elif option == "database":
 				self._database = forceUnicode(value)
-			elif option == 'databasecharset':
+			elif option == "databasecharset":
 				self._databaseCharset = str(value)
-			elif option == 'connectionpoolsize':
+			elif option == "connectionpoolsize":
 				self._connectionPoolSize = forceInt(value)
-			elif option == 'connectionpoolmaxoverflow':
+			elif option == "connectionpoolmaxoverflow":
 				self._connectionPoolMaxOverflow = forceInt(value)
 			# elif option == 'connectionpooltimeout':
 			# self._connectionPoolTimeout = forceInt(value)
-			elif option == 'connectionpoolrecycling':
+			elif option == "connectionpoolrecycling":
 				self._connectionPoolRecyclingSeconds = forceInt(value)
 
 		secret_filter.add_secrets(self._password)
@@ -100,7 +100,8 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 
 	@staticmethod
 	def on_engine_connect(conn, branch) -> None:  # pylint: disable=unused-argument
-		conn.execute("""
+		conn.execute(
+			"""
 			SET SESSION sql_mode=(SELECT
 				REPLACE(
 					REPLACE(
@@ -114,7 +115,8 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			);
 			SET SESSION group_concat_max_len = 1000000;
 			SET SESSION lock_wait_timeout = 60;
-		""")
+		"""
+		)
 		conn.execute("SET SESSION group_concat_max_len = 1000000;")
 		# conn.execute("SHOW VARIABLES LIKE 'sql_mode';").fetchone()
 
@@ -145,23 +147,19 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 			encoding=self._databaseCharset,
 			pool_size=self._connectionPoolSize,
 			max_overflow=self._connectionPoolMaxOverflow,
-			pool_recycle=self._connectionPoolRecyclingSeconds
+			pool_recycle=self._connectionPoolRecyclingSeconds,
 		)
 		self.engine._should_log_info = lambda: self.log_queries  # pylint: disable=protected-access
 
-		listen(self.engine, 'engine_connect', self.on_engine_connect)
+		listen(self.engine, "engine_connect", self.on_engine_connect)
 
-		self.session_factory = sessionmaker(
-			bind=self.engine,
-			autocommit=False,
-			autoflush=False
-		)
+		self.session_factory = sessionmaker(bind=self.engine, autocommit=False, autoflush=False)
 		self.Session = scoped_session(self.session_factory)  # pylint: disable=invalid-name
 
 		# Test connection
 		with self.session() as session:
 			version_string = self.getRow(session, "SELECT @@VERSION")[0]
-			logger.info('Connected to server version: %s', version_string)
+			logger.info("Connected to server version: %s", version_string)
 			server_type = "MariaDB" if "maria" in version_string.lower() else "MySQL"
 			match = re.search(r"^([\d\.]+)", version_string)
 			if match:
@@ -203,38 +201,37 @@ class MySQL(SQL):  # pylint: disable=too-many-instance-attributes
 		tables = {}
 		logger.trace("Current tables:")
 		for i in self.getSet(
-			session,
-			f"SELECT table_name from information_schema.tables WHERE table_type != 'VIEW' AND table_schema = '{self._database}';"
+			session, f"SELECT table_name from information_schema.tables WHERE table_type != 'VIEW' AND table_schema = '{self._database}';"
 		):
 			for table_name in i.values():
 				table_name = table_name.upper()
 				logger.trace(" [ %s ]", table_name)
-				fields = [j['Field'] for j in self.getSet(session, f'SHOW COLUMNS FROM `{table_name}`')]
+				fields = [j["Field"] for j in self.getSet(session, f"SHOW COLUMNS FROM `{table_name}`")]
 				tables[table_name] = fields
 				logger.trace("Fields in %s: %s", table_name, fields)
 
 		return tables
 
 	def getTableCreationOptions(self, table: str) -> str:
-		if table in ('SOFTWARE', 'SOFTWARE_CONFIG') or table.startswith(('HARDWARE_DEVICE_', 'HARDWARE_CONFIG_')):
-			return 'ENGINE=MyISAM DEFAULT CHARSET utf8 COLLATE utf8_general_ci;'
-		return 'ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci'
+		if table in ("SOFTWARE", "SOFTWARE_CONFIG") or table.startswith(("HARDWARE_DEVICE_", "HARDWARE_CONFIG_")):
+			return "ENGINE=MyISAM DEFAULT CHARSET utf8 COLLATE utf8_general_ci;"
+		return "ENGINE=InnoDB DEFAULT CHARSET utf8 COLLATE utf8_general_ci"
 
 
 class MySQLBackend(SQLBackend):
 	"""Backend holding information in MySQL form."""
 
 	def __init__(self, **kwargs) -> None:
-		self._name = 'mysql'
+		self._name = "mysql"
 
 		SQLBackend.__init__(self, **kwargs)
 
 		self._sql = MySQL(**kwargs)
 
-		logger.debug('MySQLBackend created: %s', self)
+		logger.debug("MySQLBackend created: %s", self)
 
 	def _createTableHost(self) -> None:
-		logger.debug('Creating table HOST')
+		logger.debug("Creating table HOST")
 		# MySQL uses some defaults for a row that specifies TIMESTAMP as
 		# type without giving DEFAULT or ON UPDATE constraints that
 		# result in hosts always having the current time in created and
@@ -243,7 +240,7 @@ class MySQLBackend(SQLBackend):
 		# More information about the defaults can be found in the MySQL
 		# handbook:
 		#   https://dev.mysql.com/doc/refman/5.1/de/timestamp-4-1.html
-		table = f'''CREATE TABLE `HOST` (
+		table = f"""CREATE TABLE `HOST` (
 				`hostId` varchar(255) NOT NULL,
 				`type` varchar(30),
 				`description` varchar(100),
@@ -255,6 +252,7 @@ class MySQLBackend(SQLBackend):
 				`lastSeen` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				`opsiHostKey` varchar(32),
 				`oneTimePassword` varchar(32),
+				`systemUUID` varchar(36) DEFAULT NULL,
 				`maxBandwidth` integer,
 				`depotLocalUrl` varchar(128),
 				`depotRemoteUrl` varchar(255),
@@ -267,18 +265,18 @@ class MySQLBackend(SQLBackend):
 				`workbenchLocalUrl` varchar(128),
 				`workbenchRemoteUrl` varchar(255),
 				PRIMARY KEY (`hostId`)
-			) {self._sql.getTableCreationOptions("HOST")};'''
+			) {self._sql.getTableCreationOptions("HOST")};"""
 		logger.debug(table)
 		with self._sql.session() as session:
 			self._sql.execute(session, table)
-			self._sql.execute(session, 'CREATE INDEX `index_host_type` on `HOST` (`type`);')
+			self._sql.execute(session, "CREATE INDEX `index_host_type` on `HOST` (`type`);")
 
 	def _createTableSoftwareConfig(self) -> None:
-		logger.debug('Creating table SOFTWARE_CONFIG')
+		logger.debug("Creating table SOFTWARE_CONFIG")
 		# We want the primary key config_id to be of a bigint as
 		# regular int has been proven to be too small on some
 		# installations.
-		table = f'''CREATE TABLE `SOFTWARE_CONFIG` (
+		table = f"""CREATE TABLE `SOFTWARE_CONFIG` (
 				`config_id` bigint NOT NULL {self._sql.AUTOINCREMENT},
 				`clientId` varchar(255) NOT NULL,
 				`name` varchar(100) NOT NULL,
@@ -296,14 +294,14 @@ class MySQLBackend(SQLBackend):
 				`licenseKey` VARCHAR(1024),
 				PRIMARY KEY (`config_id`)
 			) {self._sql.getTableCreationOptions("SOFTWARE_CONFIG")};
-			'''
+			"""
 		logger.debug(table)
 		with self._sql.session() as session:
 			self._sql.execute(session, table)
-			self._sql.execute(session, 'CREATE INDEX `index_software_config_clientId` on `SOFTWARE_CONFIG` (`clientId`);')
+			self._sql.execute(session, "CREATE INDEX `index_software_config_clientId` on `SOFTWARE_CONFIG` (`clientId`);")
 			self._sql.execute(
 				session,
-				'CREATE INDEX `index_software_config_nvsla` on `SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);'
+				"CREATE INDEX `index_software_config_nvsla` on `SOFTWARE_CONFIG` (`name`, `version`, `subVersion`, `language`, `architecture`);",
 			)
 
 	# Overwriting product_getObjects to use JOIN for speedup
@@ -313,11 +311,11 @@ class MySQLBackend(SQLBackend):
 		logger.info("Getting products, filter: %s", filter)
 
 		(attributes, filter) = self._adjustAttributes(Product, attributes, filter)
-		readWindowsSoftwareIDs = not attributes or 'windowsSoftwareIds' in attributes
+		readWindowsSoftwareIDs = not attributes or "windowsSoftwareIds" in attributes
 
-		select = ','.join(f'p.`{attribute}`' for attribute in attributes) or 'p.*'
-		where = self._filterToSql(filter, table="p") or '1=1'
-		query = f'''
+		select = ",".join(f"p.`{attribute}`" for attribute in attributes) or "p.*"
+		where = self._filterToSql(filter, table="p") or "1=1"
+		query = f"""
 			SELECT
 				{select},
 				GROUP_CONCAT(wp.windowsSoftwareId SEPARATOR "\n") AS windowsSoftwareIds
@@ -331,18 +329,18 @@ class MySQLBackend(SQLBackend):
 				p.productId,
 				p.productVersion,
 				p.packageVersion
-		'''
+		"""
 
 		products = []
 		with self._sql.session() as session:
 			for product in self._sql.getSet(session, query):
-				product['productClassIds'] = []
-				if readWindowsSoftwareIDs and product['windowsSoftwareIds']:
-					product['windowsSoftwareIds'] = product['windowsSoftwareIds'].split("\n")
+				product["productClassIds"] = []
+				if readWindowsSoftwareIDs and product["windowsSoftwareIds"]:
+					product["windowsSoftwareIds"] = product["windowsSoftwareIds"].split("\n")
 				else:
-					product['windowsSoftwareIds'] = []
+					product["windowsSoftwareIds"] = []
 
-				if not attributes or 'productClassIds' in attributes:
+				if not attributes or "productClassIds" in attributes:
 					pass
 
 				self._adjustResult(Product, product)
@@ -356,11 +354,11 @@ class MySQLBackend(SQLBackend):
 		logger.info("Getting product properties, filter: %s", filter)
 
 		(attributes, filter) = self._adjustAttributes(ProductProperty, attributes, filter)
-		readValues = not attributes or 'possibleValues' in attributes or 'defaultValues' in attributes
+		readValues = not attributes or "possibleValues" in attributes or "defaultValues" in attributes
 
-		select = ','.join(f'pp.`{attribute}`' for attribute in attributes) or 'pp.*'
-		where = self._filterToSql(filter, table="pp") or '1=1'
-		query = f'''
+		select = ",".join(f"pp.`{attribute}`" for attribute in attributes) or "pp.*"
+		where = self._filterToSql(filter, table="pp") or "1=1"
+		query = f"""
 			SELECT
 				{select},
 				-- JSON_ARRAYAGG(ppv.value) AS possibleValues,
@@ -382,19 +380,19 @@ class MySQLBackend(SQLBackend):
 				pp.productVersion,
 				pp.packageVersion,
 				pp.propertyId
-		'''
+		"""
 		productProperties = []
 		with self._sql.session() as session:
 			for productProperty in self._sql.getSet(session, query):
-				if readValues and productProperty['possibleValues']:
-					productProperty['possibleValues'] = productProperty['possibleValues'].split("\n")
+				if readValues and productProperty["possibleValues"]:
+					productProperty["possibleValues"] = productProperty["possibleValues"].split("\n")
 				else:
-					productProperty['possibleValues'] = []
+					productProperty["possibleValues"] = []
 
-				if readValues and productProperty['defaultValues']:
-					productProperty['defaultValues'] = productProperty['defaultValues'].split("\n")
+				if readValues and productProperty["defaultValues"]:
+					productProperty["defaultValues"] = productProperty["defaultValues"].split("\n")
 				else:
-					productProperty['defaultValues'] = []
+					productProperty["defaultValues"] = []
 				productProperties.append(ProductProperty.fromHash(productProperty))
 		return productProperties
 
@@ -404,10 +402,7 @@ class MySQLBackend(SQLBackend):
 		clientId = forceHostIdList(clientId)
 		with self._sql.session() as session:
 			logger.info("Deleting auditSoftware of clients %s", clientId)
-			session.execute(
-				"DELETE FROM SOFTWARE_CONFIG WHERE clientId IN :clientIds",
-				params={"clientIds": clientId}
-			)
+			session.execute("DELETE FROM SOFTWARE_CONFIG WHERE clientId IN :clientIds", params={"clientIds": clientId})
 
 	def auditHardwareOnHost_setObsolete(self, hostId: str) -> None:
 		if not hostId:
@@ -415,10 +410,7 @@ class MySQLBackend(SQLBackend):
 		hostId = forceHostIdList(hostId)
 		with self._sql.session() as session:
 			for hw_class in self._auditHardwareConfig:
-				session.execute(
-					f"DELETE FROM HARDWARE_CONFIG_{hw_class} WHERE hostId IN :hostIds",
-					params={"hostIds": hostId}
-				)
+				session.execute(f"DELETE FROM HARDWARE_CONFIG_{hw_class} WHERE hostId IN :hostIds", params={"hostIds": hostId})
 
 
 class MySQLBackendObjectModificationTracker(SQLBackendObjectModificationTracker):
