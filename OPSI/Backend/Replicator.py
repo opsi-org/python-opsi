@@ -8,7 +8,8 @@ Backend-Replicator.
 The replicator allows replication from one backend into another.
 """
 
-from opsicommon.logging import TRACE, get_logger
+from opsicommon.logging import get_logger
+from opsicommon.logging.constants import TRACE
 
 from OPSI.Backend.Base import Backend, ExtendedConfigDataBackend
 
