@@ -1194,7 +1194,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	def host_insertObject(self, host: Host) -> None:
 		ConfigDataBackend.host_insertObject(self, host)
 		data = self._objectToDatabaseHash(host)
-		data.pop("systemUUID", None)
 		where = self._uniqueCondition(host)
 		with self._sql.session() as session:
 			self._host_check_duplicates(host, session)
@@ -1206,7 +1205,6 @@ class SQLBackend(ConfigDataBackend):  # pylint: disable=too-many-public-methods
 	def host_updateObject(self, host: Host) -> None:
 		ConfigDataBackend.host_updateObject(self, host)
 		data = self._objectToDatabaseHash(host)
-		data.pop("systemUUID", None)
 		where = self._uniqueCondition(host)
 		with self._sql.session() as session:
 			self._host_check_duplicates(host, session)
