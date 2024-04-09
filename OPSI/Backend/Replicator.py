@@ -8,7 +8,7 @@ Backend-Replicator.
 The replicator allows replication from one backend into another.
 """
 
-from opsicommon.logging import get_logger
+from opsicommon.logging import TRACE, get_logger
 
 from OPSI.Backend.Base import Backend, ExtendedConfigDataBackend
 
@@ -254,6 +254,11 @@ class BackendReplicator:  # pylint: disable=too-many-instance-attributes
 						meth = "%s_getObjects" % Class.backendMethodPrefix
 						meth = getattr(rb, meth)
 						objs = meth(**filter)
+
+					logger.debug("Read %d objects", len(objs))
+					if logger.isEnabledFor(TRACE):
+						for obj in objs:
+							logger.trace(str(obj.to_hash()))
 
 					self.__currentProgressSubject.addToState(1)
 					if objClass == "Group":
