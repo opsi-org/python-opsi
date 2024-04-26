@@ -273,8 +273,11 @@ def getHostname():
 
 
 def getFQDN():
-	fqdn = socket.getfqdn().lower()
-	if fqdn.count(".") < 2:
+	try:
+		fqdn = socket.getfqdn().lower()
+		if fqdn.count(".") < 2:
+			return getHostname()
+	except FileNotFoundError:
 		return getHostname()
 
 	return forceUnicodeLower(getHostname() + "." + ".".join(fqdn.split(".")[1:]))
@@ -1318,7 +1321,6 @@ def execute(  # pylint: disable=dangerous-default-value,too-many-branches,too-ma
 			stderr=subprocess.PIPE if captureStderr else None,
 			env=sp_env,
 		) as proc:
-
 			if stdin_data:
 				proc.stdin.write(stdin_data)
 				proc.stdin.flush()
@@ -1713,7 +1715,7 @@ def existsUser(username):
 
 def getUserSidFromHandle(userHandle):
 	tic = win32security.GetTokenInformation(userHandle, ntsecuritycon.TokenGroups)
-	for (sid, flags) in tic:
+	for sid, flags in tic:
 		if flags & win32con.SE_GROUP_LOGON_ID:
 			return sid
 	return None
@@ -1803,9 +1805,7 @@ class Impersonate:  # pylint: disable=too-many-instance-attributes
 		self.desktop = forceUnicodeLower(self.desktop)
 		self.userToken = userToken
 
-	def start(
-		self, logonType="INTERACTIVE", newDesktop=False, createEnvironment=False
-	):  # pylint: disable=too-many-branches,too-many-statements
+	def start(self, logonType="INTERACTIVE", newDesktop=False, createEnvironment=False):  # pylint: disable=too-many-branches,too-many-statements
 		try:
 			logonType = forceUnicode(logonType)
 			winLogonType = None
