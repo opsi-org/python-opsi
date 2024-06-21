@@ -11,7 +11,6 @@ license = "AGPL-3.0"
 maintainers = [ "uib GmbH <info@uib.de>",]
 authors = [ "uib GmbH <info@uib.de>",]
 include = [ "python-opsi_data/**/*",]
-
 [[tool.poetry.packages]]
 include = "OPSI"
 
@@ -26,9 +25,6 @@ priority = "primary"
 [tool.ruff]
 line-length = 140
 ignore = [ "F401", "E402", "F403", "F405",]
-
-[tool.ruff.format]
-indent-style = "tab"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
@@ -58,6 +54,9 @@ pytest = "^7.0"
 pytest-asyncio = "^0.23"
 pytest-cov = "^4.0"
 ruff = "^0.4"
+
+[tool.ruff.format]
+indent-style = "tab"
 
 [tool.poetry.dependencies.distro]
 platform = "linux"
