@@ -33,6 +33,7 @@ pylint-pytest:
     cp tests/Backends/config.py.gitlabci tests/Backends/config.py
     apt-get update
     apt-get --yes install default-libmysqlclient-dev librsync1
+    poetry env use 3.12
     poetry lock --no-update
     poetry install
     poetry run pylint --disable=R,C,fixme OPSI
