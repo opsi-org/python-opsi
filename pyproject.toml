@@ -22,9 +22,6 @@ priority = "primary"
 [tool.ruff]
 line-length = 140
 
-[tool.ruff.lint]
-ignore = [ "F401", "E402", "F403", "F405",]
-
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
 attrs = "^23.1"
@@ -53,6 +50,9 @@ pytest = "^7.0"
 pytest-asyncio = "^0.23"
 pytest-cov = "^4.0"
 ruff = "^0.4"
+
+[tool.ruff.lint]
+ignore = [ "F401", "E402", "F403", "F405",]
 
 [tool.ruff.format]
 indent-style = "tab"
