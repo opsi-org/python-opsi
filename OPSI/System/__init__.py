@@ -26,6 +26,7 @@ from OPSI.Types import forceFilename
 from OPSI.Util import formatFileSize
 
 SystemSpecificHook: type
+hooks = []
 if platform.system().lower() == "linux":
 	from .Linux import *
 	from .Linux import SystemSpecificHook, hooks

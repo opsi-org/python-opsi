@@ -52,6 +52,7 @@ RS_MD4_SIG_MAGIC = 0x72730136
 #  DEFINES FROM librsync.h  #
 #############################
 
+
 # librsync.h: rs_buffers_s
 class Buffer(ctypes.Structure):
 	_fields_ = [

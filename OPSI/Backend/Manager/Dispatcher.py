@@ -54,7 +54,7 @@ class BackendDispatcher(Backend):
 		self._context = self
 		self.is_extended_config_data_backend = False
 
-		for (option, value) in kwargs.items():
+		for option, value in kwargs.items():
 			option = option.lower()
 			if option == "dispatchconfig":
 				self._dispatchConfig = value
@@ -208,7 +208,6 @@ class BackendDispatcher(Backend):
 				if functionRef.__doc__:
 					new_function.__doc__ = functionRef.__doc__
 				setattr(self, methodName, types.MethodType(new_function, self))
-
 
 	def _dispatchMethod(self, methodBackends, methodName, **kwargs):
 		logger.debug("Dispatching method %s to backends: %s", methodName, methodBackends)

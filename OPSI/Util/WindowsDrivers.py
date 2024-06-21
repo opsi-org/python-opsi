@@ -29,9 +29,7 @@ from OPSI.Util.Repository import Repository
 logger = get_logger("opsi.general")
 
 
-def searchWindowsDrivers(
-	driverDir, auditHardwares, messageSubject=None, srcRepository=None
-):  # pylint: disable=too-many-branches,too-many-statements,too-many-arguments
+def searchWindowsDrivers(driverDir, auditHardwares, messageSubject=None, srcRepository=None):  # pylint: disable=too-many-branches,too-many-statements,too-many-arguments
 	driverDir = forceFilename(driverDir)
 	try:
 		auditHardwares = forceObjectClassList(auditHardwares, AuditHardware)
@@ -318,9 +316,7 @@ def integrateWindowsHardwareDrivers(
 	)
 
 
-def integrateWindowsTextmodeDrivers(
-	driverDirectory, destination, devices, sifFile=None, messageSubject=None
-):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+def integrateWindowsTextmodeDrivers(driverDirectory, destination, devices, sifFile=None, messageSubject=None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 	driverDirectory = forceFilename(driverDirectory)
 	destination = forceFilename(destination)
 	devices = forceList(devices)

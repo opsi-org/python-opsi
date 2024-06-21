@@ -19,7 +19,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from OPSI.Backend.SQL import SQL, SQLBackend, SQLBackendObjectModificationTracker
 from OPSI.Types import forceFilename
 
-__all__ = ('SQLite', 'SQLiteBackend', 'SQLiteObjectBackendModificationTracker')
+__all__ = ("SQLite", "SQLiteBackend", "SQLiteObjectBackendModificationTracker")
 
 
 logger = get_logger("opsi.general")
@@ -27,7 +27,8 @@ logger = get_logger("opsi.general")
 
 class SQLite(SQL):
 	"""Class handling basic SQLite functionality."""
-	AUTOINCREMENT = ''
+
+	AUTOINCREMENT = ""
 	ALTER_TABLE_CHANGE_SUPPORTED = False
 	ESCAPED_BACKSLASH = "\\"
 	ESCAPED_APOSTROPHE = "''"
@@ -38,13 +39,13 @@ class SQLite(SQL):
 		super().__init__(**kwargs)
 
 		self._database = ":memory:"
-		self._databaseCharset = 'utf8'
+		self._databaseCharset = "utf8"
 
-		for (option, value) in kwargs.items():
+		for option, value in kwargs.items():
 			option = option.lower()
-			if option == 'database':
+			if option == "database":
 				self._database = forceFilename(value)
-			elif option == 'databasecharset':
+			elif option == "databasecharset":
 				self._databaseCharset = str(value)
 
 		try:
@@ -67,29 +68,22 @@ class SQLite(SQL):
 		pass
 
 	def init_connection(self) -> None:
-		uri = f'sqlite:///{self._database}'
+		uri = f"sqlite:///{self._database}"
 		logger.info("Connecting to %s", uri)
 
-		self.engine = create_engine(
-			uri,
-			encoding=self._databaseCharset
-		)
+		self.engine = create_engine(uri, encoding=self._databaseCharset)
 		self.engine._should_log_info = lambda: self.log_queries  # pylint: disable=protected-access
 
-		listen(self.engine, 'engine_connect', self.on_engine_connect)
+		listen(self.engine, "engine_connect", self.on_engine_connect)
 
-		self.session_factory = sessionmaker(
-			bind=self.engine,
-			autocommit=False,
-			autoflush=False
-		)
+		self.session_factory = sessionmaker(bind=self.engine, autocommit=False, autoflush=False)
 		self.Session = scoped_session(self.session_factory)  # pylint: disable=invalid-name
 		# self.Session = self.session_factory  # pylint: disable=invalid-name
 
 		# Test connection
 		with self.session() as session:
 			self.getTables(session)
-		logger.debug('SQLite connected: %s', self)
+		logger.debug("SQLite connected: %s", self)
 
 	def __repr__(self) -> str:
 		return f"<{self.__class__.__name__}(database={self._database})>"
@@ -113,27 +107,27 @@ class SQLite(SQL):
 		for i in self.getSet(session, 'SELECT name FROM sqlite_master WHERE type = "table";'):
 			tableName = tuple(i.values())[0].upper()
 			logger.trace(" [ %s ]", tableName)
-			fields = [j['name'] for j in self.getSet(session, f'PRAGMA table_info(`{tableName}`);')]
+			fields = [j["name"] for j in self.getSet(session, f"PRAGMA table_info(`{tableName}`);")]
 			tables[tableName] = fields
 			logger.trace("Fields in %s: %s", tableName, fields)
 
 		return tables
 
 	def getTableCreationOptions(self, table: Any) -> str:
-		return ''
+		return ""
 
 
 class SQLiteBackend(SQLBackend):
 	"""Backend holding information in SQLite form."""
 
 	def __init__(self, **kwargs) -> None:
-		self._name = 'sqlite'
+		self._name = "sqlite"
 
 		SQLBackend.__init__(self, **kwargs)
 
 		self._sql = SQLite(**kwargs)
 
-		logger.debug('SQLiteBackend created: %s', self)
+		logger.debug("SQLiteBackend created: %s", self)
 
 	def _check_module(self, module: str) -> None:
 		return
@@ -160,18 +154,18 @@ class SQLiteBackend(SQLBackend):
 			existingTables = set(tables.keys())
 
 			def removeTrailingComma(query: str) -> str:
-				if query.endswith(','):
+				if query.endswith(","):
 					return query[:-1]
 
 				return query
 
 			def finishSQLQuery(tableExists: bool, tableName: str) -> str:
 				if tableExists:
-					return ' ;\n'
-				return f'\n) {self._sql.getTableCreationOptions(tableName)};\n'
+					return " ;\n"
+				return f"\n) {self._sql.getTableCreationOptions(tableName)};\n"
 
 			def getSQLStatements() -> Generator[str, None, None]:  # pylint: disable=too-many-branches,too-many-statements
-				for (hwClass, values) in self._auditHardwareConfig.items():  # pylint: disable=too-many-nested-blocks
+				for hwClass, values in self._auditHardwareConfig.items():  # pylint: disable=too-many-nested-blocks
 					logger.debug("Processing hardware class '%s'", hwClass)
 					hardwareDeviceTableName = f"HARDWARE_DEVICE_{hwClass}"
 					hardwareConfigTableName = f"HARDWARE_CONFIG_{hwClass}"
@@ -183,15 +177,14 @@ class SQLiteBackend(SQLBackend):
 						hardwareDeviceTable = f"ALTER TABLE `{hardwareDeviceTableName}`\n"
 					else:
 						hardwareDeviceTable = (
-							f"CREATE TABLE `{hardwareDeviceTableName}` (\n"
-							f"`hardware_id` INTEGER NOT NULL {self._sql.AUTOINCREMENT},\n"
+							f"CREATE TABLE `{hardwareDeviceTableName}` (\n" f"`hardware_id` INTEGER NOT NULL {self._sql.AUTOINCREMENT},\n"
 						)
 
 					avoid_process_further_hw_dev = False
 					hardwareDeviceValuesProcessed = 0
-					for (value, valueInfo) in values.items():
+					for value, valueInfo in values.items():
 						logger.debug("  Processing value '%s'", value)
-						if valueInfo['Scope'] == 'g':
+						if valueInfo["Scope"] == "g":
 							if hardwareDeviceTableExists:
 								if value in tables[hardwareDeviceTableName]:
 									# Column exists => change
@@ -221,9 +214,9 @@ class SQLiteBackend(SQLBackend):
 
 					avoid_process_further_hw_cnf = False
 					hardwareConfigValuesProcessed = 0
-					for (value, valueInfo) in values.items():
+					for value, valueInfo in values.items():
 						logger.debug("  Processing value '%s'", value)
-						if valueInfo['Scope'] == 'i':
+						if valueInfo["Scope"] == "i":
 							if hardwareConfigTableExists:
 								if value in tables[hardwareConfigTableName]:
 									# Column exists => change
@@ -243,9 +236,9 @@ class SQLiteBackend(SQLBackend):
 						continue
 
 					if not hardwareDeviceTableExists:
-						hardwareDeviceTable += 'PRIMARY KEY (`hardware_id`)\n'
+						hardwareDeviceTable += "PRIMARY KEY (`hardware_id`)\n"
 					if not hardwareConfigTableExists:
-						hardwareConfigTable += 'PRIMARY KEY (`config_id`)\n'
+						hardwareConfigTable += "PRIMARY KEY (`config_id`)\n"
 
 					# Remove leading and trailing whitespace
 					hardwareDeviceTable = hardwareDeviceTable.strip()

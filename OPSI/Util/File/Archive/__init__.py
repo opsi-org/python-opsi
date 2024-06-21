@@ -110,11 +110,11 @@ class BaseArchive:
 		try:
 			logger.info("Executing: %s", command)
 			with subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
-
-				flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
-				fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-				flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
-				fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+				if os.name == "posix":
+					flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
+					fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+					flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
+					fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
 				if self._progressSubject:
 					self._progressSubject.setEnd(fileCount)
@@ -164,7 +164,6 @@ class BaseArchive:
 		with cd(baseDir):
 			logger.info("Executing: %s", command)
 			with subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
-
 				flags = fcntl.fcntl(proc.stdout, fcntl.F_GETFL)
 				fcntl.fcntl(proc.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 				flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)

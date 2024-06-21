@@ -41,6 +41,7 @@ import time
 from typing import Any, List
 
 from opsicommon.logging import get_logger
+# pyright: reportMissingImports=false
 from snack import (  # pylint: disable=import-error
 	Button,
 	CheckboxTree,
@@ -77,7 +78,12 @@ except Exception as error:  # pylint: disable=broad-except
 
 class MessageBox:
 	def __init__(
-		self, ui: Any, width: int = 0, height: int = 0, title: str = _("Title"), text: str = ""  # pylint: disable=unused-argument
+		self,
+		ui: Any,
+		width: int = 0,
+		height: int = 0,
+		title: str = _("Title"),
+		text: str = "",  # pylint: disable=unused-argument
 	) -> None:
 		pass
 
@@ -386,7 +392,13 @@ class SnackDualProgressBox(SnackMessageBox, ProgressObserver):
 				self.setCurrentState(self._currentState)
 
 	def progressChanged(
-		self, subject: Any, state: Any, percent: Any, timeSpend: Any, timeLeft: Any, speed: Any  # pylint: disable=unused-argument
+		self,
+		subject: Any,
+		state: Any,
+		percent: Any,
+		timeSpend: Any,
+		timeLeft: Any,
+		speed: Any,  # pylint: disable=unused-argument
 	) -> None:
 		if subject == self._overallProgressSubject:
 			self.setOverallState(state)
@@ -508,7 +520,11 @@ class UI:
 		return CopyDualProgressBox(self)
 
 	def createMessageBox(
-		self, width: int = -1, height: int = -1, title: str = _("Text"), text: str = ""  # pylint: disable=unused-argument
+		self,
+		width: int = -1,  # pylint: disable=unused-argument
+		height: int = -1,  # pylint: disable=unused-argument
+		title: str = _("Text"),  # pylint: disable=unused-argument
+		text: str = "",  # pylint: disable=unused-argument
 	) -> MessageBox:
 		return MessageBox(self)
 

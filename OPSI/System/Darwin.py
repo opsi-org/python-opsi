@@ -293,9 +293,7 @@ def parse_ioreg_output(lines: List) -> Dict:
 	return hwdata
 
 
-def hardwareInventory(
-	config, progressSubject=None
-):  # pylint: disable=unused-argument, too-many-locals, too-many-branches, too-many-statements
+def hardwareInventory(config, progressSubject=None):  # pylint: disable=unused-argument, too-many-locals, too-many-branches, too-many-statements
 	"""
 	Collect hardware information on OSX.
 
@@ -480,7 +478,7 @@ def mount(dev, mountpoint, **options):  # pylint: disable=too-many-locals
 		logger.debug("Mountpoint '%s' already mounted, umounting before mount", mountpoint)
 		umount(mountpoint)
 
-	for (key, value) in options.items():
+	for key, value in options.items():
 		options[key] = forceUnicode(value)
 
 	if dev.lower().startswith(("smb://", "cifs://", "webdav://", "webdavs://", "http://", "https://")):

@@ -64,12 +64,7 @@ def testByAudit(tempDir, destinationDir, hardwareClass, hostId):
 
 	result = integrateAdditionalWindowsDrivers(tempDir, destinationDir, [], auditHardwareOnHosts=[testData1])
 
-	expectedResult = [{
-		'devices': [],
-		'directory': u'%s/1' % destinationDir,
-		'driverNumber': 1,
-		'infFile': u'%s/1/test.inf' % destinationDir
-	}]
+	expectedResult = [{"devices": [], "directory": "%s/1" % destinationDir, "driverNumber": 1, "infFile": "%s/1/test.inf" % destinationDir}]
 
 	assert expectedResult == result
 
@@ -84,12 +79,7 @@ def testByAuditWithUnderscoreAtTheEnd(tempDir, destinationDir, hardwareClass, ho
 
 	result = integrateAdditionalWindowsDrivers(tempDir, destinationDir, [], auditHardwareOnHosts=[testData1])
 
-	expectedResult = [{
-		'devices': [],
-		'directory': u'%s/1' % destinationDir,
-		'driverNumber': 1,
-		'infFile': u'%s/1/test.inf' % destinationDir
-	}]
+	expectedResult = [{"devices": [], "directory": "%s/1" % destinationDir, "driverNumber": 1, "infFile": "%s/1/test.inf" % destinationDir}]
 
 	assert expectedResult == result
 
@@ -106,11 +96,6 @@ def testByAuditWithSKUFallback(tempDir, destinationDir, hardwareClass, hostId):
 
 	result = integrateAdditionalWindowsDrivers(tempDir, destinationDir, [], auditHardwareOnHosts=[testData1])
 
-	expectedResult = [{
-		'devices': [],
-		'directory': u'%s/1' % destinationDir,
-		'driverNumber': 1,
-		'infFile': u'%s/1/test.inf' % destinationDir
-	}]
+	expectedResult = [{"devices": [], "directory": "%s/1" % destinationDir, "driverNumber": 1, "infFile": "%s/1/test.inf" % destinationDir}]
 
 	assert expectedResult == result

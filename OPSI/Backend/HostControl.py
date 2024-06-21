@@ -15,7 +15,7 @@ import time
 from contextlib import closing
 from typing import Any, Dict, List
 
-from opsicommon.client.jsonrpc import JSONRPCClient
+from opsicommon.client.opsiservice import ServiceClient
 from opsicommon.logging import get_logger
 from opsicommon.objects import Host
 
@@ -40,7 +40,6 @@ logger = get_logger("opsi.general")
 
 
 class RpcThread(KillableThread):  # pylint: disable=too-many-instance-attributes
-
 	_USER_AGENT = f"opsi-RpcThread/{__version__}"
 
 	def __init__(  # pylint: disable=too-many-arguments
@@ -52,7 +51,7 @@ class RpcThread(KillableThread):  # pylint: disable=too-many-instance-attributes
 		password: str,
 		method: str,
 		params: List = None,
-		hostPort: int = 0
+		hostPort: int = 0,
 	) -> None:
 		KillableThread.__init__(self)
 		self.hostControlBackend = hostControlBackend
@@ -69,21 +68,17 @@ class RpcThread(KillableThread):  # pylint: disable=too-many-instance-attributes
 		else:
 			hostPort = self.hostControlBackend._opsiclientdPort
 
-		self.jsonrpc = JSONRPCClient(
+		self.jsonrpc = ServiceClient(
 			address=f"https://{self.address}:{hostPort}/opsiclientd",
 			username=forceUnicode(username),
 			password=forceUnicode(password),
-			connect_timeout=max(self.hostControlBackend._hostRpcTimeout, 0),
-			read_timeout=max(self.hostControlBackend._hostRpcTimeout, 0),
-			connect_on_init=False,
-			create_methods=False,
-			retry=0,
+			connect_timeout=max(self.hostControlBackend._hostRpcTimeout, 0)
 		)
 
 	def run(self) -> None:
 		self.started = time.time()
 		try:
-			self.result = self.jsonrpc.execute_rpc(self.method, self.params)
+			self.result = self.jsonrpc.jsonrpc(self.method, self.params)
 		except Exception as err:  # pylint: disable=broad-except
 			self.error = str(err)
 		finally:
@@ -109,7 +104,9 @@ class ConnectionThread(KillableThread):
 		timeout = max(self.hostControlBackend._hostReachableTimeout, 0)  # pylint: disable=protected-access
 
 		logger.info(
-			"Trying connection to '%s:%d'", self.address, self.hostControlBackend._opsiclientdPort  # pylint: disable=protected-access
+			"Trying connection to '%s:%d'",
+			self.address,
+			self.hostControlBackend._opsiclientdPort,  # pylint: disable=protected-access
 		)
 		try:
 			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -209,9 +206,7 @@ class HostControlBackend(ExtendedBackend):
 			raise BackendUnaccomplishableError(f"Failed to get ip address for host '{host.id}'")
 		return address
 
-	def _opsiclientdRpc(
-		self, hostIds: List[str], method: str, params: List = None, timeout: int = None
-	):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+	def _opsiclientdRpc(self, hostIds: List[str], method: str, params: List = None, timeout: int = None):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		if not hostIds:
 			raise BackendMissingDataError("No matching host ids found")
 		hostIds = forceHostIdList(hostIds)
@@ -400,11 +395,7 @@ class HostControlBackend(ExtendedBackend):
 		return self._opsiclientdRpc(hostIds=hostIds, method="getActiveSessions", params=[])
 
 	def hostControl_opsiclientdRpc(
-		self,
-		method: str,
-		params: List[Any] = None,
-		hostIds: List[str] = None,
-		timeout: int = None
+		self, method: str, params: List[Any] = None, hostIds: List[str] = None, timeout: int = None
 	) -> Dict[str, Any]:
 		hostIds = self._context.host_getIdents(id=hostIds or [], returnType="unicode")  # pylint: disable=maybe-no-member
 		return self._opsiclientdRpc(hostIds=hostIds, method=method, params=params or [], timeout=timeout)
@@ -473,7 +464,7 @@ class HostControlBackend(ExtendedBackend):
 		waitForEnding: bool = True,
 		captureStderr: bool = True,
 		encoding: str = None,
-		timeout: int = 300
+		timeout: int = 300,
 	) -> Dict[str, Any]:
 		command = forceUnicode(command)
 		hostIds = self._context.host_getIdents(id=hostIds, returnType="unicode")  # pylint: disable=maybe-no-member

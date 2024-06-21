@@ -12,7 +12,7 @@ from OPSI.Backend.Base.Backend import Backend
 from OPSI.Backend.HostControl import HostControlBackend
 from OPSI.Exceptions import BackendMissingDataError
 
-__all__ = ('HostControlSafeBackend', )
+__all__ = ("HostControlSafeBackend",)
 
 
 class HostControlSafeBackend(HostControlBackend):
@@ -22,11 +22,11 @@ class HostControlSafeBackend(HostControlBackend):
 	"""
 
 	def __init__(self, backend: Backend, **kwargs) -> None:
-		self._name = 'hostcontrolsafe'
+		self._name = "hostcontrolsafe"
 		HostControlBackend.__init__(self, backend, **kwargs)
 
 	def hostControlSafe_start(self, hostIds: List[str] = None) -> Dict[str, Any]:
-		''' Switches on remote computers using WOL. '''
+		"""Switches on remote computers using WOL."""
 		if not hostIds:
 			raise BackendMissingDataError("No matching host ids found")
 		return HostControlBackend.hostControl_start(self, hostIds or [])
@@ -47,12 +47,7 @@ class HostControlSafeBackend(HostControlBackend):
 		return HostControlBackend.hostControl_fireEvent(self, event, hostIds or [])
 
 	def hostControlSafe_showPopup(  # pylint: disable=too-many-arguments
-		self,
-		message: str,
-		hostIds: List[str] = None,
-		mode: str = "prepend",
-		addTimestamp: bool = True,
-		displaySeconds: float = 0
+		self, message: str, hostIds: List[str] = None, mode: str = "prepend", addTimestamp: bool = True, displaySeconds: float = 0
 	) -> Dict[str, Any]:
 		if not hostIds:
 			raise BackendMissingDataError("No matching host ids found")
@@ -69,11 +64,7 @@ class HostControlSafeBackend(HostControlBackend):
 		return HostControlBackend.hostControl_getActiveSessions(self, hostIds or [])
 
 	def hostControlSafe_opsiclientdRpc(
-		self,
-		method: str,
-		params: List = None,
-		hostIds: List[str] = None,
-		timeout: int = None
+		self, method: str, params: List = None, hostIds: List[str] = None, timeout: int = None
 	) -> Dict[str, Any]:
 		if not hostIds:
 			raise BackendMissingDataError("No matching host ids found")
@@ -91,7 +82,7 @@ class HostControlSafeBackend(HostControlBackend):
 		waitForEnding: bool = True,
 		captureStderr: bool = True,
 		encoding: str = None,
-		timeout: int = 300
+		timeout: int = 300,
 	):
 		if not hostIds:
 			raise BackendMissingDataError("No matching host ids found")

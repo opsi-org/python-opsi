@@ -1943,7 +1943,7 @@ class Harddisk:  # pylint: disable=too-many-instance-attributes,too-many-public-
 
 		try:
 			system = forceUnicodeLower(system)
-
+			ms_sys_version = ""
 			try:
 				logger.debug("Try to determine ms-sys version")
 				cmd = f"{which('ms-sys')} -v"
@@ -4035,7 +4035,7 @@ def setLocalSystemTime(timestring):
 		raise ValueError("Invalid timestring given. It should be in format like: '2014-07-15 13:20:24.085661'")
 
 	try:
-		dt = datetime.datetime.strptime(timestring, "%Y-%m-%d %H:%M:%S.%f")
+		dt = datetime.datetime.strptime(timestring, "%Y-%m-%d %H:%M:%S.%f")  # pylint: disable=no-member
 		logger.info("Setting Systemtime Time to %s", timestring)
 		systemTime = f'date --set="{dt.year}-{dt.month}-{dt.day} {dt.hour}:{dt.minute}:{dt.second}.{dt.microsecond}"'
 		subprocess.call([systemTime])

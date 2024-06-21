@@ -9,8 +9,7 @@ Testing backend cleaning.
 from OPSI.Object import LocalbootProduct, ProductOnDepot
 from OPSI.Util.Task.CleanupBackend import cleanupBackend, cleanUpProducts
 
-from .test_backend_replicator import (
-	checkIfBackendIsFilled, fillBackend, fillBackendWithHosts)
+from .test_backend_replicator import checkIfBackendIsFilled, fillBackend, fillBackendWithHosts
 
 
 def testCleanupBackend(cleanableDataBackend):
@@ -23,14 +22,14 @@ def testCleanupBackend(cleanableDataBackend):
 
 
 def testCleaninUpProducts(cleanableDataBackend):
-	productIdToClean = 'dissection'
+	productIdToClean = "dissection"
 
 	prod1 = LocalbootProduct(productIdToClean, 1, 1)
 	prod12 = LocalbootProduct(productIdToClean, 1, 2)
 	prod13 = LocalbootProduct(productIdToClean, 1, 3)
-	prod2 = LocalbootProduct(productIdToClean + '2', 2, 1)
-	prod3 = LocalbootProduct('unhallowed', 3, 1)
-	prod32 = LocalbootProduct('unhallowed', 3, 2)
+	prod2 = LocalbootProduct(productIdToClean + "2", 2, 1)
+	prod3 = LocalbootProduct("unhallowed", 3, 1)
+	prod32 = LocalbootProduct("unhallowed", 3, 2)
 
 	products = [prod1, prod12, prod13, prod2, prod3, prod32]
 	for p in products:

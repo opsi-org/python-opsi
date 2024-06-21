@@ -21,6 +21,8 @@ priority = "primary"
 
 [tool.ruff]
 line-length = 140
+
+[tool.ruff.lint]
 ignore = [ "F401", "E402", "F403", "F405",]
 
 [tool.poetry.dependencies]

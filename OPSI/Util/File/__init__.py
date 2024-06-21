@@ -20,7 +20,7 @@ import threading
 import time
 from configparser import (  # pylint: disable=deprecated-class
 	RawConfigParser,
-	SafeConfigParser,
+	ConfigParser,
 )
 from io import StringIO
 from itertools import islice
@@ -59,8 +59,8 @@ if os.name == "posix":
 	import grp
 	import pwd
 
+# pyright: reportMissingModuleSource=false
 if os.name == "nt":
-	# pyright: reportMissingImports=false
 	import pywintypes  # pylint: disable=import-error
 	import win32con  # pylint: disable=import-error
 	import win32file  # pylint: disable=import-error
@@ -113,27 +113,28 @@ class File:
 		if os.name == "nt":
 			logger.warning("Not implemented on windows")
 			return
-		uid = -1
-		if isinstance(user, int):
-			if user > -1:
-				uid = user
-		elif user is not None:
-			try:
-				uid = pwd.getpwnam(user)[2]
-			except KeyError as err:
-				raise ValueError(f"Unknown user '{user}'") from err
+		if os.name == "posix":
+			uid = -1
+			if isinstance(user, int):
+				if user > -1:
+					uid = user
+			elif user is not None:
+				try:
+					uid = pwd.getpwnam(user)[2]
+				except KeyError as err:
+					raise ValueError(f"Unknown user '{user}'") from err
 
-		gid = -1
-		if isinstance(group, int):
-			if group > -1:
-				gid = group
-		elif group is not None:
-			try:
-				gid = grp.getgrnam(group)[2]
-			except KeyError as err:
-				raise ValueError(f"Unknown group '{group}'") from err
+			gid = -1
+			if isinstance(group, int):
+				if group > -1:
+					gid = group
+			elif group is not None:
+				try:
+					gid = grp.getgrnam(group)[2]
+				except KeyError as err:
+					raise ValueError(f"Unknown group '{group}'") from err
 
-		os.chown(self._filename, uid, gid)
+			os.chown(self._filename, uid, gid)
 
 	def chmod(self, mode):
 		mode = forceOct(mode)
@@ -609,7 +610,7 @@ class IniFile(ConfigFile):
 		if self._raw:
 			self._configParser = RawConfigParser()
 		else:
-			self._configParser = SafeConfigParser()
+			self._configParser = ConfigParser()
 
 		try:
 			self._configParser.read_file(StringIO("\r\n".join(lines)))

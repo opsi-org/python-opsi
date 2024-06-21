@@ -114,9 +114,7 @@ class ProductPackageFile:
 		self.runPostinst()
 		self.cleanup()
 
-	def unpackSource(
-		self, destinationDir=".", newProductId=None, progressSubject=None
-	):  # pylint: disable=too-many-branches,too-many-statements
+	def unpackSource(self, destinationDir=".", newProductId=None, progressSubject=None):  # pylint: disable=too-many-branches,too-many-statements
 		logger.info("Extracting package source from '%s'", self.packageFile)
 		if progressSubject:
 			progressSubject.setMessage(_("Extracting package source from '%s'") % self.packageFile)
@@ -333,13 +331,14 @@ class ProductPackageFile:
 
 			productClientDataDir = self.getProductClientDataDir()
 
-			uid = -1
-			if os.geteuid() == 0:
-				uid = pwd.getpwnam(DEFAULT_CLIENT_DATA_USER)[2]
-			gid = grp.getgrnam(DEFAULT_CLIENT_DATA_GROUP)[2]
+			if os.name == "posix":
+				uid = -1
+				if os.geteuid() == 0:
+					uid = pwd.getpwnam(DEFAULT_CLIENT_DATA_USER)[2]
+				gid = grp.getgrnam(DEFAULT_CLIENT_DATA_GROUP)[2]
 
-			os.chown(productClientDataDir, uid, gid)
-			os.chmod(productClientDataDir, 0o2770)
+				os.chown(productClientDataDir, uid, gid)
+				os.chmod(productClientDataDir, 0o2770)
 
 			for filename in self.getClientDataFiles():
 				path = os.path.join(productClientDataDir, filename)
@@ -429,9 +428,7 @@ class ProductPackageFile:
 			with open(script, "rb") as file:
 				data = file.read()
 			if data.startswith(b"#!"):
-				new_data = re.sub(
-					rb"(^|\s|/)python3?(\s+)", rb"\g<1>opsi-python\g<2>", data
-				)  # pylint: disable=anomalous-backslash-in-string
+				new_data = re.sub(rb"(^|\s|/)python3?(\s+)", rb"\g<1>opsi-python\g<2>", data)  # pylint: disable=anomalous-backslash-in-string
 				if b"\r\n" in data:
 					logger.info("Replacing dos line breaks in %s", script)
 					new_data = new_data.replace(b"\r\n", b"\n")

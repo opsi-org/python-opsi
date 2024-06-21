@@ -27,7 +27,7 @@ except ImportError as ierr:
 try:
 	which("mysqldump")
 	mysqldump = True
-except Exception as error:
+except Exception:
 	mysqldump = False
 
 
@@ -211,9 +211,7 @@ config = {{
 "fixedAddressFormat":	  u"IP", # or FQDN
 "defaultClientParameters": {{ "next-server": localip, "filename": u"linux/pxelinux.0" }}
 }}
-""".format(
-				dhcpdConfig
-			)
+""".format(dhcpdConfig)
 		)
 
 	with open(dhcpdConfig, "w") as config:
@@ -250,9 +248,7 @@ config = {{
 	"baseDir":	 u"{0}",
 	"hostKeyFile": u"{1}",
 }}
-""".format(
-				configDataFolder, keyFile
-			)
+""".format(configDataFolder, keyFile)
 		)
 
 	return configDataFolder, keyFile
@@ -309,9 +305,7 @@ config = {{
 	"connectionPoolMaxOverflow": {connectionPoolMaxOverflow},
 	"connectionPoolTimeout":	 {connectionPoolTimeout}
 }}
-""".format(
-				**MySQLconfiguration
-			)
+""".format(**MySQLconfiguration)
 		)
 
 	return MySQLconfiguration
@@ -362,9 +356,7 @@ host_.*			: {0}, opsipxeconfd, dhcpd
 productOnClient_.* : {0}, opsipxeconfd
 configState_.*	 : {0}, opsipxeconfd
 .*				 : {0}
-""".format(
-					dataBackend
-				)
+""".format(dataBackend)
 			)
 	except IOError as err:
 		if err.errno != 17:  # 17 is File exists

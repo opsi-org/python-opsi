@@ -1430,17 +1430,19 @@ class OpsiBackupArchive(tarfile.TarFile):
 
 		:rtype: dict
 		"""
-		sysinfo = SysInfo()
+		if os.name == "posix":
+			sysinfo = SysInfo()
+			return {
+				"hostname": sysinfo.hostname,
+				"fqdn": sysinfo.fqdn,
+				"domainname": sysinfo.domainname,
+				"distribution": sysinfo.distribution,
+				"sysVersion": sysinfo.sysVersion,
+				"distributionId": sysinfo.distributionId,
+				"opsiVersion": LIBRARY_VERSION,
+			}
+		return {}
 
-		return {
-			"hostname": sysinfo.hostname,
-			"fqdn": sysinfo.fqdn,
-			"domainname": sysinfo.domainname,
-			"distribution": sysinfo.distribution,
-			"sysVersion": sysinfo.sysVersion,
-			"distributionId": sysinfo.distributionId,
-			"opsiVersion": LIBRARY_VERSION,
-		}
 
 	def _readSysInfo(self):
 		sysInfo = {}
@@ -1566,11 +1568,12 @@ element of the tuple is replace with the second element.
 
 			shutil.copyfile(path, dest)
 			os.utime(dest, (member.mtime, member.mtime))
-			try:
-				os.chmod(dest, member.mode)
-				os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
-			except Exception as err:  # pylint: disable=broad-except
-				logger.warning("Failed to restore file permissions on %s: %s", dest, err)
+			if os.name == "posix":
+				try:
+					os.chmod(dest, member.mode)
+					os.chown(dest, pwd.getpwnam(member.uname)[2], grp.getgrnam(member.gname)[2])
+				except Exception as err:  # pylint: disable=broad-except
+					logger.warning("Failed to restore file permissions on %s: %s", dest, err)
 		finally:
 			os.close(tf)
 			os.remove(path)
@@ -1722,8 +1725,9 @@ element of the tuple is replace with the second element.
 				fd, name = tempfile.mkstemp(dir=self.tempdir)
 				try:
 					with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=get_subprocess_environment()) as proc:
-						flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
-						fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+						if os.name == "posix":
+							flags = fcntl.fcntl(proc.stderr, fcntl.F_GETFL)
+							fcntl.fcntl(proc.stderr, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
 						out = proc.stdout.readline()
 

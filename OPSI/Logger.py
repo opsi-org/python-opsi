@@ -5,6 +5,7 @@
 """
 opsi python library - Logger
 """
+
 import logging
 import os
 import warnings

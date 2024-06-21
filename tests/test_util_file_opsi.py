@@ -489,7 +489,6 @@ def testParsingPackageContentFile(outsideFile, outsideDir):
 @pytest.fixture
 def emptyFile():
 	with workInTemporaryDirectory() as tempDir:
-
 		path = os.path.join(tempDir, "empty")
 		with open(path, "w"):
 			pass

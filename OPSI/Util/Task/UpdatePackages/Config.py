@@ -93,7 +93,6 @@ def splitAndStrip(string, sep):
 
 
 class ConfigurationParser:  # pylint: disable=too-few-public-methods
-
 	TIME_REGEX = re.compile(r"^\d{1,2}:\d{1,2}$")
 
 	def __init__(self, configFile, backend=None, depotId=None, depotKey=None):
@@ -131,7 +130,7 @@ overriden based on values in configuration file.
 			configIni = iniFile.parse()
 			for section in configIni.sections():
 				if section.lower() == "general":
-					for (option, value) in configIni.items(section):
+					for option, value in configIni.items(section):
 						if option.lower() == "packagedir":
 							config["packageDir"] = forceFilename(value.strip())
 						elif option.lower() == "logfile":
@@ -154,7 +153,7 @@ overriden based on values in configuration file.
 							config["ignoreErrors"] = forceBool(value.strip())
 
 				elif section.lower() == "notification":
-					for (option, value) in configIni.items(section):
+					for option, value in configIni.items(section):
 						if option.lower() == "active":
 							config["notification"] = forceBool(value)
 						elif option.lower() == "smtphost":
@@ -176,7 +175,7 @@ overriden based on values in configuration file.
 							config["receivers"] = [forceEmailAddress(receiver) for receiver in splitAndStrip(value, ",")]
 
 				elif section.lower() == "wol":
-					for (option, value) in configIni.items(section):
+					for option, value in configIni.items(section):
 						if option.lower() == "active":
 							config["wolAction"] = forceBool(value.strip())
 						elif option.lower() == "excludeproductids":
@@ -189,7 +188,7 @@ overriden based on values in configuration file.
 								config["wolStartGap"] = 0
 
 				elif section.lower() == "installation":
-					for (option, value) in configIni.items(section):
+					for option, value in configIni.items(section):
 						if option.lower() == "windowstart":
 							if not value.strip():
 								continue
@@ -263,7 +262,7 @@ overriden based on values in configuration file.
 		verifyCert = False
 		baseUrl = None
 		opsiDepotId = None
-		for (option, value) in config.items(section):
+		for option, value in config.items(section):
 			option = option.lower()
 			value = value.strip()
 			if option == "active":
@@ -320,7 +319,7 @@ overriden based on values in configuration file.
 		else:
 			raise MissingConfigurationValueError(f"Repository section '{section}': neither baseUrl nor opsiDepotId set")
 
-		for (option, value) in config.items(section):
+		for option, value in config.items(section):
 			if option.lower() == "username":
 				repository.username = forceUnicode(value.strip())
 			elif option.lower() == "password":

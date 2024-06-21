@@ -159,6 +159,7 @@ def insertDHCPDRestartCommand(dhcpBackendConfigFile, restartCommand):
 	with open(dhcpBackendConfigFile, encoding="utf-8") as configFile:
 		config = configFile.read()
 
+	command = ""
 	for line in config.split("\n"):
 		if "reloadConfigCommand" in line and not line.startswith("#"):
 			_, command = line.split(":", 1)

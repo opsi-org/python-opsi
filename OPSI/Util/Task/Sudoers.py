@@ -19,6 +19,7 @@ Functionality to patch a sudoers file on a Linux system.
 
 	Avoid duplicating settings.
 """
+
 import codecs
 import shutil
 import time

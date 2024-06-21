@@ -187,7 +187,7 @@ def addDependentProductOnClients(
 		pocsByClientIdAndProductId[productOnClient.clientId][productOnClient.productId] = productOnClient
 
 	dependendProductOnClients = []
-	for (clientId, productOnClientByProductId) in pocsByClientIdAndProductId.items():
+	for clientId, productOnClientByProductId in pocsByClientIdAndProductId.items():
 		logger.debug("Adding dependent productOnClients for client %s", clientId)
 
 		addedInfo = {}
@@ -705,7 +705,7 @@ def generateProductSequenceFromRequPairs_algorithm2(  # pylint: disable=too-many
 
 	requirementsByClasses = defaultdict(list)
 
-	for (prod1, prod2) in setupRequirements:
+	for prod1, prod2 in setupRequirements:
 		logger.debug("First product: %s", prod1)
 		if prod1 not in productById:
 			logger.debug("Product %s is requested but not available", prod1)

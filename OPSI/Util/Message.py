@@ -7,6 +7,7 @@ opsi python library - Message
 
 Working with subjects and progress information.
 """
+
 from __future__ import annotations
 
 import time

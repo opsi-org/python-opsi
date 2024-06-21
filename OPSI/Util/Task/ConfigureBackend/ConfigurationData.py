@@ -7,6 +7,7 @@ Configuration data for the backend.
 
 .. versionadded:: 4.0.6.1
 """
+
 import codecs
 import os
 import re

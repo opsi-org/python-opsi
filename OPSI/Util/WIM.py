@@ -15,7 +15,7 @@ from OPSI.System import execute, which
 from OPSI.Types import forceList, forceProductId
 from OPSI.Util import getfqdn
 
-__all__ = ('getImageInformation', 'parseWIM', 'writeImageInformation')
+__all__ = ("getImageInformation", "parseWIM", "writeImageInformation")
 
 logger = get_logger("opsi.general")
 
@@ -28,16 +28,16 @@ def parseWIM(wimPath):
 
 	:return: a list of images. These have attributes `name`, `languages` and `default_language`.
 	"""
-	Image = namedtuple("Image", 'name languages default_language')
+	Image = namedtuple("Image", "name languages default_language")
 
 	logger.notice("Detected the following images:")
 	images = []
 	for image in getImageInformation(wimPath):
-		logger.notice(image['name'])
-		images.append(Image(image['name'], image.get('languages', tuple()), image.get('default language', None)))
+		logger.notice(image["name"])
+		images.append(Image(image["name"], image.get("languages", tuple()), image.get("default language", None)))
 
 	if not images:
-		raise ValueError('Could not find any images')
+		raise ValueError("Could not find any images")
 
 	return images
 
@@ -54,7 +54,7 @@ def getImageInformation(imagePath):
 		raise OSError(f"File '{imagePath}' not found!")
 
 	try:
-		imagex = which('wimlib-imagex')
+		imagex = which("wimlib-imagex")
 	except Exception as err:
 		logger.debug(err, exc_info=True)
 		logger.error("Unable to find 'wimlib-imagex', please install 'wimtools': %s", err)
@@ -62,17 +62,17 @@ def getImageInformation(imagePath):
 
 	imageinfo = {}
 	for line in execute(f"{imagex} info '{imagePath}'"):
-		if line and ':' in line:
-			key, value = line.split(':', 1)
+		if line and ":" in line:
+			key, value = line.split(":", 1)
 			key = key.strip().lower()
 			value = value.strip()
 
-			if key == 'languages':
+			if key == "languages":
 				langs = value
-				if ' ' in langs:
-					langs = langs.split(' ')
-				elif ',' in langs:
-					langs = langs.split(',')
+				if " " in langs:
+					langs = langs.split(" ")
+				elif "," in langs:
+					langs = langs.split(",")
 				else:
 					langs = [langs]
 
@@ -85,7 +85,7 @@ def getImageInformation(imagePath):
 
 			imageinfo[key] = value
 		elif not line and imageinfo:
-			if 'name' in imageinfo:  # Do not return file information.
+			if "name" in imageinfo:  # Do not return file information.
 				logger.debug("Collected information: %s", imageinfo)
 				yield imageinfo
 
@@ -111,7 +111,7 @@ def writeImageInformation(backend, productId, imagenames, languages=None, defaul
 		raise ValueError(f"Not a valid productId: '{productId}'")
 	productId = forceProductId(productId)
 
-	productProperty = _getProductProperty(backend, productId, 'imagename')
+	productProperty = _getProductProperty(backend, productId, "imagename")
 	productProperty.possibleValues = imagenames
 	if productProperty.defaultValues:
 		if productProperty.defaultValues[0] not in imagenames:
@@ -126,7 +126,11 @@ def writeImageInformation(backend, productId, imagenames, languages=None, defaul
 
 	if languages:
 		logger.debug("Writing detected languages...")
-		productPropertyList = [(_getProductProperty(backend, productId, "system_language"), "system_language"), (_getProductProperty(backend, productId, "winpe_uilanguage"), "winpe_uilanguage"), (_getProductProperty(backend, productId, "winpe_uilanguage_fallback"), "winpe_uilanguage_fallback")]
+		productPropertyList = [
+			(_getProductProperty(backend, productId, "system_language"), "system_language"),
+			(_getProductProperty(backend, productId, "winpe_uilanguage"), "winpe_uilanguage"),
+			(_getProductProperty(backend, productId, "winpe_uilanguage_fallback"), "winpe_uilanguage_fallback"),
+		]
 		for _, productProperty in enumerate(productPropertyList):
 			productProperty[0].possibleValues = forceList(languages)
 
@@ -141,10 +145,7 @@ def writeImageInformation(backend, productId, imagenames, languages=None, defaul
 
 
 def _getProductProperty(backend, productId, propertyId):
-	productFilter = {
-		"productId": productId,
-		"propertyId": propertyId
-	}
+	productFilter = {"productId": productId, "propertyId": propertyId}
 	properties = backend.productProperty_getObjects(**productFilter)
 	logger.debug("Properties: %s", properties)
 
@@ -161,9 +162,9 @@ def _getProductProperty(backend, productId, propertyId):
 			raise RuntimeError(f"Too many products '{productId}' on depot {serverId}")
 
 		prodOnDepot = prodOnDepot[0]
-		productFilter['packageVersion'] = prodOnDepot.packageVersion
-		productFilter['productVersion'] = prodOnDepot.productVersion
-		logger.debug('New filter: %s', productFilter)
+		productFilter["packageVersion"] = prodOnDepot.packageVersion
+		productFilter["productVersion"] = prodOnDepot.productVersion
+		logger.debug("New filter: %s", productFilter)
 		properties = backend.productProperty_getObjects(**productFilter)
 		logger.debug("Properties: %s", properties)
 

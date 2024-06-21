@@ -68,9 +68,7 @@ class EmailNotifier(BaseNotifier):  # pylint: disable=too-many-instance-attribut
 	Notify by sending an email.
 	"""
 
-	def __init__(
-		self, smtphost="localhost", smtpport=25, subject="opsi product updater", sender="", receivers=None
-	):  # pylint: disable=too-many-arguments
+	def __init__(self, smtphost="localhost", smtpport=25, subject="opsi product updater", sender="", receivers=None):  # pylint: disable=too-many-arguments
 		super().__init__()
 
 		self.receivers = forceUnicodeList(receivers or [])

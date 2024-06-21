@@ -21,14 +21,14 @@ CommandCollection = namedtuple("CommandCollection", "minimal full")
 @contextmanager
 def workWithEmptyCommandFile(backend):
 	with workInTemporaryDirectory():
-		filename = u'test_file.conf'
+		filename = "test_file.conf"
 
 		with open(filename, "w"):
 			pass
 
-		with mock.patch.object(backend._backend, '_getSSHCommandCustomFilename', return_value=filename):
-			with mock.patch.object(backend._backend, '_getSSHCommandFilenames', return_value=[filename]):
-				with mock.patch.object(backend._backend, '_isBuiltIn', return_value=False):
+		with mock.patch.object(backend._backend, "_getSSHCommandCustomFilename", return_value=filename):
+			with mock.patch.object(backend._backend, "_getSSHCommandFilenames", return_value=[filename]):
+				with mock.patch.object(backend._backend, "_isBuiltIn", return_value=False):
 					yield
 
 
@@ -42,40 +42,37 @@ def workWithBrokenCommandFile(backend):
 			"position": 30,
 			"needSudo": True,
 			"tooltipText": "Rechte mittels opsi-set-rights setzen",
-			"parentMenuText": "opsi"
+			"parentMenuText": "opsi",
 		}
 
-		filename = u'test_file.conf'
+		filename = "test_file.conf"
 
 		with open(filename, "w") as f:
 			json.dump(element, f)
 
-		with mock.patch.object(backend._backend, '_getSSHCommandCustomFilename', return_value=filename):
-			with mock.patch.object(backend._backend, '_getSSHCommandFilenames', return_value=[filename]):
-				with mock.patch.object(backend._backend, '_isBuiltIn', return_value=False):
+		with mock.patch.object(backend._backend, "_getSSHCommandCustomFilename", return_value=filename):
+			with mock.patch.object(backend._backend, "_getSSHCommandFilenames", return_value=[filename]):
+				with mock.patch.object(backend._backend, "_isBuiltIn", return_value=False):
 					yield
 
 
 def getTestCommands():
-	first = getTestCommand(u'utestmenu1', u'UTestMenu1', [u'test 1'], 5, True,  u'Test Tooltip1', u'Test Parent1')
-	second = getTestCommand(u'utestmenu2', u'UTestMenu2', [u'test 2'], 52, True,  u'Test Tooltip2', u'Test Parent2')
-	third = getTestCommand(u'utestmenu3', u'UTestMenu3', [u'test 3'], 53, True,  u'Test Tooltip3', u'Test Parent3')
+	first = getTestCommand("utestmenu1", "UTestMenu1", ["test 1"], 5, True, "Test Tooltip1", "Test Parent1")
+	second = getTestCommand("utestmenu2", "UTestMenu2", ["test 2"], 52, True, "Test Tooltip2", "Test Parent2")
+	third = getTestCommand("utestmenu3", "UTestMenu3", ["test 3"], 53, True, "Test Tooltip3", "Test Parent3")
 	return first, second, third
 
 
 def getTestCommand(commandId, menuText, commands, position, needSudo, tooltipText, parentMenuText):
-	minimal = {
-		u'menuText': menuText,
-		u'commands': commands
-	}
+	minimal = {"menuText": menuText, "commands": commands}
 	full = {
-		u'id': commandId,
-		u'menuText': menuText,
-		u'commands': commands,
-		u'needSudo': needSudo,
-		u'position': position,
-		u'tooltipText': tooltipText,
-		u'parentMenuText': parentMenuText
+		"id": commandId,
+		"menuText": menuText,
+		"commands": commands,
+		"needSudo": needSudo,
+		"position": position,
+		"tooltipText": tooltipText,
+		"parentMenuText": parentMenuText,
 	}
 	return CommandCollection(minimal, full)
 
@@ -87,13 +84,13 @@ def getTestOneCommand(mid, menuText, commands, position, needSudo, tooltipText, 
 
 def getTestCommandWithDefault(existingCommand):
 	return {
-		u'needSudo': False,
-		u'position': 0,
-		u'tooltipText': u'',
-		u'parentMenuText': None,
-		u'id': existingCommand["id"],
-		u'menuText': existingCommand[u'menuText'],
-		u'commands': existingCommand[u'commands'],
+		"needSudo": False,
+		"position": 0,
+		"tooltipText": "",
+		"parentMenuText": None,
+		"id": existingCommand["id"],
+		"menuText": existingCommand["menuText"],
+		"commands": existingCommand["commands"],
 	}
 
 
@@ -102,7 +99,10 @@ def getSSHCommandCreationParameter():
 	return [
 		[[first.minimal], [getTestCommandWithDefault(first.full)]],
 		[[first.minimal, second.minimal], [getTestCommandWithDefault(first.full), getTestCommandWithDefault(second.full)]],
-		[[first.minimal, second.minimal, third.minimal], [getTestCommandWithDefault(first.full), getTestCommandWithDefault(second.full), getTestCommandWithDefault(first.full)]],
+		[
+			[first.minimal, second.minimal, third.minimal],
+			[getTestCommandWithDefault(first.full), getTestCommandWithDefault(second.full), getTestCommandWithDefault(first.full)],
+		],
 	]
 
 
@@ -126,7 +126,7 @@ def testSSHCommandCreation(backendManager, val, expected_result):
 				command.get("position"),
 				command.get("needSudo"),
 				command.get("tooltipText"),
-				command.get("parentMenuText")
+				command.get("parentMenuText"),
 			)
 
 		compareLists(result, expected_result)
@@ -151,17 +151,17 @@ def compareLists(list1, list2):
 
 def getSSHCommandCreationExceptionsParameter():
 	return [
-		[getTestOneCommand(None, None, None, 10, True, u'', None)],
-		[getTestOneCommand(None, u'TestMenuText1', {}, 10, True, u'', None)],
-		[getTestOneCommand(None, u'TestMenuText2', [], u'', True, u'', None)],
-		[getTestOneCommand(None, u'TestMenuText3', [], u'10', u'True', u'', None)],
-		[getTestOneCommand(None, u'TestMenuText4', [u'foo'], 10, u'True', u'', None)],
-		[getTestOneCommand(None, u'TestMenuText5', [u'foo'], 10, u'True', u'', None)]
+		[getTestOneCommand(None, None, None, 10, True, "", None)],
+		[getTestOneCommand(None, "TestMenuText1", {}, 10, True, "", None)],
+		[getTestOneCommand(None, "TestMenuText2", [], "", True, "", None)],
+		[getTestOneCommand(None, "TestMenuText3", [], "10", "True", "", None)],
+		[getTestOneCommand(None, "TestMenuText4", ["foo"], 10, "True", "", None)],
+		[getTestOneCommand(None, "TestMenuText5", ["foo"], 10, "True", "", None)],
 	]
 
 
 @pytest.mark.parametrize("commandlist", getSSHCommandCreationExceptionsParameter())
-def testSSHCommandCreationExceptions(backendManager,  commandlist):
+def testSSHCommandCreationExceptions(backendManager, commandlist):
 	with workWithEmptyCommandFile(backendManager):
 		with pytest.raises(ValueError):
 			if commandlist:
@@ -172,7 +172,7 @@ def testSSHCommandCreationExceptions(backendManager,  commandlist):
 					command.get("position"),
 					command.get("needSudo"),
 					command.get("tooltipText"),
-					command.get("parentMenuText")
+					command.get("parentMenuText"),
 				)
 
 			backendManager.SSHCommand_createObjects(commandlist)
@@ -180,15 +180,15 @@ def testSSHCommandCreationExceptions(backendManager,  commandlist):
 
 def getSSHCommandUpdateExceptionsParameter():
 	return [
-		[getTestOneCommand(None, None, None, 10, True, u'', None)],
-		[getTestOneCommand(None, u'TestMenuText1', {}, 10, True, u'', None)],
-		[getTestOneCommand(None, u'TestMenuText2', [], u'10', u'True', u'', None)],
-		[getTestOneCommand(None, u'TestMenuText3', [u'foo'], 10, u'True', u'', None)]
+		[getTestOneCommand(None, None, None, 10, True, "", None)],
+		[getTestOneCommand(None, "TestMenuText1", {}, 10, True, "", None)],
+		[getTestOneCommand(None, "TestMenuText2", [], "10", "True", "", None)],
+		[getTestOneCommand(None, "TestMenuText3", ["foo"], 10, "True", "", None)],
 	]
 
 
 @pytest.mark.parametrize("commandlist", getSSHCommandCreationExceptionsParameter())
-def testSSHCommandUpdateExceptions(backendManager,  commandlist):
+def testSSHCommandUpdateExceptions(backendManager, commandlist):
 	with workWithEmptyCommandFile(backendManager):
 		with pytest.raises(Exception):
 			if commandlist:
@@ -199,7 +199,7 @@ def testSSHCommandUpdateExceptions(backendManager,  commandlist):
 					command.get("position", None),
 					command.get("needSudo", None),
 					command.get("tooltipText", None),
-					command.get("parentMenuText", None)
+					command.get("parentMenuText", None),
 				)
 
 			backendManager.SSHCommand_updateObjects(commandlist)
@@ -267,14 +267,14 @@ def testUpdatingSingleCommand(backendWithEmptyCommandFile, firstCommand):
 	assert backend.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
 	backend.SSHCommand_createObject(firstCommand.full["menuText"], firstCommand.full["commands"])
 	com1_new_full = firstCommand.full
-	com1_new_full = modifySSHCommand(com1_new_full, [u'MyNewTestCom'], 10, True, u'MyNewTooltipText', u'myParent')
+	com1_new_full = modifySSHCommand(com1_new_full, ["MyNewTestCom"], 10, True, "MyNewTooltipText", "myParent")
 	return_command = backend.SSHCommand_updateObject(
 		firstCommand.full["menuText"],
 		com1_new_full["commands"],
 		com1_new_full["position"],
 		com1_new_full["needSudo"],
 		com1_new_full["tooltipText"],
-		com1_new_full["parentMenuText"]
+		com1_new_full["parentMenuText"],
 	)
 
 	compareLists(return_command, [com1_new_full])
@@ -284,9 +284,9 @@ def testUpdatingMultipleCommands(backendWithEmptyCommandFile, firstCommand, seco
 	backend = backendWithEmptyCommandFile
 
 	com123_new_full = [
-		modifySSHCommand(firstCommand.full, [u'MyNewTestCom1'], 11, True, u'MyNewTooltipText1', u'myParent1'),
-		modifySSHCommand(secondCommand.full, [u'MyNewTestCom2'], 12, False, u'MyNewTooltipText2', u'myParent2'),
-		modifySSHCommand(thirdCommand.full, [u'MyNewTestCom3'], 13, False, u'MyNewTooltipText3', u'myParent3')
+		modifySSHCommand(firstCommand.full, ["MyNewTestCom1"], 11, True, "MyNewTooltipText1", "myParent1"),
+		modifySSHCommand(secondCommand.full, ["MyNewTestCom2"], 12, False, "MyNewTooltipText2", "myParent2"),
+		modifySSHCommand(thirdCommand.full, ["MyNewTestCom3"], 13, False, "MyNewTooltipText3", "myParent3"),
 	]
 
 	assert backend.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
@@ -311,9 +311,17 @@ def testDeletingCommands(backendManager, firstCommand, secondCommand, thirdComma
 	with workWithEmptyCommandFile(backend):
 		assert backend.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
 		backend.SSHCommand_createObjects([firstCommand.minimal, secondCommand.minimal, thirdCommand.minimal])
-		compareLists(backend.SSHCommand_deleteObjects([firstCommand.minimal["menuText"], secondCommand.minimal["menuText"], thirdCommand.minimal["menuText"]]), [])
+		compareLists(
+			backend.SSHCommand_deleteObjects(
+				[firstCommand.minimal["menuText"], secondCommand.minimal["menuText"], thirdCommand.minimal["menuText"]]
+			),
+			[],
+		)
 
 	with workWithEmptyCommandFile(backend):
 		assert backend.SSHCommand_getObjects() == [], "first return of SSHCommand_getObjects should be an empty list"
 		backend.SSHCommand_createObjects([firstCommand.minimal, secondCommand.minimal, thirdCommand.minimal])
-		compareLists(backend.SSHCommand_deleteObjects([firstCommand.minimal["menuText"], secondCommand.minimal["menuText"]]), [thirdCommandWithDefaults])
+		compareLists(
+			backend.SSHCommand_deleteObjects([firstCommand.minimal["menuText"], secondCommand.minimal["menuText"]]),
+			[thirdCommandWithDefaults],
+		)

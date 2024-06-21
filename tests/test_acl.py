@@ -17,28 +17,34 @@ from OPSI.Util import getfqdn
 from OPSI.Util.File.Opsi import BackendACLFile
 from OPSI.Backend.BackendManager import BackendAccessControl
 
-from .test_backend_replicator import (fillBackendWithHosts,
-	fillBackendWithProducts, fillBackendWithProductOnClients)
+from .test_backend_replicator import fillBackendWithHosts, fillBackendWithProducts, fillBackendWithProductOnClients
 from .test_hosts import getClients
 from .test_products import getProducts
 
 
 def testParsingBackendACLFile(tempDir):
 	expectedACL = [
-		['host_.*', [
-			{'denyAttributes': [], 'type': 'opsi_depotserver', 'ids': ['depot1.test.invalid', 'depot2.test.invalid'], 'allowAttributes': []},
-			{'denyAttributes': [], 'type': 'opsi_client', 'ids': ['self'], 'allowAttributes': ['attr1', 'attr2']},
-			{'denyAttributes': [], 'type': 'sys_user', 'ids': ['some user', 'some other user'], 'allowAttributes': []},
-			{'denyAttributes': [], 'type': 'sys_group', 'ids': ['a_group', 'group2'], 'allowAttributes': []}
-			]
+		[
+			"host_.*",
+			[
+				{
+					"denyAttributes": [],
+					"type": "opsi_depotserver",
+					"ids": ["depot1.test.invalid", "depot2.test.invalid"],
+					"allowAttributes": [],
+				},
+				{"denyAttributes": [], "type": "opsi_client", "ids": ["self"], "allowAttributes": ["attr1", "attr2"]},
+				{"denyAttributes": [], "type": "sys_user", "ids": ["some user", "some other user"], "allowAttributes": []},
+				{"denyAttributes": [], "type": "sys_group", "ids": ["a_group", "group2"], "allowAttributes": []},
+			],
 		]
 	]
 
-	aclFile = os.path.join(tempDir, 'acl.conf')
-	with open(aclFile, 'w') as exampleConfig:
-		exampleConfig.write('''
+	aclFile = os.path.join(tempDir, "acl.conf")
+	with open(aclFile, "w") as exampleConfig:
+		exampleConfig.write("""
 host_.*: opsi_depotserver(depot1.test.invalid, depot2.test.invalid); opsi_client(self,  attributes (attr1, attr2)); sys_user(some user, some other user); sys_group(a_group, group2)
-''')
+""")
 
 	assert expectedACL == BackendACLFile(aclFile).parse()
 
@@ -60,9 +66,9 @@ def testAllowingMethodsForSpecificClient(extendedConfigDataBackend):
 		password=client1.opsiHostKey,
 		backend=backend,
 		acl=[
-			['host_getObjects',   [{'type': 'opsi_client', 'ids': [client1.id], 'denyAttributes': [], 'allowAttributes': []}]],
-			['config_getObjects', [{'type': 'opsi_client', 'ids': [client2.id], 'denyAttributes': [], 'allowAttributes': []}]],
-		]
+			["host_getObjects", [{"type": "opsi_client", "ids": [client1.id], "denyAttributes": [], "allowAttributes": []}]],
+			["config_getObjects", [{"type": "opsi_client", "ids": [client2.id], "denyAttributes": [], "allowAttributes": []}]],
+		],
 	)
 
 	backendAccessControl.host_getObjects()
@@ -88,9 +94,9 @@ def testDenyingAttributes(extendedConfigDataBackend):
 		password=client1.opsiHostKey,
 		backend=backend,
 		acl=[
-			['host_getObjects', [{'type': 'self',		'ids': [], 'denyAttributes': [],			  'allowAttributes': []}]],
-			['host_getObjects', [{'type': 'opsi_client', 'ids': [], 'denyAttributes': ['opsiHostKey'], 'allowAttributes': []}]],
-		]
+			["host_getObjects", [{"type": "self", "ids": [], "denyAttributes": [], "allowAttributes": []}]],
+			["host_getObjects", [{"type": "opsi_client", "ids": [], "denyAttributes": ["opsiHostKey"], "allowAttributes": []}]],
+		],
 	)
 
 	for host in backendAccessControl.host_getObjects():
@@ -101,46 +107,46 @@ def testDenyingAttributes(extendedConfigDataBackend):
 
 
 # def testAllowingOnlyUpdatesOfSpecificAttributes(extendedConfigDataBackend):
-#	 # TODO: this test has been disabled for quite a while.
-#	 # Check why this is the cause and maybe fix. If unfixable: delete.
-#	 backend = extendedConfigDataBackend
+# # TODO: this test has been disabled for quite a while.
+# # Check why this is the cause and maybe fix. If unfixable: delete.
+# backend = extendedConfigDataBackend
 
-#	 clients = getClients()
-#	 backend.host_createObjects(clients)
-#	 client1 = clients[0]
-#	 client2 = clients[1]
-#	 client3 = clients[2]
+# clients = getClients()
+# backend.host_createObjects(clients)
+# client1 = clients[0]
+# client2 = clients[1]
+# client3 = clients[2]
 
-#	 backendAccessControl = BackendAccessControl(
-#		 username=client1.id,
-#		 password=client1.opsiHostKey,
-#		 backend=backend,
-#		 acl=[
-#			 ['host_.*',	   [{'type': 'self',		'ids': [], 'denyAttributes': [],			  'allowAttributes': []}]],
-#			 ['host_get.*',	[{'type': 'opsi_client', 'ids': [], 'denyAttributes': ['opsiHostKey'], 'allowAttributes': []}]],
-#			 ['host_update.*', [{'type': 'opsi_client', 'ids': [], 'denyAttributes': [],			  'allowAttributes': ['notes']}]]
-#		 ]
-#	 )
+# backendAccessControl = BackendAccessControl(
+# username=client1.id,
+# password=client1.opsiHostKey,
+# backend=backend,
+# acl=[
+# ['host_.*',	   [{'type': 'self',		'ids': [], 'denyAttributes': [],			  'allowAttributes': []}]],
+# ['host_get.*',	[{'type': 'opsi_client', 'ids': [], 'denyAttributes': ['opsiHostKey'], 'allowAttributes': []}]],
+# ['host_update.*', [{'type': 'opsi_client', 'ids': [], 'denyAttributes': [],			  'allowAttributes': ['notes']}]]
+# ]
+# )
 
-#	 assert len(backendAccessControl.host_getObjects()) > 1, "Backend must be able to access all objects not only itself!"
+# assert len(backendAccessControl.host_getObjects()) > 1, "Backend must be able to access all objects not only itself!"
 
-#	 client1.setDescription("Access to self is allowed.")
-#	 client1.setNotes("Access to self is allowed.")
-#	 backendAccessControl.host_updateObject(client1)
+# client1.setDescription("Access to self is allowed.")
+# client1.setNotes("Access to self is allowed.")
+# backendAccessControl.host_updateObject(client1)
 
-#	 client2.setDescription("Only updating notes is allowed.")
-#	 with pytest.raises(OPSI.Types.BackendPermissionDeniedError):
-#		 backendAccessControl.host_updateObject(client2)
+# client2.setDescription("Only updating notes is allowed.")
+# with pytest.raises(OPSI.Types.BackendPermissionDeniedError):
+# backendAccessControl.host_updateObject(client2)
 
-#	 assert not backendAccessControl.host_getObjects()
-#	 newClient3 = OPSI.Object.OpsiClient(
-#		 id=client3.id,
-#		 notes="New notes are okay"
-#	 )
-#	 # backendAccessControl.host_updateObject(newClient3)
-#	 assert not backendAccessControl.host_getObjects(id=client3.id)
-#	 client3FromBackend = backendAccessControl.host_getObjects(id=client3.id)[0]
-#	 assert client3FromBackend.notes == newClient3.notes
+# assert not backendAccessControl.host_getObjects()
+# newClient3 = OPSI.Object.OpsiClient(
+# id=client3.id,
+# notes="New notes are okay"
+# )
+# # backendAccessControl.host_updateObject(newClient3)
+# assert not backendAccessControl.host_getObjects(id=client3.id)
+# client3FromBackend = backendAccessControl.host_getObjects(id=client3.id)[0]
+# assert client3FromBackend.notes == newClient3.notes
 
 
 def testDenyingAccessToOtherObjects(extendedConfigDataBackend):
@@ -173,19 +179,23 @@ def testDenyingAccessToOtherObjects(extendedConfigDataBackend):
 
 	product1 = products[0]
 
-	backend.config_createObjects([{
-		"id": 'clientconfig.depot.id',
-		"type": "UnicodeConfig",
-	}])
-	backend.configState_create('clientconfig.depot.id', client1.getId(), values=[depotserver1['id']])
+	backend.config_createObjects(
+		[
+			{
+				"id": "clientconfig.depot.id",
+				"type": "UnicodeConfig",
+			}
+		]
+	)
+	backend.configState_create("clientconfig.depot.id", client1.getId(), values=[depotserver1["id"]])
 
 	productOnDepot1 = OPSI.Object.ProductOnDepot(
 		productId=product1.getId(),
 		productType=product1.getType(),
 		productVersion=product1.getProductVersion(),
 		packageVersion=product1.getPackageVersion(),
-		depotId=depotserver1['id'],
-		locked=False
+		depotId=depotserver1["id"],
+		locked=False,
 	)
 
 	backend.productOnDepot_createObjects([productOnDepot1])
@@ -195,15 +205,12 @@ def testDenyingAccessToOtherObjects(extendedConfigDataBackend):
 		password=client1.opsiHostKey,
 		backend=backend,
 		acl=[
-			['productOnClient_create', [{'type': 'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}]],
-		]
+			["productOnClient_create", [{"type": "self", "ids": [], "denyAttributes": [], "allowAttributes": []}]],
+		],
 	)
 
 	backendAccessControl.productOnClient_create(
-		productId=product1.id,
-		productType=product1.getType(),
-		clientId=client1.id,
-		installationStatus='installed'
+		productId=product1.id, productType=product1.getType(), clientId=client1.id, installationStatus="installed"
 	)
 
 	with pytest.raises(Exception):
@@ -211,7 +218,7 @@ def testDenyingAccessToOtherObjects(extendedConfigDataBackend):
 			productId=product1.id,
 			productType=product1.getType(),
 			clientId=client2.id,  # here is the difference
-			installationStatus='installed'
+			installationStatus="installed",
 		)
 
 
@@ -225,13 +232,7 @@ def testGettingFullAccess(extendedConfigDataBackend):
 		backend=backend,
 		username=configServer.id,
 		password=configServer.opsiHostKey,
-		acl=[
-				['.*',
-					[
-						{'type': 'opsi_depotserver', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
-					]
-				]
-			]
+		acl=[[".*", [{"type": "opsi_depotserver", "ids": [], "denyAttributes": [], "allowAttributes": []}]]],
 	)
 
 	hosts = backend.host_getObjects()
@@ -254,13 +255,7 @@ def testOnlyAccessingSelfIsPossible(extendedConfigDataBackend):
 		backend=backend,
 		username=configServer.id,
 		password=configServer.opsiHostKey,
-		acl=[
-				['.*',
-					[
-						{'type': 'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
-					]
-				]
-			]
+		acl=[[".*", [{"type": "self", "ids": [], "denyAttributes": [], "allowAttributes": []}]]],
 	)
 
 	hosts = backend.host_getObjects()
@@ -273,18 +268,12 @@ def testDenyingAccessToSpecifiedAttributes(extendedConfigDataBackend):
 	configServer, depotServer, clients = fillBackendWithHosts(backend)
 	createdHosts = list(depotServer) + list(clients) + [configServer]
 
-	denyAttributes = set(['opsiHostKey', 'description'])
+	denyAttributes = set(["opsiHostKey", "description"])
 	backend = BackendAccessControl(
 		backend=backend,
 		username=configServer.id,
 		password=configServer.opsiHostKey,
-		acl=[
-				['.*',
-					[
-						{'type': 'opsi_depotserver', 'ids': [], 'denyAttributes': denyAttributes, 'allowAttributes': []}
-					]
-				]
-			]
+		acl=[[".*", [{"type": "opsi_depotserver", "ids": [], "denyAttributes": denyAttributes, "allowAttributes": []}]]],
 	)
 
 	hosts = backend.host_getObjects()
@@ -302,18 +291,12 @@ def testGettingAccessAndOnlyAllowingSomeAttributes(extendedConfigDataBackend):
 	configServer, depotServer, clients = fillBackendWithHosts(backend)
 	createdHosts = list(depotServer) + list(clients) + [configServer]
 
-	allowAttributes = set(['type', 'id', 'description', 'notes'])
+	allowAttributes = set(["type", "id", "description", "notes"])
 	backend = BackendAccessControl(
 		backend=backend,
 		username=configServer.id,
 		password=configServer.opsiHostKey,
-		acl=[
-				['.*',
-					[
-						{'type': 'opsi_depotserver', 'ids': [], 'denyAttributes': [], 'allowAttributes': allowAttributes}
-					]
-				]
-			]
+		acl=[[".*", [{"type": "opsi_depotserver", "ids": [], "denyAttributes": [], "allowAttributes": allowAttributes}]]],
 	)
 
 	hosts = backend.host_getObjects()
@@ -331,19 +314,20 @@ def testGettingAccessButDenyingAttributesOnSelf(extendedConfigDataBackend):
 	configServer, depotServer, clients = fillBackendWithHosts(backend)
 	createdHosts = list(depotServer) + list(clients) + [configServer]
 
-	denyAttributes = set(['opsiHostKey', 'description'])
+	denyAttributes = set(["opsiHostKey", "description"])
 	backend = BackendAccessControl(
 		backend=backend,
 		username=configServer.id,
 		password=configServer.opsiHostKey,
 		acl=[
-				['.*',
-					[
-						{'type': 'opsi_depotserver', 'ids': [], 'denyAttributes': denyAttributes, 'allowAttributes': []},
-						{'type': 'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
-					]
-				]
+			[
+				".*",
+				[
+					{"type": "opsi_depotserver", "ids": [], "denyAttributes": denyAttributes, "allowAttributes": []},
+					{"type": "self", "ids": [], "denyAttributes": [], "allowAttributes": []},
+				],
 			]
+		],
 	)
 
 	hosts = backend.host_getObjects()
@@ -375,18 +359,15 @@ def testAccessingSelfProductOnClients(extendedConfigDataBackend):
 		backend=dataBackend,
 		username=client.id,
 		password=client.opsiHostKey,
-		acl=[
-				['.*',
-					[
-						{'type': 'self', 'ids': [], 'denyAttributes': [], 'allowAttributes': []}
-					]
-				]
-			]
+		acl=[[".*", [{"type": "self", "ids": [], "denyAttributes": [], "allowAttributes": []}]]],
 	)
 
 	productOnClients = backend.productOnClient_getObjects()
 	for productOnClient in productOnClients:
-		assert client.id == productOnClient.clientId, u"Expected client id %s in productOnClient, but got client id '%s'" % (client.id, productOnClient.clientId)
+		assert client.id == productOnClient.clientId, "Expected client id %s in productOnClient, but got client id '%s'" % (
+			client.id,
+			productOnClient.clientId,
+		)
 
 	for c in clients:
 		if client.id != c.id:

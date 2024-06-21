@@ -45,7 +45,7 @@ from OPSI.Util import fromJson, getfqdn, toJson
 from OPSI.Util.File import IniFile, LockableFile
 from OPSI.Util.File.Opsi import HostKeyFile, PackageControlFile
 
-__all__ = ('FileBackend', )
+__all__ = ("FileBackend",)
 
 
 logger = get_logger("opsi.general")
@@ -54,16 +54,16 @@ logger = get_logger("opsi.general")
 class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attributes,too-many-public-methods
 	"""Backend holding information in Plain textfile form."""
 
-	PRODUCT_FILENAME_REGEX = re.compile(r'^([a-zA-Z0-9_.-]+)_([\w.]+)-([\w.]+)\.(local|net)boot$')
-	PLACEHOLDER_REGEX = re.compile(r'^(.*)<([^>]+)>(.*)$')
+	PRODUCT_FILENAME_REGEX = re.compile(r"^([a-zA-Z0-9_.-]+)_([\w.]+)-([\w.]+)\.(local|net)boot$")
+	PLACEHOLDER_REGEX = re.compile(r"^(.*)<([^>]+)>(.*)$")
 
 	def __init__(self, **kwargs) -> None:  # pylint: disable=too-many-statements
-		self._name = 'file'
+		self._name = "file"
 
 		ConfigDataBackend.__init__(self, **kwargs)
 
-		self.__baseDir = '/var/lib/opsi/config'
-		self.__hostKeyFile = '/etc/opsi/pckeys'
+		self.__baseDir = "/var/lib/opsi/config"
+		self.__hostKeyFile = "/etc/opsi/pckeys"
 
 		self.__fileUser = OPSICONFD_USER
 		self.__fileGroup = FILE_ADMIN_GROUP
@@ -73,21 +73,21 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		self.__dirMode = 0o770
 
 		# Parse arguments
-		logger.trace('kwargs are: {0}'.format(kwargs))
-		for (option, value) in kwargs.items():
+		logger.trace("kwargs are: {0}".format(kwargs))
+		for option, value in kwargs.items():
 			option = option.lower()
-			if option == 'basedir':
+			if option == "basedir":
 				logger.trace('Setting __basedir to "{0}"'.format(value))
 				self.__baseDir = forceFilename(value)
-			elif option == 'hostkeyfile':
+			elif option == "hostkeyfile":
 				logger.trace('Setting __hostKeyFile to "{0}"'.format(value))
 				self.__hostKeyFile = forceFilename(value)
-			elif option in ('filegroupname', ):
+			elif option in ("filegroupname",):
 				logger.trace('Setting __fileGroup to "{0}"'.format(value))
 				self.__fileGroup = forceUnicode(value)
 				logger.trace('Setting __dirGroup to "{0}"'.format(value))
 				self.__dirGroup = forceUnicode(value)
-			elif option in ('fileusername', ):
+			elif option in ("fileusername",):
 				logger.trace('Setting __fileUser to "{0}"'.format(value))
 				self.__fileUser = forceUnicode(value)
 				logger.trace('Setting __dirUser to "{0}"'.format(value))
@@ -98,132 +98,174 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		self.__dirUid = pwd.getpwnam(self.__dirUser)[2]
 		self.__dirGid = grp.getgrnam(self.__dirGroup)[2]
 
-		self.__clientConfigDir = os.path.join(self.__baseDir, 'clients')
-		self.__depotConfigDir = os.path.join(self.__baseDir, 'depots')
-		self.__productDir = os.path.join(self.__baseDir, 'products')
-		self.__auditDir = os.path.join(self.__baseDir, 'audit')
-		self.__configFile = os.path.join(self.__baseDir, 'config.ini')
-		self.__clientGroupsFile = os.path.join(self.__baseDir, 'clientgroups.ini')
-		self.__productGroupsFile = os.path.join(self.__baseDir, 'productgroups.ini')
-		self.__clientTemplateDir = os.path.join(self.__baseDir, 'templates')
+		self.__clientConfigDir = os.path.join(self.__baseDir, "clients")
+		self.__depotConfigDir = os.path.join(self.__baseDir, "depots")
+		self.__productDir = os.path.join(self.__baseDir, "products")
+		self.__auditDir = os.path.join(self.__baseDir, "audit")
+		self.__configFile = os.path.join(self.__baseDir, "config.ini")
+		self.__clientGroupsFile = os.path.join(self.__baseDir, "clientgroups.ini")
+		self.__productGroupsFile = os.path.join(self.__baseDir, "productgroups.ini")
+		self.__clientTemplateDir = os.path.join(self.__baseDir, "templates")
 
-		self.__defaultClientTemplateName = 'pcproto'
-		self.__defaultClientTemplatePath = os.path.join(self.__clientTemplateDir, '{0}.ini'.format(self.__defaultClientTemplateName))
+		self.__defaultClientTemplateName = "pcproto"
+		self.__defaultClientTemplatePath = os.path.join(self.__clientTemplateDir, "{0}.ini".format(self.__defaultClientTemplateName))
 
 		self.__serverId = forceHostId(getfqdn())
 
 		self._mappings = {
-			'Config': [
-				{'fileType': 'ini', 'attribute': 'type', 'section': '<id>', 'option': 'type', 'json': False},
-				{'fileType': 'ini', 'attribute': 'description', 'section': '<id>', 'option': 'description', 'json': False},
-				{'fileType': 'ini', 'attribute': 'editable', 'section': '<id>', 'option': 'editable', 'json': True},
-				{'fileType': 'ini', 'attribute': 'multiValue', 'section': '<id>', 'option': 'multivalue', 'json': True},
-				{'fileType': 'ini', 'attribute': 'possibleValues', 'section': '<id>', 'option': 'possiblevalues', 'json': True},
-				{'fileType': 'ini', 'attribute': 'defaultValues', 'section': '<id>', 'option': 'defaultvalues', 'json': True}
+			"Config": [
+				{"fileType": "ini", "attribute": "type", "section": "<id>", "option": "type", "json": False},
+				{"fileType": "ini", "attribute": "description", "section": "<id>", "option": "description", "json": False},
+				{"fileType": "ini", "attribute": "editable", "section": "<id>", "option": "editable", "json": True},
+				{"fileType": "ini", "attribute": "multiValue", "section": "<id>", "option": "multivalue", "json": True},
+				{"fileType": "ini", "attribute": "possibleValues", "section": "<id>", "option": "possiblevalues", "json": True},
+				{"fileType": "ini", "attribute": "defaultValues", "section": "<id>", "option": "defaultvalues", "json": True},
 			],
-			'OpsiClient': [
-				{'fileType': 'key', 'attribute': 'opsiHostKey'},
-				{'fileType': 'ini', 'attribute': 'oneTimePassword', 'section': 'info', 'option': 'onetimepassword', 'json': False},
-				{'fileType': 'ini', 'attribute': 'description', 'section': 'info', 'option': 'description', 'json': False},
-				{'fileType': 'ini', 'attribute': 'notes', 'section': 'info', 'option': 'notes', 'json': False},
-				{'fileType': 'ini', 'attribute': 'hardwareAddress', 'section': 'info', 'option': 'hardwareaddress', 'json': False},
-				{'fileType': 'ini', 'attribute': 'ipAddress', 'section': 'info', 'option': 'ipaddress', 'json': False},
-				{'fileType': 'ini', 'attribute': 'inventoryNumber', 'section': 'info', 'option': 'inventorynumber', 'json': False},
-				{'fileType': 'ini', 'attribute': 'created', 'section': 'info', 'option': 'created', 'json': False},
-				{'fileType': 'ini', 'attribute': 'lastSeen', 'section': 'info', 'option': 'lastseen', 'json': False}
+			"OpsiClient": [
+				{"fileType": "key", "attribute": "opsiHostKey"},
+				{"fileType": "ini", "attribute": "oneTimePassword", "section": "info", "option": "onetimepassword", "json": False},
+				{"fileType": "ini", "attribute": "description", "section": "info", "option": "description", "json": False},
+				{"fileType": "ini", "attribute": "notes", "section": "info", "option": "notes", "json": False},
+				{"fileType": "ini", "attribute": "hardwareAddress", "section": "info", "option": "hardwareaddress", "json": False},
+				{"fileType": "ini", "attribute": "ipAddress", "section": "info", "option": "ipaddress", "json": False},
+				{"fileType": "ini", "attribute": "inventoryNumber", "section": "info", "option": "inventorynumber", "json": False},
+				{"fileType": "ini", "attribute": "created", "section": "info", "option": "created", "json": False},
+				{"fileType": "ini", "attribute": "lastSeen", "section": "info", "option": "lastseen", "json": False},
 			],
-			'OpsiDepotserver': [
-				{'fileType': 'key', 'attribute': 'opsiHostKey'},
-				{'fileType': 'ini', 'attribute': 'description', 'section': 'depotserver', 'option': 'description', 'json': False},
-				{'fileType': 'ini', 'attribute': 'notes', 'section': 'depotserver', 'option': 'notes', 'json': False},
-				{'fileType': 'ini', 'attribute': 'hardwareAddress', 'section': 'depotserver', 'option': 'hardwareaddress', 'json': False},
-				{'fileType': 'ini', 'attribute': 'ipAddress', 'section': 'depotserver', 'option': 'ipaddress', 'json': False},
-				{'fileType': 'ini', 'attribute': 'inventoryNumber', 'section': 'depotserver', 'option': 'inventorynumber', 'json': False},
-				{'fileType': 'ini', 'attribute': 'networkAddress', 'section': 'depotserver', 'option': 'network', 'json': False},
-				{'fileType': 'ini', 'attribute': 'isMasterDepot', 'section': 'depotserver', 'option': 'ismasterdepot', 'json': True},
-				{'fileType': 'ini', 'attribute': 'masterDepotId', 'section': 'depotserver', 'option': 'masterdepotid', 'json': False},
-				{'fileType': 'ini', 'attribute': 'depotRemoteUrl', 'section': 'depotshare', 'option': 'remoteurl', 'json': False},
-				{'fileType': 'ini', 'attribute': 'depotWebdavUrl', 'section': 'depotshare', 'option': 'webdavurl', 'json': False},
-				{'fileType': 'ini', 'attribute': 'depotLocalUrl', 'section': 'depotshare', 'option': 'localurl', 'json': False},
-				{'fileType': 'ini', 'attribute': 'repositoryRemoteUrl', 'section': 'repository', 'option': 'remoteurl', 'json': False},
-				{'fileType': 'ini', 'attribute': 'repositoryLocalUrl', 'section': 'repository', 'option': 'localurl', 'json': False},
-				{'fileType': 'ini', 'attribute': 'maxBandwidth', 'section': 'repository', 'option': 'maxbandwidth', 'json': False},
-				{'fileType': 'ini', 'attribute': 'workbenchLocalUrl', 'section': 'workbench', 'option': 'localurl', 'json': False},
-				{'fileType': 'ini', 'attribute': 'workbenchRemoteUrl', 'section': 'workbench', 'option': 'remoteurl', 'json': False},
+			"OpsiDepotserver": [
+				{"fileType": "key", "attribute": "opsiHostKey"},
+				{"fileType": "ini", "attribute": "description", "section": "depotserver", "option": "description", "json": False},
+				{"fileType": "ini", "attribute": "notes", "section": "depotserver", "option": "notes", "json": False},
+				{"fileType": "ini", "attribute": "hardwareAddress", "section": "depotserver", "option": "hardwareaddress", "json": False},
+				{"fileType": "ini", "attribute": "ipAddress", "section": "depotserver", "option": "ipaddress", "json": False},
+				{"fileType": "ini", "attribute": "inventoryNumber", "section": "depotserver", "option": "inventorynumber", "json": False},
+				{"fileType": "ini", "attribute": "networkAddress", "section": "depotserver", "option": "network", "json": False},
+				{"fileType": "ini", "attribute": "isMasterDepot", "section": "depotserver", "option": "ismasterdepot", "json": True},
+				{"fileType": "ini", "attribute": "masterDepotId", "section": "depotserver", "option": "masterdepotid", "json": False},
+				{"fileType": "ini", "attribute": "depotRemoteUrl", "section": "depotshare", "option": "remoteurl", "json": False},
+				{"fileType": "ini", "attribute": "depotWebdavUrl", "section": "depotshare", "option": "webdavurl", "json": False},
+				{"fileType": "ini", "attribute": "depotLocalUrl", "section": "depotshare", "option": "localurl", "json": False},
+				{"fileType": "ini", "attribute": "repositoryRemoteUrl", "section": "repository", "option": "remoteurl", "json": False},
+				{"fileType": "ini", "attribute": "repositoryLocalUrl", "section": "repository", "option": "localurl", "json": False},
+				{"fileType": "ini", "attribute": "maxBandwidth", "section": "repository", "option": "maxbandwidth", "json": False},
+				{"fileType": "ini", "attribute": "workbenchLocalUrl", "section": "workbench", "option": "localurl", "json": False},
+				{"fileType": "ini", "attribute": "workbenchRemoteUrl", "section": "workbench", "option": "remoteurl", "json": False},
 			],
-			'ConfigState': [
-				{'fileType': 'ini', 'attribute': 'values', 'section': 'generalconfig', 'option': '<configId>', 'json': True}
+			"ConfigState": [{"fileType": "ini", "attribute": "values", "section": "generalconfig", "option": "<configId>", "json": True}],
+			"Product": [
+				{"fileType": "pro", "attribute": "name", "object": "product"},
+				{"fileType": "pro", "attribute": "licenseRequired", "object": "product"},
+				{"fileType": "pro", "attribute": "setupScript", "object": "product"},
+				{"fileType": "pro", "attribute": "uninstallScript", "object": "product"},
+				{"fileType": "pro", "attribute": "updateScript", "object": "product"},
+				{"fileType": "pro", "attribute": "alwaysScript", "object": "product"},
+				{"fileType": "pro", "attribute": "onceScript", "object": "product"},
+				{"fileType": "pro", "attribute": "customScript", "object": "product"},
+				{"fileType": "pro", "attribute": "priority", "object": "product"},
+				{"fileType": "pro", "attribute": "description", "object": "product"},
+				{"fileType": "pro", "attribute": "advice", "object": "product"},
+				{"fileType": "pro", "attribute": "changelog", "object": "product"},
+				{"fileType": "pro", "attribute": "productClassNames", "object": "product"},
+				{"fileType": "pro", "attribute": "windowsSoftwareIds", "object": "product"},
 			],
-			'Product': [
-				{'fileType': 'pro', 'attribute': 'name', 'object': 'product'},
-				{'fileType': 'pro', 'attribute': 'licenseRequired', 'object': 'product'},
-				{'fileType': 'pro', 'attribute': 'setupScript', 'object': 'product'},
-				{'fileType': 'pro', 'attribute': 'uninstallScript', 'object': 'product'},
-				{'fileType': 'pro', 'attribute': 'updateScript', 'object': 'product'},
-				{'fileType': 'pro', 'attribute': 'alwaysScript', 'object': 'product'},
-				{'fileType': 'pro', 'attribute': 'onceScript', 'object': 'product'},
-				{'fileType': 'pro', 'attribute': 'customScript', 'object': 'product'},
-				{'fileType': 'pro', 'attribute': 'priority', 'object': 'product'},
-				{'fileType': 'pro', 'attribute': 'description', 'object': 'product'},
-				{'fileType': 'pro', 'attribute': 'advice', 'object': 'product'},
-				{'fileType': 'pro', 'attribute': 'changelog', 'object': 'product'},
-				{'fileType': 'pro', 'attribute': 'productClassNames', 'object': 'product'},
-				{'fileType': 'pro', 'attribute': 'windowsSoftwareIds', 'object': 'product'}
+			"LocalbootProduct": [{"fileType": "pro", "attribute": "userLoginScript", "object": "product"}],
+			"NetbootProduct": [{"fileType": "pro", "attribute": "pxeConfigTemplate", "object": "product"}],
+			"ProductProperty": [{"fileType": "pro", "attribute": "*"}],
+			"ProductDependency": [{"fileType": "pro", "attribute": "*"}],
+			"ProductOnDepot": [
+				{"fileType": "ini", "attribute": "productType", "section": "<productId>-state", "option": "producttype", "json": False},
+				{
+					"fileType": "ini",
+					"attribute": "productVersion",
+					"section": "<productId>-state",
+					"option": "productversion",
+					"json": False,
+				},
+				{
+					"fileType": "ini",
+					"attribute": "packageVersion",
+					"section": "<productId>-state",
+					"option": "packageversion",
+					"json": False,
+				},
+				{"fileType": "ini", "attribute": "locked", "section": "<productId>-state", "option": "locked", "json": False},
 			],
-			'LocalbootProduct': [
-				{'fileType': 'pro', 'attribute': 'userLoginScript', 'object': 'product'}
+			"ProductOnClient": [
+				{"fileType": "ini", "attribute": "productType", "section": "<productId>-state", "option": "producttype", "json": False},
+				{
+					"fileType": "ini",
+					"attribute": "actionProgress",
+					"section": "<productId>-state",
+					"option": "actionprogress",
+					"json": False,
+				},
+				{
+					"fileType": "ini",
+					"attribute": "productVersion",
+					"section": "<productId>-state",
+					"option": "productversion",
+					"json": False,
+				},
+				{
+					"fileType": "ini",
+					"attribute": "packageVersion",
+					"section": "<productId>-state",
+					"option": "packageversion",
+					"json": False,
+				},
+				{
+					"fileType": "ini",
+					"attribute": "modificationTime",
+					"section": "<productId>-state",
+					"option": "modificationtime",
+					"json": False,
+				},
+				{"fileType": "ini", "attribute": "lastAction", "section": "<productId>-state", "option": "lastaction", "json": False},
+				{"fileType": "ini", "attribute": "actionResult", "section": "<productId>-state", "option": "actionresult", "json": False},
+				{
+					"fileType": "ini",
+					"attribute": "targetConfiguration",
+					"section": "<productId>-state",
+					"option": "targetconfiguration",
+					"json": False,
+				},
+				{
+					"fileType": "ini",
+					"attribute": "installationStatus",
+					"section": "<productType>_product_states",
+					"option": "<productId>",
+					"json": False,
+				},  # pylint: disable=line-too-long
+				{
+					"fileType": "ini",
+					"attribute": "actionRequest",
+					"section": "<productType>_product_states",
+					"option": "<productId>",
+					"json": False,
+				},
 			],
-			'NetbootProduct': [
-				{'fileType': 'pro', 'attribute': 'pxeConfigTemplate', 'object': 'product'}
+			"ProductPropertyState": [
+				{"fileType": "ini", "attribute": "values", "section": "<productId>-install", "option": "<propertyId>", "json": True}
 			],
-			'ProductProperty': [
-				{'fileType': 'pro', 'attribute': '*'}
+			"Group": [
+				{"fileType": "ini", "attribute": "description", "section": "<id>", "option": "description", "json": False},
+				{"fileType": "ini", "attribute": "parentGroupId", "section": "<id>", "option": "parentgroupid", "json": False},
+				{"fileType": "ini", "attribute": "notes", "section": "<id>", "option": "notes", "json": False},
 			],
-			'ProductDependency': [
-				{'fileType': 'pro', 'attribute': '*'}
-			],
-			'ProductOnDepot': [
-				{'fileType': 'ini', 'attribute': 'productType', 'section': '<productId>-state', 'option': 'producttype', 'json': False},
-				{'fileType': 'ini', 'attribute': 'productVersion', 'section': '<productId>-state', 'option': 'productversion', 'json': False},
-				{'fileType': 'ini', 'attribute': 'packageVersion', 'section': '<productId>-state', 'option': 'packageversion', 'json': False},
-				{'fileType': 'ini', 'attribute': 'locked', 'section': '<productId>-state', 'option': 'locked', 'json': False}
-			],
-			'ProductOnClient': [
-				{'fileType': 'ini', 'attribute': 'productType', 'section': '<productId>-state', 'option': 'producttype', 'json': False},
-				{'fileType': 'ini', 'attribute': 'actionProgress', 'section': '<productId>-state', 'option': 'actionprogress', 'json': False},
-				{'fileType': 'ini', 'attribute': 'productVersion', 'section': '<productId>-state', 'option': 'productversion', 'json': False},
-				{'fileType': 'ini', 'attribute': 'packageVersion', 'section': '<productId>-state', 'option': 'packageversion', 'json': False},
-				{'fileType': 'ini', 'attribute': 'modificationTime', 'section': '<productId>-state', 'option': 'modificationtime', 'json': False},
-				{'fileType': 'ini', 'attribute': 'lastAction', 'section': '<productId>-state', 'option': 'lastaction', 'json': False},
-				{'fileType': 'ini', 'attribute': 'actionResult', 'section': '<productId>-state', 'option': 'actionresult', 'json': False},
-				{'fileType': 'ini', 'attribute': 'targetConfiguration', 'section': '<productId>-state', 'option': 'targetconfiguration', 'json': False},
-				{'fileType': 'ini', 'attribute': 'installationStatus', 'section': '<productType>_product_states', 'option': '<productId>', 'json': False},  # pylint: disable=line-too-long
-				{'fileType': 'ini', 'attribute': 'actionRequest', 'section': '<productType>_product_states', 'option': '<productId>', 'json': False},
-			],
-			'ProductPropertyState': [
-				{'fileType': 'ini', 'attribute': 'values', 'section': '<productId>-install', 'option': '<propertyId>', 'json': True}
-			],
-			'Group': [
-				{'fileType': 'ini', 'attribute': 'description', 'section': '<id>', 'option': 'description', 'json': False},
-				{'fileType': 'ini', 'attribute': 'parentGroupId', 'section': '<id>', 'option': 'parentgroupid', 'json': False},
-				{'fileType': 'ini', 'attribute': 'notes', 'section': '<id>', 'option': 'notes', 'json': False}
-			],
-			'ObjectToGroup': [
-				{'fileType': 'ini', 'attribute': '*', 'section': '<groupId>', 'option': '<objectId>', 'json': False}
-			]
+			"ObjectToGroup": [{"fileType": "ini", "attribute": "*", "section": "<groupId>", "option": "<objectId>", "json": False}],
 		}
 
-		self._mappings['UnicodeConfig'] = self._mappings['Config']
-		self._mappings['BoolConfig'] = self._mappings['Config']
-		self._mappings['OpsiConfigserver'] = self._mappings['OpsiDepotserver']
-		self._mappings['UnicodeProductProperty'] = self._mappings['ProductProperty']
-		self._mappings['BoolProductProperty'] = self._mappings['ProductProperty']
-		self._mappings['HostGroup'] = self._mappings['Group']
-		self._mappings['ProductGroup'] = self._mappings['Group']
+		self._mappings["UnicodeConfig"] = self._mappings["Config"]
+		self._mappings["BoolConfig"] = self._mappings["Config"]
+		self._mappings["OpsiConfigserver"] = self._mappings["OpsiDepotserver"]
+		self._mappings["UnicodeProductProperty"] = self._mappings["ProductProperty"]
+		self._mappings["BoolProductProperty"] = self._mappings["ProductProperty"]
+		self._mappings["HostGroup"] = self._mappings["Group"]
+		self._mappings["ProductGroup"] = self._mappings["Group"]
 
 		# Extending the settings with the attributes from the base class
-		self._mappings['LocalbootProduct'].extend(self._mappings['Product'])
-		self._mappings['NetbootProduct'].extend(self._mappings['Product'])
+		self._mappings["LocalbootProduct"].extend(self._mappings["Product"])
+		self._mappings["NetbootProduct"].extend(self._mappings["Product"])
 
 	def backend_exit(self) -> None:
 		pass
@@ -231,14 +273,18 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 	def backend_createBase(self) -> None:
 		logger.notice("Creating base path: '%s'" % (self.__baseDir))
 		for dirname in (
-			self.__baseDir, self.__clientConfigDir, self.__depotConfigDir,
-			self.__productDir, self.__auditDir, self.__clientTemplateDir
+			self.__baseDir,
+			self.__clientConfigDir,
+			self.__depotConfigDir,
+			self.__productDir,
+			self.__auditDir,
+			self.__clientTemplateDir,
 		):
 			if not os.path.isdir(dirname):
 				self._mkdir(dirname)
 			self._setRights(dirname)
 
-		defaultTemplate = os.path.join(self.__clientTemplateDir, self.__defaultClientTemplateName + '.ini')
+		defaultTemplate = os.path.join(self.__clientTemplateDir, self.__defaultClientTemplateName + ".ini")
 		for filename in (defaultTemplate, self.__configFile, self.__hostKeyFile, self.__clientGroupsFile, self.__productGroupsFile):
 			if not os.path.isfile(filename):
 				self._touch(filename)
@@ -303,99 +349,99 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 	def __escape(string: str) -> str:
 		string = forceUnicode(string)
 		logger.trace("Escaping string: '%s'" % (string))
-		return string.replace('\n', '\\n').replace(';', '\\;').replace('#', '\\#').replace('%', '%%')
+		return string.replace("\n", "\\n").replace(";", "\\;").replace("#", "\\#").replace("%", "%%")
 
 	@staticmethod
 	def __unescape(string: str) -> str:
 		string = forceUnicode(string)
 		logger.trace("Unescaping string: '%s'" % (string))
-		return string.replace('\\n', '\n').replace('\\;', ';').replace('\\#', '#').replace('%%', '%')
+		return string.replace("\\n", "\n").replace("\\;", ";").replace("\\#", "#").replace("%%", "%")
 
 	def _getConfigFile(self, objType: str, ident: Dict[str, Any], fileType: str) -> str:  # pylint: disable=too-many-branches,too-many-statements
 		logger.debug("Getting config file for '%s', '%s', '%s'", objType, ident, fileType)
 		filename = None
 
-		if fileType == 'key':
+		if fileType == "key":
 			filename = self.__hostKeyFile
 
-		elif fileType == 'ini':
-			if objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
+		elif fileType == "ini":
+			if objType in ("Config", "UnicodeConfig", "BoolConfig"):
 				filename = self.__configFile
-			elif objType == 'OpsiClient':
-				filename = os.path.join(self.__clientConfigDir, ident['id'] + '.ini')
-			elif objType in ('OpsiDepotserver', 'OpsiConfigserver'):
-				filename = os.path.join(self.__depotConfigDir, ident['id'] + '.ini')
-			elif objType == 'ConfigState':
-				if os.path.isfile(os.path.join(os.path.join(self.__depotConfigDir, ident['objectId'] + '.ini'))):
-					filename = os.path.join(self.__depotConfigDir, ident['objectId'] + '.ini')
+			elif objType == "OpsiClient":
+				filename = os.path.join(self.__clientConfigDir, ident["id"] + ".ini")
+			elif objType in ("OpsiDepotserver", "OpsiConfigserver"):
+				filename = os.path.join(self.__depotConfigDir, ident["id"] + ".ini")
+			elif objType == "ConfigState":
+				if os.path.isfile(os.path.join(os.path.join(self.__depotConfigDir, ident["objectId"] + ".ini"))):
+					filename = os.path.join(self.__depotConfigDir, ident["objectId"] + ".ini")
 				else:
-					filename = os.path.join(self.__clientConfigDir, ident['objectId'] + '.ini')
-			elif objType == 'ProductOnDepot':
-				filename = os.path.join(self.__depotConfigDir, ident['depotId'] + '.ini')
-			elif objType == 'ProductOnClient':
-				filename = os.path.join(self.__clientConfigDir, ident['clientId'] + '.ini')
-			elif objType == 'ProductPropertyState':
-				if os.path.isfile(os.path.join(os.path.join(self.__depotConfigDir, ident['objectId'] + '.ini'))):
-					filename = os.path.join(self.__depotConfigDir, ident['objectId'] + '.ini')
+					filename = os.path.join(self.__clientConfigDir, ident["objectId"] + ".ini")
+			elif objType == "ProductOnDepot":
+				filename = os.path.join(self.__depotConfigDir, ident["depotId"] + ".ini")
+			elif objType == "ProductOnClient":
+				filename = os.path.join(self.__clientConfigDir, ident["clientId"] + ".ini")
+			elif objType == "ProductPropertyState":
+				if os.path.isfile(os.path.join(os.path.join(self.__depotConfigDir, ident["objectId"] + ".ini"))):
+					filename = os.path.join(self.__depotConfigDir, ident["objectId"] + ".ini")
 				else:
-					filename = os.path.join(self.__clientConfigDir, ident['objectId'] + '.ini')
-			elif objType in ('Group', 'HostGroup', 'ProductGroup'):
-				if objType == 'ProductGroup' or (objType == 'Group' and ident.get('type', '') == 'ProductGroup'):
+					filename = os.path.join(self.__clientConfigDir, ident["objectId"] + ".ini")
+			elif objType in ("Group", "HostGroup", "ProductGroup"):
+				if objType == "ProductGroup" or (objType == "Group" and ident.get("type", "") == "ProductGroup"):
 					filename = os.path.join(self.__productGroupsFile)
-				elif objType == 'HostGroup' or (objType == 'Group' and ident.get('type', '') == 'HostGroup'):
+				elif objType == "HostGroup" or (objType == "Group" and ident.get("type", "") == "HostGroup"):
 					filename = os.path.join(self.__clientGroupsFile)
 				else:
-					raise BackendUnaccomplishableError("Unable to determine config file for object type '%s' and ident %s" % (objType, ident))
-			elif objType == 'ObjectToGroup':
-				if ident.get('groupType') in ('ProductGroup',):
+					raise BackendUnaccomplishableError(
+						"Unable to determine config file for object type '%s' and ident %s" % (objType, ident)
+					)
+			elif objType == "ObjectToGroup":
+				if ident.get("groupType") in ("ProductGroup",):
 					filename = os.path.join(self.__productGroupsFile)
-				elif ident.get('groupType') in ('HostGroup',):
+				elif ident.get("groupType") in ("HostGroup",):
 					filename = os.path.join(self.__clientGroupsFile)
 				else:
-					raise BackendUnaccomplishableError("Unable to determine config file for object type '%s' and ident %s" % (objType, ident))
+					raise BackendUnaccomplishableError(
+						"Unable to determine config file for object type '%s' and ident %s" % (objType, ident)
+					)
 
-		elif fileType == 'pro':
-			pVer = '_' + ident['productVersion'] + '-' + ident['packageVersion']
+		elif fileType == "pro":
+			pVer = "_" + ident["productVersion"] + "-" + ident["packageVersion"]
 
-			if objType == 'LocalbootProduct':
-				filename = os.path.join(self.__productDir, ident['id'] + pVer + '.localboot')
-			elif objType == 'NetbootProduct':
-				filename = os.path.join(self.__productDir, ident['id'] + pVer + '.netboot')
-			elif objType in ('Product', 'ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
+			if objType == "LocalbootProduct":
+				filename = os.path.join(self.__productDir, ident["id"] + pVer + ".localboot")
+			elif objType == "NetbootProduct":
+				filename = os.path.join(self.__productDir, ident["id"] + pVer + ".netboot")
+			elif objType in ("Product", "ProductProperty", "UnicodeProductProperty", "BoolProductProperty", "ProductDependency"):
 				pId = None
-				if objType == 'Product':
-					pId = ident['id']
+				if objType == "Product":
+					pId = ident["id"]
 				else:
-					pId = ident['productId']
+					pId = ident["productId"]
 				# instead of searching the whole dir, let's check the only possible files
-				if os.path.isfile(os.path.join(self.__productDir, pId + pVer + '.localboot')):
-					filename = os.path.join(self.__productDir, pId + pVer + '.localboot')
-				elif os.path.isfile(os.path.join(self.__productDir, pId + pVer + '.netboot')):
-					filename = os.path.join(self.__productDir, pId + pVer + '.netboot')
+				if os.path.isfile(os.path.join(self.__productDir, pId + pVer + ".localboot")):
+					filename = os.path.join(self.__productDir, pId + pVer + ".localboot")
+				elif os.path.isfile(os.path.join(self.__productDir, pId + pVer + ".netboot")):
+					filename = os.path.join(self.__productDir, pId + pVer + ".netboot")
 
-		elif fileType == 'sw':
-			if objType == 'AuditSoftware':
-				filename = os.path.join(self.__auditDir, 'global.sw')
-			elif objType == 'AuditSoftwareOnClient':
-				filename = os.path.join(self.__auditDir, ident['clientId'] + '.sw')
+		elif fileType == "sw":
+			if objType == "AuditSoftware":
+				filename = os.path.join(self.__auditDir, "global.sw")
+			elif objType == "AuditSoftwareOnClient":
+				filename = os.path.join(self.__auditDir, ident["clientId"] + ".sw")
 
-		elif fileType == 'hw':
-			if objType == 'AuditHardware':
-				filename = os.path.join(self.__auditDir, 'global.hw')
-			elif objType == 'AuditHardwareOnHost':
-				filename = os.path.join(self.__auditDir, ident['hostId'] + '.hw')
+		elif fileType == "hw":
+			if objType == "AuditHardware":
+				filename = os.path.join(self.__auditDir, "global.hw")
+			elif objType == "AuditHardwareOnHost":
+				filename = os.path.join(self.__auditDir, ident["hostId"] + ".hw")
 
 		if filename is None:
-			raise BackendError(
-				f"No config-file returned! objType '{objType}', ident '{ident}', fileType '{fileType}'"
-			)
+			raise BackendError(f"No config-file returned! objType '{objType}', ident '{ident}', fileType '{fileType}'")
 
-		if objType in ('ConfigState', 'ProductOnDepot', 'ProductOnClient', 'ProductPropertyState'):
+		if objType in ("ConfigState", "ProductOnDepot", "ProductOnClient", "ProductPropertyState"):
 			if os.path.isfile(filename):
 				return filename
-			raise BackendIOError(
-				f"{objType} needs existing file '{filename}' ident '{ident}', fileType '{fileType}'"
-			)
+			raise BackendIOError(f"{objType} needs existing file '{filename}' ident '{ident}', fileType '{fileType}'")
 
 		logger.trace("Returning config file '%s'", filename)
 		return filename
@@ -404,24 +450,24 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		logger.debug("Getting idents for '%s' with filter '%s'", objType, filter)
 		objIdents = []
 
-		if objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
-			filename = self._getConfigFile(objType, {}, 'ini')
+		if objType in ("Config", "UnicodeConfig", "BoolConfig"):
+			filename = self._getConfigFile(objType, {}, "ini")
 			if os.path.isfile(filename):
 				iniFile = IniFile(filename=filename, ignoreCase=False)
 				cp = iniFile.parse()
 				for section in cp.sections():
-					objIdents.append({'id': section})
+					objIdents.append({"id": section})
 
-		elif objType in ('OpsiClient', 'ProductOnClient'):
-			if objType == 'OpsiClient' and filter.get('id'):
-				idFilter = {'id': filter['id']}
-			elif objType == 'ProductOnClient' and filter.get('clientId'):
-				idFilter = {'id': filter['clientId']}
+		elif objType in ("OpsiClient", "ProductOnClient"):
+			if objType == "OpsiClient" and filter.get("id"):
+				idFilter = {"id": filter["id"]}
+			elif objType == "ProductOnClient" and filter.get("clientId"):
+				idFilter = {"id": filter["clientId"]}
 			else:
 				idFilter = {}
 
 			for entry in os.listdir(self.__clientConfigDir):
-				if not entry.lower().endswith('.ini'):
+				if not entry.lower().endswith(".ini"):
 					logger.trace("Ignoring invalid client file '%s'", entry)
 					continue
 
@@ -431,29 +477,25 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 					logger.warning("Ignoring invalid client file '%s'", entry)
 					continue
 
-				if idFilter and not self._objectHashMatches({'id': hostId}, **idFilter):
+				if idFilter and not self._objectHashMatches({"id": hostId}, **idFilter):
 					continue
 
-				if objType == 'ProductOnClient':
-					filename = self._getConfigFile(objType, {'clientId': hostId}, 'ini')
+				if objType == "ProductOnClient":
+					filename = self._getConfigFile(objType, {"clientId": hostId}, "ini")
 					iniFile = IniFile(filename=filename, ignoreCase=False)
 					cp = iniFile.parse()
 
 					for section in cp.sections():
-						if section.endswith('-state'):
-							objIdents.append({
-								'productId': section[:-6],
-								'productType': cp.get(section, 'productType'),
-								'clientId': hostId
-							})
+						if section.endswith("-state"):
+							objIdents.append({"productId": section[:-6], "productType": cp.get(section, "productType"), "clientId": hostId})
 				else:
-					objIdents.append({'id': hostId})
+					objIdents.append({"id": hostId})
 
-		elif objType in ('OpsiDepotserver', 'OpsiConfigserver', 'ProductOnDepot'):
-			if objType in ('OpsiDepotserver', 'OpsiConfigserver') and filter.get('id'):
-				idFilter = {'id': filter['id']}
-			elif objType == 'ProductOnDepot' and filter.get('depotId'):
-				idFilter = {'id': filter['depotId']}
+		elif objType in ("OpsiDepotserver", "OpsiConfigserver", "ProductOnDepot"):
+			if objType in ("OpsiDepotserver", "OpsiConfigserver") and filter.get("id"):
+				idFilter = {"id": filter["id"]}
+			elif objType == "ProductOnDepot" and filter.get("depotId"):
+				idFilter = {"id": filter["depotId"]}
 			else:
 				idFilter = {}
 
@@ -461,7 +503,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 				raise BackendMissingDataError(f"Directory {self.__depotConfigDir} does not exist")
 
 			for entry in os.listdir(self.__depotConfigDir):
-				if not entry.lower().endswith('.ini'):
+				if not entry.lower().endswith(".ini"):
 					logger.trace("Ignoring invalid depot file '%s'", entry)
 					continue
 
@@ -471,54 +513,57 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 					logger.warning("Ignoring invalid depot file '%s'", entry)
 					continue
 
-				if idFilter and not self._objectHashMatches({'id': hostId}, **idFilter):
+				if idFilter and not self._objectHashMatches({"id": hostId}, **idFilter):
 					continue
 
-				if objType == 'OpsiConfigserver' and hostId != self.__serverId:
+				if objType == "OpsiConfigserver" and hostId != self.__serverId:
 					continue
 
-				if objType == 'ProductOnDepot':
-					filename = self._getConfigFile(objType, {'depotId': hostId}, 'ini')
+				if objType == "ProductOnDepot":
+					filename = self._getConfigFile(objType, {"depotId": hostId}, "ini")
 					iniFile = IniFile(filename=filename, ignoreCase=False)
 					cp = iniFile.parse()
 
 					for section in cp.sections():
-						if section.endswith('-state'):
-							objIdents.append({
-								'productId': section[:-6],
-								'productType': cp.get(section, 'producttype'),
-								'productVersion': cp.get(section, 'productversion'),
-								'packageVersion': cp.get(section, 'packageversion'),
-								'depotId': hostId
-							})
+						if section.endswith("-state"):
+							objIdents.append(
+								{
+									"productId": section[:-6],
+									"productType": cp.get(section, "producttype"),
+									"productVersion": cp.get(section, "productversion"),
+									"packageVersion": cp.get(section, "packageversion"),
+									"depotId": hostId,
+								}
+							)
 				else:
-					objIdents.append({'id': hostId})
+					objIdents.append({"id": hostId})
 
 		elif objType in (
-			'Product', 'LocalbootProduct', 'NetbootProduct', 'ProductProperty',
-			'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'
+			"Product",
+			"LocalbootProduct",
+			"NetbootProduct",
+			"ProductProperty",
+			"UnicodeProductProperty",
+			"BoolProductProperty",
+			"ProductDependency",
 		):
-			if (
-				objType in ('Product', 'LocalbootProduct', 'NetbootProduct') and
-				filter.get('id')
+			if objType in ("Product", "LocalbootProduct", "NetbootProduct") and filter.get("id"):
+				idFilter = {"id": filter["id"]}
+			elif objType in ("ProductProperty", "UnicodeProductProperty", "BoolProductProperty", "ProductDependency") and filter.get(
+				"productId"
 			):
-				idFilter = {'id': filter['id']}
-			elif (
-				objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency') and
-				filter.get('productId')
-			):
-				idFilter = {'id': filter['productId']}
+				idFilter = {"id": filter["productId"]}
 			else:
 				idFilter = {}
 
 			for entry in os.listdir(self.__productDir):
 				match = None
 
-				if entry.endswith('.localboot'):
-					if objType == 'NetbootProduct':
+				if entry.endswith(".localboot"):
+					if objType == "NetbootProduct":
 						continue
-				elif entry.endswith('.netboot'):
-					if objType == 'LocalbootProduct':
+				elif entry.endswith(".netboot"):
+					if objType == "LocalbootProduct":
 						continue
 				else:
 					logger.trace("Ignoring invalid product file '%s'", entry)
@@ -529,30 +574,32 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 					logger.warning("Ignoring invalid product file '%s'", entry)
 					continue
 
-				if idFilter and not self._objectHashMatches({'id': match.group(1)}, **idFilter):
+				if idFilter and not self._objectHashMatches({"id": match.group(1)}, **idFilter):
 					continue
 
-				logger.trace("Found match: id='%s', productVersion='%s', packageVersion='%s'" % (match.group(1), match.group(2), match.group(3)))
+				logger.trace(
+					"Found match: id='%s', productVersion='%s', packageVersion='%s'" % (match.group(1), match.group(2), match.group(3))
+				)
 
-				if objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
-					objIdents.append({'id': match.group(1), 'productVersion': match.group(2), 'packageVersion': match.group(3)})
+				if objType in ("Product", "LocalbootProduct", "NetbootProduct"):
+					objIdents.append({"id": match.group(1), "productVersion": match.group(2), "packageVersion": match.group(3)})
 
-				elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
+				elif objType in ("ProductProperty", "UnicodeProductProperty", "BoolProductProperty", "ProductDependency"):
 					filename = os.path.join(self.__productDir, entry)
 					packageControlFile = PackageControlFile(filename=filename)
-					if objType == 'ProductDependency':
+					if objType == "ProductDependency":
 						for productDependency in packageControlFile.getProductDependencies():
-							objIdents.append(productDependency.getIdent(returnType='dict'))
+							objIdents.append(productDependency.getIdent(returnType="dict"))
 					else:
 						for productProperty in packageControlFile.getProductProperties():
-							objIdents.append(productProperty.getIdent(returnType='dict'))
+							objIdents.append(productProperty.getIdent(returnType="dict"))
 
-		elif objType in ('ConfigState', 'ProductPropertyState'):  # pylint: disable=too-many-nested-blocks
+		elif objType in ("ConfigState", "ProductPropertyState"):  # pylint: disable=too-many-nested-blocks
 			for path in (self.__depotConfigDir, self.__clientConfigDir):
 				for entry in os.listdir(path):
 					filename = os.path.join(path, entry)
 
-					if not entry.lower().endswith('.ini'):
+					if not entry.lower().endswith(".ini"):
 						logger.trace("Ignoring invalid file '%s'", filename)
 						continue
 
@@ -562,121 +609,107 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 						logger.warning("Ignoring invalid file '%s': %s", filename, err)
 						continue
 
-					if not self._objectHashMatches({'objectId': objectId}, **filter):
+					if not self._objectHashMatches({"objectId": objectId}, **filter):
 						continue
 
 					iniFile = IniFile(filename=filename, ignoreCase=False)
 					cp = iniFile.parse()
 
-					if objType == 'ConfigState' and cp.has_section('generalconfig'):
-						for option in cp.options('generalconfig'):
-							objIdents.append({
-								'configId': option,
-								'objectId': objectId
-							})
-					elif objType == 'ProductPropertyState':
+					if objType == "ConfigState" and cp.has_section("generalconfig"):
+						for option in cp.options("generalconfig"):
+							objIdents.append({"configId": option, "objectId": objectId})
+					elif objType == "ProductPropertyState":
 						for section in cp.sections():
-							if not section.endswith('-install'):
+							if not section.endswith("-install"):
 								continue
 
 							for option in cp.options(section):
-								objIdents.append(
-									{
-										'productId': section[:-8],
-										'propertyId': option,
-										'objectId': objectId
-									}
-								)
+								objIdents.append({"productId": section[:-8], "propertyId": option, "objectId": objectId})
 
-		elif objType in ('Group', 'HostGroup', 'ProductGroup', 'ObjectToGroup'):  # pylint: disable=too-many-nested-blocks
-			if objType == 'ObjectToGroup':
-				if filter.get('groupType'):
-					passes = [{'filename': self._getConfigFile(objType, {'groupType': filter['groupType']}, 'ini'), 'groupType': filter['groupType']}]
+		elif objType in ("Group", "HostGroup", "ProductGroup", "ObjectToGroup"):  # pylint: disable=too-many-nested-blocks
+			if objType == "ObjectToGroup":
+				if filter.get("groupType"):
+					passes = [
+						{
+							"filename": self._getConfigFile(objType, {"groupType": filter["groupType"]}, "ini"),
+							"groupType": filter["groupType"],
+						}
+					]
 				else:
 					passes = [
-						{'filename': self._getConfigFile(objType, {'groupType': 'ProductGroup'}, 'ini'), 'groupType': 'ProductGroup'},
-						{'filename': self._getConfigFile(objType, {'groupType': 'HostGroup'}, 'ini'), 'groupType': 'HostGroup'}
+						{"filename": self._getConfigFile(objType, {"groupType": "ProductGroup"}, "ini"), "groupType": "ProductGroup"},
+						{"filename": self._getConfigFile(objType, {"groupType": "HostGroup"}, "ini"), "groupType": "HostGroup"},
 					]
 			else:
-				if objType in ('HostGroup', 'ProductGroup'):
-					passes = [{'filename': self._getConfigFile(objType, {}, 'ini'), 'groupType': objType}]
-				elif filter.get('type'):
-					passes = [{'filename': self._getConfigFile(objType, {'type': filter['type']}, 'ini'), 'groupType': filter['type']}]
+				if objType in ("HostGroup", "ProductGroup"):
+					passes = [{"filename": self._getConfigFile(objType, {}, "ini"), "groupType": objType}]
+				elif filter.get("type"):
+					passes = [{"filename": self._getConfigFile(objType, {"type": filter["type"]}, "ini"), "groupType": filter["type"]}]
 				else:
 					passes = [
-						{'filename': self._getConfigFile(objType, {'type': 'ProductGroup'}, 'ini'), 'groupType': 'ProductGroup'},
-						{'filename': self._getConfigFile(objType, {'type': 'HostGroup'}, 'ini'), 'groupType': 'HostGroup'}
+						{"filename": self._getConfigFile(objType, {"type": "ProductGroup"}, "ini"), "groupType": "ProductGroup"},
+						{"filename": self._getConfigFile(objType, {"type": "HostGroup"}, "ini"), "groupType": "HostGroup"},
 					]
 
 			for _pass in passes:
-				groupType = _pass['groupType']
-				iniFile = IniFile(filename=_pass['filename'], ignoreCase=False)
+				groupType = _pass["groupType"]
+				iniFile = IniFile(filename=_pass["filename"], ignoreCase=False)
 				cp = iniFile.parse()
 
 				for section in cp.sections():
-					if objType == 'ObjectToGroup':
+					if objType == "ObjectToGroup":
 						for option in cp.options(section):
-							if option in ('description', 'notes', 'parentgroupid'):
+							if option in ("description", "notes", "parentgroupid"):
 								continue
 
 							try:
 								value = cp.get(section, option)
 								if not forceBool(value):
-									logger.debug(
-										"Skipping '%s' in section '%s' with False-value '%s'",
-										option, section, value
-									)
+									logger.debug("Skipping '%s' in section '%s' with False-value '%s'", option, section, value)
 									continue
-								if groupType == 'HostGroup':
+								if groupType == "HostGroup":
 									option = forceHostId(option)
-								elif groupType == 'ProductGroup':
+								elif groupType == "ProductGroup":
 									option = forceProductId(option)
 
-								objIdents.append(
-									{
-										'groupType': groupType,
-										'groupId': section,
-										'objectId': option
-									}
-								)
+								objIdents.append({"groupType": groupType, "groupId": section, "objectId": option})
 							except Exception as err:  # pylint: disable=broad-except
 								logger.error(
-									"Found invalid option '%s' in section '%s' in file '%s': %s",
-									option, section, _pass['filename'], err
+									"Found invalid option '%s' in section '%s' in file '%s': %s", option, section, _pass["filename"], err
 								)
 					else:
-						objIdents.append({'id': section, 'type': groupType})
+						objIdents.append({"id": section, "type": groupType})
 
-		elif objType in ('AuditSoftware', 'AuditSoftwareOnClient', 'AuditHardware', 'AuditHardwareOnHost'):  # pylint: disable=too-many-nested-blocks
-			if objType in ('AuditHardware', 'AuditHardwareOnHost'):
-				fileType = 'hw'
+		elif objType in ("AuditSoftware", "AuditSoftwareOnClient", "AuditHardware", "AuditHardwareOnHost"):  # pylint: disable=too-many-nested-blocks
+			if objType in ("AuditHardware", "AuditHardwareOnHost"):
+				fileType = "hw"
 			else:
-				fileType = 'sw'
+				fileType = "sw"
 
 			filenames = []
-			if objType in ('AuditSoftware', 'AuditHardware'):
+			if objType in ("AuditSoftware", "AuditHardware"):
 				filename = self._getConfigFile(objType, {}, fileType)
 				if os.path.isfile(filename):
 					filenames.append(filename)
 			else:
 				idFilter = {}
-				if objType == 'AuditSoftwareOnClient' and filter.get('clientId'):
-					idFilter = {'id': filter['clientId']}
-				elif objType == 'AuditHardwareOnHost' and filter.get('hostId'):
-					idFilter = {'id': filter['hostId']}
+				if objType == "AuditSoftwareOnClient" and filter.get("clientId"):
+					idFilter = {"id": filter["clientId"]}
+				elif objType == "AuditHardwareOnHost" and filter.get("hostId"):
+					idFilter = {"id": filter["hostId"]}
 
 				for entry in os.listdir(self.__auditDir):
 					entry = entry.lower()
 					filename = None
 
-					if entry in ('global.sw', 'global.hw'):
+					if entry in ("global.sw", "global.hw"):
 						continue
 
-					if not entry.endswith('.%s' % fileType):
+					if not entry.endswith(".%s" % fileType):
 						logger.trace("Ignoring invalid file '%s'" % (entry))
 
 					try:
-						if idFilter and not self._objectHashMatches({'id': forceHostId(entry[:-3])}, **idFilter):
+						if idFilter and not self._objectHashMatches({"id": forceHostId(entry[:-3])}, **idFilter):
 							continue
 					except Exception:  # pylint: disable=broad-except
 						logger.warning("Ignoring invalid file '%s'", entry)
@@ -689,30 +722,24 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 				cp = iniFile.parse()
 
 				for section in cp.sections():
-					if objType in ('AuditSoftware', 'AuditSoftwareOnClient'):
-						objIdent = {
-							'name': None,
-							'version': None,
-							'subVersion': None,
-							'language': None,
-							'architecture': None
-						}
+					if objType in ("AuditSoftware", "AuditSoftwareOnClient"):
+						objIdent = {"name": None, "version": None, "subVersion": None, "language": None, "architecture": None}
 
 						for key in list(objIdent):
 							option = key.lower()
 							if cp.has_option(section, option):
 								objIdent[key] = self.__unescape(cp.get(section, option))
 
-						if objType == 'AuditSoftwareOnClient':
-							objIdent['clientId'] = os.path.basename(filename)[:-3]
+						if objType == "AuditSoftwareOnClient":
+							objIdent["clientId"] = os.path.basename(filename)[:-3]
 					else:
 						objIdent = {}
 
-						for (key, value) in cp.items(section):
+						for key, value in cp.items(section):
 							objIdent[str(key)] = self.__unescape(value)
 
-						if objType == 'AuditHardwareOnHost':
-							objIdent['hostId'] = os.path.basename(filename)[:-3]
+						if objType == "AuditHardwareOnHost":
+							objIdent["hostId"] = os.path.basename(filename)[:-3]
 
 					objIdents.append(objIdent)
 
@@ -733,11 +760,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 			logger.trace("Returning idents without filter.")
 			return objIdents
 
-		return [
-			ident
-			for ident in objIdents
-			if self._objectHashMatches(ident, **filter)
-		]
+		return [ident for ident in objIdents if self._objectHashMatches(ident, **filter)]
 
 	@staticmethod
 	def _adaptObjectHashAttributes(objHash: Dict[str, Any], ident: Dict[str, Any], attributes: List[str]) -> Dict[str, Any]:
@@ -756,9 +779,9 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		return objHash
 
 	def _read(self, objType: str, attributes: List[str], **filter) -> List[Any]:  # pylint: disable=redefined-builtin,too-many-branches,too-many-locals,too-many-statements
-		if filter.get('type'):
+		if filter.get("type"):
 			match = False
-			for objectType in forceList(filter['type']):
+			for objectType in forceList(filter["type"]):
 				if objectType == objType:
 					match = True
 					break
@@ -788,11 +811,11 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 		mappings = {}
 		for mapping in self._mappings[objType]:
-			if (not attributes or mapping['attribute'] in attributes) or mapping['attribute'] in filter:
-				if mapping['fileType'] not in mappings:
-					mappings[mapping['fileType']] = []
+			if (not attributes or mapping["attribute"] in attributes) or mapping["attribute"] in filter:
+				if mapping["fileType"] not in mappings:
+					mappings[mapping["fileType"]] = []
 
-				mappings[mapping['fileType']].append(mapping)
+				mappings[mapping["fileType"]].append(mapping)
 
 		logger.trace("Using mappings %s" % mappings)
 
@@ -804,90 +827,88 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		for ident in self._getIdents(objType, **filter):  # pylint: disable=too-many-nested-blocks
 			objHash = dict(ident)
 
-			for (fileType, mapping) in mappings.items():
+			for fileType, mapping in mappings.items():
 				filename = self._getConfigFile(objType, ident, fileType)
 
 				if not os.path.exists(os.path.dirname(filename)):
 					raise BackendIOError("Directory '%s' not found" % os.path.dirname(filename))
 
-				if fileType == 'key':
+				if fileType == "key":
 					if not hostKeys:
 						hostKeys = HostKeyFile(filename=filename)
 						hostKeys.parse()
 
 					for _mapping in mapping:
-						objHash[_mapping['attribute']] = hostKeys.getOpsiHostKey(ident['id'])
+						objHash[_mapping["attribute"]] = hostKeys.getOpsiHostKey(ident["id"])
 
-				elif fileType == 'ini':
+				elif fileType == "ini":
 					try:
 						cp = iniFileCache[filename]
 					except KeyError:
 						iniFile = IniFile(filename=filename, ignoreCase=False)
 						cp = iniFileCache[filename] = iniFile.parse()
 
-					if cp.has_section('LocalbootProduct_product_states') or cp.has_section('NetbootProduct_product_states'):
-						if cp.has_section('LocalbootProduct_product_states'):
-							if not cp.has_section('localboot_product_states'):
-								cp.add_section('localboot_product_states')
+					if cp.has_section("LocalbootProduct_product_states") or cp.has_section("NetbootProduct_product_states"):
+						if cp.has_section("LocalbootProduct_product_states"):
+							if not cp.has_section("localboot_product_states"):
+								cp.add_section("localboot_product_states")
 
-							for (key, val) in cp.items('LocalbootProduct_product_states'):
-								cp.set('localboot_product_states', key, val)
+							for key, val in cp.items("LocalbootProduct_product_states"):
+								cp.set("localboot_product_states", key, val)
 
-							cp.remove_section('LocalbootProduct_product_states')
-						if cp.has_section('NetbootProduct_product_states'):
-							if not cp.has_section('netboot_product_states'):
-								cp.add_section('netboot_product_states')
+							cp.remove_section("LocalbootProduct_product_states")
+						if cp.has_section("NetbootProduct_product_states"):
+							if not cp.has_section("netboot_product_states"):
+								cp.add_section("netboot_product_states")
 
-							for (key, val) in cp.items('NetbootProduct_product_states'):
-								cp.set('netboot_product_states', key, val)
+							for key, val in cp.items("NetbootProduct_product_states"):
+								cp.set("netboot_product_states", key, val)
 
-							cp.remove_section('NetbootProduct_product_states')
+							cp.remove_section("NetbootProduct_product_states")
 						IniFile(filename=filename, ignoreCase=False).generate(cp)
 
 					for _mapping in mapping:
-						attribute = _mapping['attribute']
-						section = _mapping['section']
-						option = _mapping['option']
+						attribute = _mapping["attribute"]
+						section = _mapping["section"]
+						option = _mapping["option"]
 
 						match = self.PLACEHOLDER_REGEX.search(section)
 						if match:
-							section = '%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))  # pylint: disable=maybe-no-member
-							if objType == 'ProductOnClient':  # <productType>_product_states
-								section = section.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
+							section = "%s%s%s" % (match.group(1), objHash[match.group(2)], match.group(3))  # pylint: disable=maybe-no-member
+							if objType == "ProductOnClient":  # <productType>_product_states
+								section = section.replace("LocalbootProduct", "localboot").replace("NetbootProduct", "netboot")
 
 						match = self.PLACEHOLDER_REGEX.search(option)
 						if match:
-							option = '%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))  # pylint: disable=maybe-no-member
+							option = "%s%s%s" % (match.group(1), objHash[match.group(2)], match.group(3))  # pylint: disable=maybe-no-member
 
 						if cp.has_option(section, option):
 							value = cp.get(section, option)
-							if _mapping.get('json'):
+							if _mapping.get("json"):
 								value = fromJson(value)
 							elif isinstance(value, str):
 								value = self.__unescape(value)
 
 							# Invalid values will throw exceptions later
-							if objType == 'ProductOnClient' and section.endswith('_product_states'):
-								index = value.find(':')  # pylint: disable=maybe-no-member
+							if objType == "ProductOnClient" and section.endswith("_product_states"):
+								index = value.find(":")  # pylint: disable=maybe-no-member
 								if index == -1:
-									raise BackendBadValueError(
-										f"No ':' found in section '{section}' in option '{option}' in '{filename}'"
-									)
+									raise BackendBadValueError(f"No ':' found in section '{section}' in option '{option}' in '{filename}'")
 
-								if attribute == 'installationStatus':
+								if attribute == "installationStatus":
 									value = value[:index]
-								elif attribute == 'actionRequest':
-									value = value[index + 1:]
+								elif attribute == "actionRequest":
+									value = value[index + 1 :]
 
 							objHash[attribute] = value
-						elif objType == 'ProductOnClient' and attribute.lower() == 'installationstatus':
-							objHash[attribute] = 'not_installed'
-						elif objType == 'ProductOnClient' and attribute.lower() == 'actionrequest':
-							objHash[attribute] = 'none'
+						elif objType == "ProductOnClient" and attribute.lower() == "installationstatus":
+							objHash[attribute] = "not_installed"
+						elif objType == "ProductOnClient" and attribute.lower() == "actionrequest":
+							objHash[attribute] = "none"
 
 					logger.trace("Got object hash from ini file: %s" % objHash)
 
-				elif fileType == 'pro':
+				elif fileType == "pro":
 					try:
 						packageControlFile = packageControlFileCache[filename]
 					except KeyError:
@@ -895,19 +916,19 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 						packageControlFileCache[filename].parse()
 						packageControlFile = packageControlFileCache[filename]
 
-					if objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
+					if objType in ("Product", "LocalbootProduct", "NetbootProduct"):
 						objHash = packageControlFile.getProduct().toHash()
 
-					elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
-						if objType == 'ProductDependency':
+					elif objType in ("ProductProperty", "UnicodeProductProperty", "BoolProductProperty", "ProductDependency"):
+						if objType == "ProductDependency":
 							knownObjects = packageControlFile.getProductDependencies()
 						else:
 							knownObjects = packageControlFile.getProductProperties()
 
 						for obj in knownObjects:
-							objIdent = obj.getIdent(returnType='dict')
+							objIdent = obj.getIdent(returnType="dict")
 							matches = True
-							for (key, value) in ident.items():
+							for key, value in ident.items():
 								if objIdent[key] != value:
 									matches = False
 									break
@@ -951,16 +972,15 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 				objHash = self._adaptObjectHashAttributes(objHash, ident, attributes)
 				objects.append(Class.fromHash(objHash))
 
-
 		for obj in objects:
 			logger.trace("Returning object: %s" % obj.getIdent())
 
 		return objects
 
-	def _write(self, obj: Any, mode: str = 'create') -> None:  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+	def _write(self, obj: Any, mode: str = "create") -> None:  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 		objType = obj.getType()
 
-		if objType == 'OpsiConfigserver':
+		if objType == "OpsiConfigserver":
 			if self.__serverId != obj.getId():
 				raise BackendUnaccomplishableError(
 					f"Filebackend can only handle this config server '{self.__serverId}', not '{obj.getId()}'"
@@ -971,15 +991,15 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 		mappings = {}
 		for mapping in self._mappings[objType]:
-			if mapping['fileType'] not in mappings:
-				mappings[mapping['fileType']] = {}
-			mappings[mapping['fileType']][mapping['attribute']] = mapping
+			if mapping["fileType"] not in mappings:
+				mappings[mapping["fileType"]] = {}
+			mappings[mapping["fileType"]][mapping["attribute"]] = mapping
 
-		for (fileType, mapping) in mappings.items():  # pylint: disable=too-many-nested-blocks
-			filename = self._getConfigFile(objType, obj.getIdent(returnType='dict'), fileType)
+		for fileType, mapping in mappings.items():  # pylint: disable=too-many-nested-blocks
+			filename = self._getConfigFile(objType, obj.getIdent(returnType="dict"), fileType)
 
-			if fileType == 'key':
-				if mode == 'create' or (mode == 'update' and obj.getOpsiHostKey()):
+			if fileType == "key":
+				if mode == "create" or (mode == "update" and obj.getOpsiHostKey()):
 					if not os.path.exists(filename):
 						self._touch(filename)
 
@@ -987,10 +1007,10 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 					hostKeys.setOpsiHostKey(obj.getId(), obj.getOpsiHostKey())
 					hostKeys.generate()
 
-			elif fileType == 'ini':
+			elif fileType == "ini":
 				iniFile = IniFile(filename=filename, ignoreCase=False)
-				if mode == 'create':
-					if objType == 'OpsiClient' and not iniFile.exists():
+				if mode == "create":
+					if objType == "OpsiClient" and not iniFile.exists():
 						proto = os.path.join(self.__clientTemplateDir, os.path.basename(filename))
 						if not os.path.isfile(proto):
 							proto = self.__defaultClientTemplatePath
@@ -1000,25 +1020,25 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 				cp = iniFile.parse()
 
-				if mode == 'create':
+				if mode == "create":
 					removeSections = []
 					removeOptions = {}
-					if objType in ('OpsiClient', 'OpsiDepotserver', 'OpsiConfigserver'):
-						removeSections = ['info', 'depotserver', 'depotshare', 'repository']
-					elif objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
+					if objType in ("OpsiClient", "OpsiDepotserver", "OpsiConfigserver"):
+						removeSections = ["info", "depotserver", "depotshare", "repository"]
+					elif objType in ("Config", "UnicodeConfig", "BoolConfig"):
 						removeSections = [obj.getId()]
-					elif objType in ('Group', 'HostGroup', 'ProductGroup'):
+					elif objType in ("Group", "HostGroup", "ProductGroup"):
 						removeOptions[obj.getId()] = []
 						for _mapping in mapping.values():
-							removeOptions[obj.getId()].append(_mapping['option'])
-					elif objType in ('ProductOnDepot', 'ProductOnClient'):
-						removeSections = [obj.getProductId() + '-state']
+							removeOptions[obj.getId()].append(_mapping["option"])
+					elif objType in ("ProductOnDepot", "ProductOnClient"):
+						removeSections = [obj.getProductId() + "-state"]
 
 					for section in removeSections:
 						if cp.has_section(section):
 							cp.remove_section(section)
 
-					for (section, options) in removeOptions.items():
+					for section, options in removeOptions.items():
 						if cp.has_section(section):
 							for option in options:
 								if cp.has_option(section, option):
@@ -1026,92 +1046,92 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 				objHash = obj.toHash()
 
-				for (attribute, value) in objHash.items():
-					if value is None and mode == 'update':
+				for attribute, value in objHash.items():
+					if value is None and mode == "update":
 						continue
 
-					attributeMapping = mapping.get(attribute, mapping.get('*'))
+					attributeMapping = mapping.get(attribute, mapping.get("*"))
 
 					if attributeMapping is not None:
-						section = attributeMapping['section']
-						option = attributeMapping['option']
+						section = attributeMapping["section"]
+						option = attributeMapping["option"]
 
 						match = self.PLACEHOLDER_REGEX.search(section)
 						if match:
-							section = '%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))
-							if objType == 'ProductOnClient':
-								section = section.replace('LocalbootProduct', 'localboot').replace('NetbootProduct', 'netboot')
+							section = "%s%s%s" % (match.group(1), objHash[match.group(2)], match.group(3))
+							if objType == "ProductOnClient":
+								section = section.replace("LocalbootProduct", "localboot").replace("NetbootProduct", "netboot")
 
 						match = self.PLACEHOLDER_REGEX.search(option)
 						if match:
-							option = '%s%s%s' % (match.group(1), objHash[match.group(2)], match.group(3))
+							option = "%s%s%s" % (match.group(1), objHash[match.group(2)], match.group(3))
 
 						if not cp.has_section(section):
 							cp.add_section(section)
 
-						if objType == 'ProductOnClient':
-							if attribute in ('installationStatus', 'actionRequest'):
-								(installationStatus, actionRequest) = ('not_installed', 'none')
+						if objType == "ProductOnClient":
+							if attribute in ("installationStatus", "actionRequest"):
+								(installationStatus, actionRequest) = ("not_installed", "none")
 
 								if cp.has_option(section, option):
 									combined = cp.get(section, option)
 								else:
-									combined = ''
+									combined = ""
 
-								if ':' in combined:
-									(installationStatus, actionRequest) = combined.split(':', 1)
+								if ":" in combined:
+									(installationStatus, actionRequest) = combined.split(":", 1)
 								elif combined:
 									installationStatus = combined
 
 								if value is not None:
-									if attribute == 'installationStatus':
+									if attribute == "installationStatus":
 										installationStatus = value
-									elif attribute == 'actionRequest':
+									elif attribute == "actionRequest":
 										actionRequest = value
-								value = installationStatus + ':' + actionRequest
-						elif objType == 'ObjectToGroup':
+								value = installationStatus + ":" + actionRequest
+						elif objType == "ObjectToGroup":
 							value = 1
 
 						if value is not None:
-							if attributeMapping.get('json'):
+							if attributeMapping.get("json"):
 								value = toJson(value)
 							elif isinstance(value, str):
 								value = self.__escape(value)
 
 							cp.set(section, option, value)
 
-				iniFile.setSectionSequence(['info', 'generalconfig', 'localboot_product_states', 'netboot_product_states'])
+				iniFile.setSectionSequence(["info", "generalconfig", "localboot_product_states", "netboot_product_states"])
 				iniFile.generate(cp)
 
-			elif fileType == 'pro':
+			elif fileType == "pro":
 				if not os.path.exists(filename):
 					self._touch(filename)
 				packageControlFile = PackageControlFile(filename=filename)
 
-				if objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
-					if mode == 'create':
+				if objType in ("Product", "LocalbootProduct", "NetbootProduct"):
+					if mode == "create":
 						packageControlFile.setProduct(obj)
 					else:
 						productHash = packageControlFile.getProduct().toHash()
-						for (attribute, value) in obj.toHash().items():
+						for attribute, value in obj.toHash().items():
 							if value is None:
 								continue
 							productHash[attribute] = value
 						packageControlFile.setProduct(Product.fromHash(productHash))
-				elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
-					if objType == 'ProductDependency':
+				elif objType in ("ProductProperty", "UnicodeProductProperty", "BoolProductProperty", "ProductDependency"):
+					if objType == "ProductDependency":
 						currentObjects = packageControlFile.getProductDependencies()
 					else:
 						currentObjects = packageControlFile.getProductProperties()
 
 					found = False
 					for i, currentObj in enumerate(currentObjects):
-						if currentObj.getIdent(returnType='unicode') == obj.getIdent(returnType='unicode'):
-							if mode == 'create':
+						if currentObj.getIdent(returnType="unicode") == obj.getIdent(returnType="unicode"):
+							if mode == "create":
 								currentObjects[i] = obj
 							else:
 								newHash = currentObj.toHash()
-								for (attribute, value) in obj.toHash().items():
+								for attribute, value in obj.toHash().items():
 									if value is not None:
 										newHash[attribute] = value
 
@@ -1123,7 +1143,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 					if not found:
 						currentObjects.append(obj)
 
-					if objType == 'ProductDependency':
+					if objType == "ProductDependency":
 						packageControlFile.setProductDependencies(currentObjects)
 					else:
 						packageControlFile.setProductProperties(currentObjects)
@@ -1138,8 +1158,8 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		# within ifs obj.getType() from obj in objList should be used
 		objType = objList[0].getType()
 
-		if objType in ('OpsiClient', 'OpsiConfigserver', 'OpsiDepotserver'):
-			hostKeyFile = HostKeyFile(self._getConfigFile('', {}, 'key'))
+		if objType in ("OpsiClient", "OpsiConfigserver", "OpsiDepotserver"):
+			hostKeyFile = HostKeyFile(self._getConfigFile("", {}, "key"))
 			for obj in objList:
 				if obj.getId() == self.__serverId:
 					logger.warning("Cannot delete %s '%s', ignored.", obj.getType(), obj.getId())
@@ -1148,14 +1168,13 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 				logger.debug("Deleting %s: '%s'", obj.getType(), obj.getIdent())
 				hostKeyFile.deleteOpsiHostKey(obj.getId())
 
-				filename = self._getConfigFile(
-					obj.getType(), obj.getIdent(returnType='dict'), 'ini')
+				filename = self._getConfigFile(obj.getType(), obj.getIdent(returnType="dict"), "ini")
 				if os.path.isfile(filename):
 					os.unlink(filename)
 			hostKeyFile.generate()
 
-		elif objType in ('Config', 'UnicodeConfig', 'BoolConfig'):
-			filename = self._getConfigFile(objType, {}, 'ini')
+		elif objType in ("Config", "UnicodeConfig", "BoolConfig"):
+			filename = self._getConfigFile(objType, {}, "ini")
 			iniFile = IniFile(filename=filename, ignoreCase=False)
 			cp = iniFile.parse()
 			for obj in objList:
@@ -1165,8 +1184,8 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 					logger.trace("Removed section '%s'" % obj.getId())
 			iniFile.generate(cp)
 
-		elif objType == 'ConfigState':
-			filenames = set(self._getConfigFile(obj.getType(), obj.getIdent(returnType='dict'), 'ini') for obj in objList)
+		elif objType == "ConfigState":
+			filenames = set(self._getConfigFile(obj.getType(), obj.getIdent(returnType="dict"), "ini") for obj in objList)
 
 			for filename in filenames:
 				iniFile = IniFile(filename=filename, ignoreCase=False)
@@ -1176,28 +1195,27 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 						continue
 
 					logger.debug("Deleting %s: '%s'", obj.getType(), obj.getIdent())
-					if cp.has_option('generalconfig', obj.getConfigId()):
-						cp.remove_option('generalconfig', obj.getConfigId())
+					if cp.has_option("generalconfig", obj.getConfigId()):
+						cp.remove_option("generalconfig", obj.getConfigId())
 						logger.trace("Removed option in generalconfig '%s'" % obj.getConfigId())
 
 				iniFile.generate(cp)
 
-		elif objType in ('Product', 'LocalbootProduct', 'NetbootProduct'):
+		elif objType in ("Product", "LocalbootProduct", "NetbootProduct"):
 			for obj in objList:
-				filename = self._getConfigFile(
-					obj.getType(), obj.getIdent(returnType='dict'), 'pro')
+				filename = self._getConfigFile(obj.getType(), obj.getIdent(returnType="dict"), "pro")
 				logger.debug("Deleting %s: '%s'", obj.getType(), obj.getIdent())
 				if os.path.isfile(filename):
 					os.unlink(filename)
 					logger.trace("Removed file '%s'" % filename)
 
-		elif objType in ('ProductProperty', 'UnicodeProductProperty', 'BoolProductProperty', 'ProductDependency'):
-			filenames = set(self._getConfigFile(obj.getType(), obj.getIdent(returnType='dict'), 'pro') for obj in objList)
+		elif objType in ("ProductProperty", "UnicodeProductProperty", "BoolProductProperty", "ProductDependency"):
+			filenames = set(self._getConfigFile(obj.getType(), obj.getIdent(returnType="dict"), "pro") for obj in objList)
 
 			for filename in filenames:
 				packageControlFile = PackageControlFile(filename=filename)
 
-				if objType == 'ProductDependency':
+				if objType == "ProductDependency":
 					oldList = packageControlFile.getProductDependencies()
 				else:
 					oldList = packageControlFile.getProductProperties()
@@ -1207,7 +1225,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 					delete = False
 					obj = None
 					for obj in objList:
-						if oldItem.getIdent(returnType='unicode') == obj.getIdent(returnType='unicode'):
+						if oldItem.getIdent(returnType="unicode") == obj.getIdent(returnType="unicode"):
 							delete = True
 							break
 					if delete:
@@ -1215,15 +1233,15 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 					else:
 						newList.append(oldItem)
 
-				if objType == 'ProductDependency':
+				if objType == "ProductDependency":
 					packageControlFile.setProductDependencies(newList)
 				else:
 					packageControlFile.setProductProperties(newList)
 
 				packageControlFile.generate()
 
-		elif objType in ('ProductOnDepot', 'ProductOnClient'):
-			filenames = set(self._getConfigFile(obj.getType(), obj.getIdent(returnType='dict'), 'ini') for obj in objList)
+		elif objType in ("ProductOnDepot", "ProductOnClient"):
+			filenames = set(self._getConfigFile(obj.getType(), obj.getIdent(returnType="dict"), "ini") for obj in objList)
 
 			for filename in filenames:
 				iniFile = IniFile(filename=filename, ignoreCase=False)
@@ -1231,21 +1249,20 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 				for obj in objList:
 					logger.debug("Deleting %s: '%s'", obj.getType(), obj.getIdent())
-					if cp.has_section(obj.getProductId() + '-state'):
-						cp.remove_section(obj.getProductId() + '-state')
-						logger.trace("Removed section '%s'" % obj.getProductId() + '-state')
+					if cp.has_section(obj.getProductId() + "-state"):
+						cp.remove_section(obj.getProductId() + "-state")
+						logger.trace("Removed section '%s'" % obj.getProductId() + "-state")
 
 				iniFile.generate(cp)
 
-		elif objType == 'ProductPropertyState':
+		elif objType == "ProductPropertyState":
 			for obj in objList:
 				logger.debug("Deleting %s: '%s'", obj.getType(), obj.getIdent())
-				filename = self._getConfigFile(
-					obj.getType(), obj.getIdent(returnType='dict'), 'ini')
+				filename = self._getConfigFile(obj.getType(), obj.getIdent(returnType="dict"), "ini")
 				iniFile = IniFile(filename=filename, ignoreCase=False)
 				cp = iniFile.parse()
 
-				section = obj.getProductId() + '-install'
+				section = obj.getProductId() + "-install"
 				option = obj.getPropertyId()
 
 				if cp.has_option(section, option):
@@ -1258,20 +1275,20 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 				iniFile.generate(cp)
 
-		elif objType in ('Group', 'HostGroup', 'ProductGroup', 'ObjectToGroup'):
+		elif objType in ("Group", "HostGroup", "ProductGroup", "ObjectToGroup"):
 			passes = [
-				{'filename': self._getConfigFile('Group', {'type': 'ProductGroup'}, 'ini'), 'groupType': 'ProductGroup'},
-				{'filename': self._getConfigFile('Group', {'type': 'HostGroup'}, 'ini'), 'groupType': 'HostGroup'},
+				{"filename": self._getConfigFile("Group", {"type": "ProductGroup"}, "ini"), "groupType": "ProductGroup"},
+				{"filename": self._getConfigFile("Group", {"type": "HostGroup"}, "ini"), "groupType": "HostGroup"},
 			]
 			for _pass in passes:
-				groupType = _pass['groupType']
-				iniFile = IniFile(filename=_pass['filename'], ignoreCase=False)
+				groupType = _pass["groupType"]
+				iniFile = IniFile(filename=_pass["filename"], ignoreCase=False)
 				cp = iniFile.parse()
 
 				for obj in objList:
 					section = None
-					if obj.getType() == 'ObjectToGroup':
-						if obj.groupType not in ('HostGroup', 'ProductGroup'):
+					if obj.getType() == "ObjectToGroup":
+						if obj.groupType not in ("HostGroup", "ProductGroup"):
 							raise BackendBadValueError("Unhandled group type '%s'" % obj.groupType)
 						if not groupType == obj.groupType:
 							continue
@@ -1282,7 +1299,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 						section = obj.getId()
 
 					logger.debug("Deleting %s: '%s'", obj.getType(), obj.getIdent())
-					if obj.getType() == 'ObjectToGroup':
+					if obj.getType() == "ObjectToGroup":
 						if cp.has_option(section, obj.getObjectId()):
 							cp.remove_option(section, obj.getObjectId())
 							logger.trace("Removed option '%s' in section '%s'" % (obj.getObjectId(), section))
@@ -1307,22 +1324,22 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.host_insertObject(self, host)
 
 		logger.debug("Inserting host: '%s'", host.getIdent())  # pylint: disable=maybe-no-member
-		self._write(host, mode='create')
+		self._write(host, mode="create")
 
 	def host_updateObject(self, host: Host) -> None:
 		host = forceObjectClass(host, Host)
 		ConfigDataBackend.host_updateObject(self, host)
 
 		logger.debug("Updating host: '%s'", host.getIdent())  # pylint: disable=maybe-no-member
-		self._write(host, mode='update')
+		self._write(host, mode="update")
 
 	def host_getObjects(self, attributes: List[str] = None, **filter) -> List[Host]:  # pylint: disable=redefined-builtin
 		attributes = attributes or []
 		ConfigDataBackend.host_getObjects(self, attributes, **filter)
 
 		logger.debug("Getting hosts ...")
-		result = self._read('OpsiDepotserver', attributes, **filter)
-		opsiConfigServers = self._read('OpsiConfigserver', attributes, **filter)
+		result = self._read("OpsiDepotserver", attributes, **filter)
+		opsiConfigServers = self._read("OpsiConfigserver", attributes, **filter)
 
 		if opsiConfigServers:
 			contained = False
@@ -1334,7 +1351,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 			if not contained:
 				result.append(opsiConfigServers[0])
-		result.extend(self._read('OpsiClient', attributes, **filter))
+		result.extend(self._read("OpsiClient", attributes, **filter))
 
 		return result
 
@@ -1350,21 +1367,21 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.config_insertObject(self, config)
 
 		logger.debug("Inserting config: '%s'", config.getIdent())
-		self._write(config, mode='create')
+		self._write(config, mode="create")
 
 	def config_updateObject(self, config: Config) -> None:
 		config = forceObjectClass(config, Config)
 		ConfigDataBackend.config_updateObject(self, config)
 
 		logger.debug("Updating config: '%s'", config.getIdent())
-		self._write(config, mode='update')
+		self._write(config, mode="update")
 
 	def config_getObjects(self, attributes: List[str] = None, **filter):  # pylint: disable=redefined-builtin
 		attributes = attributes or []
 		ConfigDataBackend.config_getObjects(self, attributes, **filter)
 
 		logger.debug("Getting configs ...")
-		return self._read('Config', attributes, **filter)
+		return self._read("Config", attributes, **filter)
 
 	def config_deleteObjects(self, configs: List[Config]) -> None:
 		ConfigDataBackend.config_deleteObjects(self, configs)
@@ -1378,21 +1395,21 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.configState_insertObject(self, configState)
 
 		logger.debug("Inserting configState: '%s'", configState.getIdent())  # pylint: disable=maybe-no-member
-		self._write(configState, mode='create')
+		self._write(configState, mode="create")
 
 	def configState_updateObject(self, configState: ConfigState) -> None:
 		configState = forceObjectClass(configState, ConfigState)
 		ConfigDataBackend.configState_updateObject(self, configState)
 
 		logger.debug("Updating configState: '%s'", configState.getIdent())  # pylint: disable=maybe-no-member
-		self._write(configState, mode='update')
+		self._write(configState, mode="update")
 
 	def configState_getObjects(self, attributes: List[str] = None, **filter):  # pylint: disable=redefined-builtin
 		attributes = attributes or []
 		ConfigDataBackend.configState_getObjects(self, attributes, **filter)
 
 		logger.debug("Getting configStates ...")
-		return self._read('ConfigState', attributes, **filter)
+		return self._read("ConfigState", attributes, **filter)
 
 	def configState_deleteObjects(self, configStates: List[ConfigState]) -> None:
 		ConfigDataBackend.configState_deleteObjects(self, configStates)
@@ -1406,22 +1423,22 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.product_insertObject(self, product)
 
 		logger.debug("Inserting product: '%s'", product.getIdent())  # pylint: disable=maybe-no-member
-		self._write(product, mode='create')
+		self._write(product, mode="create")
 
 	def product_updateObject(self, product: Product) -> None:
 		product = forceObjectClass(product, Product)
 		ConfigDataBackend.product_updateObject(self, product)
 
 		logger.debug("Updating product: '%s'", product.getIdent())  # pylint: disable=maybe-no-member
-		self._write(product, mode='update')
+		self._write(product, mode="update")
 
 	def product_getObjects(self, attributes: List[str] = None, **filter) -> List[Product]:  # pylint: disable=redefined-builtin
 		attributes = attributes or []
 		ConfigDataBackend.product_getObjects(self, attributes, **filter)
 
 		logger.debug("Getting products ...")
-		result = self._read('LocalbootProduct', attributes, **filter)
-		result.extend(self._read('NetbootProduct', attributes, **filter))
+		result = self._read("LocalbootProduct", attributes, **filter)
+		result.extend(self._read("NetbootProduct", attributes, **filter))
 
 		return result
 
@@ -1437,21 +1454,21 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.productProperty_insertObject(self, productProperty)
 
 		logger.debug("Inserting productProperty: '%s'", productProperty.getIdent())  # pylint: disable=maybe-no-member
-		self._write(productProperty, mode='create')
+		self._write(productProperty, mode="create")
 
 	def productProperty_updateObject(self, productProperty: ProductProperty) -> None:
 		productProperty = forceObjectClass(productProperty, ProductProperty)
 		ConfigDataBackend.productProperty_updateObject(self, productProperty)
 
 		logger.debug("Updating productProperty: '%s'", productProperty.getIdent())  # pylint: disable=maybe-no-member
-		self._write(productProperty, mode='update')
+		self._write(productProperty, mode="update")
 
 	def productProperty_getObjects(self, attributes: List[str] = None, **filter) -> List[ProductProperty]:  # pylint: disable=redefined-builtin
 		attributes = attributes or []
 		ConfigDataBackend.productProperty_getObjects(self, attributes, **filter)
 
 		logger.debug("Getting productProperties ...")
-		return self._read('ProductProperty', attributes, **filter)
+		return self._read("ProductProperty", attributes, **filter)
 
 	def productProperty_deleteObjects(self, productProperties: List[ProductProperty]) -> None:
 		ConfigDataBackend.productProperty_deleteObjects(self, productProperties)
@@ -1465,21 +1482,21 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.productDependency_insertObject(self, productDependency)
 
 		logger.debug("Inserting productDependency: '%s'", productDependency.getIdent())  # pylint: disable=maybe-no-member
-		self._write(productDependency, mode='create')
+		self._write(productDependency, mode="create")
 
 	def productDependency_updateObject(self, productDependency: ProductDependency) -> None:
 		productDependency = forceObjectClass(productDependency, ProductDependency)
 		ConfigDataBackend.productDependency_updateObject(self, productDependency)
 
 		logger.debug("Updating productDependency: '%s'", productDependency.getIdent())  # pylint: disable=maybe-no-member
-		self._write(productDependency, mode='update')
+		self._write(productDependency, mode="update")
 
 	def productDependency_getObjects(self, attributes: List[str] = None, **filter) -> List[ProductDependency]:  # pylint: disable=redefined-builtin
 		attributes = attributes or []
 		ConfigDataBackend.productDependency_getObjects(self, attributes=[], **filter)
 
 		logger.debug("Getting productDependencies ...")
-		return self._read('ProductDependency', attributes, **filter)
+		return self._read("ProductDependency", attributes, **filter)
 
 	def productDependency_deleteObjects(self, productDependencies: List[ProductDependency]) -> None:
 		ConfigDataBackend.productDependency_deleteObjects(self, productDependencies)
@@ -1493,21 +1510,21 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.productOnDepot_insertObject(self, productOnDepot)
 
 		logger.debug("Inserting productOnDepot: '%s'", productOnDepot.getIdent())  # pylint: disable=maybe-no-member
-		self._write(productOnDepot, mode='create')
+		self._write(productOnDepot, mode="create")
 
 	def productOnDepot_updateObject(self, productOnDepot: ProductOnDepot) -> None:
 		productOnDepot = forceObjectClass(productOnDepot, ProductOnDepot)
 		ConfigDataBackend.productOnDepot_updateObject(self, productOnDepot)
 
 		logger.debug("Updating productOnDepot: '%s'", productOnDepot.getIdent())  # pylint: disable=maybe-no-member
-		self._write(productOnDepot, mode='update')
+		self._write(productOnDepot, mode="update")
 
 	def productOnDepot_getObjects(self, attributes: List[str] = None, **filter) -> List[ProductOnDepot]:  # pylint: disable=redefined-builtin
 		attributes = attributes or []
 		ConfigDataBackend.productOnDepot_getObjects(self, attributes=[], **filter)
 
 		logger.debug("Getting productOnDepots ...")
-		return self._read('ProductOnDepot', attributes, **filter)
+		return self._read("ProductOnDepot", attributes, **filter)
 
 	def productOnDepot_deleteObjects(self, productOnDepots: List[ProductOnDepot]) -> None:
 		ConfigDataBackend.productOnDepot_deleteObjects(self, productOnDepots)
@@ -1521,21 +1538,21 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.productOnClient_insertObject(self, productOnClient)
 
 		logger.debug("Inserting productOnClient: '%s'", productOnClient.getIdent())  # pylint: disable=maybe-no-member
-		self._write(productOnClient, mode='create')
+		self._write(productOnClient, mode="create")
 
 	def productOnClient_updateObject(self, productOnClient: ProductOnClient) -> None:
 		productOnClient = forceObjectClass(productOnClient, ProductOnClient)
 		ConfigDataBackend.productOnClient_updateObject(self, productOnClient)
 
 		logger.debug("Updating productOnClient: '%s'", productOnClient.getIdent())  # pylint: disable=maybe-no-member
-		self._write(productOnClient, mode='update')
+		self._write(productOnClient, mode="update")
 
 	def productOnClient_getObjects(self, attributes: List[str] = None, **filter) -> List[ProductOnClient]:  # pylint: disable=redefined-builtin
 		attributes = attributes or []
 		ConfigDataBackend.productOnClient_getObjects(self, attributes=[], **filter)
 
 		logger.debug("Getting productOnClient ...")
-		return self._read('ProductOnClient', attributes, **filter)
+		return self._read("ProductOnClient", attributes, **filter)
 
 	def productOnClient_deleteObjects(self, productOnClients: ProductOnClient) -> None:
 		ConfigDataBackend.productOnClient_deleteObjects(self, productOnClients)
@@ -1549,21 +1566,21 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.productPropertyState_insertObject(self, productPropertyState)
 
 		logger.debug("Inserting productPropertyState: '%s'", productPropertyState.getIdent())  # pylint: disable=maybe-no-member
-		self._write(productPropertyState, mode='create')
+		self._write(productPropertyState, mode="create")
 
 	def productPropertyState_updateObject(self, productPropertyState: ProductPropertyState) -> None:
 		productPropertyState = forceObjectClass(productPropertyState, ProductPropertyState)
 		ConfigDataBackend.productPropertyState_updateObject(self, productPropertyState)
 
 		logger.debug("Updating productPropertyState: '%s'", productPropertyState.getIdent())  # pylint: disable=maybe-no-member
-		self._write(productPropertyState, mode='update')
+		self._write(productPropertyState, mode="update")
 
 	def productPropertyState_getObjects(self, attributes: List[str] = None, **filter) -> List[ProductPropertyState]:  # pylint: disable=redefined-builtin
 		attributes = attributes or []
 		ConfigDataBackend.productPropertyState_getObjects(self, attributes=[], **filter)
 
 		logger.debug("Getting productPropertyStates ...")
-		return self._read('ProductPropertyState', attributes, **filter)
+		return self._read("ProductPropertyState", attributes, **filter)
 
 	def productPropertyState_deleteObjects(self, productPropertyStates: List[ProductPropertyState]) -> None:
 		ConfigDataBackend.productPropertyState_deleteObjects(self, productPropertyStates)
@@ -1577,21 +1594,21 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.group_insertObject(self, group)
 
 		logger.debug("Inserting group: '%s'", group.getIdent())  # pylint: disable=maybe-no-member
-		self._write(group, mode='create')
+		self._write(group, mode="create")
 
 	def group_updateObject(self, group: Group) -> None:
 		group = forceObjectClass(group, Group)
 		ConfigDataBackend.group_updateObject(self, group)
 
 		logger.debug("Updating group: '%s'", group.getIdent())  # pylint: disable=maybe-no-member
-		self._write(group, mode='update')
+		self._write(group, mode="update")
 
 	def group_getObjects(self, attributes: List[str] = None, **filter):  # pylint: disable=redefined-builtin
 		attributes = attributes or []
 		ConfigDataBackend.group_getObjects(self, attributes=[], **filter)
 
 		logger.debug("Getting groups ...")
-		return self._read('Group', attributes, **filter)
+		return self._read("Group", attributes, **filter)
 
 	def group_deleteObjects(self, groups: List[Group]) -> None:
 		ConfigDataBackend.group_deleteObjects(self, groups)
@@ -1605,21 +1622,21 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.objectToGroup_insertObject(self, objectToGroup)
 
 		logger.debug("Inserting objectToGroup: '%s'", objectToGroup.getIdent())  # pylint: disable=maybe-no-member
-		self._write(objectToGroup, mode='create')
+		self._write(objectToGroup, mode="create")
 
 	def objectToGroup_updateObject(self, objectToGroup: ObjectToGroup) -> None:
 		objectToGroup = forceObjectClass(objectToGroup, ObjectToGroup)
 		ConfigDataBackend.objectToGroup_updateObject(self, objectToGroup)
 
 		logger.debug("Updating objectToGroup: '%s'", objectToGroup.getIdent())  # pylint: disable=maybe-no-member
-		self._write(objectToGroup, mode='update')
+		self._write(objectToGroup, mode="update")
 
 	def objectToGroup_getObjects(self, attributes: List[str] = None, **filter) -> List[ObjectToGroup]:  # pylint: disable=redefined-builtin
 		attributes = attributes or []
 		ConfigDataBackend.objectToGroup_getObjects(self, attributes=[], **filter)
 
 		logger.debug("Getting objectToGroups ...")
-		return self._read('ObjectToGroup', attributes, **filter)
+		return self._read("ObjectToGroup", attributes, **filter)
 
 	def objectToGroup_deleteObjects(self, objectToGroups: List[ObjectToGroup]) -> None:
 		ConfigDataBackend.objectToGroup_deleteObjects(self, objectToGroups)
@@ -1633,7 +1650,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.auditSoftware_insertObject(self, auditSoftware)
 
 		logger.debug("Inserting auditSoftware: '%s'", auditSoftware.getIdent())  # pylint: disable=maybe-no-member
-		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
+		filename = self._getConfigFile("AuditSoftware", {}, "sw")
 
 		if not os.path.exists(filename):
 			self._touch(filename)
@@ -1643,19 +1660,19 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 		auditSoftware = auditSoftware.toHash()  # pylint: disable=maybe-no-member
 		for attribute in auditSoftware.keys():
-			if (auditSoftware[attribute] is None) or (attribute == 'type'):
+			if (auditSoftware[attribute] is None) or (attribute == "type"):
 				continue
 			auditSoftware[attribute] = self.__escape(auditSoftware[attribute])
 
 		newNum = 0
 		removeSection = None
 		for section in ini.sections():
-			num = int(section.split('_')[-1])
+			num = int(section.split("_")[-1])
 			if num >= newNum:
 				newNum = num + 1
 
 			matches = True
-			for attribute in ('name', 'version', 'subVersion', 'language', 'architecture'):
+			for attribute in ("name", "version", "subVersion", "language", "architecture"):
 				if not ini.has_option(section, attribute):
 					if auditSoftware[attribute] is not None:
 						matches = False
@@ -1670,15 +1687,15 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 				logger.debug("Found auditSoftware section '%s' to replace", removeSection)
 				break
 
-		section = 'software_%d' % newNum
+		section = "software_%d" % newNum
 		if removeSection:
 			ini.remove_section(removeSection)
 		else:
 			logger.debug("Inserting new auditSoftware section '%s'", section)
 
 		ini.add_section(section)
-		for (attribute, value) in auditSoftware.items():
-			if value is None or attribute == 'type':
+		for attribute, value in auditSoftware.items():
+			if value is None or attribute == "type":
 				continue
 			ini.set(section, attribute, value)
 		iniFile.generate(ini)
@@ -1688,20 +1705,20 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.auditSoftware_updateObject(self, auditSoftware)
 
 		logger.debug("Updating auditSoftware: '%s'", auditSoftware.getIdent())  # pylint: disable=maybe-no-member
-		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
+		filename = self._getConfigFile("AuditSoftware", {}, "sw")
 		iniFile = IniFile(filename=filename)
 		ini = iniFile.parse()
-		ident = auditSoftware.getIdent(returnType='dict')  # pylint: disable=maybe-no-member
+		ident = auditSoftware.getIdent(returnType="dict")  # pylint: disable=maybe-no-member
 
 		for section in ini.sections():
 			found = True
-			for (key, value) in ident.items():
+			for key, value in ident.items():
 				if self.__unescape(ini.get(section, key.lower())) != value:
 					found = False
 					break
 
 			if found:
-				for (key, value) in auditSoftware.toHash().items():  # pylint: disable=maybe-no-member
+				for key, value in auditSoftware.toHash().items():  # pylint: disable=maybe-no-member
 					if value is None:
 						continue
 					ini.set(section, key, self.__escape(value))
@@ -1715,7 +1732,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.auditSoftware_getObjects(self, attributes=[], **filter)
 
 		logger.debug("Getting auditSoftwares ...")
-		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
+		filename = self._getConfigFile("AuditSoftware", {}, "sw")
 		if not os.path.exists(filename):
 			return []
 
@@ -1724,10 +1741,10 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		fastFilter = {}
 
 		if filter:
-			for (attribute, value) in filter.items():
+			for attribute, value in filter.items():
 				if attribute in ("name", "version", "subVersion", "language", "architecture") and value:
 					value = forceUnicodeList(value)
-					if len(value) == 1 and value[0].find('*') == -1:
+					if len(value) == 1 and value[0].find("*") == -1:
 						fastFilter[attribute] = value[0]
 
 		result = []
@@ -1741,10 +1758,10 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 				"windowsSoftwareId": None,
 				"windowsDisplayName": None,
 				"windowsDisplayVersion": None,
-				"installSize": None
+				"installSize": None,
 			}
 			fastFiltered = False
-			for (key, value) in objHash.items():
+			for key, value in objHash.items():
 				try:
 					value = self.__unescape(ini.get(section, key.lower()))
 					if fastFilter and value and key in fastFilter and (fastFilter[key] != value):
@@ -1763,21 +1780,18 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.auditSoftware_deleteObjects(self, auditSoftwares)
 
 		logger.debug("Deleting auditSoftwares ...")
-		filename = self._getConfigFile('AuditSoftware', {}, 'sw')
+		filename = self._getConfigFile("AuditSoftware", {}, "sw")
 		if not os.path.exists(filename):
 			return
 		iniFile = IniFile(filename=filename)
 		ini = iniFile.parse()
-		idents = [
-			auditSoftware.getIdent(returnType='dict') for auditSoftware
-			in forceObjectClassList(auditSoftwares, AuditSoftware)
-		]
+		idents = [auditSoftware.getIdent(returnType="dict") for auditSoftware in forceObjectClassList(auditSoftwares, AuditSoftware)]
 
 		removeSections = []
 		for section in ini.sections():
 			for ident in idents:
 				found = True
-				for (key, value) in ident.items():
+				for key, value in ident.items():
 					if self.__unescape(ini.get(section, key.lower())) != value:
 						found = False
 						break
@@ -1796,7 +1810,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.auditSoftwareOnClient_insertObject(self, auditSoftwareOnClient)
 
 		logger.debug("Inserting auditSoftwareOnClient: '%s'", auditSoftwareOnClient.getIdent())  # pylint: disable=maybe-no-member
-		filename = self._getConfigFile('AuditSoftwareOnClient', {"clientId": auditSoftwareOnClient.clientId}, 'sw')  # pylint: disable=maybe-no-member
+		filename = self._getConfigFile("AuditSoftwareOnClient", {"clientId": auditSoftwareOnClient.clientId}, "sw")  # pylint: disable=maybe-no-member
 
 		if not os.path.exists(filename):
 			self._touch(filename)
@@ -1812,12 +1826,12 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		newNum = 0
 		removeSection = None
 		for section in ini.sections():
-			num = int(section.split('_')[-1])
+			num = int(section.split("_")[-1])
 			if num >= newNum:
 				newNum = num + 1
 
 			matches = True
-			for attribute in ('name', 'version', 'subVersion', 'language', 'architecture'):
+			for attribute in ("name", "version", "subVersion", "language", "architecture"):
 				if not ini.has_option(section, attribute):
 					if auditSoftwareOnClient[attribute] is not None:
 						matches = False
@@ -1832,14 +1846,14 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 				logger.debug("Found auditSoftwareOnClient section '%s' to replace", removeSection)
 				break
 
-		section = 'software_%d' % newNum
+		section = "software_%d" % newNum
 		if removeSection:
 			ini.remove_section(removeSection)
 		else:
 			logger.debug("Inserting new auditSoftwareOnClient section '%s'", section)
 
 		ini.add_section(section)
-		for (attribute, value) in auditSoftwareOnClient.items():
+		for attribute, value in auditSoftwareOnClient.items():
 			if value is None:
 				continue
 			ini.set(section, attribute, value)
@@ -1850,20 +1864,20 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.auditSoftwareOnClient_updateObject(self, auditSoftwareOnClient)
 
 		logger.debug("Updating auditSoftwareOnClient: '%s'", auditSoftwareOnClient.getIdent())  # pylint: disable=maybe-no-member
-		filename = self._getConfigFile('AuditSoftwareOnClient', {"clientId": auditSoftwareOnClient.clientId}, 'sw')  # pylint: disable=maybe-no-member
+		filename = self._getConfigFile("AuditSoftwareOnClient", {"clientId": auditSoftwareOnClient.clientId}, "sw")  # pylint: disable=maybe-no-member
 		iniFile = IniFile(filename=filename)
 		ini = iniFile.parse()
-		ident = auditSoftwareOnClient.getIdent(returnType='dict')  # pylint: disable=maybe-no-member
+		ident = auditSoftwareOnClient.getIdent(returnType="dict")  # pylint: disable=maybe-no-member
 
 		for section in ini.sections():
 			found = True
-			for (key, value) in ident.items():
+			for key, value in ident.items():
 				if self.__unescape(ini.get(section, key.lower())) != value:
 					found = False
 					break
 
 			if found:
-				for (key, value) in auditSoftwareOnClient.toHash().items():  # pylint: disable=maybe-no-member
+				for key, value in auditSoftwareOnClient.toHash().items():  # pylint: disable=maybe-no-member
 					if value is None:
 						continue
 					ini.set(section, key, self.__escape(value))
@@ -1878,12 +1892,12 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 		logger.debug("Getting auditSoftwareOnClients ...")
 		filenames = {}
-		for ident in self._getIdents('AuditSoftwareOnClient', **filter):
-			if ident['clientId'] not in filenames:
-				filenames[ident['clientId']] = self._getConfigFile('AuditSoftwareOnClient', ident, 'sw')
+		for ident in self._getIdents("AuditSoftwareOnClient", **filter):
+			if ident["clientId"] not in filenames:
+				filenames[ident["clientId"]] = self._getConfigFile("AuditSoftwareOnClient", ident, "sw")
 
 		result = []
-		for (_clientId, filename) in filenames.items():
+		for _clientId, filename in filenames.items():
 			if not os.path.exists(filename):
 				continue
 			iniFile = IniFile(filename=filename)
@@ -1903,7 +1917,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 					"state": None,
 					"usageFrequency": None,
 					"lastUsed": None,
-					"licenseKey": None
+					"licenseKey": None,
 				}
 				for key in list(objHash):
 					try:
@@ -1923,23 +1937,23 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		filenames = {}
 		idents = {}
 		for auditSoftwareOnClient in forceObjectClassList(auditSoftwareOnClients, AuditSoftwareOnClient):
-			ident = auditSoftwareOnClient.getIdent(returnType='dict')
+			ident = auditSoftwareOnClient.getIdent(returnType="dict")
 			try:
-				idents[ident['clientId']].append(ident)
+				idents[ident["clientId"]].append(ident)
 			except KeyError:
-				idents[ident['clientId']] = [ident]
+				idents[ident["clientId"]] = [ident]
 
-			if ident['clientId'] not in filenames:
-				filenames[ident['clientId']] = self._getConfigFile('AuditSoftwareOnClient', ident, 'sw')
+			if ident["clientId"] not in filenames:
+				filenames[ident["clientId"]] = self._getConfigFile("AuditSoftwareOnClient", ident, "sw")
 
-		for (clientId, filename) in filenames.items():
+		for clientId, filename in filenames.items():
 			iniFile = IniFile(filename=filename)
 			ini = iniFile.parse()
 			removeSections = []
 			for section in ini.sections():
 				for ident in idents[clientId]:
 					found = True
-					for (key, value) in ident.items():
+					for key, value in ident.items():
 						if self.__unescape(ini.get(section, key.lower())) != value:
 							found = False
 							break
@@ -1957,21 +1971,21 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.auditHardware_insertObject(self, auditHardware)
 
 		logger.debug("Inserting auditHardware: '%s'", auditHardware.getIdent())
-		self.__doAuditHardwareObj(auditHardware, mode='insert')
+		self.__doAuditHardwareObj(auditHardware, mode="insert")
 
 	def auditHardware_updateObject(self, auditHardware: AuditHardware) -> None:
 		auditHardware = forceObjectClass(auditHardware, AuditHardware)
 		ConfigDataBackend.auditHardware_updateObject(self, auditHardware)
 
 		logger.debug("Updating auditHardware: '%s'", auditHardware.getIdent())
-		self.__doAuditHardwareObj(auditHardware, mode='update')
+		self.__doAuditHardwareObj(auditHardware, mode="update")
 
 	def auditHardware_getObjects(self, attributes: List[str] = None, **filter) -> List[AuditHardware]:  # pylint: disable=redefined-builtin,unused-argument
 		attributes = attributes or []
 		ConfigDataBackend.auditHardware_getObjects(self, attributes=[], **filter)
 
 		logger.debug("Getting auditHardwares ...")
-		filename = self._getConfigFile('AuditHardware', {}, 'hw')
+		filename = self._getConfigFile("AuditHardware", {}, "hw")
 		if not os.path.exists(filename):
 			return []
 
@@ -1981,8 +1995,8 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		for section in ini.sections():
 			objHash = {}
 			for option in ini.options(section):
-				if option.lower() == 'hardwareclass':
-					objHash['hardwareClass'] = self.__unescape(ini.get(section, option))
+				if option.lower() == "hardwareclass":
+					objHash["hardwareClass"] = self.__unescape(ini.get(section, option))
 				else:
 					objHash[str(option)] = self.__unescape(ini.get(section, option))
 
@@ -1998,7 +2012,7 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		logger.debug("Deleting auditHardwares ...")
 		# TODO: forceObjectClassList necessary?
 		for auditHardware in forceObjectClassList(auditHardwares, AuditHardware):
-			self.__doAuditHardwareObj(auditHardware, mode='delete')
+			self.__doAuditHardwareObj(auditHardware, mode="delete")
 
 	# AuditHardwareOnHosts
 	def auditHardwareOnHost_insertObject(self, auditHardwareOnHost: AuditHardwareOnHost) -> None:
@@ -2006,14 +2020,14 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		ConfigDataBackend.auditHardwareOnHost_insertObject(self, auditHardwareOnHost)
 
 		logger.debug("Inserting auditHardwareOnHost: '%s'", auditHardwareOnHost.getIdent())
-		self.__doAuditHardwareObj(auditHardwareOnHost, mode='insert')
+		self.__doAuditHardwareObj(auditHardwareOnHost, mode="insert")
 
 	def auditHardwareOnHost_updateObject(self, auditHardwareOnHost: AuditHardwareOnHost) -> None:
 		auditHardwareOnHost = forceObjectClass(auditHardwareOnHost, AuditHardwareOnHost)
 		ConfigDataBackend.auditHardwareOnHost_updateObject(self, auditHardwareOnHost)
 
 		logger.debug("Updating auditHardwareOnHost: '%s'", auditHardwareOnHost.getIdent())
-		self.__doAuditHardwareObj(auditHardwareOnHost, mode='update')
+		self.__doAuditHardwareObj(auditHardwareOnHost, mode="update")
 
 	def auditHardwareOnHost_getObjects(self, attributes: List[str] = None, **filter) -> List[AuditHardwareOnHost]:  # pylint: disable=redefined-builtin, unused-argument
 		attributes = attributes or []
@@ -2021,24 +2035,22 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 
 		logger.debug("Getting auditHardwareOnHosts ...")
 		filenames = {}
-		for ident in self._getIdents('AuditHardwareOnHost', **filter):
-			if ident['hostId'] not in filenames:
-				filenames[ident['hostId']] = self._getConfigFile('AuditHardwareOnHost', ident, 'hw')
+		for ident in self._getIdents("AuditHardwareOnHost", **filter):
+			if ident["hostId"] not in filenames:
+				filenames[ident["hostId"]] = self._getConfigFile("AuditHardwareOnHost", ident, "hw")
 
 		result = []
-		for (hostId, filename) in filenames.items():
+		for hostId, filename in filenames.items():
 			if not os.path.exists(filename):
 				continue
 
 			iniFile = IniFile(filename=filename)
 			ini = iniFile.parse()
 			for section in ini.sections():
-				objHash = {
-					'hostId': hostId
-				}
+				objHash = {"hostId": hostId}
 				for option in ini.options(section):
-					if option.lower() == 'hardwareclass':
-						objHash['hardwareClass'] = self.__unescape(ini.get(section, option))
+					if option.lower() == "hardwareclass":
+						objHash["hardwareClass"] = self.__unescape(ini.get(section, option))
 					else:
 						objHash[str(option)] = self.__unescape(ini.get(section, option))
 
@@ -2054,36 +2066,36 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 		logger.debug("Deleting auditHardwareOnHosts ...")
 
 		for auditHardwareOnHost in forceObjectClassList(auditHardwareOnHosts, AuditHardwareOnHost):
-			self.__doAuditHardwareObj(auditHardwareOnHost, mode='delete')
+			self.__doAuditHardwareObj(auditHardwareOnHost, mode="delete")
 
 	def __doAuditHardwareObj(self, auditHardwareObj: Union[AuditHardware, AuditHardwareOnHost], mode: str) -> None:  # pylint: disable=too-many-branches,too-many-statements
-		if mode not in ('insert', 'update', 'delete'):
+		if mode not in ("insert", "update", "delete"):
 			raise ValueError("Unknown mode: %s" % mode)
 
 		objType = auditHardwareObj.getType()
-		if objType not in ('AuditHardware', 'AuditHardwareOnHost'):
+		if objType not in ("AuditHardware", "AuditHardwareOnHost"):
 			raise TypeError("Unknown type: %s" % objType)
 
-		filename = self._getConfigFile(objType, auditHardwareObj.getIdent(returnType='dict'), 'hw')
+		filename = self._getConfigFile(objType, auditHardwareObj.getIdent(returnType="dict"), "hw")
 		self._touch(filename)
 		iniFile = IniFile(filename=filename)
 		ini = iniFile.parse()
 
 		objHash = {}
-		for (attribute, value) in auditHardwareObj.toHash().items():
-			if attribute.lower() in ('hostid', 'type'):
+		for attribute, value in auditHardwareObj.toHash().items():
+			if attribute.lower() in ("hostid", "type"):
 				continue
 
 			if value is None:
-				objHash[attribute.lower()] = ''
+				objHash[attribute.lower()] = ""
 			else:
 				objHash[attribute.lower()] = forceUnicode(value)
 
 		sectionFound = None
 		for section in ini.sections():
 			matches = True
-			for (attribute, value) in objHash.items():
-				if attribute in ('firstseen', 'lastseen', 'state'):
+			for attribute, value in objHash.items():
+				if attribute in ("firstseen", "lastseen", "state"):
 					continue
 
 				if ini.has_option(section, attribute):
@@ -2094,37 +2106,34 @@ class FileBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attri
 					matches = False
 					break
 			if matches:
-				logger.debug(
-					"Found matching section '%s' in audit file '%s' for object %s",
-					section, filename, objHash
-				)
+				logger.debug("Found matching section '%s' in audit file '%s' for object %s", section, filename, objHash)
 				sectionFound = section
 				break
 
-		if mode == 'delete':
+		if mode == "delete":
 			if sectionFound:
 				ini.remove_section(sectionFound)
-		elif mode == 'update':
+		elif mode == "update":
 			if sectionFound:
-				for (attribute, value) in objHash.items():
-					if attribute in ('firstseen', 'lastseen', 'state') and not value:
+				for attribute, value in objHash.items():
+					if attribute in ("firstseen", "lastseen", "state") and not value:
 						continue
 					ini.set(sectionFound, attribute, self.__escape(value))
 			else:
-				mode = 'insert'
+				mode = "insert"
 
-		if mode == 'insert':
+		if mode == "insert":
 			if sectionFound:
 				ini.remove_section(sectionFound)
 			else:
-				nums = [int(section[section.rfind('_') + 1:]) for section in ini.sections()]
+				nums = [int(section[section.rfind("_") + 1 :]) for section in ini.sections()]
 
 				num = 0
 				while num in nums:
 					num += 1
-				sectionFound = 'hardware_%d' % num
+				sectionFound = "hardware_%d" % num
 			ini.add_section(sectionFound)
-			for (attribute, value) in objHash.items():
+			for attribute, value in objHash.items():
 				ini.set(sectionFound, attribute, self.__escape(value))
 
 		iniFile.generate(ini)

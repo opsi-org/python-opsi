@@ -142,7 +142,6 @@ def checkIfBackendIsFilled(backend, licenseManagementData=False, auditData=False
 		print(type(group), group.toHash())
 		assert type(group).__name__ in ("HostGroup", "ProductGroup")
 
-
 	if licenseManagementData:
 		# TODO: check licenseManagementData
 		assert len(backend.licenseContract_getObjects()) > 0

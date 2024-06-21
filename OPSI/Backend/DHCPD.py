@@ -207,9 +207,7 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 
 	def _getResponsibleDepotId(self, clientId: str) -> str:
 		"""This method returns the depot a client is assigned to."""
-		configStates = self._context.configState_getObjects(
-			configId="clientconfig.depot.id", objectId=clientId
-		)  # pylint: disable=maybe-no-member
+		configStates = self._context.configState_getObjects(configId="clientconfig.depot.id", objectId=clientId)  # pylint: disable=maybe-no-member
 		try:
 			depotId = configStates[0].values[0]
 		except IndexError as err:
@@ -235,9 +233,7 @@ class DHCPDBackend(ConfigDataBackend):  # pylint: disable=too-many-instance-attr
 		if self._dhcpdOnDepot:
 			depotId = self._getResponsibleDepotId(host.id)  # pylint: disable=maybe-no-member
 			if depotId != self._depotId:
-				logger.info(
-					"Not responsible for client '%s', forwarding request to depot '%s'", host.id, depotId
-				)  # pylint: disable=maybe-no-member
+				logger.info("Not responsible for client '%s', forwarding request to depot '%s'", host.id, depotId)  # pylint: disable=maybe-no-member
 				return self._getDepotConnection(depotId).dhcpd_updateHost(host)  # pylint: disable=maybe-no-member
 		return self.dhcpd_updateHost(host)
 

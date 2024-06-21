@@ -30,9 +30,9 @@ from .Config import loadBackendConfig
 from .Dispatcher import BackendDispatcher
 from .Extender import BackendExtender
 
-__all__ = ('BackendManager', 'backendManagerFactory')
+__all__ = ("BackendManager", "backendManagerFactory")
 
-_BACKEND_CONFIG_NAME_REGEX = re.compile(r'^[a-zA-Z0-9-_]+$')
+_BACKEND_CONFIG_NAME_REGEX = re.compile(r"^[a-zA-Z0-9-_]+$")
 
 logger = get_logger("opsi.general")
 
@@ -44,13 +44,14 @@ class BackendManager(ExtendedBackend):
 	This includes extending the backends, dispatching calls to backends,
 	limiting the access through ACL.
 	"""
+
 	default_config = {
-		"dispatchConfigFile": '/etc/opsi/backendManager/dispatch.conf',
-		"backendConfigDir": '/etc/opsi/backends',
-		"extensionConfigDir": '/etc/opsi/backendManager/extend.d',
+		"dispatchConfigFile": "/etc/opsi/backendManager/dispatch.conf",
+		"backendConfigDir": "/etc/opsi/backends",
+		"extensionConfigDir": "/etc/opsi/backendManager/extend.d",
 		"depotBackend": False,
 		"hostControlBackend": True,
-		"hostControlSafeBackend": True
+		"hostControlSafeBackend": True,
 	}
 
 	def __init__(self, **kwargs):  # pylint: disable=super-init-not-called,too-many-locals,too-many-branches,too-many-statements
@@ -126,35 +127,35 @@ class BackendManager(ExtendedBackend):
 		loadBackend = None
 
 		argumentToDelete = set()
-		for (option, value) in kwargs.items():
+		for option, value in kwargs.items():
 			option = option.lower()
-			if option == 'backend':
+			if option == "backend":
 				if isinstance(value, str):
 					loadBackend = value
 				else:
 					self._backend = value
 				argumentToDelete.add(option)
-			elif option == 'backendconfigdir':
+			elif option == "backendconfigdir":
 				self._backendConfigDir = value
-			elif option in ('dispatchconfig', 'dispatchconfigfile') and value:
+			elif option in ("dispatchconfig", "dispatchconfigfile") and value:
 				dispatch = True
-			elif option == 'depotbackend':
+			elif option == "depotbackend":
 				depotBackend = forceBool(value)
-			elif option == 'hostcontrolbackend':
+			elif option == "hostcontrolbackend":
 				hostControlBackend = forceBool(value)
-			elif option == 'hostcontrolsafebackend':
+			elif option == "hostcontrolsafebackend":
 				hostControlSafeBackend = forceBool(value)
-			elif option == 'extensionconfigdir' and value:
+			elif option == "extensionconfigdir" and value:
 				extensionConfigDir = value
 				extend = True
-			elif option == 'extensionclass':
+			elif option == "extensionclass":
 				extensionClass = value
 				extend = True
-			elif option == 'extend':
+			elif option == "extend":
 				extend = forceBool(value)
-			elif option in ('acl', 'aclfile') and value:
+			elif option in ("acl", "aclfile") and value:
 				accessControl = True
-			elif option == 'accesscontrolclass':
+			elif option == "accesscontrolclass":
 				accessControlClass = value
 
 		for argument in argumentToDelete:
@@ -190,24 +191,18 @@ class BackendManager(ExtendedBackend):
 			logger.info("* BackendManager is creating HostControlBackend")
 			hostControlBackendConfig = dict(kwargs)
 			try:
-				hostControlBackendConfig.update(self.__loadBackendConfig('hostcontrol')['config'])
+				hostControlBackendConfig.update(self.__loadBackendConfig("hostcontrol")["config"])
 			except Exception as err:  # pylint: disable=broad-except
-				logger.error(
-					"Failed to load configuration for HostControlBackend: %s",
-					err
-				)
+				logger.error("Failed to load configuration for HostControlBackend: %s", err)
 			self._backend = HostControlBackend(self._backend, **hostControlBackendConfig)
 
 		if hostControlSafeBackend:
 			logger.info("* BackendManager is creating HostControlSafeBackend")
 			hostControlSafeBackendConfig = dict(kwargs)
 			try:
-				hostControlSafeBackendConfig.update(self.__loadBackendConfig('hostcontrol')['config'])
+				hostControlSafeBackendConfig.update(self.__loadBackendConfig("hostcontrol")["config"])
 			except Exception as err:  # pylint: disable=broad-except
-				logger.error(
-					"Failed to load configuration for HostControlSafeBackend: %s",
-					err
-				)
+				logger.error("Failed to load configuration for HostControlSafeBackend: %s", err)
 			self._backend = HostControlSafeBackend(self._backend, **hostControlSafeBackendConfig)
 
 		if accessControl:
@@ -237,24 +232,24 @@ class BackendManager(ExtendedBackend):
 
 	def __loadBackend(self, name):
 		config = self.__loadBackendConfig(name)
-		if not config['module']:
+		if not config["module"]:
 			raise BackendConfigurationError(f"No module defined in backend config file for '{name}'")
-		if not isinstance(config['config'], dict):
+		if not isinstance(config["config"], dict):
 			raise BackendConfigurationError(f"Bad type for 'config' var in backend config file for '{name}': has to be dict")
-		config['config']['name'] = name
-		moduleName = config['module']
+		config["config"]["name"] = name
+		moduleName = config["module"]
 		backendClassName = f"{config['module']}Backend"
-		exec(f'from OPSI.Backend.{moduleName} import {backendClassName}')  # pylint: disable=exec-used
+		exec(f"from OPSI.Backend.{moduleName} import {backendClassName}")  # pylint: disable=exec-used
 		return eval(f'{backendClassName}(**config["config"])')  # pylint: disable=eval-used
 
 	_loadBackend = __loadBackend
 
+
 def backendManagerFactory(
-	user, password, dispatchConfigFile, backendConfigDir,
-	extensionConfigDir, aclFile, depotId, postpath, context, **kwargs
+	user, password, dispatchConfigFile, backendConfigDir, extensionConfigDir, aclFile, depotId, postpath, context, **kwargs
 ):  # pylint: disable=too-many-arguments
 	backendManager = None
-	if len(postpath) == 2 and postpath[0] == 'backend':
+	if len(postpath) == 2 and postpath[0] == "backend":
 		backendManager = BackendManager(
 			backend=postpath[1],
 			accessControlContext=context,
@@ -262,11 +257,11 @@ def backendManagerFactory(
 			aclFile=aclFile,
 			username=user,
 			password=password,
-			**kwargs
+			**kwargs,
 		)
-	elif len(postpath) == 2 and postpath[0] == 'extend':
+	elif len(postpath) == 2 and postpath[0] == "extend":
 		extendPath = postpath[1]
-		if not re.search(r'^[a-zA-Z0-9_-]+$', extendPath):
+		if not re.search(r"^[a-zA-Z0-9_-]+$", extendPath):
 			raise ValueError(f"Extension config path '{extendPath}' refused")
 		backendManager = BackendManager(
 			dispatchConfigFile=dispatchConfigFile,
@@ -279,7 +274,7 @@ def backendManagerFactory(
 			hostControlSafeBackend=True,
 			username=user,
 			password=password,
-			**kwargs
+			**kwargs,
 		)
 	else:
 		backendManager = BackendManager(
@@ -293,7 +288,7 @@ def backendManagerFactory(
 			hostControlSafeBackend=True,
 			username=user,
 			password=password,
-			**kwargs
+			**kwargs,
 		)
 
 	return backendManager

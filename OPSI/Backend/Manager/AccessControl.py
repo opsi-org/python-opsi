@@ -63,7 +63,6 @@ class BackendAccessControl:
 	"""Access control for a Backend"""
 
 	def __init__(self, backend, **kwargs):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
-
 		self._backend = backend
 		self._context = backend
 		self._acl = None
@@ -73,7 +72,7 @@ class BackendAccessControl:
 
 		pam_service = None
 		kwargs = {k.lower(): v for k, v in kwargs.items()}
-		for (option, value) in kwargs.items():
+		for option, value in kwargs.items():
 			if option == "acl":
 				self._acl = value
 			elif option == "aclfile":
@@ -146,9 +145,7 @@ class BackendAccessControl:
 	def user_store(self, user_store):
 		self._user_store = user_store
 
-	def authenticate(
-		self, username: str, password: str, forceGroups: List[str] = None, auth_type: str = None
-	):  # pylint: disable=too-many-branches,too-many-statements
+	def authenticate(self, username: str, password: str, forceGroups: List[str] = None, auth_type: str = None):  # pylint: disable=too-many-branches,too-many-statements
 		if not auth_type:
 			if re.search(r"^[^.]+\.[^.]+\.\S+$", username) or re.search(r"^[a-fA-F0-9]{2}(:[a-fA-F0-9]{2}){5}$", username):
 				# Username is a fqdn or mac address
@@ -356,7 +353,7 @@ class BackendAccessControl:
 	def _isSelf(self, **params):
 		if not params:
 			return False
-		for (param, value) in params.items():
+		for param, value in params.items():
 			if issubclass(value, Object) and value.id == self.user_store.username:
 				return True
 			if param in ("id", "objectId", "hostId", "clientId", "serverId", "depotId") and (value == self.user_store.username):
@@ -449,7 +446,7 @@ class BackendAccessControl:
 
 	def _filterParams(self, params, acls):
 		logger.debug("Filtering params: %s", params)
-		for (key, value) in tuple(params.items()):
+		for key, value in tuple(params.items()):
 			valueList = forceList(value)
 			if not valueList:
 				continue
@@ -472,9 +469,7 @@ class BackendAccessControl:
 				return self._filterObjects(result, acls, exceptionOnTruncate=False, exceptionIfAllRemoved=False)
 		return result
 
-	def _filterObjects(
-		self, objects, acls, exceptionOnTruncate=True, exceptionIfAllRemoved=True
-	):  # pylint: disable=too-many-branches,too-many-locals
+	def _filterObjects(self, objects, acls, exceptionOnTruncate=True, exceptionIfAllRemoved=True):  # pylint: disable=too-many-branches,too-many-locals
 		logger.info("Filtering objects by acls")
 		is_list = type(objects) in (tuple, list)
 		newObjects = []
