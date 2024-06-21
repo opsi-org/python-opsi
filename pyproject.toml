@@ -4,37 +4,31 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "python-opsi"
-version = "4.3.5.1"
+version = "4.4.0.0"
 description = "The opsi python library"
 homepage = "https://www.opsi.org"
 license = "AGPL-3.0"
 maintainers = [ "uib GmbH <info@uib.de>",]
 authors = [ "uib GmbH <info@uib.de>",]
 include = [ "python-opsi_data/**/*",]
+
 [[tool.poetry.packages]]
 include = "OPSI"
 
+[[tool.poetry.packages]]
+include = "opsisystem"
+
 [[tool.poetry.source]]
 name = "uibpypi"
-url = "https://pypi.uib.gmbh/simple"
+url = "http://pypi.uib.gmbh:8080/simple"
 priority = "primary"
-
-[[tool.poetry.source]]
-name = "PyPI"
-priority = "primary"
-
-[tool.black]
-line-length = 140
-target-version = [ "py39", "py310",]
-use-tabs = true
-
-[tool.isort]
-profile = "black"
-indent = "\t"
 
 [tool.ruff]
 line-length = 140
 ignore = [ "F401", "E402", "F403", "F405",]
+
+[tool.ruff.format]
+indent-style = "tab"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
@@ -43,19 +37,19 @@ colorlog = "^6.6"
 ldap3 = "^2.9"
 lz4 = "^4.0"
 msgpack = "^1.0"
+packaging = "^23.0"
 pefile = "^2023.2"
 pexpect = "^4.8"
 psutil = "^5.8"
 pyasn1 = "^0.5"
 pycryptodome = "^3.10"
-python-opsi-common = ">=4.3.3,<4.4"
+python-opsi-common = ">=4.4,<4.5"
 python-pam = "^2.0"
+pyzsync = "^1.2"
 ruyaml = "^0.91"
 service-identity = "^24.1"
 sqlalchemy = ">=1.4,<2.0"
-packaging = "^23.0"
 tomlkit = "^0.12"
-pyzsync = "^1.2"
 
 [tool.poetry.dev-dependencies]
 mock = "^5.0"
@@ -63,10 +57,7 @@ pylint = "^3.0"
 pytest = "^7.0"
 pytest-asyncio = "^0.23"
 pytest-cov = "^4.0"
-ruff = "^0.1"
-
-[tool.ruff.format]
-indent-style = "tab"
+ruff = "^0.4"
 
 [tool.poetry.dependencies.distro]
 platform = "linux"
@@ -81,4 +72,4 @@ platform = "win32"
 version = "^1.5"
 
 [tool.poetry.group.dev.dependencies]
-six = "^1.16.0"
+six = "^1.16"
