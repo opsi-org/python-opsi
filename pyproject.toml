@@ -11,11 +11,9 @@ license = "AGPL-3.0"
 maintainers = [ "uib GmbH <info@uib.de>",]
 authors = [ "uib GmbH <info@uib.de>",]
 include = [ "python-opsi_data/**/*",]
-[[tool.poetry.packages]]
-include = "OPSI"
 
 [[tool.poetry.packages]]
-include = "opsisystem"
+include = "OPSI"
 
 [[tool.poetry.source]]
 name = "uibpypi"
