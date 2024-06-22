@@ -10,6 +10,7 @@ pylint-pytest:
   #when: manual
   services:
     - name: mysql:latest
+      alias: mysql
       command:
         - --max_connections=1000
         - --default-authentication-plugin=mysql_native_password
@@ -38,7 +39,7 @@ pylint-pytest:
     poetry install
     poetry run pylint --disable=R,C,fixme OPSI
     poetry add mysqlclient==2.1.1
-    poetry run pytest --tb=short -o junit_family=xunit2 --junitxml=testreport.xml --cov-append --cov-report term --cov-report xml -v tests
+    poetry run pytest --tb=short -o junit_family=xunit2 --junitxml=testreport.xml --cov-append --cov-report term --cov-report xml -x -v tests
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+)%/'
   artifacts:
     name: 'python-opsi_test'
