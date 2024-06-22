@@ -9,7 +9,7 @@ stages:
 pylint-pytest:
   #when: manual
   services:
-    - name: mysql:latest
+    - name: mariadb:10.7
       alias: mysql
       command:
         - --max_connections=1000
