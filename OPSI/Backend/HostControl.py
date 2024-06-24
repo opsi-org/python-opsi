@@ -72,7 +72,8 @@ class RpcThread(KillableThread):  # pylint: disable=too-many-instance-attributes
 			address=f"https://{self.address}:{hostPort}/opsiclientd",
 			username=forceUnicode(username),
 			password=forceUnicode(password),
-			connect_timeout=max(self.hostControlBackend._hostRpcTimeout, 0)
+			connect_timeout=max(self.hostControlBackend._hostRpcTimeout, 0),
+			jsonrpc_create_objects=True,
 		)
 
 	def run(self) -> None:
