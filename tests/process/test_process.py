@@ -625,6 +625,13 @@ def test_run_script() -> None:
 		run_script(script="exit 3")
 	assert exc_info.value.script == ("@echo off" + os.linesep if is_windows() else "") + "exit 3" + os.linesep
 
+	with pytest.raises(ProcessError):
+		run_script(
+			script="Invoke-WebRequest https://localhost:1234\nexit 0" if is_windows() else "ls -l /notexisting\nexit 0",
+			interpreter="powershell" if is_windows() else "bash",
+			exit_on_error=True,
+		)
+
 
 def test_run_script_file(tmp_path: Path) -> None:
 	script_path = tmp_path / ("test_script.sh" if not is_windows() else "test_script.cmd")

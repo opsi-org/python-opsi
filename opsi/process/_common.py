@@ -1022,8 +1022,6 @@ def run_script(
 	arguments: Collection[str | int | float] | None = None,
 	working_dir: Path | str | None = None,
 	timeout: float | int | None = None,
-	stdin: str | bytes | None = None,
-	close_stdin: bool = True,
 	capture_output: Literal["stdout", "stderr", "both", "combined", "none"] = "combined",
 	encoding: str | None = None,
 	exit_on_error: bool = False,
@@ -1044,6 +1042,7 @@ def run_script(
 		timeout=timeout,
 		capture_output=capture_output,
 		encoding=encoding,
+		exit_on_error=exit_on_error,
 		success_exit_codes=success_exit_codes,
 		retry_config=retry_config,
 	) as proc:
@@ -1058,8 +1057,6 @@ def run_script_file(
 	arguments: Collection[str | int | float] | None = None,
 	working_dir: Path | str | None = None,
 	timeout: float | int | None = None,
-	stdin: str | bytes | None = None,
-	close_stdin: bool = True,
 	capture_output: Literal["stdout", "stderr", "both", "combined", "none"] = "combined",
 	encoding: str | None = None,
 	exit_on_error: bool = False,
@@ -1077,8 +1074,8 @@ def run_script_file(
 		timeout=timeout,
 		capture_output=capture_output,
 		encoding=encoding,
-		success_exit_codes=success_exit_codes,
 		exit_on_error=exit_on_error,
+		success_exit_codes=success_exit_codes,
 		retry_config=retry_config,
 	) as proc:
 		pass
