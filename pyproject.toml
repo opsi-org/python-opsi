@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "AGPL-3.0-only"
 dependencies = [
+	"blake3>=1.0.8",
 	"colorlog>=6.10.1",
 	"configupdater>=3.2",
 	"dotenv>=0.9.9",
