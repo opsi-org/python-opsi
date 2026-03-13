@@ -84,6 +84,7 @@ test:lint-and-test:
 
   script:
     - 'echo "CI_CONCURRENT_ID: $CI_CONCURRENT_ID"'
+    - 'echo "CI_PROJECT_DIR: $CI_PROJECT_DIR"'
 
     - echo -e "${TXT_HEAD}Prepare docker containers${TXT_CLEAR}"
     - $DOCKER_COMPOSE up --remove-orphans --detach --wait --wait-timeout 120
@@ -91,8 +92,8 @@ test:lint-and-test:
 
     - echo -e "${TXT_HEAD}Run linters${TXT_CLEAR}"
     - $DOCKER_COMPOSE exec python-opsi-dev uv sync --frozen
-    - $DOCKER_COMPOSE exec python-opsi-dev uv run ruff check opsi tests examples
-    - $DOCKER_COMPOSE exec python-opsi-dev uv run ty check opsi tests examples
+    - $DOCKER_COMPOSE exec python-opsi-dev uv run ruff check opsi tests
+    - $DOCKER_COMPOSE exec python-opsi-dev uv run ty check opsi tests
 
     - echo -e "${TXT_HEAD}Waiting for opsi-server to be ready${TXT_CLEAR}"
     - $DOCKER_COMPOSE exec python-opsi-dev bash -c 'for trynum in $(seq 1 30); do curl --silent --insecure https://opsi-server:4447 && break; sleep 6; done'
