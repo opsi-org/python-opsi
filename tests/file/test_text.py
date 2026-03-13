@@ -14,7 +14,7 @@ from opsi.file.text import patch_text_file
 from opsi.file.text._common import TextFile, _get_params_from_file
 from opsi.logging import LOG_INFO
 from opsi.system.info import is_linux, is_windows
-from tests.utils import log_stream
+from opsi.testing.helper import log_stream
 
 
 def test_get_params_from_file(tmp_path: Path) -> None:

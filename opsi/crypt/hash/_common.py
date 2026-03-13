@@ -10,8 +10,6 @@ from typing import Literal
 from blake3 import blake3
 
 
-
-
 def compute_file_hash(file_path: Path, algorithm: Literal["blake3", "md5"]) -> str:
 	"""
 	Compute the hash of a file using the specified algorithm.

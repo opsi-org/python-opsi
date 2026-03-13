@@ -6,7 +6,11 @@
 import os
 import platform
 
-from opsi.system.info import is_linux, is_macos, is_posix, is_unix, is_windows
+from opsi.system.info import get_system, is_linux, is_macos, is_posix, is_unix, is_windows
+
+
+def test_get_system() -> None:
+	assert get_system() in ("linux", "windows", "macos")
 
 
 def test_is_windows() -> None:

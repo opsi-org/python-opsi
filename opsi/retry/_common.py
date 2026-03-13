@@ -13,7 +13,7 @@ from stamina import retry as _retry_decorator
 from stamina import retry_context as _retry_context
 from stamina._core import ExcOrBackoffHook, _RetryContextIterator
 
-from opsi.logging import get_logger, OPSILogger
+from opsi.logging import OPSILogger, get_logger
 
 logger: OPSILogger = get_logger()
 
@@ -61,7 +61,9 @@ def _file_io_backoff_hook(exception: Exception) -> bool:
 
 
 def _run_process_backoff_hook(exception: Exception) -> bool:
-	return not isinstance(exception, TimeoutError)
+	from opsi.process import ProcessError
+
+	return not isinstance(exception, (ProcessError, TimeoutError))
 
 
 def get_retry_config(type: Literal["file_io", "run_process"] = "file_io") -> RetryConfig:

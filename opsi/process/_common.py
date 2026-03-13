@@ -11,6 +11,7 @@ import os
 import re
 import shlex
 import subprocess
+import sys
 import time
 from contextlib import contextmanager, nullcontext
 from functools import lru_cache
@@ -19,15 +20,67 @@ from shutil import which
 from subprocess import PIPE, STDOUT, Popen, list2cmdline
 from threading import Event, Lock, Thread
 from types import TracebackType
-from typing import Collection, Literal, Self, cast
+from typing import Collection, Literal, Mapping, Self, cast
 
 from opsi.exception import OpsiError
 from opsi.file.temp import TempFile
 from opsi.logging import get_logger
 from opsi.retry import Retry, RetryConfig, get_retry_config
-from opsi.system.info import is_windows
+from opsi.system.info import is_posix, is_windows
+
+LD_LIBRARY_EXCLUDE_LIST = ["/usr/lib/opsiclientd", "/usr/lib/opsiconfd", "/usr/lib/opsi-agent"]
 
 logger = get_logger()
+
+
+def _get_executable_path() -> Path:
+	return Path(sys.executable).resolve().parent
+
+
+def _get_subprocess_environment(env: Mapping[str, str] | None = None) -> dict[str, str]:
+	if env is None:
+		env = os.environ.copy()
+	else:
+		env = dict(env)
+	logger.trace("Original environment: %s", env)
+
+	executable_path = _get_executable_path()
+	if getattr(sys, "frozen", False):
+		# Running in pyinstaller / frozen
+		pyi_home = env.get("_PYI_APPLICATION_HOME_DIR") or env.get("_MEIPASS2") or ""
+		if is_posix():
+			ldlp = []
+			for entry in (env.get("LD_LIBRARY_PATH_ORIG") or env.get("LD_LIBRARY_PATH") or "").split(os.pathsep):
+				entry = entry.strip()
+				if not entry:
+					continue
+				if entry == pyi_home:
+					continue
+				entry_path = Path(entry)
+				if any(entry_path.is_relative_to(Path(p)) for p in LD_LIBRARY_EXCLUDE_LIST):
+					continue
+				if executable_path.is_relative_to(entry_path):
+					continue
+				ldlp.append(entry)
+			if ldlp:
+				ldlp_str = os.pathsep.join(ldlp)
+				logger.debug("Setting LD_LIBRARY_PATH to '%s' in env for subprocess", ldlp_str)
+				env["LD_LIBRARY_PATH"] = ldlp_str
+			else:
+				logger.debug("Removing LD_LIBRARY_PATH from env for subprocess")
+				env.pop("LD_LIBRARY_PATH", None)
+		for env_var in (
+			"_PYI_APPLICATION_HOME_DIR",
+			"_PYI_ARCHIVE_FILE",
+			"_PYI_PARENT_PROCESS_LEVEL",
+			"_PYI_LINUX_PROCESS_NAME",
+			"_PYI_SPLASH_IPC",
+			"_MEIPASS2",
+		):
+			env.pop(env_var, None)
+	env.pop("OPENSSL_MODULES", None)
+	logger.trace("Environment for subprocess: %s", env)
+	return env
 
 
 class ProcessError(OpsiError):
@@ -210,6 +263,7 @@ class Process:
 		interpreter: Literal["cmd", "powershell", "bash"] | Collection[str] | str | None = None,
 		arguments: Collection[str | int | float] | None = None,
 		working_dir: Path | str | None = None,
+		environment: Mapping[str, str] | None = None,
 		timeout: float | int | None = None,
 		stdin: str | bytes | None = None,
 		close_stdin: bool = True,
@@ -242,6 +296,8 @@ class Process:
 		:param working_dir:
 			Working directory for the process.
 			If None, uses the current directory.
+		:param environment:
+			Environment variables for the process. If None, inherits the current environment.
 		:param timeout:
 			Maximum execution time in seconds.
 			If exceeded, the process is killed and a TimeoutError is raised.
@@ -279,6 +335,7 @@ class Process:
 		self._script: str | None = None
 		self._working_dir = Path(working_dir) if working_dir else None
 		self._timeout = timeout
+		self._environment = _get_subprocess_environment(environment)
 		arguments = [str(arg) for arg in arguments] if arguments else []
 		if capture_output not in ("stdout", "stderr", "both", "combined", "none"):
 			raise ValueError(f"Invalid capture_output value: {capture_output}")
@@ -528,6 +585,7 @@ class Process:
 				stderr=stderr,
 				stdin=stdin,
 				cwd=self._working_dir,
+				env=self._environment,
 				startupinfo=startupinfo,
 			)
 		self._pid = self._proc.pid
@@ -564,6 +622,7 @@ class Process:
 					self._exit_code = exit_code
 					if self._success_exit_codes and self._exit_code is not None and self._exit_code not in self._success_exit_codes:
 						raise ProcessError(f"Process exited with code {self._exit_code}", self)
+					logger.info("Process %r with PID %d exited with code %d", self.get_command(), self._pid, self._exit_code)
 					return
 
 				if self._timeout is not None:

@@ -51,7 +51,7 @@ from opsi.logging._constants import INFO, LOG_DEBUG, LOG_ERROR, LOG_INFO, LOG_NO
 from opsi.logging._sqlite import SQLiteHandler, SQLiteLogDatabase
 from opsi.system.info import is_windows
 from opsi.time import unix_timestamp
-from tests.utils import log_stream
+from opsi.testing.helper import log_stream
 
 MY_FORMAT = "%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(contextstring)s] %(message)s"
 OTHER_FORMAT = "[%(opsilevel)d] [%(asctime)s.%(msecs)03d] [%(contextstring)s] %(message)s   (%(filename)s:%(lineno)d)"

@@ -6,6 +6,12 @@
 import platform
 
 SYSTEM = platform.system().lower()
+if SYSTEM == "darwin":
+	SYSTEM = "macos"
+
+
+def get_system() -> str:
+	return SYSTEM
 
 
 def is_linux() -> bool:
@@ -17,12 +23,12 @@ def is_windows() -> bool:
 
 
 def is_macos() -> bool:
-	return SYSTEM == "darwin"
+	return SYSTEM == "macos"
 
 
 def is_unix() -> bool:
-	return SYSTEM in ("linux", "darwin")
+	return SYSTEM in ("linux", "macos")
 
 
 def is_posix() -> bool:
-	return SYSTEM in ("linux", "darwin")
+	return SYSTEM in ("linux", "macos")

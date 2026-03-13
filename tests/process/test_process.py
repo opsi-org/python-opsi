@@ -4,17 +4,20 @@
 # License: AGPL-3.0-only
 
 import os
+import sys
 import time
 from pathlib import Path
 from subprocess import list2cmdline
 from typing import Literal
 from unittest.mock import patch
 
+import psutil
 import pytest
 
 from opsi.process import Process, ProcessError, run_command, run_script, run_script_file
 from opsi.process._common import _get_interpreter_command, _get_process_io_encoding
 from opsi.system.info import is_windows
+from opsi.testing.helper import environment
 
 
 @pytest.mark.parametrize(
@@ -390,6 +393,74 @@ def test_process_working_dir(tmp_path: Path) -> None:
 	out = proc.get_output_text().strip()
 	assert "test.txt" in out
 	assert "ÜÖÄöäü.txt" in out
+
+
+def test_process_environment() -> None:
+	script = "echo %ENV_TEST1%" if is_windows() else "echo $ENV_TEST1"
+	with Process(script=script, environment={"ENV_TEST1": "value 1"}) as proc:
+		pass
+
+	assert proc.exit_code == 0
+	assert proc.get_output_text().strip() == "value 1"
+
+
+@pytest.mark.linux
+@pytest.mark.parametrize(
+	"ld_library_path_orig, ld_library_path, executable_path, expected_ld_library_path",
+	(
+		# LD_LIBRARY_PATH_ORIG is set to a valid value, LD_LIBRARY_PATH must be set to that value
+		("/orig/ld/path", "/usr/lib/opsi_component", "/usr/lib/opsi_component/bin/executable", "/orig/ld/path"),
+		("/orig/ld/path", "/some/path:/usr/lib/opsiclientd:/usr/lib/opsiconfd", "/usr/lib/opsi_component/bin/executable", "/orig/ld/path"),
+		# LD_LIBRARY_PATH_ORIG is not set, LD_LIBRARY_PATH must be removed
+		(None, "/usr/lib/opsi_component", "/usr/lib/opsi_component/bin/executable", None),
+		# LD_LIBRARY_PATH_ORIG is empty, LD_LIBRARY_PATH must be removed
+		("", "/usr/lib/opsi_component", "/usr/lib/opsi_component/bin/executable", None),
+		# LD_LIBRARY_PATH_ORIG is empty, LD_LIBRARY_PATH is valid and must be kept
+		("", "/some/path", "/usr/lib/opsi_component/bin/executable", "/some/path"),
+		# LD_LIBRARY_PATH_ORIG is empty, LD_LIBRARY_PATH is valid and must be kept
+		("", "/some/path: /other/path", "/usr/lib/opsi_component/bin/executable", "/some/path:/other/path"),
+		# LD_LIBRARY_PATH_ORIG is not set, executable path must be removed fom LD_LIBRARY_PATH
+		("", "/some/path:/usr/lib/opsi_component", "/usr/lib/opsi_component/bin/executable", "/some/path"),
+		# LD_LIBRARY_PATH_ORIG is not set, hardcoded excludes must be removed fom LD_LIBRARY_PATH
+		("", "/some/path:/usr/lib/opsiclientd:/usr/lib/opsiconfd", "/usr/lib/opsi_component/bin/executable", "/some/path"),
+		# LD_LIBRARY_PATH_ORIG is not set, hardcoded excludes must not be added to LD_LIBRARY_PATH
+		("", "/some/path:/usr/lib:/usr/lib/opsiclientd/_internal", "mount", "/some/path:/usr/lib"),
+	),
+)
+def test_process_ld_library_path(
+	ld_library_path_orig: str, ld_library_path: str, executable_path: str, expected_ld_library_path: str
+) -> None:
+	frozen = getattr(sys, "frozen", False)
+	setattr(sys, "frozen", True)
+	try:
+		env_vars = {"_MEIPASS2": "/tmp/foobar", "_PYI_APPLICATION_HOME_DIR": "/tmp/foobar", "_PYI_LINUX_PROCESS_NAME": "frozen-proc"}
+		if ld_library_path_orig is not None:
+			env_vars["LD_LIBRARY_PATH_ORIG"] = ld_library_path_orig
+		if ld_library_path is not None:
+			env_vars["LD_LIBRARY_PATH"] = ld_library_path
+		with (
+			patch("opsi.process._common._get_executable_path", lambda: Path(executable_path)),
+			environment(env_vars),
+		):
+			assert os.environ.get("LD_LIBRARY_PATH_ORIG") == ld_library_path_orig
+			assert os.environ.get("LD_LIBRARY_PATH") == ld_library_path
+			with run_command(["sleep", "1"]) as proc:
+				ps_proc = psutil.Process(proc.pid)
+				assert ps_proc and ps_proc.environ
+				proc_env = ps_proc.environ()
+				assert proc_env.get("LD_LIBRARY_PATH_ORIG") == ld_library_path_orig
+				assert proc_env.get("LD_LIBRARY_PATH") == expected_ld_library_path
+				assert proc_env.get("_MEIPASS2") is None
+				assert proc_env.get("_PYI_APPLICATION_HOME_DIR") is None
+				assert proc_env.get("_PYI_LINUX_PROCESS_NAME") is None
+				proc.wait()
+			assert os.environ.get("LD_LIBRARY_PATH_ORIG") == ld_library_path_orig
+			assert os.environ.get("LD_LIBRARY_PATH") == ld_library_path
+			assert os.environ.get("_MEIPASS2") == "/tmp/foobar"
+			assert os.environ.get("_PYI_APPLICATION_HOME_DIR") == "/tmp/foobar"
+			assert os.environ.get("_PYI_LINUX_PROCESS_NAME") == "frozen-proc"
+	finally:
+		setattr(sys, "frozen", frozen)
 
 
 def test_command_and_script() -> None:
