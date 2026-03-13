@@ -16,5 +16,5 @@ def test_get_kernel_params(tmp_path: Path) -> None:
 
 	from opsi.system.linux import get_kernel_params
 
-	with mock.patch("opsicommon.system.linux.CMDLINE_PATH", str(cmdline_path)):
+	with mock.patch("opsi.system.linux._kernel.CMDLINE_PATH", str(cmdline_path)):
 		assert get_kernel_params() == {"root": "/root", "rw": "", "quiet": "", "splash": "", "apparmor": "1", "security": "apparmor"}

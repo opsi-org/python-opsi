@@ -6,7 +6,7 @@
 import os
 import platform
 
-from opsi.system.info import is_linux, is_macos, is_unix, is_windows
+from opsi.system.info import is_linux, is_macos, is_posix, is_unix, is_windows
 
 
 def test_is_windows() -> None:
@@ -20,6 +20,9 @@ def test_is_linux() -> None:
 def test_is_macos() -> None:
 	assert is_macos() == bool(platform.system() == "Darwin")
 
+
+def test_is_posix() -> None:
+	assert is_posix() == bool(platform.system() in ("Linux", "Darwin"))
 
 def test_is_unix() -> None:
 	assert is_unix() == bool(platform.system() in ("Linux", "Darwin"))

@@ -59,6 +59,7 @@ OTHER_FORMAT = "[%(opsilevel)d] [%(asctime)s.%(msecs)03d] [%(contextstring)s] %(
 logger = get_logger()
 
 
+
 @pytest.fixture(autouse=True)
 def _reset_logging() -> None:
 	reset_logging()
@@ -884,14 +885,9 @@ def test_sqlite_handler_threaded(tmp_path: Path) -> None:
 	sqlite_handler.close()
 
 
-@pytest.mark.linux
-def test_sqlite_handler_multiprocess(tmp_path: Path) -> None:
-	log_db = Path(tmp_path) / "logs_multiprocess.db"
-
+def _sqlite_multiprocess_log_messages(log_db: Path, process_id: int) -> None:
 	sqlite_handler = SQLiteHandler(db_path=log_db)
-
-	def log_messages(process_id: int) -> None:
-		sqlite_handler = SQLiteHandler(db_path=log_db)
+	try:
 		with log_context({"process_id": str(process_id)}):
 			for i in range(1000):
 				sqlite_handler.emit(
@@ -906,22 +902,36 @@ def test_sqlite_handler_multiprocess(tmp_path: Path) -> None:
 					)
 				)
 				time.sleep(0.001)
+	finally:
 		sqlite_handler.close()
+
+
+@pytest.mark.linux
+def test_sqlite_handler_multiprocess(tmp_path: Path) -> None:
+	log_db = Path(tmp_path) / "logs_multiprocess.db"
+
+	sqlite_handler = SQLiteHandler(db_path=log_db)
 
 	processes = []
 	num_processes = 5
 	for process_id in range(num_processes):
-		process = Process(target=log_messages, args=(process_id,))
+		process = Process(target=_sqlite_multiprocess_log_messages, args=(log_db, process_id))
 		processes.append(process)
-	for process in processes:
-		with warnings.catch_warnings():
-			warnings.simplefilter("ignore", DeprecationWarning)
-			process.start()
-	for process in processes:
-		process.join()
-	records = list(sqlite_handler.get_records())
-	assert len(records) == num_processes * 1000
-	sqlite_handler.close()
+	try:
+		for process in processes:
+			with warnings.catch_warnings():
+				warnings.simplefilter("ignore", DeprecationWarning)
+				process.start()
+		for process in processes:
+			process.join()
+		records = list(sqlite_handler.get_records())
+		assert len(records) == num_processes * 1000
+	finally:
+		for process in processes:
+			if process.is_alive():
+				process.terminate()
+				process.join()
+		sqlite_handler.close()
 
 
 @pytest.mark.parametrize("max_level", [None, LOG_ERROR])
