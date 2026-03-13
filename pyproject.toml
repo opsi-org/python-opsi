@@ -21,6 +21,7 @@ dependencies = [
 	"rich>=14.3.3",
 	"stamina>=25.2.0",
 	"websocket-client>=1.9.0",
+	"pywin32>=308; platform_system == 'Windows'",
 ]
 
 [[project.authors]]
