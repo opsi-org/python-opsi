@@ -44,4 +44,3 @@ def test_encode_decode(format: Literal["json", "msgpack"]) -> None:
 	data = TestClass(id=1, result={"key1": "value1", "key2": ["listvalue1", "listvalue2"]})
 	encoded = encode(data)
 	assert decode(encoded) == asdict(data)
-

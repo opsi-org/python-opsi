@@ -29,9 +29,11 @@ def _admin_permissions() -> bool:
 
 		return ctypes.windll.shell32.IsUserAnAdmin() != 0  # type: ignore[attr-defined]
 
+
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
 	# Run logging tests last, as they are messing up pytests logging
 	items.sort(key=lambda item: 2 if "logging" in item.path.parts[-3:] else 1)
+
 
 def pytest_runtest_setup(item: pytest.Item) -> None:
 	for marker in item.iter_markers():

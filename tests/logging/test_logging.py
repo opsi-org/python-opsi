@@ -59,7 +59,6 @@ OTHER_FORMAT = "[%(opsilevel)d] [%(asctime)s.%(msecs)03d] [%(contextstring)s] %(
 logger = get_logger()
 
 
-
 @pytest.fixture(autouse=True)
 def _reset_logging() -> None:
 	reset_logging()

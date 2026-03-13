@@ -24,5 +24,6 @@ def test_is_macos() -> None:
 def test_is_posix() -> None:
 	assert is_posix() == bool(platform.system() in ("Linux", "Darwin"))
 
+
 def test_is_unix() -> None:
 	assert is_unix() == bool(platform.system() in ("Linux", "Darwin"))

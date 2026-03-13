@@ -14,4 +14,3 @@ def test_unix_timestamp() -> None:
 	assert unix_ts_ms / 1000 - unix_ts < 2
 	assert (unix_timestamp(add_seconds=30) - (unix_ts + 30)) < 2
 	assert (unix_timestamp(add_seconds=-30) - (unix_ts - 30)) < 2
-
