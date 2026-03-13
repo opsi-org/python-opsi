@@ -3,7 +3,7 @@ docker_dir=${base_dir}/docker
 env_template_file=${docker_dir}/env.template
 env_file=${docker_dir}/.env
 env_file_server=${docker_dir}/opsi-server/.env
-env_file_agent=${docker_dir}/opsi-script-dev/.env
+env_file_agent=${docker_dir}/python-opsi-dev/.env
 
 echo "Base directory: ${base_dir}"
 
