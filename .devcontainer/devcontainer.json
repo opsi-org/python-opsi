@@ -1,0 +1,40 @@
+{
+	"name": "python-opsi",
+	"dockerComposeFile": [
+		"../docker/python-opsi-dev/docker-compose.yml"
+	],
+	"service": "python-opsi-dev",
+	"initializeCommand": ".devcontainer/initialize.sh",
+	"postCreateCommand": ".devcontainer/post_create.sh",
+	"postStartCommand": ".devcontainer/post_start.sh",
+	"workspaceFolder": "/workspace",
+	"remoteUser": "${localEnv:USER}",
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"editor.insertSpaces": false,
+				"editor.renderWhitespace": "all",
+				"editor.formatOnType": true,
+				"editor.formatOnPaste": true,
+				"editor.formatOnSave": true,
+				"files.trimTrailingWhitespace": true,
+				"pylint.enabled": false,
+				"python.languageServer": "None",
+				"[python]": {
+					"editor.codeActionsOnSave": {
+						"source.fixAll.ruff": "explicit",
+						"source.organizeImports.ruff": "explicit"
+					},
+					"editor.defaultFormatter": "charliermarsh.ruff"
+				}
+			},
+			"extensions": [
+				"ms-python.python",
+				"charliermarsh.ruff",
+				"astral-sh.ty",
+				"ryanluker.vscode-coverage-gutters",
+				"streetsidesoftware.code-spell-checker"
+			]
+		}
+	}
+}

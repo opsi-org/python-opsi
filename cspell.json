@@ -1,0 +1,32 @@
+{
+	// Version of the setting file.  Always 0.2
+	"version": "0.2",
+	// language - current active spelling language
+	"language": "en",
+	// words - list of words to be always considered correct
+	"words": [
+		"asgi",
+		"bootimage",
+		"confz",
+		"containerd",
+		"devel",
+		"fastapi",
+		"filetransfer",
+		"getpid",
+		"messagebus",
+		"opsiagent",
+		"opsi",
+		"opsiservice",
+		"pids",
+		"procs",
+		"psutil",
+		"ptyprocess",
+		"Pydantic",
+		"servicemanager",
+		"setwinsize",
+		"signum",
+		"uvicorn",
+		"webserver",
+		"winpty"
+	]
+}

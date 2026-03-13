@@ -1,0 +1,14 @@
+include:
+  - ../opsi-server/docker-compose.yml
+
+services:
+  python-opsi-dev:
+    build:
+      args:
+        DEV_USER: ${USER}
+    hostname: python-opsi-dev
+    volumes:
+      - ${LOCAL_WORKSPACE_DIR}:/workspace
+    env_file:
+      - .env
+    command: sleep infinity

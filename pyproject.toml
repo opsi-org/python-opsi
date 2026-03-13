@@ -1,0 +1,71 @@
+[project]
+name = "python-opsi"
+version = "5.0.0.0"
+description = "python-opsi"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "AGPL-3.0-only"
+dependencies = [
+	"colorlog>=6.10.1",
+	"configupdater>=3.2",
+	"dotenv>=0.9.9",
+	"msgpack>=1.0; platform_system == 'Windows'",
+	"msgspec>=0.19; platform_system != 'Windows'",
+	"pydantic>=2.12.5",
+	"requests>=2.32.5",
+	"rich>=14.3.3",
+	"stamina>=25.2.0",
+]
+
+[[project.authors]]
+name = "uib GmbH"
+email = "info@uib.de"
+
+[[project.maintainers]]
+name = "uib GmbH"
+email = "info@uib.de"
+
+[project.urls]
+Homepage = "https://www.opsi.org"
+
+[dependency-groups]
+dev = [
+	"pytest-coverage>=0.0",
+	"pytest>=9.0",
+	"ruff>=0.9",
+	"ty>=0.0.18",
+	"types-toml>=0.10",
+]
+
+[tool.uv]
+extra-index-url = [ "https://pypi.uib.gmbh/simple",]
+index-strategy = "unsafe-best-match"
+package = true
+
+[tool.ruff]
+line-length = 140
+
+[tool.mypy]
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+follow_imports = "silent"
+
+[tool.ruff.format]
+indent-style = "tab"
+
+[tool.pytest.ini_options]
+markers = [
+	"windows: mark test to run only on windows.",
+	"linux: mark test to run only on linux.",
+	"macos: mark test to run only on macos.",
+	"posix: mark test to run only on posix.",
+	"admin_permissions: mark test to run only if user has admin permissions."
+]
+filterwarnings = [ "ignore::urllib3.exceptions.InsecureRequestWarning",]
+
+[tool.setuptools.packages.find]
+include = [
+	"opsi",
+	"opsi.*"
+]
