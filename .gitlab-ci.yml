@@ -61,7 +61,7 @@ test:lint-and-test:
     # https://gitlab.com/gitlab-org/gitlab-foss/-/issues/41227
     - CONTAINER_ID=$(docker ps -q -f "label=com.gitlab.gitlab-runner.job.id=$CI_JOB_ID" -f "label=com.gitlab.gitlab-runner.type=build")
     - DOCKER_COMPOSE="docker compose -f docker/python-opsi-dev/docker-compose.yml -p python-opsi-test-$CI_JOB_ID"
-    - export LOCAL_WORKSPACE_DIR=$(docker inspect $CONTAINER_ID -f "{{ range .Mounts }}{{ if eq .Destination \"/builds\" }}{{ .Source }}{{end}}{{end}}")/uib/python-opsi/
+    - export LOCAL_WORKSPACE_DIR=$(docker inspect $CONTAINER_ID -f "{{ range .Mounts }}{{ if eq .Destination \"/builds\" }}{{ .Source }}{{end}}{{end}}")${CI_PROJECT_DIR#/builds}
     - echo $LOCAL_WORKSPACE_DIR
 
     - ./docker/create_env.sh
@@ -83,7 +83,6 @@ test:lint-and-test:
 
   script:
     - 'echo "CI_CONCURRENT_ID: $CI_CONCURRENT_ID"'
-    - 'echo "CI_PROJECT_DIR: $CI_PROJECT_DIR"'
 
     - echo -e "${TXT_HEAD}Prepare docker containers${TXT_CLEAR}"
     - $DOCKER_COMPOSE up --remove-orphans --detach --wait --wait-timeout 120
