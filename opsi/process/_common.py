@@ -13,7 +13,7 @@ import shlex
 import subprocess
 import sys
 import time
-from contextlib import contextmanager, nullcontext
+from contextlib import contextmanager
 from functools import lru_cache
 from pathlib import Path
 from shutil import which
@@ -269,6 +269,7 @@ class Process:
 		close_stdin: bool = True,
 		capture_output: Literal["stdout", "stderr", "both", "combined", "none"] = "combined",
 		encoding: str | None = None,
+		exit_on_error: bool = False,
 		success_exit_codes: Collection[int] | None = (0,),
 		retry_config: RetryConfig | None = None,
 	) -> None:
@@ -317,6 +318,10 @@ class Process:
 			List of exit codes that indicate successful execution.
 			If the process exits with a code outside this set, a ProcessError is raised.
 			If None, all exit codes are treated as successful.
+		:param exit_on_error:
+			Only valid with script execution and interpreter bash or powershell.
+			If True the script will exit on the first error.
+			If False the script will continue execution even if some commands fail.
 		:param retry_config:
 			Configuration for automatic retry behavior on failure.
 			If None, uses the default retry configuration for process execution.
@@ -333,6 +338,10 @@ class Process:
 
 		self._command: list[str] = []
 		self._script: str | None = None
+		self._interpreter = interpreter
+		self._temp_script_file: TempFile | None = None
+		self._script_file: Path | None = None
+		self._exit_on_error = bool(exit_on_error)
 		self._working_dir = Path(working_dir) if working_dir else None
 		self._timeout = timeout
 		self._environment = _get_subprocess_environment(environment)
@@ -342,7 +351,6 @@ class Process:
 		self._capture_output = capture_output
 
 		# Build command
-		self._script_file: TempFile | Path | None = None
 		if command:
 			# Direct command execution
 			self._command = shlex.split(command) if isinstance(command, str) else list(command)
@@ -368,45 +376,53 @@ class Process:
 			elif not isinstance(interpreter, list):
 				interpreter = [str(interpreter)]
 
+			self._interpreter = interpreter
+			if self._exit_on_error and self._interpreter not in ("bash", "powershell"):
+				raise ValueError("'exit_on_error' can only be used with 'bash' or 'powershell' interpreter")
+
 			if not encoding:
 				encoding = _get_process_io_encoding(interpreter=interpreter if interpreter in ("cmd", "powershell", "bash") else None)
 
 			if isinstance(script, Path):
 				self._script_file = script
 			else:
-				assert isinstance(script, (str, Collection))
-				script_lines = script.splitlines() if isinstance(script, str) else list(script)
-				script_text = os.linesep.join(script_lines) + os.linesep
-				if interpreter == "cmd" and not script_text.startswith("@echo "):
-					script_text = "@echo off" + os.linesep + script_text
-				self._script = script_text
+				assert isinstance(script, Collection)
+				if isinstance(script, str):
+					self._script = script
+				else:
+					self._script = os.linesep.join(script) + os.linesep
+
+				if not self._script:
+					raise ValueError("Script content cannot be empty")
 
 			if self._pipe_script:
 				if stdin:
 					raise ValueError("Cannot use stdin with piped script execution")
-			elif not self._script_file:
-				extension = "tmp"
-				if interpreter == "cmd":
-					extension = "cmd"
-				elif interpreter == "powershell":
-					extension = "ps1"
-				elif interpreter == "bash":
-					extension = "sh"
-				self._script_file = TempFile(
-					content=self._script,
-					encoding=encoding,
-					extension=extension,
-				)
+			else:
+				extension = ""
+				if self._script_file:
+					extension = self._script_file.suffix.lstrip(".")
+				if not extension:
+					if interpreter == "cmd":
+						extension = "cmd"
+					elif interpreter == "powershell":
+						extension = "ps1"
+					elif interpreter == "bash":
+						extension = "sh"
+				if not extension:
+					extension = "tmp"
+				self._temp_script_file = TempFile(encoding=encoding, extension=extension)
+
 			if interpreter in ("cmd", "powershell", "bash"):
 				self._command = _get_interpreter_command(
 					cast(Literal["cmd", "powershell", "bash"], interpreter),
-					script_file=self._script_file if self._script_file and not self._pipe_script else "-",
+					script_file=str(self._temp_script_file.path) if self._temp_script_file else "-",
 					arguments=arguments or None,
 				)
 			else:
 				self._command = list(interpreter)
-				if self._script_file:
-					self._command.append(str(self._script_file))
+				if self._temp_script_file:
+					self._command.append(str(self._temp_script_file))
 				if arguments:
 					self._command.extend(arguments)
 
@@ -521,19 +537,44 @@ class Process:
 		except Exception as exc:
 			logger.debug("Failed to close %s pipe: %r", type, exc)
 
+	def _prepare_script(self):
+		if not self._script and not self._script_file:
+			return
+
+		script = self._script or ""
+		if self._script_file:
+			# TODO: Retry
+			script = self._script_file.read_text(encoding=self._encoding)
+
+		script_lines = script.splitlines()
+		assert script_lines
+		if self._interpreter == "cmd" and not script_lines[0].startswith("@echo "):
+			script_lines.insert(0, "@echo off")
+		if self._exit_on_error:
+			if self._interpreter == "bash":
+				script_lines.insert(0, "set -e")
+			elif self._interpreter == "powershell":
+				script_lines.insert(0, '$ErrorActionPreference = "Stop"')
+
+		self._script = os.linesep.join(script_lines) + os.linesep
+		if self._temp_script_file:
+			self._temp_script_file.create(content=self._script, encoding=self._encoding)
+
 	def _manager(self) -> None:
 		"""
 		Run the process with retries according to the retry configuration.
 		"""
 		try:
-			with self._script_file if isinstance(self._script_file, TempFile) else nullcontext():
-				for attempt in Retry(self._retry_config):
-					with attempt:
-						self._attempts += 1
-						self._run_attempt()
+			self._prepare_script()
+			for attempt in Retry(self._retry_config):
+				with attempt:
+					self._attempts += 1
+					self._run_attempt()
 		except Exception as exc:
 			self._exception = exc
 		finally:
+			if self._temp_script_file:
+				self._temp_script_file.delete()
 			self._started.set()
 			self._ended.set()
 
@@ -559,12 +600,8 @@ class Process:
 		if self._pipe_script:
 			logger.debug("Using piped script input for shell execution")
 			close_stdin = True
-			if self._script:
-				stdin_data = self._script.encode(self._encoding)
-			elif isinstance(self._script_file, Path):
-				stdin_data = self._script_file.read_bytes() + os.linesep.encode(self._encoding)
-			else:
-				raise ValueError("No script content available for piped input")
+			assert self._script
+			stdin_data = self._script.encode(self._encoding)
 
 		stdout = PIPE if self._capture_output in ("stdout", "both", "combined") else None
 		stderr = PIPE if self._capture_output in ("stderr", "both") else STDOUT if self._capture_output == "combined" else None
@@ -989,6 +1026,7 @@ def run_script(
 	close_stdin: bool = True,
 	capture_output: Literal["stdout", "stderr", "both", "combined", "none"] = "combined",
 	encoding: str | None = None,
+	exit_on_error: bool = False,
 	success_exit_codes: Collection[int] | None = (0,),
 	retry_config: RetryConfig | None = None,
 ) -> Process:
@@ -1024,6 +1062,7 @@ def run_script_file(
 	close_stdin: bool = True,
 	capture_output: Literal["stdout", "stderr", "both", "combined", "none"] = "combined",
 	encoding: str | None = None,
+	exit_on_error: bool = False,
 	success_exit_codes: Collection[int] | None = (0,),
 	retry_config: RetryConfig | None = None,
 ) -> Process:
@@ -1039,6 +1078,7 @@ def run_script_file(
 		capture_output=capture_output,
 		encoding=encoding,
 		success_exit_codes=success_exit_codes,
+		exit_on_error=exit_on_error,
 		retry_config=retry_config,
 	) as proc:
 		pass

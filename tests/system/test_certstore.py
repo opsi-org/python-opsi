@@ -1,3 +1,8 @@
+# This file is part of the desktop management solution OPSI http://www.opsi.org
+# Copyright (c) 2026-2026 uib GmbH <info@uib.de>
+# This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
+# License: AGPL-3.0-only
+
 from pathlib import Path
 
 import pytest
@@ -109,7 +114,11 @@ def test_wget(tmp_path: Path) -> None:
 		try:
 			if is_windows():
 				assert (
-					run_script([f"Invoke-WebRequest -UseBasicParsing https://localhost:{server.port}"], interpreter="powershell").exit_code
+					run_script(
+						[f"Invoke-WebRequest -UseBasicParsing https://localhost:{server.port}"],
+						interpreter="powershell",
+						exit_on_error=True,
+					).exit_code
 					== 0
 				)
 			else:
@@ -121,7 +130,11 @@ def test_wget(tmp_path: Path) -> None:
 			remove_ca(common_name)
 			if is_windows():
 				with pytest.raises(ProcessError) as exc_info:
-					run_script([f"Invoke-WebRequest -UseBasicParsing https://localhost:{server.port}"], interpreter="powershell")
+					run_script(
+						[f"Invoke-WebRequest -UseBasicParsing https://localhost:{server.port}"],
+						interpreter="powershell",
+						exit_on_error=True,
+					)
 				assert exc_info.value.exit_code == 1
 			else:
 				with pytest.raises(ProcessError) as exc_info:

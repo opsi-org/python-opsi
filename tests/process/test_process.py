@@ -519,6 +519,34 @@ def test_process_custom_interpreter_string() -> None:
 	assert proc.get_output_text().strip() == "from shell: arg1"
 
 
+@pytest.mark.parametrize("exit_on_error", [True, False])
+def test_process_script_exit_on_error(exit_on_error: bool) -> None:
+	with Process(
+		script="Invoke-WebRequest https://localhost:1234\nexit 0" if is_windows() else "ls -l /notexisting\nexit 0",
+		interpreter="powershell" if is_windows() else "bash",
+		exit_on_error=exit_on_error,
+		success_exit_codes=None,
+	) as proc:
+		pass
+	if exit_on_error:
+		assert proc.exit_code != 0
+		script = proc.get_script()
+		assert script
+		if is_windows():
+			assert '$ErrorActionPreference = "Stop"' in script
+		else:
+			assert "set -e" in script
+	else:
+		assert proc.exit_code == 0
+
+
+def test_process_script_exit_on_error_error() -> None:
+	for interpreter in ("cmd", "zsh", ["uv", "run"]):
+		with pytest.raises(ValueError, match="'exit_on_error' can only be used with 'bash' or 'powershell' interpreter"):
+			with Process(script="exit 0", interpreter=interpreter, exit_on_error=True):
+				pass
+
+
 def test_process_error(tmp_path: Path) -> None:
 	with pytest.raises(ProcessError, match="Process exited with code 3") as exc_info:
 		with Process(script="exit 3"):
