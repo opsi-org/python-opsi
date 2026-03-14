@@ -14,7 +14,7 @@ from opsi.process import ProcessError, run_command, run_script
 from opsi.system.certstore import install_ca, load_ca, load_cas, remove_ca
 from opsi.system.info import is_windows
 from opsi.testing.helper import http_test_server
-
+from opsi.logging import use_logging_config
 
 @pytest.mark.admin_permissions
 def test_install_load_remove_ca() -> None:
@@ -90,7 +90,7 @@ def test_install_load_remove_ca() -> None:
 
 
 @pytest.mark.admin_permissions
-def test_wget(tmp_path: Path) -> None:
+def test_curl(tmp_path: Path) -> None:
 	ca_cert, ca_key = create_ca(subject={"CN": "python-opsi test ca"}, valid_days=3)
 	cert, key = create_server_cert(
 		subject={"CN": "python-opsi test server cert"},
@@ -107,33 +107,36 @@ def test_wget(tmp_path: Path) -> None:
 	server_key.write_text(as_pem(key), encoding="utf-8", newline="")
 
 	with http_test_server(server_key=server_key, server_cert=server_cert) as server:
-		install_ca(ca_cert)
-		try:
-			if is_windows():
-				assert (
-					run_script(
-						[f"Invoke-WebRequest -UseBasicParsing https://localhost:{server.port}"],
-						interpreter="powershell",
-						exit_on_error=True,
-					).exit_code
-					== 0
-				)
-			else:
-				assert run_command(["curl", f"https://localhost:{server.port}"]).exit_code == 0
-		finally:
-			common_name = ca_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value
-			if not isinstance(common_name, str):
-				common_name = common_name.decode("utf-8")
-			remove_ca(common_name)
-			if is_windows():
-				with pytest.raises(ProcessError) as exc_info:
-					run_script(
-						[f"Invoke-WebRequest -UseBasicParsing https://localhost:{server.port}"],
-						interpreter="powershell",
-						exit_on_error=True,
+		with use_logging_config(stderr_level=7):
+			install_ca(ca_cert)
+			try:
+				if is_windows():
+					assert (
+						run_script(
+							[f"Invoke-WebRequest -UseBasicParsing https://localhost:{server.port}"],
+							interpreter="powershell",
+							exit_on_error=True,
+						).exit_code
+						== 0
 					)
-				assert exc_info.value.exit_code == 1
-			else:
-				with pytest.raises(ProcessError) as exc_info:
-					run_command(["curl", f"https://localhost:{server.port}"])
-				assert exc_info.value.exit_code == 60
+				else:
+					assert run_command(["curl", f"https://localhost:{server.port}"]).exit_code == 0
+			finally:
+				common_name = ca_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value
+				if not isinstance(common_name, str):
+					common_name = common_name.decode("utf-8")
+				remove_ca(common_name)
+				if is_windows():
+					with pytest.raises(ProcessError) as exc_info:
+						run_script(
+							[f"Invoke-WebRequest -UseBasicParsing https://localhost:{server.port}"],
+							interpreter="powershell",
+							exit_on_error=True,
+						)
+					assert exc_info.value.exit_code == 1
+				else:
+					with pytest.raises(ProcessError) as exc_info:
+						proc = run_command(["curl", f"https://localhost:{server.port}"])
+						print(proc.exit_code)
+						print(proc.output)
+					assert exc_info.value.exit_code == 60
