@@ -674,9 +674,9 @@ class Process:
 			self._end_time = time.monotonic()
 			self._close_stdin()
 			if self._stdout_reader and self._stdout_reader.is_alive():
-				self._stdout_reader.join(timeout=3)
+				self._stdout_reader.join(timeout=5)
 			if self._stderr_reader and self._stderr_reader.is_alive():
-				self._stderr_reader.join(timeout=3)
+				self._stderr_reader.join(timeout=5)
 
 	def _stop(self) -> None:
 		"""
@@ -795,7 +795,7 @@ class Process:
 		"""
 		ended = self._ended.wait(timeout=timeout)
 		if ended and self._manager_thread:
-			self._manager_thread.join(timeout=3)
+			self._manager_thread.join(timeout=10)
 		return ended
 
 	def write_bytes(self, data: bytes, close: bool = False) -> None:
@@ -903,9 +903,9 @@ class Process:
 		if self._exit_code is not None:
 			# If the process has ended, ensure all reader threads have finished to capture any remaining output
 			if self._stdout_reader and self._stdout_reader.is_alive():
-				self._stdout_reader.join(timeout=3)
+				self._stdout_reader.join(timeout=5)
 			if self._stderr_reader and self._stderr_reader.is_alive():
-				self._stderr_reader.join(timeout=3)
+				self._stderr_reader.join(timeout=5)
 
 		stdout_data, stderr_data = b"", b""
 		with self._data_lock:
