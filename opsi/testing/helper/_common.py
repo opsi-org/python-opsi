@@ -7,12 +7,13 @@ from __future__ import annotations
 
 import ctypes
 import gc
+import sys
 import os
 import platform
 import threading
 from contextlib import contextmanager
 from io import StringIO
-from typing import Generator, Mapping
+from typing import Generator, Mapping, TextIO
 
 from psutil import Process
 
@@ -49,14 +50,15 @@ class MemoryUsageMonitor(threading.Thread):
 		self._should_stop.set()
 		self.stopped.wait(self._interval + 1.0)
 
-	def print_stats(self) -> None:
-		print("Memory usage statistics:")
-		print(f"  Start RSS: {self.start_rss / 1_000_000:.2f} MB")
-		print(f"  End RSS: {self.end_rss / 1_000_000:.2f} MB")
-		print(f"  Min RSS: {self.min_rss / 1_000_000:.2f} MB")
-		print(f"  Max RSS: {self.max_rss / 1_000_000:.2f} MB")
-		print(f"  Avg RSS: {self.avg_rss / 1_000_000:.2f} MB")
-		print(f"  Max increase RSS: {self.max_increase_rss / 1024 / 1024:.2f} MB")
+	def print_stats(self, file: TextIO | None = None) -> None:
+		file = file or sys.stdout
+		print("Memory usage statistics:", file=file)
+		print(f"  Start RSS: {self.start_rss / 1_000_000:.2f} MB", file=file)
+		print(f"  End RSS: {self.end_rss / 1_000_000:.2f} MB", file=file)
+		print(f"  Min RSS: {self.min_rss / 1_000_000:.2f} MB", file=file)
+		print(f"  Max RSS: {self.max_rss / 1_000_000:.2f} MB", file=file)
+		print(f"  Avg RSS: {self.avg_rss / 1_000_000:.2f} MB", file=file)
+		print(f"  Max increase RSS: {self.max_increase_rss / 1024 / 1024:.2f} MB", file=file)
 
 	@property
 	def max_increase_rss(self) -> float:

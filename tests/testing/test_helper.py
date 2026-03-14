@@ -12,13 +12,14 @@ import os
 import time
 from base64 import b64decode
 from email.utils import formatdate
+from io import StringIO
 from pathlib import Path
 from random import randbytes
 
 import requests
 import websocket
 
-from opsi.testing.helper import HTTPTestServerRequestHandler, environment, http_test_server
+from opsi.testing.helper import HTTPTestServerRequestHandler, environment, http_test_server, memory_usage_monitor
 
 
 def test_environment() -> None:
@@ -29,6 +30,22 @@ def test_environment() -> None:
 			assert os.environ.get("TEST_VAR1") == "VAL2"
 		assert os.environ.get("TEST_VAR1") == "VAL1"
 	assert "TEST_VAR1" not in os.environ
+
+
+def test_memory_usage_monitor() -> None:
+	with memory_usage_monitor(interval=0.5) as monitor:
+		data = b"x" * 25_000_000
+		time.sleep(1)
+		del data
+		time.sleep(1)
+
+	file = StringIO()
+	monitor.print_stats(file)
+	data = file.getvalue()
+	assert "Memory usage statistics:" in data
+	assert "Max increase RSS" in data
+	assert monitor.max_increase_rss > 20_000_000
+	assert monitor.max_increase_rss < 30_000_000
 
 
 def test_test_http_server_log_file(tmp_path: Path) -> None:
