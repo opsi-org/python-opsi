@@ -493,6 +493,7 @@ class Process:
 					data = pipe.readline(self._read_max)
 					data_len = len(data)
 					if not data_len:
+						logger.debug("End of %s stream reached", type)
 						# EOF
 						break
 					logger.trace("Read %d bytes from %s: %r", data_len, type, data)

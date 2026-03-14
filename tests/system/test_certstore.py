@@ -13,13 +13,13 @@ from opsi.crypt.ssl import as_pem, create_ca, create_server_cert
 from opsi.logging import use_logging_config
 from opsi.process import ProcessError, run_command, run_script
 from opsi.system.certstore import install_ca, load_ca, load_cas, remove_ca
-from opsi.system.info import is_windows, is_linux
+from opsi.system.info import is_linux, is_windows
 from opsi.testing.helper import http_test_server
 
 
 @pytest.mark.admin_permissions
 def test_install_load_remove_ca() -> None:
-	with use_logging_config(stderr_level=7):
+	with use_logging_config(stderr_level=8):
 		subject_name = "python-opsi test ca"
 		remove_ca(subject_name)
 		all_cas = list(load_cas(subject_name))
@@ -93,7 +93,7 @@ def test_install_load_remove_ca() -> None:
 
 @pytest.mark.admin_permissions
 def test_curl(tmp_path: Path) -> None:
-	with use_logging_config(stderr_level=7):
+	with use_logging_config(stderr_level=8):
 		ca_cert, ca_key = create_ca(subject={"CN": "python-opsi test ca"}, valid_days=3)
 		cert, key = create_server_cert(
 			subject={"CN": "python-opsi test server cert"},
