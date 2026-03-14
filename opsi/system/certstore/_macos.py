@@ -52,7 +52,9 @@ def load_cas(subject_name: str) -> Generator[x509.Certificate, None, None]:
 		if "could not be found" in err.output:
 			return
 		raise
+	logger.debug("Certificates found:\n%s", pem)
 	for cert_match in re.finditer(r"(-+BEGIN CERTIFICATE-+.*?-+END CERTIFICATE-+)", pem, re.DOTALL):
+		logger.debug("Loading certificate:\n%s", cert_match.group(1))
 		try:
 			yield x509.load_pem_x509_certificate(cert_match.group(1).encode("utf-8"))
 		except Exception as err:
