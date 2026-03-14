@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives import hashes
 from opsi.crypt.ssl import as_pem, create_ca, create_server_cert
 from opsi.process import ProcessError, run_command, run_script
 from opsi.system.certstore import install_ca, load_ca, load_cas, remove_ca
-from opsi.system.info import is_linux, is_macos, is_windows
+from opsi.system.info import is_windows
 from opsi.testing.helper import http_test_server
 
 
@@ -62,8 +62,8 @@ def test_install_load_remove_ca() -> None:
 		install_ca(ca_cert1)
 		install_ca(ca_cert2)
 
-		if not is_linux():
-			# On Linux only one CA with the same subject can be installed
+		if is_windows():
+			# On Windows multiple CAs with the same subject can be installed
 			all_cas = list(load_cas(subject_name))
 			assert len(list(all_cas)) == 2
 
@@ -91,9 +91,6 @@ def test_install_load_remove_ca() -> None:
 
 @pytest.mark.admin_permissions
 def test_wget(tmp_path: Path) -> None:
-	if is_macos():
-		# TODO
-		return
 	ca_cert, ca_key = create_ca(subject={"CN": "python-opsi test ca"}, valid_days=3)
 	cert, key = create_server_cert(
 		subject={"CN": "python-opsi test server cert"},
@@ -122,7 +119,7 @@ def test_wget(tmp_path: Path) -> None:
 					== 0
 				)
 			else:
-				assert run_command(["wget", f"https://localhost:{server.port}", "-O-"]).exit_code == 0
+				assert run_command(["curl", f"https://localhost:{server.port}"]).exit_code == 0
 		finally:
 			common_name = ca_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value
 			if not isinstance(common_name, str):
@@ -138,5 +135,5 @@ def test_wget(tmp_path: Path) -> None:
 				assert exc_info.value.exit_code == 1
 			else:
 				with pytest.raises(ProcessError) as exc_info:
-					run_command(["wget", f"https://localhost:{server.port}", "-O-"])
-				assert exc_info.value.exit_code == 5
+					run_command(["curl", f"https://localhost:{server.port}"])
+				assert exc_info.value.exit_code == 60
