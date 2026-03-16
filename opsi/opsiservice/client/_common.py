@@ -1,0 +1,2435 @@
+# opsicommon is part of the desktop management solution opsi http://www.opsi.org
+# Copyright (c) 2020-2025 uib GmbH <info@uib.de>
+# This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
+# License: AGPL-3.0-only
+
+"""
+This file is part of opsi - https://www.opsi.org
+"""
+
+from __future__ import annotations
+
+import asyncio
+import gzip
+import json
+import locale
+import os
+import posixpath
+import random
+import re
+import ssl
+import sys
+import time
+import warnings
+import webbrowser
+from abc import ABC
+from base64 import b64encode
+from contextlib import contextmanager, nullcontext
+from contextvars import copy_context
+from dataclasses import astuple, dataclass
+from datetime import datetime, timezone
+from enum import Enum
+from functools import lru_cache
+from ipaddress import IPv6Address, ip_address
+from pathlib import Path
+from random import randint
+from threading import Event, Lock, Thread
+from types import MethodType, TracebackType
+from typing import TYPE_CHECKING, Any, BinaryIO, Callable, Generator, Iterable, Literal, overload
+from urllib.parse import quote, unquote, urlparse
+from uuid import uuid4
+from xml.etree import ElementTree
+
+import lz4.frame
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
+from packaging import version
+from requests import HTTPError, Session
+from requests import Response as RequestsResponse
+from requests.adapters import HTTPAdapter
+from requests.cookies import RequestsCookieJar
+from requests.exceptions import SSLError, Timeout
+from requests.structures import CaseInsensitiveDict
+from urllib3 import HTTPSConnectionPool
+from urllib3.exceptions import InsecureRequestWarning
+from websocket import WebSocket, WebSocketApp
+from websocket import _core as websocket_core
+from websocket import _handshake as websocket_handshake
+from websocket import _http as websocket_http
+from websocket import setdefaulttimeout as websocket_setdefaulttimeout
+from websocket._abnf import ABNF
+
+from opsi import __version__
+from opsi.crypt.ssl import load_key, x509_name_to_dict
+from opsi.exception import (
+	OpsiRpcError,
+	OpsiServiceAuthenticationError,
+	OpsiServiceClientCertificateError,
+	OpsiServiceConnectionError,
+	OpsiServiceError,
+	OpsiServicePermissionError,
+	OpsiServiceTimeoutError,
+	OpsiServiceUnavailableError,
+	OpsiServiceVerificationError,
+)
+from opsi.file.lock import lock_file
+from opsi.logging import get_logger, secret_filter
+from opsi.logging._constants import TRACE
+from opsi.messagebus.message import (
+	ChannelSubscriptionEventMessage,
+	ChannelSubscriptionRequestMessage,
+	JSONRPCRequestMessage,
+	JSONRPCResponseMessage,
+	Message,
+	MessageType,
+	messagebus_timestamp,
+)
+from opsi.opsiservice.config import OPSI_CA_CERT_FILE, OpsiConfig
+from opsi.opsiservice.model.object import deserialize, serialize
+from opsi.opsiservice.model.type import to_host_id, to_opsi_host_key
+from opsi.opsiservice.server import get_opsiconfd_config
+from opsi.serialization import json_decode, json_encode, msgpack_decode, msgpack_encode
+from opsi.system.info import is_windows
+from opsi.system.network import get_hostnames, get_network_info, prepare_proxy_environment
+from opsi.system.time import set_system_datetime
+
+if TYPE_CHECKING:
+	from urllib3._base_connection import BaseHTTPSConnection
+
+if TYPE_CHECKING:
+	from urllib3._base_connection import BaseHTTPSConnection
+
+warnings.simplefilter("ignore", InsecureRequestWarning)
+
+
+MIN_VERSION_MESSAGEBUS = version.parse("4.2.0.287")
+MIN_VERSION_MSGPACK = version.parse("4.2.0.171")
+MIN_VERSION_LZ4 = version.parse("4.2.0.171")
+MIN_VERSION_GZIP = version.parse("4.2.0.0")
+MIN_VERSION_SESSION_API = version.parse("4.2.0.285")
+MIN_VERSION_CA_CERTS = version.parse("4.3.18.15")
+
+RPC_TIMEOUTS = {
+	"depot_installPackage": 4 * 3600,
+	"depot_librsyncPatchFile": 24 * 3600,
+	"depot_getMD5Sum": 3600,
+	"depot_createMd5SumFile": 3600,
+	"depot_createZsyncFile": 3600,
+}
+RPC_TIMEOUTS_DEFAULT = 300
+RPC_TIMEOUTS_REGEX = {
+	re.compile("^hostControl"): 60,
+}
+
+_DEFAULT_HTTPS_PORT = 4447
+
+# It is possible to set multiple certificates as UIB_OPSI_CA
+UIB_OPSI_CA = """-----BEGIN CERTIFICATE-----
+MIIFvjCCA6agAwIBAgIWb3BzaS11aWItY2EtMjE1NzMwODcwNzANBgkqhkiG9w0B
+AQsFADB+MQswCQYDVQQGEwJERTELMAkGA1UECAwCUlAxDjAMBgNVBAcMBU1haW56
+MREwDwYDVQQKDAh1aWIgR21iSDENMAsGA1UECwwEb3BzaTEUMBIGA1UEAwwLdWli
+IG9wc2kgQ0ExGjAYBgkqhkiG9w0BCQEWC2luZm9AdWliLmRlMB4XDTIxMDIyNjEy
+NTMxNloXDTQ4MDcxNDEyNTMxNlowfjELMAkGA1UEBhMCREUxCzAJBgNVBAgMAlJQ
+MQ4wDAYDVQQHDAVNYWluejERMA8GA1UECgwIdWliIEdtYkgxDTALBgNVBAsMBG9w
+c2kxFDASBgNVBAMMC3VpYiBvcHNpIENBMRowGAYJKoZIhvcNAQkBFgtpbmZvQHVp
+Yi5kZTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBALJn/XO2KV8Ax9I2
+5PcaN13kat8Y7xB0MVrU64iwLtoYSjayQ62tcmcJNBQeo6x4COQdp3XQTvy7fCjS
+y6O9WwySr920Wh2/etZkXNA6qgqqLBSx6hw8zCGXPLuxkT/INvFVr3zWaH4Irx2o
+SB94cPvvM3mnp3vhhphBDJUKqIvm7uz2h5npMVD0UJCeLhcG9iBe7FcRT3xaUDmi
+QDE5norGK2YS/kvMv1lGAxcoM8dJ3Dl0hAn6mFKJ7lIBzojxSuNQuBMZlx7OsCbS
+p0u4dGR82LYTX2RZvZOJIQPEn+XzsyNG/2vHjlnVDLUikrdRs3IJ8pJQyIAOF1aq
+tb5X4K/Syy8OIV71++hvnksEiI2JgBti6IdFgHVCb034hHhzblQdwZeRsQXy5b6X
+ZibrRkhkoRXptHkLb3Qt3yvi1xtmvR5le5Jh7AczjTYVAx0EToEq2WLZFyhTgQgH
+0PZthUeb0q9fBUZoqpppePBU+BnKvVga8hRpVapx4gy7Ms6SaHMZhKVR7aBAAbmb
+IhCWJ3dQPbWa/De8JC5SaEQMWyg+UPD+6N8EZXIsAXczqjnSLfbfXBHlPrfxVVOD
+YtvhNaSchyXjXEpCqXrTJtYrxQ3m7YGXfs8+P7Ncbl2py7bvYKBl1c7KeqJctUgK
+vu6ym8XjsMWSK/YZABCNB4dL6mOTAgMBAAGjMjAwMB0GA1UdDgQWBBTpzwF8edXy
+f1RBXkqReeeCTKvrpTAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IC
+AQCgLNQiM70eW7yc0Jrnklwm8euWh5s7iVr9hCaM8LaYXrk1LY04W4WpQPyk0CnW
+jlwbsSfvksc65HwkK7W2M/CGo98Dc9bgLvhDRa90+18ktiF54TlTRy1DeGEfxcF0
+CAEqWMcSTxkaMdWEI/DlWmwKlHmH+NyoajA/iJq+0yMr8TKIKmIoX0f7TuXiiPM+
+roWG814e5dvapr3rYE5m6sf7kjVufaTEHWogo5oFHtXzTA04L51ZBvZl09isN+OK
+eD0dL26/rdTiLOetGnta5BX0Rt1Ua4xUQPxgxVS70n9SN5gSo3LKEMAVRZvF56xz
+mcDrJFQM6pEJ/uoH5cJe+EL0YMGndrKPeXFrIhdY64R4WY/iGNFXl0EOL2SX0M81
+D+CAXzvO0SPjJLTrYIfpBqq0LaPAv6V5JlwpW27BL4jdmc9ADj9c4nPRzXU6d1Tb
+6avQ4OyVgU/wUoUwq6AsO2BMVmfu5JS02Phl+WG7T+CR7HigNjr5nRJk2HayJ+z1
+6HIb8KmSqzTt+5VuwSkMLDdUXVt2Dok9dzKYFufWvrvDnZnz0svDwToQ9LAjXFij
+igDA0os9lNV7Pn4nlK0c+Fk/2+wZdF4rzl0Bia4C6CMso0M+3Kqe7aqY6+/I6jgy
+kGOsCMSImzajpmtonx3ccPgSOyEWyoEaGij6u80QtFkj9g==
+-----END CERTIFICATE-----"""
+
+
+logger = get_logger("opsicommon.general")
+
+
+def websocket_dump(title: str, message: str) -> None:
+	if not logger.isEnabledFor(TRACE):
+		return
+	logger.trace(f"--- {title} ---")
+	logger.trace(message)
+	logger.trace("-----------------------")
+
+
+def websocket_trace(msg: str) -> None:
+	logger.trace(msg)
+
+
+def isEnabledForTrace() -> bool:
+	return logger.isEnabledFor(TRACE)
+
+
+websocket_handshake.dump = websocket_dump  # type: ignore[invalid-assignment]]
+websocket_http.dump = websocket_dump  # type: ignore[invalid-assignment]]
+websocket_http.trace = websocket_trace  # type: ignore[invalid-assignment]]
+websocket_core.trace = websocket_trace  # type: ignore[invalid-assignment]]
+websocket_core.isEnabledForTrace = isEnabledForTrace  # type: ignore[invalid-assignment]]
+
+
+@lru_cache
+def get_opsi_config() -> OpsiConfig:
+	return OpsiConfig(upgrade_config=False)
+
+
+@lru_cache
+def get_rpc_timeout(method: str) -> float:
+	if method in RPC_TIMEOUTS:
+		return float(RPC_TIMEOUTS[method])
+	for regex, timeout in RPC_TIMEOUTS_REGEX.items():
+		if regex.match(method):
+			return float(timeout)
+	return float(RPC_TIMEOUTS_DEFAULT)
+
+
+class ServiceVerificationFlags(str, Enum):
+	STRICT_CHECK = "strict_check"
+	UIB_OPSI_CA = "uib_opsi_ca"
+	ACCEPT_ALL = "accept_all"
+	OPSI_CA = "opsi_ca"
+	REPLACE_EXPIRED_CA = "replace_expired_ca"
+
+
+class OpsiCaState(str, Enum):
+	UNAVAILABLE = "unavailable"
+	AVAILABLE = "available"
+	EXPIRED = "expired"
+
+
+class CallbackThread(Thread):
+	def __init__(self, callback: Callable, **kwargs: Any) -> None:
+		super().__init__(daemon=True, name="opsiservice-CallbackThread")
+		self.callback = callback
+		self.kwargs = kwargs
+		self._context = copy_context()
+
+	def run(self) -> None:
+		for var in self._context:
+			var.set(self._context[var])
+		try:
+			self.callback(**self.kwargs)
+		except Exception as err:
+			logger.error("Error in %s: %s", self, err, exc_info=True)
+
+
+class ServiceConnectionListener(ABC):
+	def connection_open(self, service_client: ServiceClient) -> None:
+		"""
+		Called when the connection to the service is opened.
+		"""
+
+	def connection_established(self, service_client: ServiceClient) -> None:
+		"""
+		Called when the connection to the service is established.
+		"""
+
+	def connection_closed(self, service_client: ServiceClient) -> None:
+		"""
+		Called when the connection to the service is close.
+		"""
+
+	def connection_failed(self, service_client: ServiceClient, exception: Exception) -> None:
+		"""
+		Called when a connection to the service failed.
+		"""
+
+	def address_changed(self, service_client: ServiceClient, address: str) -> None:
+		"""
+		Called when the address of the service changed.
+		"""
+
+	@contextmanager
+	def register(self, service_client: ServiceClient) -> Generator[None, None, None]:
+		"""
+		Context manager for register this listener on and off the message bus.
+		"""
+		try:
+			service_client.register_connection_listener(self)
+			yield
+		finally:
+			service_client.unregister_connection_listener(self)
+
+
+@dataclass
+class Response:
+	status_code: int
+	reason: str
+	headers: CaseInsensitiveDict
+	content: bytes
+
+	def __getitem__(self, item: int) -> int | str | CaseInsensitiveDict | bytes:
+		return astuple(self)[item]
+
+	def __iter__(self) -> Generator[int | str | CaseInsensitiveDict | bytes, None, None]:
+		for item in astuple(self):
+			yield item
+
+
+HTTPSConnectionPool_orig_new_conn = HTTPSConnectionPool._new_conn
+
+
+def _patch_https_connection_pool_key_password(key_password: str | None) -> None:
+	def _new_conn(self: HTTPSConnectionPool) -> BaseHTTPSConnection:
+		self.key_password = key_password
+		return HTTPSConnectionPool_orig_new_conn(self)
+
+	setattr(HTTPSConnectionPool, "_new_conn", _new_conn)
+
+
+class KeyPasswordHTTPAdapter(HTTPAdapter):
+	def __init__(self, key_password: str | None) -> None:
+		self.key_password = key_password
+		super().__init__()
+
+	def init_poolmanager(self, *args: Any, **kwargs: Any) -> None:
+		if self.key_password:
+			kwargs["key_password"] = self.key_password
+		super().init_poolmanager(*args, **kwargs)
+
+
+class UploadFile:
+	def __init__(self, file: Path, progress_callback: Callable | None = None) -> None:
+		self.file = file
+		self.progress_callback = progress_callback
+		self.file_size = file.stat().st_size
+		self._file_handle: BinaryIO | None = None
+		self._position = 0
+
+	def __enter__(self) -> UploadFile:
+		self._file_handle = open(self.file, "rb")
+		self._position = 0
+		if self.progress_callback:
+			self.progress_callback(0, self.file_size)
+		return self
+
+	def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, traceback: TracebackType | None) -> None:
+		if self._file_handle:
+			self._file_handle.close()
+
+	def read(self, size: int = -1) -> bytes:
+		assert self._file_handle
+		data = self._file_handle.read(size)
+		self._position += len(data)
+		if self.progress_callback:
+			self.progress_callback(self._position, self.file_size)
+		return data
+
+
+@dataclass(kw_only=True)
+class DAVFileInfo:
+	path: str
+	type: Literal["file", "dir"]
+	size: int = 0
+
+	@property
+	def name(self) -> str:
+		return self.path.rstrip("/").rsplit("/", maxsplit=1)[-1]
+
+	def relative_path(self, start: str) -> str:
+		return posixpath.relpath(self.path, start=start)
+
+
+def _get_file_infos_from_dav_xml(dav_xml: str) -> list[DAVFileInfo]:
+	file_infos = []
+	root = ElementTree.fromstring(dav_xml)
+	for child in root:
+		if child.tag != "{DAV:}response":
+			raise ValueError("No valid davxml given")
+
+		if child[0].tag != "{DAV:}href" or not child[0].text or child[1].tag != "{DAV:}propstat":
+			continue
+
+		file_info = DAVFileInfo(path=unquote(child[0].text).rstrip("/"), type="file", size=0)
+		if file_info.name in (".", ".."):
+			continue
+
+		for node in child[1]:
+			if node.tag != "{DAV:}prop":
+				continue
+
+			for childnode in node:
+				if childnode.tag == "{DAV:}getcontenttype" and childnode.text and "directory" in childnode.text:
+					file_info.type = "dir"
+				elif childnode.tag == "{DAV:}resourcetype":
+					for res_child in childnode:
+						if res_child.tag == "{DAV:}collection":
+							file_info.type = "dir"
+				elif childnode.tag == "{DAV:}getcontentlength" and childnode.text:
+					file_info.size = int(childnode.text)
+
+		file_infos.append(file_info)
+
+	return file_infos
+
+
+class ServiceClient:
+	no_proxy_addresses = ["localhost", "127.0.0.1", "ip6-localhost", "ip6-loopback", "::1"]
+
+	def __init__(
+		self,
+		address: Iterable[str] | str | None = None,
+		*,
+		username: str | None = None,
+		password: str | None = None,
+		totp: str | None = None,
+		sso: bool = False,
+		client_cert_file: str | Path | None = None,
+		client_key_file: str | Path | None = None,
+		client_key_password: str | None = None,
+		ca_cert_file: str | Path | None = None,
+		verify: str | Iterable[str] = ServiceVerificationFlags.STRICT_CHECK,
+		session_cookie: str | None = None,
+		session_lifetime: int = 150,
+		proxy_url: str | None = "system",
+		user_agent: str | None = None,
+		connect_timeout: float = 10.0,
+		max_time_diff: float = 0.0,
+		jsonrpc_create_objects: bool = False,
+		jsonrpc_create_methods: bool = False,
+	) -> None:
+		"""
+		proxy_url:
+		    system = Use system proxy
+		    None = Do not use a proxy
+
+		verify:
+		    strict_check:
+		        Check server certificate against ca_cert_file.
+		    uib_opsi_ca:
+		        In combination with verify. Also accept server certificates signed by uib.
+		    accept_all:
+		        Do not check server certificate.
+		    opsi_ca:
+		        If ca_cert_file missing or empty: Do not verify certificate.
+		        If ca_cert_file is present: Verify if accept_all is not set.
+		        After every successful connection: Fetch CA certs from service and update ca_cert_file.
+		    replace_expired_ca:
+		        To use in combination with fetch_ca_certs.
+		        If a CA from ca_cert_file is expired => accept_all.
+		"""
+
+		self._addresses: list[str] = []
+		self._address_index = 0
+		self.server_name = ""
+		self.server_version = version.parse("0")
+		self.new_host_id: str | None = None
+		self.new_host_key: str | None = None
+		self.jsonrpc_create_objects = bool(jsonrpc_create_objects)
+		self.jsonrpc_create_methods = bool(jsonrpc_create_methods)
+		self._jsonrpc_path = "/rpc"
+		self._jsonrpc_interface: dict[str, dict[str, Any]] = {}
+		self._jsonrpc_method_params: dict[str, dict[str, Any]] = {}
+		self._messagebus_available = False
+		self._connected = False
+		self._max_time_diff = max_time_diff
+		self._connect_lock = Lock()
+		self._messagebus_connect_lock = Lock()
+		self._listener_lock = Lock()
+		self._ca_cert_lock = Lock()
+		self._listener: list[ServiceConnectionListener] = []
+		self._service_unavailable: OpsiServiceUnavailableError | None = None
+		self._username: str | None = None
+		self._password: str | None = None
+		self._totp: str | None = None
+		self._sso = sso
+
+		self._uib_opsi_ca_cert = x509.load_pem_x509_certificate(UIB_OPSI_CA.encode("ascii"))
+
+		self._session = Session()
+
+		self.username = username
+		self.password = password
+		self.totp = totp
+
+		self._client_cert_file = None
+		self._client_key_file = None
+		self._client_key_password = None
+		if client_key_password:
+			secret_filter.add_secrets(client_key_password)
+		if client_cert_file:
+			self._client_cert_file = Path(client_cert_file)
+			self._session.cert = str(self._client_cert_file)
+
+			if client_key_file:
+				self._client_key_file = Path(client_key_file)
+				self._session.cert = (str(self._client_cert_file), str(self._client_key_file))
+
+			_client_key_file = self._client_key_file or self._client_cert_file
+
+			logger.info(
+				"Using client certificate file '%s' and key file '%s'",
+				self._client_cert_file,
+				_client_key_file,
+			)
+			self._client_key_password = client_key_password or None
+
+			logger.debug("Trying to load private key")
+			# Test key loading (passphrase)
+			load_key(_client_key_file, self._client_key_password)
+
+			_patch_https_connection_pool_key_password(self._client_key_password)
+
+		self._ca_cert_file = None
+		if ca_cert_file:
+			if not isinstance(ca_cert_file, Path):
+				ca_cert_file = Path(ca_cert_file)
+			self._ca_cert_file = ca_cert_file
+
+		verify = verify or []
+		if isinstance(verify, (str, ServiceVerificationFlags)):
+			verify = [verify]
+
+		self._verify: list[ServiceVerificationFlags] = []
+		for verify_flag in list(verify):
+			if not isinstance(verify_flag, ServiceVerificationFlags):
+				verify_flag = ServiceVerificationFlags(verify_flag)
+			if verify_flag not in ServiceVerificationFlags:
+				raise ValueError(f"Invalid verification mode {verify_flag}")
+			self._verify.append(verify_flag)
+
+		if ServiceVerificationFlags.STRICT_CHECK in self._verify:
+			self._verify = [ServiceVerificationFlags.STRICT_CHECK]
+
+		if ServiceVerificationFlags.UIB_OPSI_CA in verify and ServiceVerificationFlags.OPSI_CA not in self._verify:
+			self._verify.append(ServiceVerificationFlags.OPSI_CA)
+
+		if not self._verify:
+			self._verify = [ServiceVerificationFlags.STRICT_CHECK]
+
+		self._session_lifetime = max(1, int(session_lifetime))
+		self._proxy_url = str(proxy_url) if proxy_url and proxy_url != "none" else None
+
+		self._user_agent = f"opsi-service-client/{__version__}" if user_agent is None else str(user_agent)
+		self._connect_timeout = max(0.0, float(connect_timeout))
+		self._read_timeout = 60.0
+
+		self.default_headers = {
+			"User-Agent": self._user_agent,
+			"X-opsi-version": __version__,
+			"X-opsi-session-lifetime": str(self._session_lifetime),
+		}
+		self._session.headers.update(self.default_headers)
+		self.session_cookie = session_cookie
+
+		ca_bundle = os.environ.get("REQUESTS_CA_BUNDLE", None)
+		if ca_bundle:
+			logger.warning("Environment variable REQUESTS_CA_BUNDLE is set to %r", ca_bundle)
+
+		self.set_addresses(address)
+
+		if ServiceVerificationFlags.ACCEPT_ALL in self._verify:
+			self._session.verify = False
+		elif self._addresses:
+			self._session.verify = str(self.ca_cert_file)
+		else:
+			self._session.verify = True
+
+		self._messagebus = Messagebus(self)
+
+	@property
+	def addresses(self) -> Iterable[str] | str | None:
+		return self._addresses
+
+	@property
+	def address_index(self) -> int:
+		return self._address_index
+
+	@address_index.setter
+	def address_index(self, address_index: int) -> None:
+		if address_index >= len(self._addresses):
+			address_index = 0
+
+		current_index = self._address_index
+		self._address_index = address_index
+
+		if not self._addresses:
+			return
+
+		new_address = self._addresses[self._address_index]
+
+		logger.debug("Now using service address: %r", new_address)
+		addr, path = self.normalize_service_address(new_address)
+
+		path = path.rstrip("/")
+		if path and path != "/rpc":
+			self._jsonrpc_path = path
+
+		service_hostname = urlparse(addr).hostname or ""
+
+		self._session = prepare_proxy_environment(
+			service_hostname,
+			self._proxy_url,
+			no_proxy_addresses=self.no_proxy_addresses,
+			session=self._session,
+		)
+
+		if self._address_index != current_index:
+			for listener in self._listener:
+				listener.address_changed(self, new_address)
+
+	@staticmethod
+	def normalize_service_address(address: str) -> tuple[str, str]:
+		scheme = "https"
+		auth = ""
+		host = ""
+		port = _DEFAULT_HTTPS_PORT
+		path = ""
+		if "://" in address:
+			scheme, address = address.split("://", 1)
+			if "/" in address:
+				address, path = address.split("/", 1)
+				path = f"/{path.strip('/')}"
+
+		if scheme != "https":
+			raise ValueError(f"Protocol {scheme} not supported")
+
+		if "@" in address:
+			auth, address = address.split("@", 1)
+			auth += "@"
+
+		columns = address.count(":")
+		if columns > 1 or ("[" in address and "]" in address):
+			# IPv6 address
+			if "]:" in address:
+				address, str_port = address.split("]:", 1)
+				port = int(str_port)
+			host = address.replace("[", "").replace("]", "")
+		elif columns:
+			host, str_port = address.split(":", 1)
+			port = int(str_port)
+		else:
+			host = address
+
+		try:
+			ipa = ip_address(host)
+			if isinstance(ipa, IPv6Address):
+				host = f"[{ipa.exploded}]"
+		except ValueError:
+			pass
+
+		return f"{scheme}://{auth}{host}:{port}", path
+
+	def set_addresses(self, address: Iterable[str] | str | None) -> None:
+		current_addresses = list(self._addresses)
+		self._addresses = []
+		if address:
+			for addr in [address] if isinstance(address, str) else address:
+				addr, path = self.normalize_service_address(addr)
+				url = urlparse(addr)
+				if url.username is not None:
+					if self.username and self.username != url.username:
+						raise ValueError("Different usernames supplied")
+					self.username = url.username
+
+				if url.password is not None:
+					if self.password and self.password != url.password:
+						raise ValueError("Different passwords supplied")
+					self.password = url.password
+
+				self._addresses.append(f"{addr}{path}")
+
+		if current_addresses != self._addresses:
+			self._address_index = -1
+			self.address_index = 0
+
+	@property
+	def base_url(self) -> str:
+		if not self._addresses:
+			raise ValueError("Service address undefined")
+		return self.normalize_service_address(self._addresses[self._address_index])[0]
+
+	def service_is_opsiclientd(self) -> bool:
+		addr = urlparse(self._addresses[self._address_index])
+		return self.is_local_address(self._addresses[self._address_index]) and addr.port == 4441
+
+	@property
+	def verify(self) -> list[ServiceVerificationFlags]:
+		return self._verify
+
+	@property
+	def jsonrpc_interface(self) -> list[dict[str, Any]]:
+		"""
+		Returns the JSON-RPC interface as received from the service.
+		"""
+		return list(self._jsonrpc_interface.values())
+
+	def get_jsonrpc_method(self, method: str) -> dict[str, Any]:
+		"""
+		Returns the JSON-RPC method interface for the given method name.
+		:param method: The name of the JSON-RPC method.
+		:raises ValueError: If the method is not found in the JSON-RPC interface.
+		"""
+		method_interface = self._jsonrpc_interface.get(method)
+		if not method_interface:
+			raise ValueError(f"Method {method!r} not found in JSON-RPC interface")
+		return method_interface
+
+	@staticmethod
+	@lru_cache
+	def is_local_address(service_address: str) -> bool:
+		service_address = ServiceClient.normalize_service_address(service_address)[0]
+		url = urlparse(service_address)
+		if not url.hostname:
+			raise ValueError(f"Invalid service address: {service_address}")
+		host = url.hostname.lower().replace("[", "").replace("]", "")
+		return (
+			host in ("0000:0000:0000:0000:0000:0000:0000:0001", "127.0.0.1", "localhost", "ip6-localhost", "ip6-loopback")
+			or host in [interface.address.exploded for interface in get_network_info().interfaces]
+			or host in get_hostnames()
+		)
+
+	@staticmethod
+	@lru_cache
+	def get_ca_cert_file_path(service_address: str) -> Path:
+		base_dir = Path.home() / ".config"
+		if is_windows():
+			appdata = os.getenv("APPDATA")
+			if not appdata:
+				raise RuntimeError("APPDATA environment variable not set")
+			base_dir = Path(appdata)
+
+		service_address = ServiceClient.normalize_service_address(service_address)[0]
+		url = urlparse(service_address)
+		if not url.hostname:
+			raise ValueError(f"Invalid service address: {service_address}")
+
+		host = url.hostname.lower().replace("[", "").replace("]", "")
+		if ServiceClient.is_local_address(service_address):
+			host = "localhost"
+
+		dirname = f"{host}_{url.port}".replace(":", ".")
+		return base_dir / "opsi" / "services" / dirname / "ca-certs.pem"
+
+	@property
+	def ca_cert_file(self) -> Path | None:
+		if self._ca_cert_file:
+			return self._ca_cert_file
+		if ServiceVerificationFlags.OPSI_CA in self._verify:
+			return self.get_ca_cert_file_path(self.base_url)
+		return None
+
+	@property
+	def client_cert_file(self) -> Path | None:
+		return self._client_cert_file
+
+	@property
+	def client_key_file(self) -> Path | None:
+		return self._client_key_file
+
+	@property
+	def client_key_password(self) -> str | None:
+		return self._client_key_password
+
+	@property
+	def connected(self) -> bool:
+		return self._connected
+
+	@connected.setter
+	def connected(self, connected: bool) -> None:
+		changed = self._connected != connected
+		self._connected = connected
+		if not self._connected:
+			self.server_version = version.parse("0")
+			self.server_name = ""
+			self._messagebus_available = False
+
+		if changed:
+			for listener in self._listener:
+				CallbackThread(
+					listener.connection_established if self._connected else listener.connection_closed, service_client=self
+				).start()
+
+	def _update_auth(self) -> None:
+		assert self._session
+		if not self._username and not self._password:
+			self._session.auth = None
+			return
+
+		self._session.auth = (  # type:ignore[invalid-assignment] # session.auth should be tuple of str, but that is a problem with weird locales
+			(self._username or "").encode("utf-8"),
+			(self._password or "").encode("utf-8"),
+		)
+
+	@property
+	def username(self) -> str | None:
+		return self._username
+
+	@username.setter
+	def username(self, username: str | None) -> None:
+		self._username = username
+		self._update_auth()
+
+	@property
+	def password(self) -> str | None:
+		return self._password
+
+	@password.setter
+	def password(self, password: str | None) -> None:
+		self._password = password
+		if self._password:
+			secret_filter.add_secrets(self._password)
+		self._update_auth()
+
+	@property
+	def totp(self) -> str | None:
+		return self._totp
+
+	@totp.setter
+	def totp(self, totp: str | None) -> None:
+		self._totp = str(totp) if totp else None
+
+	@property
+	def proxy_url(self) -> str | None:
+		return self._proxy_url
+
+	@property
+	def session_cookie(self) -> str | None:
+		if not self._session.cookies:
+			return None
+		cookies = self._session.cookies.items()
+		if not cookies:
+			return None
+		return f"{cookies[-1][0]}={cookies[-1][1]}"
+
+	@session_cookie.setter
+	def session_cookie(self, session_cookie: str | None) -> None:
+		self._session.cookies = RequestsCookieJar()
+		if not session_cookie:
+			return
+		logger.confidential("Setting session cookie: %s", session_cookie)
+		if "=" not in session_cookie:
+			raise ValueError("Invalid session cookie, <name>=<value> is needed")
+
+		cookie_name, cookie_value = session_cookie.split("=", 1)
+		secret_filter.add_secrets(cookie_value)
+		self._session.cookies.set(cookie_name, cookie_value)
+
+	def register_connection_listener(self, listener: ServiceConnectionListener) -> None:
+		with self._listener_lock:
+			if listener not in self._listener:
+				self._listener.append(listener)
+
+	def unregister_connection_listener(self, listener: ServiceConnectionListener) -> None:
+		with self._listener_lock:
+			if listener in self._listener:
+				self._listener.remove(listener)
+
+	def certs_from_pem(self, pem_data: str) -> list[x509.Certificate]:
+		certs = []
+		for match in re.finditer(r"BEGIN CERTIFICATE-+(.*?)-+END CERTIFICATE", pem_data, re.DOTALL):
+			try:
+				pem = f"-----BEGIN CERTIFICATE-----{match.group(1)}-----END CERTIFICATE-----"
+				certs.append(x509.load_pem_x509_certificate(pem.encode("utf-8")))
+			except Exception as err:
+				logger.error("Failed to load cert %r: %s", match.group(1), err, exc_info=True)
+		return certs
+
+	def read_ca_cert_file(self, with_lock: bool = True) -> list[x509.Certificate]:
+		ca_cert_file = self.ca_cert_file
+		if not ca_cert_file:
+			raise OpsiServiceError("No CA cert file defined")
+		with self._ca_cert_lock if with_lock else nullcontext():
+			with open(ca_cert_file, "r", encoding="utf-8") as file:
+				with lock_file(file=file, exclusive=False, timeout=5.0):
+					return self.certs_from_pem(file.read())
+
+	def write_ca_cert_file(self, certs: list[x509.Certificate], *, force: bool = False, with_lock: bool = True) -> None:
+		ca_cert_file = self.ca_cert_file
+
+		if not force and str(ca_cert_file) == OPSI_CA_CERT_FILE:
+			# Do not touch the opsi CA file
+			logger.info("Not writing to opsiconfd CA file")
+			return
+
+		if not ca_cert_file:
+			raise OpsiServiceError("No CA cert file defined")
+
+		with self._ca_cert_lock if with_lock else nullcontext():
+			ca_cert_file.parent.mkdir(parents=True, exist_ok=True)
+			certs_pem = []
+			subjects = []
+			for cert in certs:
+				subj = x509_name_to_dict(cert.subject)
+				if subj in subjects:
+					continue
+				certs_pem.append(cert.public_bytes(encoding=serialization.Encoding.PEM).decode("utf-8").strip() + "\n")
+				subjects.append(subj)
+
+			with open(ca_cert_file, "a+", encoding="utf-8") as file:
+				with lock_file(file=file, exclusive=True, timeout=5.0):
+					file.seek(0)
+					file.truncate()
+					file.write("".join(certs_pem))
+
+			logger.info("CA cert file '%s' successfully updated (%d certificates total)", ca_cert_file, len(certs))
+
+	def fetch_ca_certs(self, *, skip_verify: bool = False, force_write_ca_cert_file: bool = False) -> None:
+		verify = False if skip_verify else self._session.verify
+		logger.info("Fetching OPSI CA from service (verify=%s)", verify)
+
+		pem_name = "ca-certs.pem" if self.server_version >= MIN_VERSION_CA_CERTS else "opsi-ca-cert.pem"
+		try:
+			response = self._session.get(f"{self.base_url}/ssl/{pem_name}", timeout=(self._connect_timeout, 5), verify=verify)
+			response.raise_for_status()
+		except Exception as err:
+			raise OpsiServiceError(f"Failed to fetch {pem_name}: {err}") from err
+
+		ca_certs = self.certs_from_pem(response.text)
+		if not ca_certs:
+			raise OpsiServiceError(f"Failed to fetch {pem_name}: No certificates in response")
+
+		if ServiceVerificationFlags.UIB_OPSI_CA in self._verify:
+			ca_certs.extend(self.certs_from_pem(UIB_OPSI_CA))
+
+		self.write_ca_cert_file(ca_certs, force=force_write_ca_cert_file)
+
+	def handle_uib_opsi_ca_in_cert_file(self, action: Literal["add", "remove"]) -> None:
+		with self._ca_cert_lock:
+			ca_cert_file = self.ca_cert_file
+			if not ca_cert_file:
+				raise OpsiServiceError("No CA cert file defined")
+			uib_opsi_ca_cn = self._uib_opsi_ca_cert.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value
+			found = False
+			ca_certs = []
+			for cert in self.get_opsi_ca_certs(with_lock=False):
+				if cert.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value == uib_opsi_ca_cn:
+					found = True
+				else:
+					ca_certs.append(cert)
+
+			if action == "remove":
+				if found:
+					logger.info("Removing UIB OPSI CA from cert file '%s' (%d certificates total)", ca_cert_file, len(ca_certs))
+				else:
+					logger.info(
+						"UIB OPSI CA not found in cert file '%s', nothing to remove (%d certificates total)", ca_cert_file, len(ca_certs)
+					)
+					return
+
+			elif action == "add":
+				ca_certs.extend(self.certs_from_pem(UIB_OPSI_CA))
+				if found:
+					logger.info("Updating UIB OPSI CA in cert file '%s' (%d certificates total)", ca_cert_file, len(ca_certs))
+				else:
+					logger.info("Adding UIB OPSI CA to cert file '%s' (%d certificates total)", ca_cert_file, len(ca_certs))
+
+			self.write_ca_cert_file(ca_certs, with_lock=False)
+
+	def get_opsi_ca_certs(self, with_lock: bool = True) -> list[x509.Certificate]:
+		ca_certs: list[x509.Certificate] = []
+		ca_cert_file = self.ca_cert_file
+		if not ca_cert_file or not ca_cert_file.exists() or ca_cert_file.stat().st_size == 0:
+			return ca_certs
+		try:
+			ca_certs = self.read_ca_cert_file(with_lock=with_lock)
+		except Exception as err:
+			logger.warning(err, exc_info=True)
+		return ca_certs
+
+	def get_opsi_ca_certs_state(self) -> OpsiCaState:
+		now = datetime.now(tz=timezone.utc)
+		uib_opsi_ca_cn = self._uib_opsi_ca_cert.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value
+		for cert in self.get_opsi_ca_certs():
+			if cert.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value != uib_opsi_ca_cn:
+				if cert.not_valid_after_utc <= now:
+					logger.notice("Expired certificate found: %r", cert)
+					return OpsiCaState.EXPIRED
+				return OpsiCaState.AVAILABLE
+		return OpsiCaState.UNAVAILABLE
+
+	def create_jsonrpc_methods(self, instance: Any = None) -> None:
+		if self._jsonrpc_interface is None:
+			raise ValueError("Interface description not available")
+
+		instance = instance or self
+
+		def backend_getInterface(self: ServiceClient) -> list[dict[str, Any]]:
+			return self.jsonrpc_interface
+
+		def backend_exit(self: ServiceClient) -> None:
+			return self.disconnect()
+
+		for method_name, method in self._jsonrpc_interface.items():
+			try:
+				exec_locals: dict[str, object] = {}
+
+				if method_name not in ("backend_getInterface", "backend_exit"):
+					logger.debug("Creating instance method: %s", method_name)
+
+					args = method["args"]
+					varargs = method["varargs"]
+					keywords = method["keywords"]
+					defaults = method["defaults"]
+
+					arg_list = []
+					call_list = []
+					for i, argument in enumerate(args):
+						if argument == "self":
+							continue
+
+						if isinstance(defaults, (tuple, list)) and len(defaults) + i >= len(args):
+							default = defaults[len(defaults) - len(args) + i]
+							if isinstance(default, str):
+								default = repr(default)
+							arg_list.append(f"{argument}={default}")
+						else:
+							arg_list.append(argument)
+						call_list.append(argument)
+
+					if varargs:
+						for vararg in varargs:
+							arg_list.append(f"*{vararg}")
+							call_list.append(vararg)
+
+					if keywords:
+						arg_list.append(f"**{keywords}")
+						call_list.append(keywords)
+
+					arg_string = ", ".join(arg_list)
+					call_string = ", ".join(call_list)
+
+					logger.trace("%s: arg string is: %s", method_name, arg_string)
+					logger.trace("%s: call string is: %s", method_name, call_string)
+					with warnings.catch_warnings():
+						exec(
+							f'def {method_name}(self, {arg_string}): return self.jsonrpc("{method_name}", [{call_string}])',
+							None,
+							exec_locals,
+						)
+				setattr(instance, method_name, MethodType(exec_locals[method_name] if exec_locals else eval(method_name), self))  # type: ignore[arg-type]
+			except Exception as err:
+				logger.error("Failed to create instance method '%s': %s", method, err)
+
+	@contextmanager
+	def connection(self, connect_messagebus: bool = False) -> Generator[None, None, None]:
+		self.connect(connect_messagebus=connect_messagebus)
+		try:
+			yield
+		finally:
+			self.stop()
+
+	def connect(self, connect_messagebus: bool = False) -> None:
+		if not self._addresses:
+			raise OpsiServiceConnectionError("Service address undefined")
+
+		if self._connect_lock.locked():
+			return
+
+		self.disconnect()
+		with self._connect_lock:
+			for listener in self._listener:
+				CallbackThread(listener.connection_open, service_client=self).start()
+
+			headers: dict[str, str] = {"x-opsi-mfa-otp": self.totp} if self.totp else {}
+			for address_index in range(len(self._addresses)):
+				self.address_index = address_index
+				logger.info("Connecting to service %r (opsiclientd: %r)", self.base_url, self.service_is_opsiclientd())
+
+				ca_cert_file = self.ca_cert_file
+				ca_cert_file_exists = ca_cert_file and ca_cert_file.exists()
+
+				if ServiceVerificationFlags.ACCEPT_ALL in self._verify or self.service_is_opsiclientd():
+					self._session.verify = False
+				elif ca_cert_file:
+					self._session.verify = str(self.ca_cert_file)
+				else:
+					self._session.verify = True
+
+				verify = self._session.verify
+				logger.debug(
+					"ca_cert_file: '%s', exists: %r, verify_flags: %r, session.verify: %r, verify: %r",
+					ca_cert_file,
+					ca_cert_file_exists,
+					self._verify,
+					self._session.verify,
+					verify,
+				)
+				if ServiceVerificationFlags.OPSI_CA in self._verify:
+					opsi_ca_state = self.get_opsi_ca_certs_state()
+					if opsi_ca_state == OpsiCaState.UNAVAILABLE:
+						logger.info(
+							"Service verification enabled, but '%s' does not contain CA certs, skipping verification",
+							ca_cert_file,
+						)
+						verify = False
+					elif ServiceVerificationFlags.REPLACE_EXPIRED_CA in self._verify and opsi_ca_state == OpsiCaState.EXPIRED:
+						logger.info(
+							"Service verification enabled, but a certificate from CA cert file '%s' is expired, skipping verification",
+							ca_cert_file,
+						)
+						verify = False
+
+				if verify:
+					if ca_cert_file_exists:
+						if ServiceVerificationFlags.UIB_OPSI_CA in self._verify:
+							self.handle_uib_opsi_ca_in_cert_file("add")
+						elif ServiceVerificationFlags.OPSI_CA in self._verify:
+							self.handle_uib_opsi_ca_in_cert_file("remove")
+					else:
+						# Prevent OSError invalid path
+						verify = True
+
+				verify_addr: str | bool = verify
+				# Accept status 405 for older opsiconfd versions
+				allow_status_codes = [200, 405]
+				if self.service_is_opsiclientd():
+					if self._sso:
+						raise RuntimeError("SSO not supported for opsiclientd")
+
+					logger.notice("Connecting to local opsiclientd, skipping verification and allowing error 500")
+					# Accept status 500 for older opsiclientd versions
+					allow_status_codes.append(500)
+					verify_addr = False
+
+				try:
+					if self._sso:
+						authenticated = False
+						if self.session_cookie:
+							try:
+								response = self._request(
+									method="GET",
+									path="/auth/authenticated",
+									headers=headers,
+									connect_timeout=self._connect_timeout,
+									read_timeout=self._connect_timeout,
+									verify=verify_addr,
+									allow_status_codes=[200],
+								)
+								authenticated = response.json()
+							except OpsiServiceAuthenticationError:
+								pass
+
+						if not authenticated:
+							self.session_cookie = None
+							response = self._request(
+								method="GET",
+								path="/auth/session_id",
+								headers=headers,
+								connect_timeout=self._connect_timeout,
+								read_timeout=self._connect_timeout,
+								verify=verify_addr,
+								allow_status_codes=[200],
+							)
+							session_id = response.json()
+
+							try:
+								webbrowser.open(f"{self.base_url}/auth/saml/login?session_id={session_id}&redirect=close_window")
+							except Exception as err:
+								raise OpsiServiceAuthenticationError(f"SSO failed: failed to open browser: {err}") from err
+
+							response = self._request(
+								method="POST",
+								path="/auth/wait_authenticated",
+								data=json.dumps({"wait_time": 60}).encode("utf-8"),
+								read_timeout=65,
+								verify=verify_addr,
+								allow_status_codes=[200],
+							)
+							if not response.json():
+								raise OpsiServiceAuthenticationError("SSO failed")
+					else:
+						# Check permission to access JSON-RPC API
+						response = self._request(
+							method="HEAD",
+							path=self._jsonrpc_path,
+							headers=headers,
+							connect_timeout=self._connect_timeout,
+							read_timeout=self._connect_timeout,
+							verify=verify_addr,
+							allow_status_codes=allow_status_codes,
+						)
+					break
+				except OpsiServiceError as err:
+					if self.address_index >= len(self._addresses) - 1:
+						for listener in self._listener:
+							CallbackThread(listener.connection_failed, service_client=self, exception=err).start()
+						raise
+
+			cookies = self._session.cookies.items()
+			if cookies and len(cookies) > 1:
+				logger.debug("Multiple cookies stored, using the last one: %s", cookies[-1])
+				self.session_cookie = f"{cookies[-1][0]}={cookies[-1][1]}"
+
+			if "server" in response.headers:
+				self.server_name = response.headers["server"]
+				match = re.search(r"^opsi\D+([\d\.]+)", self.server_name)
+				if match:
+					self.server_version = version.parse(match.group(1))
+					self._messagebus_available = self.server_version >= MIN_VERSION_MESSAGEBUS
+
+			if "x-opsi-new-host-id" in response.headers:
+				try:
+					self.new_host_id = to_host_id(response.headers["x-opsi-new-host-id"])
+				except ValueError as error:
+					logger.error("Could not get HostId from header: %s", error, exc_info=True)
+
+			if "x-opsi-new-host-key" in response.headers:
+				try:
+					self.new_host_key = to_opsi_host_key(response.headers["x-opsi-new-host-key"])
+				except ValueError as error:
+					logger.error("Could not get OpsiHostKey from header: %s", error, exc_info=True)
+
+			logger.debug("max_time_diff: %r", self._max_time_diff)
+			if self._max_time_diff > 0 and not self.service_is_opsiclientd():
+				try:
+					server_dt = None
+					uxts_hdr = response.headers.get("x-date-unix-timestamp")
+					date_hdr = response.headers.get("date")
+					logger.debug("uxts_hdr: %r, date_hdr: %r", uxts_hdr, date_hdr)
+					if uxts_hdr:
+						server_dt = datetime.fromtimestamp(int(uxts_hdr), tz=timezone.utc)
+					elif date_hdr:
+						times, timez = date_hdr.rsplit(" ", 1)
+						if timez == "UTC":
+							# Parsing UTC dates only
+							loc = locale.getlocale()
+							try:
+								locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
+							except locale.Error as err:
+								logger.debug("Failed to set locale: %s, continuing with locale %r", err, loc)
+							try:
+								server_dt = datetime.strptime(times, "%a, %d %b %Y %H:%M:%S").replace(tzinfo=timezone.utc)
+							finally:
+								locale.setlocale(locale.LC_ALL, loc)
+					if server_dt:
+						local_dt = datetime.now(timezone.utc)
+						diff = (server_dt - local_dt).total_seconds()
+						logger.debug("server_dt: %r, local_dt: %r, diff: %r", server_dt, local_dt, diff)
+						if abs(diff) > self._max_time_diff:
+							logger.warning(
+								"Local time %r differs from server time (max diff: %0.3f), setting system time to %r",
+								local_dt.strftime("%Y-%m-%d %H:%M:%S %Z"),
+								self._max_time_diff,
+								server_dt.strftime("%Y-%m-%d %H:%M:%S %Z"),
+							)
+							set_system_datetime(server_dt)
+							logger.notice("System time is now %r", datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z"))
+					else:
+						logger.debug("Not parsing non UTC date header: %s", response.headers["date"])
+				except Exception as err:
+					logger.warning("Failed to process date header %r: %r", response.headers["date"], err, exc_info=True)
+
+			if ServiceVerificationFlags.OPSI_CA in self._verify and not self.service_is_opsiclientd():
+				try:
+					self.fetch_ca_certs(skip_verify=not verify)
+				except Exception as err:
+					logger.error("Failed to fetch CA certs: %s", err, exc_info=True)
+					raise OpsiServiceVerificationError(f"Failed to fetch CA certs: {err}") from err
+
+			self._jsonrpc_method_params = {}
+			self._jsonrpc_interface = {}
+			if self.jsonrpc_create_methods:
+				try:
+					for method in self.jsonrpc("backend_getInterface", assert_connected=False):
+						self._jsonrpc_interface[method["name"]] = method
+						self._jsonrpc_method_params[method["name"]] = {}
+						def_idx = 0
+						for param in method["params"]:
+							default = None
+							if param[0] == "*":
+								param = param.lstrip("*")
+								if method["defaults"]:
+									try:
+										default = method["defaults"][def_idx]
+									except IndexError:
+										pass
+								def_idx += 1
+							self._jsonrpc_method_params[method["name"]][param] = default
+				except Exception as err:
+					logger.error("Failed to get interface description: %s", err, exc_info=True)
+
+				self.create_jsonrpc_methods()
+
+		# Fire connection established event
+		self.connected = True
+
+		if connect_messagebus:
+			self.connect_messagebus()
+
+	def disconnect(self) -> None:
+		self.disconnect_messagebus()
+		if self._connected:
+			try:
+				if self.server_version >= MIN_VERSION_SESSION_API:
+					self.post("/session/logout", connect_timeout=3.0, read_timeout=3.0)
+				else:
+					self.jsonrpc("backend_exit", connect_timeout=3.0, read_timeout=3.0)
+			except Exception:
+				pass
+		try:
+			self._session.close()
+		except Exception:
+			pass
+
+		self.connected = False
+
+	def assert_connected(self) -> None:
+		with self._connect_lock:
+			if self._connected:
+				return
+		self.connect()
+
+	def _get_url(self, path: str) -> str:
+		if not path.startswith("/"):
+			path = f"/{path}"
+		return f"{self.base_url}{path}"
+
+	def _request(
+		self,
+		method: str,
+		path: str,
+		*,
+		headers: dict[str, str] | None = None,
+		connect_timeout: float | None = None,
+		write_timeout: float | None = None,
+		read_timeout: float | None = None,
+		data: bytes | UploadFile | None = None,
+		verify: str | bool | None = None,
+		allow_status_codes: Iterable[int] | None = None,
+	) -> RequestsResponse:
+		if self._service_unavailable and self._service_unavailable.until and self._service_unavailable.until >= time.monotonic():
+			raise self._service_unavailable
+
+		if connect_timeout is None:
+			connect_timeout = self._connect_timeout
+		if write_timeout is None:
+			write_timeout = 0
+		if read_timeout is None:
+			read_timeout = self._read_timeout
+
+		self._service_unavailable = None
+
+		allow_status_codes = (200, 201, 202, 203, 204, 206, 207, 208) if allow_status_codes is None else allow_status_codes
+		max_attempts = 3
+		for attempt in range(1, max_attempts + 1):
+			try:
+				response = self._session.request(
+					method=method,
+					url=self._get_url(path),
+					headers=headers,
+					data=data,
+					# Unfortunately, requests / urllib3 does not support separate connect and write timeouts
+					# See https://github.com/urllib3/urllib3/issues/857
+					timeout=(connect_timeout + write_timeout, read_timeout),
+					stream=True,
+					verify=verify,
+				)
+				if allow_status_codes and allow_status_codes != ... and response.status_code not in allow_status_codes:
+					response.raise_for_status()
+				return response
+			except SSLError as err:
+				str_err = str(err).lower()
+				if "permission denied" in str_err and attempt < max_attempts:
+					# Possible permission error in context.load_verify_locations accessing ca_cert_file (file locked?)
+					wait_time = random.randint(500, 3000) / 1000
+					logger.warning("%s, retrying in %0.3f seconds", err, wait_time)
+					time.sleep(wait_time)
+					continue
+				if "certificate required" in str_err or "unknown ca" in str_err:
+					raise OpsiServiceClientCertificateError(str(err)) from err
+				try:
+					if err.args[0].reason.args[0].errno == 8:
+						# EOF occurred in violation of protocol
+						raise OpsiServiceConnectionError(str(err)) from err
+				except (AttributeError, IndexError):
+					pass
+				raise OpsiServiceVerificationError(str(err)) from err
+			except Timeout as err:
+				raise OpsiServiceTimeoutError(str(err)) from err
+			except HTTPError as err:
+				if err.response is None:
+					raise OpsiServiceError(str(err)) from err
+
+				if err.response.status_code == 503:
+					retry_after = 60
+					try:
+						retry_after = int(err.response.headers.get("Retry-After", ""))
+						retry_after = max(1, min(retry_after, 7200))
+					except ValueError:
+						pass
+					self._service_unavailable = OpsiServiceUnavailableError(
+						str(err), status_code=err.response.status_code, content=err.response.text, until=time.monotonic() + retry_after
+					)
+					raise self._service_unavailable from err
+
+				cls = OpsiServiceError
+				if err.response.status_code == 401:
+					cls = OpsiServiceAuthenticationError
+				elif err.response.status_code == 403:
+					cls = OpsiServicePermissionError
+				raise cls(str(err), status_code=err.response.status_code, content=err.response.text) from err
+			except Exception as err:
+				raise OpsiServiceConnectionError(str(err)) from err
+		# Should never be reached
+		raise OpsiServiceConnectionError("Failed to connect")
+
+	@overload
+	def request(
+		self,
+		method: str,
+		path: str,
+		*,
+		headers: dict[str, str] | None = None,
+		connect_timeout: float | None = None,
+		read_timeout: float | None = None,
+		data: bytes | None = None,
+		allow_status_codes: Iterable[int] | None = None,
+		raw_response: Literal[False] = ...,
+		assert_connected: bool = True,
+	) -> Response: ...
+
+	@overload
+	def request(
+		self,
+		method: str,
+		path: str,
+		*,
+		headers: dict[str, str] | None = None,
+		connect_timeout: float | None = None,
+		read_timeout: float | None = None,
+		data: bytes | None = None,
+		allow_status_codes: Iterable[int] | None = None,
+		raw_response: Literal[True],
+		assert_connected: bool = True,
+	) -> RequestsResponse: ...
+
+	@overload
+	def request(
+		self,
+		method: str,
+		path: str,
+		*,
+		headers: dict[str, str] | None = None,
+		connect_timeout: float | None = None,
+		read_timeout: float | None = None,
+		data: bytes | None = None,
+		allow_status_codes: Iterable[int] | None = None,
+		raw_response: bool = ...,
+		assert_connected: bool = True,
+	) -> RequestsResponse | Response: ...
+
+	def request(
+		self,
+		method: str,
+		path: str,
+		*,
+		headers: dict[str, str] | None = None,
+		connect_timeout: float | None = None,
+		read_timeout: float | None = None,
+		data: bytes | None = None,
+		allow_status_codes: Iterable[int] | None = None,
+		raw_response: bool = False,
+		assert_connected: bool = True,
+	) -> Response | RequestsResponse:
+		if assert_connected:
+			self.assert_connected()
+		response = self._request(
+			method=method,
+			path=path,
+			headers=headers,
+			connect_timeout=connect_timeout,
+			read_timeout=read_timeout,
+			data=data,
+			allow_status_codes=allow_status_codes,
+		)
+		if raw_response:
+			return response
+		return Response(
+			status_code=response.status_code or 0, reason=response.reason or "", headers=response.headers, content=response.content
+		)
+
+	@overload
+	def get(
+		self,
+		path: str,
+		*,
+		headers: dict[str, str] | None = None,
+		connect_timeout: float | None = None,
+		read_timeout: float | None = None,
+		allow_status_codes: Iterable[int] | None = None,
+		raw_response: Literal[False] = ...,
+		assert_connected: bool = True,
+	) -> Response: ...
+
+	@overload
+	def get(
+		self,
+		path: str,
+		*,
+		headers: dict[str, str] | None = None,
+		connect_timeout: float | None = None,
+		read_timeout: float | None = None,
+		allow_status_codes: Iterable[int] | None = None,
+		raw_response: Literal[True],
+		assert_connected: bool = True,
+	) -> RequestsResponse: ...
+
+	@overload
+	def get(
+		self,
+		path: str,
+		*,
+		headers: dict[str, str] | None = None,
+		connect_timeout: float | None = None,
+		read_timeout: float | None = None,
+		allow_status_codes: Iterable[int] | None = None,
+		raw_response: bool = ...,
+		assert_connected: bool = True,
+	) -> RequestsResponse | Response: ...
+
+	def get(
+		self,
+		path: str,
+		*,
+		headers: dict[str, str] | None = None,
+		connect_timeout: float | None = None,
+		read_timeout: float | None = None,
+		allow_status_codes: Iterable[int] | None = None,
+		raw_response: bool = False,
+		assert_connected: bool = True,
+	) -> Response | RequestsResponse:
+		return self.request(
+			"GET",
+			path=path,
+			headers=headers,
+			connect_timeout=connect_timeout,
+			read_timeout=read_timeout,
+			allow_status_codes=allow_status_codes,
+			raw_response=raw_response,
+			assert_connected=assert_connected,
+		)
+
+	@overload
+	def post(
+		self,
+		path: str,
+		data: bytes | None = None,
+		*,
+		headers: dict[str, str] | None = None,
+		connect_timeout: float | None = None,
+		read_timeout: float | None = None,
+		allow_status_codes: Iterable[int] | None = None,
+		raw_response: Literal[False] = ...,
+		assert_connected: bool = True,
+	) -> Response: ...
+
+	@overload
+	def post(
+		self,
+		path: str,
+		data: bytes | None = None,
+		*,
+		headers: dict[str, str] | None = None,
+		connect_timeout: float | None = None,
+		read_timeout: float | None = None,
+		allow_status_codes: Iterable[int] | None = None,
+		raw_response: Literal[True],
+		assert_connected: bool = True,
+	) -> RequestsResponse: ...
+
+	@overload
+	def post(
+		self,
+		path: str,
+		data: bytes | None = None,
+		*,
+		headers: dict[str, str] | None = None,
+		connect_timeout: float | None = None,
+		read_timeout: float | None = None,
+		allow_status_codes: Iterable[int] | None = None,
+		raw_response: bool = ...,
+		assert_connected: bool = True,
+	) -> RequestsResponse | Response: ...
+
+	def post(
+		self,
+		path: str,
+		data: bytes | None = None,
+		*,
+		headers: dict[str, str] | None = None,
+		connect_timeout: float | None = None,
+		read_timeout: float | None = None,
+		allow_status_codes: Iterable[int] | None = None,
+		raw_response: bool = False,
+		assert_connected: bool = True,
+	) -> Response | RequestsResponse:
+		return self.request(
+			"POST",
+			path=path,
+			headers=headers,
+			connect_timeout=connect_timeout,
+			read_timeout=read_timeout,
+			data=data,
+			allow_status_codes=allow_status_codes,
+			raw_response=raw_response,
+			assert_connected=assert_connected,
+		)
+
+	def jsonrpc(
+		self,
+		method: str,
+		params: tuple[Any, ...] | list[Any] | dict[str, Any] | None = None,
+		*,
+		connect_timeout: float | None = None,
+		read_timeout: float | None = None,
+		return_result_only: bool = True,
+		create_objects: bool | None = None,
+		assert_connected: bool = True,
+	) -> Any:
+		params = params or []
+		if isinstance(params, tuple):
+			params = list(params)
+		if isinstance(params, dict):
+			m_params = self._jsonrpc_method_params.get(method)
+			if m_params is None:
+				raise ValueError(f"Method {method!r} not found in interface description")
+
+			m_param_names = list(m_params)
+			new_params = list(m_params.values())
+			max_idx = 0
+			for name, val in params.items():
+				try:
+					idx = m_param_names.index(name)
+				except ValueError as err:
+					raise ValueError(f"Invalid param {name!r} for method {method!r}") from err
+				new_params[idx] = val
+				max_idx = max(max_idx, idx)
+			params = [p for i, p in enumerate(new_params) if i <= max_idx]
+
+		headers = {"Accept-Encoding": "deflate, gzip, lz4"}
+
+		rpc_id = str(uuid4())
+		data_dict = {
+			"jsonrpc": "2.0",
+			"id": rpc_id,
+			"method": method,
+			"params": serialize(params),
+		}
+		if logger.isEnabledFor(TRACE):
+			logger.trace("RPC: %s", data_dict)
+
+		serial = "msgpack" if self.server_version >= MIN_VERSION_MSGPACK else "json"
+		if serial == "msgpack":
+			headers["Content-Type"] = headers["Accept"] = "application/msgpack"
+			data = msgpack_encode(data_dict)
+		else:
+			headers["Content-Type"] = headers["Accept"] = "application/json"
+			data = json_encode(data_dict)
+
+		if not isinstance(data, bytes):
+			data = data.encode("utf-8")
+
+		if self.server_version >= MIN_VERSION_LZ4:
+			logger.trace("Compressing data with lz4")
+			headers["Content-Encoding"] = headers["Accept-Encoding"] = "lz4"
+			data = lz4.frame.compress(data, compression_level=0, block_linked=True)
+		elif self.server_version >= MIN_VERSION_GZIP:
+			logger.trace("Compressing data with gzip")
+			headers["Content-Encoding"] = headers["Accept-Encoding"] = "gzip"
+			data = gzip.compress(data)
+
+		if not read_timeout:
+			read_timeout = get_rpc_timeout(method)
+
+		logger.info(
+			"JSON-RPC request to %s: id=%r, method=%s, Content-Type=%s, Content-Encoding=%s, timeout=%r",
+			self.base_url,
+			rpc_id,
+			method,
+			headers.get("Content-Type", ""),
+			headers.get("Content-Encoding", ""),
+			read_timeout,
+		)
+		start_time = time.monotonic()
+
+		allow_status_codes = (200, 500) if return_result_only else ...
+		response = self.post(  # type: ignore[call-overload]  # ellipsis -> object
+			self._jsonrpc_path,
+			headers=headers,
+			data=data,
+			connect_timeout=connect_timeout,
+			read_timeout=read_timeout,
+			allow_status_codes=allow_status_codes,
+			assert_connected=assert_connected,
+		)
+		data = response.content
+		content_type = response.headers.get("Content-Type", "")
+		content_encoding = response.headers.get("Content-Encoding", "")
+		logger.info(
+			"Got response status=%s, id=%r, method=%s, Content-Type=%s, Content-Encoding=%s, duration=%0.3fs",
+			response.status_code,
+			rpc_id,
+			method,
+			content_type,
+			content_encoding,
+			(time.monotonic() - start_time),
+		)
+
+		# gzip and deflate transfer-encodings are automatically decoded
+		if "lz4" in content_encoding:
+			logger.trace("Decompressing data with lz4")
+			data = lz4.frame.decompress(data)
+
+		error_cls: type[Exception] | None = None
+		error_msg = None
+		if response.status_code != 200:
+			error_msg = response.reason
+			error_cls = OpsiRpcError
+			error_msg = f"{response.status_code} - {response.reason}"
+
+		rpc = {}
+		try:
+			if content_type == "application/msgpack":
+				rpc = msgpack_decode(data)
+			else:
+				rpc = json_decode(data)
+			if not return_result_only:
+				return rpc
+		except Exception:
+			if error_cls:
+				raise error_cls(error_msg) from None
+			raise
+
+		if rpc.get("error"):
+			logger.debug("JSONRPC-response contains error")
+			if not error_cls:
+				error_cls = OpsiRpcError
+			if isinstance(rpc["error"], dict) and rpc["error"].get("message"):
+				error_msg = rpc["error"]["message"]
+			else:
+				error_msg = str(rpc["error"])
+
+		if error_cls:
+			raise error_cls(error_msg)
+
+		if create_objects is None:
+			create_objects = self.jsonrpc_create_objects and not method.endswith(("_hash", "_listOfHashes", "_getHashes"))
+
+		if create_objects:
+			return deserialize(rpc.get("result"))
+
+		return rpc.get("result")
+
+	def delete(self, path: str) -> None:
+		logger.info("Deleting '%s'", path)
+		self.assert_connected()
+		self._request(
+			method="DELETE",
+			path=path,
+			allow_status_codes=(204,),
+		)
+
+	def upload(self, source: Path, path: str, *, progress_callback: Callable | None = None) -> None:
+		if source.is_dir():
+			raise NotImplementedError("Directory upload not supported")
+
+		with UploadFile(source, progress_callback) as upload_file:
+			logger.info("Uploading '%s' to '%s' (size: %d)", source, path, upload_file.file_size)
+			self.assert_connected()
+			self._request(
+				method="PUT",
+				path=path,
+				data=upload_file,
+				headers={"Content-Type": "binary/octet-stream", "Content-Length": str(upload_file.file_size)},
+				write_timeout=24 * 3600,  # 24 hours
+				allow_status_codes=(200, 201),
+			)
+
+	def download(
+		self, source: str, destination: Path, *, preserve_source_dir: bool = True, progress_callback: Callable | None = None
+	) -> None:
+		contents = self.webdav_content(source, include_base_path=True)
+		if not contents:
+			raise FileNotFoundError(f"File/Directory not found: {source}")
+		current = contents[0]
+		if current.type == "dir":
+			dest_dir = destination / current.name if preserve_source_dir else destination
+			logger.info("Creating directory '%s'", dest_dir)
+			(destination / current.name).mkdir(exist_ok=True)
+			logger.debug("Recursing to subpaths %s of %s", [content.name for content in contents], source)
+			for content in contents[1:]:
+				self.download(content.path, dest_dir, preserve_source_dir=True, progress_callback=progress_callback)
+		else:
+			logger.info("Downloading '%s' to '%s' (size: %d)", current.path, destination / current.name, current.size)
+			self.assert_connected()
+			response = self._request(
+				method="GET",
+				path=current.path,
+				read_timeout=24 * 3600,  # 24 hours
+			)
+			with (destination / current.name).open("wb") as dest_file:
+				position = 0
+				for chunk in response.iter_content(chunk_size=8192):
+					num_bytes = dest_file.write(chunk)
+					position += num_bytes
+					if progress_callback:
+						progress_callback(position, current.size)
+
+	def webdav_content(self, path: str, include_base_path: bool = False) -> list[DAVFileInfo]:
+		path = "/" + path.strip("/")
+		self.assert_connected()
+		response = self._request(
+			method="PROPFIND",
+			path=path + "/",
+			headers={"depth": "1"},
+			allow_status_codes=(207,),
+		)
+		dav_xml = response.text
+		logger.trace(dav_xml)
+		return [fi for fi in _get_file_infos_from_dav_xml(dav_xml) if fi.path != path or include_base_path]
+
+	@property
+	def messagebus(self) -> Messagebus:
+		return self._messagebus
+
+	@property
+	def messagebus_available(self) -> bool:
+		self.assert_connected()
+		return self._messagebus_available
+
+	def assert_messagebus_connected(self) -> None:
+		if not self.messagebus_available:
+			raise RuntimeError(f"Messagebus not available (connected to: {self.server_name})")
+		with self._messagebus_connect_lock:
+			if not self._messagebus.connected:
+				self._messagebus.connect()
+
+	def connect_messagebus(self) -> Messagebus:
+		self.assert_messagebus_connected()
+		return self._messagebus
+
+	def disconnect_messagebus(self) -> None:
+		self._messagebus.disconnect()
+
+	def stop(self) -> None:
+		self.disconnect()
+		self.messagebus.stop()
+		if self.messagebus.is_alive():
+			self.messagebus.join(7)
+
+	@property
+	def messagebus_connected(self) -> bool:
+		return self._messagebus.connected
+
+	def __enter__(self) -> "ServiceClient":
+		return self
+
+	def __exit__(
+		self, exc_type: type[BaseException] | None, exc_value: BaseException | None, traceback: TracebackType | None
+	) -> bool | None:
+		self.stop()
+		return None
+
+
+class MessagebusListener(ABC):
+	def __init__(self, messagebus: Messagebus | None = None, message_types: Iterable[MessageType | str] | None = None) -> None:
+		"""
+		message_types:
+		"""
+		self.messagebus: Messagebus | None = messagebus
+		self.message_types = {MessageType(mt) for mt in message_types} if message_types else None
+
+	def messagebus_connection_open(self, messagebus: Messagebus) -> None:
+		"""
+		Called when the connection to the messagebus is opened.
+		"""
+
+	def messagebus_connection_established(self, messagebus: Messagebus) -> None:
+		"""
+		Called when the connection to the messagebus is established.
+		"""
+
+	def messagebus_connection_closed(self, messagebus: Messagebus) -> None:
+		"""
+		Called when the connection to the messagebus is closed.
+		"""
+
+	def messagebus_connection_failed(self, messagebus: Messagebus, exception: Exception) -> None:
+		"""
+		Called when a connection to the messagebus failed.
+		"""
+
+	def message_received(self, message: Message) -> None:
+		"""
+		Called when a valid message is received.
+		"""
+
+	def expired_message_received(self, message: Message) -> None:
+		"""
+		Called when a expired message is received.
+		Expired messages should not be processed!
+		"""
+
+	@contextmanager
+	def register(self, messagebus: Messagebus) -> Generator[None, None, None]:
+		"""
+		Context manager for register this listener on and off the message bus.
+		"""
+		self.messagebus = messagebus
+		try:
+			self.messagebus.register_messagebus_listener(self)
+			yield
+		finally:
+			self.messagebus.unregister_messagebus_listener(self)
+
+
+class Messagebus(Thread):
+	_messagebus_path = "/messagebus/v1"
+
+	def __init__(self, opsi_service_client: ServiceClient) -> None:
+		super().__init__(daemon=True, name="opsiservice-Messagebus")
+		self._context = copy_context()
+		self._client = opsi_service_client
+		self._app: WebSocketApp | None = None
+		self._should_stop = Event()
+		self._should_be_connected = False
+		self._connected = False
+		self._client_was_connected_on_connection_lost = False
+		self._connected_result = Event()
+		self._connect_exception: Exception | None = None
+		self._disconnected_result = Event()
+		self._send_lock = Lock()
+		self._listener: list[MessagebusListener] = []
+		self._listener_lock = Lock()
+		self._connect_timeout = self._client._connect_timeout
+		self.ping_interval = 15.0  # Send ping every specified period in seconds.
+		self.ping_timeout = 10.0  # Ping timeout in seconds.
+		# After connection lost, reconnect after specified seconds (min/max).
+		self.reconnect_wait_min = 5
+		self.reconnect_wait_max = 5
+		self._connect_attempt = 0
+		self._next_connect_wait = 0.0
+		self._subscribed_channels: list[str] = []
+		self._resubscribe_channels: list[str] = []
+		self.threaded_callbacks = True
+		self.compression: str | None = "lz4"
+		# from websocket import enableTrace
+		# enableTrace(True)
+
+	def __str__(self) -> str:
+		return f"Messagebus(id={self.id}, connected={self.connected})"
+
+	__repr__ = __str__
+
+	@property
+	def connected(self) -> bool:
+		return self._connected
+
+	@property
+	def id(self) -> str:
+		return str(id(self))
+
+	def _on_open(self, websocket: WebSocket) -> None:
+		logger.debug("Websocket opened (id=%r)", self.id)
+		if not self._connected:
+			logger.notice("Connected to OPSI messagebus (id=%r)", self.id)
+		self._next_connect_wait = 0.0
+		self._connected = True
+		if self._client_was_connected_on_connection_lost:
+			self._client._connected = True
+		self._client_was_connected_on_connection_lost = False
+		self._connected_result.set()
+
+		for listener in self._listener:
+			self._run_listener_callback(listener, "messagebus_connection_established", messagebus=self)
+		self._connect_attempt = 0
+
+	def _on_error(self, websocket: WebSocket, error: Exception) -> None:
+		retry_after = 0
+		logger.warning("Websocket error: %s (id=%r)", error, self.id)
+		try:
+			if getattr(error, "status_code", 0) == 503:
+				resp_headers = getattr(error, "resp_headers", {})
+				logger.debug("Service unavailable, headers: %r", resp_headers)
+				if resp_headers and "retry-after" in resp_headers:
+					retry_after = int(resp_headers.get("retry-after", ""))
+			elif data := getattr(error, "data", None):
+				data_str = data.decode("utf-8", errors="replace")
+				logger.debug("Websocket error data: %s", data_str)
+				for dat in data_str.lower().splitlines():
+					if dat.startswith("retry-after:"):
+						retry_after = int(dat.split(":", 1)[1].strip())
+		except Exception as exc:
+			logger.error("Error in websocket error handler: %s", exc, exc_info=True)
+		if retry_after:
+			self._next_connect_wait = max(1, min(retry_after, 7200))
+			logger.debug("Setting next connect wait to %d seconds based on Retry-After header", self._next_connect_wait)
+
+		self._connect_exception = error
+		self._connected_result.set()
+		for listener in self._listener:
+			self._run_listener_callback(listener, "messagebus_connection_failed", messagebus=self, exception=error)
+
+	def _on_close(self, websocket: WebSocket, close_status_code: int, close_message: str) -> None:
+		logger.info(
+			"Websocket closed with status_code=%r and message=%r, (should_be_connected=%r, id=%r)",
+			close_status_code,
+			close_message,
+			self._should_be_connected,
+			self.id,
+		)
+		self._connected = False
+		if self._should_be_connected and self._client.connected:
+			self._client._connected = False
+			self._client_was_connected_on_connection_lost = True
+
+		if close_status_code == 1013:
+			# Try again later
+			self._next_connect_wait = 60
+			try:
+				match = re.search(r"retry-after:\s*(\d+)", close_message, flags=re.IGNORECASE)
+				if match:
+					self._next_connect_wait = max(1, min(int(match.group(1)), 7200))
+			except ValueError:
+				pass
+
+		# Do not resubscribe to session channels
+		self._resubscribe_channels = [c for c in self._subscribed_channels if not c.startswith("session:")]
+
+		# Add random wait time to reduce the load on the server
+		self._next_connect_wait += float(randint(self.reconnect_wait_min, self.reconnect_wait_max))
+
+		for listener in self._listener:
+			self._run_listener_callback(listener, "messagebus_connection_closed", messagebus=self)
+
+	def _on_message(self, websocket: WebSocket, message: bytes) -> None:
+		logger.debug("Websocket message received (id=%r)", self.id)
+		try:
+			if self.compression == "lz4":
+				message = lz4.frame.decompress(message)
+			msg = Message.from_msgpack(message)
+
+			cur_timestamp = messagebus_timestamp()
+			expired = msg.expires and msg.expires <= cur_timestamp
+			if expired:
+				callback = "expired_message_received"
+				logger.info("Received expired message: %r (expires=%d, timestamp=%d)", msg, msg.expires, cur_timestamp)
+			else:
+				callback = "message_received"
+				logger.debug("Received message: %r", msg)
+
+			if isinstance(msg, ChannelSubscriptionEventMessage):
+				self._subscribed_channels = msg.subscribed_channels
+				logger.info("Current channel subscriptions: %r", self._subscribed_channels)
+
+				if self._resubscribe_channels:
+					# Restore subscriptions on reconnect
+					add_channels = [c for c in self._resubscribe_channels if c not in self._subscribed_channels]
+					self._resubscribe_channels = []
+					if add_channels:
+						logger.info("Restoring channel subscriptions: %r", add_channels)
+						self.send_message(
+							ChannelSubscriptionRequestMessage(
+								sender="@", channel="service:messagebus", channels=add_channels, operation="add"
+							)
+						)
+
+			for listener in self._listener:
+				if listener.message_types and msg.type not in listener.message_types:
+					continue
+				self._run_listener_callback(listener, callback, message=msg)
+		except Exception as err:
+			logger.error("Failed to process websocket message: %s (id=%r)", err, self.id, exc_info=True)
+
+	def _on_ping(self, websocket: WebSocket, message: bytes) -> None:
+		logger.debug("Ping message received (id=%r)", self.id)
+		# We do not need to send a pong, the websocket library will do that for us
+
+	def _on_pong(self, websocket: WebSocket, message: bytes) -> None:
+		logger.debug("Pong message received (id=%r)", self.id)
+
+	def register_messagebus_listener(self, listener: MessagebusListener) -> None:
+		with self._listener_lock:
+			if listener not in self._listener:
+				if not listener.messagebus:
+					listener.messagebus = self
+				self._listener.append(listener)
+
+	def unregister_messagebus_listener(self, listener: MessagebusListener) -> None:
+		with self._listener_lock:
+			if listener in self._listener:
+				self._listener.remove(listener)
+
+	def _run_listener_callback(self, listener: MessagebusListener, callback_name: str, **kwargs: Any) -> None:
+		try:
+			callback = getattr(listener, callback_name)
+			if self.threaded_callbacks:
+				CallbackThread(callback, **kwargs).start()
+			else:
+				callback(**kwargs)
+		except Exception as err:
+			logger.error("Error running callback %r on listener %r: %s (id=%r)", callback_name, listener, err, self.id, exc_info=True)
+
+	def wait_for_jsonrpc_response_message(self, rpc_id: str | int, timeout: float | None = None) -> JSONRPCResponseMessage:
+		class JSONRPCResponseListener(MessagebusListener):
+			def __init__(self, rpc_id: str | int, timeout: float | None = None) -> None:
+				super().__init__(message_types=(MessageType.JSONRPC_RESPONSE,))
+				self.rpc_id = rpc_id
+				self.timeout = timeout
+				self.message_received_event = Event()
+				self.message: JSONRPCResponseMessage | None = None
+
+			def wait_for_message(self) -> JSONRPCResponseMessage:
+				if self.message_received_event.wait(self.timeout) and self.message:
+					return self.message
+				raise OpsiServiceTimeoutError(f"Timed out waiting for JSONRPCResponseMessage with rpc_id={self.rpc_id}")
+
+			def message_received(self, message: Message) -> None:
+				if isinstance(message, JSONRPCResponseMessage) and message.rpc_id == self.rpc_id:
+					self.message = message
+					self.message_received_event.set()
+
+		listener = JSONRPCResponseListener(rpc_id, timeout)
+		with listener.register(self):
+			return listener.wait_for_message()
+
+	def jsonrpc(self, method: str, params: tuple[Any, ...] | list[Any] | None = None, return_result_only: bool = True) -> Any:
+		params = params or tuple()
+		if isinstance(params, list):
+			params = tuple(params)
+		msg = JSONRPCRequestMessage(sender="*", channel="service:config:jsonrpc", method=method, params=params)
+		self.send_message(msg)
+		timeout = get_rpc_timeout(method)
+		res = self.wait_for_jsonrpc_response_message(rpc_id=msg.rpc_id, timeout=timeout)
+		if not return_result_only:
+			return {"jsonrpc": "2.0", "id": res.rpc_id, "result": res.result, "error": res.error}
+
+		if res.error:
+			logger.debug("JSON-RPC-response contains error: %s", res.error)
+			error_cls: type[Exception] = OpsiRpcError
+			if res.error["data"]["class"] in ("BackendPermissionDeniedError", "OpsiServicePermissionError"):
+				error_cls = OpsiServicePermissionError
+			raise error_cls(res.error["message"])
+
+		return res.result
+
+	async def async_send_message(self, message: Message) -> None:
+		await asyncio.get_event_loop().run_in_executor(None, self.send_message, message)
+
+	def send_message(self, message: Message) -> None:
+		if not self.connected:
+			raise RuntimeError(f"Messagebus not connected (id={self.id})")
+		if not self._app:
+			raise RuntimeError(f"WebSocketApp not initialized (id={self.id})")
+		logger.debug("Sending message: %r (id=%r)", message, self.id)
+		data = message.to_msgpack()
+		if self.compression == "lz4":
+			data = lz4.frame.compress(data, compression_level=0, block_linked=True)
+		with self._send_lock:
+			self._app.send(data, ABNF.OPCODE_BINARY)
+
+	def connect(self, wait: bool = True) -> None:
+		logger.debug("Messagebus.connect (id=%r)", self.id)
+		if self._should_be_connected:
+			return
+		if not self._client.addresses:
+			raise OpsiServiceConnectionError("Service address undefined")
+
+		self._connected_result.clear()
+		self._should_be_connected = True
+		if not self.is_alive():
+			logger.debug("Starting thread (id=%r)", self.id)
+			self.start()
+		if wait:
+			logger.debug("Waiting for connected result (timeout=%r)", self._connect_timeout)
+			if not self._connected_result.wait(self._connect_timeout):
+				self._connect_exception = OpsiServiceTimeoutError(
+					f"Timed out after {self._connect_timeout} seconds while waiting for connect result"
+				)
+				raise self._connect_exception
+			if self._connect_exception:
+				status_code = getattr(self._connect_exception, "status_code", 0)
+				cls: type[OpsiServiceError] = OpsiServiceConnectionError
+				if status_code == 401:
+					cls = OpsiServiceAuthenticationError
+				elif status_code == 403:
+					cls = OpsiServicePermissionError
+				elif status_code == 503:
+					cls = OpsiServiceUnavailableError
+				logger.debug("Raising %r: %r", cls, self._connect_exception)
+				raise cls(str(self._connect_exception)) from self._connect_exception
+
+	def disconnect(self, wait: bool = True) -> None:
+		self._should_be_connected = False
+		if not self._connected:
+			return
+
+		self._disconnected_result.clear()
+		self._disconnect()
+		if wait:
+			if not self._disconnected_result.wait(5):
+				logger.warning("Timed out after 5 seconds while waiting for disconnect result")
+
+	def _connect(self) -> None:
+		logger.notice("Connecting to OPSI messagebus")
+		if self._connected:
+			self._disconnect()
+		self._connect_attempt += 1
+		self._connected_result.clear()
+		self._connect_exception = None
+
+		sslopt: dict[str, str | ssl.VerifyMode] = {}
+		sslopt["ca_certs"] = str(self._client.ca_cert_file)
+		if ServiceVerificationFlags.ACCEPT_ALL in self._client.verify:
+			sslopt["cert_reqs"] = ssl.CERT_NONE
+		if self._client.client_cert_file:
+			sslopt["certfile"] = str(self._client.client_cert_file)
+			if self._client.client_key_file:
+				sslopt["keyfile"] = str(self._client.client_key_file)
+			if self._client.client_key_password:
+				sslopt["password"] = self._client.client_key_password
+
+		proxy_type = None
+		http_proxy_host = None
+		http_proxy_port = None
+		http_proxy_auth = None
+		http_no_proxy = None
+		proxy_url = None
+		if self._client.proxy_url is None:
+			# no proxy
+			http_no_proxy = "*"
+		elif self._client.proxy_url == "system":
+			# Use system proxy
+			proxy_url = os.environ.get("https_proxy") or None
+			http_no_proxy = os.environ.get("no_proxy") or None
+		else:
+			# Use explicit proxy url
+			proxy_url = self._client.proxy_url
+
+		if proxy_url:
+			proxy_type = "http"
+			purl = urlparse(proxy_url)
+			http_proxy_host = purl.hostname
+			http_proxy_port = purl.port or None
+			if purl.username or purl.password:
+				http_proxy_auth = (purl.username, purl.password)
+
+		url = self._client.base_url.replace("https://", "wss://") + self._messagebus_path
+		if self.compression:
+			url = f"{url}?compression={self.compression}"
+		header = [f"{k}: {v + ('/messagebus' if k.lower() == 'user-agent' else '')}" for k, v in self._client.default_headers.items()]
+		if self._client.username is not None or self._client.password is not None:
+			basic_auth = b64encode(f"{self._client.username or ''}:{self._client.password or ''}".encode("utf-8")).decode("ascii")
+			header.append(f"Authorization: Basic {basic_auth}")
+
+		cookie = self._client.session_cookie
+		if cookie and "=" in cookie:
+			name, value = cookie.split("=", 1)
+			cookie = f"{name}={quote(value)}"
+
+		self._app = WebSocketApp(
+			url,
+			header=header,
+			cookie=cookie,
+			on_open=self._on_open,  # type: ignore[invalid-argument-type]
+			on_error=self._on_error,  # type: ignore[invalid-argument-type]
+			on_close=self._on_close,  # type: ignore[invalid-argument-type]
+			on_message=self._on_message,  # type: ignore[invalid-argument-type]
+			on_ping=self._on_ping,
+			on_pong=self._on_pong,
+		)
+
+		for listener in self._listener:
+			self._run_listener_callback(listener, "messagebus_connection_open", messagebus=self)
+
+		logger.debug(
+			"Websocket connection params (id=%r): sslopt=%r, "
+			"proxy_type=%r, http_proxy_host=%r, http_proxy_port=%r, http_proxy_auth=%r, http_no_proxy=%r, "
+			"connect_timeout=%r, ping_interval=%r, ping_timeout=%r",
+			self.id,
+			sslopt,
+			proxy_type,
+			http_proxy_host,
+			http_proxy_port,
+			http_proxy_auth,
+			http_no_proxy,
+			self._connect_timeout,
+			self.ping_interval,
+			self.ping_timeout,
+		)
+
+		websocket_setdefaulttimeout(self._connect_timeout)
+		self._app.run_forever(
+			sslopt=sslopt,
+			skip_utf8_validation=True,
+			proxy_type=proxy_type,  # type: ignore[arg-type]
+			http_proxy_host=http_proxy_host,  # type: ignore[arg-type]
+			http_proxy_port=http_proxy_port,  # type: ignore[arg-type]
+			http_proxy_auth=http_proxy_auth,  # type: ignore[arg-type]
+			http_no_proxy=http_no_proxy,  # type: ignore[arg-type]
+			http_proxy_timeout=self._connect_timeout,
+			ping_interval=self.ping_interval,
+			ping_timeout=self.ping_timeout,
+			reconnect=0,
+		)
+
+	def _disconnect(self) -> None:
+		logger.notice("Disconnecting from OPSI messagebus (id=%r)", self.id)
+		self._disconnected_result.clear()
+		self._connect_attempt = 0
+		if self._app and self._app.sock:
+			try:
+				self._app.close()
+			except Exception as err:
+				logger.error(err, exc_info=True)
+		self._app = None
+		self._connected = False
+		self._disconnected_result.set()
+
+	def run(self) -> None:
+		for var in self._context:
+			var.set(self._context[var])
+		logger.debug("Messagebus thread started (id=%r)", self.id)
+		try:
+			while not self._should_stop.wait(1):
+				if self._should_be_connected and not self._connected:
+					if self._next_connect_wait:
+						logger.info("Waiting %d seconds before reconnect (id=%r)", self._next_connect_wait, self.id)
+						for _ in range(round(self._next_connect_wait)):
+							if self._should_stop.wait(1):
+								return
+
+					# Reset next connect wait
+					self._next_connect_wait = 0.0
+					logger.debug("Calling _connect() (id=%r)", self.id)
+					# Call of _connect() will block until the connection is lost
+					self._connect()
+		except Exception as err:
+			logger.error(err, exc_info=True)
+
+	def stop(self) -> None:
+		self.disconnect()
+		self._should_stop.set()
+
+
+class BackendManager(ServiceClient):
+	"""
+	For backwards compatibility
+	"""
+
+	def __init__(self, username: str | None = None, password: str | None = None, **kwargs: Any) -> None:
+		warnings.warn("BackendManager is deprecated, please use opsicommon.client.opsiservice.get_service_client()")
+		opsi_config = get_opsi_config()
+		super().__init__(
+			address=opsi_config.get("service", "url"),
+			username=username or opsi_config.get("host", "id"),
+			password=password or opsi_config.get("host", "key"),
+			user_agent=f"BackendManager/{__version__}/{os.path.basename(sys.argv[0])}",
+			# BackendManager can only be used to connect to the local opsi service.
+			# Using local CA cert file read-only with strict verification and.
+			ca_cert_file=OPSI_CA_CERT_FILE,
+			verify=ServiceVerificationFlags.STRICT_CHECK,
+			jsonrpc_create_objects=True,
+			jsonrpc_create_methods=True,
+		)
+		self.connect()
+
+
+def get_service_client(
+	*,
+	address: str | None = None,
+	username: str | None = None,
+	password: str | None = None,
+	totp: str | None = None,
+	client_cert_file: str | Path | None = None,
+	client_key_file: str | Path | None = None,
+	client_key_password: str | None = None,
+	ca_cert_file: str | Path | None = None,
+	verify: str | None = None,
+	client_cert_auth: bool | None = None,
+	auto_connect: bool = True,
+	sso: bool = False,
+	session_cookie: str | None = None,
+	session_lifetime: int = 150,
+	proxy_url: str | None = "system",
+	user_agent: str | None = None,
+	connect_timeout: float = 10,
+	max_time_diff: float = 0,
+	jsonrpc_create_objects: bool = True,
+	jsonrpc_create_methods: bool = True,
+) -> ServiceClient:
+	if user_agent is None:
+		user_agent = f"service-client/{__version__}/{os.path.basename(sys.argv[0])}"
+
+	opsi_config = get_opsi_config()
+
+	service_url = opsi_config.get("service", "url")
+	if service_url:
+		service_url = ServiceClient.normalize_service_address(service_url)[0]
+
+	address = ServiceClient.normalize_service_address(address)[0] if address else service_url
+
+	if not verify:
+		verify = ServiceVerificationFlags.OPSI_CA
+
+	ca_cert_file = None
+
+	if opsi_config.get("host", "server-role") in ("configserver", "depotserver") and (
+		service_url == address or ServiceClient.is_local_address(address)
+	):
+		# Connection to the service URL or local opsiconfd (on depot)
+		if not ca_cert_file and os.path.exists(OPSI_CA_CERT_FILE):
+			ca_cert_file = OPSI_CA_CERT_FILE
+		if verify != ServiceVerificationFlags.ACCEPT_ALL and str(ca_cert_file) == str(OPSI_CA_CERT_FILE):
+			verify = ServiceVerificationFlags.STRICT_CHECK
+		if client_cert_auth is None:
+			client_cert_auth = True
+
+	if client_key_file and ca_cert_file and client_cert_auth is None:
+		client_cert_auth = True
+
+	if client_cert_auth and (not client_cert_file or not client_key_file):
+		cfg = get_opsiconfd_config({"ssl_server_key": "", "ssl_server_cert": "", "ssl_server_key_passphrase": ""})
+		logger.debug("opsiconfd config: %r", cfg)
+		if (
+			cfg["ssl_server_key"]
+			and os.path.exists(cfg["ssl_server_key"])
+			and cfg["ssl_server_cert"]
+			and os.path.exists(cfg["ssl_server_cert"])
+		):
+			client_cert_file = cfg["ssl_server_cert"]
+			client_key_file = cfg["ssl_server_key"]
+			client_key_password = cfg["ssl_server_key_passphrase"]
+
+	service_client = ServiceClient(
+		address=address,
+		username=username or opsi_config.get("host", "id"),
+		password=password or opsi_config.get("host", "key"),
+		totp=totp,
+		sso=sso,
+		user_agent=user_agent,
+		verify=verify,
+		ca_cert_file=ca_cert_file,
+		client_cert_file=client_cert_file,
+		client_key_file=client_key_file,
+		client_key_password=client_key_password,
+		jsonrpc_create_objects=jsonrpc_create_objects,
+		jsonrpc_create_methods=jsonrpc_create_methods,
+		session_cookie=session_cookie,
+		session_lifetime=session_lifetime,
+		proxy_url=proxy_url,
+		connect_timeout=connect_timeout,
+		max_time_diff=max_time_diff,
+	)
+	if auto_connect:
+		service_client.connect()
+		logger.info("Connected to %s", service_client.server_name)
+	return service_client

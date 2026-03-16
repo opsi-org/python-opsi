@@ -30,6 +30,11 @@ def _admin_permissions() -> bool:
 		return ctypes.windll.shell32.IsUserAnAdmin() != 0  # type: ignore[attr-defined]
 
 
+@lru_cache
+def _running_in_docker() -> bool:
+	return os.path.exists("/.dockerenv")
+
+
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
 	# Run logging tests last, as they are messing up pytests logging
 	items.sort(key=lambda item: 2 if "logging" in item.path.parts[-3:] else 1)
@@ -48,6 +53,9 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
 				return
 		if marker.name == "admin_permissions" and not _admin_permissions():
 			pytest.skip("No admin permissions")
+			return
+		if marker.name == "not_in_docker" and _running_in_docker():
+			pytest.skip("Cannot run in docker")
 			return
 
 	item.stash["start_threads"] = set(threading.enumerate())  # type: ignore[index]

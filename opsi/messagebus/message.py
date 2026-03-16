@@ -63,7 +63,7 @@ class ErrorCode(StrEnum):
 MessageErrorEnum = ErrorCode
 
 
-def timestamp(add_seconds: float = 0.0) -> int:
+def messagebus_timestamp(add_seconds: float = 0.0) -> int:
 	"""
 	Returns the current time (UTC) as messagebus timestamp.
 	`add_seconds` can be used to add or subtract seconds from the current time.
@@ -90,8 +90,8 @@ class Message(BaseModel, ABC):
 	channel: str
 	back_channel: str | None = None
 	id: UUID4Str = Field(default_factory=lambda: str(uuid4()))
-	created: int = Field(default_factory=timestamp)
-	expires: int = Field(default_factory=lambda: timestamp() + DEFAULT_MESSAGE_VALIDITY_PERIOD)
+	created: int = Field(default_factory=messagebus_timestamp)
+	expires: int = Field(default_factory=lambda: messagebus_timestamp() + DEFAULT_MESSAGE_VALIDITY_PERIOD)
 	ref_id: str | None = None
 
 	@classmethod

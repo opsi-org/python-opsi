@@ -7,17 +7,19 @@ from __future__ import annotations
 
 import ctypes
 import gc
-import sys
 import os
 import platform
+import sys
 import threading
 from contextlib import contextmanager
 from io import StringIO
-from typing import Generator, Mapping, TextIO
+from tempfile import NamedTemporaryFile
+from typing import Any, Generator, Mapping, TextIO
 
 from psutil import Process
 
 from opsi.logging import use_logging_config
+from opsi.opsiservice.config import OpsiConfig
 
 
 class MemoryUsageMonitor(threading.Thread):
@@ -113,3 +115,23 @@ def log_stream(new_level: int, format: str | None = None) -> Generator[StringIO,
 	stream = StringIO()
 	with use_logging_config(stderr_level=new_level, stderr_format=format, stderr_file=stream):
 		yield stream
+
+
+@contextmanager
+def opsi_config(conf_vars: dict[str, Any]) -> Generator[OpsiConfig, None, None]:
+	orig_config_file = OpsiConfig.config_file
+	config_file = NamedTemporaryFile(delete=False)
+	opsi_conf = OpsiConfig(upgrade_config=False)
+	try:
+		opsi_conf.config_file = config_file.name
+		for key, value in conf_vars.items():
+			category, config = key.split(".", 1)
+			opsi_conf.set(category, config, value, persistent=False)
+		yield opsi_conf
+	finally:
+		opsi_conf.config_file = orig_config_file
+		try:
+			if os.path.exists(config_file.name):
+				os.unlink(config_file.name)
+		except Exception:
+			pass

@@ -19,7 +19,8 @@ from random import randbytes
 import requests
 import websocket
 
-from opsi.testing.helper import HTTPTestServerRequestHandler, environment, http_test_server, memory_usage_monitor
+from opsi.opsiservice.config import OpsiConfig
+from opsi.testing.helper import HTTPTestServerRequestHandler, environment, http_test_server, memory_usage_monitor, opsi_config
 
 
 def test_environment() -> None:
@@ -46,6 +47,13 @@ def test_memory_usage_monitor() -> None:
 	assert "Max increase RSS" in data
 	assert monitor.max_increase_rss > 20_000_000
 	assert monitor.max_increase_rss < 30_000_000
+
+
+def test_opsi_config() -> None:
+	with opsi_config({"host.id": "host.opsi-test", "service.url": "https://opsi.server:443"}):
+		conf = OpsiConfig()
+		assert conf.get("host", "id") == "host.opsi-test"
+		assert conf.get("service", "url") == "https://opsi.server:443"
 
 
 def test_test_http_server_log_file(tmp_path: Path) -> None:

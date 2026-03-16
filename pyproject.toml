@@ -12,10 +12,12 @@ dependencies = [
 	"configupdater>=3.2",
 	"cryptography>=46.0.5",
 	"distro>=1.9.0",
+	"dnspython>=2.7.0",
 	"dotenv>=0.9.9",
 	"lz4>=4.4.5",
 	"msgpack>=1.0; platform_system == 'Windows'",
 	"msgspec>=0.19; platform_system != 'Windows'",
+	"netifaces>=0.11.0",
 	"psutil>=7.2.2",
 	"ptyprocess>=0.7",
 	"pydantic>=2.12.5",
@@ -24,6 +26,7 @@ dependencies = [
 	"requests>=2.32.5",
 	"rich>=14.3.3",
 	"stamina>=25.2.0",
+	"tomlkit>=0.14.0",
 	"websocket-client>=1.9.0",
 ]
 
@@ -40,12 +43,19 @@ Homepage = "https://www.opsi.org"
 
 [dependency-groups]
 dev = [
+	"hypothesis>=6.151.9",
+	"pproxy>=2.7",
 	"pytest-asyncio>=1.3.0",
 	"pytest-coverage>=0.0",
 	"pytest>=9.0",
 	"ruff>=0.9",
 	"ty>=0.0.18",
 	"types-toml>=0.10",
+	"types-aiofiles>=24.1",
+	"types-netifaces>=0.11.0.20241025",
+	"types-orjson>=3.6",
+	"types-psutil>=6.0",
+	"types-requests>=2.32",
 ]
 
 [tool.uv]
@@ -71,7 +81,8 @@ markers = [
 	"linux: mark test to run only on linux.",
 	"macos: mark test to run only on macos.",
 	"posix: mark test to run only on posix.",
-	"admin_permissions: mark test to run only if user has admin permissions."
+	"admin_permissions: mark test to run only if user has admin permissions.",
+	"not_in_docker: mark test to run only if not running in docker"
 ]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"

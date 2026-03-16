@@ -3,6 +3,51 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from ._common import OperatingSystemUnsupportedError, OpsiError
+from ._common import (
+	CanceledException,
+	LicenseConfigurationError,
+	LicenseMissingError,
+	OperatingSystemUnsupportedError,
+	OpsiBackupBackendNotFound,
+	OpsiBackupFileError,
+	OpsiBackupFileNotFound,
+	OpsiBadRpcError,
+	OpsiError,
+	OpsiProductOrderingError,
+	OpsiRpcError,
+	OpsiServiceAuthenticationError,
+	OpsiServiceClientCertificateError,
+	OpsiServiceConnectionError,
+	OpsiServiceConnectionRefusedError,
+	OpsiServiceError,
+	OpsiServicePermissionError,
+	OpsiServiceTimeoutError,
+	OpsiServiceUnavailableError,
+	OpsiServiceVerificationError,
+	RepositoryError,
+)
 
-__all__ = ["OpsiError", "OperatingSystemUnsupportedError"]
+__all__ = [
+	"CanceledException",
+	"LicenseConfigurationError",
+	"LicenseMissingError",
+	"OperatingSystemUnsupportedError",
+	"OpsiBackupBackendNotFound",
+	"OpsiBackupFileError",
+	"OpsiBackupFileNotFound",
+	"OpsiBadRpcError",
+	"OpsiError",
+	"OpsiError",
+	"OpsiProductOrderingError",
+	"OpsiRpcError",
+	"OpsiServiceAuthenticationError",
+	"OpsiServiceClientCertificateError",
+	"OpsiServiceConnectionError",
+	"OpsiServiceConnectionRefusedError",
+	"OpsiServiceError",
+	"OpsiServicePermissionError",
+	"OpsiServiceTimeoutError",
+	"OpsiServiceUnavailableError",
+	"OpsiServiceVerificationError",
+	"RepositoryError",
+]

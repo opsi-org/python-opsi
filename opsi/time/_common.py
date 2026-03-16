@@ -15,7 +15,7 @@ def unix_timestamp(*, millis: bool = False, add_seconds: float = 0.0) -> float:
 	If `millis` is True, the timestamp is in milliseconds.
 	`add_seconds` can be used to add or subtract seconds from the current time.
 	"""
-	# Do not use time.time() as the behaviour can be platform and timezone dependent
+	# Do not use time.time() as the behavior can be platform and timezone dependent
 	unix_ts = _now(tz=_utc).timestamp() + add_seconds
 	if millis:
 		return unix_ts * 1000

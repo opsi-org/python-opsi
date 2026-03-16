@@ -3,6 +3,7 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
+from ._environment import update_environment_from_config_files
 from ._kernel import get_kernel_params
 
-__all__ = ["get_kernel_params"]
+__all__ = ["get_kernel_params", "update_environment_from_config_files"]
