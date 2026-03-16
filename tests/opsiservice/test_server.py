@@ -13,6 +13,7 @@ from opsi.opsiservice.server._common import _opsiconfd_get_config
 from opsi.process import ProcessError
 
 
+@pytest.mark.linux
 def test_get_opsiconfd_config() -> None:
 	with patch("opsi.opsiservice.server._common.OPSICONFD_GET_CONFIG_COMMAND", ["opsiconfd-command-not-found"]):
 		assert get_opsiconfd_config() == {}
