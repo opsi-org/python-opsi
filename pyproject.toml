@@ -28,6 +28,7 @@ dependencies = [
 	"stamina>=25.2.0",
 	"tomlkit>=0.14.0",
 	"websocket-client>=1.9.0",
+	"wmi>=1.5; platform_system == 'Windows'",
 ]
 
 [[project.authors]]
