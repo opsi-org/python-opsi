@@ -1,4 +1,4 @@
-# This file is part of the desktop management solution OPSI http://www.opsi.org
+# This file is part of the device management solution OPSI http://www.opsi.org
 # Copyright (c) 2026-2026 uib GmbH <info@uib.de>
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
@@ -37,7 +37,7 @@ def _get_executable_path() -> Path:
 	return Path(sys.executable).resolve().parent
 
 
-def _get_subprocess_environment(env: Mapping[str, str] | None = None) -> dict[str, str]:
+def get_subprocess_environment(env: Mapping[str, str] | None = None) -> dict[str, str]:
 	if env is None:
 		env = os.environ.copy()
 	else:
@@ -344,7 +344,7 @@ class Process:
 		self._exit_on_error = bool(exit_on_error)
 		self._working_dir = Path(working_dir) if working_dir else None
 		self._timeout = timeout
-		self._environment = _get_subprocess_environment(environment)
+		self._environment = get_subprocess_environment(environment)
 		arguments = [str(arg) for arg in arguments] if arguments else []
 		if capture_output not in ("stdout", "stderr", "both", "combined", "none"):
 			raise ValueError(f"Invalid capture_output value: {capture_output}")
