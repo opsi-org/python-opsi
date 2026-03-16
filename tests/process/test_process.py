@@ -584,7 +584,7 @@ def test_process_error(tmp_path: Path) -> None:
 		assert proc.get_output_text().strip() == "exit 3"
 
 	with pytest.raises(
-		ProcessError, match="Failed to run process after 5 attempts.*" + ("WinError 2" if is_windows() else "No such file")
+		ProcessError, match="Failed to run process after 1 attempts.*" + ("WinError 2" if is_windows() else "No such file")
 	) as exc_info:
 		with Process(command=["not_available_command", "arg1"]):
 			pass
@@ -634,7 +634,7 @@ def test_process_error_max_output_length(tmp_path: Path) -> None:
 
 def test_run_command() -> None:
 	with pytest.raises(
-		ProcessError, match="Failed to run process after 5 attempts.*" + ("WinError 2" if is_windows() else "No such file")
+		ProcessError, match="Failed to run process after 1 attempts.*" + ("WinError 2" if is_windows() else "No such file")
 	) as exc_info:
 		run_command(command=["not_available_command", "arg1"])
 	assert exc_info.value.command == "not_available_command arg1"

@@ -20,7 +20,6 @@ from tomlkit.items import Item
 from opsi.logging import get_logger
 from opsi.opsiservice.model.type import to_fqdn
 from opsi.process import run_command
-from opsi.retry import NoRetry
 from opsi.system.network import get_fqdn
 from opsi.util.pattern import Singleton
 
@@ -127,7 +126,6 @@ def get_host_key(server_role: str) -> str:
 				],
 				stdin=f"[client]\nuser={mysql_conf['username']}\npassword={mysql_conf['password']}\n",
 				timeout=5,
-				retry_config=NoRetry,
 			)
 			.get_stdout_text()
 			.strip()

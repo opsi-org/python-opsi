@@ -63,7 +63,8 @@ def _file_io_backoff_hook(exception: Exception) -> bool:
 def _run_process_backoff_hook(exception: Exception) -> bool:
 	from opsi.process import ProcessError
 
-	return not isinstance(exception, (ProcessError, TimeoutError))
+	# TODO: Retry on FileNotFoundError on Windows?
+	return not isinstance(exception, (ProcessError, FileNotFoundError, TimeoutError))
 
 
 def get_retry_config(type: Literal["file_io", "run_process"] = "file_io") -> RetryConfig:

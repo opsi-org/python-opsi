@@ -8,13 +8,12 @@ from datetime import datetime
 
 from opsi.logging import get_logger
 from opsi.process import run_command
-from opsi.retry import NoRetry
 
 logger = get_logger("opsi")
 
 
 def set_system_datetime(utc_datetime: datetime) -> None:
 	try:
-		run_command(["date", "--utc", "--set", utc_datetime.strftime("%Y-%m-%d %H:%M:%S")], timeout=10.0, retry_config=NoRetry)
+		run_command(["date", "--utc", "--set", utc_datetime.strftime("%Y-%m-%d %H:%M:%S")], timeout=10.0)
 	except Exception as err:
 		raise RuntimeError(f"Failed to set system time as uid {os.geteuid()}: {err}") from err

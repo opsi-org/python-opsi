@@ -18,7 +18,6 @@ from dns.resolver import Resolver
 from opsi.logging import get_logger
 from opsi.opsiservice.model.type import to_fqdn
 from opsi.process import run_command
-from opsi.retry import NoRetry
 from opsi.system.info import is_linux, is_posix
 
 if TYPE_CHECKING:
@@ -168,7 +167,7 @@ def get_fqdn() -> str:
 	if is_posix():
 		logger.debug("Trying to get FQDN by running hostname -f")
 		try:
-			return to_fqdn(run_command(["hostname", "-f"], timeout=1.0, retry_config=NoRetry).get_stdout_text().strip())
+			return to_fqdn(run_command(["hostname", "-f"], timeout=1.0).get_stdout_text().strip())
 		except Exception as err:
 			logger.debug("Failed to get FQDN by running hostname -f: %s", err)
 
