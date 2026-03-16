@@ -623,13 +623,13 @@ def test_process_error_max_output_length(tmp_path: Path) -> None:
 				pass
 
 		assert exc_info.value.exit_code == 1
-		assert exc_info.value.output == stderr_data + stdout_data
+		assert exc_info.value.output == stdout_data + stderr_data
 		err_lines = str(exc_info.value).split("\n")
 		assert err_lines[0] == "Process exited with code 1"
 		assert err_lines[1].startswith("Command:")
 		assert err_lines[2] == "Exit code: 1"
 		assert err_lines[3] == "Output:"
-		assert err_lines[4] == "..." + "O" * 97
+		assert err_lines[4] == "..." + "E" * 97
 
 
 def test_run_command() -> None:

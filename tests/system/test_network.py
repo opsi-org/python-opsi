@@ -53,8 +53,13 @@ def test_get_fqdn() -> None:
 	except RuntimeError:
 		pass
 
+	class Process:
+		def get_stdout_text() -> str:
+			return ""
+
 	with (
 		mock.patch("socket.getfqdn", lambda x=None: ""),
+		mock.patch("opsi.system.network._common.run_command", return_value=Process),
 		mock.patch("opsi.system.network._common.get_hostnames", lambda: ["hostname1", "hostname2", "hostname1.domain.test", "alias"]),
 	):
 		assert get_fqdn() == "hostname1.domain.test"

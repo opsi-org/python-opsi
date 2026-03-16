@@ -10,7 +10,6 @@ from copy import deepcopy
 from functools import lru_cache
 from pathlib import Path
 from shutil import chown
-from subprocess import PIPE, CalledProcessError, Popen, TimeoutExpired
 from threading import Lock
 from typing import Any
 from urllib.parse import urlparse
@@ -20,6 +19,8 @@ from tomlkit.items import Item
 
 from opsi.logging import get_logger
 from opsi.opsiservice.model.type import to_fqdn
+from opsi.process import run_command
+from opsi.retry import NoRetry
 from opsi.system.network import get_fqdn
 from opsi.util.pattern import Singleton
 
@@ -111,29 +112,28 @@ def get_host_key(server_role: str) -> str:
 		return ""
 
 	try:
-		with Popen(
-			[
-				"mysql",
-				"--defaults-file=/dev/stdin",
-				"--skip-column-names",
-				"-h",
-				urlparse(mysql_conf["address"]).hostname or mysql_conf["address"],
-				"-D",
-				mysql_conf["database"],
-				"-e",
-				"SELECT opsiHostKey FROM HOST WHERE type='OpsiConfigserver';",
-			],
-			stdin=PIPE,
-			stdout=PIPE,
-			stderr=PIPE,
-		) as proc:
-			out = proc.communicate(
-				input=f"[client]\nuser={mysql_conf['username']}\npassword={mysql_conf['password']}\n".encode(), timeout=5
+		return (
+			run_command(
+				[
+					"mysql",
+					"--defaults-file=/dev/stdin",
+					"--skip-column-names",
+					"-h",
+					urlparse(mysql_conf["address"]).hostname or mysql_conf["address"],
+					"-D",
+					mysql_conf["database"],
+					"-e",
+					"SELECT opsiHostKey FROM HOST WHERE type='OpsiConfigserver';",
+				],
+				stdin=f"[client]\nuser={mysql_conf['username']}\npassword={mysql_conf['password']}\n",
+				timeout=5,
+				retry_config=NoRetry,
 			)
-			if proc.returncode != 0:
-				return ""
-			return out[0].decode().strip()
-	except (FileNotFoundError, CalledProcessError, TimeoutExpired):
+			.get_stdout_text()
+			.strip()
+		)
+	except Exception as exc:
+		logger.debug(exc)
 		return ""
 
 

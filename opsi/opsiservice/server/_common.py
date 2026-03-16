@@ -4,19 +4,21 @@
 # License: AGPL-3.0-only
 
 import json
-import subprocess
 from functools import lru_cache
 from typing import Any
 
 from opsi.logging import get_logger, secret_filter
+from opsi.process import run_command
+from opsi.retry import NoRetry
 
 logger = get_logger("opsi")
+
+OPSICONFD_GET_CONFIG_COMMAND = ["opsiconfd", "get-config"]
 
 
 @lru_cache
 def _opsiconfd_get_config() -> dict[str, Any]:
-	proc = subprocess.run(["opsiconfd", "get-config"], shell=False, check=True, capture_output=True, text=True, encoding="utf-8")
-	return json.loads(proc.stdout)
+	return json.loads(run_command(OPSICONFD_GET_CONFIG_COMMAND, timeout=10.0, retry_config=NoRetry).get_stdout_text())
 
 
 def get_opsiconfd_config(template: dict[str, Any] | None = None, ignore_error: bool = True) -> dict[str, str]:

@@ -10,32 +10,34 @@ import pytest
 
 from opsi.opsiservice.server import get_opsiconfd_config
 from opsi.opsiservice.server._common import _opsiconfd_get_config
+from opsi.process import ProcessError
 
 
 def test_get_opsiconfd_config() -> None:
-	with patch("subprocess.run", side_effect=FileNotFoundError("File not found")):
+	with patch("opsi.opsiservice.server._common.OPSICONFD_GET_CONFIG_COMMAND", ["opsiconfd-command-not-found"]):
 		assert get_opsiconfd_config() == {}
 		_opsiconfd_get_config.cache_clear()
 
-		with pytest.raises(FileNotFoundError):
+		with pytest.raises(ProcessError, match="No such file or directory"):
 			get_opsiconfd_config(ignore_error=False)
 		_opsiconfd_get_config.cache_clear()
 
-	class Proc:
-		stdout = """{
-			"websocket_protocol": "wsproto_opsiconfd",
-			"websocket_open_timeout": 30,
-			"log_slow_async_callbacks": 0.05,
-			"addon_dirs": [
-				"/usr/lib/opsiconfd/addons",
-				"/var/lib/opsiconfd/addons"
-			]
-		}
-		"""
+	class Process:
+		def get_stdout_text() -> str:
+			return """{
+				"websocket_protocol": "wsproto_opsiconfd",
+				"websocket_open_timeout": 30,
+				"log_slow_async_callbacks": 0.05,
+				"addon_dirs": [
+					"/usr/lib/opsiconfd/addons",
+					"/var/lib/opsiconfd/addons"
+				]
+			}
+			"""
 
-	config = json.loads(Proc.stdout)
+	config = json.loads(Process.get_stdout_text())
 
-	with patch("subprocess.run", return_value=Proc):
+	with patch("opsi.opsiservice.server._common.run_command", return_value=Process):
 		assert get_opsiconfd_config() == config
 		_opsiconfd_get_config.cache_clear()
 

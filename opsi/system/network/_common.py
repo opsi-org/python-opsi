@@ -9,7 +9,6 @@ import concurrent.futures
 import ipaddress
 import os
 import socket
-import subprocess
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -18,7 +17,9 @@ from dns.resolver import Resolver
 
 from opsi.logging import get_logger
 from opsi.opsiservice.model.type import to_fqdn
-from opsi.system.info import is_linux
+from opsi.process import run_command
+from opsi.retry import NoRetry
+from opsi.system.info import is_linux, is_posix
 
 if TYPE_CHECKING:
 	from requests import Session
@@ -164,13 +165,10 @@ def get_fqdn() -> str:
 	except Exception as err:
 		logger.debug("Failed to get FQDN by socket.getfqdn(): %s - %s", fqdn, err)
 
-	if os.name == "posix":
+	if is_posix():
 		logger.debug("Trying to get FQDN by running hostname -f")
 		try:
-			proc = subprocess.run(["hostname", "-f"], capture_output=True, text=True, check=False, timeout=0.1)
-			logger.debug("hostname -f returned: %s (exit code %d)", proc.stdout.strip(), proc.returncode)
-			if proc.returncode == 0:
-				return to_fqdn(proc.stdout.strip())
+			return to_fqdn(run_command(["hostname", "-f"], timeout=1.0, retry_config=NoRetry).get_stdout_text().strip())
 		except Exception as err:
 			logger.debug("Failed to get FQDN by running hostname -f: %s", err)
 

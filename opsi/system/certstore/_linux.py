@@ -2,6 +2,7 @@
 # Copyright (c) 2026-2026 uib GmbH <info@uib.de>
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
+from opsi.retry import NoRetry
 
 import os
 from dataclasses import dataclass
@@ -87,7 +88,7 @@ def install_ca(ca_cert: x509.Certificate) -> None:
 
 	cert_file = info.custom_ca_certs_path / f"{common_name.replace(' ', '_')}.crt"
 	cert_file.write_bytes(ca_cert.public_bytes(encoding=serialization.Encoding.PEM))
-	run_command(info.ca_cert_update_cmd, timeout=10)
+	run_command(info.ca_cert_update_cmd, timeout=10, retry_config=NoRetry)
 
 
 def load_cas(subject_name: str) -> Generator[x509.Certificate, None, None]:
@@ -143,5 +144,5 @@ def remove_ca(subject_name: str, sha1_fingerprint: str | None = None) -> bool:
 		logger.info("CA '%s' (%s) not found, nothing to remove", subject_name, sha1_fingerprint)
 		return False
 
-	run_command(info.ca_cert_update_cmd, timeout=10)
+	run_command(info.ca_cert_update_cmd, timeout=10, retry_config=NoRetry)
 	return True

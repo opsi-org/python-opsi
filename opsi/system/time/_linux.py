@@ -4,18 +4,17 @@
 # License: AGPL-3.0-only
 
 import os
-import subprocess
 from datetime import datetime
 
 from opsi.logging import get_logger
+from opsi.process import run_command
+from opsi.retry import NoRetry
 
 logger = get_logger("opsi")
 
 
 def set_system_datetime(utc_datetime: datetime) -> None:
 	try:
-		subprocess.run(["date", "--utc", "--set", utc_datetime.strftime("%Y-%m-%d %H:%M:%S")], capture_output=True, check=True)
-	except subprocess.CalledProcessError as err:
-		raise RuntimeError(
-			f"Failed to set system time as uid {os.geteuid()}: {err.returncode} - {err.stderr.decode(errors='replace')}"
-		) from err
+		run_command(["date", "--utc", "--set", utc_datetime.strftime("%Y-%m-%d %H:%M:%S")], timeout=10.0, retry_config=NoRetry)
+	except Exception as err:
+		raise RuntimeError(f"Failed to set system time as uid {os.geteuid()}: {err}") from err

@@ -2,7 +2,6 @@
 # Copyright (c) 2026-2026 uib GmbH <info@uib.de>
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
-
 import os
 import re
 import tempfile
@@ -14,6 +13,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 
 from opsi.logging import get_logger
 from opsi.process import ProcessError, run_command
+from opsi.retry import NoRetry
 
 logger = get_logger("opsi")
 
@@ -21,10 +21,10 @@ logger = get_logger("opsi")
 @contextmanager
 def security_authorization() -> Generator[None, None, None]:
 	try:  # Allow to make changes to certificate settings
-		run_command(["security", "authorizationdb", "write", "com.apple.trust-settings.admin", "allow"], timeout=10)
+		run_command(["security", "authorizationdb", "write", "com.apple.trust-settings.admin", "allow"], timeout=10, retry_config=NoRetry)
 		yield
 	finally:  # Disallow to make changes to certificate settings
-		run_command(["security", "authorizationdb", "remove", "com.apple.trust-settings.admin"], timeout=10)
+		run_command(["security", "authorizationdb", "remove", "com.apple.trust-settings.admin"], timeout=10, retry_config=NoRetry)
 
 
 def install_ca(ca_cert: x509.Certificate) -> None:
@@ -38,6 +38,7 @@ def install_ca(ca_cert: x509.Certificate) -> None:
 			run_command(
 				["security", "add-trusted-cert", "-d", "-r", "trustRoot", "-k", "/Library/Keychains/System.keychain", pem_file.name],
 				timeout=10,
+				retry_config=NoRetry,
 			)
 	finally:
 		os.remove(pem_file.name)
@@ -46,7 +47,9 @@ def install_ca(ca_cert: x509.Certificate) -> None:
 def load_cas(subject_name: str) -> Generator[x509.Certificate, None, None]:
 	try:
 		pem = run_command(
-			["security", "find-certificate", "-a", "-p", "-c", subject_name, "/Library/Keychains/System.keychain"], timeout=10
+			["security", "find-certificate", "-a", "-p", "-c", subject_name, "/Library/Keychains/System.keychain"],
+			timeout=10,
+			retry_config=NoRetry,
 		).output
 	except ProcessError as err:
 		if "could not be found" in err.output:
@@ -86,6 +89,10 @@ def remove_ca(subject_name: str, sha1_fingerprint: str | None = None) -> bool:
 	with security_authorization():
 		for ca_fingerprint in remove_cas:
 			logger.info("Removing CA '%s' (%s)", subject_name, ca_fingerprint)
-			run_command(["security", "delete-certificate", "-Z", ca_fingerprint, "/Library/Keychains/System.keychain", "-t"], timeout=10)
+			run_command(
+				["security", "delete-certificate", "-Z", ca_fingerprint, "/Library/Keychains/System.keychain", "-t"],
+				timeout=10,
+				retry_config=NoRetry,
+			)
 
 	return True
