@@ -34,7 +34,7 @@ pytest-windows:
   script:
     - $Env:UV_PYTHON_INSTALL_DIR = "c:\\uv\\python"
     - $Env:UV_CACHE_DIR = "c:\\uv\\cache"
-    - $Env:UV_PYTHON = "3.14-x86_64"
+    - $Env:UV_PYTHON = "3.13-x86_64"
     - $Env:UV_PYTHON_PREFERENCE = "only-managed"
     - $Env:RUSTUP_TOOLCHAIN = "stable-x86_64-pc-windows-msvc"
     - uv sync --frozen
