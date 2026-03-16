@@ -17,21 +17,22 @@ class FixtureRequest:
 exception_classes = []
 pre_globals = list(globals())
 from opsi.exception import (  # noqa: E402,F401
-	LicenseConfigurationError,
-	LicenseMissingError,
-	OpsiBackupBackendNotFound,
-	OpsiBackupFileError,
-	OpsiBackupFileNotFound,
+	OperatingSystemUnsupportedError,
 	OpsiBadRpcError,
 	OpsiError,
-	OpsiProductOrderingError,
+	OpsiLicenseConfigurationError,
+	OpsiLicenseMissingError,
+	OpsiRepositoryError,
 	OpsiRpcError,
 	OpsiServiceAuthenticationError,
+	OpsiServiceClientCertificateError,
 	OpsiServiceConnectionError,
 	OpsiServiceConnectionRefusedError,
+	OpsiServiceError,
+	OpsiServicePermissionError,
 	OpsiServiceTimeoutError,
+	OpsiServiceUnavailableError,
 	OpsiServiceVerificationError,
-	RepositoryError,
 )
 
 exception_classes = [obj for name, obj in dict(globals()).items() if name not in pre_globals and name != "pre_globals"]
@@ -69,37 +70,6 @@ def exception(exception_class: type[Exception], exception_parameter: str) -> Gen
 
 def test_exception_can_be_printed(exception: Exception) -> None:
 	print(exception)
-
-
-def test_exception_has__repr__(exception: Exception) -> None:
-	_repr = repr(exception)
-	assert _repr.startswith("<")
-	assert exception.__class__.__name__ in _repr
-	assert _repr.endswith(">")
-
-
-@pytest.mark.parametrize(
-	"message,problematic_requirements",
-	(
-		("ordering error", None),
-		("ordering error", []),
-		("ordering error", ["requirement1", "requirement2"]),
-		("", None),
-		("", ["requirement1", "requirement2"]),
-	),
-)
-def test_opsi_product_ordering_exception(message: str, problematic_requirements: list[str] | None) -> None:
-	exc = OpsiProductOrderingError(message, problematic_requirements)
-	_repr = repr(exc)
-	assert _repr.startswith("<")
-	assert _repr.endswith(">")
-	if message:
-		assert ":" in str(exc)
-
-
-def test_opsi_product_ordering_error_ordering_is_accessible() -> None:
-	error = OpsiProductOrderingError("message", [3, 4, 5])
-	assert [3, 4, 5] == error.problematicRequirements
 
 
 def test_exception_is_sub_class_of_opsi_error(exception_class: type[Exception]) -> None:

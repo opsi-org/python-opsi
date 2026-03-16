@@ -33,7 +33,7 @@ from opsi.process import get_subprocess_environment
 
 processes: dict[str, Process] = {}
 processes_lock = Lock()
-logger = get_logger()
+logger = get_logger("opsi")
 
 
 @lru_cache()

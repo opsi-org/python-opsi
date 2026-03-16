@@ -13,9 +13,9 @@ from stamina import retry as _retry_decorator
 from stamina import retry_context as _retry_context
 from stamina._core import ExcOrBackoffHook, _RetryContextIterator
 
-from opsi.logging import OPSILogger, get_logger
+from opsi.logging import get_logger
 
-logger: OPSILogger = get_logger()
+logger = get_logger("opsi")
 
 
 @dataclass(kw_only=True, slots=True, frozen=True)

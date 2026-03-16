@@ -12,7 +12,7 @@ from opsi.logging import get_logger
 
 LD_LIBRARY_EXCLUDE_LIST = ["/usr/lib/opsiclientd"]
 
-logger = get_logger()
+logger = get_logger("opsi")
 
 
 @contextmanager

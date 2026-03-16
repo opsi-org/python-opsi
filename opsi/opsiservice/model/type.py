@@ -104,7 +104,7 @@ __all__ = (
 	"to_url",
 )
 
-logger = get_logger("opsicommon.general")
+logger = get_logger("opsi")
 
 get_object_type: Callable | None = None
 from_json: Callable | None = None

@@ -34,7 +34,7 @@ DEFAULT_CHUNK_SIZE = 262144  # 256 KiB
 file_transfers: dict[str, FileTransfer] = {}
 file_transfers_lock = Lock()
 
-logger = get_logger()
+logger = get_logger("opsi")
 
 
 class FileTransfer:

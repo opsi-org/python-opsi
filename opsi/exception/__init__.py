@@ -3,17 +3,14 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
+
 from ._common import (
-	CanceledException,
-	LicenseConfigurationError,
-	LicenseMissingError,
 	OperatingSystemUnsupportedError,
-	OpsiBackupBackendNotFound,
-	OpsiBackupFileError,
-	OpsiBackupFileNotFound,
 	OpsiBadRpcError,
 	OpsiError,
-	OpsiProductOrderingError,
+	OpsiLicenseConfigurationError,
+	OpsiLicenseMissingError,
+	OpsiRepositoryError,
 	OpsiRpcError,
 	OpsiServiceAuthenticationError,
 	OpsiServiceClientCertificateError,
@@ -24,21 +21,15 @@ from ._common import (
 	OpsiServiceTimeoutError,
 	OpsiServiceUnavailableError,
 	OpsiServiceVerificationError,
-	RepositoryError,
 )
 
 __all__ = [
-	"CanceledException",
-	"LicenseConfigurationError",
-	"LicenseMissingError",
+	"OpsiError",
 	"OperatingSystemUnsupportedError",
-	"OpsiBackupBackendNotFound",
-	"OpsiBackupFileError",
-	"OpsiBackupFileNotFound",
 	"OpsiBadRpcError",
-	"OpsiError",
-	"OpsiError",
-	"OpsiProductOrderingError",
+	"OpsiLicenseConfigurationError",
+	"OpsiLicenseMissingError",
+	"OpsiRepositoryError",
 	"OpsiRpcError",
 	"OpsiServiceAuthenticationError",
 	"OpsiServiceClientCertificateError",

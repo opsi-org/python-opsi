@@ -15,16 +15,15 @@ from types import TracebackType
 from typing import Literal, Self, get_args
 
 from opsi.exception import OperatingSystemUnsupportedError
-from opsi.logging._constants import INFO
-
 from opsi.logging import get_logger
+from opsi.logging._constants import INFO
 from opsi.retry import Retry, RetryConfig, get_retry_config
 from opsi.system.info import is_linux, is_windows
 
 if is_linux():
 	from opsi.system.linux import get_kernel_params
 
-logger = get_logger()
+logger = get_logger("opsi")
 
 PLACEHOLDER_REGEX = re.compile(r"^(.*)#\@(\w+)\**#+(.*)$")
 PLACEHOLDER_REGEX_NEW = re.compile(r"^(.*){{\s*(.*?)\s*}}(.*)$")

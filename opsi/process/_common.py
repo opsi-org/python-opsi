@@ -30,7 +30,7 @@ from opsi.system.info import is_posix, is_windows
 
 LD_LIBRARY_EXCLUDE_LIST = ["/usr/lib/opsiclientd", "/usr/lib/opsiconfd", "/usr/lib/opsi-agent"]
 
-logger = get_logger()
+logger = get_logger("opsi")
 
 
 def _get_executable_path() -> Path:

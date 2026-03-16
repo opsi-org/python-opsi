@@ -9,41 +9,17 @@ from typing import Any
 class OpsiError(Exception):
 	"""Base class for OPSI Backend exceptions."""
 
-	ExceptionShortDescription = "OPSI error"
-
 	def __init__(self, message: str = "") -> None:
 		super().__init__(message)
-		self.message = str(message)
-
-	def __str__(self) -> str:
-		if self.message:
-			return f"{self.ExceptionShortDescription}: {self.message}"
-		return self.ExceptionShortDescription
-
-	def __repr__(self) -> str:
-		if self.message:
-			return f'<{self.__class__.__name__}("{self.message}")>'
-		return f"<{self.__class__.__name__}>"
+		self.message = message
 
 
 class OperatingSystemUnsupportedError(OpsiError):
 	"""Raised when the operating system is not supported."""
 
 
-class OpsiBackupFileError(OpsiError):
-	ExceptionShortDescription = "OPSI backup file error"
-
-
-class OpsiBackupFileNotFound(OpsiBackupFileError):
-	ExceptionShortDescription = "OPSI backup file not found"
-
-
-class OpsiBackupBackendNotFound(OpsiBackupFileError):
-	ExceptionShortDescription = "OPSI backend not found in backup"
-
-
 class OpsiServiceError(OpsiError):
-	ExceptionShortDescription = "OPSI service error"
+	"""Base class for exceptions related to the OPSI Service."""
 
 	def __init__(self, message: str = "", status_code: int | None = None, content: str | None = None) -> None:
 		super().__init__(message)
@@ -52,41 +28,41 @@ class OpsiServiceError(OpsiError):
 
 
 class OpsiServiceConnectionRefusedError(OpsiServiceError):
-	ExceptionShortDescription = "OPSI service connection refused error"
+	"""Raised when the connection to the OPSI Service is refused, e.g. because the service is not running or a firewall is blocking the connection."""
 
 
 class OpsiServiceAuthenticationError(OpsiServiceError):
-	ExceptionShortDescription = "OPSI service authentication error"
+	"""Raised when authentication with the OPSI Service fails."""
 
 
 class OpsiServiceClientCertificateError(OpsiServiceAuthenticationError):
-	ExceptionShortDescription = "OPSI service client certificate error"
+	"""Raised when there is an issue with the client certificate used for authentication."""
 
 
 BackendAuthenticationError = OpsiServiceAuthenticationError
 
 
 class OpsiServicePermissionError(OpsiServiceError):
-	ExceptionShortDescription = "OPSI service permission error"
+	"""Raised when the user does not have the necessary permissions to perform an action on the OPSI Service."""
 
 
 BackendPermissionDeniedError = OpsiServicePermissionError
 
 
 class OpsiServiceConnectionError(OpsiServiceError):
-	ExceptionShortDescription = "OPSI service connection error"
+	"""Raised when there is a connection error with the OPSI Service, e.g. due to network issues or service unavailability."""
 
 
 class OpsiServiceVerificationError(OpsiServiceConnectionError):
-	ExceptionShortDescription = "OPSI service verification error"
+	"""Raised when there is a verification error with the OPSI Service, e.g. due to SSL certificate issues."""
 
 
 class OpsiServiceTimeoutError(OpsiServiceConnectionError):
-	ExceptionShortDescription = "OPSI service timeout error"
+	"""Raised when a connection to the OPSI Service times out."""
 
 
 class OpsiServiceUnavailableError(OpsiServiceConnectionError):
-	ExceptionShortDescription = "OPSI service unavailable error"
+	"""Raised when the OPSI Service is unavailable, e.g. due to maintenance or high load."""
 
 	def __init__(self, message: str = "", status_code: int | None = None, content: str | None = None, until: float | None = None) -> None:
 		super().__init__(message)
@@ -96,56 +72,24 @@ class OpsiServiceUnavailableError(OpsiServiceConnectionError):
 
 
 class OpsiBadRpcError(OpsiError):
-	ExceptionShortDescription = "OPSI bad rpc error"
+	"""Raised due to a malformed RPC."""
 
 
 class OpsiRpcError(OpsiError):
-	ExceptionShortDescription = "OPSI rpc error"
+	"""Raised when an error occurs during an RPC to the OPSI Service."""
 
 	def __init__(self, message: str = "", response: dict[str, Any] | None = None) -> None:
 		super().__init__(message)
 		self.response = response
 
 
-class OpsiProductOrderingError(OpsiError):
-	"""A condition for ordering cannot be fulfilled"""
-
-	ExceptionShortDescription = "A condition for ordering cannot be fulfilled"
-
-	def __init__(self, message: str = "", problematicRequirements: list[int] | list[str] | None = None) -> None:
-		super().__init__(message)
-		self.problematicRequirements: list[int] | list[str] | list = problematicRequirements or []
-
-	def __str__(self) -> str:
-		if self.message:
-			if self.problematicRequirements:
-				return f"{self.ExceptionShortDescription}: {self.message} ({self.problematicRequirements})"
-			return f"{self.ExceptionShortDescription}: {self.message}"
-		return self.ExceptionShortDescription
-
-	def __repr__(self) -> str:
-		if self.message:
-			if self.problematicRequirements:
-				return f'<{self.__class__.__name__}("{self.message}", {self.problematicRequirements})>'
-			return f'<{self.__class__.__name__}("{self.message}")>'
-		return f"<{self.__class__.__name__}>"
-
-
-class LicenseConfigurationError(OpsiError):
+class OpsiLicenseConfigurationError(OpsiError):
 	"""Exception raised if a configuration error occurs in the license data base."""
 
-	ExceptionShortDescription = "License configuration error"
 
-
-class LicenseMissingError(OpsiError):
+class OpsiLicenseMissingError(OpsiError):
 	"""Exception raised if a license is requested but cannot be found."""
 
-	ExceptionShortDescription = "License missing error"
 
-
-class RepositoryError(OpsiError):
-	ExceptionShortDescription = "Repository error"
-
-
-class CanceledException(Exception):
-	ExceptionShortDescription = "CanceledException"
+class OpsiRepositoryError(OpsiError):
+	"""Exception raised if an error occurs when accessing an OPSI repository."""

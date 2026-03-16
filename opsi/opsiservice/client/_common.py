@@ -159,7 +159,7 @@ kGOsCMSImzajpmtonx3ccPgSOyEWyoEaGij6u80QtFkj9g==
 -----END CERTIFICATE-----"""
 
 
-logger = get_logger("opsicommon.general")
+logger = get_logger("opsi")
 
 
 def websocket_dump(title: str, message: str) -> None:

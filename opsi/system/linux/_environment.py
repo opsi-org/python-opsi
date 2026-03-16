@@ -9,7 +9,7 @@ from pathlib import Path
 
 from opsi.logging import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger("opsi")
 
 
 def update_environment_from_config_files(files: list[Path] | None = None) -> None:

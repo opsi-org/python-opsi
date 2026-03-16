@@ -10,7 +10,7 @@ from typing import Any
 
 from opsi.logging import get_logger, secret_filter
 
-logger = get_logger(__name__)
+logger = get_logger("opsi")
 
 
 @lru_cache

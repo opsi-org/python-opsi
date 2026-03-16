@@ -15,7 +15,7 @@ from typing import Self
 from opsi.logging import get_logger
 from opsi.retry import Retry, RetryConfig, get_retry_config
 
-logger = get_logger()
+logger = get_logger("opsi")
 
 TEMP_DIR_PREFIX = "opsi_temp_"
 TEMP_FILE_PREFIX = "opsi_temp_"

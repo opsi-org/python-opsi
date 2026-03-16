@@ -20,7 +20,7 @@ ENCODING = "utf-8"
 tmp = Path("/tmp") / "test.ini"
 
 
-logger = get_logger()
+logger = get_logger("opsi")
 
 
 class IniParseError(OpsiError):
