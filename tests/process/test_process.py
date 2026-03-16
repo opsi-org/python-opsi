@@ -140,6 +140,7 @@ def test_process_read(size_limit: int, capture_output: Literal["stdout", "stderr
 					stdout_data += stdout
 				if stderr:
 					stderr_data += stderr
+			assert proc.read_bytes(stdout=False, stderr=False) == (b"", b"")  # Make no sense, just a test
 
 	stdout_lines = [
 		b"stdout one stdout one stdout one stdout one",
@@ -404,6 +405,15 @@ def test_process_environment() -> None:
 	assert proc.get_output_text().strip() == "value 1"
 
 
+def test_process_arguments() -> None:
+	command = ["ping"]
+	arguments = ["/n", "1", "127.0.0.1"] if is_windows() else ["-c", "1", "127.0.0.1"]
+	with Process(command=command, arguments=arguments) as proc:
+		pass
+
+	assert proc.exit_code == 0
+
+
 @pytest.mark.linux
 @pytest.mark.parametrize(
 	"ld_library_path_orig, ld_library_path, executable_path, expected_ld_library_path",
@@ -461,6 +471,19 @@ def test_process_ld_library_path(
 			assert os.environ.get("_PYI_LINUX_PROCESS_NAME") == "frozen-proc"
 	finally:
 		setattr(sys, "frozen", frozen)
+
+
+def test_process_argument_validation() -> None:
+	with pytest.raises(ValueError, match="'command' and 'script' are mutually exclusive"):
+		Process(command="echo test", script="echo test")
+	with pytest.raises(ValueError, match="Either 'command' or 'script' must be provided"):
+		Process()
+	with pytest.raises(ValueError, match="'interpreter' can only be used with 'script', not with 'command'"):
+		Process(command="echo test", interpreter="python")
+	with pytest.raises(ValueError, match="'exit_on_error' can only be used with 'bash' or 'powershell' interpreter"):
+		Process(script="exit 0", interpreter="cmd", exit_on_error=True)
+	with pytest.raises(ValueError, match="Invalid capture_output value"):
+		Process(script="exit 0", interpreter="bash", capture_output="invalid_value")  # type: ignore[invalid-argument-type]
 
 
 def test_command_and_script() -> None:
@@ -617,9 +640,35 @@ def test_run_command() -> None:
 	assert exc_info.value.command == "not_available_command arg1"
 
 
-def test_run_script() -> None:
-	proc = run_script(script="echo OPSI is great!")
-	assert proc.get_output_text().strip() == "OPSI is great!"
+def test_run_script(tmp_path: Path) -> None:
+
+	stderr_data = "E" * 10
+	stderr_file = tmp_path / "stderr.txt"
+	stderr_file.write_bytes(stderr_data.encode("ascii"))
+	stdout_data = "O" * 10
+	stdout_file = tmp_path / "stdout.txt"
+	stdout_file.write_bytes(stdout_data.encode("ascii"))
+
+	if is_windows():
+		script = ["@echo off", f"type {stderr_file} 1>&2", f"type {stdout_file}"]
+	else:
+		script = [f"cat {stderr_file} 1>&2", f"cat {stdout_file}"]
+
+	proc = run_script(script=script, capture_output="both")
+	assert proc.get_output_text().strip() == stdout_data + stderr_data
+	assert proc.get_stderr_text().strip() == stderr_data
+	assert proc.get_stdout_text().strip() == stdout_data
+	assert proc.get_stderr_bytes().strip() == stderr_data.encode("ascii")
+	assert proc.get_stdout_bytes().strip() == stdout_data.encode("ascii")
+	assert proc.read_text(truncate=False) == (stdout_data, stderr_data)
+	proc._stdout_read_position = proc._stderr_read_position = 0
+	assert proc.read_stderr_text(truncate=False).strip() == stderr_data
+	assert proc.read_stdout_text(truncate=False).strip() == stdout_data
+	proc._stdout_read_position = proc._stderr_read_position = 0
+	assert proc.read_bytes(truncate=False) == (stdout_data.encode("ascii"), stderr_data.encode("ascii"))
+	proc._stdout_read_position = proc._stderr_read_position = 0
+	assert proc.read_stderr_bytes(truncate=False).strip() == stderr_data.encode("ascii")
+	assert proc.read_stdout_bytes(truncate=False).strip() == stdout_data.encode("ascii")
 
 	with pytest.raises(ProcessError, match="Process exited with code 3") as exc_info:
 		run_script(script="exit 3")

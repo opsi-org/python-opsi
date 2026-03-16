@@ -884,7 +884,7 @@ class Process:
 		:param stderr: Whether to read from standard error.
 		:return: A tuple containing the new standard output and standard error as bytes.
 		"""
-		start_time = time.monotonic()
+		start_time: int | float = time.monotonic()
 		if not stdout and not stderr:
 			return b"", b""
 
