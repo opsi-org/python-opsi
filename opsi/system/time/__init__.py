@@ -7,7 +7,7 @@ elif is_windows():
 	from ._windows import set_system_datetime
 elif is_macos():
 	from ._macos import set_system_datetime
-
+else:
 	raise OperatingSystemUnsupportedError(f"{get_system()} not supported")
 
 
