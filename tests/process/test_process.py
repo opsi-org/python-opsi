@@ -65,7 +65,7 @@ def test_get_interpreter_command(
 	assert command == expected_command
 
 	if is_windows():
-		with pytest.raises(ProcessError, match="cmd.exe interpreter requires script file with .cmd or .bat extension"):
+		with pytest.raises(ValueError, match="cmd.exe interpreter requires script file with .cmd or .bat extension"):
 			_get_interpreter_command(interpreter="cmd", script_file="script")
 
 
