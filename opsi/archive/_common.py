@@ -459,7 +459,7 @@ def create_archive_external(
 			line = data.strip().split("\n")[-1]
 			match = checkpoint_re.search(line)
 			if not match:
-				return data
+				continue
 			number = int(match.group(1))
 			logger.trace("Read checkpoint number %d", number)
 			if progress:
