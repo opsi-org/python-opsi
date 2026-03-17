@@ -1042,6 +1042,10 @@ def remove_all_handlers(handler_type: type | None = None, handler_name: str | No
 	return removed_handlers
 
 
+def is_log_level_enabled(logger: OPSILogger | logging.Logger, level: int) -> bool:
+	return logger.isEnabledFor(OPSI_LEVEL_TO_LEVEL.get(level, level))
+
+
 def get_logger_levels(opsi_level: bool = True) -> dict[str, int]:
 	return dict(
 		sorted({lg.name: LEVEL_TO_OPSI_LEVEL.get(lg.level, lg.level) if opsi_level else lg.level for lg in get_all_loggers()}.items())

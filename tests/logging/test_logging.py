@@ -42,8 +42,27 @@ from opsi.logging import (
 	set_format,
 	use_logging_config,
 )
-from opsi.logging._common import get_logger_levels, remove_all_handlers, reset_logging
-from opsi.logging._const import INFO, LOG_DEBUG, LOG_ERROR, LOG_INFO, LOG_NOTSET, LOG_SECRET, LOG_TRACE, LOG_WARNING, LoggingError
+from opsi.logging._common import get_logger_levels, is_log_level_enabled, remove_all_handlers, reset_logging
+from opsi.logging._const import (
+	DEBUG,
+	ERROR,
+	ESSENTIAL,
+	INFO,
+	LOG_DEBUG,
+	LOG_ERROR,
+	LOG_ESSENTIAL,
+	LOG_INFO,
+	LOG_NOTICE,
+	LOG_NOTSET,
+	LOG_SECRET,
+	LOG_TRACE,
+	LOG_WARNING,
+	NOTICE,
+	SECRET,
+	TRACE,
+	WARNING,
+	LoggingError,
+)
 from opsi.logging._sqlite import SQLiteHandler, SQLiteLogDatabase
 from opsi.system.info import is_windows
 from opsi.testing.helper import log_stream
@@ -552,6 +571,11 @@ def test_sub_logger() -> None:
 		sub_logger.error("sub_logger_4")
 		sub_logger.warning("sub_logger_5")
 
+		for lvl in (LOG_SECRET, SECRET, LOG_TRACE, TRACE, LOG_DEBUG, DEBUG, LOG_INFO, INFO, LOG_NOTICE, NOTICE, LOG_WARNING, WARNING):
+			assert not is_log_level_enabled(sub_logger, lvl)
+		for lvl in (LOG_ERROR, ERROR, LOG_ESSENTIAL, ESSENTIAL):
+			assert is_log_level_enabled(sub_logger, lvl)
+
 		levels = get_logger_levels(opsi_level=True)
 		assert levels["root"] == LOG_WARNING
 		assert levels["sub"] == LOG_ERROR
@@ -615,9 +639,17 @@ def test_use_logging_config() -> None:
 	with log_stream(LOG_WARNING, format="%(message)s") as stream:
 		logger.warning("warning1")
 		logger.info("info1")
+		for lvl in (LOG_SECRET, SECRET, LOG_TRACE, TRACE, LOG_DEBUG, DEBUG, LOG_INFO, INFO, LOG_NOTICE, NOTICE):
+			assert not is_log_level_enabled(logger, lvl)
+		for lvl in (LOG_WARNING, WARNING, LOG_ERROR, ERROR, LOG_ESSENTIAL, ESSENTIAL):
+			assert is_log_level_enabled(logger, lvl)
 		with use_logging_config(stderr_level=LOG_INFO):
 			logger.warning("warning2")
 			logger.info("info2")
+			for lvl in (LOG_SECRET, SECRET, LOG_TRACE, TRACE, LOG_DEBUG, DEBUG):
+				assert not is_log_level_enabled(logger, lvl)
+			for lvl in (LOG_INFO, INFO, LOG_NOTICE, NOTICE, LOG_WARNING, WARNING, LOG_ERROR, ERROR, LOG_ESSENTIAL, ESSENTIAL):
+				assert is_log_level_enabled(logger, lvl)
 		logger.warning("warning3")
 		logger.info("info3")
 

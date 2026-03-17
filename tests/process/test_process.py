@@ -65,13 +65,21 @@ def test_get_interpreter_command(
 	assert command == expected_command
 
 	if is_windows():
-		with pytest.raises(ValueError, match="cmd.exe interpreter requires script file with .cmd or .bat extension"):
+		with pytest.raises(ProcessError, match="cmd.exe interpreter requires script file with .cmd or .bat extension"):
 			_get_interpreter_command(interpreter="cmd", script_file="script")
 
 
 def test_get_interpreter_command_error() -> None:
 	with pytest.raises(FileNotFoundError, match="Interpreter not found: unknown"):
 		_get_interpreter_command(interpreter="unknown", script_file="-")  # type: ignore[invalid-argument-type]
+
+	with pytest.raises(ProcessError, match=("WinError 2" if is_windows() else "No such file")) as exc_info:
+		with Process(script="x", interpreter="unknown"):
+			pass
+	exc = exc_info.value
+	assert isinstance(exc, ProcessError)
+	assert isinstance(exc.cause, FileNotFoundError)
+	assert exc.command_not_found
 
 
 @pytest.mark.parametrize("interpreter", ["cmd", "powershell", None] if is_windows() else ["bash", None])
@@ -474,15 +482,15 @@ def test_process_ld_library_path(
 
 
 def test_process_argument_validation() -> None:
-	with pytest.raises(ValueError, match="'command' and 'script' are mutually exclusive"):
+	with pytest.raises(ProcessError, match="'command' and 'script' are mutually exclusive"):
 		Process(command="echo test", script="echo test")
-	with pytest.raises(ValueError, match="Either 'command' or 'script' must be provided"):
+	with pytest.raises(ProcessError, match="Either 'command' or 'script' must be provided"):
 		Process()
-	with pytest.raises(ValueError, match="'interpreter' can only be used with 'script', not with 'command'"):
+	with pytest.raises(ProcessError, match="'interpreter' can only be used with 'script', not with 'command'"):
 		Process(command="echo test", interpreter="python")
-	with pytest.raises(ValueError, match="'exit_on_error' can only be used with 'bash' or 'powershell' interpreter"):
+	with pytest.raises(ProcessError, match="'exit_on_error' can only be used with 'bash' or 'powershell' interpreter"):
 		Process(script="exit 0", interpreter="cmd", exit_on_error=True)
-	with pytest.raises(ValueError, match="Invalid capture_output value"):
+	with pytest.raises(ProcessError, match="Invalid capture_output value"):
 		Process(script="exit 0", interpreter="bash", capture_output="invalid_value")  # type: ignore[invalid-argument-type]
 
 
@@ -565,7 +573,7 @@ def test_process_script_exit_on_error(exit_on_error: bool) -> None:
 
 def test_process_script_exit_on_error_error() -> None:
 	for interpreter in ("cmd", "zsh", ["uv", "run"]):
-		with pytest.raises(ValueError, match="'exit_on_error' can only be used with 'bash' or 'powershell' interpreter"):
+		with pytest.raises(ProcessError, match="'exit_on_error' can only be used with 'bash' or 'powershell' interpreter"):
 			with Process(script="exit 0", interpreter=interpreter, exit_on_error=True):
 				pass
 

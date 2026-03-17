@@ -24,7 +24,7 @@ from typing import Collection, Literal, Mapping, Self, cast
 
 from opsi.exception import OpsiError
 from opsi.file.temp import TempFile
-from opsi.logging import get_logger
+from opsi.logging import LOG_TRACE, get_logger, is_log_level_enabled
 from opsi.retry import Retry, RetryConfig, get_retry_config
 from opsi.system.info import is_posix, is_windows
 
@@ -88,19 +88,29 @@ class ProcessError(OpsiError):
 
 	max_output_length = 1000
 
-	def __init__(self, message: str, process: Process) -> None:
+	def __init__(self, message: str, *, process: Process) -> None:
 		super().__init__(message)
 		self.process = process
 
 	def __str__(self) -> str:
 		output = self.output
-		return (
-			f"{super().__str__()}\n"
-			f"Command: {self.command}\n"
-			f"Exit code: {self.exit_code}\n"
-			f"Output:\n"
-			f"{'...' if len(output) > self.max_output_length else ''}{output[3 - self.max_output_length :]}"
-		)
+		ret = super().__str__()
+		if self.command:
+			ret += f"\nCommand: {self.command}"
+		if self.exit_code is not None:
+			ret += f"\nExit code: {self.exit_code}"
+		if output:
+			ret += "\nOutput:\n"
+			ret += f"{'...' if len(output) > self.max_output_length else ''}{output[3 - self.max_output_length :]}"
+		return ret
+
+	@property
+	def cause(self) -> BaseException | None:
+		return self.__cause__ or self.__context__ or None
+
+	@property
+	def command_not_found(self) -> bool:
+		return isinstance(self.cause, FileNotFoundError)
 
 	@property
 	def command(self) -> str:
@@ -328,13 +338,6 @@ class Process:
 			The default configuration does not retry on TimeoutError.
 			Pass NoRetry to disable retries.
 		"""
-		if command is not None and script is not None:
-			raise ValueError("'command' and 'script' are mutually exclusive")
-		if command is None and script is None:
-			raise ValueError("Either 'command' or 'script' must be provided")
-		if command is not None:
-			if interpreter is not None:
-				raise ValueError("'interpreter' can only be used with 'script', not with 'command'")
 
 		self._command: list[str] = []
 		self._script: str | None = None
@@ -344,12 +347,43 @@ class Process:
 		self._exit_on_error = bool(exit_on_error)
 		self._working_dir = Path(working_dir) if working_dir else None
 		self._timeout = timeout
-		self._environment = get_subprocess_environment(environment)
-		arguments = [str(arg) for arg in arguments] if arguments else []
-		if capture_output not in ("stdout", "stderr", "both", "combined", "none"):
-			raise ValueError(f"Invalid capture_output value: {capture_output}")
+		self._environment: dict[str, str] = {}
 		self._capture_output = capture_output
+		self._encoding = encoding or "utf-8"
+		self._stdin_data: bytes | None = None
+		self._close_stdin_after_start = bool(close_stdin)
+		self._success_exit_codes = None if success_exit_codes is None else set(success_exit_codes)
+		self._retry_config = retry_config or get_retry_config("run_process")
+		self._proc: Popen | None = None
+		self._attempts = 0
+		self._should_stop = False
+		self._started = Event()
+		self._ended = Event()
+		self._data_lock = Lock()
+		self._manager_thread: Thread | None = None
+		self._stdout_reader: Thread | None = None
+		self._stderr_reader: Thread | None = None
 
+		self._reset_state()
+
+		if capture_output not in ("stdout", "stderr", "both", "combined", "none"):
+			raise ProcessError(f"Invalid capture_output value: {capture_output}", process=self)
+		if command is not None and script is not None:
+			raise ProcessError("'command' and 'script' are mutually exclusive", process=self)
+		if command is None and script is None:
+			raise ProcessError("Either 'command' or 'script' must be provided", process=self)
+		if command is not None:
+			if interpreter is not None:
+				raise ProcessError("'interpreter' can only be used with 'script', not with 'command'", process=self)
+
+		if isinstance(stdin, bytes):
+			self._stdin_data = stdin
+		elif isinstance(stdin, str):
+			self._stdin_data = stdin.encode(self._encoding)
+
+		self._environment = get_subprocess_environment(environment)
+
+		arguments = [str(arg) for arg in arguments] if arguments else []
 		# Build command
 		if command:
 			# Direct command execution
@@ -368,7 +402,7 @@ class Process:
 					elif extension in ("sh",):
 						interpreter = "bash"
 					else:
-						raise ValueError(f"Cannot auto-detect interpreter for file extension '.{extension}'")
+						raise ProcessError(f"Cannot auto-detect interpreter for file extension '.{extension}'", process=self)
 				else:
 					interpreter = "cmd" if is_windows() else "bash"
 			elif interpreter in ("cmd", "powershell", "bash"):
@@ -378,7 +412,7 @@ class Process:
 
 			self._interpreter = interpreter
 			if self._exit_on_error and self._interpreter not in ("bash", "powershell"):
-				raise ValueError("'exit_on_error' can only be used with 'bash' or 'powershell' interpreter")
+				raise ProcessError("'exit_on_error' can only be used with 'bash' or 'powershell' interpreter", process=self)
 
 			if not encoding:
 				encoding = _get_process_io_encoding(interpreter=interpreter if interpreter in ("cmd", "powershell", "bash") else None)
@@ -393,11 +427,11 @@ class Process:
 					self._script = os.linesep.join(script) + os.linesep
 
 				if not self._script:
-					raise ValueError("Script content cannot be empty")
+					raise ProcessError("Script content cannot be empty", process=self)
 
 			if self._pipe_script:
 				if stdin:
-					raise ValueError("Cannot use stdin with piped script execution")
+					raise ProcessError("Cannot use stdin with piped script execution", process=self)
 			else:
 				extension = ""
 				if self._script_file:
@@ -414,39 +448,20 @@ class Process:
 				self._temp_script_file = TempFile(encoding=encoding, extension=extension)
 
 			if interpreter in ("cmd", "powershell", "bash"):
-				self._command = _get_interpreter_command(
-					cast(Literal["cmd", "powershell", "bash"], interpreter),
-					script_file=str(self._temp_script_file.path) if self._temp_script_file else "-",
-					arguments=arguments or None,
-				)
+				try:
+					self._command = _get_interpreter_command(
+						cast(Literal["cmd", "powershell", "bash"], interpreter),
+						script_file=str(self._temp_script_file.path) if self._temp_script_file else "-",
+						arguments=arguments or None,
+					)
+				except Exception as exc:
+					raise ProcessError(f"Failed to get interpreter command for interpreter '{interpreter}': {exc}", process=self) from exc
 			else:
 				self._command = list(interpreter)
 				if self._temp_script_file:
 					self._command.append(str(self._temp_script_file))
 				if arguments:
 					self._command.extend(arguments)
-
-		self._encoding = encoding or "utf-8"
-		self._stdin_data: bytes | None = None
-		self._close_stdin_after_start = bool(close_stdin)
-		if isinstance(stdin, bytes):
-			self._stdin_data = stdin
-		elif isinstance(stdin, str):
-			self._stdin_data = stdin.encode(self._encoding)
-
-		self._success_exit_codes = None if success_exit_codes is None else set(success_exit_codes)
-		self._retry_config = retry_config or get_retry_config("run_process")
-		self._proc: Popen | None = None
-		self._should_stop = False
-		self._data_lock = Lock()
-		self._started = Event()
-		self._ended = Event()
-		self._attempts = 0
-		self._manager_thread: Thread | None = None
-		self._stdout_reader: Thread | None = None
-		self._stderr_reader: Thread | None = None
-
-		self._reset_state()
 
 	def _reset_state(self) -> None:
 		"""
@@ -609,7 +624,7 @@ class Process:
 		stdin = PIPE if stdin_data is not None or not close_stdin else None
 
 		logger.info(
-			"Starting process with command: %r, working_dir: %r, stdout: %r, stderr: %r, stdin: %r",
+			"Starting process with command: %r, working_dir: '%s', stdout: %r, stderr: %r, stdin: %r",
 			self._command,
 			self._working_dir,
 			stdout,
@@ -659,7 +674,7 @@ class Process:
 				if exit_code is not None:
 					self._exit_code = exit_code
 					if self._success_exit_codes and self._exit_code is not None and self._exit_code not in self._success_exit_codes:
-						raise ProcessError(f"Process exited with code {self._exit_code}", self)
+						raise ProcessError(f"Process exited with code {self._exit_code}", process=self)
 					logger.info("Process %r with PID %d exited with code %d", self.get_command(), self._pid, self._exit_code)
 					return
 
@@ -706,7 +721,9 @@ class Process:
 			if isinstance(self._exception, ProcessError):
 				raise self._exception
 			else:
-				raise ProcessError(f"Failed to run process after {self._attempts} attempts: {self._exception}", self)
+				raise ProcessError(
+					f"Failed to run process after {self._attempts} attempts: {self._exception}", process=self
+				) from self._exception
 
 	def _start_manager(self) -> None:
 		"""
@@ -807,8 +824,12 @@ class Process:
 		if not self._started.wait(self._start_wait_timeout) or not self._proc or not self._proc.stdin or self._stdin_closed:
 			raise RuntimeError("Process is not running or stdin is closed")
 
+		if is_log_level_enabled(logger, LOG_TRACE):
+			logger.trace("Writing %d bytes to process stdin: %r", len(data), data)
 		self._proc.stdin.write(data)
+		self._proc.stdin.flush()
 		if close:
+			logger.debug("Closing stdin after writing data")
 			self._close_stdin()
 
 	def write_text(self, data: str, close: bool = False) -> None:
@@ -1023,6 +1044,8 @@ def run_script(
 	arguments: Collection[str | int | float] | None = None,
 	working_dir: Path | str | None = None,
 	timeout: float | int | None = None,
+	stdin: str | bytes | None = None,
+	close_stdin: bool = True,
 	capture_output: Literal["stdout", "stderr", "both", "combined", "none"] = "both",
 	encoding: str | None = None,
 	exit_on_error: bool = False,
@@ -1032,15 +1055,14 @@ def run_script(
 	"""
 	Run a script via an interpreter and return the Process instance.
 	"""
-	if isinstance(script, list):
-		script = os.linesep.join(script) + os.linesep
-
 	with Process(
 		script=script,
 		interpreter=interpreter,
 		arguments=arguments,
 		working_dir=working_dir,
 		timeout=timeout,
+		stdin=stdin,
+		close_stdin=close_stdin,
 		capture_output=capture_output,
 		encoding=encoding,
 		exit_on_error=exit_on_error,
@@ -1058,6 +1080,8 @@ def run_script_file(
 	arguments: Collection[str | int | float] | None = None,
 	working_dir: Path | str | None = None,
 	timeout: float | int | None = None,
+	stdin: str | bytes | None = None,
+	close_stdin: bool = True,
 	capture_output: Literal["stdout", "stderr", "both", "combined", "none"] = "both",
 	encoding: str | None = None,
 	exit_on_error: bool = False,
@@ -1073,6 +1097,8 @@ def run_script_file(
 		arguments=arguments,
 		working_dir=working_dir,
 		timeout=timeout,
+		stdin=stdin,
+		close_stdin=close_stdin,
 		capture_output=capture_output,
 		encoding=encoding,
 		exit_on_error=exit_on_error,

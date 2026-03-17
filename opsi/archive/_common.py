@@ -12,7 +12,6 @@ from __future__ import annotations
 import fnmatch
 import os
 import re
-import subprocess
 import sys
 import tarfile
 import time
@@ -29,6 +28,7 @@ import zstandard
 
 from opsi.logging import get_logger
 from opsi.opsiservice.config import OpsiConfig
+from opsi.process import Process, ProcessError, run_command
 from opsi.system.info import is_linux
 
 if TYPE_CHECKING:
@@ -148,14 +148,13 @@ def use_pigz() -> bool:
 	if not opsi_conf.get("packages", "use_pigz"):
 		return False
 	try:
-		process = subprocess.run(["pigz", "--version"], capture_output=True, check=True)
-		# Depending on pigz version, version is put to stdout or stderr
-		pigz_version = process.stderr.decode("utf-8") + process.stdout.decode("utf-8")
-		pigz_version = pigz_version.replace("pigz", "").strip()
+		# Depending on pigz version, version is written to stdout or stderr
+		pigz_version = run_command(["pigz", "--version"]).get_output_text().replace("pigz", "").strip()
 		if packaging.version.parse(pigz_version) < packaging.version.parse("2.2.3"):
 			raise ValueError("pigz too old")
 		return True
-	except (FileNotFoundError, subprocess.CalledProcessError, ValueError):
+	except Exception as exc:
+		logger.debug("pigz not available or too old: %s", exc)
 		return False
 
 
@@ -204,9 +203,9 @@ def decompress_command(archive: Path) -> str:
 		return "bunzip2 --stdout --quiet --decompress"
 	if archive.suffix == ".zstd":
 		try:
-			subprocess.run(["zstdcat", "--version"], capture_output=True, check=True)
-		except (subprocess.CalledProcessError, FileNotFoundError) as error:
-			raise RuntimeError("Zstdcat not available.") from error
+			run_command(["zstdcat", "--version"])
+		except ProcessError as exc:
+			raise RuntimeError("Zstdcat not available.") from exc
 		return "zstd --stdout --quiet --decompress"
 	raise RuntimeError(f"Unknown compression of file '{archive}'")
 
@@ -248,27 +247,17 @@ def extract_archive_external(
 		progress = ArchiveProgress(total=archive.stat().st_size)
 		progress.register_progress_listener(progress_listener)
 
-	with chdir(destination):
-		proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
-		assert proc.stdin
-		assert proc.stdout
-		assert proc.stderr
+	with Process(script=cmd, interpreter="bash", working_dir=destination, close_stdin=False) as proc:
 		with open(archive, "rb") as file:
 			while True:
 				data = file.read(chunk_size)
 				if data:
-					proc.stdin.write(data)
-					proc.stdin.flush()
+					proc.write_bytes(data)
 					if progress:
 						progress.advance(len(data))
 				else:
-					proc.stdin.close()
+					proc.write_bytes(data, close=True)
 					break
-		proc.wait(timeout=7200)
-		out = proc.stdout.read().decode(errors="ignore") + proc.stderr.read().decode(errors="ignore")
-		logger.debug("%s output: %s", cmd, out)
-		if proc.returncode != 0:
-			raise RuntimeError(f"Command {cmd} failed: {out}")
 
 
 def extract_archive_internal(
@@ -323,11 +312,11 @@ def compress_command(archive: Path, compression: str) -> str:
 	if compression == "zstd":
 		zstd_version = "0"
 		try:
-			match = re.search(r"\sv([\d\.]+)", subprocess.run(["zstd", "--version"], capture_output=True, check=True, text=True).stdout)
+			match = re.search(r"\sv([\d\.]+)", run_command(["zstd", "--version"]).get_stdout_text())
 			if match:
 				zstd_version = match.group(1)
-		except (subprocess.CalledProcessError, FileNotFoundError) as error:
-			raise RuntimeError("Zstd not available.") from error
+		except ProcessError as exc:
+			raise RuntimeError("Zstd not available.") from exc
 		opts = ""
 		if packaging.version.parse(zstd_version) >= packaging.version.parse("1.3.8"):
 			# With version 1.3.8 zstd introduced --rsyncable mode.
@@ -412,7 +401,6 @@ def create_archive_external(
 ) -> None:
 	if not is_linux():
 		raise RuntimeError("External archiving is only available on linux")
-	from fcntl import F_GETFL, F_SETFL, fcntl
 
 	if not files:
 		raise ValueError("No files to archive")
@@ -453,65 +441,33 @@ def create_archive_external(
 		progress.register_progress_listener(progress_listener)
 
 	checkpoint_re = re.compile(r"\|(\d+)\|")
-
-	def read_checkpoint_number(proc: subprocess.Popen, progress: ArchiveProgress | None) -> str:
-		assert proc.stderr
-		try:
-			raw_data = proc.stderr.read()
-		except OSError:
-			return ""
-		if not raw_data:
-			return ""
-		data = raw_data.decode(errors="ignore")
-		line = data.strip().split("\n")[-1]
-		match = checkpoint_re.search(line)
-		if not match:
-			return data
-		number = int(match.group(1))
-		logger.trace("Read checkpoint number %d", number)
-		if progress:
-			progress.set_completed(number * 512 * 20)
-		return data
-
-	with chdir(base_dir):
-		# Cannot get a reliable exit code on piped commands because dash does not support pipefail
-		logger.debug("Executing %s at %s", cmd, base_dir)
-		proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
-		assert proc.stdin
-		assert proc.stdout
-		assert proc.stderr
-		fileno = proc.stderr.fileno()
-		flags = fcntl(fileno, F_GETFL)
-		fcntl(fileno, F_SETFL, flags | os.O_NONBLOCK)
-		stderr = ""
+	logger.debug("Executing %s at %s", cmd, base_dir)
+	stderr_data = ""
+	with Process(script=f"set -e\nset -o pipefail\n{cmd}", interpreter="bash", working_dir=base_dir, close_stdin=False) as proc:
 		for file in files:
 			file_str = str(file.archive_path).lstrip("/")
-			logger.trace("Adding file: '%s'", file_str)
+			logger.info("Adding file: '%s'", file_str)
 			if "\n" in file_str:
 				raise ValueError(f"Invalid filename '{file_str}'")
-			proc.stdin.write(f"{file_str}\n".encode())
-			proc.stdin.flush()
-			if data := read_checkpoint_number(proc, progress):
-				stderr += data
+			proc.write_text(f"{file_str}\n")
 
 		logger.debug("All filenames sent, closing stdin")
-		proc.stdin.close()
-		while proc.poll() is None:
-			if data := read_checkpoint_number(proc, progress):
-				stderr += data
-			time.sleep(0.5)
+		proc.write_text("", close=True)
 
-		logger.debug("Process ended with exit code %r", proc.returncode)
-		if progress:
-			progress.set_completed(total_size)
-		try:
-			stderr += proc.stderr.read().decode(errors="ignore")
-		except Exception:
-			pass
-		out = proc.stdout.read().decode(errors="ignore") + stderr
-		logger.debug("%s output: %s", cmd, out)
-		if proc.returncode != 0 or "Exiting with failure status" in out:
-			raise RuntimeError(f"Command {cmd} failed: {out}")
+		while data := proc.read_stderr_text():
+			stderr_data += data
+			line = data.strip().split("\n")[-1]
+			match = checkpoint_re.search(line)
+			if not match:
+				return data
+			number = int(match.group(1))
+			logger.trace("Read checkpoint number %d", number)
+			if progress:
+				progress.set_completed(number * 512 * 20)
+
+	logger.debug("Process ended with exit code %r, output:\n%s", proc.exit_code, stderr_data)
+	if progress:
+		progress.set_completed(total_size)
 
 
 def create_archive_internal(
