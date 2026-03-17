@@ -3,7 +3,6 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-
 from ._common import (
 	OperatingSystemUnsupportedError,
 	OpsiBadRpcError,

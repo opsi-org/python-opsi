@@ -39,7 +39,7 @@ DEFAULT_COLUMNS = 120
 
 terminals: dict[str, Terminal] = {}
 terminals_lock = Lock()
-logger = get_logger()
+logger = get_logger("opsi")
 
 if is_windows():
 
