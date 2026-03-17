@@ -376,11 +376,6 @@ class Process:
 			if interpreter is not None:
 				raise ProcessError("'interpreter' can only be used with 'script', not with 'command'", process=self)
 
-		if isinstance(stdin, bytes):
-			self._stdin_data = stdin
-		elif isinstance(stdin, str):
-			self._stdin_data = stdin.encode(self._encoding)
-
 		self._environment = get_subprocess_environment(environment)
 
 		arguments = [str(arg) for arg in arguments] if arguments else []
@@ -415,7 +410,8 @@ class Process:
 				raise ProcessError("'exit_on_error' can only be used with 'bash' or 'powershell' interpreter", process=self)
 
 			if not encoding:
-				encoding = _get_process_io_encoding(interpreter=interpreter if interpreter in ("cmd", "powershell", "bash") else None)
+				self._encoding = _get_process_io_encoding(interpreter=interpreter if interpreter in ("cmd", "powershell", "bash") else None)
+				logger.debug("Using auto-detected encoding for process I/O: %r", self._encoding)
 
 			if isinstance(script, Path):
 				self._script_file = script
@@ -445,7 +441,7 @@ class Process:
 						extension = "sh"
 				if not extension:
 					extension = "tmp"
-				self._temp_script_file = TempFile(encoding=encoding, extension=extension)
+				self._temp_script_file = TempFile(encoding=self._encoding, extension=extension)
 
 			if interpreter in ("cmd", "powershell", "bash"):
 				try:
@@ -462,6 +458,11 @@ class Process:
 					self._command.append(str(self._temp_script_file))
 				if arguments:
 					self._command.extend(arguments)
+
+		if isinstance(stdin, bytes):
+			self._stdin_data = stdin
+		elif isinstance(stdin, str):
+			self._stdin_data = stdin.encode(self._encoding)
 
 	def _reset_state(self) -> None:
 		"""
