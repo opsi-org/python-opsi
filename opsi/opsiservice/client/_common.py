@@ -74,7 +74,7 @@ from opsi.exception import (
 )
 from opsi.file.lock import lock_file
 from opsi.logging import get_logger, secret_filter
-from opsi.logging._constants import TRACE
+from opsi.logging._const import TRACE
 from opsi.messagebus.message import (
 	ChannelSubscriptionEventMessage,
 	ChannelSubscriptionRequestMessage,

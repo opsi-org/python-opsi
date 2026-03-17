@@ -47,11 +47,11 @@ from opsi.logging import (
 	use_logging_config,
 )
 from opsi.logging._common import get_logger_levels, remove_all_handlers, reset_logging
-from opsi.logging._constants import INFO, LOG_DEBUG, LOG_ERROR, LOG_INFO, LOG_NOTSET, LOG_SECRET, LOG_TRACE, LOG_WARNING, LoggingError
+from opsi.logging._const import INFO, LOG_DEBUG, LOG_ERROR, LOG_INFO, LOG_NOTSET, LOG_SECRET, LOG_TRACE, LOG_WARNING, LoggingError
 from opsi.logging._sqlite import SQLiteHandler, SQLiteLogDatabase
 from opsi.system.info import is_windows
-from opsi.time import unix_timestamp
 from opsi.testing.helper import log_stream
+from opsi.time import unix_timestamp
 
 MY_FORMAT = "%(log_color)s[%(opsilevel)d] [%(asctime)s.%(msecs)03d]%(reset)s [%(contextstring)s] %(message)s"
 OTHER_FORMAT = "[%(opsilevel)d] [%(asctime)s.%(msecs)03d] [%(contextstring)s] %(message)s   (%(filename)s:%(lineno)d)"

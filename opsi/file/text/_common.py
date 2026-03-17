@@ -16,7 +16,7 @@ from typing import Literal, Self, get_args
 
 from opsi.exception import OperatingSystemUnsupportedError
 from opsi.logging import get_logger
-from opsi.logging._constants import INFO
+from opsi.logging._const import INFO
 from opsi.retry import Retry, RetryConfig, get_retry_config
 from opsi.system.info import is_linux, is_windows
 

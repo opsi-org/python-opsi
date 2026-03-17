@@ -34,7 +34,7 @@ from ._common import (
 	set_format,
 	use_logging_config,
 )
-from ._constants import (
+from ._const import (
 	CRITICAL,
 	DATETIME_FORMAT,
 	DEBUG,

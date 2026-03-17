@@ -28,7 +28,7 @@ from urllib.parse import quote
 
 from colorlog import ColoredFormatter
 
-from ._constants import (
+from ._const import (
 	DATETIME_FORMAT,
 	DEFAULT_COLORED_FORMAT,
 	DEFAULT_FORMAT,
