@@ -5,6 +5,4 @@
 
 from ._common import librsync_delta_file, librsync_patch_file, librsync_signature
 
-__all__ = [
-	"librsync_delta_file", "librsync_patch_file", "librsync_signature"
-]
+__all__ = ["librsync_delta_file", "librsync_patch_file", "librsync_signature"]
