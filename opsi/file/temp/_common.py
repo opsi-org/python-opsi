@@ -26,17 +26,20 @@ class TempDir:
 	Create a temporary directory that is automatically deleted when the context is exited.
 	"""
 
-	def __init__(self, *, retry_config: RetryConfig | None = None) -> None:
+	def __init__(self, *, base_dir: Path | str | None = None, retry_config: RetryConfig | None = None) -> None:
 		"""
 		Initialize a new TempDir instance.
-
+		:param base_dir:
+			The base directory where the temporary directory will be created.
+			If None, uses the system default temporary directory.
 		:param retry_config:
 			Configuration for automatic retry behavior on failure.
 			If None, uses the default retry configuration for file I/O operations.
 		"""
+		base_dir = Path(base_dir) if base_dir else Path(gettempdir())
 		self._retry_config = retry_config or get_retry_config("file_io")
 		name = "".join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=8))
-		self._path = Path(gettempdir()) / f"{TEMP_DIR_PREFIX}{name}"
+		self._path = base_dir / f"{TEMP_DIR_PREFIX}{name}"
 
 	@property
 	def path(self) -> Path:
