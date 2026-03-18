@@ -66,7 +66,7 @@ def _legacy_cmpkey(version: str) -> tuple[str, ...]:
 # Inspired by packaging.version.LegacyVersion (deprecated)
 class LegacyVersion(Version):
 	def __init__(self, version: str):
-		self._version = str(version)  # type: ignore[invalid-assignment]
+		self._version = str(version)
 		self._key = _legacy_cmpkey(self._version)  # type: ignore[invalid-assignment]
 
 	def __str__(self) -> str:

@@ -9,7 +9,6 @@ opsi packages repository metadata handling
 
 from __future__ import annotations
 
-import re
 from dataclasses import asdict, dataclass, field, fields
 from datetime import datetime, timezone
 from enum import StrEnum
@@ -17,7 +16,6 @@ from pathlib import Path
 from typing import Any, Callable, Generator
 
 import zstandard
-from packaging.version import Version
 
 from opsi.crypt.hash import compute_file_hash
 from opsi.file.lock import lock_file
@@ -26,61 +24,9 @@ from opsi.opsipackage import OpsiPackage, PackageDependency
 from opsi.opsiservice.model.object import ProductDependency
 from opsi.opsiservice.model.type import Architecture, OperatingSystem
 from opsi.serialization import json_decode, json_encode, msgpack_decode, msgpack_encode
+from opsi.util.version import LegacyVersion
 
 logger = get_logger("opsicommon.package")
-
-
-def _legacy_cmpkey(version: str) -> tuple[str, ...]:
-	_legacy_version_component_re = re.compile(r"(\d+ | [a-z]+ | \.| -)", re.VERBOSE)
-	_legacy_version_replacement_map = {
-		"pre": "c",
-		"preview": "c",
-		"-": "final-",
-		"rc": "c",
-		"dev": "@",
-	}
-
-	def _parse_version_parts(instring: str) -> Generator[str, None, None]:
-		for part in _legacy_version_component_re.split(instring):
-			part = _legacy_version_replacement_map.get(part, part)
-
-			if not part or part == ".":
-				continue
-
-			if part[:1] in "0123456789":
-				# pad for numeric comparison
-				yield part.zfill(8)
-			else:
-				yield "*" + part
-
-		# ensure that alpha/beta/candidate are before final
-		yield "*final"
-
-	parts: list[str] = []
-	for part in _parse_version_parts(version.lower()):
-		if part.startswith("*"):
-			# remove "-" before a prerelease tag
-			if part < "*final":
-				while parts and parts[-1] == "*final-":
-					parts.pop()
-
-			# remove trailing zeros from each series of numeric parts
-			while parts and parts[-1] == "00000000":
-				parts.pop()
-
-		parts.append(part)
-
-	return tuple(parts)
-
-
-# Inspired by packaging.version.LegacyVersion (deprecated)
-class LegacyVersion(Version):
-	def __init__(self, version: str):
-		self._version = str(version)  # type: ignore[invalid-assignment]
-		self._key = _legacy_cmpkey(self._version)  # type: ignore[invalid-assignment]
-
-	def __str__(self) -> str:
-		return str(self._version)
 
 
 @dataclass
