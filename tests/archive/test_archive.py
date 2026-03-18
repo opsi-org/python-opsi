@@ -5,6 +5,7 @@
 
 import getpass
 import os
+import time
 from unittest.mock import patch
 
 try:
@@ -23,19 +24,24 @@ from hypothesis import given, settings
 from hypothesis.strategies import binary, from_regex, sampled_from
 
 from opsi.archive._common import (
+	CPIO_EXTRACT_COMMAND,
+	TAR_EXTRACT_COMMAND,
 	ArchiveFile,
 	ArchiveProgress,
 	ArchiveProgressListener,
-	chdir,
 	create_archive,
 	create_archive_external,
 	create_archive_internal,
+	decompress_command,
 	extract_archive_external,
 	extract_archive_internal,
+	extract_command,
 	get_archive_files,
+	use_pigz,
 )
+from opsi.process import run_command
 from opsi.sync.zsync import SOURCE_REMOTE, create_zsync_file, get_patch_instructions, read_zsync_file
-from opsi.testing.helper import memory_usage_monitor
+from opsi.testing.helper import memory_usage_monitor, opsi_config
 
 # File may not
 # * contain slash/backslash path delimiters
@@ -69,18 +75,134 @@ def make_source_files(path: Path) -> Path:
 	return source
 
 
-def test_chdir(tmp_path: Path) -> None:
-	original_dir = os.getcwd()
-	with chdir(tmp_path):
-		assert os.getcwd() == str(tmp_path)
-	assert os.getcwd() == original_dir
+def test_archive_progress() -> None:
+	listener = ProgressListener()
+	assert listener.percent_completed_vals == []
 
-	orig_getcwd = os.getcwd
-	with patch("os.getcwd", side_effect=FileNotFoundError()):
-		with chdir(tmp_path):
-			assert orig_getcwd() == str(tmp_path)
-	assert orig_getcwd() == str(tmp_path)
-	os.chdir(original_dir)
+	progress = ArchiveProgress(100)
+	progress.set_completed(10)
+	assert listener.percent_completed_vals == []
+
+	time.sleep(ArchiveProgress._notification_interval + 0.1)
+	progress.set_completed(15)
+	assert listener.percent_completed_vals == []
+
+	time.sleep(ArchiveProgress._notification_interval + 0.1)
+	progress.register_progress_listener(listener)
+	progress.set_completed(20)
+	assert listener.percent_completed_vals == [20.0]
+
+	time.sleep(ArchiveProgress._notification_interval + 0.1)
+	progress.unregister_progress_listener(listener)
+	progress.set_completed(50)
+	assert listener.percent_completed_vals == [20.0]
+
+	# Test notification interval
+	time.sleep(ArchiveProgress._notification_interval + 0.1)
+	progress.set_completed(0)
+	listener.percent_completed_vals.clear()
+	progress.register_progress_listener(listener)
+	assert listener.percent_completed_vals == []
+
+	progress.set_completed(0)
+	for _ in range(10):
+		time.sleep(0.1)
+		progress.advance(1)
+	progress.set_completed(100)
+
+	assert listener.percent_completed_vals[0] == 0
+	assert listener.percent_completed_vals[-1] == 100.0
+	assert len(listener.percent_completed_vals) < 5
+
+
+def test_use_pigz() -> None:
+	class MockProcess:
+		def __init__(self, output: str) -> None:
+			self._output = output
+
+		def get_output_text(self) -> str:
+			return self._output
+
+	use_pigz.cache_clear()
+	with opsi_config({"packages.use_pigz": False}):
+		assert not use_pigz()
+
+	use_pigz.cache_clear()
+	with opsi_config({"packages.use_pigz": True}), patch("opsi.archive._common.run_command", return_value=MockProcess("pigz 2.2.2")):
+		assert not use_pigz()
+
+	use_pigz.cache_clear()
+	with opsi_config({"packages.use_pigz": True}), patch("opsi.archive._common.run_command", return_value=MockProcess("pigz 2.2.3")):
+		assert use_pigz()
+
+
+@pytest.mark.parametrize(
+	"archive_name, archive_type, expected_command",
+	(
+		("file.tar", "tar", TAR_EXTRACT_COMMAND),
+		("file.cpio", "cpio", CPIO_EXTRACT_COMMAND),
+		("file.tar.gz", "tar", TAR_EXTRACT_COMMAND),
+		("file.tar.bz2", "tar", TAR_EXTRACT_COMMAND),
+		("file.tar.zst", "tar", TAR_EXTRACT_COMMAND),
+		("file.tar", "cpio", TAR_EXTRACT_COMMAND),
+		("file.cpio", "tar", CPIO_EXTRACT_COMMAND),
+		("file", "tar", TAR_EXTRACT_COMMAND),
+		("file", "cpio", CPIO_EXTRACT_COMMAND),
+		("file.gz", "gz", None),
+		("file", "", None),
+	),
+)
+def test_extract_command(tmp_path: Path, archive_name: str, archive_type: str, expected_command: str | None) -> None:
+	archive_file = tmp_path / archive_name
+	archive_src = tmp_path / "archive_src"
+	archive_src.mkdir()
+	test_file = archive_src / "testfile"
+	test_file.write_bytes(b"test")
+
+	if archive_type == "tar":
+		shutil.which("tar") or pytest.skip("tar not available")
+		run_command(["tar", "cvf", str(archive_file), str(archive_src)])
+	elif archive_type == "cpio":
+		shutil.which("cpio") or pytest.skip("cpio not available")
+		data = run_command(["cpio", "--create", "--format", "crc"], stdin=f"{test_file}\n").get_stdout_bytes()
+		archive_file.write_bytes(data)
+	elif archive_type == "gz":
+		archive_file.write_bytes(b"\x1f\x8b\x08")
+	else:
+		archive_file.write_bytes(b"test")
+
+	if expected_command:
+		assert extract_command(archive_file, "opsi.*") == f"{expected_command} 'opsi.*'"
+	else:
+		with pytest.raises(TypeError):
+			extract_command(archive_file)
+
+
+def test_decompress_command(tmp_path: Path) -> None:
+	use_pigz.cache_clear()
+	with opsi_config({"packages.use_pigz": False}):
+		gz_file = tmp_path / "file.gz"
+		assert decompress_command(gz_file) == "gunzip --stdout --quiet --decompress"
+
+	use_pigz.cache_clear()
+	with opsi_config({"packages.use_pigz": True}):
+		gz_file = tmp_path / "file.gz"
+		assert decompress_command(gz_file) == "pigz --stdout --quiet --decompress"
+
+	for ext in (".zstd", ".zst"):
+		zst_file = tmp_path / f"file{ext}"
+		with patch("shutil.which", return_value=False):
+			with pytest.raises(RuntimeError, match="Zstdcat not available."):
+				decompress_command(zst_file)
+		with patch("shutil.which", return_value=True):
+			assert decompress_command(zst_file) == "zstd --stdout --quiet --decompress"
+
+	bz2_file = tmp_path / "file.bz2"
+	assert decompress_command(bz2_file) == "bunzip2 --stdout --quiet --decompress"
+
+	unknown_file = tmp_path / "file.unknown"
+	with pytest.raises(RuntimeError, match=f"Unknown compression of file '{unknown_file}'"):
+		decompress_command(unknown_file)
 
 
 @pytest.mark.parametrize(

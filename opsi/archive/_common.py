@@ -3,20 +3,17 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-"""
-handling of archives
-"""
-
 from __future__ import annotations
 
 import fnmatch
 import os
 import re
+import shutil
 import sys
 import tarfile
 import time
 from abc import ABC
-from contextlib import contextmanager, nullcontext
+from contextlib import nullcontext
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path, PurePosixPath
@@ -37,21 +34,6 @@ if TYPE_CHECKING:
 logger = get_logger("opsi")
 
 
-@contextmanager
-def chdir(new_dir: Path) -> Generator[None, None, None]:
-	try:
-		old_path = os.getcwd()
-	except FileNotFoundError:
-		old_path = None
-	try:
-		os.chdir(str(new_dir))
-		yield
-	finally:
-		if old_path:
-			os.chdir(old_path)
-
-
-# IDEA: tar can use --zstd
 CPIO_EXTRACT_COMMAND = "cpio --unconditional --extract --make-directories --quiet --no-preserve-owner --no-absolute-filenames"
 TAR_EXTRACT_COMMAND = "tar --wildcards --no-same-owner --extract --file -"
 TAR_CREATE_COMMAND = "tar --owner=nobody --group=nogroup --create --file"
@@ -70,13 +52,13 @@ class ArchiveProgress:
 	def set_completed(self, completed: int) -> None:
 		self.completed = min(self.total, completed)
 		percent_completed = self.percent_completed
-		self.percent_completed = round(self.completed * 100 / self.total if self.total > 0 else 1.0, 2)
-		if percent_completed == self.percent_completed:
+		self.percent_completed = round(self.completed * 100 / self.total if self.total > 0 else 0.0, 2)
+		if percent_completed != 0 and percent_completed == self.percent_completed:
 			return
 		now = time.time()
-		if now - self._last_notification < self._notification_interval:
+		if self.percent_completed not in (0, 100) and now - self._last_notification < self._notification_interval:
 			return
-		self._notification_interval = now
+		self._last_notification = now
 		with self._listener_lock:
 			for listener in self._listener:
 				listener.progress_changed(self)
@@ -205,11 +187,9 @@ def decompress_command(archive: Path) -> str:
 		return "gunzip --stdout --quiet --decompress"
 	if archive.suffix in (".bzip2", ".bz2"):
 		return "bunzip2 --stdout --quiet --decompress"
-	if archive.suffix == ".zstd":
-		try:
-			run_command(["zstdcat", "--version"])
-		except ProcessError as exc:
-			raise RuntimeError("Zstdcat not available.") from exc
+	if archive.suffix in (".zstd", ".zst"):
+		if not shutil.which("zstdcat"):
+			raise RuntimeError("Zstdcat not available.")
 		return "zstd --stdout --quiet --decompress"
 	raise RuntimeError(f"Unknown compression of file '{archive}'")
 

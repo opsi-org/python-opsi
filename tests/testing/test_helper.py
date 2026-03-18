@@ -15,8 +15,9 @@ from random import randbytes
 import requests
 import websocket
 
+from opsi.logging import LOG_INFO, get_logger
 from opsi.opsiservice.config import OpsiConfig
-from opsi.testing.helper import HTTPTestServerRequestHandler, environment, http_test_server, memory_usage_monitor, opsi_config
+from opsi.testing.helper import HTTPTestServerRequestHandler, environment, http_test_server, log_stream, memory_usage_monitor, opsi_config
 
 
 def test_environment() -> None:
@@ -50,6 +51,19 @@ def test_opsi_config() -> None:
 		conf = OpsiConfig()
 		assert conf.get("host", "id") == "host.opsi-test"
 		assert conf.get("service", "url") == "https://opsi.server:443"
+
+
+def test_log_stream() -> None:
+	logger = get_logger()
+	with log_stream(LOG_INFO, format="%(levelname)s: %(message)s") as stream:
+		logger.info("Test log message INFO")
+		logger.notice("Test log message NOTICE")
+		logger.debug("Test log message DEBUG")
+
+	data = stream.getvalue()
+	assert "Test log message INFO" in data
+	assert "Test log message NOTICE" in data
+	assert "Test log message DEBUG" not in data
 
 
 def test_test_http_server_log_file(tmp_path: Path) -> None:

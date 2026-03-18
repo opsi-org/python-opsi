@@ -13,6 +13,7 @@ import sys
 import threading
 from contextlib import contextmanager
 from io import StringIO
+from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any, Generator, Mapping, TextIO
 
@@ -130,8 +131,4 @@ def opsi_config(conf_vars: dict[str, Any]) -> Generator[OpsiConfig, None, None]:
 		yield opsi_conf
 	finally:
 		opsi_conf.config_file = orig_config_file
-		try:
-			if os.path.exists(config_file.name):
-				os.unlink(config_file.name)
-		except Exception:
-			pass
+		Path(config_file.name).unlink(missing_ok=True)
