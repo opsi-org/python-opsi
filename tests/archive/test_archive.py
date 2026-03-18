@@ -80,6 +80,7 @@ def test_chdir(tmp_path: Path) -> None:
 		with chdir(tmp_path):
 			assert orig_getcwd() == str(tmp_path)
 	assert orig_getcwd() == str(tmp_path)
+	os.chdir(original_dir)
 
 
 @pytest.mark.parametrize(
