@@ -13,12 +13,11 @@ import sys
 import threading
 from contextlib import contextmanager
 from io import StringIO
-from pathlib import Path
-from tempfile import NamedTemporaryFile
 from typing import Any, Generator, Mapping, TextIO
 
 from psutil import Process
 
+from opsi.file.temp import TempFile
 from opsi.logging import use_logging_config
 from opsi.opsiservice.config import OpsiConfig
 
@@ -121,14 +120,13 @@ def log_stream(new_level: int, format: str | None = None) -> Generator[StringIO,
 @contextmanager
 def opsi_config(conf_vars: dict[str, Any]) -> Generator[OpsiConfig, None, None]:
 	orig_config_file = OpsiConfig.config_file
-	config_file = NamedTemporaryFile(delete=False)
-	opsi_conf = OpsiConfig(upgrade_config=False)
-	try:
-		opsi_conf.config_file = config_file.name
-		for key, value in conf_vars.items():
-			category, config = key.split(".", 1)
-			opsi_conf.set(category, config, value, persistent=False)
-		yield opsi_conf
-	finally:
-		opsi_conf.config_file = orig_config_file
-		Path(config_file.name).unlink(missing_ok=True)
+	with TempFile() as temp_config_file:
+		opsi_conf = OpsiConfig(upgrade_config=False)
+		try:
+			opsi_conf.config_file = str(temp_config_file.path)
+			for key, value in conf_vars.items():
+				category, config = key.split(".", 1)
+				opsi_conf.set(category, config, value, persistent=False)
+			yield opsi_conf
+		finally:
+			opsi_conf.config_file = orig_config_file
