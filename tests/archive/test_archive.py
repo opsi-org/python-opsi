@@ -5,6 +5,7 @@
 
 import getpass
 import os
+from unittest.mock import patch
 
 try:
 	import grp
@@ -20,12 +21,12 @@ from typing import Literal
 import pytest
 from hypothesis import given, settings
 from hypothesis.strategies import binary, from_regex, sampled_from
-from opsi.sync.zsync import SOURCE_REMOTE, create_zsync_file, get_patch_instructions, read_zsync_file
 
 from opsi.archive._common import (
 	ArchiveFile,
 	ArchiveProgress,
 	ArchiveProgressListener,
+	chdir,
 	create_archive,
 	create_archive_external,
 	create_archive_internal,
@@ -33,6 +34,7 @@ from opsi.archive._common import (
 	extract_archive_internal,
 	get_archive_files,
 )
+from opsi.sync.zsync import SOURCE_REMOTE, create_zsync_file, get_patch_instructions, read_zsync_file
 from opsi.testing.helper import memory_usage_monitor
 
 # File may not
@@ -65,6 +67,19 @@ def make_source_files(path: Path) -> Path:
 	(source / "some_file").write_bytes(randbytes(100))
 	os.symlink(source / "some_file", source / "link_to_some_file")
 	return source
+
+
+def test_chdir(tmp_path: Path) -> None:
+	original_dir = os.getcwd()
+	with chdir(tmp_path):
+		assert os.getcwd() == str(tmp_path)
+	assert os.getcwd() == original_dir
+
+	orig_getcwd = os.getcwd
+	with patch("os.getcwd", side_effect=FileNotFoundError()):
+		with chdir(tmp_path):
+			assert orig_getcwd() == str(tmp_path)
+	assert orig_getcwd() == str(tmp_path)
 
 
 @pytest.mark.parametrize(
