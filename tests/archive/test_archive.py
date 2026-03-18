@@ -115,6 +115,7 @@ def test_archive_progress() -> None:
 	assert len(listener.percent_completed_vals) < 5
 
 
+@pytest.mark.linux
 def test_use_pigz() -> None:
 	class MockProcess:
 		def __init__(self, output: str) -> None:
@@ -152,6 +153,7 @@ def test_use_pigz() -> None:
 		("file", "", None),
 	),
 )
+@pytest.mark.linux
 def test_extract_command(tmp_path: Path, archive_name: str, archive_type: str, expected_command: str | None) -> None:
 	archive_file = tmp_path / archive_name
 	archive_src = tmp_path / "archive_src"
@@ -178,6 +180,7 @@ def test_extract_command(tmp_path: Path, archive_name: str, archive_type: str, e
 			extract_command(archive_file)
 
 
+@pytest.mark.linux
 def test_decompress_command(tmp_path: Path) -> None:
 	use_pigz.cache_clear()
 	with opsi_config({"packages.use_pigz": False}):
