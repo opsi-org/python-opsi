@@ -107,7 +107,10 @@ class INIFile:
 		:param option: Option name
 		:return: True if the option exists in the section, False otherwise
 		"""
-		return self._updater.has_section(section) and option in self._updater[section]
+		# Use this method which is case insensitive.
+		# Using self._updater.has_section(section) and option in self._updater[section] does weird stuff
+		# and would require to call option.lower(). Making this method case sensitive is more complicated.
+		return self._updater.has_option(section, option)
 
 	def merge(self, other: INIFile) -> None:
 		"""
@@ -132,7 +135,7 @@ class INIFile:
 		:param option: Option name
 		:param default: Default value if option is not found
 		:return: Value of the option or default if not found"""
-		if self._updater.has_section(section) and option in self._updater[section]:
+		if self.has_option(section, option):
 			return self._updater[section][option].value or default
 		return default
 
@@ -154,7 +157,7 @@ class INIFile:
 		:param option: Option name to remove
 		:return: True if the option was removed, False if it did not exist
 		"""
-		if self._updater.has_section(section) and option in self._updater[section]:
+		if self.has_option(section, option):
 			logger.info("Removing option '%s' from section '%s'", option, section)
 			return self._updater.remove_option(section, option)
 
