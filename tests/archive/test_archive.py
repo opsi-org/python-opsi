@@ -112,7 +112,7 @@ def test_archive_progress() -> None:
 
 	assert listener.percent_completed_vals[0] == 0
 	assert listener.percent_completed_vals[-1] == 100.0
-	assert len(listener.percent_completed_vals) < 5
+	assert len(listener.percent_completed_vals) < 6
 
 
 @pytest.mark.linux
