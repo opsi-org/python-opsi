@@ -15,9 +15,11 @@ from opsi.file.text._text import TextFile, _get_params_from_file
 from opsi.logging import LOG_INFO
 from opsi.system.info import is_linux, is_windows
 from opsi.testing.helper import log_stream
+from tests.file.conftest import PATH_TYPES
 
 
-def test_get_params_from_file(tmp_path: Path) -> None:
+@pytest.mark.parametrize("path_type", PATH_TYPES)
+def test_get_params_from_file(tmp_path: Path, path_type) -> None:
 	param_file = tmp_path / "params"
 	param_file.write_text(
 		"key_without_value\n"
@@ -30,7 +32,7 @@ def test_get_params_from_file(tmp_path: Path) -> None:
 		"var4 = before-tab\tafter-tab\n"
 	)
 	with pytest.warns(DeprecationWarning, match="invalid escape sequence"):
-		params = _get_params_from_file(param_file)
+		params = _get_params_from_file(path_type(str(param_file)))
 	assert params == {
 		"key_without_value": "",
 		"var1": "simple",
@@ -41,12 +43,12 @@ def test_get_params_from_file(tmp_path: Path) -> None:
 
 	param_file.write_text("var1  = linu\\x\n")
 	with log_stream(LOG_INFO, format="%(levelname)s: %(message)s") as stream:
-		params = _get_params_from_file(param_file)
+		params = _get_params_from_file(path_type(str(param_file)))
 		assert "Failed to escape decode ' linu\\x': invalid \\x escape" in stream.getvalue()
 
 
 @pytest.mark.parametrize("encoding", ["cp1250", "utf-8", "utf-16"])
-def test_detect_encoding(tmp_path: Path, encoding: str) -> None:
+def test_detect_encoding(tmp_path: Path, encoding: str, path_type) -> None:
 	file_path = tmp_path / "textfile"
 	text = "Some text with special characters: Ý Ü »"
 	file_path.write_text(text, encoding=encoding)
@@ -129,7 +131,8 @@ def test_change_encoding_and_line_ending(tmp_path: Path) -> None:
 			text_file.set_line_ending("invalid-line-ending")  # type: ignore[invalid-argument-type]
 
 
-def test_patch_text_file(tmp_path: Path) -> None:
+@pytest.mark.parametrize("path_type", PATH_TYPES)
+def test_patch_text_file(tmp_path: Path, path_type) -> None:
 
 	file_path = tmp_path / "textfile"
 	unpatched_data = (
@@ -148,7 +151,7 @@ def test_patch_text_file(tmp_path: Path) -> None:
 	params_file.write_text("test_var1=val1\ntest_var2 = val2\ntest_var3=val3")
 
 	with log_stream(LOG_INFO, format="%(levelname)s: %(message)s") as stream:
-		patch_text_file(file_path, params_file=params_file)
+		patch_text_file(path_type(str(file_path)), params_file=path_type(str(params_file)))
 		assert "Params:\n   test_var1 = val1\n   test_var2 = val2\n   test_var3 = val3\n" in stream.getvalue()
 
 	data = file_path.read_text()
@@ -164,7 +167,9 @@ def test_patch_text_file(tmp_path: Path) -> None:
 	)
 
 	file_path.write_text(unpatched_data)
-	patch_text_file(file_path, params_file=params_file, params={"test_var1": "new_val1", "test_var4": "new_val4"})
+	patch_text_file(
+		path_type(str(file_path)), params_file=path_type(str(params_file)), params={"test_var1": "new_val1", "test_var4": "new_val4"}
+	)
 	data = file_path.read_text()
 	assert data == (
 		"################################################\n"
@@ -179,13 +184,15 @@ def test_patch_text_file(tmp_path: Path) -> None:
 
 	if not is_linux():
 		with pytest.raises(OperatingSystemUnsupportedError, match="Kernel parameters can only be retrieved on Linux systems"):
-			patch_text_file(file_path, kernel_params=True)
+			patch_text_file(path_type(str(file_path)), kernel_params=True)
 		return
 
 	file_path.write_text(unpatched_data)
 
 	with patch("opsi.file.text._text.get_kernel_params", return_value={"test_var1": "kernel_val1", "test_var5": "kernel_val5"}):
-		patch_text_file(file_path, params_file=params_file, params={"test_var4": "new_val4"}, kernel_params=True)
+		patch_text_file(
+			path_type(str(file_path)), params_file=path_type(str(params_file)), params={"test_var4": "new_val4"}, kernel_params=True
+		)
 
 	data = file_path.read_text()
 	assert data == (
