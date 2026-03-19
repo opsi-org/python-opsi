@@ -169,7 +169,9 @@ def _get_process_io_encoding(interpreter: Literal["cmd", "powershell", "bash"] |
 
 
 def _get_interpreter_command(
-	interpreter: Literal["cmd", "powershell", "bash"], script_file: str | Path | TempFile = "-", arguments: list[str] | None = None
+	interpreter: Literal["cmd", "powershell", "bash"],
+	script_file: str | os.PathLike[str] | TempFile = "-",
+	arguments: list[str] | None = None,
 ) -> list[str]:
 	script_file = str(script_file.path) if isinstance(script_file, TempFile) else str(script_file)
 	if is_windows():
@@ -272,7 +274,7 @@ class Process:
 		script: str | Collection[str] | Path | None = None,
 		interpreter: Literal["cmd", "powershell", "bash"] | Collection[str] | str | None = None,
 		arguments: Collection[str | int | float] | None = None,
-		working_dir: Path | str | None = None,
+		working_dir: str | os.PathLike[str] | None = None,
 		environment: Mapping[str, str] | None = None,
 		timeout: float | int | None = None,
 		stdin: str | bytes | None = None,
@@ -1011,7 +1013,7 @@ class Process:
 def run_command(
 	command: Collection[str] | str | None = None,
 	*,
-	working_dir: Path | str | None = None,
+	working_dir: str | os.PathLike[str] | None = None,
 	timeout: float | int | None = None,
 	stdin: str | bytes | None = None,
 	close_stdin: bool = True,
@@ -1043,7 +1045,7 @@ def run_script(
 	*,
 	interpreter: Literal["cmd", "powershell", "bash"] | Collection[str] | str | None = None,
 	arguments: Collection[str | int | float] | None = None,
-	working_dir: Path | str | None = None,
+	working_dir: str | os.PathLike[str] | None = None,
 	timeout: float | int | None = None,
 	stdin: str | bytes | None = None,
 	close_stdin: bool = True,
@@ -1075,11 +1077,11 @@ def run_script(
 
 
 def run_script_file(
-	script_file: str | Path,
+	script_file: str | os.PathLike[str],
 	*,
 	interpreter: Literal["cmd", "powershell", "bash"] | Collection[str] | str | None = None,
 	arguments: Collection[str | int | float] | None = None,
-	working_dir: Path | str | None = None,
+	working_dir: str | os.PathLike[str] | None = None,
 	timeout: float | int | None = None,
 	stdin: str | bytes | None = None,
 	close_stdin: bool = True,
