@@ -9,13 +9,15 @@ from typing import Any, Literal
 
 import pytest
 
-from opsi.serialization._common import (
-	_msgspec_json_decode,
-	_msgspec_json_encode,
+from opsi.serialization import (
 	json_decode,
 	json_encode,
 	msgpack_decode,
 	msgpack_encode,
+)
+from opsi.serialization._json import (
+	_msgspec_json_decode,
+	_msgspec_json_encode,
 )
 from opsi.system.info import is_linux
 

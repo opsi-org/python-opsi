@@ -3,7 +3,7 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from ._common import (
+from opsi.logging._logging import (
 	ContextFilter,
 	ContextSecretFormatter,
 	ObservableHandler,
@@ -31,6 +31,7 @@ from ._common import (
 	set_format,
 	use_logging_config,
 )
+
 from ._const import (
 	CRITICAL,
 	DATETIME_FORMAT,

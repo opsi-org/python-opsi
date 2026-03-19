@@ -5,7 +5,7 @@
 
 import pytest
 
-from opsi.retry._common import NoRetry, Retry, RetryConfig, _file_io_backoff_hook, _run_process_backoff_hook, get_retry_config, retry
+from opsi.retry._retry import NoRetry, Retry, RetryConfig, _file_io_backoff_hook, _run_process_backoff_hook, get_retry_config, retry
 
 
 def test_retry():

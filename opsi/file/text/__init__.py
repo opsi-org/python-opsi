@@ -3,6 +3,6 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from opsi.file.text._common import TextFile, patch_text_file
+from opsi.file.text._text import TextFile, patch_text_file
 
 __all__ = ["patch_text_file", "TextFile"]

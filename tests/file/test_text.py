@@ -11,7 +11,7 @@ import pytest
 
 from opsi.exception import OperatingSystemUnsupportedError
 from opsi.file.text import patch_text_file
-from opsi.file.text._common import TextFile, _get_params_from_file
+from opsi.file.text._text import TextFile, _get_params_from_file
 from opsi.logging import LOG_INFO
 from opsi.system.info import is_linux, is_windows
 from opsi.testing.helper import log_stream
@@ -67,7 +67,7 @@ def test_detect_encoding(tmp_path: Path, encoding: str) -> None:
 	with TextFile(file_path) as file:
 		assert file.get_encoding() == "cp1250"
 
-	with patch("opsi.file.text._common.TextFile._encodings_to_try", ["utf-8", "utf-16"]):
+	with patch("opsi.file.text._text.TextFile._encodings_to_try", ["utf-8", "utf-16"]):
 		with pytest.raises(UnicodeDecodeError):
 			with TextFile(file_path) as file:
 				file.get_encoding()
@@ -184,7 +184,7 @@ def test_patch_text_file(tmp_path: Path) -> None:
 
 	file_path.write_text(unpatched_data)
 
-	with patch("opsi.file.text._common.get_kernel_params", return_value={"test_var1": "kernel_val1", "test_var5": "kernel_val5"}):
+	with patch("opsi.file.text._text.get_kernel_params", return_value={"test_var1": "kernel_val1", "test_var5": "kernel_val5"}):
 		patch_text_file(file_path, params_file=params_file, params={"test_var4": "new_val4"}, kernel_params=True)
 
 	data = file_path.read_text()
@@ -301,7 +301,7 @@ def test_retry_on_io_error(tmp_path: Path) -> None:
 		if attempt < 3:
 			raise OSError("Read error")
 
-	with patch("opsi.file.text._common.TextFile._read_attempt", side_effect=side_effect):
+	with patch("opsi.file.text._text.TextFile._read_attempt", side_effect=side_effect):
 		file_path = tmp_path / "textfile"
 		with TextFile(file_path) as text_file:
 			text_file.select_line_number(1)

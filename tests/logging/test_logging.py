@@ -42,7 +42,6 @@ from opsi.logging import (
 	set_format,
 	use_logging_config,
 )
-from opsi.logging._common import get_logger_levels, is_log_level_enabled, remove_all_handlers, reset_logging
 from opsi.logging._const import (
 	DEBUG,
 	ERROR,
@@ -63,6 +62,7 @@ from opsi.logging._const import (
 	WARNING,
 	LoggingError,
 )
+from opsi.logging._logging import get_logger_levels, is_log_level_enabled, remove_all_handlers, reset_logging
 from opsi.logging._sqlite import SQLiteHandler, SQLiteLogDatabase
 from opsi.system.info import is_windows
 from opsi.testing.helper import log_stream

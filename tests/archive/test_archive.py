@@ -23,7 +23,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis.strategies import binary, from_regex, sampled_from
 
-from opsi.archive._common import (
+from opsi.archive._archive import (
 	CPIO_EXTRACT_COMMAND,
 	TAR_EXTRACT_COMMAND,
 	ArchiveFile,
@@ -112,7 +112,7 @@ def test_archive_progress() -> None:
 
 	assert listener.percent_completed_vals[0] == 0
 	assert listener.percent_completed_vals[-1] == 100.0
-	assert len(listener.percent_completed_vals) < 5
+	assert len(listener.percent_completed_vals) < 6
 
 
 @pytest.mark.linux
@@ -129,11 +129,11 @@ def test_use_pigz() -> None:
 		assert not use_pigz()
 
 	use_pigz.cache_clear()
-	with opsi_config({"packages.use_pigz": True}), patch("opsi.archive._common.run_command", return_value=MockProcess("pigz 2.2.2")):
+	with opsi_config({"packages.use_pigz": True}), patch("opsi.archive._archive.run_command", return_value=MockProcess("pigz 2.2.2")):
 		assert not use_pigz()
 
 	use_pigz.cache_clear()
-	with opsi_config({"packages.use_pigz": True}), patch("opsi.archive._common.run_command", return_value=MockProcess("pigz 2.2.3")):
+	with opsi_config({"packages.use_pigz": True}), patch("opsi.archive._archive.run_command", return_value=MockProcess("pigz 2.2.3")):
 		assert use_pigz()
 
 

@@ -3,6 +3,6 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from ._common import compute_file_hash, verify_file_hash
+from opsi.crypt.hash._hash import compute_file_hash, verify_file_hash
 
 __all__ = ["compute_file_hash", "verify_file_hash"]

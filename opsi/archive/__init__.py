@@ -3,6 +3,6 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from ._common import ArchiveFile, ArchiveProgress, ArchiveProgressListener, create_archive, extract_archive, get_archive_files
+from opsi.archive._archive import ArchiveFile, ArchiveProgress, ArchiveProgressListener, create_archive, extract_archive, get_archive_files
 
 __all__ = ["ArchiveFile", "ArchiveProgress", "ArchiveProgressListener", "create_archive", "extract_archive", "get_archive_files"]

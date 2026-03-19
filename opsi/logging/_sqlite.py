@@ -18,10 +18,7 @@ from typing import Generator
 
 from colorlog import ColoredFormatter
 
-from opsi.serialization import json_decode, json_encode
-
-from ._common import ContextSecretFormatter, secret_filter
-from ._const import (
+from opsi.logging._const import (
 	DATETIME_FORMAT,
 	DEFAULT_COLORED_FORMAT,
 	DEFAULT_FORMAT,
@@ -30,6 +27,8 @@ from ._const import (
 	SECRET_REPLACEMENT_STRING,
 	LoggingError,
 )
+from opsi.logging._logging import ContextSecretFormatter, secret_filter
+from opsi.serialization import json_decode, json_encode
 
 
 def _timestamp_ms(time: float | datetime) -> int:
