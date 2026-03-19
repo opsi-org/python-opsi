@@ -3,7 +3,7 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from ._common import environment, log_stream, memory_usage_monitor, opsi_config
-from ._http import HTTPTestServerRequestHandler, http_test_server
+from opsi.testing.helper._common import environment, log_stream, memory_usage_monitor, opsi_config
+from opsi.testing.helper._http import HTTPTestServerRequestHandler, http_test_server
 
 __all__ = ["memory_usage_monitor", "opsi_config", "environment", "log_stream", "http_test_server", "HTTPTestServerRequestHandler"]

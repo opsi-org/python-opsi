@@ -17,9 +17,9 @@ from typing import Any, Generator, Mapping, TextIO
 
 from psutil import Process
 
-from opsi.file.temp import TempFile
 from opsi.logging import use_logging_config
-from opsi.opsiservice.config import OpsiConfig
+from opsi.opsi.service.server import OpsiConfig
+from opsi.system.file.temp import TempFile
 
 
 class MemoryUsageMonitor(threading.Thread):

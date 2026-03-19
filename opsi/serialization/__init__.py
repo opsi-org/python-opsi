@@ -3,6 +3,7 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from ._common import json_decode, json_encode, msgpack_decode, msgpack_encode
+from opsi.serialization._json import json_decode, json_encode
+from opsi.serialization._messagepack import msgpack_decode, msgpack_encode
 
 __all__ = ["json_decode", "json_encode", "msgpack_encode", "msgpack_decode"]

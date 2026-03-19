@@ -16,7 +16,7 @@ import requests
 import websocket
 
 from opsi.logging import LOG_INFO, get_logger
-from opsi.opsiservice.config import OpsiConfig
+from opsi.opsi.service.server import OpsiConfig
 from opsi.testing.helper import HTTPTestServerRequestHandler, environment, http_test_server, log_stream, memory_usage_monitor, opsi_config
 
 

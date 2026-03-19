@@ -6,9 +6,9 @@
 from pathlib import Path
 
 import pytest
-from opsi.file.ini._common import IniParseError
 
 from opsi.file import ini
+from opsi.file.ini._ini import IniParseError
 
 ENCODING = "utf-8"
 

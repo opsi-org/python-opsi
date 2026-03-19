@@ -14,13 +14,13 @@ import pytest
 
 IMPORT_FAILED = False
 try:
-	from opsi.sync.rsync import librsync_delta_file, librsync_patch_file, librsync_signature
+	from opsi.sync.rsync import rsync_delta_file, rsync_patch_file, rsync_signature
 except ImportError:
 	IMPORT_FAILED = True
 
 
 @pytest.fixture
-def librsync_testfile(tmp_path: Path) -> Path:
+def rsync_testfile(tmp_path: Path) -> Path:
 	data = (
 		"Die NASA konnte wieder ein Funksignal der Sonde New Horizons empfangen. "
 		"Damit scheint sicher, dass das Manöver ein Erfolg war und nun jede Menge Daten zu erwarten sind. "
@@ -41,44 +41,44 @@ def librsync_testfile(tmp_path: Path) -> Path:
 		"Daraus schließen die Verantwortlichen der NASA, dass auch tatsächlich wissenschaftliche Informationen "
 		"im geplanten Ausmaß gesammelt wurden."
 	)
-	testfile = tmp_path / "librsync_signature.txt"
+	testfile = tmp_path / "rsync_signature.txt"
 	testfile.write_text(data, "utf-8", newline="")
 	return testfile
 
 
 @pytest.mark.skipif(IMPORT_FAILED, reason="Import failed.")
-def test_librsync_signature_base64_encoded(librsync_testfile: Path) -> None:
-	assert librsync_signature(librsync_testfile) in (
-		"cnMBNgAACAAAAAAI/6410IBmvH1GKbBN\n",  # librsync1
-		"cnMBNwAACAAAAAAI/6410EtC5dhLF6sI\n",  # librsync2
+def test_rsync_signature_base64_encoded(rsync_testfile: Path) -> None:
+	assert rsync_signature(rsync_testfile) in (
+		"cnMBNgAACAAAAAAI/6410IBmvH1GKbBN\n",  # rsync1
+		"cnMBNwAACAAAAAAI/6410EtC5dhLF6sI\n",  # rsync2
 	)
 
 
 @pytest.mark.skipif(IMPORT_FAILED, reason="Import failed.")
-def test_librsync_signature_creation(librsync_testfile: Path) -> None:
-	signature = librsync_signature(librsync_testfile, base64_encoded=False)
+def test_rsync_signature_creation(rsync_testfile: Path) -> None:
+	signature = rsync_signature(rsync_testfile, base64_encoded=False)
 	assert signature in (
-		b"rs\x016\x00\x00\x08\x00\x00\x00\x00\x08\xff\xae5\xd0\x80f\xbc}F)\xb0M",  # librsync1
-		b"rs\x017\x00\x00\x08\x00\x00\x00\x00\x08\xff\xae5\xd0KB\xe5\xd8K\x17\xab\x08",  # librsync2
+		b"rs\x016\x00\x00\x08\x00\x00\x00\x00\x08\xff\xae5\xd0\x80f\xbc}F)\xb0M",  # rsync1
+		b"rs\x017\x00\x00\x08\x00\x00\x00\x00\x08\xff\xae5\xd0KB\xe5\xd8K\x17\xab\x08",  # rsync2
 	)
 
 
 @pytest.mark.skipif(IMPORT_FAILED, reason="Import failed.")
-def test_librsync_delta_file_creation(librsync_testfile: Path, tmp_path: Path) -> None:
+def test_rsync_delta_file_creation(rsync_testfile: Path, tmp_path: Path) -> None:
 	deltafile = tmp_path / "delta"
 	oldfile = tmp_path / "old"
 	oldfile.write_bytes(b"olddata")
-	signature = librsync_signature(oldfile, base64_encoded=False)
+	signature = rsync_signature(oldfile, base64_encoded=False)
 
-	librsync_delta_file(librsync_testfile, signature.strip(), deltafile)
+	rsync_delta_file(rsync_testfile, signature.strip(), deltafile)
 	assert deltafile.exists(), "No delta file was created"
 
-	expected_delta = b"rs\x026B\x04\x8a" + librsync_testfile.read_bytes() + b"\x00"
+	expected_delta = b"rs\x026B\x04\x8a" + rsync_testfile.read_bytes() + b"\x00"
 	assert deltafile.read_bytes() == expected_delta
 
 
 @pytest.mark.skipif(IMPORT_FAILED, reason="Import failed.")
-def test_librsync_delta_size(tmp_path: Path) -> None:
+def test_rsync_delta_size(tmp_path: Path) -> None:
 	base_file = tmp_path / "base"
 	oldfile = tmp_path / "old"
 	delta_file = tmp_path / "base.delta"
@@ -88,28 +88,28 @@ def test_librsync_delta_size(tmp_path: Path) -> None:
 	base_file.write_text(data, encoding="utf-8", newline="")
 	oldfile.write_text(data[: int(size / 2)], encoding="utf-8", newline="")
 
-	signature = librsync_signature(oldfile, False)
-	librsync_delta_file(base_file, signature, delta_file)
+	signature = rsync_signature(oldfile, False)
+	rsync_delta_file(base_file, signature, delta_file)
 	delta_size = os.path.getsize(delta_file)
 	assert delta_size < size * 0.51
 
 
 @pytest.mark.skipif(IMPORT_FAILED, reason="Import failed.")
-def test_librsync_patch_file_does_not_alter_if_unneeded(librsync_testfile: Path, tmp_path: Path) -> None:
-	base_file = librsync_testfile
+def test_rsync_patch_file_does_not_alter_if_unneeded(rsync_testfile: Path, tmp_path: Path) -> None:
+	base_file = rsync_testfile
 	oldfile = tmp_path / "old"
 	delta_file = tmp_path / "base.delta"
 
 	shutil.copy(base_file, oldfile)
-	signature = librsync_signature(oldfile, False)
-	librsync_delta_file(base_file, signature, delta_file)
+	signature = rsync_signature(oldfile, False)
+	rsync_delta_file(base_file, signature, delta_file)
 
 	assert delta_file.exists()
 	expected_delta = b"rs\x026F\x00\x04\x8a\x00"
 	assert delta_file.read_bytes() == expected_delta
 
 	newfile = tmp_path / "new_file.txt"
-	librsync_patch_file(oldfile, delta_file, newfile)
+	rsync_patch_file(oldfile, delta_file, newfile)
 	assert newfile.exists()
 
 	with open(newfile, "rb") as new_f:
@@ -118,9 +118,9 @@ def test_librsync_patch_file_does_not_alter_if_unneeded(librsync_testfile: Path,
 
 
 @pytest.mark.skipif(IMPORT_FAILED, reason="Import failed.")
-def test_librsync_patch_file_creates_new_file_based_on_delta(librsync_testfile: Path, tmp_path: Path) -> None:
-	base_file = librsync_testfile
-	signature = librsync_signature(base_file, False)
+def test_rsync_patch_file_creates_new_file_based_on_delta(rsync_testfile: Path, tmp_path: Path) -> None:
+	base_file = rsync_testfile
+	signature = rsync_signature(base_file, False)
 
 	new_file = tmp_path / "oldnew.txt"
 	shutil.copy(base_file, new_file)
@@ -131,7 +131,7 @@ def test_librsync_patch_file_creates_new_file_based_on_delta(librsync_testfile: 
 		file.write(f"\n\n{additional_text}\n")
 
 	delta_file_for_new_file = tmp_path / "new_delta.delta"
-	librsync_delta_file(new_file, signature, delta_file_for_new_file)
+	rsync_delta_file(new_file, signature, delta_file_for_new_file)
 	expected_delta = (
 		b"rs\x026B\x04\xb8Die NASA konnte wieder ein Funksignal der "
 		b"Sonde New Horizons empfangen. Damit scheint sicher, dass "
@@ -161,7 +161,7 @@ def test_librsync_patch_file_creates_new_file_based_on_delta(librsync_testfile: 
 	assert delta_file_for_new_file.read_bytes() == expected_delta
 
 	file_based_on_delta = tmp_path / "newnew.txt"
-	librsync_patch_file(base_file, delta_file_for_new_file, file_based_on_delta)
+	rsync_patch_file(base_file, delta_file_for_new_file, file_based_on_delta)
 	with open(new_file, mode="r", encoding="utf-8") as new_f:
 		with open(file_based_on_delta, mode="r", encoding="utf-8") as new_f2:
 			assert new_f.readlines() == new_f2.readlines()
@@ -172,7 +172,7 @@ def test_librsync_patch_file_creates_new_file_based_on_delta(librsync_testfile: 
 
 @pytest.mark.skipif(IMPORT_FAILED, reason="Import failed.")
 @pytest.mark.parametrize("old, delta, new", list(combinations_with_replacement(("foo", "bar"), 3)))
-def test_librsync_patch_file_avoids_patching_same_file(old: str, delta: str, new: str) -> None:
+def test_rsync_patch_file_avoids_patching_same_file(old: str, delta: str, new: str) -> None:
 	with pytest.raises(ValueError):
-		librsync_patch_file(old, delta, new)
-		librsync_patch_file(old, delta, new)
+		rsync_patch_file(old, delta, new)
+		rsync_patch_file(old, delta, new)

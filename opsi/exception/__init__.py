@@ -3,7 +3,7 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from ._common import (
+from opsi.exception._exception import (
 	OperatingSystemUnsupportedError,
 	OpsiBadRpcError,
 	OpsiError,
@@ -39,5 +39,4 @@ __all__ = [
 	"OpsiServiceTimeoutError",
 	"OpsiServiceUnavailableError",
 	"OpsiServiceVerificationError",
-	"RepositoryError",
 ]

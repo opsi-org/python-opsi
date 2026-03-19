@@ -15,7 +15,7 @@ import psutil
 import pytest
 
 from opsi.process import Process, ProcessError, run_command, run_script, run_script_file
-from opsi.process._common import _get_interpreter_command, _get_process_io_encoding
+from opsi.process._process import _get_interpreter_command, get_process_io_encoding
 from opsi.system.info import is_windows
 from opsi.testing.helper import environment
 
@@ -83,9 +83,9 @@ def test_get_interpreter_command_error() -> None:
 
 
 @pytest.mark.parametrize("interpreter", ["cmd", "powershell", None] if is_windows() else ["bash", None])
-def test_get_process_io_encoding(interpreter: Literal["cmd", "powershell", "bash"] | None) -> None:
-	_get_process_io_encoding.cache_clear()
-	encoding = _get_process_io_encoding(interpreter)
+def testget_process_io_encoding(interpreter: Literal["cmd", "powershell", "bash"] | None) -> None:
+	get_process_io_encoding.cache_clear()
+	encoding = get_process_io_encoding(interpreter)
 	if is_windows():
 		if interpreter == "powershell":
 			assert encoding.lower() == "utf-8" or encoding.lower().startswith("cp")
@@ -95,11 +95,11 @@ def test_get_process_io_encoding(interpreter: Literal["cmd", "powershell", "bash
 		assert encoding.lower() == "utf-8"
 
 	with (
-		patch("opsi.process._common.locale.getpreferredencoding", side_effect=Exception("Failed")),
-		patch("opsi.process._common.subprocess.check_output", side_effect=Exception("Failed")),
+		patch("opsi.process._process.locale.getpreferredencoding", side_effect=Exception("Failed")),
+		patch("opsi.process._process.subprocess.check_output", side_effect=Exception("Failed")),
 	):
-		_get_process_io_encoding.cache_clear()
-		encoding = _get_process_io_encoding(interpreter)
+		get_process_io_encoding.cache_clear()
+		encoding = get_process_io_encoding(interpreter)
 		assert encoding.lower() == "utf-8"
 
 

@@ -7,7 +7,7 @@ from typing import Literal
 
 import pytest
 
-from opsi.util.version import compare_versions
+from opsi.util import compare_versions
 
 
 @pytest.mark.parametrize(
