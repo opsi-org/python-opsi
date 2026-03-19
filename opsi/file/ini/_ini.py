@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import builtins
+import os
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Generator
@@ -35,7 +36,7 @@ class INIFile:
 	and modify its contents.
 	"""
 
-	def __init__(self, filename: Path | str, /, *, encoding: str = ENCODING) -> None:
+	def __init__(self, filename: str | os.PathLike[str], /, *, encoding: str = ENCODING) -> None:
 		"""
 		Initialize the INIFile instance.
 		:param filename: Path to the INI file.
@@ -193,7 +194,7 @@ class INIFile:
 
 
 @contextmanager
-def open(ini_file: Path | str, /, *, encoding: str = ENCODING) -> Generator[INIFile, None, None]:
+def open(ini_file: str | os.PathLike[str], /, *, encoding: str = ENCODING) -> Generator[INIFile, None, None]:
 	"""
 	Open an INI file for reading and modification.
 
@@ -221,7 +222,7 @@ def open(ini_file: Path | str, /, *, encoding: str = ENCODING) -> Generator[INIF
 
 
 def set_option(
-	ini_file: Path | str,
+	ini_file: str | os.PathLike[str],
 	section: str,
 	option: str,
 	value: str,
@@ -239,7 +240,7 @@ def set_option(
 		config.set_option(section, option, value, overwrite=overwrite, create=create)
 
 
-def has_section(ini_file: Path | str, section: str, /, *, encoding: str = ENCODING) -> bool:
+def has_section(ini_file: str | os.PathLike[str], section: str, /, *, encoding: str = ENCODING) -> bool:
 	"""
 	Check if a section exists in an INI configuration file.
 
@@ -248,7 +249,7 @@ def has_section(ini_file: Path | str, section: str, /, *, encoding: str = ENCODI
 		return config.has_section(section)
 
 
-def has_option(ini_file: Path | str, section: str, option: str, /, *, encoding: str = ENCODING) -> bool:
+def has_option(ini_file: str | os.PathLike[str], section: str, option: str, /, *, encoding: str = ENCODING) -> bool:
 	"""
 	Check if an option exists in a specific section of an INI configuration file.
 
@@ -257,7 +258,7 @@ def has_option(ini_file: Path | str, section: str, option: str, /, *, encoding: 
 		return config.has_option(section, option)
 
 
-def get_option(ini_file: Path | str, section: str, option: str, /, *, default: str = "", encoding: str = ENCODING) -> str:
+def get_option(ini_file: str | os.PathLike[str], section: str, option: str, /, *, default: str = "", encoding: str = ENCODING) -> str:
 	"""
 	Reads a specific value from an INI configuration file.
 
@@ -266,7 +267,7 @@ def get_option(ini_file: Path | str, section: str, option: str, /, *, default: s
 		return config.get_option(section, option, default=default)
 
 
-def list_sections(ini_file: Path | str, /, *, encoding: str = ENCODING) -> list[str]:
+def list_sections(ini_file: str | os.PathLike[str], /, *, encoding: str = ENCODING) -> list[str]:
 	"""
 	Get all sections from an INI configuration file.
 
@@ -276,7 +277,7 @@ def list_sections(ini_file: Path | str, /, *, encoding: str = ENCODING) -> list[
 
 
 def replace_option(
-	ini_file: Path | str, old_option: str, old_value: str, new_option: str, new_value: str, /, *, encoding: str = ENCODING
+	ini_file: str | os.PathLike[str], old_option: str, old_value: str, new_option: str, new_value: str, /, *, encoding: str = ENCODING
 ) -> None:
 	"""
 	Replace an option with a new option and value in all sections of an INI configuration file
@@ -287,7 +288,7 @@ def replace_option(
 		config.replace_option(old_option, old_value, new_option, new_value)
 
 
-def remove_section(ini_file: Path | str, section: str, /, *, encoding: str = ENCODING) -> bool:
+def remove_section(ini_file: str | os.PathLike[str], section: str, /, *, encoding: str = ENCODING) -> bool:
 	"""
 	Remove a section from an INI configuration file.
 
@@ -296,7 +297,7 @@ def remove_section(ini_file: Path | str, section: str, /, *, encoding: str = ENC
 		return config.remove_section(section)
 
 
-def remove_option(ini_file: Path | str, section: str, option: str, /, *, encoding: str = ENCODING) -> bool:
+def remove_option(ini_file: str | os.PathLike[str], section: str, option: str, /, *, encoding: str = ENCODING) -> bool:
 	"""
 	Remove an option from a section in an INI configuration file.
 

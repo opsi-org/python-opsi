@@ -31,7 +31,7 @@ PLACEHOLDER_REGEX_NEW = re.compile(r"^(.*){{\s*(.*?)\s*}}(.*)$")
 TypeWhere = Literal["selected", "above_selected", "below_selected", "top", "bottom"]
 
 
-def _get_params_from_file(params_file: str | Path) -> dict[str, str]:
+def _get_params_from_file(params_file: str | os.PathLike[str]) -> dict[str, str]:
 	"""
 	Read parameters from a file in the format KEY=VALUE, one per line.
 	Lines starting with # or ; will be ignored as comments.
@@ -78,7 +78,7 @@ class TextFile:
 
 	def __init__(
 		self,
-		path: Path | str,
+		path: os.PathLike[str] | str,
 		*,
 		encoding: str | None = None,
 		line_ending: Literal["\n", "\r\n"] | None = None,
@@ -570,7 +570,9 @@ class TextFile:
 		self._changed = True
 		return len(self._lines)
 
-	def patch(self, *, params: dict[str, str] | None = None, params_file: str | Path | None = None, kernel_params: bool = False) -> None:
+	def patch(
+		self, *, params: dict[str, str] | None = None, params_file: str | os.PathLike[str] | None = None, kernel_params: bool = False
+	) -> None:
 		"""
 		Patch the text file by replacing placeholders with values from the provided parameters.
 		Placeholders in the text file can be in the format #@KEY# or {{KEY}}. The KEY will be replaced with the corresponding value from the parameters.
@@ -626,7 +628,11 @@ class TextFile:
 
 
 def patch_text_file(
-	text_file: str | Path, *, params: dict[str, str] | None = None, params_file: str | Path | None = None, kernel_params: bool = False
+	text_file: str | os.PathLike[str],
+	*,
+	params: dict[str, str] | None = None,
+	params_file: str | os.PathLike[str] | None = None,
+	kernel_params: bool = False,
 ) -> None:
 	with TextFile(text_file) as file:
 		file.patch(params=params, params_file=params_file, kernel_params=kernel_params)
