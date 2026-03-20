@@ -48,7 +48,7 @@ def test_get_params_from_file(tmp_path: Path, path_type) -> None:
 
 
 @pytest.mark.parametrize("encoding", ["cp1250", "utf-8", "utf-16"])
-def test_detect_encoding(tmp_path: Path, encoding: str, path_type) -> None:
+def test_detect_encoding(tmp_path: Path, encoding: str) -> None:
 	file_path = tmp_path / "textfile"
 	text = "Some text with special characters: Ý Ü »"
 	file_path.write_text(text, encoding=encoding)
