@@ -172,7 +172,9 @@ def _get_interpreter_command(
 	script_file: str | os.PathLike[str] | TempFile = "-",
 	arguments: list[str] | None = None,
 ) -> list[str]:
-	script_file = str(script_file.path) if isinstance(script_file, TempFile) else str(script_file)
+	script_file = (
+		str(script_file.path) if isinstance(script_file, TempFile) else os.fspath(script_file)
+	)  # os.fspath handles both str and os.PathLike
 	if is_windows():
 		system_root = Path(os.environ.get("SystemRoot") or r"c:\Windows")
 
