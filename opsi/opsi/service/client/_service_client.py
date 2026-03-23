@@ -30,7 +30,7 @@ from ipaddress import IPv6Address, ip_address
 from pathlib import Path
 from random import randint
 from threading import Event, Lock, Thread
-from types import MethodType, TracebackType
+from types import TracebackType
 from typing import TYPE_CHECKING, Any, BinaryIO, Callable, Generator, Iterable, Literal, overload
 from urllib.parse import quote, unquote, urlparse
 from uuid import uuid4
