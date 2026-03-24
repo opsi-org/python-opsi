@@ -7,10 +7,17 @@
 efi tests
 """
 
+import platform
 import shutil
 from os import statvfs_result
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
+
+if platform.system() != "Linux":
+	pytest.skip("storage tests are only relevant on Linux", allow_module_level=True)
+
 
 from opsi.system.efi import EFIBootManager, cleanup_efi_nvram, get_efi_nvram_stats
 
