@@ -1,0 +1,43 @@
+[Version]
+Signature=$WINDOWS NT$
+Class=System
+ClassGUID={4D36E97D-E325-11CE-BFC1-08002BE10318}
+Provider=%INTEL%
+DriverVer=06/02/2022,1.18.11.0
+CatalogFile=delta_ADL_PW_1.18.11.0.cat
+
+[Manufacturer]
+%INTEL%=INTEL,NT,NTamd64
+
+[INTEL.NT]
+%ACM_SINIT.DeviceDesc% = Needs_NO_DRV, ACPI\INT_ADL_SINIT
+%ACM_SINIT.DeviceDesc% = Needs_NO_DRV, ACPI\INT_RPL_SINIT
+
+[INTEL.NTamd64]
+%ACM_SINIT.DeviceDesc% = Needs_NO_DRV, ACPI\INT_ADL_SINIT
+%ACM_SINIT.DeviceDesc% = Needs_NO_DRV, ACPI\INT_RPL_SINIT
+
+[DestinationDirs]
+ACM_CopyFiles = 11
+
+[SourceDisksNames]
+1 = "Current Directory"
+
+[SourceDisksFiles]
+ADL_SINIT_REL_NT_O1.PW_06022022_1.18.11.0.bin = 1
+
+[ACM_CopyFiles]
+acm.bin, ADL_SINIT_REL_NT_O1.PW_06022022_1.18.11.0.bin
+
+[Needs_NO_DRV]
+CopyFiles=ACM_CopyFiles
+Include=machine.inf
+Needs=NO_DRV
+
+[Needs_NO_DRV.Services]
+Include=machine.inf
+Needs=NO_DRV.Services
+
+[Strings]
+INTEL="INTEL"
+ACM_SINIT.DeviceDesc="Intel(R) TXT Authenticated Code Module"

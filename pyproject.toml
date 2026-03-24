@@ -16,6 +16,7 @@ dependencies = [
 	"dotenv>=0.9.9",
 	"lz4>=4.4.5",
 	"msgpack>=1.0; platform_system == 'Windows'",
+	"hivex>=1.3; platform_system == 'Linux'",
 	"msgspec>=0.19; platform_system != 'Windows'",
 	"netifaces>=0.11.0",
 	"packaging>=24.1,<25.0",  # TODO: LegacyVersion no longer working with packaging >= 25.0
@@ -86,7 +87,8 @@ markers = [
 	"macos: mark test to run only on macos.",
 	"posix: mark test to run only on posix.",
 	"admin_permissions: mark test to run only if user has admin permissions.",
-	"not_in_docker: mark test to run only if not running in docker"
+	"not_in_docker: mark test to run only if not running in docker",
+	"storage_utils: mark test to run only if storage utilities are installed"
 ]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
