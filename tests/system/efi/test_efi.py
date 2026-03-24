@@ -97,7 +97,7 @@ def test_set_boot_next(tmp_path: Path) -> None:
 
 
 def test_get_efi_nvram_stats() -> None:
-	with patch("opsi.system.efi._efi.EFIVAR_FS", "tests/data/efi/efivars"), patch("opsi.system.efi._efi.statvfs") as mock_statvfs:
+	with patch("opsi.system.efi._efi.EFIVAR_FS", "tests/data/efi/efivars"), patch("opsi.system.efi._efi.os.statvfs") as mock_statvfs:
 		# f_bsize, f_frsize, f_blocks, f_bfree, f_bavail, f_files, f_ffree, f_favail, f_flag, f_namemax
 		mock_statvfs.return_value = statvfs_result((1, 1, 251804, 156164, 151044, 0, 0, 0, 4110, 255))
 
