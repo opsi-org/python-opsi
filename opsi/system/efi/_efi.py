@@ -7,11 +7,12 @@
 This file is part of opsi - https://www.opsi.org
 """
 
+import os
+import platform
 import re
 import uuid
 from dataclasses import dataclass
 from enum import Enum
-from os import statvfs
 from pathlib import Path
 from struct import pack, unpack
 from typing import Dict, Generator, List, Tuple, Type
@@ -110,6 +111,8 @@ class EFINVRAMStats:
 
 
 def get_efi_nvram_stats() -> EFINVRAMStats:
+	if platform.system() == "Windows":
+		raise NotImplementedError("get_efi_nvram_stats is not implemented on Windows")
 	# From the kernel source (fs/efivars/super.c)
 	#   This is not a normal filesystem, so no point in pretending it has a block
 	#   size; we declare f_bsize to 1, so that we can then report the exact value
@@ -123,7 +126,9 @@ def get_efi_nvram_stats() -> EFINVRAMStats:
 	efivars_path = Path(EFIVAR_FS)
 	if not efivars_path.is_dir():
 		raise RuntimeError(f"EFI variables filesystem not found at {efivars_path}")
-	stats = statvfs(efivars_path)
+	if platform.system() == "Windows":
+		raise NotImplementedError("get_efi_nvram_stats is not implemented on Windows")
+	stats = os.statvfs(efivars_path)
 	return EFINVRAMStats(
 		block_size=stats.f_bsize,
 		blocks_total=stats.f_blocks,
