@@ -24,6 +24,7 @@ from opsi.system.windows_driver import (
 from opsi.testing.helper import http_test_server
 
 
+@pytest.mark.posix
 @pytest.mark.parametrize("http", (True, False))
 def test_integrate_windows_drivers(tmp_path: Path, http: bool) -> None:
 	product_id = "win11-x64"
