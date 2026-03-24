@@ -13,6 +13,9 @@ from uuid import UUID, uuid4
 
 import pytest
 
+if platform.system() != "Linux":
+	pytest.skip("storage tests are only relevant on Linux", allow_module_level=True)
+
 from opsi.system.storage import (
 	GPTPartition,
 	GPTPartitionTable,
@@ -22,9 +25,6 @@ from opsi.system.storage import (
 	get_disks,
 )
 from opsi.system.storage._storage import _run_command
-
-if platform.system() != "Linux":
-	pytest.skip("storage tests are only relevant on Linux", allow_module_level=True)
 
 
 @pytest.mark.storage_utils
