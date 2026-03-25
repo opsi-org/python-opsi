@@ -18,6 +18,8 @@ from pathlib import Path
 from typing import Any, Generator
 from uuid import UUID
 
+from opsi.opsi.service.model.type import Architecture
+
 from ._infhash import calc_hash
 
 RE_SECTION = re.compile(r"\[\s*([^\]]+)\s*\]")
@@ -104,27 +106,6 @@ class CaseInsensitiveDict(MutableMapping):  # TODO: why is this here?
 		return str(dict(self.items()))
 
 
-class Architecture(StrEnum):  # TODO: move to a common module if needed in other places
-	X86 = "x86"
-	X64 = "x64"
-	IA64 = "ia64"
-	ARM = "arm"
-	ARM64 = "arm64"
-
-	@staticmethod
-	def from_string(value: str) -> Architecture:
-		value = value.lower()
-		if value in ("x86_64", "amd64"):
-			value = "x64"
-		return Architecture(value)
-
-	@property
-	def inf_value(self) -> str:
-		if self == Architecture.X64:
-			return "amd64"
-		return self.value
-
-
 class INFSectionType(StrEnum):
 	STRINGS = "strings"
 	VERSION = "version"
@@ -191,7 +172,7 @@ class INFTargetOSVersion:
 		if not value_lower.startswith("nt"):
 			raise ValueError(f"Invalid TargetOSVersion: {value}")
 		parts = value_lower.removeprefix("nt").split(".")
-		version = INFTargetOSVersion(Architecture=Architecture.from_string(parts[0]))
+		version = INFTargetOSVersion(Architecture=Architecture(parts[0]))
 		if len(parts) > 1:
 			version.OSMajorVersion = _to_int(parts[1]) if parts[1] else None
 		if len(parts) > 2:

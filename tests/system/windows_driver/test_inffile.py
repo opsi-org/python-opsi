@@ -71,13 +71,6 @@ def test_reg_expand_sz() -> None:
 	assert reg_expand_sz("test") == "hex(2):74,00,65,00,73,00,74,00,00,00"
 
 
-def test_architecture() -> None:
-	assert Architecture.from_string("amd64") == Architecture.X64
-	assert Architecture.from_string("x64") == Architecture.X64
-	assert Architecture.from_string("x86_64") == Architecture.X64
-	assert Architecture.from_string("x86") == Architecture.X86
-
-
 def test_current_timestamp() -> None:
 	assert abs(current_timestamp() - datetime.now().timestamp()) < 1
 
