@@ -3,12 +3,12 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
+_MASK_64 = 0xFFFFFFFFFFFFFFFF
+_HASH_BASE = 39
+
+
 def calc_hash(data: bytes) -> int:
-	dataarray = bytearray(data)
-	dataarray.reverse()
 	int_hash = 0
-	for idx, char in enumerate(dataarray):
-		pwr = 39**idx
-		int_hash += (pwr & 0xFFFFFFFFFFFFFFFF) * char
-		int_hash &= 0xFFFFFFFFFFFFFFFF
+	for char in data:
+		int_hash = (int_hash * _HASH_BASE + char) & _MASK_64
 	return int.from_bytes(int_hash.to_bytes(8, byteorder="little"), byteorder="big", signed=False)
