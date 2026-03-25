@@ -10,12 +10,10 @@ This file is part of opsi - https://www.opsi.org
 from __future__ import annotations
 
 import re
-from collections.abc import MutableMapping
 from dataclasses import dataclass, field, fields
 from datetime import datetime, timezone
 from enum import StrEnum
 from pathlib import Path
-from typing import Any, Generator
 from uuid import UUID
 
 from opsi.opsi.service.model.type import Architecture
@@ -74,36 +72,6 @@ def reg_expand_sz(value: bytes | str) -> str:
 
 def current_timestamp() -> float:
 	return datetime.now().timestamp()
-
-
-class CaseInsensitiveDict(MutableMapping):  # TODO: why is this here?
-	"""CaseInsensitiveDict from requests.structures"""
-
-	def __init__(self, data: dict | None = None, **kwargs: Any) -> None:
-		self._store: dict[str, Any] = {}
-		if data is None:
-			data = {}
-		self.update(data, **kwargs)
-
-	def __setitem__(self, key: str, value: Any) -> None:
-		# Use the lowercased key for lookups, but store the actual
-		# key alongside the value.
-		self._store[key.lower()] = (key, value)
-
-	def __getitem__(self, key: str) -> Any:
-		return self._store[key.lower()][1]
-
-	def __delitem__(self, key: str) -> None:
-		del self._store[key.lower()]
-
-	def __iter__(self) -> Generator[Any, None, None]:
-		return (cased_key for cased_key, _ in self._store.values())
-
-	def __len__(self) -> int:
-		return len(self._store)
-
-	def __repr__(self) -> str:
-		return str(dict(self.items()))
 
 
 class INFSectionType(StrEnum):
