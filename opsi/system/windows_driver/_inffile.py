@@ -1,11 +1,7 @@
-# opsi.system is part of the desktop management solution opsi http://www.opsi.org
-# Copyright (c) 2021-2025 uib GmbH <info@uib.de>
+# This file is part of the device management solution OPSI http://www.opsi.org
+# Copyright (c) 2020-2026 uib GmbH <info@uib.de>
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
-
-"""
-This file is part of opsi - https://www.opsi.org
-"""
 
 from __future__ import annotations
 
