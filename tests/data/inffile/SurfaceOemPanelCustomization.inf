@@ -1,0 +1,63 @@
+[Version]
+Signature="$Windows NT$"
+Class=Extension
+ClassGuid={e2f84ce7-8efa-411c-aa69-97454ca4cb57}
+Provider=%ManufacturerName%
+CatalogFile=SurfaceOemPanelCustomization.cat
+ExtensionId = {1BD52744-4AF5-4090-8A03-12D28E110782}
+DriverVer = 03/04/2023,8.8.4.0
+PnpLockdown=1
+
+[Manufacturer]
+%ManufacturerName%=SurfaceOemPanelCustomization,NTamd64
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+SurfacesRGB.icm = 1
+SurfaceEnhanced.icm = 1
+DisplayCalibrationConfig.bin = 1
+
+[DestinationDirs]
+;23 == Windows\system32\spool\drivers\color
+ProfilesCopy=23
+DefaultDestDir = 13
+
+[SurfaceOemPanelCustomization.NTamd64]
+%DeviceName%=SurfaceOemPanelCustomization_Install, Monitor\BOE088B
+
+[SurfaceOemPanelCustomization_Install.NT]
+CopyFiles=ProfilesCopy,CalibrationBinFilesCopy
+AddReg=SurfaceOemPanelCustomization_Install_NT_AddReg
+
+[ProfilesCopy]
+SurfacesRGB.icm
+SurfaceEnhanced.icm
+
+[CalibrationBinFilesCopy]
+DisplayCalibrationConfig.bin
+
+[DEL_CURRENT_REG]
+HKR,,ICMProfile
+
+[SurfaceOemPanelCustomization_Install_NT_AddReg]
+HKR,,ICMProfile,0x00010000,"SurfacesRGB.icm"
+HKR,,ICMProfile,0x00010008,"SurfaceEnhanced.icm"
+HKR,,PreferredScaleFactor,0x00010001,150
+HKR,,CalibrationConfigBlobFile, REG_EXPAND_SZ, "%13%\DisplayCalibrationConfig.bin"
+
+[SurfaceOemPanelCustomization_Install.NT.HW]
+;
+
+; =================== Generic ==================================
+
+[Strings]
+ManufacturerName="Surface"
+DeviceName="Surface Panel"
+DiskName="Surface Panel Driver Customization Installation Disk"
+REG_EXPAND_SZ          = 0x00020000
+REG_DWORD              = 0x00010001
+REG_MULTI_SZ           = 0x00010000
+REG_BINARY             = 0x00000001
+REG_SZ                 = 0x00000000

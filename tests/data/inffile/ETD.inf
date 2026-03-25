@@ -1,0 +1,917 @@
+;============================================================================ 
+; Installation file (.inf) for Windows 10.
+;
+; All Rights Reserved, Copyright(C) ELAN Microelectronics Corp. 2003-2020
+;============================================================================
+
+[Version]
+Signature="$Windows NT$"
+Provider=%VenderName%
+ClassGUID={4D36E96F-E325-11CE-BFC1-08002BE10318}
+Class=Mouse
+CatalogFile=ETD.cat
+DriverVer=04/06/2020, 32.2.3.5
+
+[SourceDisksNames]
+1=%DiskName%,,
+
+[SourceDisksFiles]
+ETD.sys 		= 1
+
+ETDCtrl.exe = 1
+ETDCtrlHelper.exe = 1
+ETDCmds.dll = 1
+ETDApix.dll = 1
+ETDFavorite.dll = 1
+ETDService.exe = 1
+ETDVersion.dll = 1
+
+;----------------------------------------------------------------------------
+; Manufacturer Sections
+;----------------------------------------------------------------------------
+
+[Manufacturer]
+%VenderName%   = ELAN.Mfg, NTamd64, NTamd64.6.2, NTamd64.6.3, NTamd64.10.0
+
+[ELAN.Mfg.NTamd64]
+
+[ELAN.Mfg.NTamd64.6.2]
+
+[ELAN.Mfg.NTamd64.6.3]
+
+[ELAN.Mfg.NTamd64.10.0]
+%ELANHIDDeviceDesc% 		= ELAN07XX_Inst_Win10, HID\*ELAN0720&Col05									; MWS
+%ELANHIDDeviceDesc% 		= ELAN07XX_Inst_Win10, HID\VEN_ELAN&DEV_0720&Col05					; MWS
+%ELANHIDDeviceDesc% 		= ELAN07XX_Inst_Win10, HID\*ELAN0721&Col05									; MWS
+%ELANHIDDeviceDesc% 		= ELAN07XX_Inst_Win10, HID\VEN_ELAN&DEV_0721&Col05					; MWS
+
+;----------------------------------------------------------------------------
+; Install Sections
+;----------------------------------------------------------------------------
+
+[DestinationDirs]
+DefaultDestDir 		= 12			; Driver directory
+ETDSys.CopyFiles 	= 12			; Driver directory
+ETDApp.CopyFiles	= 11			; System32 directory
+
+[ETD_Service_Inst]
+DisplayName    = %ELANHIDDeviceDesc%
+ServiceType    = 1                  ; SERVICE_KERNEL_DRIVER
+StartType      = 3                  ; SERVICE_DEMAND_START
+ErrorControl   = 0                  ; SERVICE_ERROR_IGNORE
+ServiceBinary  = %12%\ETD.sys
+LoadOrderGroup = Pointer Port
+
+[ETD_APP_Service_Inst]
+DisplayName    = "ELAN Service"
+ServiceType    = 0x00000010         ; SERVICE_WIN32_OWN_PROCESS
+StartType      = 0x00000002         ; SERVICE_AUTO_START
+ErrorControl   = 1                  ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %11%\ETDService.exe
+;LoadOrderGroup = ""								; System determines automatically
+
+;----------------------------------------------------------------------------
+; Common File Copy and Registry Operations
+;----------------------------------------------------------------------------
+
+[ETDSys.CopyFiles]
+ETD.sys,,,0x00000001
+
+[ETDApp.CopyFiles]
+ETDService.exe,,,0x00000001
+ETDCtrl.exe,,,0x00004000
+ETDCtrlHelper.exe,,,0x00004000
+ETDCmds.dll,,,0x00004000
+ETDApix.dll,,,0x00004000
+ETDFavorite.dll,,,0x00004000
+ETDVersion.dll,,,0x00004000
+
+
+
+;----------------------------------------------------------------------------
+
+[ELAN07XX_Inst_Win10]
+FeatureScore=F9
+Include=msmouse.inf
+Needs = HID_Mouse_Inst.NT
+CopyFiles=ETDSys.CopyFiles,ETDApp.CopyFiles
+
+AddReg=ETD_System.AddReg,\       
+       ETD_Customer_Default.AddReg,\
+       ETD_DeviceInfo.AddReg,\
+       ETD_UIFunctionOption.AddReg,\
+       ETD_DriverOption.AddReg,\
+       ETD_OtherSetting_Default.AddReg,\
+       ETD07XX_OtherSetting.AddReg,\
+       ETD_SmartPadDisplay_Clickpad.AddReg,\
+       ETD_SmartPadUI_Default.AddReg,\
+       ETD_SmartPadUI_Clickpad.AddReg,\
+       ETD_PSTUI.AddReg
+
+CopyINF=ETD_component.inf,ETDHCF.inf,ETDHSA.inf
+
+[ELAN07XX_Inst_Win10.Services]
+Include=msmouse.inf
+Needs = HID_Mouse_Inst.NT.Services
+AddService = ETD,0x00000000, ETD_Service_Inst
+AddService = ETDService,0x00000800, ETD_APP_Service_Inst
+
+
+[ELAN07XX_Inst_Win10.HW]
+AddReg = ETD_AddReg.HW
+
+[ELAN07XX_Inst_Win10.Wdf]
+KmdfService = ETD, HIDDevice_WdfSect
+
+[ELAN07XX_Inst_Win10.Components]
+AddComponent = ETD_component,,ETD_Extension_ComponentInstall_Win10
+
+;----------------------------------------------------------------------------
+
+;----------------------------------------------------------------------------
+; End of Hardware ID
+;----------------------------------------------------------------------------
+
+;----------------------------------------------------------------------------
+; ETD HW
+;----------------------------------------------------------------------------
+[ETD_AddReg.HW]
+HKR,,"UpperFilters",0x00010000,"ETD"
+
+;----------------------------------------------------------------------------
+; Wdf Section for PS/2 TouchPad driver
+;----------------------------------------------------------------------------
+
+[HIDDevice_WdfSect]
+KmdfLibraryVersion = 1.11
+
+[ETD_Extension_ComponentInstall_Win10]
+ComponentIds = VID_ETD&SID0006
+
+;----------------------------------------------------------------------------
+; System Section
+;----------------------------------------------------------------------------
+
+[ETD_System.AddReg]
+HKLM,%HKLMRootPath%"\Elantech",Version,%REG_SZ%,"%DriverVersion%"
+HKLM,%HKLMRootPath%"\Elantech",DriverVersion,%REG_SZ%,"ELAN %DriverVersion%_%DriverBit%_%DriverVersionExtend%"
+HKLM,%HKLMRootPath%"\Elantech",SupportHKRRegistry,%REG_DWORD%,1
+;HKR,,ScreenOrientation,%REG_DWORD%,0
+
+;----------------------------------------------------------------------------
+; Customer Default Section
+;----------------------------------------------------------------------------
+
+[ETD_Customer_Default.AddReg]
+HKR,"Customer",EdgeSwipeLimitByMS,%REG_DWORD%,0 
+HKR,"Customer",FastFourFingerSwipeEnable,%REG_DWORD%,0 ; default 0
+HKR,"Customer",RestingScrollEnable,%REG_DWORD%,0
+HKR,"Customer",ScanCodeTriggerByMake,%REG_DWORD%,1	
+HKR,"Customer",NotifyEC97commandWhenTPStatusChange,%REG_DWORD%,0
+HKR,"Customer",Switch_NB_Mode_Function_Enable,%REG_DWORD%,0
+HKR,"Customer",Switch_NB_Mode_Key,%REG_DWORD%,0xE063
+HKR,"Customer",Switch_Tablet_Mode_Key,%REG_DWORD%,0xE005
+
+;----------------------------------------------------------------------------
+; Device Information Section
+;----------------------------------------------------------------------------
+
+[ETD_DeviceInfo.AddReg]
+HKR,"DeviceInformation",KBCSupportMode,%REG_DWORD%,0
+HKR,"DeviceInformation",KBCMode,%REG_DWORD%,0
+HKR,"DeviceInformation",DevicePort,%REG_DWORD%,0
+HKR,"DeviceInformation",Port0_MasterDeviceType,%REG_DWORD%,0
+HKR,"DeviceInformation",Port1_MasterDeviceType,%REG_DWORD%,0
+HKR,"DeviceInformation",Port2_MasterDeviceType,%REG_DWORD%,0
+HKR,"DeviceInformation",Port3_MasterDeviceType,%REG_DWORD%,0
+HKR,"DeviceInformation",Port0_SlaveDeviceType,%REG_DWORD%,0
+HKR,"DeviceInformation",Port1_SlaveDeviceType,%REG_DWORD%,0
+HKR,"DeviceInformation",Port2_SlaveDeviceType,%REG_DWORD%,0
+HKR,"DeviceInformation",Port3_SlaveDeviceType,%REG_DWORD%,0
+HKR,"DeviceInformation",Port0_MasterIsConnected,%REG_DWORD%,0
+HKR,"DeviceInformation",Port1_MasterIsConnected,%REG_DWORD%,0
+HKR,"DeviceInformation",Port2_MasterIsConnected,%REG_DWORD%,0
+HKR,"DeviceInformation",Port3_MasterIsConnected,%REG_DWORD%,0
+HKR,"DeviceInformation",Port0_SlaveIsConnected,%REG_DWORD%,0
+HKR,"DeviceInformation",Port1_SlaveIsConnected,%REG_DWORD%,0
+HKR,"DeviceInformation",Port2_SlaveIsConnected,%REG_DWORD%,0
+HKR,"DeviceInformation",Port3_SlaveIsConnected,%REG_DWORD%,0
+HKR,"DeviceInformation",Port0_MasterEnable,%REG_DWORD%,1
+HKR,"DeviceInformation",Port1_MasterEnable,%REG_DWORD%,1
+HKR,"DeviceInformation",Port2_MasterEnable,%REG_DWORD%,1
+HKR,"DeviceInformation",Port3_MasterEnable,%REG_DWORD%,1
+HKR,"DeviceInformation",Port0_SlaveEnable,%REG_DWORD%,1
+HKR,"DeviceInformation",Port1_SlaveEnable,%REG_DWORD%,1
+HKR,"DeviceInformation",Port2_SlaveEnable,%REG_DWORD%,1
+HKR,"DeviceInformation",Port3_SlaveEnable,%REG_DWORD%,1
+HKR,"DeviceInformation",Port0_MasterDeviceMode,%REG_DWORD%,0
+HKR,"DeviceInformation",Port1_MasterDeviceMode,%REG_DWORD%,0
+HKR,"DeviceInformation",Port2_MasterDeviceMode,%REG_DWORD%,0
+HKR,"DeviceInformation",Port3_MasterDeviceMode,%REG_DWORD%,0
+HKR,"DeviceInformation",Port0_SlaveDeviceMode,%REG_DWORD%,0
+HKR,"DeviceInformation",Port1_SlaveDeviceMode,%REG_DWORD%,0
+HKR,"DeviceInformation",Port2_SlaveDeviceMode,%REG_DWORD%,0
+HKR,"DeviceInformation",Port3_SlaveDeviceMode,%REG_DWORD%,0
+
+;----------------------------------------------------------------------------
+; UI Function Option Section
+;----------------------------------------------------------------------------
+
+[ETD_UIFunctionOption.AddReg]
+HKR,"UIFunctionOption",InVisible_DisableExternUSB,%REG_DWORD%,0		; Activate DisableWhenUSBPlugIn function
+HKR,"UIFunctionOption",InVisible_DeviceListStatus,%REG_DWORD%,0
+HKR,"UIFunctionOption",InVisible_DisableEnableButton,%REG_DWORD%,0
+HKR,"UIFunctionOption",Visible_Animation,%REG_DWORD%,1
+HKR,"UIFunctionOption",DisableExclusive,%REG_DWORD%,0
+HKR,"UIFunctionOption",UI_Theme,%REG_DWORD%,1						; 0 = Mcpl UI, 1 = Animation UI, 2 = Dell UI, 3 = Dual Mode, 4 = Simple UI
+
+;----------------------------------------------------------------------------
+; Driver Option Section
+;----------------------------------------------------------------------------
+
+[ETD_DriverOption.AddReg]
+HKR,"DriverOption",TwoFingerGestureMode,%REG_DWORD%,1			; 1 = Standard
+HKR,"DriverOption",ButtonMode,%REG_DWORD%,1					; 1 = Button Combine, 2 = Button Indenpendent
+HKR,"DriverOption",ClickPadActiveAreaClickMode,%REG_DWORD%,2	; 1 = No Function, 2 = Left Button , 3 = Right Button, 4 = Middle Button
+HKR,"DriverOption",ClickPadRestingAreaClickMode,%REG_DWORD%,3	; 1 = No Function, 2 = Left Button , 3 = Right Button, 4 = Middle Button
+HKR,"DriverOption",ClickPadGestureAreaTimerMode,%REG_DWORD%,1	; 1 = Timer Check MultiFinger Gesture, 2 = Always MultiFinger Gesture
+HKR,"DriverOption",DualModePSTModuleType,%REG_DWORD%,1			; 1 = NXP, 2 = STek
+HKR,"DriverOption",DualModePSTSupportZaxis,%REG_DWORD%,0		; 0 = Not support, 1 = Support
+HKR,"DriverOption",AlwaysTrigerScrollFromUserMode,%REG_DWORD%,0	; 0 = Auto, 1 = Always User Mode
+HKR,"DriverOption",PSTWorkAndDisableTouchPadEnable,%REG_DWORD%,0	; 0 = Disable, 1 = Enable
+HKR,"DriverOption",PSTWorkAndDisableTouchPadTime,%REG_DWORD%,200	; Unit (ms)
+HKR,"DriverOption",CustomizePalm,%REG_DWORD%,0						; 0 = default, 1 = Samsung
+HKR,"DriverOption",EnableClickPadRestingAreaClickMode2F,%REG_DWORD%,1		; 0 = Disable, 1 = Enable
+HKR,"DriverOption",ClickPadRestingAreaClickLeftMode2F,%REG_DWORD%,2		; 1 = No Function, 2 = Left Button , 3 = Right Button, 4 = Middle Button
+HKR,"DriverOption",ClickPadRestingAreaClickRightMode2F,%REG_DWORD%,3		; 1 = No Function, 2 = Left Button , 3 = Right Button, 4 = Middle Button
+HKR,"DriverOption",ClickPadRestingAreaClickLeftRightMode2F,%REG_DWORD%,3	; 1 = No Function, 2 = Left Button , 3 = Right Button, 4 = Middle Button
+HKR,"DriverOption",HIDSupportEnable,%REG_DWORD%,0							; 0 = Disable HID, 1 = Enable HID
+HKR,"DriverOption",EnableTouchInjection,%REG_DWORD%,1
+
+
+;----------------------------------------------------------------------------
+; Other Setting Section
+;----------------------------------------------------------------------------
+
+[ETD_OtherSetting_Default.AddReg]
+HKR,"OtherSetting",IconType,%REG_DWORD%,2							; 0 = Dynamic Trayicon, 1 = Static Trayicon, 2 = Do Not Display Trayicon
+HKR,"OtherSetting",DisableWhenDetectUSBMouse,%REG_DWORD%,0
+HKR,"OtherSetting",DontSwapUIButtionSetting,%REG_DWORD%,0
+HKR,"OtherSetting",MustOpenMouseProperties,%REG_DWORD%,0
+HKR,"OtherSetting",DisableShowGestureCursorIcon,%REG_DWORD%,1
+HKR,"OtherSetting",EnableASUSACPIFunction,%REG_DWORD%,0
+HKR,"OtherSetting",EnableASUSNotifyFunction,%REG_DWORD%,0
+HKR,"OtherSetting",ShowTopIconWhenDeviceOnOff,%REG_DWORD%,0
+HKR,"OtherSetting",DisableAutoScreenOrientation,%REG_DWORD%,1		; 0 = Auto Detect Screen Orientation, 1 = Disable Detect Screen Orientation
+HKR,"OtherSetting",ScreenOrientationValueToKernel,%REG_DWORD%,0
+HKR,"OtherSetting",AlwaysShowOneFingerTrayicon,%REG_DWORD%,0
+HKR,"OtherSetting",ForceEnableStatusWhenResume,%REG_DWORD%,0		; Force enable after resume
+HKR,"OtherSetting",ForceEnableStatusWhenSuspend,%REG_DWORD%,0		; Force enable when suspend
+HKR,"OtherSetting",ForceEnableStatusWhenFUS,%REG_DWORD%,0			; Force enable when FUS
+HKR,"OtherSetting",ForceEnableStatusWhenLogOff,%REG_DWORD%,0		; Force enable when logoff
+HKR,"OtherSetting",ForceEnableStatusWhenShutdown,%REG_DWORD%,0		; Force enable when shutdown
+HKR,"OtherSetting",TemporaryEnableStatusAtLoginScreen,%REG_DWORD%,1	; Temporary enable at login screen
+HKR,"OtherSetting",LaunchUserModeHook,%REG_DWORD%,0				; Use UserMode Hook
+HKR,"OtherSetting",DisablePollingAPToSwitchHook,%REG_DWORD%,1		; 0 = Polling AP to Switch Hook, 1 = Disable Polling AP to Switch Hook
+HKR,"OtherSetting",ToggleFunction_Enable,%REG_DWORD%,1				; Toggle Function Key Enable
+HKR,"OtherSetting",ToggleScanCode,%REG_DWORD%,0xE00A				; Toggle Scan Code
+;HKR,"OtherSetting",SwitchFunction_Enable,%REG_DWORD%,0				; Switch Function Key Enable
+;HKR,"OtherSetting",Switch_On_Key,%REG_DWORD%,0xE00A				; Switch On Key
+;HKR,"OtherSetting",Switch_Off_Key,%REG_DWORD%,0xE00B				; Switch Off Key
+;HKR,"OtherSetting",EC_Notify_Enable,%REG_DWORD%,0
+;HKR,"OtherSetting",EC_Notify_Inhibit_WhenForceEnable,%REG_DWORD%,0	; Send cmd after force enable
+;HKR,"OtherSetting",EC_Notify_On_Port,%REG_DWORD%,0x97				; To 64h
+;HKR,"OtherSetting",EC_Notify_On_Data,%REG_DWORD%,0x02				; To 60h
+;HKR,"OtherSetting",EC_Notify_Off_Port,%REG_DWORD%,0x97				; To 64h
+;HKR,"OtherSetting",EC_Notify_Off_Data,%REG_DWORD%,0x01				; To 60h
+HKR,"OtherSetting",DisableECNotifyAtOnce,%REG_DWORD%,0				; 0: Disable , 1: Enables
+HKR,"OtherSetting",DisableECNotifyByScanCode,%REG_DWORD%,0			; 0: Disable , 1: Enables
+HKR,"OtherSetting",ScrollSupportAutoFocus,%REG_DWORD%,0			; 0 = Not Support, 1 = Support
+HKR,"OtherSetting",EnableQueryMultiplexing,%REG_DWORD%,0			; Keep EC work at Legacy mode
+HKR,"OtherSetting",HiddenShapeFunction_Enable,%REG_DWORD%,0		; Special Shape Function (Cursor not move)
+HKR,"OtherSetting",EnableCheckAndUpdateKernelPortStatus,%REG_DWORD%,1	; 0 = Disable, 1 = Enable
+HKR,"OtherSetting",CustomerDefinition,%REG_DWORD%,0x10				; 0 = NONE, 1 = SONY, 2 = DELL, 3 = CLEVO, 4 = SAMSUNG, 5 = ASUS, 6 = ACER
+HKR,"OtherSetting",DetectTouchPadSMBusProtocol,%REG_DWORD%,0		; 0 = Not Detect, 1 = Detect
+HKR,"OtherSetting",DetectTouchPadI2CProtocol,%REG_DWORD%,1		; 0 = Not Detect, 1 = Detect
+HKR,"OtherSetting",EnableTPWhenLidOpen,%REG_DWORD%,0               ; 0: Disable Function , 1: Enable Function
+HKR,"OtherSetting",EnableHValueRejectTap,%REG_DWORD%,0				; 0: Disable Function , 1: Enable Function
+HKR,"OtherSetting",EnableSHMReportVirtualPoint,%REG_DWORD%,0		; 0: Disable Function , 1: Enable Function
+HKR,"OtherSetting",IsSupportAcerFunction,%REG_DWORD%,0				; 0: Disable Function , 1: Enable Function
+;HKR,"OtherSetting",LidStatusControlFunction_Enable,%REG_DWORD%,0	; 0: Close Function , 1: Open Function
+;HKR,"OtherSetting",LidStatusNotifyFW_Enable,%REG_DWORD%,0	; 0: Disable Function , 1: Enable Function
+HKR,"OtherSetting",ButtonAreaSlowMovingReject,%REG_DWORD%,0		; 0: Disable Function , 1: Enable Function
+HKR,"OtherSetting",ClickWithNonconductor_Enable,%REG_DWORD%,0		; 0: Disable Function , 1: Enable Function
+HKR,"OtherSetting",DisableRestingGestureCheck,%REG_DWORD%,0		; 0: Disable Function , 1: Enable Function
+;HKR,"OtherSetting",HardwareID,%REG_DWORD%,0x0000 ; ex. 0x0601
+HKR,"OtherSetting",ForceDisableTPWhenLidClose,%REG_DWORD%,0		; 0: Disable , 1: Enable
+HKR,"OtherSetting",MouseSpeedChangeEnable,%REG_DWORD%,0            ; 0: Disable , 1: Enable
+HKR,"OtherSetting",MouseSpeedChangeValue,%REG_DWORD%,10            ; (0,2,4,6,8,10,12,14,16,18,20)
+HKR,"OtherSetting",IgnoreScreenOrientationWhenLogin,%REG_DWORD%,0	; 0: Normal , 1: Ignore
+;HKR,"OtherSetting",BiosNotifyLidCloseByScanCode_Enable,%REG_DWORD%,1	; 0: Disable , 1: Enable
+;HKR,"OtherSetting",BiosLidOpenScanCode,%REG_DWORD%,0xE063
+;HKR,"OtherSetting",BiosLidCloseScanCode,%REG_DWORD%,0xE005
+;HKR,"OtherSetting",SmartPalm_Enable,%REG_DWORD%,1			; 0: Disable Function , 1: Enable Function
+;HKR,"OtherSetting",SmartUX_AllZoneResting_Enable,%REG_DWORD%,1
+;HKR,"OtherSetting",SmartUX_AllZoneResting_Mode,%REG_DWORD%,1	; 1: AZR 1.0 , 2: AZR 2.0
+;HKR,"OtherSetting",SmartUX_HoverPalm_Enable,%REG_DWORD%,0
+;HKR,"OtherSetting",SmartUX_HoverPalm_Mode,%REG_DWORD%,0	; 0: 3D Cell , 1: SRD1 New Hover	, 2: SMUX3.0 Hover
+;HKR,"OtherSetting",SmartUX_AllowEdgeTapping_Enable,%REG_DWORD%,1
+;HKR,"OtherSetting",DyRRGainCursorMove_Enable,%REG_DWORD%,0
+HKR,"OtherSetting",DyRRGainDividendBase,%REG_DWORD%,10
+HKR,"OtherSetting",DyRRGainExt1,%REG_DWORD%,10
+HKR,"OtherSetting",DyRRGainExt2,%REG_DWORD%,10
+HKR,"OtherSetting",DyRRGainExt3,%REG_DWORD%,10
+HKR,"OtherSetting",DyRRGainExt4,%REG_DWORD%,10
+HKR,"OtherSetting",DyRRGainExt5,%REG_DWORD%,10
+HKR,"OtherSetting",DyRRGainExt6,%REG_DWORD%,10
+HKR,"OtherSetting",DyRRGainExt7,%REG_DWORD%,10
+HKR,"OtherSetting",DyRRGainExt8,%REG_DWORD%,10
+HKR,"OtherSetting",DyRRGainExt8,%REG_DWORD%,10
+HKR,"OtherSetting",ScrollIgnoreHVEnJudgeHV,%REG_DWORD%,1
+HKR,"OtherSetting",Quanta_2000_NewUID,%REG_DWORD%,0xFD	; Toshiba Quanta future project for IC 2000 , 0xFD means no new UID currently.
+HKR,"OtherSetting",Quanta_2000K_NewUID,%REG_DWORD%,0xFD	; Toshiba Quanta future project for IC 2000K, 0xFD means no new UID currently.
+HKR,"OtherSetting",Quanta_3000K_NewUID,%REG_DWORD%,0xFD	; Toshiba Quanta future project for IC 3000K, 0xFD means no new UID currently.
+HKR,"OtherSetting",BIOSNotifyQEvent,%REG_DWORD%,0                  ; 0: Disable , 1: Enables
+HKR,"OtherSetting",BIOSNotifySupportLid,%REG_DWORD%,0 
+HKR,"OtherSetting",BIOSNotifySupportOnOffTP,%REG_DWORD%,0 
+HKR,"OtherSetting",BIOSNotify_lid_Close_Key,%REG_DWORD%,0x00 
+HKR,"OtherSetting",BIOSNotify_lid_Open_Key,%REG_DWORD%,0x00 
+HKR,"OtherSetting",BIOSNotify_TP_On_Key,%REG_DWORD%,0x00 
+HKR,"OtherSetting",BIOSNotify_TP_Off_Key,%REG_DWORD%,0x00 
+HKR,"OtherSetting",Send97CommandEnable,%REG_DWORD%,1 
+HKR,"OtherSetting",LenovoYogaMode,%REG_DWORD%,0				; 0: Default, 1: Yoga mode
+HKR,"OtherSetting",DynamicPalm_Enable,%REG_DWORD%,0	; 0: Disable Function , 1: Enable Function
+HKR,"OtherSetting",DynamicPalm_UpperThreshold,%REG_DWORD%,0	; 0: inital value
+HKR,"OtherSetting",DynamicPalm_LowerThreshold,%REG_DWORD%,0	; 0: inital value
+HKR,"OtherSetting",DynamicPalm_BaseHValue,%REG_DWORD%,0	; 0: inital value
+HKR,"OtherSetting",bLenovoYogaMode,%REG_DWORD%,0
+HKR,"OtherSetting",DontSendF5F4WhenS3,%REG_DWORD%,0
+HKR,"OtherSetting",DontSwtichToStandardWhenShutdown,%REG_DWORD%,1
+HKR,"OtherSetting",SupportExitCtrlSwitchToStandard,%REG_DWORD%,0
+
+[ETD07XX_OtherSetting.AddReg]
+HKR,"OtherSetting",HardwareID,%REG_DWORD%,0x0700
+HKR,"OtherSetting",SmartPalm_Enable,%REG_DWORD%,0		; 0: Disable Function , 1: Enable Function
+HKR,"OtherSetting",SmartUX_AllZoneResting_Enable,%REG_DWORD%,0
+HKR,"OtherSetting",SmartUX_AllZoneResting_Mode,%REG_DWORD%,0	; 1: AZR 1.0 , 2: AZR 2.0
+HKR,"OtherSetting",SmartUX_HoverPalm_Enable,%REG_DWORD%,0
+HKR,"OtherSetting",SmartUX_HoverPalm_Mode,%REG_DWORD%,0		; 0: 3D Cell , 1: SRD1 New Hover
+HKR,"OtherSetting",SmartUX_AllowEdgeTapping_Enable,%REG_DWORD%,1
+HKR,"OtherSetting",SwitchFunction_Enable,%REG_DWORD%,0				; Switch Function Key Enable
+HKR,"OtherSetting",Switch_On_Key,%REG_DWORD%,0xE057				; Switch On Key
+HKR,"OtherSetting",Switch_Off_Key,%REG_DWORD%,0xE058				; Switch Off Key
+HKR,"OtherSetting",BiosNotifyLidCloseByScanCode_Enable,%REG_DWORD%,0	; 0: Disable , 1: Enable
+HKR,"OtherSetting",BiosLidOpenScanCode,%REG_DWORD%,0xE063
+HKR,"OtherSetting",BiosLidCloseScanCode,%REG_DWORD%,0xE005
+HKR,"OtherSetting",LidStatusControlFunction_Enable,%REG_DWORD%,0	; 0: Close Function , 1: Open Function
+HKR,"OtherSetting",LidStatusNotifyFW_Enable,%REG_DWORD%,0	; 0: Disable Function , 1: Enable Function
+HKR,"OtherSetting",EC_Notify_Enable,%REG_DWORD%,0
+HKR,"OtherSetting",EC_Notify_Inhibit_WhenForceEnable,%REG_DWORD%,0	; Send cmd after force enable
+HKR,"OtherSetting",EC_Notify_On_Port,%REG_DWORD%,0x97				; To 64h
+HKR,"OtherSetting",EC_Notify_On_Data,%REG_DWORD%,0x02				; To 60h
+HKR,"OtherSetting",EC_Notify_Off_Port,%REG_DWORD%,0x97				; To 64h
+HKR,"OtherSetting",EC_Notify_Off_Data,%REG_DWORD%,0x01				; To 60h
+HKR,"OtherSetting",DyRRGainCursorMove_Enable,%REG_DWORD%,0
+HKR,"OtherSetting",DyRRCloseAcceleration,%REG_DWORD%,0
+HKR,"OtherSetting",SwitchKeyboardBacklight_Enable,%REG_DWORD%,0
+HKR,"OtherSetting",UpdatePTPonoffStateWhenResume_Enable,%REG_DWORD%,0
+HKR,"OtherSetting",SupportETDHSA,%REG_DWORD%,1
+
+;----------------------------------------------------------------------------
+; SmartPad UI Display Section - Win10 RS3
+;----------------------------------------------------------------------------
+
+[ETD_SmartPadDisplay_Clickpad.AddReg]
+HKR,"SmartPadDisplay",Button_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",Click_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",Click2F_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",Tap_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",TwoFingerScroll_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",Zoom_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",Rotate_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",Drag_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",MAG_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",Swipe_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",FastKey_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",ThreeFinger_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",Palm_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",STV_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",SmartMotion_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",SlowMotion_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",EdgeScroll_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",DeviceControl_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",Momentum_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",SmartArea_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",FourFinger_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",EdgeZoom_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",Cover_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",EdgeSwipe_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",CornerTap_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",ThreeFingerPress_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",TouchPadRejection_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",Grab_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",TabUI_1F_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",TabUI_MultiFinger_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",TabUI_Additional_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",EdgeSwipeWin8_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",SmartDetect_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",GestureEffect_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",FreeTyping_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",MultiFingerGesture_Display,%REG_DWORD%,0
+HKR,"SmartPadDisplay",Win10_3F_Tap_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",Win10_4F_Tap_Display,%REG_DWORD%,1
+HKR,"SmartPadDisplay",Win10_3F_Swipe_Display,%REG_DWORD%,1
+
+
+;----------------------------------------------------------------------------
+; SmartPad UI Default Section - Win10 RS3
+;----------------------------------------------------------------------------
+
+[ETD_SmartPadUI_Clickpad.AddReg]
+; Button
+HKR,"SmartPad",Button_Enable,%REG_DWORD%,1
+HKR,"SmartPad",Button_Left,%REG_DWORD%,%CLICK_SELECT%
+HKR,"SmartPad",Button_Left_Ex,%REG_SZ%,
+HKR,"SmartPad",Button_Left_Path,%REG_SZ%,
+HKR,"SmartPad",Button_Middle,%REG_DWORD%,%MIDDLEBUTTON%
+HKR,"SmartPad",Button_Middle_Ex,%REG_SZ%,
+HKR,"SmartPad",Button_Middle_Path,%REG_SZ%,
+HKR,"SmartPad",Button_Right,%REG_DWORD%,%CONTEXT_MENU%
+HKR,"SmartPad",Button_Right_Ex,%REG_SZ%,
+HKR,"SmartPad",Button_Right_Path,%REG_SZ%,
+HKR,"SmartPad",ButtonLeftFunStaticText,%REG_DWORD%,1
+HKR,"SmartPad",ButtonRightFunStaticText,%REG_DWORD%,1
+HKR,"SmartPad",SwapButton_ShowItem,%REG_DWORD%,1
+; Click
+HKR,"SmartPad",ClickPad_LeftCorner_Range_Adjust_Enable,%REG_DWORD%,1
+HKR,"SmartPad",ClickPad_LeftCorner_Click_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",ClickPad_LeftCorner_Click_Enable,%REG_DWORD%,1
+HKR,"SmartPad",ClickPad_LeftCorner_Click_Func,%REG_DWORD%,%CLICK_SELECT%
+HKR,"SmartPad",ClickPad_LeftCorner_Click_Path,%REG_SZ%,
+HKR,"SmartPad",ClickPad_LeftCorner_Range,%REG_DWORD%,5000			; 2000 means 20.00%
+HKR,"SmartPad",ClickPad_RightCorner_Click_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",ClickPad_RightCorner_Click_Enable,%REG_DWORD%,1
+HKR,"SmartPad",ClickPad_RightCorner_Click_Func,%REG_DWORD%,%CONTEXT_MENU%
+HKR,"SmartPad",ClickPad_RightCorner_Click_Path,%REG_SZ%,
+HKR,"SmartPad",ClickPad_Two_Finger_Click_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",ClickPad_Two_Finger_Click_Enable,%REG_DWORD%,1
+HKR,"SmartPad",ClickPad_Two_Finger_Click_Func,%REG_DWORD%,%CONTEXT_MENU%
+HKR,"SmartPad",ClickPad_Two_Finger_Click_Path,%REG_SZ%,
+HKR,"SmartPad",ClickPad_Three_Finger_Click_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",ClickPad_Three_Finger_Click_Enable,%REG_DWORD%,0
+HKR,"SmartPad",ClickPad_Three_Finger_Click_Func,%REG_DWORD%,%NONE%
+HKR,"SmartPad",ClickPad_Three_Finger_Click_Path,%REG_SZ%,
+HKR,"SmartPad",ClickPad_Four_Finger_Click_ShowItem,%REG_DWORD%,0
+HKR,"SmartPad",ClickPad_Four_Finger_Click_Enable,%REG_DWORD%,0
+HKR,"SmartPad",ClickPad_Four_Finger_Click_Func,%REG_DWORD%,%NONE%
+HKR,"SmartPad",ClickPad_Four_Finger_Click_Path,%REG_SZ%,
+; Rotate
+HKR,"SmartPad",Rotation_Enable,%REG_DWORD%,1
+HKR,"SmartPad",Rotation_Circular_ShowItem,%REG_DWORD%,0
+HKR,"SmartPad",Rotation_Circular_Enable,%REG_DWORD%,0
+; SmartArea
+HKR,"SmartPad",SmartArea_Enable,%REG_DWORD%,1
+HKR,"SmartPad",SmartArea_Up_Range,%REG_DWORD%,1500
+HKR,"SmartPad",SmartArea_Down_Range,%REG_DWORD%,1500
+HKR,"SmartPad",SmartArea_Left_Range,%REG_DWORD%,1000
+HKR,"SmartPad",SmartArea_Right_Range,%REG_DWORD%,1500
+HKR,"SmartPad",SmartArea_Radio_Button_ShowItem,%REG_DWORD%,0
+HKR,"SmartPad",SmartArea_Radio_Button,%REG_DWORD%,4
+HKR,"SmartPad",SmartArea_Restrict_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",SmartArea_Restrict_Move,%REG_DWORD%,1
+HKR,"SmartPad",SmartArea_Restrict_Tap,%REG_DWORD%,1
+HKR,"SmartPad",SmartArea_IdleTime_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",SmartArea_IdleTime_Enable,%REG_DWORD%,1
+HKR,"SmartPad",SmartArea_IdleTime,%REG_DWORD%,1
+HKR,"SmartPad",SmartArea_IdleTime_Unit,%REG_DWORD%,1000
+HKR,"SmartPad",SmartArea_Unit,%REG_DWORD%,1               ; 0 = dot, 1 = percent
+HKR,"SmartPad",SmartArea_BreakTime,%REG_DWORD%,0
+
+; HP Double Tap to On/Off TP
+HKR,"SmartPad",DoubleTapToOnOffDevice_HP_ShowItem,%REG_DWORD%,0
+HKR,"SmartPad",DoubleTapToOnOffDevice_Mode,%REG_DWORD%,1
+
+
+;--------------------------------------------------------
+; The following settings are NOT in Default: Button, Click, SmartArea, HP DoubleTapToOnOff, Rotate
+;--------------------------------------------------------
+[ETD_SmartPadUI_Default.AddReg]
+; Zoom
+HKR,"SmartPad",Zoom_Enable,%REG_DWORD%,1
+HKR,"SmartPad",Zoom_STV_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",Zoom_STV,%REG_DWORD%,4
+; Drag
+HKR,"SmartPad",Drag_Enable,%REG_DWORD%,1
+HKR,"SmartPad",Drag_Radio,%REG_DWORD%,%RELEASE_AFTER_FINGER_LIFT%
+HKR,"SmartPad",Drag_Radio2_Slider,%REG_DWORD%,4
+HKR,"SmartPad",Drag_Delay_Time_Adjust_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Drag_Delay_Time_Adjust_Value,%REG_DWORD%,500
+; Scroll
+HKR,"SmartPad",SC_Enable_ShowItem,%REG_DWORD%,0
+HKR,"SmartPad",SC_Enable,%REG_DWORD%,1
+HKR,"SmartPad",SC_V_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",SC_V_Enable,%REG_DWORD%,1
+HKR,"SmartPad",SC_H_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",SC_H_Enable,%REG_DWORD%,1
+HKR,"SmartPad",SC_AutoScroll_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",SC_AutoScroll_Enable,%REG_DWORD%,0
+HKR,"SmartPad",SC_InertialScroll_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",SC_InertialScroll_Enable,%REG_DWORD%,1
+HKR,"SmartPad",SC_ContinueScroll_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",SC_ContinueScroll_Enable,%REG_DWORD%,0
+HKR,"SmartPad",SC_Reverse_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",SC_Reverse_Enable,%REG_DWORD%,1
+HKR,"SmartPad",SC_Speed,%REG_DWORD%,2
+HKR,"SmartPad",SC_Free_Enable,%REG_DWORD%,0
+HKR,"SmartPad",SC_Speed_Has_8_Level,%REG_DWORD%,0
+; Tap
+HKR,"SmartPad",Tap_Enable,%REG_DWORD%,1
+HKR,"SmartPad",Tap_T1_Time,%REG_DWORD%,200
+HKR,"SmartPad",Tap_Activate_Enable,%REG_DWORD%,1
+HKR,"SmartPad",Tap_One_Finger_Enable,%REG_DWORD%,1
+HKR,"SmartPad",Tap_Two_Finger_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",Tap_Two_Finger_Enable,%REG_DWORD%,1
+HKR,"SmartPad",Tap_Two_Finger,%REG_DWORD%,%CONTEXT_MENU%
+HKR,"SmartPad",Tap_Two_Finger_Ex,%REG_SZ%,
+HKR,"SmartPad",Tap_Two_Finger_Path,%REG_SZ%,
+HKR,"SmartPad",Tap2FunStaticText,%REG_DWORD%,1
+HKR,"SmartPad",Tap_Up_Time,%REG_DWORD%,200
+HKR,"SmartPad",Tap_Three_Finger_ShowItem,%REG_DWORD%,0
+HKR,"SmartPad",Tap_Three_Finger_Enable,%REG_DWORD%,1
+HKR,"SmartPad",Tap_Three_Finger,%REG_DWORD%,%WIN10_CORTANA%
+HKR,"SmartPad",Tap_Three_Finger_Ex,%REG_SZ%,
+HKR,"SmartPad",Tap_Three_Finger_Path,%REG_SZ%,
+HKR,"SmartPad",Tap_Four_Finger_ShowItem,%REG_DWORD%,0
+HKR,"SmartPad",Tap_Four_Finger_Enable,%REG_DWORD%,1
+HKR,"SmartPad",Tap_Four_Finger,%REG_DWORD%,%WIN10_NOTIFICATION_CENTER%
+HKR,"SmartPad",Tap_Four_Finger_Ex,%REG_SZ%,
+HKR,"SmartPad",Tap_Four_Finger_Path,%REG_SZ%,
+; STV
+HKR,"SmartPad",STV_Enable,%REG_DWORD%,1
+HKR,"SmartPad",STV_Slider,%REG_DWORD%,5
+; Palm
+HKR,"SmartPad",Palm_Enable,%REG_DWORD%,1
+HKR,"SmartPad",Palm_Slider,%REG_DWORD%,3
+HKR,"SmartPad",Palm_Always_Enable,%REG_DWORD%,1
+; PageUpDown
+HKR,"SmartPad",PageUpDown_Enable,%REG_DWORD%,0
+HKR,"SmartPad",PageUpDown_Kind,%REG_DWORD%,0	;This is important for Win10 style 3F swipe 
+; Three Finger Move Function
+HKR,"SmartPad",ThreeFingerMove_Enable,%REG_DWORD%,1
+HKR,"SmartPad",ThreeFingerMove_Win10style_Enable,%REG_DWORD%,1
+HKR,"SmartPad",ThreeFingerMove_LR_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",ThreeFingerMove_UD_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",ThreeFingerMoveUp_Enable,%REG_DWORD%,1
+HKR,"SmartPad",ThreeFingerMoveUp_Func,%REG_DWORD%,%WIN10_TASK_WINDOW%
+HKR,"SmartPad",ThreeFingerMoveUp_Mode,%REG_DWORD%,0
+HKR,"SmartPad",ThreeFingerMoveDown_Enable,%REG_DWORD%,1
+HKR,"SmartPad",ThreeFingerMoveDown_Func,%REG_DWORD%,%WIN10_TASK_WINDOW_RELEASE%
+HKR,"SmartPad",ThreeFingerMoveDown_Mode,%REG_DWORD%,0
+HKR,"SmartPad",ThreeFingerMoveLeft_Enable,%REG_DWORD%,1
+HKR,"SmartPad",ThreeFingerMoveLeft_Mode,%REG_DWORD%,0
+HKR,"SmartPad",ThreeFingerMoveLeft_Func,%REG_DWORD%,%WIN10_NORMAL_SWITCH_WINDOW_LEFT%
+HKR,"SmartPad",ThreeFingerMoveRight_Enable,%REG_DWORD%,1
+HKR,"SmartPad",ThreeFingerMoveRight_Mode,%REG_DWORD%,0
+HKR,"SmartPad",ThreeFingerMoveRight_Func,%REG_DWORD%,%WIN10_NORMAL_SWITCH_WINDOW_RIGHT%
+; EdgeMotion
+HKR,"SmartPad",SM_Enable,%REG_DWORD%,0
+HKR,"SmartPad",SM_Radio,%REG_DWORD%,1
+HKR,"SmartPad",SM_Radio2_Slider,%REG_DWORD%,4
+HKR,"SmartPad",SM_Up_Range,%REG_DWORD%,224
+HKR,"SmartPad",SM_Down_Range,%REG_DWORD%,176
+HKR,"SmartPad",SM_Left_Range,%REG_DWORD%,160
+HKR,"SmartPad",SM_Right_Range,%REG_DWORD%,160
+HKR,"SmartPad",SM_Triger_Counter,%REG_DWORD%,100
+HKR,"SmartPad",SL_Enable,%REG_DWORD%,0
+HKR,"SmartPad",SL_Key,%REG_DWORD%,0
+; EdgeScroll
+HKR,"SmartPad",EGS_Enable,%REG_DWORD%,1
+HKR,"SmartPad",EGS_V_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",EGS_V_Enable,%REG_DWORD%,0
+HKR,"SmartPad",EGS_H_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",EGS_H_Enable,%REG_DWORD%,0
+HKR,"SmartPad",EGS_AutoScroll_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",EGS_AutoScroll_Enable,%REG_DWORD%,0
+HKR,"SmartPad",EGS_InertialScroll_ShowItem,%REG_DWORD%,0
+HKR,"SmartPad",EGS_InertialScroll_Enable,%REG_DWORD%,0
+HKR,"SmartPad",EGS_ContinueScroll_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",EGS_ContinueScroll_Enable,%REG_DWORD%,0
+HKR,"SmartPad",EGS_Reverse_ShowItem,%REG_DWORD%,1
+HKR,"SmartPad",EGS_Reverse_Enable,%REG_DWORD%,0
+HKR,"SmartPad",EGS_V_Area,%REG_DWORD%,2
+HKR,"SmartPad",EGS_H_Area,%REG_DWORD%,2
+HKR,"SmartPad",EGS_Speed,%REG_DWORD%,2
+HKR,"SmartPad",EGS_CornerArea_Reject_ShowItem,%REG_DWORD%,0
+HKR,"SmartPad",EGS_CornerArea_Reject_Enable,%REG_DWORD%,0
+HKR,"SmartPad",EGS_Speed_Has_8_Level,%REG_DWORD%,0
+; Circular Scroll
+HKR,"SmartPad",CircularScroll_ShowItem,%REG_DWORD%,0
+HKR,"SmartPad",CircularScroll_Enable,%REG_DWORD%,0
+; Device Control
+HKR,"SmartPad",DoubleTapToOnOffDevice_ShowItem,%REG_DWORD%,0
+HKR,"SmartPad",DoubleTapToOnOffDevice_Enable,%REG_DWORD%,0
+; Mag
+HKR,"SmartPad",Mag_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Mag_Kind,%REG_DWORD%,%MAG_THREE_FINGER%
+HKR,"SmartPad",Mag_P,%REG_DWORD%,0
+HKR,"SmartPad",Mag_X,%REG_DWORD%,0
+HKR,"SmartPad",Mag_Y,%REG_DWORD%,0
+; Momentum
+HKR,"SmartPad",Momentum_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Momentum_Slider,%REG_DWORD%,5
+HKR,"SmartPad",Momentum_Bounce_Enable,%REG_DWORD%,0
+; SmartDetect
+HKR,"SmartPad",SmartDetect_Enable,%REG_DWORD%,0
+HKR,"SmartPad",SmartDetect_Up_Range,%REG_DWORD%,67
+HKR,"SmartPad",SmartDetect_Down_Range,%REG_DWORD%,67
+HKR,"SmartPad",SmartDetect_Left_Range,%REG_DWORD%,128
+HKR,"SmartPad",SmartDetect_Right_Range,%REG_DWORD%,128
+HKR,"SmartPad",SmartDetect_Radio_Button_ShowItem,%REG_DWORD%,0
+HKR,"SmartPad",SmartDetect_Radio_Button,%REG_DWORD%,0
+HKR,"SmartPad",SmartDetect_DpiX,%REG_DWORD%,840
+HKR,"SmartPad",SmartDetect_DpiY,%REG_DWORD%,820
+; Four Finger Move Function
+HKR,"SmartPad",FourFingerMove_Enable_Mode,%REG_DWORD%,0 	;0: 4 checkbox(normal), 1: 2checkbox(UpDown, LeftRight)
+HKR,"SmartPad",FourFingerMove_Enable,%REG_DWORD%,0
+HKR,"SmartPad",FourFingerMove_UD_ShowItem,%REG_DWORD%,0
+HKR,"SmartPad",FourFingerMove_LR_ShowItem,%REG_DWORD%,0
+HKR,"SmartPad",FourFingerMoveUp_Enable,%REG_DWORD%,0
+HKR,"SmartPad",FourFingerMoveUp_Func,%REG_DWORD%,%RETURN_TO_DESKTOP%
+HKR,"SmartPad",FourFingerMoveDown_Enable,%REG_DWORD%,0
+HKR,"SmartPad",FourFingerMoveDown_Func,%REG_DWORD%,%RETURN_TO_DESKTOP%
+HKR,"SmartPad",FourFingerMoveLeft_Enable,%REG_DWORD%,0
+HKR,"SmartPad",FourFingerMoveLeft_Func,%REG_DWORD%,%NONE%
+HKR,"SmartPad",FourFingerMoveRight_Enable,%REG_DWORD%,0
+HKR,"SmartPad",FourFingerMoveRight_Func,%REG_DWORD%,%NONE%
+; Edge Zoom
+HKR,"SmartPad",EdgeZoom_Enable,%REG_DWORD%,0
+; Edge Swipe
+HKR,"SmartPad",Edge_1F_SwipePage_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Edge_2F_SwipePage_Enable,%REG_DWORD%,0
+; Three Finger Press
+HKR,"SmartPad",Tap3_Press_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Tap3_Press_Path,%REG_SZ%,"%%ProgramFiles%%\Internet Explorer\iexplore.exe"
+; Cover
+HKR,"SmartPad",Cover_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Cover_Func,%REG_DWORD%,%RETURN_TO_DESKTOP%
+; Dell System UI 
+HKR,"SmartPad",DoubleTapSpeed_Slider,%REG_DWORD%,550
+HKR,"SmartPad",SwapButton_Enable,%REG_DWORD%,0
+HKR,"SmartPad",CursorSpeed_Slider,%REG_DWORD%,10
+; Corner Tap
+HKR,"SmartPad",Corner_Tap_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Corner_Tap_BL_Func,%REG_DWORD%,%START_MENU%
+HKR,"SmartPad",Corner_Tap_BL_Path,%REG_SZ%,
+HKR,"SmartPad",Corner_Tap_BL_Width,%REG_DWORD%,350
+HKR,"SmartPad",Corner_Tap_BL_Height,%REG_DWORD%,350
+HKR,"SmartPad",Corner_Tap_BR_Func,%REG_DWORD%,%MINIMIZE%
+HKR,"SmartPad",Corner_Tap_BR_Path,%REG_SZ%,
+HKR,"SmartPad",Corner_Tap_BR_Width,%REG_DWORD%,350
+HKR,"SmartPad",Corner_Tap_BR_Height,%REG_DWORD%,350
+HKR,"SmartPad",Corner_Tap_TL_Func,%REG_DWORD%,%RETURN_TO_DESKTOP%
+HKR,"SmartPad",Corner_Tap_TL_Path,%REG_SZ%,
+HKR,"SmartPad",Corner_Tap_TL_Width,%REG_DWORD%,350
+HKR,"SmartPad",Corner_Tap_TL_Height,%REG_DWORD%,350
+HKR,"SmartPad",Corner_Tap_TR_Func,%REG_DWORD%,%MAXIMIZE%
+HKR,"SmartPad",Corner_Tap_TR_Path,%REG_SZ%,
+HKR,"SmartPad",Corner_Tap_TR_Width,%REG_DWORD%,350
+HKR,"SmartPad",Corner_Tap_TR_Height,%REG_DWORD%,350
+; Two Finger Double Tap
+HKR,"SmartPad",TwoFinger_Double_Tap_ShowItem,%REG_DWORD%,0
+HKR,"SmartPad",TwoFinger_Double_Tap_Enable,%REG_DWORD%,0
+HKR,"SmartPad",TwoFinger_Double_Tap_Path,%REG_SZ%,
+; Dual Mode
+HKR,"SmartPad",DualMode_TP_Mode,%REG_DWORD%,1						; 1 = Pointing + Advanced 2 = Slow Pointing 3 = Scrolling + Tap
+; TouchPad Rejection
+HKR,"SmartPad",DisableWhenType_Enable,%REG_DWORD%,1				; 0 = Disable Function, 1 = Enable Function
+HKR,"SmartPad",DisableWhenType_AllArea,%REG_DWORD%,1				; 0 = Edge Area, 1 = All Area
+HKR,"SmartPad",DisableWhenType_DelayTime_Tap,%REG_DWORD%,750		; Unit (ms)
+HKR,"SmartPad",DisableWhenType_DelayTime_Move,%REG_DWORD%,600		; Unit (ms)
+HKR,"SmartPad",DisableWhenType_DelayTime_Gesture,%REG_DWORD%,600	; Unit (ms)
+HKR,"SmartPad",DisableWhenType_Unit,%REG_DWORD%,1					; 0 = dot, 1 = percent 
+HKR,"SmartPad",DisableWhenType_Left_Range,%REG_DWORD%,1000			; 2000 means 20.00%
+HKR,"SmartPad",DisableWhenType_Right_Range,%REG_DWORD%,1500			 
+HKR,"SmartPad",DisableWhenType_Top_Range,%REG_DWORD%,1500			; 1250 means 12.50%
+HKR,"SmartPad",DisableWhenType_Bottom_Range,%REG_DWORD%,0		 
+HKR,"SmartPad",DisableWhenType_AZone_TouchThenFree,%REG_DWORD%,1
+HKR,"SmartPad",DisableWhenTypeByApTime_Enable,%REG_DWORD%,0		; 0 = Disable Function, 1 = Enable Function
+; Dynamic Palm Tap
+HKR,"SmartPad",DynamicPalmTap_Enable,%REG_DWORD%,0
+HKR,"SmartPad",DynamicPalmTap_RatioX,%REG_DWORD%,8 					; Work on Palm  Tap Left and Right
+HKR,"SmartPad",DynamicPalmTap_RatioY,%REG_DWORD%,8 					; Only work on Palm Tap Up
+; Win8 Edge Swipe
+HKR,"SmartPad",Win8EdgeSwipeLeft_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Win8EdgeSwipeRight_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Win8EdgeSwipeTop_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Win8EdgeSwipeBottom_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Win8EdgeSwipe_Edge_Range,%REG_DWORD%,100
+HKR,"SmartPad",Win8EdgeSwipe_Triger_Radius,%REG_DWORD%,250
+HKR,"SmartPad",Win8EdgeSwipe_Triger_Angle,%REG_DWORD%,25
+HKR,"SmartPad",Win8EdgeSwipe_Mode,%REG_DWORD%,0
+HKR,"SmartPad",Win8EdgeSwipe_CharmBar_CursorJump_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Win8EdgeSwipe_CharmSelect_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Win8EdgeSwipe_AppList_CursorJump_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Win8EdgeSwipe_RevertCollapse_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Win8EdgeAdvance_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Win8EdgeAdvance_Left_Return_Middle_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Win8EdgeAdvance_Left_Return_End_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Win8EdgeAdvance_Left_To_Down_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Win8EdgeAdvance_Up_To_Down_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Win8EdgeAdvance_Left_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Win8EdgeAdvance_Right_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Win8EdgeAdvance_Top_Enable,%REG_DWORD%,0
+HKR,"SmartPad",Win8EdgeAdvance_Bottom_Enable,%REG_DWORD%,0
+; Pen
+HKR,"SmartPad",Pen_Function_Enable,%REG_DWORD%,0
+; Grab
+HKR,"SmartPad",Grab_Enable,%REG_DWORD%,0
+; TP Enable/Disable Status
+HKR,"SmartPad",TPStatus_Mode,%REG_DWORD%,0
+; System DoubleClickTime
+HKR,"SmartPad",SystemDoubleClickTime,%REG_DWORD%,550
+; System Pointer Speed
+HKR,"SmartPad",SystemPointerSpeed,%REG_DWORD%,10
+; HID/Mouse switch
+HKR,"SmartPad",GestureEffect_Mode,%REG_DWORD%,0						; 0 = Mouse, 1 = HID
+; Free Typing
+HKR,"SmartPad",FreeTyping_Enable,%REG_DWORD%,0
+HKR,"SmartPad",FreeTyping_Mode,%REG_DWORD%,600
+; Five Bbutton Dual Mode
+HKR,"SmartPad",PST_StartZone_Left,%REG_DWORD%,15
+HKR,"SmartPad",PST_StartZone_Right,%REG_DWORD%,15
+HKR,"SmartPad",PST_StartZone_Top,%REG_DWORD%,25
+HKR,"SmartPad",PST_StartZone_Bottom,%REG_DWORD%,5
+
+HKR,"SmartPad",PST_LeftButton_Width,%REG_DWORD%,0
+HKR,"SmartPad",PST_LeftButton_Height,%REG_DWORD%,0
+HKR,"SmartPad",PST_RightButton_Width,%REG_DWORD%,0
+HKR,"SmartPad",PST_RightButton_Height,%REG_DWORD%,0
+HKR,"SmartPad",PST_MiddleButton_Width,%REG_DWORD%,0
+HKR,"SmartPad",PST_MiddleButton_Height,%REG_DWORD%,0
+
+HKR,"SmartPad",PST_T_Use,%REG_DWORD%,25
+HKR,"SmartPad",PST_T_Idle,%REG_DWORD%,25
+HKR,"SmartPad",KBC_T_Idle,%REG_DWORD%,25
+
+HKR,"SmartPad",TP_LeftButton_Width,%REG_DWORD%,0
+HKR,"SmartPad",TP_LeftButton_Height,%REG_DWORD%,0
+HKR,"SmartPad",TP_RightButton_Width,%REG_DWORD%,0
+HKR,"SmartPad",TP_RightButton_Height,%REG_DWORD%,0
+; Mouse Property Change
+HKR,"SmartPad",ForceAdjustMouseSpeedEnableAtOnce,%REG_DWORD%,0			; 0: Disable , 1: Enable
+HKR,"SmartPad",MouseSpeedLevel,%REG_DWORD%,5							; level 0 ~ level 10
+HKR,"SmartPad",ForceAdjustDoubleClickTimeEnableAtOnce,%REG_DWORD%,0 	; 0: Disable , 1: Enable
+HKR,"SmartPad",DoubleClickTimeLevel,%REG_DWORD%,5						; level 0 ~ level 10
+; Multi-Finger Gesture
+HKR,"SmartPad",MultiFingerGesture_Enable,%REG_DWORD%,1
+
+
+[ETD_PSTUI.AddReg]
+; Button
+HKR,"PointStick",Button_Left,%REG_DWORD%,%CLICK_SELECT%
+HKR,"PointStick",Button_Left_Ex,%REG_SZ%,
+HKR,"PointStick",Button_Left_Path,%REG_SZ%,
+HKR,"PointStick",Button_Middle,%REG_DWORD%,%MIDDLEBUTTON%
+HKR,"PointStick",Button_Middle_Ex,%REG_SZ%,
+HKR,"PointStick",Button_Middle_Path,%REG_SZ%,
+HKR,"PointStick",Button_Right,%REG_DWORD%,%CONTEXT_MENU%
+HKR,"PointStick",Button_Right_Ex,%REG_SZ%,
+HKR,"PointStick",Button_Right_Path,%REG_SZ%,
+; Z
+HKR,"PointStick",Z_Enable,%REG_DWORD%,0
+HKR,"PointStick",Z_Drag_Enable,%REG_DWORD%,0
+HKR,"PointStick",Z_ReleasetoSelect,%REG_DWORD%,0
+HKR,"PointStick",Z_Func,%REG_DWORD%,%CLICK_SELECT%
+HKR,"PointStick",Z_Select_Speed,%REG_DWORD%,4
+; Scroll
+HKR,"PointStick",SC_V_Enable,%REG_DWORD%,0
+HKR,"PointStick",SC_H_Enable,%REG_DWORD%,0
+HKR,"PointStick",SC_Speed,%REG_DWORD%,2
+HKR,"PointStick",SC_Free_Enable,%REG_DWORD%,0
+HKR,"PointStick",SC_Func,%REG_DWORD%,%PST_SCROLL_STANDARD%
+; STV
+HKR,"PointStick",STV_Slider,%REG_DWORD%,4
+;Dual Mode
+HKR,"PointStick",DualMode_PST_Mode,%REG_DWORD%,0		; 1 = Pointing + Advanced 2 = Advanced
+
+
+
+;----------------------------------------------------------------------------
+; String Table
+;----------------------------------------------------------------------------
+[Strings]
+Publisher 		= "ELAN Microelectronic Corp."
+ELANHIDDeviceDesc = "ELAN PointStick Device"
+DiskName  		= "ETDWare Driver Disk"
+VenderName		= "ELAN"
+HKLMRootPath 	= "System\CurrentControlSet\Control"
+ServiceRoot 	= "System\CurrentControlSet\Control"
+
+; Registry Type
+REG_EXPAND_SZ	= 0x00020000 
+REG_DWORD		= 0x00010001 
+REG_MULTI_SZ	= 0x00010000
+REG_BINARY		= 0x00000001
+REG_SZ			= 0x00000000
+
+; Drag and Drop Kind
+TAP_AGAIN_TO_RELEASE		= 0
+RELEASE_AFTER_TIME_DELAY	= 1
+RELEASE_AFTER_FINGER_LIFT	= 2
+
+; Edge Motion
+ALWAYS				= 0
+ONLY_WHEN_DRAGGING	= 1
+
+; Slow Motion
+SHIFT_KEY		= 0
+CTRL_KEY		= 1
+ALT_KEY			= 2
+
+; SwipePage Kind (Page Up / Down)
+SWIPE_PAGE_TWO_FINGER	= 1
+SWIPE_PAGE_THREE_FINGER	= 2
+
+; Mag Kind
+MAG_TWO_FINGER		= 1
+MAG_THREE_FINGER	= 2
+
+; PointStick Middle Button Function Type
+PST_MB_NONE		= 0
+PST_MB_SCROLL	= 1
+
+; PointStick Scroll Function Type
+PST_SCROLL_STANDARD	= 0
+PST_SCROLL_SMOOTH	= 1
+PST_SCROLL_AUTOSELECT	= 2
+
+; SmartPad Function Type
+CLICK_SELECT	= 0
+CONTEXT_MENU	= 1
+MIDDLEBUTTON	= 2
+INTERNET_BACK	= 3
+INTERNET_FORWORD	= 4
+MAXIMIZE		= 5
+MINIMIZE		= 6
+NONE			= 7
+PAGE_DOWN		= 8
+PAGE_UP			= 9
+RUN_FILE		= 10
+SCROLL_DOWN		= 11
+SCROLL_LEFT		= 12
+SCROLL_RIGHT	= 13
+SCROLL_UP		= 14
+START_MENU		= 15
+ZOOMOUT			= 16
+ZOOMIN			= 17
+CLOSE_WINDOW		= 18
+RETURN_TO_DESKTOP	= 19
+MY_FAVORITE		= 20
+MY_COMPUTER		= 21
+NORMAL_SWITCH_WINDOWS	= 22
+AERO_SWITCH_WINDOWS	= 23
+START_SLIDE_SHOW	= 24
+STOP_SLIDE_SHOW		= 25
+WINDOWS_SEARCH		= 26
+DOUBLE_CLICK_BUTTON	= 27
+LOCK_COMPUTER		= 28
+TURN_OFF_SCREEN		= 29
+2FINGER_CONTINE_SCROLL	= 30
+1FINGER_CONTINE_SCROLL	= 31
+ASUS_SWITCH_WINDOW_WAY	= 32
+RETURN_BEFORE_WINDOWS	= 33
+INTERLLIGENT_TOUCHPAD_UP 		= 34  
+INTERLLIGENT_TOUCHPAD_DOWN 		= 35  
+INTERLLIGENT_TOUCHPAD_THERRFINGER_CLICK = 36
+IDEALIFE_UP			= 37
+IDEALIFE_DOWN		= 38
+MULTI_SELECT		= 39
+ACER_RING			= 40
+RETURN_TO_METRO_DESKTOP = 41
+
+SWIPE_PAGE_UP		= 0x0300
+SWIPE_PAGE_DOWN		= 0x0301
+
+WIN8_EDGE_SWIPE_UP		= 0x0801
+WIN8_EDGE_SWIPE_DOWN	= 0x0802
+WIN8_EDGE_SWIPE_LEFT	= 0x0803
+WIN8_EDGE_SWIPE_RIGHT	= 0x0804
+
+WIN10_CORTANA = 2561
+WIN10_NOTIFICATION_CENTER = 2562
+WIN10_NORMAL_SWITCH_WINDOW = 2563
+WIN10_NORMAL_SWITCH_WINDOW_LEFT = 2564
+WIN10_NORMAL_SWITCH_WINDOW_RIGHT = 2565
+WIN10_NORMAL_SWITCH_WINDOW_UP = 2566
+WIN10_NORMAL_SWITCH_WINDOW_DOWN = 2567
+WIN10_NORMAL_SWITCH_WINDOW_RELEASE = 2568
+WIN10_TASK_WINDOW = 2569
+WIN10_TASK_WINDOW_LEFT = 2570
+WIN10_TASK_WINDOW_RIGHT = 2571
+WIN10_TASK_WINDOW_RELEASE = 2572
+WIN10_TASK_WINDOW_ESCAPE = 2573
+
+DriverDate		= "04/06/2020"
+DriverVersion	= "32.2.3.5"
+DriverBit		= "X64"
+DriverVersionExtend	= "WHQL"        ; Beta or WHQL

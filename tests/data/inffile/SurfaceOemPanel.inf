@@ -1,0 +1,533 @@
+;
+; SurfaceOemPanel.inf
+;
+
+[Version]
+Signature="$Windows NT$"
+Provider=%ManufacturerName%
+ClassGuid={4d36e96e-e325-11ce-bfc1-08002be10318}
+Class=Monitor
+DriverVer = 02/10/2023,6.170.139.0
+CatalogFile=SurfaceOemPanel.cat
+PnpLockdown=1
+
+[Manufacturer]
+%ManufacturerName%=SurfaceOemPanel,NTamd64
+
+[SurfaceOemPanel.NTamd64]
+%DeviceName%=SurfaceOemPanel_Install_LGD0554, Monitor\LGD0554
+%DeviceName%=SurfaceOemPanel_Install_LGD0555, Monitor\LGD0555
+%DeviceName%=SurfaceOemPanel_Install_SHP14B3, Monitor\SHP14B3
+%DeviceName%=SurfaceOemPanel_Install_SHP14B4, Monitor\SHP14B4
+%DeviceName%=SurfaceOemPanel_Install_JDI0000, Monitor\JDI0000
+%DeviceName%=SurfaceOemPanel_Install_MEI96A2, Monitor\MEI96A2
+%DeviceName%=SurfaceOemPanel_Install_SHP1509, Monitor\SHP1509
+%DeviceName%=SurfaceOemPanel_Install_LGD06B1, Monitor\LGD06B1
+%DeviceName%=SurfaceOemPanel_Install_LGD06B2, Monitor\LGD06B2
+%DeviceName%=SurfaceOemPanel_Install_LGD0719, Monitor\LGD0719
+%DeviceName%=SurfaceOemPanel_Install_BOE0AA4, Monitor\BOE0AA4
+%DeviceName%=SurfaceOemPanel_Install_BOE088B, Monitor\BOE088B
+%DeviceName%=SurfaceOemPanel_Install_SHP1572, Monitor\SHP1572
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+SurfaceOemPanel.dll=1
+ColorCalibrationComputation.dll=1
+SurfacesRGB.icm=1
+SurfaceEnhanced.icm=1
+
+[DestinationDirs]
+;23 == Windows\system32\spool\drivers\color
+; For any new panels supporting color profiles, entry should be added here
+ProfilesCopy_LGD0554=23
+ProfilesCopy_LGD0555=23
+ProfilesCopy_SHP14B3=23
+ProfilesCopy_SHP14B4=23
+;12 == Windows\System32\Drivers\UMDF
+DefaultDestDir = 13
+
+; =================== Monitor\LGD0554 ==============================
+[SurfaceOemPanel_Install_LGD0554.NT]
+CopyFiles=SurfaceOemPanelDriverCopy,ColorComputeDllCopy,ProfilesCopy_LGD0554
+AddReg=SurfaceOemPanel_Filter_Reg, SurfaceOemPanel_RegLGD0554
+
+[SurfaceOemPanel_RegLGD0554]
+HKR,,PreferredScaleFactor,0x00010001,200
+; Last entry is automatically set as default
+HKR,,ICMProfile,0x00010000,"SurfacesRGB.icm"
+HKR,,ICMProfile,0x00010008,"SurfaceEnhanced.icm"
+
+[SurfaceOemPanel_Install_LGD0554.NT.hw]
+AddReg=SurfaceOemPanel_Filter_Reg
+
+[SurfaceOemPanel_Install_LGD0554.NT.Services]
+AddService=WUDFRd,0x000001f8,WUDFRD_ServiceInstall
+AddService=monitor,0x000001fa, Monitor_Service.Install
+
+[SurfaceOemPanel_Install_LGD0554.NT.Wdf]
+UmdfService=SurfaceOemPanel,SurfaceOemPanel_Install_LGD0554
+UmdfServiceOrder=SurfaceOemPanel
+UmdfKernelModeClientPolicy=AllowKernelModeClients
+UmdfFsContextUsePolicy = CanUseFsContext2
+UmdfFileObjectPolicy=AllowNullAndUnknownFileObjects
+UmdfHostProcessSharing=ProcessSharingDisabled
+
+[SurfaceOemPanel_Install_LGD0554]
+UmdfLibraryVersion=2.15.0
+ServiceBinary=%13%\SurfaceOemPanel.dll
+
+[SurfaceOemPanel_Install_LGD0554.NT.CoInstallers]
+CopyFiles=ProfilesCopy_LGD0554
+
+; Profiles Associated with the monitor
+[ProfilesCopy_LGD0554]
+SurfacesRGB.icm
+SurfaceEnhanced.icm
+
+[SurfaceOemPanel_Install_LGD0554.NT.Events]
+AddEventProvider = {3D53356D-424B-496A-A094-2154D8D2B304},SurfaceOemPanel_EventProviderInstall
+
+; =================== Monitor\LGD0555 ==============================
+[SurfaceOemPanel_Install_LGD0555.NT]
+CopyFiles=SurfaceOemPanelDriverCopy,ColorComputeDllCopy,ProfilesCopy_LGD0555
+AddReg=SurfaceOemPanel_Filter_Reg, SurfaceOemPanel_RegLGD0555
+
+[SurfaceOemPanel_RegLGD0555]
+HKR,,PreferredScaleFactor,0x00010001,200
+; Last entry is automatically set as default
+HKR,,ICMProfile,0x00010000,"SurfacesRGB.icm"
+HKR,,ICMProfile,0x00010008,"SurfaceEnhanced.icm"
+
+[SurfaceOemPanel_Install_LGD0555.NT.hw]
+AddReg=SurfaceOemPanel_Filter_Reg
+
+[SurfaceOemPanel_Install_LGD0555.NT.Services]
+AddService=WUDFRd,0x000001f8,WUDFRD_ServiceInstall
+AddService=monitor,0x000001fa, Monitor_Service.Install
+
+[SurfaceOemPanel_Install_LGD0555.NT.Wdf]
+UmdfService=SurfaceOemPanel,SurfaceOemPanel_Install_LGD0555
+UmdfServiceOrder=SurfaceOemPanel
+UmdfKernelModeClientPolicy=AllowKernelModeClients
+UmdfFsContextUsePolicy = CanUseFsContext2
+UmdfFileObjectPolicy=AllowNullAndUnknownFileObjects
+UmdfHostProcessSharing=ProcessSharingDisabled
+
+[SurfaceOemPanel_Install_LGD0555]
+UmdfLibraryVersion=2.15.0
+ServiceBinary=%13%\SurfaceOemPanel.dll
+
+[SurfaceOemPanel_Install_LGD0555.NT.CoInstallers]
+CopyFiles=ProfilesCopy_LGD0555
+
+; Profiles Associated with the monitor
+[ProfilesCopy_LGD0555]
+SurfacesRGB.icm
+SurfaceEnhanced.icm
+
+[SurfaceOemPanel_Install_LGD0555.NT.Events]
+AddEventProvider = {3D53356D-424B-496A-A094-2154D8D2B304},SurfaceOemPanel_EventProviderInstall
+
+; =================== Monitor\SHP14B3 ==============================
+[SurfaceOemPanel_Install_SHP14B3.NT]
+CopyFiles=SurfaceOemPanelDriverCopy,ColorComputeDllCopy,ProfilesCopy_SHP14B3
+AddReg=SurfaceOemPanel_Filter_Reg, SurfaceOemPanel_RegSHP14B3
+
+[SurfaceOemPanel_RegSHP14B3]
+HKR,,PreferredScaleFactor,0x00010001,150
+; Last entry is automatically set as default
+HKR,,ICMProfile,0x00010000,"SurfacesRGB.icm"
+HKR,,ICMProfile,0x00010008,"SurfaceEnhanced.icm"
+
+[SurfaceOemPanel_Install_SHP14B3.NT.hw]
+AddReg=SurfaceOemPanel_Filter_Reg
+
+[SurfaceOemPanel_Install_SHP14B3.NT.Services]
+AddService=WUDFRd,0x000001f8,WUDFRD_ServiceInstall
+AddService=monitor,0x000001fa, Monitor_Service.Install
+
+[SurfaceOemPanel_Install_SHP14B3.NT.Wdf]
+UmdfService=SurfaceOemPanel,SurfaceOemPanel_Install_SHP14B3
+UmdfServiceOrder=SurfaceOemPanel
+UmdfKernelModeClientPolicy=AllowKernelModeClients
+UmdfFsContextUsePolicy = CanUseFsContext2
+UmdfFileObjectPolicy=AllowNullAndUnknownFileObjects
+UmdfHostProcessSharing=ProcessSharingDisabled
+
+[SurfaceOemPanel_Install_SHP14B3]
+UmdfLibraryVersion=2.15.0
+ServiceBinary=%13%\SurfaceOemPanel.dll
+
+[SurfaceOemPanel_Install_SHP14B3.NT.CoInstallers]
+CopyFiles=ProfilesCopy_SHP14B3
+
+; Profiles Associated with the monitor
+[ProfilesCopy_SHP14B3]
+SurfacesRGB.icm
+SurfaceEnhanced.icm
+
+[SurfaceOemPanel_Install_SHP14B3.NT.Events]
+AddEventProvider = {3D53356D-424B-496A-A094-2154D8D2B304},SurfaceOemPanel_EventProviderInstall
+
+; =================== Monitor\SHP14B4 ==============================
+[SurfaceOemPanel_Install_SHP14B4.NT]
+CopyFiles=SurfaceOemPanelDriverCopy,ColorComputeDllCopy,ProfilesCopy_SHP14B4
+DelReg=DEL_CURRENT_REG
+AddReg=SurfaceOemPanel_Filter_Reg, SurfaceOemPanel_RegSHP14B4
+
+[SurfaceOemPanel_RegSHP14B4]
+HKR,,PreferredScaleFactor,0x00010001,150
+; Last entry is automatically set as default
+HKR,,ICMProfile,0x00010000,"SurfacesRGB.icm"
+HKR,,ICMProfile,0x00010008,"SurfaceEnhanced.icm"
+
+[SurfaceOemPanel_Install_SHP14B4.NT.hw]
+AddReg=SurfaceOemPanel_Filter_Reg
+
+[SurfaceOemPanel_Install_SHP14B4.NT.Services]
+AddService=WUDFRd,0x000001f8,WUDFRD_ServiceInstall
+AddService=monitor,0x000001fa, Monitor_Service.Install
+
+[SurfaceOemPanel_Install_SHP14B4.NT.Wdf]
+UmdfService=SurfaceOemPanel,SurfaceOemPanel_Install_SHP14B4
+UmdfServiceOrder=SurfaceOemPanel
+UmdfKernelModeClientPolicy=AllowKernelModeClients
+UmdfFsContextUsePolicy = CanUseFsContext2
+UmdfFileObjectPolicy=AllowNullAndUnknownFileObjects
+UmdfHostProcessSharing=ProcessSharingDisabled
+
+[SurfaceOemPanel_Install_SHP14B4]
+UmdfLibraryVersion=2.15.0
+ServiceBinary=%13%\SurfaceOemPanel.dll
+
+[SurfaceOemPanel_Install_SHP14B4.NT.CoInstallers]
+CopyFiles=ProfilesCopy_SHP14B4
+
+; Profiles Associated with the monitor
+[ProfilesCopy_SHP14B4]
+SurfacesRGB.icm
+SurfaceEnhanced.icm
+
+[SurfaceOemPanel_Install_SHP14B4.NT.Events]
+AddEventProvider = {3D53356D-424B-496A-A094-2154D8D2B304},SurfaceOemPanel_EventProviderInstall
+
+; =================== Monitor\JDI0000 ==============================
+[SurfaceOemPanel_Install_JDI0000.NT]
+CopyFiles=SurfaceOemPanelDriverCopy,ColorComputeDllCopy
+AddReg=SurfaceOemPanel_Filter_Reg, SurfaceOemPanel_RegJDI0000
+
+[SurfaceOemPanel_RegJDI0000]
+HKR,,PreferredScaleFactor,0x00010001,200
+
+[SurfaceOemPanel_Install_JDI0000.NT.hw]
+AddReg=SurfaceOemPanel_Filter_Reg
+
+[SurfaceOemPanel_Install_JDI0000.NT.Services]
+AddService=WUDFRd,0x000001f8,WUDFRD_ServiceInstall
+AddService=monitor,0x000001fa, Monitor_Service.Install
+
+[SurfaceOemPanel_Install_JDI0000.NT.Wdf]
+UmdfService=SurfaceOemPanel,SurfaceOemPanel_Install_JDI0000
+UmdfServiceOrder=SurfaceOemPanel
+UmdfKernelModeClientPolicy=AllowKernelModeClients
+UmdfFsContextUsePolicy=CanUseFsContext2
+UmdfFileObjectPolicy=AllowNullAndUnknownFileObjects
+UmdfHostProcessSharing=ProcessSharingDisabled
+
+[SurfaceOemPanel_Install_JDI0000]
+UmdfLibraryVersion=2.15.0
+ServiceBinary=%13%\SurfaceOemPanel.dll
+
+[SurfaceOemPanel_Install_JDI0000.NT.Events]
+AddEventProvider = {3D53356D-424B-496A-A094-2154D8D2B304},SurfaceOemPanel_EventProviderInstall
+
+; =================== Monitor\MEI96A2 ==============================
+[SurfaceOemPanel_Install_MEI96A2.NT]
+CopyFiles=SurfaceOemPanelDriverCopy,ColorComputeDllCopy
+AddReg=SurfaceOemPanel_Filter_Reg, SurfaceOemPanel_RegMEI96A2
+
+[SurfaceOemPanel_RegMEI96A2]
+HKR,,PreferredScaleFactor,0x00010001,200
+
+[SurfaceOemPanel_Install_MEI96A2.NT.hw]
+AddReg=SurfaceOemPanel_Filter_Reg
+
+[SurfaceOemPanel_Install_MEI96A2.NT.Services]
+AddService=WUDFRd,0x000001f8,WUDFRD_ServiceInstall
+AddService=monitor,0x000001fa, Monitor_Service.Install
+
+[SurfaceOemPanel_Install_MEI96A2.NT.Wdf]
+UmdfService=SurfaceOemPanel,SurfaceOemPanel_Install_MEI96A2
+UmdfServiceOrder=SurfaceOemPanel
+UmdfKernelModeClientPolicy=AllowKernelModeClients
+UmdfFsContextUsePolicy=CanUseFsContext2
+UmdfFileObjectPolicy=AllowNullAndUnknownFileObjects
+UmdfHostProcessSharing=ProcessSharingDisabled
+
+[SurfaceOemPanel_Install_MEI96A2]
+UmdfLibraryVersion=2.15.0
+ServiceBinary=%13%\SurfaceOemPanel.dll
+
+[SurfaceOemPanel_Install_MEI96A2.NT.Events]
+AddEventProvider = {3D53356D-424B-496A-A094-2154D8D2B304},SurfaceOemPanel_EventProviderInstall
+
+; =================== Monitor\SHP1509 ==============================
+[SurfaceOemPanel_Install_SHP1509.NT]
+CopyFiles=SurfaceOemPanelDriverCopy,ColorComputeDllCopy
+AddReg=SurfaceOemPanel_Filter_Reg, SurfaceOemPanel_RegSHP1509
+
+[SurfaceOemPanel_RegSHP1509]
+HKR,,PreferredScaleFactor,0x00010001,150
+
+[SurfaceOemPanel_Install_SHP1509.NT.hw]
+AddReg=SurfaceOemPanel_Filter_Reg
+
+[SurfaceOemPanel_Install_SHP1509.NT.Services]
+AddService=WUDFRd,0x000001f8,WUDFRD_ServiceInstall
+AddService=monitor,0x000001fa, Monitor_Service.Install
+
+[SurfaceOemPanel_Install_SHP1509.NT.Wdf]
+UmdfService=SurfaceOemPanel,SurfaceOemPanel_Install_SHP1509
+UmdfServiceOrder=SurfaceOemPanel
+UmdfKernelModeClientPolicy=AllowKernelModeClients
+UmdfFsContextUsePolicy=CanUseFsContext2
+UmdfFileObjectPolicy=AllowNullAndUnknownFileObjects
+UmdfHostProcessSharing=ProcessSharingDisabled
+
+[SurfaceOemPanel_Install_SHP1509]
+UmdfLibraryVersion=2.15.0
+ServiceBinary=%13%\SurfaceOemPanel.dll
+
+[SurfaceOemPanel_Install_SHP1509.NT.Events]
+AddEventProvider = {3D53356D-424B-496A-A094-2154D8D2B304},SurfaceOemPanel_EventProviderInstall
+
+; =================== Monitor\LGD06B1 ==============================
+[SurfaceOemPanel_Install_LGD06B1.NT]
+CopyFiles=SurfaceOemPanelDriverCopy,ColorComputeDllCopy
+AddReg=SurfaceOemPanel_Filter_Reg, SurfaceOemPanel_RegLGD06B1
+
+[SurfaceOemPanel_RegLGD06B1]
+HKR,,PreferredScaleFactor,0x00010001,200
+
+[SurfaceOemPanel_Install_LGD06B1.NT.hw]
+AddReg=SurfaceOemPanel_Filter_Reg
+
+[SurfaceOemPanel_Install_LGD06B1.NT.Services]
+AddService=WUDFRd,0x000001f8,WUDFRD_ServiceInstall
+AddService=monitor,0x000001fa, Monitor_Service.Install
+
+[SurfaceOemPanel_Install_LGD06B1.NT.Wdf]
+UmdfService=SurfaceOemPanel,SurfaceOemPanel_Install_LGD06B1
+UmdfServiceOrder=SurfaceOemPanel
+UmdfKernelModeClientPolicy=AllowKernelModeClients
+UmdfFsContextUsePolicy=CanUseFsContext2
+UmdfFileObjectPolicy=AllowNullAndUnknownFileObjects
+UmdfHostProcessSharing=ProcessSharingDisabled
+
+[SurfaceOemPanel_Install_LGD06B1]
+UmdfLibraryVersion=2.15.0
+ServiceBinary=%13%\SurfaceOemPanel.dll
+
+[SurfaceOemPanel_Install_LGD06B1.NT.Events]
+AddEventProvider = {3D53356D-424B-496A-A094-2154D8D2B304},SurfaceOemPanel_EventProviderInstall
+
+; =================== Monitor\LGD06B2 ==============================
+[SurfaceOemPanel_Install_LGD06B2.NT]
+CopyFiles=SurfaceOemPanelDriverCopy,ColorComputeDllCopy
+AddReg=SurfaceOemPanel_Filter_Reg, SurfaceOemPanel_RegLGD06B2
+
+[SurfaceOemPanel_RegLGD06B2]
+HKR,,PreferredScaleFactor,0x00010001,200
+
+[SurfaceOemPanel_Install_LGD06B2.NT.hw]
+AddReg=SurfaceOemPanel_Filter_Reg
+
+[SurfaceOemPanel_Install_LGD06B2.NT.Services]
+AddService=WUDFRd,0x000001f8,WUDFRD_ServiceInstall
+AddService=monitor,0x000001fa, Monitor_Service.Install
+
+[SurfaceOemPanel_Install_LGD06B2.NT.Wdf]
+UmdfService=SurfaceOemPanel,SurfaceOemPanel_Install_LGD06B2
+UmdfServiceOrder=SurfaceOemPanel
+UmdfKernelModeClientPolicy=AllowKernelModeClients
+UmdfFsContextUsePolicy=CanUseFsContext2
+UmdfFileObjectPolicy=AllowNullAndUnknownFileObjects
+UmdfHostProcessSharing=ProcessSharingDisabled
+
+[SurfaceOemPanel_Install_LGD06B2]
+UmdfLibraryVersion=2.15.0
+ServiceBinary=%13%\SurfaceOemPanel.dll
+
+[SurfaceOemPanel_Install_LGD06B2.NT.Events]
+AddEventProvider = {3D53356D-424B-496A-A094-2154D8D2B304},SurfaceOemPanel_EventProviderInstall
+
+; =================== Monitor\LGD0719 ==============================
+[SurfaceOemPanel_Install_LGD0719.NT]
+CopyFiles=SurfaceOemPanelDriverCopy,ColorComputeDllCopy
+AddReg=SurfaceOemPanel_Filter_Reg, SurfaceOemPanel_RegLGD0719
+
+[SurfaceOemPanel_RegLGD0719]
+HKR,,PreferredScaleFactor,0x00010001,200
+
+[SurfaceOemPanel_Install_LGD0719.NT.hw]
+AddReg=SurfaceOemPanel_Filter_Reg
+
+[SurfaceOemPanel_Install_LGD0719.NT.Services]
+AddService=WUDFRd,0x000001f8,WUDFRD_ServiceInstall
+AddService=monitor,0x000001fa, Monitor_Service.Install
+
+[SurfaceOemPanel_Install_LGD0719.NT.Wdf]
+UmdfService=SurfaceOemPanel,SurfaceOemPanel_Install_LGD0719
+UmdfServiceOrder=SurfaceOemPanel
+UmdfKernelModeClientPolicy=AllowKernelModeClients
+UmdfFsContextUsePolicy=CanUseFsContext2
+UmdfFileObjectPolicy=AllowNullAndUnknownFileObjects
+UmdfHostProcessSharing=ProcessSharingDisabled
+
+[SurfaceOemPanel_Install_LGD0719]
+UmdfLibraryVersion=2.15.0
+ServiceBinary=%13%\SurfaceOemPanel.dll
+
+[SurfaceOemPanel_Install_LGD0719.NT.Events]
+AddEventProvider = {3D53356D-424B-496A-A094-2154D8D2B304},SurfaceOemPanel_EventProviderInstall
+
+; =================== Monitor\BOE0AA4 ==============================
+[SurfaceOemPanel_Install_BOE0AA4.NT]
+CopyFiles=SurfaceOemPanelDriverCopy,ColorComputeDllCopy
+AddReg=SurfaceOemPanel_Filter_Reg, SurfaceOemPanel_RegBOE0AA4
+
+[SurfaceOemPanel_RegBOE0AA4]
+HKR,,PreferredScaleFactor,0x00010001,200
+
+[SurfaceOemPanel_Install_BOE0AA4.NT.hw]
+AddReg=SurfaceOemPanel_Filter_Reg
+
+[SurfaceOemPanel_Install_BOE0AA4.NT.Services]
+AddService=WUDFRd,0x000001f8,WUDFRD_ServiceInstall
+AddService=monitor,0x000001fa, Monitor_Service.Install
+
+[SurfaceOemPanel_Install_BOE0AA4.NT.Wdf]
+UmdfService=SurfaceOemPanel,SurfaceOemPanel_Install_BOE0AA4
+UmdfServiceOrder=SurfaceOemPanel
+UmdfKernelModeClientPolicy=AllowKernelModeClients
+UmdfFsContextUsePolicy=CanUseFsContext2
+UmdfFileObjectPolicy=AllowNullAndUnknownFileObjects
+UmdfHostProcessSharing=ProcessSharingDisabled
+
+[SurfaceOemPanel_Install_BOE0AA4]
+UmdfLibraryVersion=2.15.0
+ServiceBinary=%13%\SurfaceOemPanel.dll
+
+[SurfaceOemPanel_Install_BOE0AA4.NT.Events]
+AddEventProvider = {3D53356D-424B-496A-A094-2154D8D2B304},SurfaceOemPanel_EventProviderInstall
+
+; =================== Monitor\BOE088B ==============================
+[SurfaceOemPanel_Install_BOE088B.NT]
+CopyFiles=SurfaceOemPanelDriverCopy,ColorComputeDllCopy
+AddReg=SurfaceOemPanel_Filter_Reg, SurfaceOemPanel_RegBOE088B
+
+[SurfaceOemPanel_RegBOE088B]
+HKR,,PreferredScaleFactor,0x00010001,200
+
+[SurfaceOemPanel_Install_BOE088B.NT.hw]
+AddReg=SurfaceOemPanel_Filter_Reg
+
+[SurfaceOemPanel_Install_BOE088B.NT.Services]
+AddService=WUDFRd,0x000001f8,WUDFRD_ServiceInstall
+AddService=monitor,0x000001fa, Monitor_Service.Install
+
+[SurfaceOemPanel_Install_BOE088B.NT.Wdf]
+UmdfService=SurfaceOemPanel,SurfaceOemPanel_Install_BOE088B
+UmdfServiceOrder=SurfaceOemPanel
+UmdfKernelModeClientPolicy=AllowKernelModeClients
+UmdfFsContextUsePolicy=CanUseFsContext2
+UmdfFileObjectPolicy=AllowNullAndUnknownFileObjects
+UmdfHostProcessSharing=ProcessSharingDisabled
+
+[SurfaceOemPanel_Install_BOE088B]
+UmdfLibraryVersion=2.15.0
+ServiceBinary=%13%\SurfaceOemPanel.dll
+
+[SurfaceOemPanel_Install_BOE088B.NT.Events]
+AddEventProvider = {3D53356D-424B-496A-A094-2154D8D2B304},SurfaceOemPanel_EventProviderInstall
+
+; =================== Monitor\SHP1572 ==============================
+[SurfaceOemPanel_Install_SHP1572.NT]
+CopyFiles=SurfaceOemPanelDriverCopy,ColorComputeDllCopy
+AddReg=SurfaceOemPanel_Filter_Reg, SurfaceOemPanel_RegSHP1572
+
+[SurfaceOemPanel_RegSHP1572]
+HKR,,PreferredScaleFactor,0x00010001,150
+
+[SurfaceOemPanel_Install_SHP1572.NT.hw]
+AddReg=SurfaceOemPanel_Filter_Reg
+
+[SurfaceOemPanel_Install_SHP1572.NT.Services]
+AddService=WUDFRd,0x000001f8,WUDFRD_ServiceInstall
+AddService=monitor,0x000001fa, Monitor_Service.Install
+
+[SurfaceOemPanel_Install_SHP1572.NT.Wdf]
+UmdfService=SurfaceOemPanel,SurfaceOemPanel_Install_SHP1572
+UmdfServiceOrder=SurfaceOemPanel
+UmdfKernelModeClientPolicy=AllowKernelModeClients
+UmdfFsContextUsePolicy=CanUseFsContext2
+UmdfFileObjectPolicy=AllowNullAndUnknownFileObjects
+UmdfHostProcessSharing=ProcessSharingDisabled
+
+[SurfaceOemPanel_Install_SHP1572]
+UmdfLibraryVersion=2.15.0
+ServiceBinary=%13%\SurfaceOemPanel.dll
+
+[SurfaceOemPanel_Install_SHP1572.NT.Events]
+AddEventProvider = {3D53356D-424B-496A-A094-2154D8D2B304},SurfaceOemPanel_EventProviderInstall
+; =================== Common ==================================
+
+;Delete Monitor Profile Entries
+[DEL_CURRENT_REG]
+HKR,MODES
+HKR,,MaxResolution
+HKR,,DPMS
+HKR,,ICMProfile
+
+[SurfaceOemPanelDriverCopy]
+SurfaceOemPanel.dll
+
+[ColorComputeDllCopy]
+ColorCalibrationComputation.dll
+
+[SurfaceOemPanel_EventProviderInstall]
+ProviderName=Microsoft-Surface-SurfaceOemPanel
+ResourceFile=%13%\SurfaceOemPanel.dll
+AddChannel= Microsoft-Surface-SurfaceOemPanel/Operational,0x2,SurfaceOemPanel_ChannelInstall
+
+[SurfaceOemPanel_ChannelInstall]
+Isolation         = 1
+Enabled           = 1
+
+[SurfaceOemPanel_Filter_Reg]
+HKR,,"LowerFilters", 0x00010008,"WUDFRd"
+
+[Monitor_Service.Install]
+DisplayName    = %Monitor.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\monitor.sys
+
+[WUDFRD_ServiceInstall]
+DisplayName    = %WudfRdDisplayName%
+ServiceType    = 1
+StartType      = 3
+ErrorControl   = 1
+ServiceBinary  = %12%\WUDFRd.sys
+
+; =================== Generic ==================================
+
+[Strings]
+ManufacturerName="Surface"
+DiskName="Surface Panel Driver Installation Disk"
+WudfRdDisplayName="Windows Driver Foundation - User-mode Driver Framework Reflector"
+DeviceName="Surface Panel"
+Monitor.SVCDESC="Microsoft Monitor Class Function Driver Service"
