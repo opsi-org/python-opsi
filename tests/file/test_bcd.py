@@ -8,15 +8,17 @@ bcd tests
 """
 
 import io
-import os
 import platform
 from pathlib import Path
 
 import pytest
 
 if platform.system() != "Linux":
-	pytest.skip("BCD tests are only relevant on Linux", allow_module_level=True)
-from opsi.system.bcd import BCD
+	pytest.skip("BCD tests are currently only relevant on Linux", allow_module_level=True)
+
+from opsi.file.bcd import BCD
+
+DATA_PATH = Path("tests") / "data" / "bcd"
 
 
 def test_fail_open() -> None:
@@ -35,7 +37,7 @@ def test_create_template(tmp_path: Path) -> None:
 
 
 def test_read_bcd_winpe() -> None:
-	filename = os.path.join(os.path.dirname(__file__), "../../data/bcd/BCD.winpe")
+	filename = DATA_PATH / "BCD.winpe"
 	bcd = BCD(filename=filename)
 	entries = bcd.get_boot_entries()
 	assert len(entries) == 3
@@ -193,7 +195,7 @@ def test_update_device_info(tmp_path: Path) -> None:  # pylint: disable=too-many
 
 
 def test_update_boot_entry(tmp_path: Path) -> None:
-	bcd_winpe = os.path.join(os.path.dirname(__file__), "../../data/bcd/BCD.winpe")
+	bcd_winpe = DATA_PATH / "BCD.winpe"
 	bcd_file = tmp_path / "BCD"
 	with open(bcd_winpe, "rb") as inf:
 		with open(bcd_file, "wb") as outf:
@@ -209,7 +211,7 @@ def test_update_boot_entry(tmp_path: Path) -> None:
 
 
 def test_boot_entry_testsigning(tmp_path: Path) -> None:
-	bcd_winpe = os.path.join(os.path.dirname(__file__), "../../data/bcd/BCD.options")
+	bcd_winpe = DATA_PATH / "BCD.options"
 	bcd_file = tmp_path / "BCD"
 	with open(bcd_winpe, "rb") as inf:
 		with open(bcd_file, "wb") as outf:
@@ -230,7 +232,7 @@ def test_boot_entry_testsigning(tmp_path: Path) -> None:
 
 
 def test_boot_entry_bootlog(tmp_path: Path) -> None:
-	bcd_winpe = os.path.join(os.path.dirname(__file__), "../../data/bcd/BCD.options")
+	bcd_winpe = DATA_PATH / "BCD.options"
 	bcd_file = tmp_path / "BCD"
 	with open(bcd_winpe, "rb") as inf:
 		with open(bcd_file, "wb") as outf:

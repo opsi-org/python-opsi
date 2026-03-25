@@ -14,8 +14,6 @@ from uuid import UUID
 
 from opsi.opsi.service.model.type import Architecture
 
-from ._infhash import calc_hash
-
 RE_SECTION = re.compile(r"\[\s*([^\]]+)\s*\]")
 RE_PLACEHOLDER = re.compile(r"%([^%]+)%")
 RE_COMMENT = re.compile(r"(\".*?\"|\'.*?\')|([;][^\r\n]*$)", re.MULTILINE | re.DOTALL)
@@ -40,6 +38,17 @@ FLG_ADDREG_TYPE_MULTI_SZ = 0x00010000  # The given value entry and/or value is o
 FLG_ADDREG_TYPE_EXPAND_SZ = 0x00020000  # The given value-entry-name and/or value is of the registry type REG_EXPAND_SZ.
 FLG_ADDREG_TYPE_DWORD = 0x00010001  # The given value-entry-name and/or value is of the registry type REG_DWORD.
 FLG_ADDREG_TYPE_NONE = 0x00020001  # The given value-entry-name and/or value is of the registry type REG_NONE.
+
+
+_MASK_64 = 0xFFFFFFFFFFFFFFFF
+_HASH_BASE = 39
+
+
+def calc_hash(data: bytes) -> int:
+	int_hash = 0
+	for char in data:
+		int_hash = (int_hash * _HASH_BASE + char) & _MASK_64
+	return int.from_bytes(int_hash.to_bytes(8, byteorder="little"), byteorder="big", signed=False)
 
 
 def reg_dword(value: int) -> str:

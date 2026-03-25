@@ -13,9 +13,10 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any
 
+from opsi.file.inf import INFFile, INFTargetOSVersion
 from opsi.logging import get_logger
 from opsi.opsi.service.client import ServiceClient
-from opsi.system.windows_driver._inffile import Architecture, INFFile, INFTargetOSVersion  # from module to avoid circular import
+from opsi.opsi.service.model.type import Architecture
 
 logger = get_logger(__name__)
 

@@ -13,8 +13,8 @@ import pytest
 
 from opsi.opsi.service.client import ServiceClient
 from opsi.opsi.service.model.object import serialize
+from opsi.opsi.service.model.type import Architecture
 from opsi.system.windows_driver import (
-	Architecture,
 	BinarySource,
 	BinarySourceAccessType,
 	BinarySourceBinaryType,

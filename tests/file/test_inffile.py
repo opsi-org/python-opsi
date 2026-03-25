@@ -3,10 +3,6 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-"""
-inffile tests
-"""
-
 from datetime import datetime, timezone
 from pathlib import Path
 from textwrap import dedent
@@ -14,8 +10,7 @@ from unittest import mock
 
 import pytest
 
-from opsi.system.windows_driver import (
-	Architecture,
+from opsi.file.inf import (
 	DeviceType,
 	INFDriverVer,
 	INFFile,
@@ -24,7 +19,10 @@ from opsi.system.windows_driver import (
 	INFTargetOSVersion,
 	INFVersion,
 )
-from opsi.system.windows_driver._inffile import _to_int, current_timestamp, reg_dword, reg_expand_sz, reg_hex, reg_multi_sz
+from opsi.file.inf._inffile import _to_int, current_timestamp, reg_dword, reg_expand_sz, reg_hex, reg_multi_sz
+from opsi.opsi.service.model.type import Architecture
+
+DATA_PATH = Path("tests") / "data" / "inffile"
 
 
 def test_to_int() -> None:
@@ -147,7 +145,7 @@ def test_fail_open() -> None:
 
 
 def test_hash() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/vioscsi_amd64.inf"
+	filepath = DATA_PATH / "vioscsi_amd64.inf"
 	inf_file = INFFile(path=filepath)
 	assert hex(inf_file.hash) == "0x580a262bfd85344b"
 
@@ -212,7 +210,7 @@ def test_hash() -> None:
 	),
 )
 def test_version(filename: str, expected_version: INFVersion) -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile" / filename
+	filepath = DATA_PATH / filename
 	inf_file = INFFile(path=filepath)
 	inf_file.parse()
 	assert inf_file.version == expected_version
@@ -291,14 +289,14 @@ def test_version(filename: str, expected_version: INFVersion) -> None:
 	),
 )
 def test_manufacturer(filename: str, expected_manufacturers: list[INFManufacturer]) -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile" / filename
+	filepath = DATA_PATH / filename
 	inf_file = INFFile(path=filepath)
 	inf_file.parse()
 	assert inf_file._manufacturers == expected_manufacturers
 
 
 def test_parse_encodings(tmp_path: Path) -> None:
-	test_file = Path(__file__).parent.parent.parent / "data/inffile/vioscsi_amd64.inf"
+	test_file = DATA_PATH / "vioscsi_amd64.inf"
 	data = test_file.read_text("ascii") + "üöä"
 	test_file = tmp_path / "test.inf"
 
@@ -318,7 +316,7 @@ def test_parse_encodings(tmp_path: Path) -> None:
 
 
 def test_strings_vioscsi_amd64() -> None:
-	test_file = Path(__file__).parent.parent.parent / "data/inffile/vioscsi_amd64.inf"
+	test_file = DATA_PATH / "vioscsi_amd64.inf"
 	inf_file = INFFile(path=test_file, inf_name="vioscsi.inf")
 	inf_file.parse()
 	assert inf_file._strings == {
@@ -335,7 +333,7 @@ def test_strings_vioscsi_amd64() -> None:
 
 
 def test_get_services_reg_vioscsi_amd64() -> None:
-	test_file = Path(__file__).parent.parent.parent / "data/inffile/vioscsi_amd64.inf"
+	test_file = DATA_PATH / "vioscsi_amd64.inf"
 	inf_file = INFFile(path=test_file, inf_name="vioscsi.inf")
 	reg = inf_file.get_services_reg(
 		hardware_id=INFHardwareID(device_type=DeviceType.PCI, vendor_id="1AF4", device_id="1004"),
@@ -436,10 +434,10 @@ def test_get_services_reg_vioscsi_amd64() -> None:
 
 
 def test_get_driver_database_reg_vioscsi_amd64() -> None:
-	test_file = Path(__file__).parent.parent.parent / "data/inffile/vioscsi_amd64.inf"
+	test_file = DATA_PATH / "vioscsi_amd64.inf"
 	inf_file = INFFile(path=test_file, inf_name="vioscsi.inf")
 
-	with mock.patch("opsi.system.windows_driver._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()):
+	with mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()):
 		reg = inf_file.get_driver_database_reg(
 			target_os_version=INFTargetOSVersion(Architecture=Architecture.X64),
 			hardware_id=INFHardwareID(
@@ -549,10 +547,10 @@ def test_get_driver_database_reg_vioscsi_amd64() -> None:
 
 
 def test_get_driver_database_reg_vioscsi_x86() -> None:
-	test_file = Path(__file__).parent.parent.parent / "data/inffile/vioscsi_x86.inf"
+	test_file = DATA_PATH / "vioscsi_x86.inf"
 	inf_file = INFFile(path=test_file, inf_name="vioscsi.inf")
 
-	with mock.patch("opsi.system.windows_driver._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()):
+	with mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()):
 		reg = inf_file.get_driver_database_reg(
 			target_os_version=INFTargetOSVersion(Architecture=Architecture.X86),
 			hardware_id=INFHardwareID(
@@ -662,7 +660,7 @@ def test_get_driver_database_reg_vioscsi_x86() -> None:
 
 
 def test_parse_lsi_sas() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/lsi_sas.inf"
+	filepath = DATA_PATH / "lsi_sas.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 	assert inf_file._strings == {
@@ -729,7 +727,7 @@ def test_parse_lsi_sas() -> None:
 
 
 def test_parse_ser2pl() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/ser2pl.inf"
+	filepath = DATA_PATH / "ser2pl.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -745,7 +743,7 @@ def test_parse_ser2pl() -> None:
 
 
 def test_parse_vioinput() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/vioinput.inf"
+	filepath = DATA_PATH / "vioinput.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -759,7 +757,7 @@ def test_parse_vioinput() -> None:
 
 
 def test_parse_qemupciserial() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/qemupciserial.inf"
+	filepath = DATA_PATH / "qemupciserial.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -779,7 +777,7 @@ def test_parse_qemupciserial() -> None:
 
 
 def test_parse_pvpanic() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/pvpanic.inf"
+	filepath = DATA_PATH / "pvpanic.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -790,7 +788,7 @@ def test_parse_pvpanic() -> None:
 
 
 def test_parse_pvscsi() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/pvscsi.inf"
+	filepath = DATA_PATH / "pvscsi.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 	assert inf_file._strings == {
@@ -818,7 +816,7 @@ def test_parse_pvscsi() -> None:
 
 
 def test_viostor() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/viostor.inf"
+	filepath = DATA_PATH / "viostor.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -865,7 +863,7 @@ def test_viostor() -> None:
 
 
 def test_parse_dax3_ext_rtk() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/dax3_ext_rtk.inf"
+	filepath = DATA_PATH / "dax3_ext_rtk.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -917,9 +915,9 @@ def test_parse_dax3_ext_rtk() -> None:
 
 
 def test_get_reg_pvscsi() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/pvscsi.inf"
+	filepath = DATA_PATH / "pvscsi.inf"
 	inf_file = INFFile(filepath)
-	with mock.patch("opsi.system.windows_driver._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()):
+	with mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()):
 		reg = inf_file.get_driver_database_reg(
 			target_os_version=INFTargetOSVersion(Architecture=Architecture.X64),
 			hardware_id=INFHardwareID(
@@ -996,9 +994,9 @@ def test_get_reg_pvscsi() -> None:
 
 
 def test_get_reg_netkvm() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/netkvm.inf"
+	filepath = DATA_PATH / "netkvm.inf"
 	inf_file = INFFile(filepath)
-	with mock.patch("opsi.system.windows_driver._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()):
+	with mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()):
 		reg = inf_file.get_driver_database_reg(
 			target_os_version=INFTargetOSVersion(Architecture=Architecture.X64),
 			hardware_id=INFHardwareID(
@@ -1356,7 +1354,7 @@ def test_get_reg_netkvm() -> None:
 
 
 def test_devices_netkvm() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/netkvm.inf"
+	filepath = DATA_PATH / "netkvm.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -1429,7 +1427,7 @@ def test_devices_netkvm() -> None:
 
 
 def test_devices_storufs() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/storufs.inf"
+	filepath = DATA_PATH / "storufs.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -1457,7 +1455,7 @@ def test_devices_storufs() -> None:
 
 
 def test_devices_hid_pci() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/HID_PCI.inf"
+	filepath = DATA_PATH / "HID_PCI.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -1470,7 +1468,7 @@ def test_devices_hid_pci() -> None:
 
 
 def test_devices_surface_pen() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/SurfacePen217Integration.inf"
+	filepath = DATA_PATH / "SurfacePen217Integration.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -1483,7 +1481,7 @@ def test_devices_surface_pen() -> None:
 
 
 def test_devices_iigd_ext_lx() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/iigd_ext_lx.inf"
+	filepath = DATA_PATH / "iigd_ext_lx.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -1498,7 +1496,7 @@ def test_devices_iigd_ext_lx() -> None:
 
 
 def test_devices_surface_oem_panel() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/SurfaceOemPanel.inf"
+	filepath = DATA_PATH / "SurfaceOemPanel.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -1523,7 +1521,7 @@ def test_devices_surface_oem_panel() -> None:
 
 
 def test_devices_surface_oem_panel_customization() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/SurfaceOemPanelCustomization.inf"
+	filepath = DATA_PATH / "SurfaceOemPanelCustomization.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -1536,7 +1534,7 @@ def test_devices_surface_oem_panel_customization() -> None:
 
 
 def test_devices_surface_oem_panel_ehdxacpm() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/EHDXACPM.inf"
+	filepath = DATA_PATH / "EHDXACPM.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -1552,7 +1550,7 @@ def test_devices_surface_oem_panel_ehdxacpm() -> None:
 
 
 def test_devices_surface_oem_panel_netwtw08() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/Netwtw08.INF"
+	filepath = DATA_PATH / "Netwtw08.INF"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -2218,7 +2216,7 @@ def test_devices_surface_oem_panel_netwtw08() -> None:
 	),
 )
 def test_devices_ehdxsstmd3a4(build_number: int, expected_configuration: str) -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/EHDXSSTMD3A4.inf"
+	filepath = DATA_PATH / "EHDXSSTMD3A4.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -2244,7 +2242,7 @@ def test_devices_ehdxsstmd3a4(build_number: int, expected_configuration: str) ->
 
 
 def test_devices_iactrllogic64() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/iactrllogic64.inf"
+	filepath = DATA_PATH / "iactrllogic64.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -2260,7 +2258,7 @@ def test_devices_iactrllogic64() -> None:
 
 
 def test_hdxacpdellcsmb() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/HDXACPDELLCSMB.inf"
+	filepath = DATA_PATH / "HDXACPDELLCSMB.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -2345,8 +2343,8 @@ def test_hdxacpdellcsmb() -> None:
 	]
 
 	with (
-		mock.patch("opsi.system.windows_driver._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()),
-		mock.patch("opsi.system.windows_driver._inffile.calc_hash", lambda x: 12345678),
+		mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()),
+		mock.patch("opsi.file.inf._inffile.calc_hash", lambda x: 12345678),
 	):
 		reg = inf_file.get_driver_database_reg(
 			target_os_version=INFTargetOSVersion(Architecture=Architecture.X64),
@@ -2360,7 +2358,7 @@ def test_hdxacpdellcsmb() -> None:
 
 
 def test_ude() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/Ude.inf"
+	filepath = DATA_PATH / "Ude.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -2379,8 +2377,8 @@ def test_ude() -> None:
 	]
 
 	with (
-		mock.patch("opsi.system.windows_driver._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()),
-		mock.patch("opsi.system.windows_driver._inffile.calc_hash", lambda x: 12345678),
+		mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()),
+		mock.patch("opsi.file.inf._inffile.calc_hash", lambda x: 12345678),
 	):
 		reg = inf_file.get_driver_database_reg(
 			target_os_version=INFTargetOSVersion(Architecture=Architecture.X64),
@@ -2446,7 +2444,7 @@ def test_ude() -> None:
 
 
 def test_hdbusext() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/HdBusExt.inf"
+	filepath = DATA_PATH / "HdBusExt.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -2501,8 +2499,8 @@ def test_hdbusext() -> None:
 	]
 
 	with (
-		mock.patch("opsi.system.windows_driver._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()),
-		mock.patch("opsi.system.windows_driver._inffile.calc_hash", lambda x: 12345678),
+		mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()),
+		mock.patch("opsi.file.inf._inffile.calc_hash", lambda x: 12345678),
 	):
 		reg = inf_file.get_driver_database_reg(
 			target_os_version=INFTargetOSVersion(Architecture=Architecture.X64),
@@ -2564,7 +2562,7 @@ def test_hdbusext() -> None:
 
 
 def test_rtdusbad_dell() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/RtDUsbAD_dell.inf"
+	filepath = DATA_PATH / "RtDUsbAD_dell.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -2583,8 +2581,8 @@ def test_rtdusbad_dell() -> None:
 	]
 
 	with (
-		mock.patch("opsi.system.windows_driver._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()),
-		mock.patch("opsi.system.windows_driver._inffile.calc_hash", lambda x: 12345678),
+		mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()),
+		mock.patch("opsi.file.inf._inffile.calc_hash", lambda x: 12345678),
 	):
 		reg = inf_file.get_driver_database_reg(
 			target_os_version=INFTargetOSVersion(Architecture=Architecture.X64),
@@ -2669,7 +2667,7 @@ def test_rtdusbad_dell() -> None:
 
 
 def test_vioprot() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/vioprot.inf"
+	filepath = DATA_PATH / "vioprot.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -2681,8 +2679,8 @@ def test_vioprot() -> None:
 	]
 
 	with (
-		mock.patch("opsi.system.windows_driver._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()),
-		mock.patch("opsi.system.windows_driver._inffile.calc_hash", lambda x: 12345678),
+		mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()),
+		mock.patch("opsi.file.inf._inffile.calc_hash", lambda x: 12345678),
 	):
 		with pytest.raises(RuntimeError, match=r"No devices found for INFTargetOSVersion\(NTamd64\) and INFHardwareID\(VIOPROT\)"):
 			inf_file.get_driver_database_reg(
@@ -2774,7 +2772,7 @@ def test_vioprot() -> None:
 
 
 def test_e1d68x64() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/e1d68x64.inf"
+	filepath = DATA_PATH / "e1d68x64.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -2844,7 +2842,7 @@ def test_e1d68x64() -> None:
 
 
 def test_AdlerLakePCH() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/AlderLakePCH-NDmaSecExtension.inf"
+	filepath = DATA_PATH / "AlderLakePCH-NDmaSecExtension.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -2964,7 +2962,7 @@ def test_AdlerLakePCH() -> None:
 
 
 def reg_out(reg_file: Path) -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/vioscsi_amd64.inf"
+	filepath = DATA_PATH / "vioscsi_amd64.inf"
 	inf_file = INFFile(filepath)
 	target_os_version = INFTargetOSVersion(Architecture=Architecture.X64)
 	reg = inf_file.get_driver_database_reg(target_os_version) + inf_file.get_services_reg(target_os_version)
@@ -2978,7 +2976,7 @@ def reg_out(reg_file: Path) -> None:
 
 
 def test_vmnext3() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/vmnext3.inf"
+	filepath = DATA_PATH / "vmnext3.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -2991,7 +2989,7 @@ def test_vmnext3() -> None:
 
 
 def test_IntelACM() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/IntelACM_ADL_PW_1.18.11.0.INF"
+	filepath = DATA_PATH / "IntelACM_ADL_PW_1.18.11.0.INF"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -3003,7 +3001,7 @@ def test_IntelACM() -> None:
 
 
 def test_iaAHCIC() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/iaAHCIC.inf"
+	filepath = DATA_PATH / "iaAHCIC.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -3024,8 +3022,8 @@ def test_iaAHCIC() -> None:
 	]
 
 	with (
-		mock.patch("opsi.system.windows_driver._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()),
-		mock.patch("opsi.system.windows_driver._inffile.calc_hash", lambda x: 12345678),
+		mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()),
+		mock.patch("opsi.file.inf._inffile.calc_hash", lambda x: 12345678),
 	):
 		reg = inf_file.get_driver_database_reg(
 			target_os_version=INFTargetOSVersion(Architecture=Architecture.X64),
@@ -3113,7 +3111,7 @@ def test_iaAHCIC() -> None:
 
 
 def test_LNBITS() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/LNBITS.inf"
+	filepath = DATA_PATH / "LNBITS.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -3129,7 +3127,7 @@ def test_LNBITS() -> None:
 
 
 def test_ETD() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/ETD.inf"
+	filepath = DATA_PATH / "ETD.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -3148,7 +3146,7 @@ def test_ETD() -> None:
 
 
 def test_WbfUsbDriver() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/WbfUsbDriver.inf"
+	filepath = DATA_PATH / "WbfUsbDriver.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -3166,14 +3164,14 @@ def test_WbfUsbDriver() -> None:
 
 """
 def test_RaidDriverSmm() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/RaidDriverSmm.inf"
+	filepath = DATA_PATH / "RaidDriverSmm.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 """
 
 
 def test_iigd_dch_d() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/iigd_dch_d.inf"
+	filepath = DATA_PATH / "iigd_dch_d.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -3362,7 +3360,7 @@ def test_iigd_dch_d() -> None:
 
 
 def test_HDXLVSST() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/HDXLVSST.inf"
+	filepath = DATA_PATH / "HDXLVSST.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
@@ -3374,7 +3372,7 @@ def test_HDXLVSST() -> None:
 
 
 def test_VBoxSup() -> None:
-	filepath = Path(__file__).parent.parent.parent / "data/inffile/VBoxSup.inf"
+	filepath = DATA_PATH / "VBoxSup.inf"
 	inf_file = INFFile(filepath)
 	inf_file.parse()
 
