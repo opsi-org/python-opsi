@@ -3,6 +3,8 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
+"""Text file handling with encoding detection, line manipulation, and placeholder patching."""
+
 from __future__ import annotations
 
 import codecs
@@ -32,14 +34,7 @@ TypeWhere = Literal["selected", "above_selected", "below_selected", "top", "bott
 
 
 def _get_params_from_file(params_file: str | os.PathLike[str]) -> dict[str, str]:
-	"""
-	Read parameters from a file in the format KEY=VALUE, one per line.
-	Lines starting with # or ; will be ignored as comments.
-	Values can contain escaped characters like \n for newline or \t for tab, which will be unescaped when read.
-
-	:param params_file: The path to the parameters file.
-	:return: A dictionary of parameters read from the file.
-	"""
+	"""Read parameters from a file in the format KEY=VALUE, one per line."""
 	result = {}
 	with open(params_file, "r", encoding="utf-8", errors="replace") as file:
 		for line in file:
@@ -61,11 +56,7 @@ def _get_params_from_file(params_file: str | os.PathLike[str]) -> dict[str, str]
 
 @lru_cache(maxsize=1)
 def _get_available_encodings() -> set[str]:
-	"""
-	Get a set of available encodings names on the system, including both canonical names and aliases.
-
-	:return: A set of available encoding names.
-	"""
+	"""Get available encoding names on the system, including canonical names and aliases."""
 	return set(encodings.aliases.aliases.keys()) | set(encodings.aliases.aliases.values())
 
 
@@ -85,17 +76,25 @@ class TextFile:
 		retry_config: RetryConfig | None = None,
 	) -> None:
 		"""
-		:param path: The path to the text file to read and modify.
-		:param encoding:
+		Initialize a TextFile instance.
+
+		Parameters
+		----------
+		path : os.PathLike[str] | str
+			The path to the text file to read and modify.
+
+		encoding : str, optional
 			The encoding to use for reading and writing the file.
 			If not specified, the encoding will be detected when reading the file or
 			default to utf-8 on Unix and utf-16 on Windows if the file does not exist or the encoding cannot be detected.
-		:param line_ending:
+
+		line_ending : Literal["\n", "\r\n"], optional
 			The line ending to use for writing the file.
 			If not specified, the line ending will be detected when reading the file
 			or default to the system default line ending if the file does not exist or the line ending cannot be detected.
-		:param retry_config:
-			Optional configuration for retrying file I/O operations in case of transient errors.
+
+		retry_config : RetryConfig, optional
+			Configuration for retrying file I/O operations in case of transient errors.
 			If not specified, a default retry configuration will be used.
 		"""
 		self._path = Path(path)
@@ -113,10 +112,12 @@ class TextFile:
 			self.set_line_ending(line_ending)
 
 	def __enter__(self) -> Self:
+		"""Read the file and return this instance as the context manager."""
 		self._read()
 		return self
 
 	def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None) -> None:
+		"""Flush changes to disk if no exception occurred."""
 		if not exc_type:
 			self.flush()
 
@@ -228,7 +229,10 @@ class TextFile:
 		"""
 		Get the encoding used for reading and writing the text file.
 
-		:return: The name of the encoding.
+		Returns
+		-------
+		str
+			The name of the encoding.
 		"""
 		if self._encoding:
 			return self._encoding
@@ -240,7 +244,10 @@ class TextFile:
 		"""
 		Set the encoding to use for reading and writing the text file.
 
-		:param encoding: The name of the encoding to use.
+		Parameters
+		----------
+		encoding : str
+			The name of the encoding to use.
 		"""
 		encodings = _get_available_encodings()
 		if str(encoding).replace("-", "_") not in encodings:
@@ -254,7 +261,10 @@ class TextFile:
 		"""
 		Get the line ending used for reading and writing the text file.
 
-		:return: The line ending as a string, e.g. "\n" for LF, "\r\n" for CRLF or "" for no line endings.
+		Returns
+		-------
+		str
+			The line ending, e.g. "\n" for LF, "\r\n" for CRLF, or "" for no line endings.
 		"""
 		if self._line_ending:
 			return self._line_ending
@@ -266,7 +276,11 @@ class TextFile:
 		"""
 		Set the line ending to use for reading and writing the text file.
 
-		:param line_ending: The line ending to use. Must be one of:
+		Parameters
+		----------
+		line_ending : Literal["\n", "\r\n", ""]
+			The line ending to use. Must be one of:
+
 			- "\n": Use LF line endings.
 			- "\r\n": Use CRLF line endings.
 			- "": Use no line endings, lines will be concatenated without any separator.
@@ -284,7 +298,10 @@ class TextFile:
 		Line numbers start at 1.
 		When the file is empty, 1 will be returned as the selected line number.
 
-		:return: The currently selected line number, starting at 1.
+		Returns
+		-------
+		int
+			The currently selected line number, starting at 1.
 		"""
 		self._assert_read()
 		return self._line_index + 1
@@ -296,8 +313,15 @@ class TextFile:
 		If the specified line number is greater than the number of lines in the file,
 		new lines will be created until the specified line number is reached.
 
-		:param line_number: The line number to select, starting at 1.
-		:return: The new line number of the selected line.
+		Parameters
+		----------
+		line_number : int
+			The line number to select, starting at 1.
+
+		Returns
+		-------
+		int
+			The new line number of the selected line.
 		"""
 		self._assert_read()
 		line_number = max(1, line_number)
@@ -313,7 +337,10 @@ class TextFile:
 		Select the first line of the text file.
 		If the file is empty, a new line will be created and selected.
 
-		:return: The first line number of the selected line, which will always be 1, even if the file is empty.
+		Returns
+		-------
+		int
+			The first line number, which will always be 1, even if the file is empty.
 		"""
 		return self.select_line_number(1)
 
@@ -322,7 +349,10 @@ class TextFile:
 		Select the last line of the text file.
 		If the file is empty, a new line will be created and selected.
 
-		:return: The new line number of the last line in the file, which will be 1 if the file is empty.
+		Returns
+		-------
+		int
+			The line number of the last line in the file, which will be 1 if the file is empty.
 		"""
 		self._assert_read()
 		return self.select_line_number(len(self._lines))
@@ -332,7 +362,10 @@ class TextFile:
 		Select the next line in the text file.
 		If the currently selected line is the last line in the file, a new line will be created and selected.
 
-		:return: The new line number of the selected line.
+		Returns
+		-------
+		int
+			The new line number of the selected line.
 		"""
 		self._assert_read()
 		return self.select_line_number(self._line_index + 2)
@@ -341,7 +374,10 @@ class TextFile:
 		"""
 		Select the previous line in the text file.
 
-		:return: The new line number of the selected line.
+		Returns
+		-------
+		int
+			The new line number of the selected line.
 		"""
 		self._assert_read()
 		return self.select_line_number(self._line_index)
@@ -350,15 +386,27 @@ class TextFile:
 		"""
 		Find the first line matching the given regular expression pattern and select it.
 
-		:param pattern: The regular expression pattern to search for in the lines of the text file.
-		:param start: The position to start the search from. Must be one of:
+		Parameters
+		----------
+		pattern : str
+			The regular expression pattern to search for in the lines of the text file.
+
+		start : TypeWhere, default: "below_selected"
+			The position to start the search from. Must be one of:
+
 			- "selected": Start searching down from the currently selected line, including it.
 			- "below_selected": Start searching down from the line below the currently selected line.
 			- "above_selected": Start searching up from the line above the currently selected line.
 			- "top": Start searching down from the top of the file.
 			- "bottom": Start searching up from the bottom of the file.
 
-		:return: The line number of the first matching line, or 0 if no match is found.
+		ignore_case : bool, default: False
+			Whether to ignore case when matching the pattern.
+
+		Returns
+		-------
+		int
+			The line number of the first matching line, or 0 if no match is found.
 		"""
 		if start not in get_args(TypeWhere):
 			raise ValueError(f"Invalid start position {start!r}, must be one of: {', '.join(repr(arg) for arg in get_args(TypeWhere))}")
@@ -385,7 +433,10 @@ class TextFile:
 		"""
 		Get the text of the currently selected line, or an empty string if the file is empty.
 
-		:return: The text of the currently selected line, or an empty string if the file is empty.
+		Returns
+		-------
+		str
+			The text of the currently selected line, or an empty string if the file is empty.
 		"""
 		self._assert_read()
 		if not self._lines:
@@ -396,14 +447,24 @@ class TextFile:
 		"""
 		Insert multiple lines of text at the specified position.
 
-		:param lines: The lines of text to insert.
-		:param where: The position to insert the lines. Must be one of:
+		Parameters
+		----------
+		lines : list[str]
+			The lines of text to insert.
+
+		where : TypeWhere, default: "below_selected"
+			The position to insert the lines. Must be one of:
+
 			- "selected": Insert at the currently selected line, the selected line will be overwritten.
 			- "above_selected": Insert above the currently selected line, pushing the current line and following lines down.
 			- "below_selected": Insert below the currently selected line, pushing the following lines down.
 			- "top": Insert at the top of the file, pushing all lines down.
 			- "bottom": Insert at the bottom of the file.
-		:return: The new line number of the last inserted line.
+
+		Returns
+		-------
+		int
+			The new line number of the last inserted line.
 		"""
 		if where not in get_args(TypeWhere):
 			raise ValueError(f"Invalid insert position {where!r}, must be one of: {', '.join(repr(arg) for arg in get_args(TypeWhere))}")
@@ -426,14 +487,24 @@ class TextFile:
 		"""
 		Insert a single line of text at the specified position.
 
-		:param text: The text to insert as a single line.
-		:param where: The position to insert the line. Must be one of:
+		Parameters
+		----------
+		text : str
+			The text to insert as a single line.
+
+		where : TypeWhere, default: "below_selected"
+			The position to insert the line. Must be one of:
+
 			- "selected": Insert at the currently selected line, the selected line will be overwritten.
 			- "above_selected": Insert above the currently selected line, pushing the current line and following lines down.
 			- "below_selected": Insert below the currently selected line, pushing the following lines down.
 			- "top": Insert at the top of the file, pushing all lines down.
 			- "bottom": Insert at the bottom of the file.
-		:return: The new line number of the inserted line.
+
+		Returns
+		-------
+		int
+			The new line number of the inserted line.
 		"""
 		return self.insert_lines([text], where=where)
 
@@ -441,8 +512,15 @@ class TextFile:
 		"""
 		Set the text of the currently selected line, overwriting it.
 
-		:param text: The text to set for the selected line.
-		:return: The new line number of the set line.
+		Parameters
+		----------
+		text : str
+			The text to set for the selected line.
+
+		Returns
+		-------
+		int
+			The new line number of the set line.
 		"""
 		return self.insert_line(text, where="selected")
 
@@ -455,19 +533,32 @@ class TextFile:
 		"""
 		Delete one or more lines of text at the specified position.
 
-		:param where: The position to delete lines from. Must be one of:
+		Parameters
+		----------
+		where : TypeWhere, default: "below_selected"
+			The position to delete lines from. Must be one of:
+
 			- "selected": Start deletion at the currently selected line.
 			- "above_selected": Delete lines above the currently selected line.
 			- "below_selected": Delete lines below the currently selected line.
 			- "top": Delete lines from the top of the file.
 			- "bottom": Delete lines from the bottom of the file.
-		:param count: The number of lines to delete. If None, the number of lines to delete will be determined based on the position:
+
+		count : int, optional
+			The number of lines to delete. If None, the number of lines to delete
+			will be determined based on the position:
+
 			- "selected": Delete the selected line.
 			- "above_selected": Delete all lines above the selected line.
 			- "below_selected": Delete all lines below the selected line.
 			- "top": Delete all lines from the top of the file.
 			- "bottom": Delete all lines from the bottom of the file.
-		:return: The new line number of the line following the last deleted line, or the last line if the deleted lines were at the end of the file.
+
+		Returns
+		-------
+		int
+			The new line number of the line following the last deleted line, or the
+			last line if the deleted lines were at the end of the file.
 		"""
 		if where not in get_args(TypeWhere):
 			raise ValueError(f"Invalid delete position {where!r}, must be one of: {', '.join(repr(arg) for arg in get_args(TypeWhere))}")
@@ -515,13 +606,22 @@ class TextFile:
 		"""
 		Delete a single line of text at the specified position.
 
-		:param where: The position to delete the line from. Must be one of:
+		Parameters
+		----------
+		where : TypeWhere, default: "selected"
+			The position to delete the line from. Must be one of:
+
 			- "selected": Delete the currently selected line.
 			- "above_selected": Delete the line above the currently selected line.
 			- "below_selected": Delete the line below the currently selected line.
 			- "top": Delete the top line of the file.
 			- "bottom": Delete the bottom line of the file.
-		:return: The new line number of the line following the deleted line, or the last line if the deleted line was at the end of the file.
+
+		Returns
+		-------
+		int
+			The new line number of the line following the deleted line, or the last
+			line if the deleted line was at the end of the file.
 		"""
 		return self.delete_lines(where=where, count=1)
 
@@ -529,7 +629,10 @@ class TextFile:
 		"""
 		Get all lines of the text file as a list of strings without line endings.
 
-		:return: A list of lines in the text file, without line endings.
+		Returns
+		-------
+		list[str]
+			The lines in the text file, without line endings.
 		"""
 		self._assert_read()
 		return self._lines
@@ -538,7 +641,10 @@ class TextFile:
 		"""
 		Get the number of lines in the text file.
 
-		:return: The number of lines in the text file.
+		Returns
+		-------
+		int
+			The number of lines in the text file.
 		"""
 		self._assert_read()
 		return len(self._lines)
@@ -547,7 +653,10 @@ class TextFile:
 		"""
 		Read the entire content of the text file as a single string with line endings.
 
-		:return: The entire content of the text file as a single string with line endings.
+		Returns
+		-------
+		str
+			The entire content of the text file as a single string with line endings.
 			If the file is empty, an empty string will be returned.
 		"""
 		self._assert_read()
@@ -561,8 +670,17 @@ class TextFile:
 		Write the given text to the file, replacing the entire content.
 		The text can contain multiple lines separated by \n or \r\n line endings.
 
-		:param text: The text to write to the file. Can contain multiple lines separated by \n or \r\n line endings.
-		:return: The new line number of the last line in the file after writing the text, or 1 if the text is empty.
+		Parameters
+		----------
+		text : str
+			The text to write to the file. Can contain multiple lines
+			separated by \n or \r\n line endings.
+
+		Returns
+		-------
+		int
+			The new line number of the last line in the file after writing
+			the text, or 1 if the text is empty.
 		"""
 		self._assert_read()
 		assert self._line_ending is not None
@@ -575,15 +693,27 @@ class TextFile:
 	) -> None:
 		"""
 		Patch the text file by replacing placeholders with values from the provided parameters.
-		Placeholders in the text file can be in the format #@KEY# or {{KEY}}. The KEY will be replaced with the corresponding value from the parameters.
+		Placeholders in the text file can be in the format ``#@KEY#`` or ``{{KEY}}``.
+		The KEY will be replaced with the corresponding value from the parameters.
 
-		:param params: A dictionary of parameters to use for patching. The keys are the placeholder names, and the values are the values to replace them with.
-		:param params_file: A file containing parameters in the format KEY=VALUE, one per line.
-			Lines starting with # or ; will be ignored as comments. Values can contain escaped characters like
-			\n for newline or \t for tab, which will be unescaped when read.
-		:param kernel_params: If True, parameters will also be read from the Linux kernel command line.
-			This is only supported on Linux systems. The kernel parameters will be available as key-value pairs
-			where the key is the parameter name and the value is the parameter value. Parameters without a value will have an empty string as value.
+		Parameters
+		----------
+		params : dict[str, str], optional
+			A dictionary of parameters to use for patching. The keys are the
+			placeholder names, and the values are the values to replace them with.
+
+		params_file : str | os.PathLike[str], optional
+			A file containing parameters in the format KEY=VALUE, one per line.
+			Lines starting with # or ; will be ignored as comments. Values can
+			contain escaped characters like \n for newline or \t for tab, which
+			will be unescaped when read.
+
+		kernel_params : bool, default: False
+			If True, parameters will also be read from the Linux kernel command line.
+			This is only supported on Linux systems. The kernel parameters will be
+			available as key-value pairs where the key is the parameter name and the
+			value is the parameter value. Parameters without a value will have an
+			empty string as value.
 		"""
 		self._assert_read()
 		_params = {}
@@ -634,5 +764,22 @@ def patch_text_file(
 	params_file: str | os.PathLike[str] | None = None,
 	kernel_params: bool = False,
 ) -> None:
+	"""
+	Patch a text file by replacing placeholders with parameter values.
+
+	Parameters
+	----------
+	text_file : str | os.PathLike[str]
+		The path to the text file to patch.
+
+	params : dict[str, str], optional
+		A dictionary of placeholder names to replacement values.
+
+	params_file : str | os.PathLike[str], optional
+		A file containing parameters in the format KEY=VALUE, one per line.
+
+	kernel_params : bool, default: False
+		If True, also read parameters from the Linux kernel command line.
+	"""
 	with TextFile(text_file) as file:
 		file.patch(params=params, params_file=params_file, kernel_params=kernel_params)
