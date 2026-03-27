@@ -390,8 +390,8 @@ def test_http_server_propfind_and_delete_directory(tmp_path: Path) -> None:
 		assert res.status_code == 404
 
 
-def _make_headers(values: dict[str, str]) -> Message[str, str]:
-	headers: Message[str, str] = Message()
+def _make_headers(values: dict[str, str]) -> Message:
+	headers = Message()
 	for name, value in values.items():
 		headers[name] = value
 	return headers
