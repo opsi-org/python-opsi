@@ -132,7 +132,13 @@ class OPSILogger(logging.Logger):
 		Find the stack frame of the caller so that we can note the source
 		file name, line number and function name.
 		"""
-		frame = sys._getframe(1)
+		try:
+			# The common call chain is findCaller -> Logger._log -> Logger.<level> -> caller.
+			frame = sys._getframe(3)
+			code = frame.f_code
+			return code.co_filename, frame.f_lineno, code.co_name, None
+		except ValueError:
+			frame = sys._getframe(1)
 		try:
 			while frame:
 				if frame.f_code.co_name == "_log":
@@ -378,6 +384,7 @@ class ContextSecretFormatter(Formatter):
 			orig_formatter = Formatter()
 		self.orig_formatter = orig_formatter
 		self.secret_filter_enabled = True
+		self._uses_contextstring = "%(contextstring)" in getattr(orig_formatter, "_fmt", "")
 
 	def disable_filter(self) -> None:
 		"""
@@ -413,7 +420,7 @@ class ContextSecretFormatter(Formatter):
 		:rytpe: str
 		"""
 
-		if context_ := getattr(record, "context", None):
+		if self._uses_contextstring and not getattr(record, "contextstring", "") and (context_ := getattr(record, "context", None)):
 			logger_name = _logger_context_names.get(record.name) or ""
 			ctx = [logger_name] if logger_name else []
 			for k, v in context_.items():
@@ -426,8 +433,11 @@ class ContextSecretFormatter(Formatter):
 		if not self.secret_filter_enabled:
 			return msg
 
-		_secret_filter = secret_filter
-		for _secret in _secret_filter.secrets:
+		secrets = secret_filter.secrets
+		if not secrets:
+			return msg
+
+		for _secret in secrets:
 			msg = msg.replace(_secret, SECRET_REPLACEMENT_STRING)
 		return msg
 
