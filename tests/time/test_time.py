@@ -13,8 +13,18 @@ import opsi.time._time as time_module
 from opsi.time import unix_timestamp
 
 
+def test_unix_timestamp() -> None:
+	unix_ts = unix_timestamp()
+	assert isinstance(unix_ts, float)
+	unix_ts_ms = unix_timestamp(millis=True)
+	assert unix_ts_ms / 1000 - unix_ts < 2
+	assert (unix_timestamp(add_seconds=30) - (unix_ts + 30)) < 2
+	assert (unix_timestamp(add_seconds=-30) - (unix_ts - 30)) < 2
+
+
 @pytest.mark.parametrize("local_timezone", ("UTC", "Europe/Berlin", "America/New_York", "Pacific/Auckland"))
-def test_unix_timestamp(monkeypatch: pytest.MonkeyPatch, local_timezone: str) -> None:
+@pytest.mark.linux
+def test_unix_timestamp_with_tz(monkeypatch: pytest.MonkeyPatch, local_timezone: str) -> None:
 	fixed_datetime = datetime(2026, 3, 27, 12, 0, 1, 250000, tzinfo=timezone.utc)
 	original_timezone = os.environ.get("TZ")
 
