@@ -987,6 +987,19 @@ def get_all_loggers() -> list[logging.Logger | logging.RootLogger]:
 	return [logging.root] + [lg for lg in logging.Logger.manager.loggerDict.values() if not isinstance(lg, PlaceHolder)]
 
 
+def _handler_matches_type(handler: logging.Handler, handler_type: type | tuple[type, ...] | None) -> bool:
+	if handler_type is None:
+		return True
+	if not isinstance(handler_type, tuple):
+		handler_type = (handler_type,)
+	for expected_type in handler_type:
+		if type(handler) is expected_type:
+			return True
+		if handler.__class__.__module__ == expected_type.__module__ and handler.__class__.__qualname__ == expected_type.__qualname__:
+			return True
+	return False
+
+
 def get_all_handlers(handler_type: type | tuple[type, ...] | None = None, handler_name: str | None = None) -> list[logging.Handler]:
 	"""
 	Gets list of all handlers.
@@ -1008,9 +1021,7 @@ def get_all_handlers(handler_type: type | tuple[type, ...] | None = None, handle
 			for _handler in _logger.handlers:
 				if (
 					(not isinstance(_handler, NullHandler))
-					and (
-						not isinstance(handler_type, tuple) or type(_handler) in handler_type  # exact type needed, not subclass
-					)
+					and _handler_matches_type(_handler, handler_type)
 					and (not handler_name or _handler.name == handler_name)
 				):
 					handlers.append(_handler)
@@ -1034,10 +1045,7 @@ def remove_all_handlers(handler_type: type | None = None, handler_name: str | No
 		remove_handlers = [
 			_handler
 			for _handler in _logger.handlers
-			if (
-				not handler_type or type(_handler) == handler_type  # exact type needed, not subclass # noqa: E721
-			)
-			and (not handler_name or _handler.name == handler_name)
+			if _handler_matches_type(_handler, handler_type) and (not handler_name or _handler.name == handler_name)
 		]
 		for _handler in remove_handlers:
 			_handler.close()
@@ -1102,14 +1110,16 @@ def reset_logging() -> None:
 	logging.root.setLevel(logging.WARNING)
 	_logging_state.reset()
 	_logger_context_names.clear()
+	secret_filter.clear_secrets()
+	observable_handler._observers.clear()
 	context_filter.set_filter(None)
 	logging_config(stderr_level=logging.WARNING)
 
 
 init_warnings_capture()
-observable_handler = ObservableHandler()
-secret_filter = SecretFilter()
-context_filter = ContextFilter()
+observable_handler = globals().get("observable_handler") or ObservableHandler()
+secret_filter = globals().get("secret_filter") or SecretFilter()
+context_filter = globals().get("context_filter") or ContextFilter()
 
 
 def get_logger(name: str | None = None) -> OPSILogger:
