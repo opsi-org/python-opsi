@@ -6,11 +6,12 @@
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from unittest.mock import patch
 
 import pytest
 
+from opsi.file.inf import INFFile
 from opsi.opsi.service.client import ServiceClient
 from opsi.opsi.service.model.object import serialize
 from opsi.opsi.service.model.type import Architecture
@@ -19,9 +20,151 @@ from opsi.system.windows_driver import (
 	BinarySourceAccessType,
 	BinarySourceBinaryType,
 	BinarySourceOperationType,
+	_driver_utils,
+	add_drivers_to_driver_store,
 	integrate_windows_drivers,
 )
 from opsi.testing.helper import http_test_server
+
+
+def test_binary_source_as_dict() -> None:
+	source = BinarySource(
+		binary_type=BinarySourceBinaryType.WINDOWS_DRIVER,
+		access_type=BinarySourceAccessType.DEPOT,
+		operation_type=BinarySourceOperationType.RECURSIVE_COPY,
+		url="/drivers/example",
+		information={"inf_file": "example.inf"},
+	)
+
+	assert source.as_dict() == {
+		"binary_type": BinarySourceBinaryType.WINDOWS_DRIVER,
+		"access_type": BinarySourceAccessType.DEPOT,
+		"operation_type": BinarySourceOperationType.RECURSIVE_COPY,
+		"url": "/drivers/example",
+		"information": {"inf_file": "example.inf"},
+	}
+
+
+def test_integrate_windows_drivers_requires_windows_base_path(tmp_path: Path) -> None:
+	class MockService(ServiceClient):
+		def driver_getSources(self, productId: str, clientId: str, architecture: str, osVersion: str | None) -> list[BinarySource]:
+			return []
+
+	with pytest.raises(ValueError, match="windows_base_path must be provided"):
+		integrate_windows_drivers(
+			service=MockService(),
+			source=tmp_path,
+			destination=tmp_path / "dest",
+			product_id="test_product",
+			client_id="test_client",
+			architecture=Architecture.X64,
+			add_driver_classes_to_driver_store=["Net"],
+		)
+
+
+def test_integrate_windows_drivers_skips_unsupported_sources(tmp_path: Path) -> None:
+	depot_path = tmp_path / "depot"
+	dest_path = tmp_path / "driver_integration"
+	valid_driver_path = depot_path / "drivers" / "valid"
+	(valid_driver_path / "valid.inf").parent.mkdir(parents=True, exist_ok=True)
+	(valid_driver_path / "valid.inf").write_text("valid")
+
+	class MockService(ServiceClient):
+		def driver_getSources(self, productId: str, clientId: str, architecture: str, osVersion: str | None) -> list[BinarySource]:
+			return [
+				BinarySource(
+					binary_type=cast(Any, "other"),
+					access_type=BinarySourceAccessType.DEPOT,
+					operation_type=BinarySourceOperationType.RECURSIVE_COPY,
+					url="/drivers/skipped",
+				),
+				BinarySource(
+					binary_type=BinarySourceBinaryType.WINDOWS_DRIVER,
+					access_type=cast(Any, "other"),
+					operation_type=BinarySourceOperationType.RECURSIVE_COPY,
+					url="/drivers/unsupported-access",
+				),
+				BinarySource(
+					binary_type=BinarySourceBinaryType.WINDOWS_DRIVER,
+					access_type=BinarySourceAccessType.DEPOT,
+					operation_type=cast(Any, "other"),
+					url="/drivers/unsupported-operation",
+				),
+				BinarySource(
+					binary_type=BinarySourceBinaryType.WINDOWS_DRIVER,
+					access_type=BinarySourceAccessType.DEPOT,
+					operation_type=BinarySourceOperationType.RECURSIVE_COPY,
+					url="/drivers/valid",
+				),
+			]
+
+	with patch.object(_driver_utils, "logger") as logger:
+		integrate_windows_drivers(
+			service=MockService(),
+			source=depot_path,
+			destination=dest_path,
+			product_id="test_product",
+			client_id="test_client",
+			architecture=Architecture.X64,
+		)
+
+	assert (dest_path / "1" / "valid.inf").read_text() == "valid"
+	logger.debug.assert_any_call("Skipping non-Windows driver source: %r", MockService().driver_getSources("", "", "", None)[0])
+	logger.error.assert_any_call("Binary access type %r is not supported", "other")
+	logger.error.assert_any_call("Binary operation type %r is not supported", "other")
+	assert any("No INF file information found for driver source" in call.args[0] for call in logger.error.call_args_list)
+
+
+def test_add_drivers_to_driver_store_copies_sys_and_ignores_registry_generation_error(tmp_path: Path) -> None:
+	driver_dir = tmp_path / "drivers" / "netkvm"
+	driver_dir.mkdir(parents=True, exist_ok=True)
+	shutil.copy("tests/data/inffile/netkvm.inf", driver_dir / "netkvm.inf")
+	(driver_dir / "netkvm.sys").write_text("driver-binary")
+
+	windows_base_path = tmp_path / "windows"
+	(windows_base_path / "System32/DriverStore/FileRepository").mkdir(parents=True, exist_ok=True)
+	(windows_base_path / "System32/drivers").mkdir(parents=True, exist_ok=True)
+
+	with patch.object(_driver_utils, "logger") as logger:
+		with patch("opsi.system.windows_driver._driver_utils.INFFile.get_driver_database_reg", side_effect=RuntimeError("boom")):
+			add_drivers_to_driver_store(
+				inf_files=[driver_dir / "netkvm.inf"],
+				windows_base_path=windows_base_path,
+				architecture=Architecture.X64,
+			)
+
+	inf_file = INFFile(driver_dir / "netkvm.inf")
+	inf_file.parse()
+	driver_store_dir = (
+		windows_base_path / "System32/DriverStore/FileRepository" / inf_file.get_driver_database_dir_name(arch=Architecture.X64)
+	)
+	assert (driver_store_dir / "netkvm.inf").exists()
+	assert (driver_store_dir / "netkvm.sys").read_text() == "driver-binary"
+	assert (windows_base_path / "System32/drivers/netkvm.sys").read_text() == "driver-binary"
+	assert any(
+		call.args and isinstance(call.args[0], RuntimeError) and call.args[0].args == ("boom",) for call in logger.error.call_args_list
+	)
+
+
+def test_add_drivers_to_driver_store_raises_on_reged_failure(tmp_path: Path) -> None:
+	driver_dir = tmp_path / "drivers" / "netkvm"
+	driver_dir.mkdir(parents=True, exist_ok=True)
+	shutil.copy("tests/data/inffile/netkvm.inf", driver_dir / "netkvm.inf")
+
+	windows_base_path = tmp_path / "windows"
+	(windows_base_path / "System32/DriverStore/FileRepository").mkdir(parents=True, exist_ok=True)
+	(windows_base_path / "System32/drivers").mkdir(parents=True, exist_ok=True)
+	(windows_base_path / "System32/config").mkdir(parents=True, exist_ok=True)
+
+	def mock_run(args: list[str], **kwargs: Any) -> subprocess.CompletedProcess:
+		return subprocess.CompletedProcess(args=args, returncode=1, stdout="bad stdout", stderr="bad stderr")
+
+	with patch("subprocess.run", mock_run), pytest.raises(RuntimeError, match="bad stdoutbad stderr"):
+		add_drivers_to_driver_store(
+			inf_files=[driver_dir / "netkvm.inf"],
+			windows_base_path=windows_base_path,
+			architecture=Architecture.X64,
+		)
 
 
 @pytest.mark.posix

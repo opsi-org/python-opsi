@@ -129,6 +129,64 @@ def test_print_boot_entries(tmp_path: Path) -> None:
 	assert out == expected
 
 
+def test_format_value_fallback_without_key() -> None:
+	bcd = BCD.__new__(BCD)
+
+	class MockHive:
+		@staticmethod
+		def value_key(value_id: int) -> str:
+			assert value_id == 1
+			return "Element"
+
+		@staticmethod
+		def value_type(value_id: int) -> tuple[int, int]:
+			assert value_id == 1
+			return (9, 0)
+
+	bcd.hive = MockHive()
+	bcd.get_value = lambda value_id: b"abc"
+
+	assert bcd.format_value(1) == '"Element"={vtype}:{value}'
+	assert bcd.format_value(1, with_key=False) == "{vtype}:{value}"
+
+
+def test_print_boot_entries_formats_boot_and_ramdisk_and_unsupported() -> None:
+	bcd = BCD.__new__(BCD)
+	bcd.get_boot_entries = lambda: [
+		{
+			"identifier": "{boot-entry}",
+			"device": {
+				"device_type": "boot",
+				"device_type_raw": 5,
+				"ramdisk_path": "sources\\boot.wim",
+				"options_id": "7619dcc8-fafe-11d9-b411-000476eba25f",
+			},
+			"osdevice": {
+				"device_type": "mystery",
+				"device_type_raw": 99,
+			},
+		}
+	]
+
+	file = io.StringIO()
+	bcd.print_boot_entries(file=file)
+
+	assert file.getvalue() == (
+		"{boot-entry}\n"
+		"device: ramdisk=[boot]\\sources\\boot.wim,{7619dcc8-fafe-11d9-b411-000476eba25f}\n"
+		"osdevice: Unsupported device type: 99/mystery\n"
+		"\n"
+	)
+
+
+def test_get_boot_entry_by_id_not_found(tmp_path: Path) -> None:
+	bcd_file = tmp_path / "BCD"
+	bcd = BCD(filename=bcd_file, create_from_template=True)
+
+	with pytest.raises(KeyError, match="Entry with identifier 'missing' not found"):
+		bcd.get_boot_entry_by_id("missing")
+
+
 def test_update_device_info(tmp_path: Path) -> None:  # pylint: disable=too-many-branches
 	bcd_file = tmp_path / "BCD"
 	bcd = BCD(filename=bcd_file, create_from_template=True)
@@ -210,6 +268,33 @@ def test_update_boot_entry(tmp_path: Path) -> None:
 	assert entry["systemroot"] == r"\Windows"
 
 
+def test_update_boot_entry_adds_missing_element(tmp_path: Path) -> None:
+	bcd_file = tmp_path / "BCD"
+	bcd = BCD(filename=bcd_file, create_from_template=True)
+	default = bcd.get_default_boot_entry_guid()
+	entry = bcd.get_boot_entry_by_id(default)
+	assert "testsigning" not in entry
+
+	bcd.update_boot_entry(default, testsigning=True)
+
+	entry = bcd.get_boot_entry_by_id(default)
+	assert entry["testsigning"] is True
+
+
+def test_delete_boot_entry(tmp_path: Path) -> None:
+	bcd_file = tmp_path / "BCD"
+	bcd = BCD(filename=bcd_file, create_from_template=True)
+	default = bcd.get_default_boot_entry_guid()
+
+	bcd.delete_boot_entry(default)
+
+	entries = bcd.get_boot_entries()
+	assert len(entries) == 1
+	assert default not in [entry["identifier"] for entry in entries]
+	with pytest.raises(KeyError, match=default):
+		bcd.get_boot_entry_by_id(default)
+
+
 def test_boot_entry_testsigning(tmp_path: Path) -> None:
 	bcd_winpe = DATA_PATH / "BCD.options"
 	bcd_file = tmp_path / "BCD"
@@ -250,3 +335,11 @@ def test_boot_entry_bootlog(tmp_path: Path) -> None:
 	bcd.update_boot_entry(default, bootlog=True)
 	entry = bcd.get_boot_entry_by_id(default)
 	assert entry["bootlog"] is True
+
+
+def test_update_device_info_invalid_device_type(tmp_path: Path) -> None:
+	bcd_file = tmp_path / "BCD"
+	bcd = BCD(filename=bcd_file, create_from_template=True)
+
+	with pytest.raises(ValueError, match="Invalid device type 'unsupported'"):
+		bcd.update_device_info(device_type="unsupported")
