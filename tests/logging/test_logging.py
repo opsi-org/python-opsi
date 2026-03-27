@@ -4,6 +4,7 @@
 # License: AGPL-3.0-only
 
 import asyncio
+import importlib
 import logging
 import os
 import random
@@ -22,6 +23,7 @@ import pytest
 import requests
 from _pytest.capture import CaptureFixture
 
+import opsi.logging._logging as opsi_logging_module
 from opsi.logging import (
 	SECRET_REPLACEMENT_STRING,
 	ContextSecretFormatter,
@@ -162,6 +164,17 @@ def test_secret_formatter_attr() -> None:
 	log_record = logging.LogRecord(name="", level=logging.ERROR, pathname="", lineno=1, msg="t", args=None, exc_info=None)
 	csf = ContextSecretFormatter(logging.Formatter())
 	csf.format(log_record)
+
+
+def test_logrecord_patch_is_idempotent() -> None:
+	original_init = logging.LogRecord.__init_orig__  # type: ignore[attr-defined]
+
+	importlib.reload(opsi_logging_module)
+	importlib.reload(opsi_logging_module)
+
+	assert logging.LogRecord.__init_orig__ is original_init  # type: ignore[attr-defined]
+	log_record = logging.LogRecord(name="", level=logging.ERROR, pathname="", lineno=1, msg="t", args=None, exc_info=None)
+	assert log_record.opsilevel == logging.level_to_opsi_level.get(logging.ERROR, logging.ERROR)  # type: ignore[attr-defined]
 
 
 def test_secret_filter() -> None:

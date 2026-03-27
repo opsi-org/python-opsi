@@ -25,6 +25,7 @@ This module wraps stamina retry primitives used across opsi and provides
 shared retry presets for common retry scenarios.
 """
 
+
 @dataclass(kw_only=True, slots=True, frozen=True)
 class RetryConfig:
 	"""
@@ -175,5 +176,6 @@ def logging_hook(details: instrumentation.RetryDetails) -> None:
 		details.wait_for,
 		details.waited_so_far,
 	)
+
 
 instrumentation.set_on_retry_hooks([logging_hook])

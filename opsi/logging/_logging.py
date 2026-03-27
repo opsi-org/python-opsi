@@ -157,7 +157,9 @@ logging.Logger.findCaller = OPSILogger.findCaller  # type: ignore[assignment]
 
 
 logging.setLoggerClass(OPSILogger)
-orig_getLogger = logging.getLogger
+if not hasattr(logging, "_orig_getLogger"):
+	logging._orig_getLogger = logging.getLogger  # type: ignore[attr-defined]
+orig_getLogger = logging._orig_getLogger  # type: ignore[attr-defined]
 logger = orig_getLogger()
 
 
@@ -197,8 +199,10 @@ def logrecord_init(
 	self.contextstring = ""
 
 
-logging.LogRecord.__init_orig__ = logging.LogRecord.__init__  # type: ignore[attr-defined]
-logging.LogRecord.__init__ = logrecord_init  # type: ignore[assignment]
+if not hasattr(logging.LogRecord, "__init_orig__"):
+	logging.LogRecord.__init_orig__ = logging.LogRecord.__init__  # type: ignore[attr-defined]
+if logging.LogRecord.__init__ is not logrecord_init:
+	logging.LogRecord.__init__ = logrecord_init  # type: ignore[assignment]
 
 
 def handle_log_exception(
@@ -1111,7 +1115,7 @@ context_filter = ContextFilter()
 def get_logger(name: str | None = None) -> OPSILogger:
 	_logger = orig_getLogger(name)
 	add_context_filter_to_logger(_logger)
-	return _logger  # type: ignore[return-value]
+	return _logger
 
 
 logging.getLogger = get_logger  # type: ignore[invalid-assignment]
