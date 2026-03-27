@@ -6,8 +6,10 @@
 from typing import Literal
 
 import pytest
+from packaging.version import InvalidVersion
 
-from opsi.util import compare_versions
+import opsi.util._version as version_module
+from opsi.util import LegacyVersion, compare_versions
 
 
 @pytest.mark.parametrize(
@@ -97,3 +99,22 @@ def test_comparisons_with_differnt_depths_are_made_the_same_depth(ver1: str, ope
 @pytest.mark.parametrize("ver1, operator, ver2", [("1-2", "<", "1-3"), ("1-2.0", "<", "1-2.1")])
 def test_package_versions_are_compared_aswell(ver1: str, operator: Literal["<"], ver2: str) -> None:
 	assert compare_versions(ver1, operator, ver2)
+
+
+def test_legacy_cmpkey_removes_package_separator_before_prerelease() -> None:
+	assert version_module._legacy_cmpkey("1-rc1") == ("00000001", "*c", "00000001", "*final")
+
+
+def test_legacy_version_str_returns_original_version() -> None:
+	assert str(LegacyVersion("1.2beta")) == "1.2beta"
+
+
+def test_compare_versions_raises_value_error_on_invalid_version_parser_error(monkeypatch: pytest.MonkeyPatch) -> None:
+	class FailingLegacyVersion:
+		def __init__(self, version: str) -> None:
+			raise InvalidVersion(version)
+
+	monkeypatch.setattr(version_module, "LegacyVersion", FailingLegacyVersion)
+
+	with pytest.raises(ValueError, match="Invalid version provided to compare_versions"):
+		version_module.compare_versions("1.0", "==", "1.0")
