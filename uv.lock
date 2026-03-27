@@ -1065,7 +1065,7 @@ wheels = [
 name = "pywinpty"
 version = "2.0.15"
 source = { registry = "https://pypi.uib.gmbh/simple" }
-sdist = { url = "https://pypi.uib.gmbh/packages/pywinpty-2.0.15.tar.gz", hash = "sha256:d5994aed54841552f8d27680b9311a49cae253073923b24a00933a31c7fffa1b" }
+sdist = { url = "https://pypi.uib.gmbh/packages/pywinpty-2.0.15.tar.gz", hash = "sha256:843f7325358d501b0b020c7726f2502b655935154b37fa5b9f3bbda5b5d290a3" }
 
 [[package]]
 name = "pyzsync"
