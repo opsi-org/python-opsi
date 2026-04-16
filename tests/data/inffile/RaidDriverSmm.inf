@@ -1,0 +1,39 @@
+## @file
+# Copyright (c) 2019, Intel Corporation. All rights reserved.<BR>
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                = 0x00010017
+  BASE_NAME                  = RaidDriverSmm
+  FILE_GUID                  = 4F4EA4C0-8603-4AB8-8C4B-C5145C8C86F6
+  MODULE_TYPE                = DXE_SMM_DRIVER
+  VERSION_STRING             = 1.0
+  PI_SPECIFICATION_VERSION   = 0x0001000A
+  ENTRY_POINT                = RaidDriverSmmInit
+  MODULE_UNI_FILE            = RaidDriverSmm.uni
+
+[Packages.X64]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+
+[Binaries.X64]
+  PE32|RaidDriverSmm.efi
+  SMM_DEPEX|RaidDriverSmm.depex
+
+[PatchPcd.X64]
+  gEfiRstTokenSpaceGuid.PcdRstPciExpressBaseAddress|0x00000000E0000000|0x7860
+
+# Copy the below guid definition into Platform.dec (in which case you should also add the path to the Platform.dec file in  this .inf file)
+# or MdeModulePkg.dec file - [Guids] section
+# gEfiRstTokenSpaceGuid = { 0x5851f882, 0xf6c3, 0x4663, { 0xab, 0xd8, 0x55, 0x36, 0xa4, 0x68, 0x9c, 0xf8 } };
+#
+# Copy the below PCD token definition into Platform.dec (in which case you should also add the path to the Platform.dec file in  this .inf file)
+# or MdeModulePkg.dec file - [PcdsPatchableInModule] section
+#
+# gEfiRstTokenSpaceGuid.PcdRstPciExpressBaseAddress|0x00000000E0000000|UINT64|0x00000001
+#
+# in the platforms .dsc file - be sure to patch the gEfiRstTokenSpaceGuid.PcdRstPciExpressBaseAddress token's value to the same value
+# that is assigned to gEfiMdePkgTokenSpaceGuid.PcdPciExpressBaseAddress

@@ -9,8 +9,10 @@ import sys
 import threading
 import time
 from functools import lru_cache
+from subprocess import check_output
 
 import pytest
+from packaging.version import Version
 
 from opsi.logging import logging_config
 
@@ -28,6 +30,25 @@ def _admin_permissions() -> bool:
 		import ctypes
 
 		return ctypes.windll.shell32.IsUserAnAdmin() != 0  # type: ignore[attr-defined]
+
+
+@lru_cache
+def _storage_utils() -> bool:
+	try:
+		sfdisk_version = check_output(["sfdisk", "--version"]).decode().split("\n", 1)[0].split()[-1]
+		if Version(sfdisk_version) < Version("2.37.2"):
+			raise RuntimeError("sfdisk version >= 2.37.2 required")
+		lsblk_version = check_output(["lsblk", "--version"]).decode().split("\n", 1)[0].split()[-1]
+		if Version(lsblk_version) < Version("2.37.2"):
+			raise RuntimeError("lsblk version >= 2.37.2 required")
+		mssys_version = check_output(["ms-sys", "--version"]).decode().split("\n", 1)[0].split()[-1]
+		if Version(mssys_version) < Version("2.8.0"):
+			raise RuntimeError("ms-sys version >= 2.8.0 required")
+		check_output(["ntfslabel", "--version"])
+		check_output(["mkfs.ntfs", "--version"])
+	except Exception:
+		return False
+	return True
 
 
 @lru_cache
@@ -56,6 +77,9 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
 			return
 		if marker.name == "not_in_docker" and _running_in_docker():
 			pytest.skip("Cannot run in docker")
+			return
+		if marker.name == "storage_utils" and not _storage_utils():
+			pytest.skip("Requires sfdisk/lsblk/ms-sys")
 			return
 
 	item.stash["start_threads"] = set(threading.enumerate())  # type: ignore[index]

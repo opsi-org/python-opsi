@@ -18,8 +18,43 @@ from opsi.logging import get_logger
 logger = get_logger("opsi")
 
 
+"""
+Retry helpers and predefined retry configurations.
+
+This module wraps stamina retry primitives used across opsi and provides
+shared retry presets for common retry scenarios.
+"""
+
+
 @dataclass(kw_only=True, slots=True, frozen=True)
 class RetryConfig:
+	"""
+	Configuration for retry decorators and retry contexts.
+
+	Attributes
+	----------
+	on : ExcOrBackoffHook
+		Callable deciding whether an exception should trigger a retry.
+
+	attempts : int, default: 5
+		Maximum number of retry attempts.
+
+	timeout : float, default: 45.0
+		Maximum total retry time in seconds.
+
+	wait_initial : float, default: 0.1
+		Initial backoff delay in seconds.
+
+	wait_max : float, default: 5.0
+		Maximum backoff delay in seconds.
+
+	wait_jitter : float, default: 1.0
+		Random jitter added to backoff delays.
+
+	wait_exp_base : float, default: 2
+		Exponential backoff base.
+	"""
+
 	on: ExcOrBackoffHook
 	attempts: int = 5
 	timeout: float = 45.0
@@ -33,6 +68,19 @@ NoRetry = RetryConfig(on=lambda exc: False, attempts=0)
 
 
 def retry(retry_config: RetryConfig | None = None):
+	"""
+	Create a retry decorator from a retry configuration.
+
+	Parameters
+	----------
+	retry_config : RetryConfig, optional
+		Retry settings to apply. If omitted, default retry settings are used.
+
+	Returns
+	-------
+	Callable
+		A configured stamina retry decorator.
+	"""
 	return _retry_decorator(
 		on=retry_config.on if retry_config else OSError,
 		attempts=retry_config.attempts if retry_config else 5,
@@ -45,6 +93,19 @@ def retry(retry_config: RetryConfig | None = None):
 
 
 def Retry(retry_config: RetryConfig) -> _RetryContextIterator:
+	"""
+	Create a retry context iterator from a retry configuration.
+
+	Parameters
+	----------
+	retry_config : RetryConfig
+		Retry settings to apply.
+
+	Returns
+	-------
+	_RetryContextIterator
+		A configured retry context iterator.
+	"""
 	return _retry_context(
 		on=retry_config.on,
 		attempts=retry_config.attempts,
@@ -57,10 +118,16 @@ def Retry(retry_config: RetryConfig) -> _RetryContextIterator:
 
 
 def _file_io_backoff_hook(exception: Exception) -> bool:
+	"""
+	Return whether a file I/O exception should be retried.
+	"""
 	return isinstance(exception, OSError)
 
 
 def _run_process_backoff_hook(exception: Exception) -> bool:
+	"""
+	Return whether a process execution exception should be retried.
+	"""
 	from opsi.process import ProcessError
 
 	# TODO: Retry on FileNotFoundError on Windows?
@@ -68,6 +135,24 @@ def _run_process_backoff_hook(exception: Exception) -> bool:
 
 
 def get_retry_config(type: Literal["file_io", "run_process"] = "file_io") -> RetryConfig:
+	"""
+	Return a predefined retry configuration.
+
+	Parameters
+	----------
+	type : Literal["file_io", "run_process"], default: "file_io"
+		Name of the retry configuration preset.
+
+	Returns
+	-------
+	RetryConfig
+		The requested retry configuration.
+
+	Raises
+	------
+	ValueError
+		If the retry configuration type is unknown.
+	"""
 	if type == "file_io":
 		return RetryConfig(on=_file_io_backoff_hook, attempts=5, wait_initial=0.1)
 	if type == "run_process":
@@ -76,6 +161,14 @@ def get_retry_config(type: Literal["file_io", "run_process"] = "file_io") -> Ret
 
 
 def logging_hook(details: instrumentation.RetryDetails) -> None:
+	"""
+	Log information about a scheduled retry.
+
+	Parameters
+	----------
+	details : instrumentation.RetryDetails
+		Retry metadata provided by stamina.
+	"""
 	logger.notice(
 		"A retry has been scheduled: error=%r, retry_num=%d, wait_for=%0.2fs, waited_so_far=%0.2fs",
 		details.caused_by,

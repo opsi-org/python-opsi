@@ -132,7 +132,13 @@ class OPSILogger(logging.Logger):
 		Find the stack frame of the caller so that we can note the source
 		file name, line number and function name.
 		"""
-		frame = sys._getframe(1)
+		try:
+			# The common call chain is findCaller -> Logger._log -> Logger.<level> -> caller.
+			frame = sys._getframe(3)
+			code = frame.f_code
+			return code.co_filename, frame.f_lineno, code.co_name, None
+		except ValueError:
+			frame = sys._getframe(1)
 		try:
 			while frame:
 				if frame.f_code.co_name == "_log":
@@ -157,7 +163,9 @@ logging.Logger.findCaller = OPSILogger.findCaller  # type: ignore[assignment]
 
 
 logging.setLoggerClass(OPSILogger)
-orig_getLogger = logging.getLogger
+if not hasattr(logging, "_orig_getLogger"):
+	logging._orig_getLogger = logging.getLogger  # type: ignore[attr-defined]
+orig_getLogger = logging._orig_getLogger  # type: ignore[attr-defined]
 logger = orig_getLogger()
 
 
@@ -197,8 +205,10 @@ def logrecord_init(
 	self.contextstring = ""
 
 
-logging.LogRecord.__init_orig__ = logging.LogRecord.__init__  # type: ignore[attr-defined]
-logging.LogRecord.__init__ = logrecord_init  # type: ignore[assignment]
+if not hasattr(logging.LogRecord, "__init_orig__"):
+	logging.LogRecord.__init_orig__ = logging.LogRecord.__init__  # type: ignore[attr-defined]
+if logging.LogRecord.__init__ is not logrecord_init:
+	logging.LogRecord.__init__ = logrecord_init  # type: ignore[assignment]
 
 
 def handle_log_exception(
@@ -374,6 +384,7 @@ class ContextSecretFormatter(Formatter):
 			orig_formatter = Formatter()
 		self.orig_formatter = orig_formatter
 		self.secret_filter_enabled = True
+		self._uses_contextstring = "%(contextstring)" in getattr(orig_formatter, "_fmt", "")
 
 	def disable_filter(self) -> None:
 		"""
@@ -409,7 +420,7 @@ class ContextSecretFormatter(Formatter):
 		:rytpe: str
 		"""
 
-		if context_ := getattr(record, "context", None):
+		if self._uses_contextstring and not getattr(record, "contextstring", "") and (context_ := getattr(record, "context", None)):
 			logger_name = _logger_context_names.get(record.name) or ""
 			ctx = [logger_name] if logger_name else []
 			for k, v in context_.items():
@@ -422,8 +433,11 @@ class ContextSecretFormatter(Formatter):
 		if not self.secret_filter_enabled:
 			return msg
 
-		_secret_filter = secret_filter
-		for _secret in _secret_filter.secrets:
+		secrets = secret_filter.secrets
+		if not secrets:
+			return msg
+
+		for _secret in secrets:
 			msg = msg.replace(_secret, SECRET_REPLACEMENT_STRING)
 		return msg
 
@@ -983,6 +997,19 @@ def get_all_loggers() -> list[logging.Logger | logging.RootLogger]:
 	return [logging.root] + [lg for lg in logging.Logger.manager.loggerDict.values() if not isinstance(lg, PlaceHolder)]
 
 
+def _handler_matches_type(handler: logging.Handler, handler_type: type | tuple[type, ...] | None) -> bool:
+	if handler_type is None:
+		return True
+	if not isinstance(handler_type, tuple):
+		handler_type = (handler_type,)
+	for expected_type in handler_type:
+		if type(handler) is expected_type:
+			return True
+		if handler.__class__.__module__ == expected_type.__module__ and handler.__class__.__qualname__ == expected_type.__qualname__:
+			return True
+	return False
+
+
 def get_all_handlers(handler_type: type | tuple[type, ...] | None = None, handler_name: str | None = None) -> list[logging.Handler]:
 	"""
 	Gets list of all handlers.
@@ -1004,9 +1031,7 @@ def get_all_handlers(handler_type: type | tuple[type, ...] | None = None, handle
 			for _handler in _logger.handlers:
 				if (
 					(not isinstance(_handler, NullHandler))
-					and (
-						not isinstance(handler_type, tuple) or type(_handler) in handler_type  # exact type needed, not subclass
-					)
+					and _handler_matches_type(_handler, handler_type)
 					and (not handler_name or _handler.name == handler_name)
 				):
 					handlers.append(_handler)
@@ -1030,10 +1055,7 @@ def remove_all_handlers(handler_type: type | None = None, handler_name: str | No
 		remove_handlers = [
 			_handler
 			for _handler in _logger.handlers
-			if (
-				not handler_type or type(_handler) == handler_type  # exact type needed, not subclass # noqa: E721
-			)
-			and (not handler_name or _handler.name == handler_name)
+			if _handler_matches_type(_handler, handler_type) and (not handler_name or _handler.name == handler_name)
 		]
 		for _handler in remove_handlers:
 			_handler.close()
@@ -1098,20 +1120,22 @@ def reset_logging() -> None:
 	logging.root.setLevel(logging.WARNING)
 	_logging_state.reset()
 	_logger_context_names.clear()
+	secret_filter.clear_secrets()
+	observable_handler._observers.clear()
 	context_filter.set_filter(None)
 	logging_config(stderr_level=logging.WARNING)
 
 
 init_warnings_capture()
-observable_handler = ObservableHandler()
-secret_filter = SecretFilter()
-context_filter = ContextFilter()
+observable_handler = globals().get("observable_handler") or ObservableHandler()
+secret_filter = globals().get("secret_filter") or SecretFilter()
+context_filter = globals().get("context_filter") or ContextFilter()
 
 
 def get_logger(name: str | None = None) -> OPSILogger:
 	_logger = orig_getLogger(name)
 	add_context_filter_to_logger(_logger)
-	return _logger  # type: ignore[return-value]
+	return _logger
 
 
 logging.getLogger = get_logger  # type: ignore[invalid-assignment]

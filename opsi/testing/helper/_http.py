@@ -272,11 +272,11 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 			self.send_response(self.server.response_status[0], self.server.response_status[1])
 		else:
 			self.send_response(200, "OK")
+		if self.server.send_max_bytes:
+			response = response[: self.server.send_max_bytes]
 		self.send_header("Content-Length", str(len(response)))
 		self.send_header("Content-Type", "application/json")
 		self.end_headers()
-		if self.server.send_max_bytes:
-			response = response[: self.server.send_max_bytes]
 		self.wfile.write(response)
 
 	def do_GET(self) -> None:
@@ -347,10 +347,10 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 			response = self.server.response_body
 		else:
 			response = "OK".encode("utf-8")
-		self.send_header("Content-Length", str(len(response)))
-		self.end_headers()
 		if self.server.send_max_bytes:
 			response = response[: self.server.send_max_bytes]
+		self.send_header("Content-Length", str(len(response)))
+		self.end_headers()
 		self.wfile.write(response)
 		return None
 
@@ -477,7 +477,7 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 				if is_collection:
 					for entry in os.listdir(path):
 						entry_path = os.path.join(path, entry)
-						href = self.path + entry
+						href = f"{self.path.rstrip('/')}/{entry}"
 						if os.path.isdir(entry_path):
 							href += "/"
 						add_response(multistatus, href, is_collection=os.path.isdir(entry_path))

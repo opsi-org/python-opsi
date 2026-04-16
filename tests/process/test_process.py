@@ -464,7 +464,7 @@ def test_process_ld_library_path(
 		if ld_library_path is not None:
 			env_vars["LD_LIBRARY_PATH"] = ld_library_path
 		with (
-			patch("opsi.process._common._get_executable_path", lambda: Path(executable_path)),
+			patch("opsi.process._process._get_executable_path", lambda: Path(executable_path)),
 			environment(env_vars),
 		):
 			assert os.environ.get("LD_LIBRARY_PATH_ORIG") == ld_library_path_orig

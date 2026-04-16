@@ -18,6 +18,7 @@ pytest-macos:
     - mv .coverage coverage_macos
   after_script:
     - user=$(whoami)
+    - echo "Changing ownership of project directory to $user"
     - sudo chown -R $user $CI_PROJECT_DIR
   artifacts:
     name: "python-opsi-common_test_macos"

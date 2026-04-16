@@ -1,0 +1,77 @@
+;/*++
+;
+;Copyright (c) 1990-2000  Microsoft Corporation
+;
+;Module Name:
+;    LNBITS.INF
+;
+;Abstract:
+;    INF file for installing the Driver Frameworks LNBITS Driver
+;
+;
+;--*/
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4d36e97d-e325-11ce-bfc1-08002be10318}
+Provider=%ProviderName%
+DriverVer = 04/13/2023,5.0.21.23
+CatalogFile=LNBITS.cat
+
+; ================= Class section =====================
+
+[SourceDisksNames]
+1 = %DiskId1%,,,""
+
+[DestinationDirs]
+DefaultDestDir = 12
+LNBITSDEV_X64Files = 11
+
+[SourceDisksFiles]
+LNBITSSvc.exe  = 1,,
+AutoModeDetect.exe = 1,,
+AutoQuiet.dll = 1,,
+GameDetect.dll = 1,,
+
+;*****************************************
+; LNBITS  Install Section
+;*****************************************
+
+[Manufacturer]
+%ProviderName%=Lenovo,NTamd64
+
+
+[Lenovo.NTamd64]
+%LNBITS.DeviceDesc%=LNBITSDEV.NTamd64, ACPI\IDEA2008
+
+[LNBITSDEV.NTamd64]
+CopyFiles=LNBITSDEV_X64Files
+
+[LNBITSDEV_X64Files]
+LNBITSSvc.exe,,,12
+AutoModeDetect.exe
+AutoQuiet.dll
+GameDetect.dll
+
+;-------------- Service installation
+[LNBITSDEV.NTamd64.Services]
+AddService = ,%SPSVCINST_ASSOCSERVICE%,,
+AddService = LITSSVC,0x00000800, LNBITS_Service_Inst
+
+; -------------- LNBITS driver install sections
+[LNBITS_Service_Inst]
+DisplayName    = %LNBITS.SVCDESC%
+ServiceType    = 0x10         	;SERVICE_WIN32_OWN_PROCESS
+StartType      = 2              ;SERVICE_AUTO_START
+ErrorControl   = 1              ;SERVICE_ERROR_NORMAL
+ObjectName = "LocalSystem"
+ServiceBinary  = %11%\LNBITSSvc.exe
+
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+ProviderName = "Lenovo"
+DiskId1 = "Lenovo Notebook ITS Disk #1"
+LNBITS.DeviceDesc = "Lenovo Notebook ITS Driver"
+LNBITS.SVCDESC = "Lenovo Notebook ITS Service"
