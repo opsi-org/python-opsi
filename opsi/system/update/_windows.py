@@ -5,11 +5,12 @@
 
 from xml.dom import minidom
 
-import win32evtlog
+import win32evtlog  # type: ignore[import]
 
 from opsi.logging import get_logger
 
 logger = get_logger("opsi")
+
 
 def updates_running() -> bool:
 
@@ -27,7 +28,7 @@ def updates_running() -> bool:
 		xml = win32evtlog.EvtRender(event, win32evtlog.EvtRenderEventXml)
 		logger.debug("Found WindowsUpdateClient event:", xml)
 		dom = minidom.parseString(xml)
-		elements = dom.getElementsByTagName('EventId')
+		elements = dom.getElementsByTagName("EventId")
 		if not elements or not elements[0].firstChild or not elements[0].firstChild.nodeValue:
 			continue
 

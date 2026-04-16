@@ -4,7 +4,7 @@
 # License: AGPL-3.0-only
 
 from opsi.exception import OperatingSystemUnsupportedError
-from opsi.system.info import get_system, is_linux, is_macos, is_windows
+from opsi.system.info import get_system, is_windows
 
 if is_windows():
 	from opsi.system.update._windows import updates_running
@@ -12,4 +12,4 @@ else:
 	raise OperatingSystemUnsupportedError(f"{get_system()} not supported")
 
 
-__all__ = ["set_system_datetime"]
+__all__ = ["updates_running"]
