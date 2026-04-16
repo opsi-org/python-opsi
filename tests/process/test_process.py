@@ -18,6 +18,7 @@ from opsi.process import Process, ProcessError, run_command, run_script, run_scr
 from opsi.process._process import _get_interpreter_command, get_process_io_encoding
 from opsi.system.info import is_windows
 from opsi.testing.helper import environment
+from tests.file.conftest import PATH_TYPES
 
 
 @pytest.mark.parametrize(
@@ -57,21 +58,27 @@ from opsi.testing.helper import environment
 		("bash", "-", ["arg 1", "arg 2"], ["bash", "-s", "--", "arg 1", "arg 2"]),
 	],
 )
+@pytest.mark.parametrize("path_type", PATH_TYPES)
 def test_get_interpreter_command(
-	interpreter: Literal["cmd", "powershell", "bash"], script_file: Path | str, arguments: list[str] | None, expected_command: list[str]
+	interpreter: Literal["cmd", "powershell", "bash"],
+	script_file: Path | str,
+	arguments: list[str] | None,
+	expected_command: list[str],
+	path_type,
 ) -> None:
-	command = _get_interpreter_command(interpreter=interpreter, script_file=script_file, arguments=arguments)
+	command = _get_interpreter_command(interpreter=interpreter, script_file=path_type(str(script_file)), arguments=arguments)
 	command[0] = os.path.basename(command[0])
 	assert command == expected_command
 
 	if is_windows():
 		with pytest.raises(ValueError, match="cmd.exe interpreter requires script file with .cmd or .bat extension"):
-			_get_interpreter_command(interpreter="cmd", script_file="script")
+			_get_interpreter_command(interpreter="cmd", script_file=path_type("script"))
 
 
-def test_get_interpreter_command_error() -> None:
+@pytest.mark.parametrize("path_type", PATH_TYPES)
+def test_get_interpreter_command_error(path_type) -> None:
 	with pytest.raises(FileNotFoundError, match="Interpreter not found: unknown"):
-		_get_interpreter_command(interpreter="unknown", script_file="-")  # type: ignore[invalid-argument-type]
+		_get_interpreter_command(interpreter="unknown", script_file=path_type("-"))  # type: ignore[invalid-argument-type]
 
 	with pytest.raises(ProcessError, match=("WinError 2" if is_windows() else "No such file")) as exc_info:
 		with Process(script="x", interpreter="unknown"):
@@ -690,9 +697,10 @@ def test_run_script(tmp_path: Path) -> None:
 		)
 
 
-def test_run_script_file(tmp_path: Path) -> None:
+@pytest.mark.parametrize("path_type", PATH_TYPES)
+def test_run_script_file(tmp_path: Path, path_type) -> None:
 	script_path = tmp_path / ("test_script.sh" if not is_windows() else "test_script.cmd")
 	script_path.write_text(("@echo off" + os.linesep if is_windows() else "") + "echo OPSI" + os.linesep)
 	for script_arg in (script_path, str(script_path)):
-		proc = run_script_file(script_file=script_arg)
+		proc = run_script_file(script_file=path_type(str(script_arg)))
 		assert proc.get_output_text().strip() == "OPSI"
