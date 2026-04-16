@@ -338,7 +338,7 @@ def get_archive_files(
 	if exclude_dirs is None:
 		exclude_dirs = ["/.svn", "/.git"]
 	if exclude_files is None:
-		exclude_files = ["*~", "[Tt]humbs.db", ".[Dd][Ss]_[Ss]tore"]
+		exclude_files = ["*~", "[Tt]humbs.db", ".[Dd][Ss]_[Ss]tore", ".gitkeep", ".gitignore"]
 
 	for root, dirnames, filenames in os.walk(base_dir, followlinks=follow_symlinks, topdown=True):
 		root_path = Path(root)
