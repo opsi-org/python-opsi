@@ -167,9 +167,9 @@ class OpsiConfig:
 		"ldap_auth": {"ldap_url": "", "bind_user": "", "group_filter": "", "use_member_of_rdn": False},
 	}
 
-	def __call__(cls, *args: Any, **kwargs: Any) -> OpsiConfig:
+	def __new__(cls, *args: Any, **kwargs: Any) -> OpsiConfig:
 		if cls._instance is None:
-			cls._instance = super().__call__(*args, **kwargs)  # ty: ignore[unresolved-attribute]
+			cls._instance = super().__new__(cls)
 		return cls._instance
 
 	def __init__(self, upgrade_config: bool = True) -> None:
