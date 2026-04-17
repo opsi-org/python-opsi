@@ -106,8 +106,7 @@ test:lint-and-test:
     - $DOCKER_COMPOSE exec python-opsi-dev opsi-dev-cli self upgrade
     - $DOCKER_COMPOSE exec python-opsi-dev opsi-dev-cli -l info testing merge-junit-testreports testreport_*.xml testreport.xml
     - $DOCKER_COMPOSE exec python-opsi-dev opsi-dev-cli -l info testing merge-coverage-files --base-path opsi coverage_* .coverage
-    - echo -e '[run]\nrelative_files = True\n' > .coveragerc
-    - $DOCKER_COMPOSE exec python-opsi-dev opsi-dev-cli -l info testing coverage-report
+    - $DOCKER_COMPOSE exec python-opsi-dev opsi-dev-cli -l info testing coverage-report --relative-files
 
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+)%/'
   artifacts:
