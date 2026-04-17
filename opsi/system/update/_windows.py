@@ -13,7 +13,7 @@ logger = get_logger("opsi")
 
 
 def updates_running() -> bool:
-
+	# TODO: This is currently not working, because the eventlog toes not contain these event-ids
 	query_handle = win32evtlog.EvtQuery(
 		Path="Microsoft-Windows-WindowsUpdateClient/Operational",
 		Flags=win32evtlog.EvtQueryReverseDirection | win32evtlog.EvtQueryChannelPath,

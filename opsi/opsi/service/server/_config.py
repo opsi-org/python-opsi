@@ -3,6 +3,8 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
+from __future__ import annotations
+
 import os
 import re
 import socket
@@ -21,7 +23,6 @@ from opsi.logging import get_logger
 from opsi.opsi.service.model.type import to_fqdn
 from opsi.process import run_command
 from opsi.system.network import get_fqdn
-from opsi.util import Singleton
 
 logger = get_logger("opsi")
 
@@ -149,7 +150,8 @@ def get_service_url(server_role: str) -> str:
 	return "https://localhost:4447"
 
 
-class OpsiConfig(metaclass=Singleton):
+class OpsiConfig:
+	_instance: OpsiConfig | None = None
 	file_lock = Lock()
 	config_file = "/etc/opsi/opsi.conf"
 	default_config = {
@@ -164,6 +166,11 @@ class OpsiConfig(metaclass=Singleton):
 		"packages": {"use_pigz": True},
 		"ldap_auth": {"ldap_url": "", "bind_user": "", "group_filter": "", "use_member_of_rdn": False},
 	}
+
+	def __call__(cls, *args: Any, **kwargs: Any) -> OpsiConfig:
+		if cls._instance is None:
+			cls._instance = super().__call__(*args, **kwargs)  # ty: ignore[unresolved-attribute]
+		return cls._instance
 
 	def __init__(self, upgrade_config: bool = True) -> None:
 		self._config_file_mtime = 0.0
