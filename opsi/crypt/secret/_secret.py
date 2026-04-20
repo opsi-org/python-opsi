@@ -13,14 +13,14 @@ from opsi.logging import secret_filter
 
 
 class SecretAlphabet(StrEnum):
-	ascii_lowercase = "ascii_lowercase"
-	ascii_uppercase = "ascii_uppercase"
-	ascii_letters = "ascii_letters"
-	digits = "digits"
-	hexdigits = "hexdigits"
-	octdigits = "octdigits"
-	punctuation = "punctuation"
-	printable = "printable"
+	ASCII_LOWERCASE = "ascii_lowercase"
+	ASCII_UPPERCASE = "ascii_uppercase"
+	ASCII_LETTERS = "ascii_letters"
+	DIGITS = "digits"
+	HEXDIGITS = "hexdigits"
+	OCTDIGITS = "octdigits"
+	PUNCTUATION = "punctuation"
+	PRINTABLE = "printable"
 
 
 def generate_secret(

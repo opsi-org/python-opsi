@@ -47,7 +47,7 @@ def test_generate_secret_uses_secret_alphabet_enum(monkeypatch: pytest.MonkeyPat
 	monkeypatch.setattr(secret_module.secrets, "choice", choice)
 	monkeypatch.setattr(secret_module.secret_filter, "add_secrets", lambda *_args: None)
 
-	secret = generate_secret(length=3, alphabet=SecretAlphabet.digits)
+	secret = generate_secret(length=3, alphabet=SecretAlphabet.DIGITS)
 
 	assert secret == "999"
 	assert used_alphabets == [string.digits] * 3
@@ -64,7 +64,7 @@ def test_generate_secret_combines_iterable_alphabets(monkeypatch: pytest.MonkeyP
 	monkeypatch.setattr(secret_module.secrets, "choice", choice)
 	monkeypatch.setattr(secret_module.secret_filter, "add_secrets", lambda *_args: None)
 
-	secret = generate_secret(length=3, alphabet=cast(Any, (SecretAlphabet.ascii_lowercase, "._", SecretAlphabet.digits)))
+	secret = generate_secret(length=3, alphabet=cast(Any, (SecretAlphabet.ASCII_LOWERCASE, "._", SecretAlphabet.DIGITS)))
 
 	assert secret == "bbb"
 	assert used_alphabets == [combined_alphabet] * 3
