@@ -2,7 +2,6 @@
 # Copyright (c) 2020-2026 uib GmbH <info@uib.de>
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
-
 from contextlib import nullcontext
 from os import symlink
 from pathlib import Path
@@ -14,6 +13,7 @@ from hypothesis import given, settings
 from hypothesis.strategies import sampled_from
 
 from opsi.archive import ArchiveProgress, ArchiveProgressListener
+from opsi.logging import LOG_WARNING
 from opsi.opsi.package import (
 	OpsiPackage,
 	PackageDependency,
@@ -22,9 +22,12 @@ from opsi.opsi.package import (
 	create_package_zsync_file,
 	create_product_dependencies,
 	package_data_from_archive,
+	parse_package_content_file,
 )
+from opsi.opsi.package._associated_files import PackageContentFileEntry
 from opsi.opsi.service.model.object import NetbootProduct
 from opsi.system.file.temp import TempDir
+from opsi.testing.helper import log_stream
 
 TEST_DATA = Path("tests") / "data" / "opsipackage"
 LEGACY_CHANGELOG = """localboot_new (42.0-1337) testing; urgency=low
@@ -633,21 +636,127 @@ def test_create_package_link_handing(dereference: bool) -> None:
 				assert (result_dir / "CLIENT_DATA" / "link_pointing_outside").is_symlink()
 
 
-def test_create_package_content_file() -> None:
-	test_data = TEST_DATA / "control.toml"
-	with TempDir() as temp_dir:
-		(temp_dir / "testpackage").mkdir()
-		copy(test_data, temp_dir / "testpackage")
-		(temp_dir / "testpackage" / "testdir").mkdir()
-		copy(test_data, temp_dir / "testpackage" / "testdir")
-		content_file = create_package_content_file(temp_dir / "testpackage")
-		result = content_file.read_text(encoding="utf-8")
-	for entry in (
-		"d 'testdir'",
-		"f 'control.toml'",  # md5sums and sizes are different on windows??
-		"f 'testdir",  # followed by /control.toml or \\control.toml ...
-	):
-		assert entry in result
+@pytest.mark.parametrize("links_as_links", (False, True))
+def test_package_content_file(tmp_path: Path, links_as_links: bool) -> None:
+	package_dir = tmp_path / "testpackage"
+	package_dir.mkdir()
+	sub_dir = package_dir / "testdir"
+	sub_dir.mkdir()
+	out_of_package_dir = tmp_path / "out_of_package/subdir"
+	out_of_package_dir.mkdir(parents=True)
+	test_file1 = package_dir / "testfile-with-special-chars-%@äö'.bin"
+	test_file1.write_bytes(b"testfile1")
+	test_file2 = sub_dir / "testfile 2.bin"
+	test_file2.write_bytes(b"testfile2")
+	dir_link1 = package_dir / "dir_link1"
+	dir_link1.symlink_to(sub_dir, target_is_directory=True)
+	dir_link2 = package_dir / "dir_link2"
+	dir_link2.symlink_to(out_of_package_dir, target_is_directory=True)
+	dir_link3 = package_dir / "dir_link3"
+	dir_link3.symlink_to(tmp_path / "not_existing_dir", target_is_directory=True)
+	file_link1 = package_dir / "file_link1.bin"
+	file_link1.symlink_to(test_file2)
+	file_link2 = package_dir / "file_link2.bin"
+	file_link2.symlink_to(test_file2)
+	copy(TEST_DATA / "control.toml", package_dir / "control.toml")
+
+	content_file = create_package_content_file(package_dir, links_as_links=links_as_links)
+	result = content_file.read_text(encoding="utf-8")
+
+	if links_as_links:
+		assert result == (
+			"d 'testdir' 0\n"
+			"f 'control.toml' 1514 7f96aebe3ebbaf189970f9426cc331a6\n"
+			"f 'testdir/testfile 2.bin' 9 e795abeef2c38de2b064be9f6364ceae\n"
+			"f 'testfile-with-special-chars-%@äö\\'.bin' 9 818959a8b06ccb5667ff3d72c1284fcc\n"
+			"l 'dir_link1' 0 'testdir'\n"
+			"l 'dir_link2' 0 '/out_of_package/subdir'\n"
+			"l 'dir_link3' 0 '/not_existing_dir'\n"
+			"l 'file_link1.bin' 0 'testdir/testfile 2.bin'\n"
+			"l 'file_link2.bin' 0 'testdir/testfile 2.bin'\n"
+		)
+		entries: list[PackageContentFileEntry] = parse_package_content_file(content_file)
+		assert len(entries) == 9
+		assert entries[0] == PackageContentFileEntry(type="d", filename="testdir", size=0, target=None, md5sum=None)
+		assert entries[1] == PackageContentFileEntry(
+			type="f", filename="control.toml", size=1514, target=None, md5sum="7f96aebe3ebbaf189970f9426cc331a6"
+		)
+		assert entries[2] == PackageContentFileEntry(
+			type="f", filename="testdir/testfile 2.bin", size=9, target=None, md5sum="e795abeef2c38de2b064be9f6364ceae"
+		)
+		assert entries[3] == PackageContentFileEntry(
+			type="f", filename="testfile-with-special-chars-%@äö'.bin", size=9, target=None, md5sum="818959a8b06ccb5667ff3d72c1284fcc"
+		)
+		assert entries[4] == PackageContentFileEntry(type="l", filename="dir_link1", size=0, target="testdir", md5sum=None)
+		assert entries[5] == PackageContentFileEntry(type="l", filename="dir_link2", size=0, target="/out_of_package/subdir", md5sum=None)
+		assert entries[6] == PackageContentFileEntry(type="l", filename="dir_link3", size=0, target="/not_existing_dir", md5sum=None)
+		assert entries[7] == PackageContentFileEntry(
+			type="l", filename="file_link1.bin", size=0, target="testdir/testfile 2.bin", md5sum=None
+		)
+		assert entries[8] == PackageContentFileEntry(
+			type="l", filename="file_link2.bin", size=0, target="testdir/testfile 2.bin", md5sum=None
+		)
+	else:
+		assert result == (
+			"d 'dir_link1' 0\n"
+			"d 'dir_link2' 0\n"
+			"d 'testdir' 0\n"
+			"f 'control.toml' 1514 7f96aebe3ebbaf189970f9426cc331a6\n"
+			"f 'dir_link1/testfile 2.bin' 9 e795abeef2c38de2b064be9f6364ceae\n"
+			"f 'file_link1.bin' 9 e795abeef2c38de2b064be9f6364ceae\n"
+			"f 'file_link2.bin' 9 e795abeef2c38de2b064be9f6364ceae\n"
+			"f 'testdir/testfile 2.bin' 9 e795abeef2c38de2b064be9f6364ceae\n"
+			"f 'testfile-with-special-chars-%@äö\\'.bin' 9 818959a8b06ccb5667ff3d72c1284fcc\n"
+		)
+		entries: list[PackageContentFileEntry] = parse_package_content_file(content_file)
+		assert len(entries) == 9
+		assert entries[0] == PackageContentFileEntry(type="d", filename="dir_link1", size=0, target=None, md5sum=None)
+		assert entries[1] == PackageContentFileEntry(type="d", filename="dir_link2", size=0, target=None, md5sum=None)
+		assert entries[2] == PackageContentFileEntry(type="d", filename="testdir", size=0, target=None, md5sum=None)
+		assert entries[3] == PackageContentFileEntry(
+			type="f", filename="control.toml", size=1514, target=None, md5sum="7f96aebe3ebbaf189970f9426cc331a6"
+		)
+		assert entries[4] == PackageContentFileEntry(
+			type="f", filename="dir_link1/testfile 2.bin", size=9, target=None, md5sum="e795abeef2c38de2b064be9f6364ceae"
+		)
+		assert entries[5] == PackageContentFileEntry(
+			type="f", filename="file_link1.bin", size=9, target=None, md5sum="e795abeef2c38de2b064be9f6364ceae"
+		)
+		assert entries[6] == PackageContentFileEntry(
+			type="f", filename="file_link2.bin", size=9, target=None, md5sum="e795abeef2c38de2b064be9f6364ceae"
+		)
+		assert entries[7] == PackageContentFileEntry(
+			type="f", filename="testdir/testfile 2.bin", size=9, target=None, md5sum="e795abeef2c38de2b064be9f6364ceae"
+		)
+		assert entries[8] == PackageContentFileEntry(
+			type="f", filename="testfile-with-special-chars-%@äö'.bin", size=9, target=None, md5sum="818959a8b06ccb5667ff3d72c1284fcc"
+		)
+
+
+def test_parse_package_content_file_skips_unknown_entries_and_unescapes_values(tmp_path: Path) -> None:
+	content_file = tmp_path / "package.files"
+	content_file.write_text(
+		"\n".join(
+			(
+				"x 'ignored' 0",
+				"d 'directory\\'' 0",
+				"f 'file\\'name.txt' 42 deadbeef",
+				"l 'link\\'name' 0 'target\\'value'",
+				"",
+			)
+		),
+		encoding="utf-8",
+	)
+
+	with log_stream(LOG_WARNING, format="%(message)s") as stream:
+		entries = parse_package_content_file(content_file)
+
+	assert entries == [
+		PackageContentFileEntry(type="d", filename="directory'", size=0, target=None, md5sum=None),
+		PackageContentFileEntry(type="f", filename="file'name.txt", size=42, target=None, md5sum="deadbeef"),
+		PackageContentFileEntry(type="l", filename="link'name", size=0, target="target'value", md5sum=None),
+	]
+	assert "Unknown entry type 'x'" in stream.getvalue()
 
 
 @pytest.mark.parametrize(

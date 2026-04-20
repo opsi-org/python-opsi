@@ -22,7 +22,12 @@ class SecretAlphabet(StrEnum):
 	punctuation = "punctuation"
 	printable = "printable"
 
-def generate_secret(length: int = 32, alphabet: Iterable[SecretAlphabet|str] | SecretAlphabet | str | None = None, required_chars: str | list[str] | tuple[str] | None = None) -> str:
+
+def generate_secret(
+	length: int = 32,
+	alphabet: Iterable[SecretAlphabet | str] | SecretAlphabet | str | None = None,
+	required_chars: str | list[str] | tuple[str] | None = None,
+) -> str:
 	"""Generates a random secret string of the specified length."""
 	if required_chars is not None:
 		if isinstance(required_chars, str):

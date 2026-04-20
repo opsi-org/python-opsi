@@ -3,7 +3,7 @@ name = "python-opsi"
 version = "4.3.13.1"
 description = "python-opsi"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 license = "AGPL-3.0-only"
 dependencies = [
 	"aiofiles>=25.1.0",

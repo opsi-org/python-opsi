@@ -3,64 +3,77 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-import os
-from hashlib import md5
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Literal, cast
 
 from pyzsync import create_zsync_file
 
+from opsi.crypt.hash import compute_file_hash
 from opsi.logging import get_logger
 
 logger = get_logger("opsi")
 
 
-def md5sum(path: Path, progress_callback: Callable | None = None) -> str:
-	md5object = md5()
-	file_size = path.stat().st_size
-	position = 0
-	if progress_callback:
-		progress_callback(position, file_size)
-
-	block_size = 524288
-	with open(path, "rb") as file_to_hash:
-		for data in iter(lambda: file_to_hash.read(block_size), b""):
-			md5object.update(data)
-			if progress_callback:
-				position += len(data)
-				progress_callback(position, file_size)
-	return md5object.hexdigest()
+@dataclass
+class PackageContentFileEntry:
+	type: Literal["d", "f", "l"]
+	filename: str
+	size: int = 0
+	target: str | None = None
+	md5sum: str | None = None
 
 
-def create_package_content_file(base_dir: Path) -> Path:
-	def handle_directory(path: Path) -> tuple[str, int, str]:
+def create_package_content_file(base_dir: Path, *, links_as_links: bool = True) -> Path:
+	def handle_directory(path: Path) -> PackageContentFileEntry:
 		logger.trace("Processing '%s' as directory", path)
-		return "d", 0, ""
+		return PackageContentFileEntry(type="d", filename=path.relative_to(base_dir).as_posix())
 
-	def handle_file(path: Path) -> tuple[str, int, str]:
+	def handle_file(path: Path) -> PackageContentFileEntry:
 		logger.trace("Processing '%s' as file", path)
-		return "f", os.path.getsize(path), md5sum(path)
+		return PackageContentFileEntry(
+			type="f",
+			filename=path.relative_to(base_dir).as_posix(),
+			size=path.stat().st_size,
+			md5sum=compute_file_hash(path, algorithm="md5"),
+		)
+
+	def handle_symlink(path: Path) -> PackageContentFileEntry:
+		logger.trace("Processing '%s' as symlink", path)
+		target = path.resolve()
+		if target.is_relative_to(base_dir):
+			target_str = target.relative_to(base_dir).as_posix()
+		else:
+			target_str = "/" + target.relative_to(base_dir.parent).as_posix()
+		return PackageContentFileEntry(type="l", filename=path.relative_to(base_dir).as_posix(), target=target_str)
 
 	package_content_file = base_dir / f"{base_dir.name}.files"
-	if package_content_file.exists():
-		package_content_file.unlink()
+	package_content_file.unlink(missing_ok=True)
 	logger.info("Creating package content file %s", package_content_file)
 	lines = []
 
 	try:
-		for path in base_dir.rglob("*"):
+		for path in base_dir.rglob("*", recurse_symlinks=not links_as_links):
 			try:
-				if path.is_dir():
-					entry_type, size, additional = handle_directory(path)
+				if path.is_symlink() and links_as_links:
+					entry = handle_symlink(path)
+				elif path.is_dir():
+					entry = handle_directory(path)
 				else:
-					entry_type, size, additional = handle_file(path)
-				filename = str(path.relative_to(base_dir).as_posix()).replace("'", "\\'")
-				lines.append(f"{entry_type} '{filename}' {size} {additional}")
-			except Exception as err:
-				logger.error(err, exc_info=True)
+					entry = handle_file(path)
 
-		with package_content_file.open("w", encoding="utf-8", newline="") as file:
-			file.write("\n".join(lines))
+				additional = ""
+				if entry.target:
+					additional = f" '{entry.target.replace("'", "\\'")}'"
+				elif entry.md5sum:
+					additional = f" {entry.md5sum}"
+
+				lines.append(f"{entry.type} '{entry.filename.replace("'", "\\'")}' {entry.size}{additional}")
+			except Exception as err:
+				logger.warning(err, exc_info=True)
+
+		lines.sort()
+		package_content_file.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="")
 
 	except Exception as err:
 		logger.error(err, exc_info=True)
@@ -68,15 +81,103 @@ def create_package_content_file(base_dir: Path) -> Path:
 	return package_content_file
 
 
-def create_package_md5_file(package_path: Path, filename: Path | None = None, progress_callback: Callable | None = None) -> Path:
+def parse_package_content_file(file: Path) -> list[PackageContentFileEntry]:
+	"""
+	Parse a package content file into structured entries.
+
+	Parameters
+	----------
+	file : Path
+		The package content file to parse.
+
+	Returns
+	-------
+	list[PackageContentFileEntry]
+		The parsed package content entries in file order.
+	"""
+
+	def split_quoted_value(value: str) -> tuple[str, str]:
+		"""Split a quoted package content value from the remaining line content."""
+
+		if not value.startswith("'"):
+			raise ValueError(f"Invalid quoted value in package content file '{file}': {value!r}")
+
+		quote_end = value.find("'", 1)
+		while quote_end != -1 and value[quote_end - 1] == "\\":
+			quote_end = value.find("'", quote_end + 1)
+		if quote_end == -1:
+			raise ValueError(f"Invalid quoted value in package content file '{file}': {value!r}")
+
+		next_index = quote_end + 1
+		if next_index == len(value):
+			remaining = ""
+		elif value[next_index] == " ":
+			remaining = value[next_index + 1 :]
+		else:
+			raise ValueError(f"Invalid quoted value in package content file '{file}': {value!r}")
+
+		return value[1:quote_end].replace("\\'", "'"), remaining
+
+	entries = []
+	with file.open("r", encoding="utf-8") as file_handle:
+		for line in file_handle:
+			stripped_line = line.strip()
+			if not stripped_line:
+				continue
+
+			try:
+				entry_type, remaining = stripped_line.split(None, 1)
+			except ValueError:
+				logger.warning("Skipping invalid line in package content file '%s': %s", file, stripped_line)
+				continue
+
+			if entry_type not in ("d", "f", "l"):
+				logger.warning("Unknown entry type '%s' in package content file '%s'", entry_type, file)
+				continue
+
+			filename, remaining = split_quoted_value(remaining)
+			size_value, separator, additional = remaining.partition(" ")
+			if not size_value:
+				raise ValueError(f"Invalid entry in package content file '{file}': {stripped_line!r}")
+
+			size = int(size_value)
+			additional = additional if separator else ""
+			target = None
+			md5 = None
+
+			if entry_type == "f":
+				md5 = additional
+			elif entry_type == "l":
+				target, remaining = split_quoted_value(additional)
+				if remaining:
+					raise ValueError(f"Invalid symlink target in package content file '{file}': {stripped_line!r}")
+
+			entries.append(
+				PackageContentFileEntry(
+					type=cast(Literal["d", "f", "l"], entry_type),
+					filename=filename,
+					size=size,
+					target=target,
+					md5sum=md5,
+				)
+			)
+
+	return entries
+
+
+def create_package_md5_file(
+	package_path: Path, filename: Path | None = None, progress_callback: Callable[[int, int], None] | None = None
+) -> Path:
 	if not filename:
 		filename = Path(f"{package_path}.md5")
-	with filename.open("w", encoding="utf-8", newline="") as file:
-		file.write(md5sum(package_path, progress_callback))
+	file_hash = compute_file_hash(package_path, algorithm="md5", progress_callback=progress_callback)
+	filename.write_text(file_hash, encoding="utf-8", newline="")
 	return filename
 
 
-def create_package_zsync_file(package_path: Path, filename: Path | None = None, progress_callback: Callable | None = None) -> Path:
+def create_package_zsync_file(
+	package_path: Path, filename: Path | None = None, progress_callback: Callable[[int, int], None] | None = None
+) -> Path:
 	if not filename:
 		filename = Path(f"{package_path}.zsync")
 	create_zsync_file(file=package_path, zsync_file=filename, legacy_mode=True, progress_callback=progress_callback)
