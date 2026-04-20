@@ -12,8 +12,7 @@ from typing import Any, cast
 import pytest
 
 import opsi.crypt.secret._secret as secret_module
-from opsi.crypt.secret import generate_secret
-from opsi.crypt.secret._secret import SecretAlphabet
+from opsi.crypt.secret import SecretAlphabet, generate_secret
 
 
 def test_generate_secret_uses_default_alphabet_and_registers_secret(monkeypatch: pytest.MonkeyPatch) -> None:

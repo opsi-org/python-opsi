@@ -33,6 +33,7 @@ dependencies = [
 	"websocket-client>=1.9.0",
 	"wmi>=1.5; platform_system == 'Windows'",
 	"zstandard>=0.21",
+	"pycryptodome>=3.23.0",
 ]
 
 [[project.authors]]

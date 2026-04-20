@@ -2,6 +2,7 @@
 # Copyright (c) 2020-2026 uib GmbH <info@uib.de>
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
+
 from contextlib import nullcontext
 from os import symlink
 from pathlib import Path
