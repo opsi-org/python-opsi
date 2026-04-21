@@ -859,6 +859,15 @@ class Process:
 		"""
 		return self.get_stdout_bytes().decode(self._encoding, errors=errors)
 
+	def get_stdout_lines(self, errors: Literal["ignore", "replace", "strict"] = "replace") -> list[str]:
+		"""
+		Get the standard output of the process as a list of lines.
+		:param errors: How to handle decoding errors.
+		:return: Standard output as a list of lines.
+		"""
+		stdout_text = self.get_stdout_text(errors=errors)
+		return stdout_text.splitlines()
+
 	def get_stderr_bytes(self) -> bytes:
 		"""
 		Get the standard error of the process as bytes.
@@ -873,6 +882,15 @@ class Process:
 		:return: Standard error as text.
 		"""
 		return self.get_stderr_bytes().decode(self._encoding, errors=errors)
+
+	def get_stderr_lines(self, *, errors: Literal["ignore", "replace", "strict"] = "replace") -> list[str]:
+		"""
+		Get the standard error of the process as a list of lines.
+		:param errors: How to handle decoding errors.
+		:return: Standard error as a list of lines.
+		"""
+		stderr_text = self.get_stderr_text(errors=errors)
+		return stderr_text.splitlines()
 
 	def get_output_bytes(self) -> bytes:
 		"""

@@ -1,0 +1,8 @@
+# This file is part of the device management solution OPSI http://www.opsi.org
+# Copyright (c) 2020-2026 uib GmbH <info@uib.de>
+# This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
+# License: AGPL-3.0-only
+
+from opsi.archive.wim._wim import WIMImageInfo, WIMImageWindowsInfo, WIMInfo, wim_capture, wim_info
+
+__all__ = ["WIMImageInfo", "WIMImageWindowsInfo", "WIMInfo", "wim_capture", "wim_info"]

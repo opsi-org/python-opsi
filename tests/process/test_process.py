@@ -220,6 +220,8 @@ def test_process_read(size_limit: int, capture_output: Literal["stdout", "stderr
 		# If not truncating, the data stays in the buffer
 		assert proc.get_stdout_bytes() == expected_stdout_data
 		assert proc.get_stderr_bytes() == expected_stderr_data
+		assert proc.get_stdout_lines() == expected_stdout_data.decode(proc._encoding).splitlines()
+		assert proc.get_stderr_lines() == expected_stderr_data.decode(proc._encoding).splitlines()
 
 	if proc._manager_thread:
 		assert not proc._manager_thread.is_alive()
