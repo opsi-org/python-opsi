@@ -7,7 +7,13 @@ from opsi.exception import OperatingSystemUnsupportedError
 from opsi.system.info import get_system, is_linux, is_macos, is_windows
 
 if is_linux():
-	from opsi.system.certificate_store._linux import install_ca, load_ca, load_cas, remove_ca
+	from opsi.system.certificate_store._linux import (
+		get_system_ca_cert_info,  # noqa F401
+		install_ca,
+		load_ca,
+		load_cas,
+		remove_ca,
+	)
 elif is_windows():
 	from opsi.system.certificate_store._windows import install_ca, load_ca, load_cas, remove_ca
 elif is_macos():
