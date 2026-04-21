@@ -207,7 +207,6 @@ def logrecord_init(
 
 if not hasattr(logging.LogRecord, "__init_orig__"):
 	logging.LogRecord.__init_orig__ = logging.LogRecord.__init__  # type: ignore[attr-defined]
-if logging.LogRecord.__init__ is not logrecord_init:
 	logging.LogRecord.__init__ = logrecord_init  # type: ignore[assignment]
 
 
