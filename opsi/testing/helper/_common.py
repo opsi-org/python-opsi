@@ -129,7 +129,8 @@ def opsi_config(conf_vars: dict[str, Any]) -> Generator[OpsiConfig, None, None]:
 			for key, value in conf_vars.items():
 				category, config = key.split(".", 1)
 				opsi_conf.set(category, config, value, persistent=False)
+			opsi_conf.write_config_file()
 			yield opsi_conf
 		finally:
-			OpsiConfig.config_file = orig_config_file
 			OpsiConfig.reset_singleton()
+			OpsiConfig.config_file = orig_config_file
