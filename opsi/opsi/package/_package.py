@@ -31,7 +31,7 @@ from opsi.opsi.package._control_file_handling import (
 from opsi.opsi.package._legacy_control_file import LegacyControlFile
 from opsi.opsi.service.model.object import Product, ProductDependency, ProductProperty
 from opsi.system.file.temp import TempDir
-from opsi.util import compare_versions
+from opsi.util.version import compare_versions
 
 PACKAGE_DIR_TYPES = Literal["OPSI", "CLIENT_DATA", "SERVER_DATA"]
 

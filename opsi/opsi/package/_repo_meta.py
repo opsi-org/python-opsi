@@ -24,7 +24,7 @@ from opsi.opsi.service.model.object import ProductDependency
 from opsi.opsi.service.model.type import Architecture, OperatingSystem
 from opsi.serialization import json_decode, json_encode, msgpack_decode, msgpack_encode
 from opsi.system.file.lock import lock_file
-from opsi.util import LegacyVersion
+from opsi.util.version import LegacyVersion
 
 logger = get_logger("opsi")
 
