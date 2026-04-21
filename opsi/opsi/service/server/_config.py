@@ -151,7 +151,7 @@ def get_service_url(server_role: str) -> str:
 
 
 class OpsiConfig:
-	_instance: OpsiConfig | None = None
+	__instance: OpsiConfig | None = None
 	file_lock = Lock()
 	config_file = "/etc/opsi/opsi.conf"
 	default_config = {
@@ -168,14 +168,14 @@ class OpsiConfig:
 	}
 
 	def __new__(cls, *args: Any, **kwargs: Any) -> OpsiConfig:
-		if cls._instance is None:
-			cls._instance = super().__new__(cls)
-		return cls._instance
+		if cls.__instance is None:
+			cls.__instance = super().__new__(cls)
+		return cls.__instance
 
 	def __init__(self, upgrade_config: bool = True) -> None:
-		if getattr(self, "_initialized", False):
+		if getattr(self, "__initialized", False):
 			return
-		self._initialized = True
+		self.__initialized = True
 		self._config_file_mtime = 0.0
 		self._config: dict[str, Any] = deepcopy(self.default_config)
 		self._config_file_read = False
