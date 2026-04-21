@@ -92,7 +92,7 @@ class TempDir:
 def create_temp_dir(*, retry_config: RetryConfig | None = None) -> Path:
 	"""
 	Create a temporary directory and return its path.
-	The directory will be not be automatically deleted, so the caller is responsible for cleanup.
+	The directory will not be automatically deleted, so the caller is responsible for cleanup.
 	"""
 	temp_dir = TempDir(retry_config=retry_config)
 	temp_dir.create()
@@ -199,7 +199,7 @@ def create_temp_file(
 ) -> Path:
 	"""
 	Create a temporary file with the specified content and return its path.
-	The file will be not be automatically deleted, so the caller is responsible for cleanup.
+	The file will not be automatically deleted, so the caller is responsible for cleanup.
 	"""
 	temp_file = TempFile(content=content, encoding=encoding, extension=extension, retry_config=retry_config)
 	temp_file.create()
