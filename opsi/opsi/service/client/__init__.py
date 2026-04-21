@@ -9,6 +9,7 @@ from opsi.opsi.service.client._service_client import (
 	Response,
 	ServiceClient,
 	ServiceConnectionListener,
+	ServiceVerificationFlags,
 	get_service_client,
 )
 
@@ -18,5 +19,6 @@ __all__ = [
 	"Response",
 	"ServiceClient",
 	"ServiceConnectionListener",
+	"ServiceVerificationFlags",
 	"get_service_client",
 ]
