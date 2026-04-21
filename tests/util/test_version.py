@@ -8,8 +8,8 @@ from typing import Literal
 import pytest
 from packaging.version import InvalidVersion
 
-import opsi.util._version as version_module
-from opsi.util import LegacyVersion, compare_versions
+import opsi.util.version as version_module
+from opsi.util.version import LegacyVersion, compare_versions
 
 
 @pytest.mark.parametrize(
