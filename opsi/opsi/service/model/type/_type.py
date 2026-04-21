@@ -27,7 +27,7 @@ if os.name != "nt":
 	WindowsError = RuntimeError
 
 if TYPE_CHECKING:
-	from opsi.opsi.service.model.object._object import BaseObjectT
+	from opsi.opsi.service.model.object import BaseObjectT
 
 logger = get_logger("opsi")
 
