@@ -129,17 +129,17 @@ class DirPermission(FilePermission):
 
 
 class PermissionRegistry:
-	__instance: PermissionRegistry | None = None
+	_instance: PermissionRegistry | None = None
 
 	def __new__(cls, *args: Any, **kwargs: Any) -> PermissionRegistry:
-		if cls.__instance is None:
-			cls.__instance = super().__new__(cls)
-		return cls.__instance
+		if cls._instance is None:
+			cls._instance = super().__new__(cls)
+		return cls._instance
 
 	def __init__(self) -> None:
-		if getattr(self, "__initialized", False):
+		if getattr(self, "_initialized", False):
 			return
-		self.__initialized = True
+		self._initialized = True
 		self._permissions: dict[str, FilePermission] = {}
 		self.reinit()
 

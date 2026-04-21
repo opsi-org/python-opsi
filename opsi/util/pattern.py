@@ -9,9 +9,9 @@ from typing import Any
 
 
 class Singleton(type):
-	__instances: dict[type, type] = {}
+	_instances: dict[type, type] = {}
 
 	def __call__(cls: Singleton, *args: Any, **kwargs: Any) -> type:
-		if cls not in cls.__instances:
-			cls.__instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-		return cls.__instances[cls]
+		if cls not in cls._instances:
+			cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+		return cls._instances[cls]

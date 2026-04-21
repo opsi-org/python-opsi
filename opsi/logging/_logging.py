@@ -271,12 +271,12 @@ class ContextFilter(logging.Filter):
 	for a single thread/task.
 	"""
 
-	__instance: ContextFilter | None = None
+	_instance: ContextFilter | None = None
 
 	def __new__(cls, *args: Any, **kwargs: Any) -> ContextFilter:
-		if cls.__instance is None:
-			cls.__instance = super().__new__(cls)
-		return cls.__instance
+		if cls._instance is None:
+			cls._instance = super().__new__(cls)
+		return cls._instance
 
 	def __init__(self, filter_dict: dict[str, Any] | None = None):
 		"""
@@ -289,9 +289,9 @@ class ContextFilter(logging.Filter):
 		        in order to accept the LogRecord.
 		:type filter_dict: dict
 		"""
-		if getattr(self, "__initialized", False):
+		if getattr(self, "_initialized", False):
 			return
-		self.__initialized = True
+		self._initialized = True
 		super().__init__()
 		self.filter_dict: dict[str, Any] = {}
 		self.set_filter(filter_dict)
@@ -466,12 +466,12 @@ class SecretFilter:
 	of secrets which can be used by the ContextSecretFormatter.
 	"""
 
-	__instance: SecretFilter | None = None
+	_instance: SecretFilter | None = None
 
 	def __new__(cls, *args: Any, **kwargs: Any) -> SecretFilter:
-		if cls.__instance is None:
-			cls.__instance = super().__new__(cls)
-		return cls.__instance
+		if cls._instance is None:
+			cls._instance = super().__new__(cls)
+		return cls._instance
 
 	def __init__(self, min_length: int = 5):
 		"""
@@ -483,9 +483,9 @@ class SecretFilter:
 		:param min_length: Minimal length of a secret string (Default: 5).
 		:type min_length: int
 		"""
-		if getattr(self, "__initialized", False):
+		if getattr(self, "_initialized", False):
 			return
-		self.__initialized = True
+		self._initialized = True
 		self._min_length = min_length
 		self.secrets: set[str] = set()
 
@@ -583,17 +583,17 @@ class RichConsoleHandler(Handler):
 
 
 class ObservableHandler(Handler):
-	__instance: ObservableHandler | None = None
+	_instance: ObservableHandler | None = None
 
 	def __new__(cls, *args: Any, **kwargs: Any) -> ObservableHandler:
-		if cls.__instance is None:
-			cls.__instance = super().__new__(cls)
-		return cls.__instance
+		if cls._instance is None:
+			cls._instance = super().__new__(cls)
+		return cls._instance
 
 	def __init__(self) -> None:
-		if getattr(self, "__initialized", False):
+		if getattr(self, "_initialized", False):
 			return
-		self.__initialized = True
+		self._initialized = True
 		Handler.__init__(self)
 		self._observers: list[Any] = []
 
