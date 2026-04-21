@@ -182,6 +182,10 @@ class OpsiConfig:
 		self._upgrade_config = upgrade_config
 		self._upgrade_done = False
 
+	@classmethod
+	def reset_singleton(cls) -> None:
+		cls.__instance = None
+
 	@property
 	def upgrade_config(self) -> bool:
 		return self._upgrade_config

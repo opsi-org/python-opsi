@@ -121,12 +121,15 @@ def log_stream(new_level: int, format: str | None = None) -> Generator[StringIO,
 def opsi_config(conf_vars: dict[str, Any]) -> Generator[OpsiConfig, None, None]:
 	orig_config_file = OpsiConfig.config_file
 	with TempFile() as temp_config_file:
+		OpsiConfig.reset_singleton()
+		OpsiConfig.config_file = str(temp_config_file.path)
 		opsi_conf = OpsiConfig(upgrade_config=False)
+		assert opsi_conf.config_file == str(temp_config_file.path)
 		try:
-			opsi_conf.config_file = str(temp_config_file.path)
 			for key, value in conf_vars.items():
 				category, config = key.split(".", 1)
 				opsi_conf.set(category, config, value, persistent=False)
 			yield opsi_conf
 		finally:
-			opsi_conf.config_file = orig_config_file
+			OpsiConfig.config_file = orig_config_file
+			OpsiConfig.reset_singleton()
