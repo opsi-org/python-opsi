@@ -4,6 +4,18 @@
 # License: AGPL-3.0-only
 
 from opsi.exception._exception import (
+	BackendAuthenticationError,
+	BackendBadValueError,
+	BackendConfigurationError,
+	BackendError,
+	BackendIOError,
+	BackendMissingDataError,
+	BackendModuleDisabledError,
+	BackendPermissionDeniedError,
+	BackendReferentialIntegrityError,
+	BackendTemporaryError,
+	BackendUnableToConnectError,
+	BackendUnaccomplishableError,
 	OperatingSystemUnsupportedError,
 	OpsiBadRpcError,
 	OpsiError,
@@ -23,6 +35,18 @@ from opsi.exception._exception import (
 )
 
 __all__ = [
+	"BackendAuthenticationError",
+	"BackendBadValueError",
+	"BackendConfigurationError",
+	"BackendError",
+	"BackendIOError",
+	"BackendMissingDataError",
+	"BackendModuleDisabledError",
+	"BackendPermissionDeniedError",
+	"BackendReferentialIntegrityError",
+	"BackendTemporaryError",
+	"BackendUnableToConnectError",
+	"BackendUnaccomplishableError",
 	"OpsiError",
 	"OperatingSystemUnsupportedError",
 	"OpsiBadRpcError",

@@ -14,6 +14,48 @@ class OpsiError(Exception):
 		self.message = message
 
 
+class BackendError(OpsiError):
+	"""Exception raised if there is an error in the backend."""
+
+
+class BackendIOError(OpsiError):
+	"""Exception raised if there is a read or write error in the backend."""
+
+
+class BackendUnableToConnectError(BackendIOError):
+	"""Exception raised if no connection can be established in the backend."""
+
+
+class BackendConfigurationError(OpsiError):
+	"""Exception raised if a configuration error occurs in the backend."""
+
+
+class BackendReferentialIntegrityError(OpsiError):
+	"""
+	Exception raised if there is a referential integrity error in the backend.
+	"""
+
+
+class BackendBadValueError(OpsiError):
+	"""Exception raised if an invalid value is found."""
+
+
+class BackendMissingDataError(OpsiError):
+	"""Exception raised if expected data not found."""
+
+
+class BackendTemporaryError(OpsiError):
+	"""Exception raised if a temporary error occurs."""
+
+
+class BackendUnaccomplishableError(OpsiError):
+	"""Exception raised if an unaccomplishable situation appears."""
+
+
+class BackendModuleDisabledError(OpsiError):
+	"""Exception raised if a needed module is disabled."""
+
+
 class OperatingSystemUnsupportedError(OpsiError):
 	"""Raised when the operating system is not supported."""
 
