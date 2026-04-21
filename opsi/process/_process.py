@@ -400,7 +400,8 @@ class Process:
 					elif extension in ("sh",):
 						interpreter = "bash"
 					else:
-						raise ProcessError(f"Cannot auto-detect interpreter for file extension '.{extension}'", process=self)
+						interpreter = "cmd" if is_windows() else "bash"
+						logger.info("Cannot auto-detect interpreter for file extension '.%s', defaulting to %r", extension, interpreter)
 				else:
 					interpreter = "cmd" if is_windows() else "bash"
 			elif interpreter in ("cmd", "powershell", "bash"):

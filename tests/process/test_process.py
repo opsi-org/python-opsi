@@ -701,8 +701,12 @@ def test_run_script(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("path_type", PATH_TYPES)
 def test_run_script_file(tmp_path: Path, path_type) -> None:
-	script_path = tmp_path / ("test_script.sh" if not is_windows() else "test_script.cmd")
-	script_path.write_text(("@echo off" + os.linesep if is_windows() else "") + "echo OPSI" + os.linesep)
-	for script_arg in (script_path, str(script_path)):
-		proc = run_script_file(script_file=path_type(str(script_arg)))
-		assert proc.get_output_text().strip() == "OPSI"
+	for extension in (True, False):
+		ext = ""
+		if extension:
+			ext = ".cmd" if is_windows() else ".sh"
+		script_path = tmp_path / f"test_script{ext}"
+		script_path.write_text(("@echo off" + os.linesep if is_windows() else "") + "echo OPSI" + os.linesep)
+		for script_arg in (script_path, str(script_path)):
+			proc = run_script_file(script_file=path_type(str(script_arg)))
+			assert proc.get_output_text().strip() == "OPSI"
