@@ -9,7 +9,6 @@ import ast
 import base64
 import configparser
 import glob
-import json
 import os
 import re
 import struct
@@ -18,8 +17,9 @@ import zlib
 from collections import OrderedDict
 from datetime import date, timedelta
 from functools import lru_cache
+from json.encoder import encode_basestring_ascii
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Generator, Literal, Self, cast, overload
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Literal, Self, cast, overload
 
 from Crypto.Hash import MD5, SHA3_512
 from Crypto.Signature import pss
@@ -154,6 +154,40 @@ OPSI_STAGING_MODULE_IDS = ("background_install",)
 
 logger = get_logger("opsi")
 
+_LICENSE_PUBLIC_FIELDS = (
+	"id",
+	"type",
+	"schema_version",
+	"opsi_version",
+	"customer_id",
+	"customer_name",
+	"customer_address",
+	"customer_unit",
+	"contract_id",
+	"service_id",
+	"module_id",
+	"client_number",
+	"issued_at",
+	"valid_from",
+	"valid_until",
+	"revoked_ids",
+	"note",
+	"additional_data",
+	"signature",
+)
+_LICENSE_HASH_FIELDS = tuple(sorted(_LICENSE_PUBLIC_FIELDS))
+_ALL_MODULE_IDS = tuple(OPSI_MODULE_BUNDLES) + OPSI_MODULE_IDS
+
+
+def _json_encode_license_value(value: Any) -> str:
+	if value is None:
+		return "null"
+	if isinstance(value, bool):
+		return "true" if value else "false"
+	if isinstance(value, int):
+		return str(value)
+	return encode_basestring_ascii(str(value))
+
 
 def _hexstr2bytes(value: str) -> bytes:
 	if isinstance(value, str):
@@ -238,6 +272,8 @@ def generate_license_id() -> str:
 
 class OpsiLicense(BaseModel):
 	model_config = ConfigDict(arbitrary_types_allowed=True)
+	_PUBLIC_FIELDS: ClassVar[tuple[str, ...]] = _LICENSE_PUBLIC_FIELDS
+	_HASH_FIELDS: ClassVar[tuple[str, ...]] = _LICENSE_HASH_FIELDS
 
 	id: str = Field(pattern=OPSI_LICENCE_ID_REGEX, default_factory=generate_license_id)
 
@@ -282,7 +318,7 @@ class OpsiLicense(BaseModel):
 
 	checksum: str | None = Field(exclude=True, default=None)
 
-	cached_state: dict[str, str] = Field(exclude=True, default_factory=OrderedDict)
+	cached_state: dict[tuple[bool, date | None], str] = Field(exclude=True, default_factory=OrderedDict)
 
 	cached_signature_valid: bool | None = Field(exclude=True, default=None)
 
@@ -320,7 +356,7 @@ class OpsiLicense(BaseModel):
 		self.license_pool = license_pool
 
 	def to_dict(self, serializable: bool = False, with_state: bool = False) -> dict:
-		data = self.model_dump()
+		data = {field_name: getattr(self, field_name) for field_name in self._PUBLIC_FIELDS}
 		if serializable:
 			data["issued_at"] = str(data["issued_at"])
 			data["valid_from"] = str(data["valid_from"])
@@ -343,16 +379,19 @@ class OpsiLicense(BaseModel):
 		return cls.from_dict(json_decode(json_data))
 
 	def _hash_base(self, with_signature: bool = True) -> bytes:
-		string = ""
-		data = self.to_dict(serializable=True, with_state=False)
-		for attribute in sorted(data):
-			if attribute.startswith("_") or (attribute == "signature" and not with_signature):
+		parts: list[str] = []
+		for attribute in self._HASH_FIELDS:
+			if attribute == "signature" and not with_signature:
 				continue
-			value = data[attribute]
-			if isinstance(value, list):
+			value = getattr(self, attribute)
+			if attribute in ("issued_at", "valid_from", "valid_until"):
+				value = str(value)
+			elif attribute == "signature":
+				value = value.hex() if value else None
+			elif isinstance(value, list):
 				value = ",".join(sorted(value))
-			string += f"{attribute}={json.dumps(value)}\n"
-		return string.encode("utf-8")
+			parts.append(f"{attribute}={_json_encode_license_value(value)}\n")
+		return "".join(parts).encode("utf-8")
 
 	def getchecksum(self, with_signature: bool = True) -> str:
 		return f"{zlib.crc32(self._hash_base(with_signature)):x}"
@@ -383,7 +422,7 @@ class OpsiLicense(BaseModel):
 		if len(self.cached_state) >= MAX_STATE_CACHE_VALUES:
 			self.cached_state.popitem()
 
-		cache_key = f"{test_revoked}{at_date}"
+		cache_key = (test_revoked, at_date)
 		if cache_key not in self.cached_state:
 			self.cached_state[cache_key] = self._get_state(test_revoked=test_revoked, at_date=at_date)
 		return self.cached_state[cache_key]
@@ -591,6 +630,7 @@ class OpsiLicensePool:
 		self.client_limit_warning_absolute: int | None = client_limit_warning_absolute
 		self._client_info: dict[str, int] | Callable | None = client_info
 		self._licenses: dict[str, OpsiLicense] = {}
+		self._revoked_license_ids_cache: dict[date, set[str]] = {}
 		self._file_modification_dates: dict[str, float] = {}
 
 	@property
@@ -655,6 +695,7 @@ class OpsiLicensePool:
 			yield lic
 
 	def clear_license_state_cache(self) -> None:
+		self._revoked_license_ids_cache = {}
 		for lic in self._licenses.values():
 			lic.clear_cache()
 
@@ -673,16 +714,20 @@ class OpsiLicensePool:
 	def get_revoked_license_ids(self, at_date: date | None = None) -> set[str]:
 		if not at_date:
 			at_date = date.today()
+		revoked_ids = self._revoked_license_ids_cache.get(at_date)
+		if revoked_ids is not None:
+			return revoked_ids
 		revoked_ids = set()
 		for lic in self._licenses.values():
 			if lic.get_state(test_revoked=False, at_date=at_date) == OPSI_LICENSE_STATE_VALID:
 				for revoked_id in lic.revoked_ids:
 					revoked_ids.add(revoked_id)
+		self._revoked_license_ids_cache[at_date] = revoked_ids
 		return revoked_ids
 
 	def get_licenses_checksum(self) -> str:
 		data = zlib.crc32(
-			b"".join(sorted([lic.getchecksum(with_signature=False).encode("utf-8") for lic in self.get_licenses(valid_only=True)]))
+			b"".join(sorted(lic.getchecksum(with_signature=False).encode("utf-8") for lic in self.get_licenses(valid_only=True)))
 		)
 		return f"{data:08x}"
 
@@ -700,10 +745,10 @@ class OpsiLicensePool:
 		if not at_date:
 			at_date = date.today()
 
-		enabled_module_ids = self.enabled_module_ids
+		enabled_module_ids = set(self.enabled_module_ids)
 		client_numbers = self.client_numbers
 		modules: dict[str, dict[str, Any]] = {}
-		for module_id in list(OPSI_MODULE_BUNDLES) + list(OPSI_MODULE_IDS):
+		for module_id in _ALL_MODULE_IDS:
 			if module_id in OPSI_FREE_MODULE_IDS:
 				modules[module_id] = {
 					"available": True,
@@ -726,13 +771,16 @@ class OpsiLicensePool:
 				modules[module_id]["available"] = True
 				modules[module_id]["state"] = OPSI_MODULE_STATE_LICENSED
 				modules[module_id]["license_ids"].append(lic.id)
-				modules[module_id]["license_ids"].sort()
 				if lic.type == OPSI_LICENSE_TYPE_CORE:
 					if modules[module_id]["client_number"] < lic.client_number:
 						modules[module_id]["client_number"] = lic.client_number
 				else:
 					modules[module_id]["client_number"] += lic.client_number
 				modules[module_id]["client_number"] = min(modules[module_id]["client_number"], OPSI_LICENSE_CLIENT_NUMBER_UNLIMITED)
+
+		for info in modules.values():
+			if len(info["license_ids"]) > 1:
+				info["license_ids"].sort()
 
 		if not modules["2fa"]["available"] and modules["vpn"]["available"]:
 			modules["2fa"] = modules["vpn"].copy()
