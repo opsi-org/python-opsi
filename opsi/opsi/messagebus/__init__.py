@@ -4,7 +4,12 @@
 # License: AGPL-3.0-only
 
 from opsi.opsi.messagebus._const import CONNECTION_SESSION_CHANNEL, CONNECTION_USER_CHANNEL, EVENT_TYPES
-from opsi.opsi.messagebus._file_transfer import get_file_transfers, process_file_transfer_message, stop_running_file_transfers
+from opsi.opsi.messagebus._file_transfer import (
+	get_file_transfer,
+	get_file_transfers,
+	process_file_transfer_message,
+	stop_running_file_transfers,
+)
 from opsi.opsi.messagebus._message import (
 	ChannelSubscriptionEventMessage,
 	ChannelSubscriptionOperation,
@@ -49,7 +54,7 @@ from opsi.opsi.messagebus._message import (
 	messagebus_timestamp,
 )
 from opsi.opsi.messagebus._process import process_process_message, remove_process, stop_running_processes
-from opsi.opsi.messagebus._terminal import process_terminal_message, remove_terminal, stop_running_terminals
+from opsi.opsi.messagebus._terminal import get_terminal, get_terminals, process_terminal_message, remove_terminal, stop_running_terminals
 
 __all__ = [
 	"CONNECTION_USER_CHANNEL",
@@ -58,9 +63,13 @@ __all__ = [
 	"process_file_transfer_message",
 	"stop_running_file_transfers",
 	"get_file_transfers",
+	"get_file_transfer",
+	"get_terminals",
+	"get_terminal",
 	"process_process_message",
 	"remove_process",
 	"stop_running_processes",
+	"get_terminal",
 	"process_terminal_message",
 	"remove_terminal",
 	"stop_running_terminals",

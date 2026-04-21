@@ -414,6 +414,16 @@ async def process_file_transfer_message(
 			await file_transfer.stop()
 
 
+def get_file_transfers() -> list[FileTransfer]:
+	with file_transfers_lock:
+		return list(file_transfers.values())
+
+
+def get_file_transfer(file_id: str) -> FileTransfer | None:
+	with file_transfers_lock:
+		return file_transfers.get(file_id)
+
+
 def remove_file_transfer(file_id: str) -> None:
 	with file_transfers_lock:
 		try:
@@ -426,8 +436,3 @@ async def stop_running_file_transfers() -> None:
 	with file_transfers_lock:
 		for file_transfer in list(file_transfers.values()):
 			await file_transfer.stop()
-
-
-def get_file_transfers() -> list[FileTransfer]:
-	with file_transfers_lock:
-		return list(file_transfers.values())

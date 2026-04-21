@@ -413,6 +413,16 @@ async def process_terminal_message(
 			await terminal.close()
 
 
+def get_terminals() -> list[Terminal]:
+	with terminals_lock:
+		return list(terminals.values())
+
+
+def get_terminal(terminal_id: str) -> Terminal | None:
+	with terminals_lock:
+		return terminals.get(terminal_id)
+
+
 def remove_terminal(terminal_id: str) -> None:
 	with terminals_lock:
 		try:
