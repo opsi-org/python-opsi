@@ -1,5 +1,5 @@
-# opsicommon is part of the desktop management solution opsi http://www.opsi.org
-# Copyright (c) 2020-2025 uib GmbH <info@uib.de>
+# This file is part of the device management solution OPSI http://www.opsi.org
+# Copyright (c) 2020-2026 uib GmbH <info@uib.de>
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
@@ -556,7 +556,7 @@ class OpsiModulesFile:
 			elif attribute == "expires":
 				if value == "never":
 					value = OPSI_LICENSE_DATE_UNLIMITED
-				common_lic["valid_until"] = value
+				common_lic["valid_until"] = value  # type: ignore[invalid-assignment]
 			else:
 				module_id = attribute.lower()
 				client_number = 0
@@ -573,7 +573,7 @@ class OpsiModulesFile:
 			kwargs["id"] = f"legacy-{module_id}"
 			kwargs["module_id"] = module_id
 			kwargs["client_number"] = client_number
-			self.add_license(OpsiLicense(**kwargs))
+			self.add_license(OpsiLicense(**kwargs))  # type: ignore[invalid-argument-type]
 
 
 class OpsiLicensePool:
@@ -616,7 +616,7 @@ class OpsiLicensePool:
 	def client_numbers(self) -> dict[str, int]:
 		client_numbers: dict[str, int] = {}
 		if callable(self._client_info):
-			client_numbers = self._client_info()
+			client_numbers = self._client_info()  # type: ignore[call-top-callable]
 		elif isinstance(self._client_info, dict):
 			client_numbers = cast(dict[str, int], self._client_info)
 		client_numbers["all"] = 0
@@ -767,7 +767,7 @@ class OpsiLicensePool:
 	def get_legacy_modules(self) -> dict[str, Any] | None:
 		for lic in self.get_licenses():
 			if lic.schema_version == 1:
-				modules = {"signature": lic.signature.hex() if lic.signature else ""}
+				modules: dict[str, str | int] = {"signature": lic.signature.hex() if lic.signature else ""}
 				for line in (lic.additional_data or "").split("\r\n"):
 					if line.strip():
 						attribute, value = line.split("=", 1)

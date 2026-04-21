@@ -1,5 +1,5 @@
-# opsicommon is part of the desktop management solution opsi http://www.opsi.org
-# Copyright (c) 2020-2025 uib GmbH <info@uib.de>
+# This file is part of the device management solution OPSI http://www.opsi.org
+# Copyright (c) 2020-2026 uib GmbH <info@uib.de>
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
@@ -224,7 +224,7 @@ def test_opsi_license_defaults() -> None:
 		("signature", bytes.fromhex("0102030405060708090a0b0c0d0e"), None),
 	),
 )
-def test_opsi_license_validation(attribute: str, value: Any, exception: type | None) -> None:
+def test_opsi_license_validation(attribute: str, value: Any, exception: type[BaseException] | None) -> None:
 	kwargs: dict[str, Any] = {
 		"customer_id": "12345",
 		"customer_name": "uib GmbH",
