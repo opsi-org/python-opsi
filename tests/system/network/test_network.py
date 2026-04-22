@@ -26,7 +26,20 @@ def test_get_network_info() -> None:
 	assert network_info.interfaces
 	assert network_info.routes
 	assert network_info.dns_nameservers
-	assert network_info.search_domains
+	if not network_info.search_domains:
+		resolv_conf_search = None
+		try:
+			for line in Path("/etc/resolv.conf").read_text().splitlines():
+				if line.startswith("search "):
+					resolv_conf_search = line.split(" ", 1)[1].strip(". ")
+					break
+		except Exception:
+			pass
+		if resolv_conf_search is None:
+			raise ValueError("No search domains found and failed to get search list from /etc/resolv.conf")
+		if resolv_conf_search != "":
+			raise ValueError(f"No search domains found, but got '{resolv_conf_search}' from /etc/resolv.conf")
+
 	default_routes = [route for route in network_info.routes if route.is_default]
 	assert default_routes
 	default_route_interfaces = [interface for interface in network_info.interfaces if interface.is_default_gateway]
