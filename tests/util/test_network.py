@@ -25,3 +25,14 @@ from opsi.util.network import ip_address_in_network
 )
 def test_ip_address_in_network(address: str | IPv4Address | IPv6Address, network: str | IPv4Network | IPv6Network, expected: bool) -> None:
 	assert ip_address_in_network(address, network) == expected
+
+
+@pytest.mark.parametrize(
+	"address, network, expected",
+	[
+		(IPv6Address("::ffff:192.168.1.10"), IPv4Network("192.168.1.0/24"), True),
+		(IPv6Address("::ffff:192.168.2.10"), IPv4Network("192.168.1.0/24"), False),
+	],
+)
+def test_ip_address_in_network_ipv4_mapped_ipv6(address: IPv6Address, network: IPv4Network, expected: bool) -> None:
+	assert ip_address_in_network(address, network) == expected
