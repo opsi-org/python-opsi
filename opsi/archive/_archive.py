@@ -3,6 +3,9 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
+# NOTE: Using fastar would speed up compression and decompression a bit,
+# but currently it would not be possible to implement progress tracking with it.
+
 from __future__ import annotations
 
 import fnmatch
@@ -37,6 +40,7 @@ logger = get_logger("opsi")
 CPIO_EXTRACT_COMMAND = "cpio --unconditional --extract --make-directories --quiet --no-preserve-owner --no-absolute-filenames"
 TAR_EXTRACT_COMMAND = "tar --wildcards --no-same-owner --extract --file -"
 TAR_CREATE_COMMAND = "tar --owner=nobody --group=nogroup --create --file"
+ZSTD_COMPRESS_LEVEL = 3
 
 
 @dataclass
@@ -301,10 +305,10 @@ def compress_command(archive: Path, compression: str) -> str:
 				zstd_version = match.group(1)
 		except ProcessError as exc:
 			raise RuntimeError("Zstd not available.") from exc
-		opts = ""
+		opts = f"-{ZSTD_COMPRESS_LEVEL}"
 		if packaging.version.parse(zstd_version) >= packaging.version.parse("1.3.8"):
 			# With version 1.3.8 zstd introduced --rsyncable mode.
-			opts = "--rsyncable"
+			opts = f"{opts} --rsyncable"
 		return f"zstd - {opts} -o '{archive}' 2> /dev/null"  # --no-progress is not available for deb9 zstd
 	raise RuntimeError(f"Unknown compression '{compression}'")
 
@@ -496,7 +500,7 @@ def create_archive_internal(
 		return tarinfo
 
 	if compression == "zstd":
-		compressor = zstandard.ZstdCompressor()
+		compressor = zstandard.ZstdCompressor(level=ZSTD_COMPRESS_LEVEL)
 		with open(archive, "wb") as archive_file:
 			with compressor.stream_writer(archive_file) as zstd_writer:
 				with ProgressTarFile.open(fileobj=zstd_writer, dereference=dereference, mode="w:") as tar_object:
