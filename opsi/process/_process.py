@@ -513,7 +513,8 @@ class Process:
 					data = pipe.readline(self._read_max)
 					data_len = len(data)
 					if not data_len:
-						logger.debug("End of %s stream reached", type)
+						total_bytes_read = self._stdout_bytes_read if type == "stdout" else self._stderr_bytes_read
+						logger.debug("End of %s stream reached, read %d bytes in total", type, total_bytes_read)
 						# EOF
 						break
 					logger.trace("Read %d bytes from %s: %r", data_len, type, data)
@@ -549,7 +550,7 @@ class Process:
 							data = remaining_data
 							data_len = len(data)
 
-				time.sleep(0.1 if is_overflow else 0.01)
+				time.sleep(0.1 if is_overflow else 0.001 if not data_len else 0.0)
 		except Exception as exc:
 			logger.warning("Exception in %s reader thread: %r", type, exc)
 

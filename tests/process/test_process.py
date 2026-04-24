@@ -231,6 +231,28 @@ def test_process_read(size_limit: int, capture_output: Literal["stdout", "stderr
 		assert not proc._stdout_reader.is_alive()
 
 
+def test_process_read_long(tmp_path: Path) -> None:
+	file_path = tmp_path / "data.bin"
+	text = (
+		"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam"
+	)
+	with file_path.open("w", encoding="utf-8") as file:
+		for i in range(5000):
+			file.write(f"{i + 1} - {text}\n")
+
+	# Test that reading long output works and does not cause a timeout due to too long reading time.
+	timeout = 5
+	if is_windows():
+		script = f"@echo off && type {file_path}"
+		out = run_script(script=script, interpreter="cmd", timeout=timeout).read_stdout_text()
+	else:
+		out = run_command(command=["cat", str(file_path)], timeout=timeout).read_stdout_text()
+	lines = out.strip().split("\n")
+	assert len(lines) == 5000
+	assert lines[0].strip() == f"1 - {text}"
+	assert lines[-1].strip() == f"5000 - {text}"
+
+
 def test_process_read_max(tmp_path: Path) -> None:
 	data = b"A" * 500_000
 	file_path = tmp_path / "data.bin"
