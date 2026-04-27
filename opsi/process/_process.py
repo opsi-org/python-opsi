@@ -17,7 +17,7 @@ from contextlib import contextmanager
 from functools import lru_cache
 from pathlib import Path
 from shutil import which
-from subprocess import PIPE, STDOUT, Popen, list2cmdline
+from subprocess import DEVNULL, PIPE, STDOUT, Popen, list2cmdline
 from threading import Event, Lock, Thread
 from types import TracebackType
 from typing import Collection, Literal, Mapping, Self, cast
@@ -30,6 +30,9 @@ from opsi.system.info import is_posix, is_windows
 LD_LIBRARY_EXCLUDE_LIST = ["/usr/lib/opsiclientd", "/usr/lib/opsiconfd", "/usr/lib/opsi-agent"]
 
 logger = get_logger("opsi")
+
+CaptureOutput = Literal["stdout", "stderr", "both", "combined", "none"]
+DiscardOutput = Literal["stdout", "stderr", "both", "none"]
 
 
 def _get_executable_path() -> Path:
@@ -280,7 +283,8 @@ class Process:
 		timeout: float | int | None = None,
 		stdin: str | bytes | None = None,
 		close_stdin: bool = True,
-		capture_output: Literal["stdout", "stderr", "both", "combined", "none"] = "both",
+		capture_output: CaptureOutput = "both",
+		discard_output: DiscardOutput = "none",
 		encoding: str | None = None,
 		exit_on_error: bool = False,
 		success_exit_codes: Collection[int] | None = (0,),
@@ -324,6 +328,10 @@ class Process:
 		:param capture_output:
 			Specifies which output streams to capture.
 			Options are "stdout", "stderr", "both", "combined", or "none".
+		:param discard_output:
+			Specifies which output streams to redirect to DEVNULL.
+			Options are "stdout", "stderr", "both", or "none".
+			If an output stream is both captured and discarded, it will be discarded.
 		:param encoding:
 			Character encoding for stdin/stdout/stderr.
 			If None, the system's preferred encoding is used.
@@ -352,6 +360,7 @@ class Process:
 		self._timeout = timeout
 		self._environment: dict[str, str] = {}
 		self._capture_output = capture_output
+		self._discard_output = discard_output
 		self._encoding = encoding or "utf-8"
 		self._stdin_data: bytes | None = None
 		self._close_stdin_after_start = bool(close_stdin)
@@ -371,6 +380,8 @@ class Process:
 
 		if capture_output not in ("stdout", "stderr", "both", "combined", "none"):
 			raise ProcessError(f"Invalid capture_output value: {capture_output}", process=self)
+		if discard_output not in ("stdout", "stderr", "both", "none"):
+			raise ProcessError(f"Invalid discard_output value: {discard_output}", process=self)
 		if command is not None and script is not None:
 			raise ProcessError("'command' and 'script' are mutually exclusive", process=self)
 		if command is None and script is None:
@@ -625,8 +636,22 @@ class Process:
 			assert self._script
 			stdin_data = self._script.encode(self._encoding)
 
-		stdout = PIPE if self._capture_output in ("stdout", "both", "combined") else None
-		stderr = PIPE if self._capture_output in ("stderr", "both") else STDOUT if self._capture_output == "combined" else None
+		stdout = (
+			DEVNULL
+			if self._discard_output in ("stdout", "both")
+			else PIPE
+			if self._capture_output in ("stdout", "both", "combined")
+			else None
+		)
+		stderr = (
+			DEVNULL
+			if self._discard_output in ("stderr", "both")
+			else PIPE
+			if self._capture_output in ("stderr", "both")
+			else STDOUT
+			if self._capture_output == "combined"
+			else None
+		)
 		stdin = PIPE if stdin_data is not None or not close_stdin else None
 
 		logger.info(
@@ -652,11 +677,11 @@ class Process:
 		assert self._proc
 		try:
 			logger.debug("Starting stdout reader thread")
-			if self._capture_output in ("stdout", "both", "combined"):
+			if stdout == PIPE:
 				self._stdout_reader = Thread(target=self._reader, args=("stdout",), daemon=True)
 				self._stdout_reader.start()
 
-			if self._capture_output in ("stderr", "both"):
+			if stderr == PIPE:
 				logger.debug("Starting stderr reader thread")
 				self._stderr_reader = Thread(target=self._reader, args=("stderr",), daemon=True)
 				self._stderr_reader.start()
@@ -1053,7 +1078,8 @@ def run_command(
 	environment: Mapping[str, str] | None = None,
 	timeout: float | int | None = None,
 	stdin: str | bytes | None = None,
-	capture_output: Literal["stdout", "stderr", "both", "combined", "none"] = "both",
+	capture_output: CaptureOutput = "both",
+	discard_output: DiscardOutput = "none",
 	encoding: str | None = None,
 	success_exit_codes: Collection[int] | None = (0,),
 	wait: bool = True,
@@ -1069,6 +1095,7 @@ def run_command(
 		timeout=timeout,
 		stdin=stdin,
 		capture_output=capture_output,
+		discard_output=discard_output,
 		encoding=encoding,
 		success_exit_codes=success_exit_codes,
 		retry_config=retry_config,
@@ -1091,7 +1118,8 @@ def run_script(
 	environment: Mapping[str, str] | None = None,
 	timeout: float | int | None = None,
 	stdin: str | bytes | None = None,
-	capture_output: Literal["stdout", "stderr", "both", "combined", "none"] = "both",
+	capture_output: CaptureOutput = "both",
+	discard_output: DiscardOutput = "none",
 	encoding: str | None = None,
 	exit_on_error: bool = False,
 	success_exit_codes: Collection[int] | None = (0,),
@@ -1110,6 +1138,7 @@ def run_script(
 		timeout=timeout,
 		stdin=stdin,
 		capture_output=capture_output,
+		discard_output=discard_output,
 		encoding=encoding,
 		exit_on_error=exit_on_error,
 		success_exit_codes=success_exit_codes,
@@ -1133,7 +1162,8 @@ def run_script_file(
 	environment: Mapping[str, str] | None = None,
 	timeout: float | int | None = None,
 	stdin: str | bytes | None = None,
-	capture_output: Literal["stdout", "stderr", "both", "combined", "none"] = "both",
+	capture_output: CaptureOutput = "both",
+	discard_output: DiscardOutput = "none",
 	encoding: str | None = None,
 	exit_on_error: bool = False,
 	success_exit_codes: Collection[int] | None = (0,),
@@ -1152,6 +1182,7 @@ def run_script_file(
 		timeout=timeout,
 		stdin=stdin,
 		capture_output=capture_output,
+		discard_output=discard_output,
 		encoding=encoding,
 		exit_on_error=exit_on_error,
 		success_exit_codes=success_exit_codes,

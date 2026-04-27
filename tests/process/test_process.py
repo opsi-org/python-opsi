@@ -523,6 +523,66 @@ def test_process_argument_validation() -> None:
 		Process(script="exit 0", interpreter="cmd", exit_on_error=True)
 	with pytest.raises(ProcessError, match="Invalid capture_output value"):
 		Process(script="exit 0", interpreter="bash", capture_output="invalid_value")  # type: ignore[invalid-argument-type]
+	with pytest.raises(ProcessError, match="Invalid discard_output value"):
+		Process(script="exit 0", interpreter="bash", discard_output="invalid_value")  # type: ignore[invalid-argument-type]
+
+
+@pytest.mark.parametrize(
+	("capture_output", "discard_output", "expected_stdout", "expected_stderr"),
+	[
+		("none", "both", "", ""),
+		("stdout", "stderr", "stdout\n", ""),
+		("stderr", "stdout", "", "stderr\n"),
+		("both", "both", "", ""),
+		("combined", "stderr", "stdout\n", ""),
+	],
+)
+def test_process_discard_output(
+	capture_output: Literal["stdout", "stderr", "both", "combined", "none"],
+	discard_output: Literal["stdout", "stderr", "both", "none"],
+	expected_stdout: str,
+	expected_stderr: str,
+	capfd: pytest.CaptureFixture[str],
+) -> None:
+	command = [
+		sys.executable,
+		"-c",
+		"import sys; print('stdout', flush=True); print('stderr', file=sys.stderr, flush=True)",
+	]
+
+	proc = run_command(command=command, capture_output=capture_output, discard_output=discard_output)
+	captured = capfd.readouterr()
+
+	assert captured.out == ""
+	assert captured.err == ""
+	assert proc.get_stdout_text() == expected_stdout
+	assert proc.get_stderr_text() == expected_stderr
+
+
+def test_process_discard_output_in_script_wrappers(tmp_path: Path, capfd: pytest.CaptureFixture[str]) -> None:
+	proc = run_script(
+		script="import sys; print('stdout', flush=True); print('stderr', file=sys.stderr, flush=True)",
+		interpreter=[sys.executable],
+		capture_output="none",
+		discard_output="both",
+	)
+	captured = capfd.readouterr()
+	assert captured.out == ""
+	assert captured.err == ""
+	assert proc.get_output_text() == ""
+
+	script_file = tmp_path / "script.py"
+	script_file.write_text("import sys\nprint('stdout', flush=True)\nprint('stderr', file=sys.stderr, flush=True)\n", encoding="utf-8")
+	proc = run_script_file(
+		script_file=script_file,
+		interpreter=[sys.executable],
+		capture_output="none",
+		discard_output="both",
+	)
+	captured = capfd.readouterr()
+	assert captured.out == ""
+	assert captured.err == ""
+	assert proc.get_output_text() == ""
 
 
 def test_command_and_script() -> None:
