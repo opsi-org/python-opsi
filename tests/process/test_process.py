@@ -259,21 +259,24 @@ def test_process_read_max(tmp_path: Path) -> None:
 	file_path.write_bytes(data)
 
 	stdout_data = b""
-	if is_windows():
-		script = f"@echo off && type {file_path}"
-		with patch.object(Process, "_read_max", 10_000):
+	with patch.object(Process, "_read_max", 10_000):
+		if is_windows():
+			script = f"@echo off && type {file_path}"
 			with Process(script=script, interpreter="cmd") as proc:
 				while proc.is_running():
 					stdout, _ = proc.read_bytes(timeout=10)
 					if stdout:
 						stdout_data += stdout
-	else:
-		with Process(command=["cat", str(file_path)]) as proc:
-			with patch.object(Process, "_read_max", 10_000):
+		else:
+			with Process(command=["cat", str(file_path)]) as proc:
 				while proc.is_running():
 					stdout, _ = proc.read_bytes(timeout=10)
 					if stdout:
 						stdout_data += stdout
+
+		stdout, _ = proc.read_bytes(timeout=10)
+		if stdout:
+			stdout_data += stdout
 
 	assert stdout_data == data
 	assert proc.runtime < 5
