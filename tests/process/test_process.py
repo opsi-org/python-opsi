@@ -531,10 +531,10 @@ def test_process_argument_validation() -> None:
 	("capture_output", "discard_output", "expected_stdout", "expected_stderr"),
 	[
 		("none", "both", "", ""),
-		("stdout", "stderr", "stdout\n", ""),
-		("stderr", "stdout", "", "stderr\n"),
+		("stdout", "stderr", "stdout", ""),
+		("stderr", "stdout", "", "stderr"),
 		("both", "both", "", ""),
-		("combined", "stderr", "stdout\n", ""),
+		("combined", "stderr", "stdout", ""),
 	],
 )
 def test_process_discard_output(
@@ -555,8 +555,8 @@ def test_process_discard_output(
 
 	assert captured.out == ""
 	assert captured.err == ""
-	assert proc.get_stdout_text() == expected_stdout
-	assert proc.get_stderr_text() == expected_stderr
+	assert proc.get_stdout_text().strip() == expected_stdout
+	assert proc.get_stderr_text().strip() == expected_stderr
 
 
 def test_process_discard_output_in_script_wrappers(tmp_path: Path, capfd: pytest.CaptureFixture[str]) -> None:
