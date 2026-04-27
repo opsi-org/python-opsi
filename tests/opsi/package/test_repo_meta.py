@@ -13,8 +13,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
-import zstandard
 
+from opsi.compression import decompress
 from opsi.opsi.package import (
 	PackageDependency,
 	RepoMetaMetadataFileType,
@@ -35,8 +35,7 @@ TEST_REPO = Path("tests") / "data" / "opsipackage" / "repository"
 def read_metafile(file: Path) -> dict:
 	bdata = file.read_bytes()
 	if ".zstd" in file.suffixes:
-		decompressor = zstandard.ZstdDecompressor()
-		bdata = decompressor.decompress(bdata)
+		bdata = decompress(bdata, "zstd")
 	data = msgpack_decode(bdata) if ".msgpack" in file.suffixes else json_decode(bdata)
 	return data
 
