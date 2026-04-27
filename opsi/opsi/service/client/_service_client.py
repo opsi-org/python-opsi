@@ -196,6 +196,11 @@ def get_rpc_timeout(method: str) -> float:
 	return float(RPC_TIMEOUTS_DEFAULT)
 
 
+def set_rpc_timeout(method: str, timeout: float) -> None:
+	RPC_TIMEOUTS[method] = int(timeout)
+	get_rpc_timeout.cache_clear()
+
+
 class ServiceVerificationFlags(str, Enum):
 	STRICT_CHECK = "strict_check"
 	UIB_OPSI_CA = "uib_opsi_ca"

@@ -84,6 +84,7 @@ from opsi.opsi.service.client._service_client import (
 	WebSocketApp,
 	get_rpc_timeout,
 	get_service_client,
+	set_rpc_timeout,
 )
 from opsi.opsi.service.model.object import OpsiClient
 from opsi.system.info import is_macos, is_windows
@@ -2754,5 +2755,8 @@ def test_permission_error_ca_cert_file_lock() -> None:
 		("backend_getInterface", float(RPC_TIMEOUTS_DEFAULT)),
 	],
 )
-def test_get_rpc_timeout(method: str, timeout: float) -> None:
+def test_get_set_rpc_timeout(method: str, timeout: float) -> None:
 	assert get_rpc_timeout(method) == timeout
+	new_timeout = timeout + 1.0
+	set_rpc_timeout(method, new_timeout)
+	assert get_rpc_timeout(method) == new_timeout
