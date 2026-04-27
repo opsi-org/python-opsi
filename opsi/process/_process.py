@@ -714,9 +714,7 @@ class Process:
 
 		:return: The Process instance.
 		"""
-		self._start_manager()
-		self._started.wait(self._start_wait_timeout)
-		return self
+		return self.start()
 
 	def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: TracebackType | None) -> None:
 		"""
@@ -737,6 +735,23 @@ class Process:
 		"""
 		self._manager_thread = Thread(target=self._manager, daemon=True)
 		self._manager_thread.start()
+
+	def start(self) -> Self:
+		"""
+		Start the process and return the Process instance.
+
+		:return: The Process instance.
+		"""
+		self._start_manager()
+		self._started.wait(self._start_wait_timeout)
+		return self
+
+	def _raise_start_error(self) -> None:
+		if not self._exception or self._pid is not None:
+			return
+		if isinstance(self._exception, ProcessError):
+			raise self._exception
+		raise ProcessError(f"Failed to run process after {self._attempts} attempts: {self._exception}", process=self) from self._exception
 
 	def _close_stdin(self) -> None:
 		"""
@@ -1041,12 +1056,13 @@ def run_command(
 	capture_output: Literal["stdout", "stderr", "both", "combined", "none"] = "both",
 	encoding: str | None = None,
 	success_exit_codes: Collection[int] | None = (0,),
+	wait: bool = True,
 	retry_config: RetryConfig | None = None,
 ) -> Process:
 	"""
 	Run a command directly and return the Process instance.
 	"""
-	with Process(
+	proc = Process(
 		command=command,
 		working_dir=working_dir,
 		environment=environment,
@@ -1056,8 +1072,13 @@ def run_command(
 		encoding=encoding,
 		success_exit_codes=success_exit_codes,
 		retry_config=retry_config,
-	) as proc:
-		pass
+	)
+	if wait:
+		with proc:
+			pass
+	else:
+		proc.start()
+		proc._raise_start_error()
 	return proc
 
 
@@ -1074,12 +1095,13 @@ def run_script(
 	encoding: str | None = None,
 	exit_on_error: bool = False,
 	success_exit_codes: Collection[int] | None = (0,),
+	wait: bool = True,
 	retry_config: RetryConfig | None = None,
 ) -> Process:
 	"""
 	Run a script via an interpreter and return the Process instance.
 	"""
-	with Process(
+	proc = Process(
 		script=script,
 		interpreter=interpreter,
 		arguments=arguments,
@@ -1092,8 +1114,13 @@ def run_script(
 		exit_on_error=exit_on_error,
 		success_exit_codes=success_exit_codes,
 		retry_config=retry_config,
-	) as proc:
-		pass
+	)
+	if wait:
+		with proc:
+			pass
+	else:
+		proc.start()
+		proc._raise_start_error()
 	return proc
 
 
@@ -1110,12 +1137,13 @@ def run_script_file(
 	encoding: str | None = None,
 	exit_on_error: bool = False,
 	success_exit_codes: Collection[int] | None = (0,),
+	wait: bool = True,
 	retry_config: RetryConfig | None = None,
 ) -> Process:
 	"""
 	Run a script via an interpreter and return the Process instance.
 	"""
-	with Process(
+	proc = Process(
 		script=Path(script_file),
 		interpreter=interpreter,
 		arguments=arguments,
@@ -1128,6 +1156,11 @@ def run_script_file(
 		exit_on_error=exit_on_error,
 		success_exit_codes=success_exit_codes,
 		retry_config=retry_config,
-	) as proc:
-		pass
+	)
+	if wait:
+		with proc:
+			pass
+	else:
+		proc.start()
+		proc._raise_start_error()
 	return proc

@@ -677,6 +677,23 @@ def test_run_command() -> None:
 	) as exc_info:
 		run_command(command=["not_available_command", "arg1"])
 	assert exc_info.value.command == "not_available_command arg1"
+	with pytest.raises(
+		ProcessError, match="Failed to run process after 1 attempts.*" + ("WinError 2" if is_windows() else "No such file")
+	) as exc_info:
+		run_command(command=["not_available_command", "arg1"], wait=False)
+	assert exc_info.value.command == "not_available_command arg1"
+
+	proc = run_command(command=[sys.executable, "-c", "import time; time.sleep(1); print('OPSI')"], wait=False)
+	try:
+		assert proc.pid is not None
+		assert proc.is_running(wait=0)
+		assert proc.exit_code is None
+		assert proc.wait(timeout=5)
+		assert proc.exit_code == 0
+		assert proc.get_stdout_text().strip() == "OPSI"
+	finally:
+		if proc.is_running(wait=0):
+			proc.stop()
 
 
 def test_run_script(tmp_path: Path) -> None:
@@ -693,7 +710,7 @@ def test_run_script(tmp_path: Path) -> None:
 	else:
 		script = [f"cat {stderr_file} 1>&2", f"cat {stdout_file}"]
 
-	proc = run_script(script=script, capture_output="both")
+	proc = run_script(script=script, capture_output="both", wait=True)
 	assert proc.get_output_text().strip() == stdout_data + stderr_data
 	assert proc.get_stderr_text().strip() == stderr_data
 	assert proc.get_stdout_text().strip() == stdout_data
@@ -720,6 +737,18 @@ def test_run_script(tmp_path: Path) -> None:
 			exit_on_error=True,
 		)
 
+	wait_script = "ping -n 2 127.0.0.1 >NUL\necho OPSI" if is_windows() else "sleep 2\necho OPSI"
+	proc = run_script(script=wait_script, wait=False)
+	try:
+		assert proc.pid is not None
+		assert proc.is_running(wait=0)
+		assert proc.wait(timeout=5)
+		assert proc.exit_code == 0
+		assert proc.get_stdout_text().strip() == "OPSI"
+	finally:
+		if proc.is_running(wait=0):
+			proc.stop()
+
 
 @pytest.mark.parametrize("path_type", PATH_TYPES)
 def test_run_script_file(tmp_path: Path, path_type) -> None:
@@ -732,3 +761,23 @@ def test_run_script_file(tmp_path: Path, path_type) -> None:
 		for script_arg in (script_path, str(script_path)):
 			proc = run_script_file(script_file=path_type(str(script_arg)))
 			assert proc.get_output_text().strip() == "OPSI"
+
+	ext = ".cmd" if is_windows() else ".sh"
+	script_path = tmp_path / f"test_script_wait_false{ext}"
+	script_path.write_text(
+		("@echo off" + os.linesep if is_windows() else "")
+		+ ("ping -n 2 127.0.0.1 >NUL" if is_windows() else "sleep 2")
+		+ os.linesep
+		+ "echo OPSI"
+		+ os.linesep
+	)
+	proc = run_script_file(script_file=path_type(str(script_path)), wait=False)
+	try:
+		assert proc.pid is not None
+		assert proc.is_running(wait=0)
+		assert proc.wait(timeout=5)
+		assert proc.exit_code == 0
+		assert proc.get_stdout_text().strip() == "OPSI"
+	finally:
+		if proc.is_running(wait=0):
+			proc.stop()
