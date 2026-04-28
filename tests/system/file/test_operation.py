@@ -150,10 +150,10 @@ def test_create_symlink_to_file(tmp_path: Path, target_exists: bool, link_exists
 
 	if link_exists:
 		with pytest.raises(FileExistsError):
-			link(target, link_path, link_type="symlink")
-		link(target, link_path, link_type="symlink", overwrite=True)
+			link(link_path, target, link_type="symlink")
+		link(link_path, target, link_type="symlink", overwrite=True)
 	else:
-		link(target, link_path, link_type="symlink")
+		link(link_path, target, link_type="symlink")
 
 	assert link_path.is_symlink()
 	if target_exists:
@@ -180,14 +180,19 @@ def test_create_symlink_to_directory(tmp_path: Path, target_exists: bool, link_e
 
 	if link_exists:
 		with pytest.raises(FileExistsError):
-			link(target, link_path, link_type="symlink")
-		link(target, link_path, link_type="symlink", overwrite=True)
+			link(link_path, target, link_type="symlink")
+		link(link_path, target, link_type="symlink", overwrite=True, target_is_directory=not target_exists)
 	else:
-		link(target, link_path, link_type="symlink")
+		link(link_path, target, link_type="symlink", target_is_directory=not target_exists)
 
 	assert link_path.is_symlink()
-	if target_exists:
-		assert (link_path / "test.txt").read_text(encoding="utf-8") == "opsi"
+	if not target_exists:
+		# Create the target after creating the symlink to test the target_is_directory parameter
+		target.mkdir()
+		(target / "test.txt").write_text("opsi", encoding="utf-8")
+
+	assert link_path.is_dir()
+	assert (link_path / "test.txt").read_text(encoding="utf-8") == "opsi"
 
 
 @pytest.mark.parametrize("target_exists", (True, False))
@@ -210,10 +215,10 @@ def test_create_hardlink_to_file(tmp_path: Path, target_exists: bool, link_exist
 	with nullcontext() if target_exists else pytest.raises(FileNotFoundError):
 		if link_exists:
 			with pytest.raises(FileExistsError):
-				link(target, link_path, link_type="hardlink")
-			link(target, link_path, link_type="hardlink", overwrite=True)
+				link(link_path, target, link_type="hardlink")
+			link(link_path, target, link_type="hardlink", overwrite=True)
 		else:
-			link(target, link_path, link_type="hardlink")
+			link(link_path, target, link_type="hardlink")
 
 	if target_exists:
 		assert link_path.exists()
@@ -246,7 +251,7 @@ def test_retry_on_link(tmp_path: Path) -> None:
 		return orig_link_attempt(source, link_path, link_type)
 
 	with patch("opsi.system.file.operation._operation._link_attempt", side_effect=side_effect_link, autospec=True):
-		link(target, link_path, link_type="hardlink")
+		link(link_path, target, link_type="hardlink")
 
 	assert link_attempt == 2
 	assert link_path.exists()

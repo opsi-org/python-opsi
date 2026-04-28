@@ -42,7 +42,7 @@ def delete(path: Path | str, *, missing_ok: bool = False, retry_config: RetryCon
 			_delete_attempt(path, missing_ok)
 
 
-def _link_attempt(target: Path, link_path: Path, link_type: LinkType, target_is_directory: bool | None = None) -> None:
+def _link_attempt(link_path: Path, target: Path, link_type: LinkType, target_is_directory: bool | None = None) -> None:
 	if link_type == "symlink":
 		if target_is_directory is not None:
 			link_path.symlink_to(target, target_is_directory=target_is_directory)
@@ -56,8 +56,8 @@ def _link_attempt(target: Path, link_path: Path, link_type: LinkType, target_is_
 
 
 def link(
-	target: Path | str,
 	link_path: Path | str,
+	target: Path | str,
 	*,
 	link_type: LinkType = "symlink",
 	target_is_directory: bool | None = None,
@@ -110,4 +110,4 @@ def link(
 	retry_config = retry_config or get_retry_config("file_io")
 	for attempt in Retry(retry_config):
 		with attempt:
-			_link_attempt(target, link_path, link_type, target_is_directory)
+			_link_attempt(link_path, target, link_type, target_is_directory)
