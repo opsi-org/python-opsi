@@ -320,3 +320,16 @@ def test_retry_on_link(tmp_path: Path) -> None:
 
 	assert link_attempt == 2
 	assert link_path.exists()
+
+
+def test_get_link_target_non_symlink(tmp_path: Path) -> None:
+	regular_file = tmp_path / "file.txt"
+	regular_file.write_text("opsi", encoding="utf-8")
+
+	assert get_link_target(regular_file) is None
+
+
+def test_get_link_target_non_existent_path(tmp_path: Path) -> None:
+	non_existent_path = tmp_path / "nonexistent.txt"
+
+	assert get_link_target(non_existent_path) is None
