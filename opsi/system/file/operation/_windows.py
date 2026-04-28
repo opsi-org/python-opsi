@@ -5,8 +5,10 @@
 
 import sys
 
+from opsi.exception import OperatingSystemUnsupportedError
+
 if sys.platform != "win32":
-	raise OSError("This module is only supported on Windows")
+	raise OperatingSystemUnsupportedError("This module is only supported on Windows")
 
 import ctypes
 from ctypes import wintypes
