@@ -5,8 +5,9 @@ from pathlib import Path
 from typing import Literal
 
 from opsi.retry import Retry, RetryConfig, get_retry_config
+from opsi.system.info import is_windows
 
-LinkType = Literal["symlink", "hardlink"]
+LinkType = Literal["symlink", "hardlink", "junction"]
 
 
 def _delete_attempt(path: Path, missing_ok: bool) -> None:
@@ -52,6 +53,11 @@ def _link_attempt(link_path: Path, target: Path, link_type: LinkType, target_is_
 	if link_type == "hardlink":
 		link_path.hardlink_to(target)
 		return
+	if link_type == "junction":
+		from ._windows import create_junction
+
+		create_junction(link_path, target)
+		return
 	raise ValueError(f"Invalid link type: {link_type}")
 
 
@@ -73,7 +79,7 @@ def link(
 		The target path the link should point to.
 	link_path : Path | str
 		The path of the link to create.
-	link_type : Literal["symlink", "hardlink"]
+	link_type : Literal["symlink", "hardlink", "junction"], default: "symlink"
 		The type of link to create.
 	target_is_directory : bool, optional
 		On Windows, a symbolic link is created as either a file link or a directory link,
@@ -98,8 +104,10 @@ def link(
 	"""
 	target = Path(target)
 	link_path = Path(link_path)
-	if link_type not in ("symlink", "hardlink"):
+	if link_type not in ("symlink", "hardlink", "junction"):
 		raise ValueError(f"Invalid link type: {link_type}")
+	if link_type == "junction" and not is_windows():
+		raise ValueError("Junctions are only supported on Windows")
 	if link_path.is_symlink() or link_path.exists():
 		if not overwrite:
 			raise FileExistsError(link_path)
@@ -111,3 +119,7 @@ def link(
 	for attempt in Retry(retry_config):
 		with attempt:
 			_link_attempt(link_path, target, link_type, target_is_directory)
+
+
+def get_link_type(link_path: Path | str) -> LinkType | None:
+	link_path = Path(link_path)

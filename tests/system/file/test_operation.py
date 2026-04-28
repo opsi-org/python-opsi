@@ -1,13 +1,15 @@
 import os
 from contextlib import nullcontext
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast
 from unittest.mock import patch
 
 import pytest
 
+from opsi.process import run_script
 from opsi.system.file.operation import delete, link
 from opsi.system.file.operation._operation import LinkType, _delete_attempt, _link_attempt
+from opsi.system.info import is_windows
 
 
 def test_delete_file(tmp_path: Path) -> None:
@@ -131,6 +133,18 @@ def test_retry_on_delete(tmp_path: Path) -> None:
 		assert not test_file.exists()
 
 
+def _get_link_type_by_dir(link_path: Path) -> Literal["SYMLINKD", "SYMLINK", "JUNCTION"] | None:
+	for line in run_script(f'dir /AL "{link_path.parent}"', timeout=5).get_stdout_lines():
+		parts = line.split()
+		if len(parts) < 4:
+			continue
+		if parts[3] == link_path.name:
+			if parts[2] in ("<SYMLINKD>", "<SYMLINK>", "<JUNCTION>"):
+				return cast(Literal["SYMLINKD", "SYMLINK", "JUNCTION"], parts[2].strip("<>"))
+			break
+	return None
+
+
 @pytest.mark.parametrize("target_exists", (True, False))
 @pytest.mark.parametrize("link_exists", ("", "link", "file", "directory"))
 def test_create_symlink_to_file(tmp_path: Path, target_exists: bool, link_exists: str) -> None:
@@ -158,6 +172,9 @@ def test_create_symlink_to_file(tmp_path: Path, target_exists: bool, link_exists
 	assert link_path.is_symlink()
 	if target_exists:
 		assert link_path.read_text(encoding="utf-8") == "opsi"
+
+	if is_windows():
+		assert _get_link_type_by_dir(link_path) == "SYMLINK"
 
 
 @pytest.mark.parametrize("target_exists", (True, False))
@@ -194,6 +211,9 @@ def test_create_symlink_to_directory(tmp_path: Path, target_exists: bool, link_e
 	assert link_path.is_dir()
 	assert (link_path / "test.txt").read_text(encoding="utf-8") == "opsi"
 
+	if is_windows():
+		assert _get_link_type_by_dir(link_path) == "SYMLINKD"
+
 
 @pytest.mark.parametrize("target_exists", (True, False))
 @pytest.mark.parametrize("link_exists", ("", "link", "file", "directory"))
@@ -222,9 +242,46 @@ def test_create_hardlink_to_file(tmp_path: Path, target_exists: bool, link_exist
 
 	if target_exists:
 		assert link_path.exists()
+		assert link_path.is_file()
 		assert link_path.read_text(encoding="utf-8") == "opsi"
 	else:
 		assert not link_path.exists()
+
+
+@pytest.mark.windows
+@pytest.mark.parametrize("target_exists", (True, False))
+@pytest.mark.parametrize("link_exists", ("", "link", "file", "directory"))
+def test_create_junction(tmp_path: Path, target_exists: bool, link_exists: str) -> None:
+	target = tmp_path / "target"
+	if target_exists:
+		target.mkdir()
+		(target / "test.txt").write_text("opsi", encoding="utf-8")
+
+	link_path = tmp_path / "link"
+	if link_exists == "link":
+		some_dir = tmp_path / "some_dir"
+		some_dir.mkdir()
+		link_path.symlink_to(some_dir)
+	elif link_exists == "file":
+		link_path.write_text("existing", encoding="utf-8")
+	elif link_exists == "directory":
+		link_path.mkdir()
+
+	if link_exists:
+		with pytest.raises(FileExistsError):
+			link(link_path, target, link_type="junction")
+		link(link_path, target, link_type="junction", overwrite=True)
+	else:
+		link(link_path, target, link_type="junction")
+
+	assert _get_link_type_by_dir(link_path) == "JUNCTION"
+
+	if not target_exists:
+		# Create the target after creating the symlink to test the target_is_directory parameter
+		target.mkdir()
+		(target / "test.txt").write_text("opsi", encoding="utf-8")
+
+	assert (link_path / "test.txt").read_text(encoding="utf-8") == "opsi"
 
 
 def test_link_raises_on_invalid_link_type(tmp_path: Path) -> None:

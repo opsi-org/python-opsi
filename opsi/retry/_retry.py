@@ -121,7 +121,13 @@ def _file_io_backoff_hook(exception: Exception) -> bool:
 	"""
 	Return whether a file I/O exception should be retried.
 	"""
-	return isinstance(exception, OSError)
+	if isinstance(exception, OSError):
+		winerror = getattr(exception, "winerror", None)
+		if winerror and winerror >= 4390 and winerror <= 4394:
+			# Windows REPARSE errors will persist
+			return False
+		return True
+	return False
 
 
 def _run_process_backoff_hook(exception: Exception) -> bool:
