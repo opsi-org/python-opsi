@@ -149,7 +149,7 @@ def _disable_file_system_redirection():
 @lru_cache()
 def get_process_io_encoding(interpreter: Literal["cmd", "powershell", "bash"] | None = None) -> str:
 	encoding = ""
-	if is_windows() and interpreter == "cmd":
+	if is_windows() and interpreter in ("cmd", None):
 		# Windows suggests cp1252 even if using something else like cp850
 		try:
 			output = subprocess.check_output("chcp", shell=True).decode("ascii", errors="replace")
@@ -166,7 +166,10 @@ def get_process_io_encoding(interpreter: Literal["cmd", "powershell", "bash"] | 
 			logger.info("Failed to get preferred encoding: %s", exc)
 	if not encoding:
 		encoding = "utf-8"
-	logger.info("Using encoding %r for process I/O", encoding)
+	if interpreter:
+		logger.info("Using encoding %r for process I/O with interpreter %r", encoding, interpreter)
+	else:
+		logger.info("Using encoding %r for process I/O", encoding)
 	return encoding
 
 
