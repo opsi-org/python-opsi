@@ -1,3 +1,8 @@
+# This file is part of the device management solution OPSI http://www.opsi.org
+# Copyright (c) 2020-2026 uib GmbH <info@uib.de>
+# This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
+# License: AGPL-3.0-only
+
 import os
 from contextlib import nullcontext
 from pathlib import Path
@@ -7,7 +12,7 @@ from unittest.mock import patch
 import pytest
 
 from opsi.process import run_script
-from opsi.system.file.operation import delete, link
+from opsi.system.file.operation import delete, get_link_target, link
 from opsi.system.file.operation._operation import LinkType, _delete_attempt, _link_attempt
 from opsi.system.info import is_windows
 
@@ -170,6 +175,7 @@ def test_create_symlink_to_file(tmp_path: Path, target_exists: bool, link_exists
 		link(link_path, target, link_type="symlink")
 
 	assert link_path.is_symlink()
+	assert get_link_target(link_path) == target
 	if target_exists:
 		assert link_path.read_text(encoding="utf-8") == "opsi"
 
@@ -203,6 +209,7 @@ def test_create_symlink_to_directory(tmp_path: Path, target_exists: bool, link_e
 		link(link_path, target, link_type="symlink", target_is_directory=not target_exists)
 
 	assert link_path.is_symlink()
+	assert get_link_target(link_path) == target
 	if not target_exists:
 		# Create the target after creating the symlink to test the target_is_directory parameter
 		target.mkdir()
@@ -274,7 +281,7 @@ def test_create_junction(tmp_path: Path, target_exists: bool, link_exists: str) 
 	else:
 		link(link_path, target, link_type="junction")
 
-	assert _get_link_type_by_dir(link_path) == "JUNCTION"
+	assert get_link_target(link_path) == target
 
 	if not target_exists:
 		# Create the target after creating the symlink to test the target_is_directory parameter
@@ -282,6 +289,7 @@ def test_create_junction(tmp_path: Path, target_exists: bool, link_exists: str) 
 		(target / "test.txt").write_text("opsi", encoding="utf-8")
 
 	assert (link_path / "test.txt").read_text(encoding="utf-8") == "opsi"
+	assert _get_link_type_by_dir(link_path) == "JUNCTION"
 
 
 def test_link_raises_on_invalid_link_type(tmp_path: Path) -> None:
