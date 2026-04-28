@@ -3,6 +3,26 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from opsi.retry._retry import NoRetry, Retry, RetryConfig, get_retry_config, retry
+from opsi.retry._retry import (
+	NoRetry,
+	Retry,
+	RetryConfig,
+	RetryDetails,
+	add_retry_hook,
+	get_retry_config,
+	get_retry_hooks,
+	remove_retry_hook,
+	retry,
+)
 
-__all__ = ["Retry", "retry", "RetryConfig", "NoRetry", "get_retry_config"]
+__all__ = [
+	"NoRetry",
+	"Retry",
+	"RetryConfig",
+	"RetryDetails",
+	"add_retry_hook",
+	"get_retry_config",
+	"get_retry_hooks",
+	"remove_retry_hook",
+	"retry",
+]

@@ -8,10 +8,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from stamina import instrumentation
 from stamina import retry as _retry_decorator
 from stamina import retry_context as _retry_context
 from stamina._core import ExcOrBackoffHook, _RetryContextIterator
+from stamina.instrumentation import RetryDetails, RetryHook, get_on_retry_hooks, set_on_retry_hooks
 
 from opsi.logging import get_logger
 
@@ -160,13 +160,13 @@ def get_retry_config(type: Literal["file_io", "run_process"] = "file_io") -> Ret
 	raise ValueError(f"Invalid retry config type: {type}")
 
 
-def logging_hook(details: instrumentation.RetryDetails) -> None:
+def logging_hook(details: RetryDetails) -> None:
 	"""
 	Log information about a scheduled retry.
 
 	Parameters
 	----------
-	details : instrumentation.RetryDetails
+	details : RetryDetails
 		Retry metadata provided by stamina.
 	"""
 	logger.notice(
@@ -178,4 +178,47 @@ def logging_hook(details: instrumentation.RetryDetails) -> None:
 	)
 
 
-instrumentation.set_on_retry_hooks([logging_hook])
+def add_retry_hook(hook: RetryHook) -> None:
+	"""
+	Add a hook to be called after a retry has been scheduled.
+
+	Parameters
+	----------
+	hook : RetryHook
+		Hook to call after a retry has been scheduled. To deactivate instrumentation, pass an empty iterable to set_on_retry_hooks.
+	"""
+	current_hooks = get_on_retry_hooks()
+	if hook in current_hooks:
+		return  # Avoid adding the same hook multiple times
+	set_on_retry_hooks(current_hooks + (hook,))
+
+
+def get_retry_hooks() -> tuple[RetryHook, ...]:
+	"""
+	Return the currently registered retry hooks.
+
+	Returns
+	-------
+	tuple[RetryHook, ...]
+		Currently registered retry hooks.
+	"""
+	return get_on_retry_hooks()
+
+
+def remove_retry_hook(hook: RetryHook) -> None:
+	"""
+	Remove a previously added retry hook.
+
+	Parameters
+	----------
+	hook : RetryHook
+		Hook to remove from the list of hooks called after a retry has been scheduled.
+	"""
+	current_hooks = get_on_retry_hooks()
+	new_hooks = tuple(h for h in current_hooks if h != hook)
+	if len(new_hooks) == len(current_hooks):
+		return  # Hook was not found, no changes needed
+	set_on_retry_hooks(new_hooks)
+
+
+add_retry_hook(logging_hook)
