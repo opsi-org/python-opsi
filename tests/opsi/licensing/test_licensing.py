@@ -494,7 +494,7 @@ def test_licensing_info_and_cache() -> None:
 
 @pytest.mark.parametrize(
 	"lic_scalability1, lic_linux, clients_total, clients_linux, warn_absolute, warn_percent,"
-	"exp_state_scalabilty, exp_avail_scalability, exp_state_linux, exp_avail_linux",
+	"exp_state_scalability, exp_avail_scalability, exp_state_linux, exp_avail_linux",
 	(
 		# OPSI_MODULE_STATE_LICENSED
 		(1000, 100, 994, 94, 0, 0, OPSI_MODULE_STATE_LICENSED, True, OPSI_MODULE_STATE_LICENSED, True),
@@ -529,7 +529,7 @@ def test_license_state_client_number_warning_and_thresholds(
 	clients_linux: int,
 	warn_absolute: int,
 	warn_percent: int,
-	exp_state_scalabilty: str,
+	exp_state_scalability: str,
 	exp_avail_scalability: bool,
 	exp_state_linux: str,
 	exp_avail_linux: bool,
@@ -562,7 +562,7 @@ def test_license_state_client_number_warning_and_thresholds(
 
 		modules = olp.get_modules()
 		assert modules["scalability1"]["client_number"] == lic_scalability1
-		assert modules["scalability1"]["state"] == exp_state_scalabilty
+		assert modules["scalability1"]["state"] == exp_state_scalability
 		assert modules["scalability1"]["available"] == exp_avail_scalability
 
 		assert modules["linux_agent"]["client_number"] == lic_linux
