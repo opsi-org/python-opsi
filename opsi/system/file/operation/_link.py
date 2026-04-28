@@ -5,47 +5,18 @@
 
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
-from typing import Literal
 
 from opsi.retry import Retry, RetryConfig, get_retry_config
-from opsi.system.info import is_windows
+from opsi.system.file.operation._common import LinkType
+from opsi.system.info import is_posix, is_windows
 
-LinkType = Literal["symlink", "hardlink", "junction"]
+if is_posix():
+	from opsi.system.file.operation._posix import get_link_target
+elif is_windows():
+	from opsi.system.file.operation._windows import get_link_target
 
-
-def _delete_attempt(path: Path, missing_ok: bool) -> None:
-	if path.is_symlink() or path.is_file():
-		path.unlink()
-	else:
-		shutil.rmtree(path)
-
-
-def delete(path: Path | str, *, missing_ok: bool = False, retry_config: RetryConfig | None = None) -> None:
-	"""
-	Delete a file, link, or directory recursively if it exists.
-
-	Parameters
-	----------
-	path : Path | str
-		The filesystem path to delete. Symbolic links are deleted as links; their targets are not traversed.
-	missing_ok : bool, default: False
-		If True, do not raise an error if the path does not exist.
-	retry_config : RetryConfig, optional
-		Configuration for automatic retry behavior on failure. If None, uses the default retry configuration for file I/O operations.
-	"""
-	path = Path(path)
-	# Checking for existence without retry
-	if not path.is_symlink() and not path.exists():
-		if missing_ok:
-			return
-		raise FileNotFoundError(path)
-
-	retry_config = retry_config or get_retry_config("file_io")
-	for attempt in Retry(retry_config):
-		with attempt:
-			_delete_attempt(path, missing_ok)
+__all__ = ["link", "get_link_target"]
 
 
 def _link_attempt(link_path: Path, target: Path, link_type: LinkType, target_is_directory: bool | None = None) -> None:
@@ -116,6 +87,8 @@ def link(
 	if link_path.is_symlink() or link_path.exists():
 		if not overwrite:
 			raise FileExistsError(link_path)
+		from opsi.system.file.operation import delete
+
 		delete(link_path, retry_config=retry_config)
 	if link_type == "hardlink" and not target.exists():
 		raise FileNotFoundError(target)

@@ -3,7 +3,6 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from opsi.system.file.operation._delete import delete
-from opsi.system.file.operation._link import get_link_target, link
+from typing import Literal
 
-__all__ = ["delete", "link", "get_link_target"]
+LinkType = Literal["symlink", "hardlink", "junction"]

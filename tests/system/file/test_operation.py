@@ -13,7 +13,9 @@ import pytest
 
 from opsi.process import run_script
 from opsi.system.file.operation import delete, get_link_target, link
-from opsi.system.file.operation._operation import LinkType, _delete_attempt, _link_attempt
+from opsi.system.file.operation._common import LinkType
+from opsi.system.file.operation._delete import _delete_attempt
+from opsi.system.file.operation._link import _link_attempt
 from opsi.system.info import is_windows
 
 
@@ -57,60 +59,74 @@ def test_delete_directory_recursively(tmp_path: Path) -> None:
 
 def test_delete_file_symlink_without_deleting_target(tmp_path: Path) -> None:
 	target = tmp_path / "target.txt"
-	link = tmp_path / "link.txt"
+	link_path = tmp_path / "link.txt"
 	target.write_text("opsi", encoding="utf-8")
 	try:
-		link.symlink_to(target)
+		link_path.symlink_to(target)
 	except OSError as err:
 		pytest.skip(f"Symbolic links are not available: {err}")
 
-	delete(link)
+	delete(link_path)
 
-	assert not link.exists()
+	assert not link_path.exists()
 	assert target.read_text(encoding="utf-8") == "opsi"
 
 
 def test_delete_directory_symlink_without_deleting_target(tmp_path: Path) -> None:
 	target = tmp_path / "target"
-	link = tmp_path / "link"
+	link_path = tmp_path / "link"
 	target.mkdir()
 	(target / "test.txt").write_text("opsi", encoding="utf-8")
 	try:
-		link.symlink_to(target, target_is_directory=True)
+		link_path.symlink_to(target, target_is_directory=True)
 	except OSError as err:
 		pytest.skip(f"Symbolic links are not available: {err}")
 
-	delete(link)
+	delete(link_path)
 
-	assert not link.exists()
+	assert not link_path.exists()
 	assert (target / "test.txt").read_text(encoding="utf-8") == "opsi"
 
 
 def test_delete_broken_symlink(tmp_path: Path) -> None:
-	link = tmp_path / "link.txt"
+	link_path = tmp_path / "link.txt"
 	try:
-		link.symlink_to(tmp_path / "missing.txt")
+		link_path.symlink_to(tmp_path / "missing.txt")
 	except OSError as err:
 		pytest.skip(f"Symbolic links are not available: {err}")
 
-	delete(link)
+	delete(link_path)
 
-	assert not link.is_symlink()
+	assert not link_path.is_symlink()
 
 
 def test_delete_hard_link_without_deleting_original(tmp_path: Path) -> None:
 	target = tmp_path / "target.txt"
-	link = tmp_path / "link.txt"
+	link_path = tmp_path / "link.txt"
 	target.write_text("opsi", encoding="utf-8")
 	try:
-		os.link(target, link)
+		os.link(target, link_path)
 	except OSError as err:
 		pytest.skip(f"Hard links are not available: {err}")
 
-	delete(link)
+	delete(link_path)
 
-	assert not link.exists()
+	assert not link_path.exists()
 	assert target.read_text(encoding="utf-8") == "opsi"
+
+
+@pytest.mark.windows
+def test_delete_junction_without_deleting_target(tmp_path: Path) -> None:
+	target = tmp_path / "target"
+	link_path = tmp_path / "link"
+	target.mkdir()
+	(target / "test.txt").write_text("opsi", encoding="utf-8")
+	link(link_path, target, link_type="junction")
+
+	delete(link_path)
+
+	assert not link_path.exists()
+	assert (target / "test.txt").read_text(encoding="utf-8") == "opsi"
 
 
 def test_retry_on_delete(tmp_path: Path) -> None:
@@ -119,14 +135,14 @@ def test_retry_on_delete(tmp_path: Path) -> None:
 	delete_attempt = 0
 	orig_delete_attempt = _delete_attempt
 
-	def side_effect_delete(path: Path, missing_ok: bool) -> None:
+	def side_effect_delete(path: Path) -> None:
 		nonlocal delete_attempt
 		delete_attempt += 1
 		if delete_attempt < 2:
 			raise OSError("Delete error")
-		return orig_delete_attempt(path, missing_ok)
+		return orig_delete_attempt(path)
 
-	with patch("opsi.system.file.operation._operation._delete_attempt", side_effect=side_effect_delete, autospec=True):
+	with patch("opsi.system.file.operation._delete._delete_attempt", side_effect=side_effect_delete, autospec=True):
 		# File does not exist, no retry should occur
 		with pytest.raises(FileNotFoundError):
 			delete(test_file)
@@ -315,7 +331,7 @@ def test_retry_on_link(tmp_path: Path) -> None:
 			raise OSError("Link error")
 		return orig_link_attempt(source, link_path, link_type)
 
-	with patch("opsi.system.file.operation._operation._link_attempt", side_effect=side_effect_link, autospec=True):
+	with patch("opsi.system.file.operation._link._link_attempt", side_effect=side_effect_link, autospec=True):
 		link(link_path, target, link_type="hardlink")
 
 	assert link_attempt == 2
