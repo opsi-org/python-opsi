@@ -3,6 +3,8 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
+from time import monotonic
+
 import pytest
 
 from opsi.retry._retry import (
@@ -30,6 +32,30 @@ def test_retry():
 			raise ValueError("Test error")
 
 	assert attempts == 3
+
+
+@pytest.mark.parametrize("config_attempts", [2, 1, 0])
+def test_retry_exhausted(config_attempts: int):
+	attempts = 0
+	with pytest.raises(ValueError, match="Test error"):
+		for attempt in Retry(RetryConfig(on=ValueError, attempts=config_attempts, wait_initial=0.1)):
+			with attempt:
+				attempts += 1
+				raise ValueError("Test error")
+
+	assert attempts == max(config_attempts, 1)  # At least one attempt should be made even if attempts=0
+
+
+def test_retry_timeout():
+	start = monotonic()
+	attempts = 0
+	with pytest.raises(ValueError, match="Test error"):
+		for attempt in Retry(RetryConfig(on=ValueError, timeout=2, attempts=100, wait_initial=0.1, wait_max=0.1)):
+			with attempt:
+				attempts += 1
+				raise ValueError("Test error")
+	time_passed = monotonic() - start
+	assert 2 <= time_passed < 3  # Should stop after approximately 2 seconds
 
 
 def test_no_retry():

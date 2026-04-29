@@ -37,22 +37,23 @@ class RetryConfig:
 		Callable deciding whether an exception should trigger a retry.
 
 	attempts : int, default: 5
-		Maximum number of retry attempts.
+		Number of total attempts including the initial attempt.
 
 	timeout : float, default: 45.0
-		Maximum total retry time in seconds.
+		Maximum total time in seconds for all attempts.
 
 	wait_initial : float, default: 0.1
-		Initial backoff delay in seconds.
+		Minimum backoff time in seconds before the first retry.
 
 	wait_max : float, default: 5.0
-		Maximum backoff delay in seconds.
+		Maximum backoff time in seconds between retries at any time.
 
 	wait_jitter : float, default: 1.0
-		Random jitter added to backoff delays.
+		Maximum jitter that is added to retry backoff delays in seconds.
+		The actual jitter added is a random number between 0 and <wait_jitter>.
 
 	wait_exp_base : float, default: 2
-		Exponential backoff base.
+		The exponential base used to compute the retry backoff.
 	"""
 
 	on: ExcOrBackoffHook
