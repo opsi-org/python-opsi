@@ -18,10 +18,10 @@ def get_sessions(protocol: str | None = None, user: str | None = None) -> list[D
 		win32ts.WTSDisconnected: "disconnected",
 	}
 
+	wts_protocol = None
 	if protocol is not None:
 		if protocol not in WTS_PROTOCOLS:
 			logger.warning("Invalid session protocol '%s'", protocol)
-			wts_protocol = None
 		else:
 			wts_protocol = WTS_PROTOCOLS[protocol]
 
