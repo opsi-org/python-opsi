@@ -227,7 +227,18 @@ def _get_interpreter_command(
 			if script_file == "-" and arguments:
 				raise ValueError("Cannot use arguments with piped PowerShell script input")
 
-			args = ["powershell.exe", "-NoLogo", "-NonInteractive", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script_file]
+			args = [
+				"powershell.exe",
+				"-NoLogo",
+				"-NonInteractive",
+				"-NoProfile",
+				"-WindowStyle",
+				"Hidden",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				script_file,
+			]
 			if arguments:
 				args.extend(arguments)
 
