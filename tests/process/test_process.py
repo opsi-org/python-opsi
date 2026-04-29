@@ -231,27 +231,52 @@ def test_process_read(size_limit: int, capture_output: Literal["stdout", "stderr
 		assert not proc._stdout_reader.is_alive()
 
 
+def test_process_read_long(tmp_path: Path) -> None:
+	file_path = tmp_path / "data.bin"
+	text = (
+		"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam"
+	)
+	with file_path.open("w", encoding="utf-8") as file:
+		for i in range(5000):
+			file.write(f"{i + 1} - {text}\n")
+
+	# Test that reading long output works and does not cause a timeout due to too long reading time.
+	timeout = 5
+	if is_windows():
+		script = f"@echo off && type {file_path}"
+		out = run_script(script=script, interpreter="cmd", timeout=timeout).read_stdout_text()
+	else:
+		out = run_command(command=["cat", str(file_path)], timeout=timeout).read_stdout_text()
+	lines = out.strip().split("\n")
+	assert len(lines) == 5000
+	assert lines[0].strip() == f"1 - {text}"
+	assert lines[-1].strip() == f"5000 - {text}"
+
+
 def test_process_read_max(tmp_path: Path) -> None:
 	data = b"A" * 500_000
 	file_path = tmp_path / "data.bin"
 	file_path.write_bytes(data)
 
 	stdout_data = b""
-	if is_windows():
-		script = f"@echo off && type {file_path}"
-		with patch.object(Process, "_read_max", 10_000):
+	with patch.object(Process, "_read_max", 10_000):
+		if is_windows():
+			script = f"@echo off && type {file_path}"
 			with Process(script=script, interpreter="cmd") as proc:
 				while proc.is_running():
 					stdout, _ = proc.read_bytes(timeout=10)
 					if stdout:
 						stdout_data += stdout
-	else:
-		with Process(command=["cat", str(file_path)]) as proc:
-			with patch.object(Process, "_read_max", 10_000):
+		else:
+			with Process(command=["cat", str(file_path)]) as proc:
 				while proc.is_running():
 					stdout, _ = proc.read_bytes(timeout=10)
 					if stdout:
 						stdout_data += stdout
+
+		stdout, _ = proc.read_bytes(timeout=10)
+		if stdout:
+			stdout_data += stdout
 
 	assert stdout_data == data
 	assert proc.runtime < 5
@@ -501,6 +526,66 @@ def test_process_argument_validation() -> None:
 		Process(script="exit 0", interpreter="cmd", exit_on_error=True)
 	with pytest.raises(ProcessError, match="Invalid capture_output value"):
 		Process(script="exit 0", interpreter="bash", capture_output="invalid_value")  # type: ignore[invalid-argument-type]
+	with pytest.raises(ProcessError, match="Invalid discard_output value"):
+		Process(script="exit 0", interpreter="bash", discard_output="invalid_value")  # type: ignore[invalid-argument-type]
+
+
+@pytest.mark.parametrize(
+	("capture_output", "discard_output", "expected_stdout", "expected_stderr"),
+	[
+		("none", "both", "", ""),
+		("stdout", "stderr", "stdout", ""),
+		("stderr", "stdout", "", "stderr"),
+		("both", "both", "", ""),
+		("combined", "stderr", "stdout", ""),
+	],
+)
+def test_process_discard_output(
+	capture_output: Literal["stdout", "stderr", "both", "combined", "none"],
+	discard_output: Literal["stdout", "stderr", "both", "none"],
+	expected_stdout: str,
+	expected_stderr: str,
+	capfd: pytest.CaptureFixture[str],
+) -> None:
+	command = [
+		sys.executable,
+		"-c",
+		"import sys; print('stdout', flush=True); print('stderr', file=sys.stderr, flush=True)",
+	]
+
+	proc = run_command(command=command, capture_output=capture_output, discard_output=discard_output)
+	captured = capfd.readouterr()
+
+	assert captured.out == ""
+	assert captured.err == ""
+	assert proc.get_stdout_text().strip() == expected_stdout
+	assert proc.get_stderr_text().strip() == expected_stderr
+
+
+def test_process_discard_output_in_script_wrappers(tmp_path: Path, capfd: pytest.CaptureFixture[str]) -> None:
+	proc = run_script(
+		script="import sys; print('stdout', flush=True); print('stderr', file=sys.stderr, flush=True)",
+		interpreter=[sys.executable],
+		capture_output="none",
+		discard_output="both",
+	)
+	captured = capfd.readouterr()
+	assert captured.out == ""
+	assert captured.err == ""
+	assert proc.get_output_text() == ""
+
+	script_file = tmp_path / "script.py"
+	script_file.write_text("import sys\nprint('stdout', flush=True)\nprint('stderr', file=sys.stderr, flush=True)\n", encoding="utf-8")
+	proc = run_script_file(
+		script_file=script_file,
+		interpreter=[sys.executable],
+		capture_output="none",
+		discard_output="both",
+	)
+	captured = capfd.readouterr()
+	assert captured.out == ""
+	assert captured.err == ""
+	assert proc.get_output_text() == ""
 
 
 def test_command_and_script() -> None:
@@ -655,6 +740,23 @@ def test_run_command() -> None:
 	) as exc_info:
 		run_command(command=["not_available_command", "arg1"])
 	assert exc_info.value.command == "not_available_command arg1"
+	with pytest.raises(
+		ProcessError, match="Failed to run process after 1 attempts.*" + ("WinError 2" if is_windows() else "No such file")
+	) as exc_info:
+		run_command(command=["not_available_command", "arg1"], wait=False)
+	assert exc_info.value.command == "not_available_command arg1"
+
+	proc = run_command(command=[sys.executable, "-c", "import time; time.sleep(1); print('OPSI')"], wait=False)
+	try:
+		assert proc.pid is not None
+		assert proc.is_running(wait=0)
+		assert proc.exit_code is None
+		assert proc.wait(timeout=5)
+		assert proc.exit_code == 0
+		assert proc.get_stdout_text().strip() == "OPSI"
+	finally:
+		if proc.is_running(wait=0):
+			proc.stop()
 
 
 def test_run_script(tmp_path: Path) -> None:
@@ -671,7 +773,7 @@ def test_run_script(tmp_path: Path) -> None:
 	else:
 		script = [f"cat {stderr_file} 1>&2", f"cat {stdout_file}"]
 
-	proc = run_script(script=script, capture_output="both")
+	proc = run_script(script=script, capture_output="both", wait=True)
 	assert proc.get_output_text().strip() == stdout_data + stderr_data
 	assert proc.get_stderr_text().strip() == stderr_data
 	assert proc.get_stdout_text().strip() == stdout_data
@@ -698,6 +800,18 @@ def test_run_script(tmp_path: Path) -> None:
 			exit_on_error=True,
 		)
 
+	wait_script = "ping -n 2 127.0.0.1 >NUL\necho OPSI" if is_windows() else "sleep 2\necho OPSI"
+	proc = run_script(script=wait_script, wait=False)
+	try:
+		assert proc.pid is not None
+		assert proc.is_running(wait=0)
+		assert proc.wait(timeout=5)
+		assert proc.exit_code == 0
+		assert proc.get_stdout_text().strip() == "OPSI"
+	finally:
+		if proc.is_running(wait=0):
+			proc.stop()
+
 
 @pytest.mark.parametrize("path_type", PATH_TYPES)
 def test_run_script_file(tmp_path: Path, path_type) -> None:
@@ -710,3 +824,23 @@ def test_run_script_file(tmp_path: Path, path_type) -> None:
 		for script_arg in (script_path, str(script_path)):
 			proc = run_script_file(script_file=path_type(str(script_arg)))
 			assert proc.get_output_text().strip() == "OPSI"
+
+	ext = ".cmd" if is_windows() else ".sh"
+	script_path = tmp_path / f"test_script_wait_false{ext}"
+	script_path.write_text(
+		("@echo off" + os.linesep if is_windows() else "")
+		+ ("ping -n 2 127.0.0.1 >NUL" if is_windows() else "sleep 2")
+		+ os.linesep
+		+ "echo OPSI"
+		+ os.linesep
+	)
+	proc = run_script_file(script_file=path_type(str(script_path)), wait=False)
+	try:
+		assert proc.pid is not None
+		assert proc.is_running(wait=0)
+		assert proc.wait(timeout=5)
+		assert proc.exit_code == 0
+		assert proc.get_stdout_text().strip() == "OPSI"
+	finally:
+		if proc.is_running(wait=0):
+			proc.stop()

@@ -3,9 +3,6 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-# NOTE: Using fastar would speed up compression and decompression a bit,
-# but currently it would not be possible to implement progress tracking with it.
-
 from __future__ import annotations
 
 import fnmatch

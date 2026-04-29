@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import datetime
-import gzip
 import os
 import platform
 import shutil
@@ -29,8 +28,7 @@ from typing import Any, Callable, Generator
 from urllib.parse import urlsplit, urlunsplit
 from xml.etree.ElementTree import Element, SubElement, tostring
 
-import lz4.frame
-
+from opsi.compression import decompress
 from opsi.crypt.ssl import as_pem, create_ca, create_server_cert
 from opsi.serialization import json_decode, json_encode, msgpack_decode
 
@@ -236,9 +234,9 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 		request: Any = self.rfile.read(length)
 
 		if self.headers["Content-Encoding"] == "lz4":
-			request = lz4.frame.decompress(request)
+			request = decompress(request, "lz4")
 		elif self.headers["Content-Encoding"] == "gzip":
-			request = gzip.decompress(request)
+			request = decompress(request, "gzip")
 
 		if "json" in self.headers.get("Content-Type", ""):
 			request = json_decode(request)

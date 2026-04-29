@@ -3,7 +3,6 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-import gzip
 import json
 import os
 import socket
@@ -20,11 +19,11 @@ from types import SimpleNamespace
 from typing import Any, cast
 from unittest.mock import Mock, patch
 
-import lz4.frame
 import pytest
 import requests
 import websocket
 
+from opsi.compression import compress
 from opsi.logging import LOG_INFO, get_logger
 from opsi.opsi.service.server import OpsiConfig
 from opsi.serialization import msgpack_encode
@@ -287,7 +286,7 @@ def test_http_server_compressed_post_and_send_max_bytes() -> None:
 
 		res = requests.post(
 			url,
-			data=gzip.compress(json.dumps({"id": 7, "method": "gzip"}).encode("utf-8")),
+			data=compress(json.dumps({"id": 7, "method": "gzip"}).encode("utf-8"), compression="gzip"),
 			headers={"Content-Encoding": "gzip", "Content-Type": "application/json"},
 			timeout=10,
 		)
@@ -297,7 +296,7 @@ def test_http_server_compressed_post_and_send_max_bytes() -> None:
 	with http_test_server() as server:
 		res = requests.post(
 			f"http://127.0.0.1:{server.port}/",
-			data=gzip.compress(json.dumps({"id": 11, "method": "gzip"}).encode("utf-8")),
+			data=compress(json.dumps({"id": 11, "method": "gzip"}).encode("utf-8"), compression="gzip"),
 			headers={"Content-Encoding": "gzip", "Content-Type": "application/json"},
 			timeout=10,
 		)
@@ -305,7 +304,7 @@ def test_http_server_compressed_post_and_send_max_bytes() -> None:
 
 		res = requests.post(
 			f"http://127.0.0.1:{server.port}/",
-			data=lz4.frame.compress(msgpack_encode({"id": 12, "method": "lz4"})),
+			data=compress(msgpack_encode({"id": 12, "method": "lz4"}), compression="lz4"),
 			headers={"Content-Encoding": "lz4", "Content-Type": "application/msgpack"},
 			timeout=10,
 		)

@@ -12,6 +12,7 @@ import shutil
 from os import statvfs_result
 from pathlib import Path
 from unittest.mock import patch
+from uuid import UUID
 
 import pytest
 
@@ -19,7 +20,7 @@ if platform.system() != "Linux":
 	pytest.skip("storage tests are only relevant on Linux", allow_module_level=True)
 
 
-from opsi.system.efi import EFIBootManager, cleanup_efi_nvram, get_efi_nvram_stats
+from opsi.system.efi import EFIBootManager, cleanup_efi_nvram, get_efi_nvram_stats, get_system_uuid
 
 
 def test_get_boot_entries() -> None:
@@ -127,3 +128,9 @@ def test_cleanup_efi_nvram() -> None:
 	assert len(unlinked) == 2
 	for entry in unlinked:
 		assert entry.name in ("dump-12345678-9abc-def0-1234-56789abcdef0", "dump-type0-12345678-9abc-def0-1234-56789abcdef0")
+
+
+@pytest.mark.admin_permissions
+def test_get_system_uuid() -> None:
+	system_uuid = get_system_uuid()
+	assert UUID(system_uuid)

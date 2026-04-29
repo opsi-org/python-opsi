@@ -10,7 +10,9 @@ from opsi.opsi.service.client._service_client import (
 	ServiceClient,
 	ServiceConnectionListener,
 	ServiceVerificationFlags,
+	get_rpc_timeout,
 	get_service_client,
+	set_rpc_timeout,
 )
 
 __all__ = [
@@ -20,5 +22,7 @@ __all__ = [
 	"ServiceClient",
 	"ServiceConnectionListener",
 	"ServiceVerificationFlags",
+	"get_rpc_timeout",
 	"get_service_client",
+	"set_rpc_timeout",
 ]

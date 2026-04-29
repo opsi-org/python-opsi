@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import asyncio
-import gzip
 import json
 import locale
 import os
@@ -36,7 +35,6 @@ from urllib.parse import quote, unquote, urlparse
 from uuid import uuid4
 from xml.etree import ElementTree
 
-import lz4.frame
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 from packaging import version
@@ -56,6 +54,7 @@ from websocket import setdefaulttimeout as websocket_setdefaulttimeout
 from websocket._abnf import ABNF
 
 from opsi import __version__
+from opsi.compression import compress, decompress
 from opsi.crypt.ssl import load_key, x509_name_to_dict
 from opsi.exception import (
 	OpsiRpcError,
@@ -194,6 +193,11 @@ def get_rpc_timeout(method: str) -> float:
 		if regex.match(method):
 			return float(timeout)
 	return float(RPC_TIMEOUTS_DEFAULT)
+
+
+def set_rpc_timeout(method: str, timeout: float) -> None:
+	RPC_TIMEOUTS[method] = int(timeout)
+	get_rpc_timeout.cache_clear()
 
 
 class ServiceVerificationFlags(str, Enum):
@@ -1662,11 +1666,11 @@ class ServiceClient:
 		if self.server_version >= MIN_VERSION_LZ4:
 			logger.trace("Compressing data with lz4")
 			headers["Content-Encoding"] = headers["Accept-Encoding"] = "lz4"
-			data = lz4.frame.compress(data, compression_level=0, block_linked=True)
+			data = compress(data, compression="lz4", compression_level=0, block_linked=True)
 		elif self.server_version >= MIN_VERSION_GZIP:
 			logger.trace("Compressing data with gzip")
 			headers["Content-Encoding"] = headers["Accept-Encoding"] = "gzip"
-			data = gzip.compress(data)
+			data = compress(data, compression="gzip")
 
 		if not read_timeout:
 			read_timeout = get_rpc_timeout(method)
@@ -1708,7 +1712,7 @@ class ServiceClient:
 		# gzip and deflate transfer-encodings are automatically decoded
 		if "lz4" in content_encoding:
 			logger.trace("Decompressing data with lz4")
-			data = lz4.frame.decompress(data)
+			data = decompress(data, "lz4")
 
 		error_cls: type[Exception] | None = None
 		error_msg = None
@@ -2036,7 +2040,7 @@ class Messagebus(Thread):
 		logger.debug("Websocket message received (id=%r)", self.id)
 		try:
 			if self.compression == "lz4":
-				message = lz4.frame.decompress(message)
+				message = decompress(message, "lz4")
 			msg = Message.from_messagepack(message)
 
 			cur_timestamp = messagebus_timestamp()
@@ -2154,7 +2158,7 @@ class Messagebus(Thread):
 		logger.debug("Sending message: %r (id=%r)", message, self.id)
 		data = message.to_messagepack()
 		if self.compression == "lz4":
-			data = lz4.frame.compress(data, compression_level=0, block_linked=True)
+			data = compress(data, compression="lz4", compression_level=0, block_linked=True)
 		with self._send_lock:
 			self._app.send(data, ABNF.OPCODE_BINARY)
 

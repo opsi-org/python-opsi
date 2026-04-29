@@ -4,7 +4,6 @@
 # License: AGPL-3.0-only
 
 import base64
-import gzip
 import os
 import pathlib
 import sys
@@ -13,6 +12,8 @@ from typing import IO
 from uuid import UUID
 
 import hivex
+
+from opsi.compression import decompress
 
 BCD_TEMPLATE = """
 H4sIAAAAAAAAA+09S2wbSXYly7bkv/yX7RmbHntnNB63p7vZbJL2rE3/Zpixx6P1l7uYzbJJNpda
@@ -205,7 +206,7 @@ class BCD:
 
 	def write_template(self) -> None:
 		with open(self.filename, "wb") as file:
-			file.write(gzip.decompress(base64.b64decode(BCD_TEMPLATE)))
+			file.write(decompress(base64.b64decode(BCD_TEMPLATE), compression="gzip"))
 
 	def get_node_by_path(self, path: str | None = None) -> int:
 		node = self.hive.root()

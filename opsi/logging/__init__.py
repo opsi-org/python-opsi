@@ -64,7 +64,7 @@ from ._const import (
 	TRACE,
 	WARNING,
 )
-from ._sqlite import SQLiteHandler
+from ._sqlite import SQLiteHandler, SQLiteLogDatabase
 
 __all__ = [
 	"add_context_filter_to_loggers",
@@ -120,6 +120,7 @@ __all__ = [
 	"set_filter",
 	"set_format",
 	"SQLiteHandler",
+	"SQLiteLogDatabase",
 	"StreamHandler",
 	"TRACE",
 	"use_logging_config",

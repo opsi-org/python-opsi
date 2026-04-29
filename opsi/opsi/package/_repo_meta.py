@@ -15,8 +15,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any, Callable, Generator
 
-import zstandard
-
+from opsi.compression import compress, decompress
 from opsi.crypt.hash import compute_file_hash
 from opsi.logging import get_logger
 from opsi.opsi.package import OpsiPackage, PackageDependency
@@ -309,8 +308,7 @@ class RepoMetaPackageCollection:
 		p_data: dict[str, Any] = {}
 		head = data[0:4].hex()
 		if head == "28b52ffd":
-			decompressor = zstandard.ZstdDecompressor()
-			data = decompressor.decompress(data)
+			data = decompress(data, compression="zstd")
 
 		if data.startswith(b"{"):
 			p_data = json_decode(data)
@@ -348,8 +346,7 @@ class RepoMetaPackageCollection:
 		if compression:
 			if compression != "zstd":
 				raise ValueError(f"Invalid compression: {compression}")
-			compressor = zstandard.ZstdCompressor()
-			bdata = compressor.compress(bdata)
+			bdata = compress(bdata, compression="zstd")
 
 		if not path.exists():
 			path.touch()  # Need to create file before it can be opened with r+

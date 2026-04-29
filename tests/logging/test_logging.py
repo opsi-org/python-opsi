@@ -596,7 +596,7 @@ def test_sub_logger() -> None:
 			if key not in ("root", "sub"):
 				assert levels[key] == LOG_NOTSET
 
-		logging_config(logger_levels={"s.*": LOG_WARNING})
+		logging_config(logger_levels={"sub.*": LOG_WARNING})
 
 		sub_logger.warning("sub_logger_6")
 

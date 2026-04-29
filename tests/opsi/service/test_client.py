@@ -27,8 +27,7 @@ from unittest import mock
 from urllib.parse import unquote
 from warnings import catch_warnings, simplefilter
 
-import lz4.frame
-
+from opsi.compression import compress, decompress
 from opsi.logging import LOG_TRACE, logger
 
 with catch_warnings():
@@ -84,6 +83,7 @@ from opsi.opsi.service.client._service_client import (
 	WebSocketApp,
 	get_rpc_timeout,
 	get_service_client,
+	set_rpc_timeout,
 )
 from opsi.opsi.service.model.object import OpsiClient
 from opsi.system.info import is_macos, is_windows
@@ -1470,18 +1470,18 @@ def test_messagebus_reconnect() -> None:
 				channel="host:test-client.uib.local",
 				subscribed_channels=subscribed_channels,
 			)
-			handler.ws_send_message(lz4.frame.compress(smsg.to_msgpack(), compression_level=0, block_linked=True))
+			handler.ws_send_message(compress(smsg.to_msgpack(), compression="lz4", compression_level=0, block_linked=True))
 
 		for _ in range(3):
 			rpc_id += 1
 			jmsg = JSONRPCResponseMessage(
 				sender="service:worker:test:1", channel="host:test-client.uib.local", rpc_id=str(rpc_id), result="RESULT"
 			)
-			handler.ws_send_message(lz4.frame.compress(jmsg.to_msgpack(), compression_level=0, block_linked=True))
+			handler.ws_send_message(compress(jmsg.to_msgpack(), compression="lz4", compression_level=0, block_linked=True))
 
 	def ws_message_callback(handler: HTTPTestServerRequestHandler, message: bytes) -> None:
 		nonlocal subscribed_channels
-		msg = Message.from_msgpack(lz4.frame.decompress(message))
+		msg = Message.from_msgpack(decompress(message, "lz4"))
 		if isinstance(msg, ChannelSubscriptionRequestMessage):
 			if msg.operation == "add":
 				subscribed_channels.extend(msg.channels)
@@ -1492,7 +1492,7 @@ def test_messagebus_reconnect() -> None:
 				channel="host:test-client.uib.local",
 				subscribed_channels=subscribed_channels,
 			)
-			handler.ws_send_message(lz4.frame.compress(smsg.to_msgpack(), compression_level=0, block_linked=True))
+			handler.ws_send_message(compress(smsg.to_msgpack(), compression="lz4", compression_level=0, block_linked=True))
 
 	with http_test_server(
 		generate_cert=True,
@@ -1595,7 +1595,7 @@ def test_messagebus_connect_503() -> None:
 		smsg = ChannelSubscriptionEventMessage(
 			sender="service:worker:test:1", channel="host:test-client.uib.local", subscribed_channels=["chan1", "chan2", "chan3"]
 		)
-		handler.ws_send_message(lz4.frame.compress(smsg.to_msgpack(), compression_level=0, block_linked=True))
+		handler.ws_send_message(compress(smsg.to_msgpack(), compression="lz4", compression_level=0, block_linked=True))
 
 	with http_test_server(generate_cert=True, ws_connect_callback=ws_connect_callback, request_callback=request_callback) as server:
 		with ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
@@ -1638,7 +1638,7 @@ def test_messagebus_reconnect_exception() -> None:
 			smsg = ChannelSubscriptionEventMessage(
 				sender="service:worker:test:1", channel="host:test-client.uib.local", subscribed_channels=["chan1", "chan2", "chan3"]
 			)
-			handler.ws_send_message(lz4.frame.compress(smsg.to_msgpack(), compression_level=0, block_linked=True))
+			handler.ws_send_message(compress(smsg.to_msgpack(), compression="lz4", compression_level=0, block_linked=True))
 			if num <= 3:
 				handler._ws_close()
 
@@ -2398,7 +2398,7 @@ def test_messagebus_jsonrpc() -> None:
 	def ws_message_callback(handler: HTTPTestServerRequestHandler, message: bytes) -> None:
 		nonlocal delay
 		nonlocal rpc_error
-		msg = JSONRPCRequestMessage.from_msgpack(lz4.frame.decompress(message))
+		msg = JSONRPCRequestMessage.from_msgpack(decompress(message, "lz4"))
 		time.sleep(delay)
 		res = JSONRPCResponseMessage(
 			sender="service:worker:test:1",
@@ -2407,7 +2407,7 @@ def test_messagebus_jsonrpc() -> None:
 			result=None if rpc_error else msg.params,
 			error=rpc_error,
 		)
-		handler.ws_send_message(lz4.frame.compress(res.to_msgpack(), compression_level=0, block_linked=True))
+		handler.ws_send_message(compress(res.to_msgpack(), compression="lz4", compression_level=0, block_linked=True))
 
 	with http_test_server(
 		generate_cert=True, ws_message_callback=ws_message_callback, response_headers={"server": "opsiconfd 4.2.1.0 (uvicorn)"}
@@ -2754,5 +2754,8 @@ def test_permission_error_ca_cert_file_lock() -> None:
 		("backend_getInterface", float(RPC_TIMEOUTS_DEFAULT)),
 	],
 )
-def test_get_rpc_timeout(method: str, timeout: float) -> None:
+def test_get_set_rpc_timeout(method: str, timeout: float) -> None:
 	assert get_rpc_timeout(method) == timeout
+	new_timeout = timeout + 1.0
+	set_rpc_timeout(method, new_timeout)
+	assert get_rpc_timeout(method) == new_timeout
