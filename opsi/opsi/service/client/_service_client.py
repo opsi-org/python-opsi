@@ -1263,24 +1263,24 @@ class ServiceClient:
 			self._jsonrpc_method_params = {}
 			self._jsonrpc_interface = {}
 			if self.jsonrpc_create_methods:
-				try:
-					for method in self.jsonrpc("backend_getInterface", assert_connected=False):
-						self._jsonrpc_interface[method["name"]] = method
-						self._jsonrpc_method_params[method["name"]] = {}
-						def_idx = 0
-						for param in method["params"]:
-							default = None
-							if param[0] == "*":
-								param = param.lstrip("*")
-								if method["defaults"]:
-									try:
-										default = method["defaults"][def_idx]
-									except IndexError:
-										pass
-								def_idx += 1
-							self._jsonrpc_method_params[method["name"]][param] = default
-				except Exception as err:
-					logger.error("Failed to get interface description: %s", err, exc_info=True)
+				# Do not catch exceptions here, because if fetching the interface fails i.e. due to a timeout error,
+				# the client cannot be used to call RPC methods and is basically unusable.
+				logger.info("Fetching JSON-RPC interface description and creating instance methods")
+				for method in self.jsonrpc("backend_getInterface", assert_connected=False):
+					self._jsonrpc_interface[method["name"]] = method
+					self._jsonrpc_method_params[method["name"]] = {}
+					def_idx = 0
+					for param in method["params"]:
+						default = None
+						if param[0] == "*":
+							param = param.lstrip("*")
+							if method["defaults"]:
+								try:
+									default = method["defaults"][def_idx]
+								except IndexError:
+									pass
+							def_idx += 1
+						self._jsonrpc_method_params[method["name"]][param] = default
 
 				self.create_jsonrpc_methods()
 
