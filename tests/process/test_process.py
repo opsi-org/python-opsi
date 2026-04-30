@@ -36,6 +36,8 @@ from tests.file.conftest import PATH_TYPES
 				"-NoLogo",
 				"-NonInteractive",
 				"-NoProfile",
+				"-WindowStyle",
+				"Hidden",
 				"-ExecutionPolicy",
 				"Bypass",
 				"-File",
