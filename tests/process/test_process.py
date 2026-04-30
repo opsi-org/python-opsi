@@ -36,6 +36,8 @@ from tests.file.conftest import PATH_TYPES
 				"-NoLogo",
 				"-NonInteractive",
 				"-NoProfile",
+				"-WindowStyle",
+				"Hidden",
 				"-ExecutionPolicy",
 				"Bypass",
 				"-File",
@@ -48,7 +50,18 @@ from tests.file.conftest import PATH_TYPES
 			"powershell",
 			"-",
 			None,
-			["powershell.exe", "-NoLogo", "-NonInteractive", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "-"],
+			[
+				"powershell.exe",
+				"-NoLogo",
+				"-NonInteractive",
+				"-NoProfile",
+				"-WindowStyle",
+				"Hidden",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"-",
+			],
 		),
 	]
 	if is_windows()
