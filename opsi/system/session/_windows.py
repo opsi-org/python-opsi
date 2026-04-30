@@ -1,10 +1,10 @@
 from opsi.logging import get_logger
 
-from ._common import DesktopSession
+from ._common import DisplaySession
 
 logger = get_logger("opsi")
 
-def get_sessions(protocol: str | None = None, user: str | None = None) -> list[DesktopSession]:
+def get_display_sessions(protocol: str | None = None, user: str | None = None) -> list[DisplaySession]:
 	import win32ts  # ty: ignore[unresolved-import]
 
 	WTS_PROTOCOLS = {
@@ -26,7 +26,7 @@ def get_sessions(protocol: str | None = None, user: str | None = None) -> list[D
 			wts_protocol = WTS_PROTOCOLS[protocol]
 
 	server = win32ts.WTS_CURRENT_SERVER_HANDLE
-	sessions: list[DesktopSession] = []
+	sessions: list[DisplaySession] = []
 	for session in win32ts.WTSEnumerateSessions(server):
 		# WTS_CONNECTSTATE_CLASS:
 		# WTSActive,WTSConnected,WTSConnectQuery,WTSShadow,WTSDisconnected,WTSIdle,WTSListen,WTSReset,WTSDown,WTSInit
@@ -40,7 +40,7 @@ def get_sessions(protocol: str | None = None, user: str | None = None) -> list[D
 		if wts_protocol and wts_protocol != win32ts.WTSQuerySessionInformation(server, session_id, win32ts.WTSClientProtocolType):
 			continue
 		sessions.append(
-			DesktopSession(
+			DisplaySession(
 				id=session_id,
 				desktop=str(win32ts.WTSQuerySessionInformation(server, session_id, win32ts.WTSWorkingDirectory)).lower() or "default",
 				user=session_user or "",

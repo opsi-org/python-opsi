@@ -1,9 +1,9 @@
 from opsi.system.info import is_linux
-from opsi.system.session import get_sessions
+from opsi.system.session import get_display_sessions
 
 
-def test_get_sessions() -> None:
-	sessions = get_sessions()
+def test_get_display_sessions() -> None:
+	sessions = get_display_sessions()
 	assert isinstance(sessions, list)
 	print(sessions)
 	if is_linux():

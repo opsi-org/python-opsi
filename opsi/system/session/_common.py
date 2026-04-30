@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 @dataclass
-class DesktopSession:
+class DisplaySession:
 	id: int
 	desktop: str
 	user: str
