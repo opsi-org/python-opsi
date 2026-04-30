@@ -3,3 +3,13 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
+from opsi.system.registry._registry_watcher import (
+	RegistryChangeCallback,
+	RegistryChangeEvent,
+	RegistryChangeType,
+	RegistryKey,
+	RegistryValue,
+	RegistryWatcher,
+)
+
+__all__ = ["RegistryChangeCallback", "RegistryChangeEvent", "RegistryChangeType", "RegistryKey", "RegistryValue", "RegistryWatcher"]
