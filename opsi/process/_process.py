@@ -539,7 +539,7 @@ class Process:
 					data_len = len(data)
 					if not data_len:
 						total_bytes_read = self._stdout_bytes_read if type == "stdout" else self._stderr_bytes_read
-						logger.debug("End of %s stream reached, read %d bytes in total", type, total_bytes_read)
+						logger.trace("End of %s stream reached, read %d bytes in total", type, total_bytes_read)
 						# EOF
 						break
 					logger.trace("Read %d bytes from %s: %r", data_len, type, data)
@@ -554,7 +554,7 @@ class Process:
 					if avail_size >= data_len:
 						is_overflow = False
 					elif avail_size > 0:
-						logger.debug("Buffer '%s' is almost full, only %d bytes available", type, avail_size)
+						logger.trace("Buffer '%s' is almost full, only %d bytes available", type, avail_size)
 						remaining_data = data[avail_size:]
 						data = data[:avail_size]
 						data_len = len(data)
@@ -668,7 +668,7 @@ class Process:
 		)
 		stdin = PIPE if stdin_data is not None or not close_stdin else None
 
-		logger.info(
+		logger.notice(
 			"Starting process with command: %r, working_dir: '%s', stdout: %r, stderr: %r, stdin: %r",
 			self._command,
 			self._working_dir,
@@ -687,7 +687,7 @@ class Process:
 				startupinfo=startupinfo,
 			)
 		self._pid = self._proc.pid
-		logger.notice("Started process %r with PID %d (attempt %d)", self.get_command(), self._pid, self._attempts)
+		logger.info("Started process %r with PID %d (attempt %d)", self.get_command(), self._pid, self._attempts)
 		assert self._proc
 		try:
 			logger.debug("Starting stdout reader thread")
@@ -995,7 +995,7 @@ class Process:
 			if timeout is not None:
 				elapsed_time = time.monotonic() - start_time
 				if elapsed_time >= timeout:
-					logger.debug("Read from process timed out after %r seconds", timeout)
+					logger.trace("Read from process timed out after %r seconds", timeout)
 					return b"", b""
 			time.sleep(0.1)
 
