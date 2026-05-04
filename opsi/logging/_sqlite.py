@@ -199,7 +199,7 @@ class SQLiteLogDatabase:
 					break
 				time.sleep(0.2)
 
-	def get_lines(
+	def get_formatted_records(
 		self,
 		*,
 		since: float | datetime | None = None,

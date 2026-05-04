@@ -31,4 +31,3 @@ def get_display_sessions(protocol: str | None = None, user: str | None = None, l
 		sessions = relevant_sessions
 	logger.devel(sessions)
 	return sessions
-

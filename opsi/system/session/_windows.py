@@ -4,6 +4,7 @@ from ._common import DisplaySession
 
 logger = get_logger("opsi")
 
+
 def get_display_sessions(protocol: str | None = None, user: str | None = None) -> list[DisplaySession]:
 	import win32ts  # ty: ignore[unresolved-import]
 
@@ -48,4 +49,3 @@ def get_display_sessions(protocol: str | None = None, user: str | None = None) -
 			)
 		)
 	return sessions
-

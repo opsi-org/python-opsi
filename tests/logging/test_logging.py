@@ -727,9 +727,9 @@ def test_sqlite_handler_base(tmp_path: Path) -> None:
 		raise Exception("TEST_EXCEPTION")
 	except Exception as err:
 		logger.error("An error occurred: %s", err, exc_info=True)
-	lines = list(sqlite_handler.get_lines())
-	assert len(lines) == 1
-	assert "Traceback (most recent call last):" in lines[0]
+	str_records = list(sqlite_handler.get_formatted_records())
+	assert len(str_records) == 1
+	assert "Traceback (most recent call last):" in str_records[0]
 
 	sqlite_handler.delete_records()
 	records = list(sqlite_handler.get_records())
@@ -830,12 +830,12 @@ def test_sqlite_handler_base(tmp_path: Path) -> None:
 	print(f"Read {len(records)} new records in {duration:.2f} seconds")
 	assert len(records) == 1
 
-	line_regex = re.compile(r"^\[\d] \[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\] \[(.*)\] .*")
+	str_record_regex = re.compile(r"^\[\d] \[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\] \[(.*)\] .*")
 	for colored in (True, False):
-		for line in sqlite_handler.get_lines(colored=colored, max_records=10, context={"ctx1": "val1", "ctx2": "val2"}):
-			assert ("\x1b[" in line) == colored
+		for str_record in sqlite_handler.get_formatted_records(colored=colored, max_records=10, context={"ctx1": "val1", "ctx2": "val2"}):
+			assert ("\x1b[" in str_record) == colored
 			if not colored:
-				match = line_regex.match(line)
+				match = str_record_regex.match(str_record)
 				assert match
 				assert match.group(1).strip() == "val1,val2"
 

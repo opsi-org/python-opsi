@@ -17,6 +17,7 @@ import pytest
 from opsi.process import Process, ProcessError, run_command, run_script, run_script_file
 from opsi.process._process import _get_interpreter_command, get_process_io_encoding
 from opsi.system.info import is_windows
+from opsi.system.session import get_display_sessions
 from opsi.testing.helper import environment
 from tests.file.conftest import PATH_TYPES
 
@@ -528,6 +529,47 @@ def test_process_ld_library_path(
 		setattr(sys, "frozen", frozen)
 
 
+def test_path_cleanup() -> None:
+	path = ["/usr/local/sbin", "", "/usr/local/bin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "", "/bin"]
+	clean_path = ["/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "/bin"]
+	cmd = ["sleep", "1"]
+	if os.name == "nt":
+		path = [
+			r"C:\Program Files (x86)\Python311-32\Scripts",
+			r"C:\Program Files (x86)\Python311-32",
+			r"C:\Program Files (x86)\Python311-32",
+			r"",
+			r"C:\WINDOWS\system32",
+			r"C:\WINDOWS",
+			r"",
+			r"C:\WINDOWS\System32\Wbem",
+			r"C:\WINDOWS\System32\WindowsPowerShell\v1.0",
+			r"C:\Program Files (x86)\Git\cmd",
+			r"C:\Program Files (x86)\opsi.org\opsi-client-agent\opsiclientd_bin\pywin32_system32",
+			r"C:\Program Files (x86)\opsi.org\opsi-client-agent\opsiclientd_bin\pywin32_system32",
+			r"C:\WINDOWS",
+		]
+		clean_path = [
+			r"C:\Program Files (x86)\Python311-32\Scripts",
+			r"C:\Program Files (x86)\Python311-32",
+			r"C:\WINDOWS\system32",
+			r"C:\WINDOWS",
+			r"C:\WINDOWS\System32\Wbem",
+			r"C:\WINDOWS\System32\WindowsPowerShell\v1.0",
+			r"C:\Program Files (x86)\Git\cmd",
+		]
+		cmd = ["timeout", "1"]
+
+	with environment({"PATH": os.pathsep.join(path)}):
+		assert os.environ["PATH"].split(os.pathsep) == path
+		with run_command(cmd) as proc:
+			ps_proc = psutil.Process(proc.pid)
+			proc_env = ps_proc.environ()
+			assert proc_env["PATH"].split(os.pathsep) == clean_path
+			proc.wait()
+		assert os.environ["PATH"].split(os.pathsep) == path
+
+
 def test_process_argument_validation() -> None:
 	with pytest.raises(ProcessError, match="'command' and 'script' are mutually exclusive"):
 		Process(command="echo test", script="echo test")
@@ -857,3 +899,19 @@ def test_run_script_file(tmp_path: Path, path_type) -> None:
 	finally:
 		if proc.is_running(wait=0):
 			proc.stop()
+
+
+@pytest.mark.windows
+def test_process_session_id() -> None:
+	sessions = get_display_sessions()
+	if not sessions:
+		pytest.skip("No display sessions found")
+
+	proc = Process(script="set", session_id=sessions[0].id, session_elevated=True)
+	print(proc.get_output_text())
+
+
+@pytest.mark.posix
+def test_process_session_id_fail() -> None:
+	with pytest.raises(ProcessError, match="Process sessions are not supported on this platform"):
+		Process(command=["sleep", "1"], session_id=1)

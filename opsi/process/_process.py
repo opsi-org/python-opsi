@@ -47,6 +47,7 @@ def get_subprocess_environment(env: Mapping[str, str] | None = None) -> dict[str
 	logger.trace("Original environment: %s", env)
 
 	executable_path = _get_executable_path()
+	remove_vars = ["OPENSSL_MODULES"]
 	if getattr(sys, "frozen", False):
 		# Running in pyinstaller / frozen
 		pyi_home = env.get("_PYI_APPLICATION_HOME_DIR") or env.get("_MEIPASS2") or ""
@@ -71,16 +72,27 @@ def get_subprocess_environment(env: Mapping[str, str] | None = None) -> dict[str
 			else:
 				logger.debug("Removing LD_LIBRARY_PATH from env for subprocess")
 				env.pop("LD_LIBRARY_PATH", None)
-		for env_var in (
-			"_PYI_APPLICATION_HOME_DIR",
-			"_PYI_ARCHIVE_FILE",
-			"_PYI_PARENT_PROCESS_LEVEL",
-			"_PYI_LINUX_PROCESS_NAME",
-			"_PYI_SPLASH_IPC",
-			"_MEIPASS2",
-		):
-			env.pop(env_var, None)
-	env.pop("OPENSSL_MODULES", None)
+
+		remove_vars.extend(
+			[
+				"_PYI_APPLICATION_HOME_DIR",
+				"_PYI_ARCHIVE_FILE",
+				"_PYI_PARENT_PROCESS_LEVEL",
+				"_PYI_LINUX_PROCESS_NAME",
+				"_PYI_SPLASH_IPC",
+				"_MEIPASS2",
+			]
+		)
+
+	env = {k: v for k, v in env.items() if k not in remove_vars}
+
+	path = env.get("PATH")
+	if path:
+		# Cleanup PATH variable. Remove empty values and values containing "pywin32_system32" and "opsi".
+		# Otherwise, these values can end up in the user environment PATH in Windows registry.
+		values = list(dict.fromkeys(v for v in path.split(os.pathsep) if v and not ("pywin32_system32" in v and "opsi" in v)))
+		env["PATH"] = os.pathsep.join(values)
+
 	logger.trace("Environment for subprocess: %s", env)
 	return env
 
@@ -302,6 +314,9 @@ class Process:
 		encoding: str | None = None,
 		exit_on_error: bool = False,
 		success_exit_codes: Collection[int] | None = (0,),
+		session_id: int | None = None,
+		session_desktop: str | None = None,
+		session_elevated: bool = False,
 		retry_config: RetryConfig | None = None,
 	) -> None:
 		"""
@@ -357,6 +372,12 @@ class Process:
 			Only valid with script execution and interpreter bash or powershell.
 			If True the script will exit on the first error.
 			If False the script will continue execution even if some commands fail.
+		:param session_id:
+			If specified (Windows only), the process will be started in the given session ID.
+		:param session_desktop:
+			If specified (Windows only), the process will be started with the given desktop (e.g. "WinSta0\\Default").
+		:param session_elevated:
+			If True and session_id is specified (Windows only), the process will be started elevated in the given session.
 		:param retry_config:
 			Configuration for automatic retry behavior on failure.
 			If None, uses the default retry configuration for process execution.
@@ -372,7 +393,11 @@ class Process:
 		self._exit_on_error = bool(exit_on_error)
 		self._working_dir = Path(working_dir) if working_dir else None
 		self._timeout = timeout
-		self._environment: dict[str, str] = {}
+		self._environment: dict[str, str] | None = None
+		self._session_id: int | None = None
+		self._session_desktop: str | None = None
+		self._session_elevated: bool = False
+
 		self._capture_output = capture_output
 		self._discard_output = discard_output
 		self._encoding = encoding or "utf-8"
@@ -404,7 +429,25 @@ class Process:
 			if interpreter is not None:
 				raise ProcessError("'interpreter' can only be used with 'script', not with 'command'", process=self)
 
-		self._environment = get_subprocess_environment(environment)
+		if session_id is not None:
+			if not is_windows():
+				raise ProcessError("Parameter 'session_id' is only supported on Windows", process=self)
+			self._session_id = int(session_id)
+			if session_desktop:
+				session_desktop = str(session_desktop)
+				if r"\\" not in session_desktop:
+					session_desktop = f"WinSta0\\{session_desktop}"
+				if session_desktop.split("\\")[-1].lower() not in ("default", "winlogon", "screensaver"):
+					raise ValueError(f"Invalid desktop '{session_desktop}'")
+				self._session_desktop = session_desktop
+			self._session_elevated = bool(session_elevated)
+		else:
+			if session_desktop is not None:
+				raise ProcessError("Parameter 'session_desktop' requires 'session_id' to be set", process=self)
+			if session_elevated is not None:
+				raise ProcessError("Parameter 'session_elevated' requires 'session_id' to be set", process=self)
+
+		self._environment = dict(environment) if environment else None
 
 		arguments = [str(arg) for arg in arguments] if arguments else []
 		# Build command
@@ -632,6 +675,7 @@ class Process:
 		self._reset_state()
 		logger.debug("Running process attempt %d: %r", self._attempts, self._command)
 
+		env = get_subprocess_environment(self._environment)
 		startupinfo = None
 		if os.name == "nt":
 			from subprocess import STARTF_USESHOWWINDOW, STARTUPINFO, SW_HIDE
@@ -639,6 +683,16 @@ class Process:
 			startupinfo = STARTUPINFO()
 			startupinfo.dwFlags |= STARTF_USESHOWWINDOW
 			startupinfo.wShowWindow = SW_HIDE
+
+			if self._session_id is not None:
+				from opsi.process._windows import patch_create_process
+
+				patch_create_process()
+
+				env["_opsi_process_session_id"] = self._session_id
+				env["_opsi_process_session_elevated"] = str(int(bool(self._session_elevated)))
+				if self._session_desktop:
+					env["_opsi_process_session_desktop"] = str(self._session_desktop)
 
 		self._start_time = time.monotonic()
 
@@ -683,7 +737,7 @@ class Process:
 				stderr=stderr,
 				stdin=stdin,
 				cwd=self._working_dir,
-				env=self._environment,
+				env=env,
 				startupinfo=startupinfo,
 			)
 		self._pid = self._proc.pid
