@@ -3,6 +3,15 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
+import sys
+
+from opsi.exception import OperatingSystemUnsupportedError
+
+if sys.platform != "win32":
+	raise OperatingSystemUnsupportedError("This module is only supported on Windows")
+
+import win32ts
+
 from opsi.logging import get_logger
 
 from ._common import DisplaySession, DisplaySessionWindowsState
@@ -11,8 +20,6 @@ logger = get_logger("opsi")
 
 
 def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySession]:
-	import win32ts  # ty: ignore[unresolved-import]
-
 	server = win32ts.WTS_CURRENT_SERVER_HANDLE
 	sessions: list[DisplaySession] = []
 	for session in win32ts.WTSEnumerateSessions(server):
@@ -54,3 +61,11 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 		sessions = relevant_sessions
 
 	return sessions
+
+
+def get_console_session() -> DisplaySession | None:
+	session_id = int(win32ts.WTSGetActiveConsoleSessionId())
+	for session in get_display_sessions(one_session_per_user=False):
+		if session.id == session_id:
+			return session
+	return None

@@ -33,3 +33,10 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 		sessions = relevant_sessions
 
 	return sessions
+
+
+def get_console_session() -> DisplaySession | None:
+	sessions = get_display_sessions(one_session_per_user=False)
+	if not sessions:
+		return None
+	return min(sessions, key=lambda x: x.id)

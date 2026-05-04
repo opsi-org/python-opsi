@@ -9,12 +9,12 @@ from opsi.system.info import get_system, is_linux, is_macos, is_windows
 from ._common import DisplaySession, DisplaySessionWindowsProtocol, DisplaySessionWindowsState
 
 if is_linux():
-	from ._linux import get_display_sessions
+	from ._linux import get_console_session, get_display_sessions
 elif is_macos():
-	from ._macos import get_display_sessions
+	from ._macos import get_console_session, get_display_sessions
 elif is_windows():
-	from ._windows import get_display_sessions
+	from ._windows import get_console_session, get_display_sessions
 else:
 	raise OperatingSystemUnsupportedError(f"{get_system()} not supported")
 
-__all__ = ["get_display_sessions", "DisplaySession", "DisplaySessionWindowsState", "DisplaySessionWindowsProtocol"]
+__all__ = ["get_display_sessions", "get_console_session", "DisplaySession", "DisplaySessionWindowsState", "DisplaySessionWindowsProtocol"]
