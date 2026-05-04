@@ -994,34 +994,37 @@ class ServiceClient:
 						f"but {len(call_args)} were given"
 					)
 
-				bound_args = list(call_args[: len(arg_names)])
+				unset = object()
+				bound_args = [unset] * len(arg_names)
+				for idx, value in enumerate(call_args[: len(arg_names)]):
+					bound_args[idx] = value
+
 				extra_args = list(call_args[len(arg_names) :])
 				extra_kwargs: dict[str, Any] = {}
 
 				for name, value in call_kwargs.items():
 					idx = arg_positions.get(name)
 					if idx is not None:
-						if idx < len(bound_args):
+						if bound_args[idx] is not unset:
 							raise TypeError(f"{method_name}() got multiple values for argument '{name}'")
-						while len(bound_args) < idx:
-							bound_args.append(None)
-						bound_args.append(value)
+						bound_args[idx] = value
 					elif keywords:
 						extra_kwargs[name] = value
 					else:
 						raise TypeError(f"{method_name}() got an unexpected keyword argument '{name}'")
 
-				if len(bound_args) < required_args:
-					missing = [arg_names[idx] for idx in range(len(bound_args), required_args)]
+				missing = [arg_names[idx] for idx in range(required_args) if bound_args[idx] is unset]
+				if missing:
 					plural = "s" if len(missing) != 1 else ""
 					missing_args = "', '".join(missing)
 					raise TypeError(f"{method_name}() missing {len(missing)} required positional argument{plural}: '{missing_args}'")
 
 				default_offset = len(arg_names) - len(defaults)
-				for idx in range(len(bound_args), len(arg_names)):
-					bound_args.append(defaults[idx - default_offset])
+				for idx in range(required_args, len(arg_names)):
+					if bound_args[idx] is unset:
+						bound_args[idx] = defaults[idx - default_offset]
 
-				params = bound_args
+				params = list(bound_args)
 				if extra_args:
 					params.extend(extra_args)
 				if extra_kwargs:

@@ -2056,6 +2056,18 @@ def test_jsonrpc_interface(tmp_path: Path) -> None:
 			"annotations": {},
 		},
 		{
+			"name": "boot_getConfig",
+			"params": ["*architecture", "*firmware_type", "*ip_version"],
+			"args": ["self", "architecture", "firmware_type", "ip_version"],
+			"varargs": None,
+			"keywords": None,
+			"defaults": [None, None, None],
+			"deprecated": False,
+			"alternative_method": None,
+			"doc": None,
+			"annotations": {},
+		},
+		{
 			"name": "backend_getInterface",
 			"params": [],
 			"args": ["self"],
@@ -2086,7 +2098,7 @@ def test_jsonrpc_interface(tmp_path: Path) -> None:
 			server.response_headers["Content-Type"] = "application/json"
 			client.connect()
 			assert sorted(client._jsonrpc_interface) == sorted(m["name"] for m in interface)
-			assert len(client.jsonrpc_interface) == 3
+			assert len(client.jsonrpc_interface) == 4
 			for method in interface:
 				assert client.get_jsonrpc_method(method["name"]) == method
 			with pytest.raises(ValueError, match="Method 'invalid' not found in JSON-RPC interface"):
@@ -2101,6 +2113,13 @@ def test_jsonrpc_interface(tmp_path: Path) -> None:
 			client.jsonrpc(method="test_method", params={"arg3": "3"})
 			client.test_method(1, 2, x=3, y=4)  # type: ignore[attr-defined]
 			client.test_method(1, x="y")  # type: ignore[attr-defined]
+			client.test_method(1, x="y")  # type: ignore[attr-defined]
+
+			client.boot_getConfig()  # type: ignore[attr-defined]
+			client.boot_getConfig(architecture="x64", firmware_type="UEFI", ip_version=4)  # type: ignore[attr-defined]
+			client.boot_getConfig(firmware_type="UEFI", ip_version=4, architecture="x64")  # type: ignore[attr-defined]
+			client.boot_getConfig("x64", ip_version=4, firmware_type="UEFI")  # type: ignore[attr-defined]
+			client.boot_getConfig(firmware_type="UEFI")  # type: ignore[attr-defined]
 
 			reqs = [json.loads(req) for req in log_file.read_text(encoding="utf-8").strip().split("\n")]
 			assert reqs[0]["method"] == "HEAD"
@@ -2113,6 +2132,13 @@ def test_jsonrpc_interface(tmp_path: Path) -> None:
 			assert reqs[5]["request"]["params"] == [None, "default2", "3"]
 			assert reqs[6]["request"]["params"] == [1, 2, {"x": 3, "y": 4}]
 			assert reqs[7]["request"]["params"] == [1, "default2", {"x": "y"}]
+
+			assert reqs[9]["request"]["method"] == "boot_getConfig"
+			assert reqs[9]["request"]["params"] == [None, None, None]
+			assert reqs[10]["request"]["params"] == ["x64", "UEFI", 4]
+			assert reqs[11]["request"]["params"] == ["x64", "UEFI", 4]
+			assert reqs[12]["request"]["params"] == ["x64", "UEFI", 4]
+			assert reqs[13]["request"]["params"] == [None, "UEFI", None]
 
 			class Test:
 				pass
