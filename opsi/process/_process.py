@@ -1150,6 +1150,9 @@ def run_command(
 	discard_output: DiscardOutput = "none",
 	encoding: str | None = None,
 	success_exit_codes: Collection[int] | None = (0,),
+	session_id: int | None = None,
+	session_desktop: str | None = None,
+	session_elevated: bool = False,
 	wait: bool = True,
 	retry_config: RetryConfig | None = None,
 ) -> Process:
@@ -1166,6 +1169,9 @@ def run_command(
 		discard_output=discard_output,
 		encoding=encoding,
 		success_exit_codes=success_exit_codes,
+		session_id=session_id,
+		session_desktop=session_desktop,
+		session_elevated=session_elevated,
 		retry_config=retry_config,
 	)
 	if wait:
@@ -1191,6 +1197,9 @@ def run_script(
 	encoding: str | None = None,
 	exit_on_error: bool = False,
 	success_exit_codes: Collection[int] | None = (0,),
+	session_id: int | None = None,
+	session_desktop: str | None = None,
+	session_elevated: bool = False,
 	wait: bool = True,
 	retry_config: RetryConfig | None = None,
 ) -> Process:
@@ -1210,6 +1219,9 @@ def run_script(
 		encoding=encoding,
 		exit_on_error=exit_on_error,
 		success_exit_codes=success_exit_codes,
+		session_id=session_id,
+		session_desktop=session_desktop,
+		session_elevated=session_elevated,
 		retry_config=retry_config,
 	)
 	if wait:
@@ -1235,6 +1247,9 @@ def run_script_file(
 	encoding: str | None = None,
 	exit_on_error: bool = False,
 	success_exit_codes: Collection[int] | None = (0,),
+	session_id: int | None = None,
+	session_desktop: str | None = None,
+	session_elevated: bool = False,
 	wait: bool = True,
 	retry_config: RetryConfig | None = None,
 ) -> Process:
@@ -1253,6 +1268,9 @@ def run_script_file(
 		discard_output=discard_output,
 		encoding=encoding,
 		exit_on_error=exit_on_error,
+		session_id=session_id,
+		session_desktop=session_desktop,
+		session_elevated=session_elevated,
 		success_exit_codes=success_exit_codes,
 		retry_config=retry_config,
 	)
