@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 import opsi.system.time._linux as linux_time
+import opsi.system.time._macos as macos_time
 from opsi.system.info import is_linux, is_macos
 from opsi.system.time import set_system_datetime
 
@@ -34,13 +35,13 @@ def test_set_system_datetime_calls_run_command_with_utc_time(monkeypatch: pytest
 		called.append(command)
 		assert timeout == 10.0
 
-	monkeypatch.setattr(linux_time, "run_command", fake_run_command)
-
-	linux_time.set_system_datetime(requested)
-
 	if is_linux():
+		monkeypatch.setattr(linux_time, "run_command", fake_run_command)
+		linux_time.set_system_datetime(requested)
 		assert called == [["date", "--utc", "--set", "2026-04-22 09:12:33"]]
 	elif is_macos():
+		monkeypatch.setattr(macos_time, "run_command", fake_run_command)
+		macos_time.set_system_datetime(requested)
 		assert called == [["date", "-f", "%Y-%m-%d %H:%M:%S %Z", "-u", "2026-04-22 09:12:33 UTC"]]
 
 
@@ -49,8 +50,12 @@ def test_set_system_datetime_raises_runtime_error_on_failure(monkeypatch: pytest
 	def fake_run_command(command: list[str], *, timeout: float) -> None:
 		raise OSError("no permission")
 
-	monkeypatch.setattr(linux_time, "run_command", fake_run_command)
-	monkeypatch.setattr(linux_time.os, "geteuid", lambda: 42)
+	if is_linux():
+		monkeypatch.setattr(linux_time, "run_command", fake_run_command)
+		monkeypatch.setattr(linux_time.os, "geteuid", lambda: 42)
+	elif is_macos():
+		monkeypatch.setattr(macos_time, "run_command", fake_run_command)
+		monkeypatch.setattr(macos_time.os, "geteuid", lambda: 42)
 
 	with pytest.raises(RuntimeError) as exc_info:
 		linux_time.set_system_datetime(datetime(2026, 4, 22, 9, 12, 33, tzinfo=timezone.utc))
