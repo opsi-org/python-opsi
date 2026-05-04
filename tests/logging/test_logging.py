@@ -722,6 +722,19 @@ def test_sqlite_handler_base(tmp_path: Path) -> None:
 	records = list(sqlite_handler.get_records())
 	assert len(records) == 0
 
+	# Test logging exceptions
+	try:
+		raise Exception("TEST_EXCEPTION")
+	except Exception as err:
+		logger.error("An error occurred: %s", err, exc_info=True)
+	lines = list(sqlite_handler.get_lines())
+	assert len(lines) == 1
+	assert "Traceback (most recent call last):" in lines[0]
+
+	sqlite_handler.delete_records()
+	records = list(sqlite_handler.get_records())
+	assert len(records) == 0
+
 	# Test performance
 	start_time = time.perf_counter()
 	log_level = 0
