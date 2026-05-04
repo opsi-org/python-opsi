@@ -907,7 +907,7 @@ def test_process_session_id() -> None:
 	if not sessions:
 		pytest.skip("No display sessions found")
 
-	proc = Process(script="set", session_id=sessions[0].id, session_elevated=True)
+	proc = Process(script="set", session_id=sessions[0].id)
 	print(proc.get_output_text())
 
 

@@ -22,8 +22,13 @@ import win32profile
 import win32security
 import win32ts
 
+from opsi.logging import get_logger
+
+logger = get_logger("opsi")
+
 
 def _get_process(process_name: str, session_id: int) -> psutil.Process | None:
+	logger.debug("Looking for process '%s' in session %d", process_name, session_id)
 	process_name = process_name.lower()
 	session_id = int(session_id)
 	for proc in psutil.process_iter():
@@ -36,11 +41,12 @@ def _get_process(process_name: str, session_id: int) -> psutil.Process | None:
 
 
 def _get_process_user_token(process_id: int, duplicate: bool = False) -> int:
+	logger.debug("Getting user token for process %d", process_id)
 	proc_handle = win32api.OpenProcess(win32con.MAXIMUM_ALLOWED, False, process_id)
 	proc_token = win32security.OpenProcessToken(proc_handle, win32con.MAXIMUM_ALLOWED)
 	if not duplicate:
 		return proc_token
-	proc_token_dup = win32security.DuplicateTokenEx(
+	return win32security.DuplicateTokenEx(
 		ExistingToken=proc_token,
 		# To request the same access rights as the existing token, specify zero.
 		DesiredAccess=0,
@@ -50,7 +56,6 @@ def _get_process_user_token(process_id: int, duplicate: bool = False) -> int:
 		# The new token is a primary token that you can use in the CreateProcessAsUser function.
 		TokenType=ntsecuritycon.TokenPrimary,
 	)
-	return proc_token_dup
 
 
 CreateProcessOrig = _winapi.CreateProcess
@@ -68,6 +73,7 @@ def CreateProcess(
 	__startup_info: Any,
 ) -> tuple[int, int, int, int]:
 	if not __env_mapping or not __env_mapping.get("_opsi_process_session_id"):
+		logger.trace("No session information in environment, using original CreateProcess")
 		return CreateProcessOrig(
 			__application_name,
 			__command_line,
@@ -80,20 +86,12 @@ def CreateProcess(
 			__startup_info,
 		)
 
-	"""
-
-		proc = get_process(process_name="explorer.exe", session_id=self._session_id)
-				user_token = get_process_user_token(proc.pid, duplicate=True)
-				user_env = get_user_environment(user_token)
-				user_env.update(env)
-				env = {k: v for k, v in user_env.items() if not k.upper().startswith("_OPSI_PROCESS_")}
-
-	"""
 	session_id = int(__env_mapping.pop("_opsi_process_session_id"))
 	session_elevated = bool(int(__env_mapping.pop("_opsi_process_session_elevated", "0")))
 	session_desktop = __env_mapping.pop("_opsi_process_session_desktop", "")
 	process_name = "winlogon.exe" if session_elevated else "explorer.exe"
 
+	logger.info("Creating process in session %d (elevated: %s, desktop: %r)", session_id, session_elevated, session_desktop)
 	proc = _get_process(process_name=process_name, session_id=session_id)
 	if not proc:
 		raise RuntimeError(f"Failed to find '{process_name}' in session {session_id}")
