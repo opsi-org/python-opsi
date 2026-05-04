@@ -910,7 +910,17 @@ def test_run_process_in_session() -> None:
 		raise RuntimeError(f"No active or connected display sessions found: {sessions}")
 
 	proc = run_script(script="set", session_id=sessions[0].id)
-	print(proc.get_output_text())
+
+	session_name = None
+	user_name = None
+	for line in proc.get_output_lines():
+		if line.startswith("SESSIONNAME="):
+			session_name = line.split("=", 1)[1]
+		elif line.startswith("USERNAME="):
+			user_name = line.split("=", 1)[1]
+
+	assert session_name
+	assert user_name == sessions[0].user
 
 
 @pytest.mark.posix
