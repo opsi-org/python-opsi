@@ -50,15 +50,15 @@ def test_set_system_datetime_raises_runtime_error_on_failure(monkeypatch: pytest
 	def fake_run_command(command: list[str], *, timeout: float) -> None:
 		raise OSError("no permission")
 
-	if is_linux():
-		monkeypatch.setattr(linux_time, "run_command", fake_run_command)
-		monkeypatch.setattr(linux_time.os, "geteuid", lambda: 42)
-	elif is_macos():
-		monkeypatch.setattr(macos_time, "run_command", fake_run_command)
-		monkeypatch.setattr(macos_time.os, "geteuid", lambda: 42)
-
 	with pytest.raises(RuntimeError) as exc_info:
-		linux_time.set_system_datetime(datetime(2026, 4, 22, 9, 12, 33, tzinfo=timezone.utc))
+		if is_linux():
+			monkeypatch.setattr(linux_time, "run_command", fake_run_command)
+			monkeypatch.setattr(linux_time.os, "geteuid", lambda: 42)
+			linux_time.set_system_datetime(datetime(2026, 4, 22, 9, 12, 33, tzinfo=timezone.utc))
+		elif is_macos():
+			monkeypatch.setattr(macos_time, "run_command", fake_run_command)
+			monkeypatch.setattr(macos_time.os, "geteuid", lambda: 42)
+			macos_time.set_system_datetime(datetime(2026, 4, 22, 9, 12, 33, tzinfo=timezone.utc))
 
 	assert "uid 42" in str(exc_info.value)
 	assert "no permission" in str(exc_info.value)
