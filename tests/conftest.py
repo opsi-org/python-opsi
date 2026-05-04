@@ -4,7 +4,6 @@
 # License: AGPL-3.0-only
 
 import os
-import platform
 import sys
 import threading
 import time
@@ -15,11 +14,7 @@ import pytest
 from packaging.version import Version
 
 from opsi.logging import logging_config
-
-
-@lru_cache
-def _system_platform() -> str:
-	return platform.system().lower()
+from opsi.system.info import get_system
 
 
 @lru_cache
@@ -64,13 +59,10 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
 def pytest_runtest_setup(item: pytest.Item) -> None:
 	for marker in item.iter_markers():
 		if marker.name in ("windows", "linux", "macos", "posix"):
-			supported_platforms = []
-			if marker.name == "posix":
-				supported_platforms.extend(["linux", "macos"])
-			else:
-				supported_platforms.append(marker.name)
-			if _system_platform() not in supported_platforms:
-				pytest.skip(f"Test only runs on: {', '.join(supported_platforms)}")
+			supported_platforms = ["linux", "macos"] if marker.name == "posix" else [marker.name]
+			system_name = get_system()
+			if system_name not in supported_platforms:
+				pytest.skip(f"Test only runs on {' or '.join(supported_platforms)}, not on {system_name}")
 				return
 		if marker.name == "admin_permissions" and not _admin_permissions():
 			pytest.skip("No admin permissions")

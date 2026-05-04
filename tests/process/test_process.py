@@ -914,5 +914,5 @@ def test_run_process_in_session() -> None:
 
 @pytest.mark.posix
 def test_run_process_in_session_non_windows() -> None:
-	with pytest.raises(ProcessError, match="Process sessions are not supported on this platform"):
+	with pytest.raises(ProcessError, match="Parameter 'session_id' is only supported on Windows"):
 		Process(command=["sleep", "1"], session_id=1)
