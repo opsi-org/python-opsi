@@ -444,7 +444,7 @@ class Process:
 		else:
 			if session_desktop is not None:
 				raise ProcessError("Parameter 'session_desktop' requires 'session_id' to be set", process=self)
-			if session_elevated is not None:
+			if session_elevated:
 				raise ProcessError("Parameter 'session_elevated' requires 'session_id' to be set", process=self)
 
 		self._environment = dict(environment) if environment else None
