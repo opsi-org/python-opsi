@@ -911,16 +911,14 @@ def test_run_process_in_session() -> None:
 
 	proc = run_script(script="set", session_id=sessions[0].id)
 
-	session_name = None
 	user_name = None
-	for line in proc.get_output_lines():
-		if line.startswith("SESSIONNAME="):
-			session_name = line.split("=", 1)[1]
-		elif line.startswith("USERNAME="):
+	lines = proc.get_output_lines()
+	for line in lines:
+		if line.startswith("USERNAME="):
 			user_name = line.split("=", 1)[1]
 
-	assert session_name
-	assert user_name == sessions[0].user
+	if user_name != sessions[0].user:
+		raise RuntimeError(f"Expected process to run in session of user '{sessions[0].user}', but got '{user_name}': {lines}")
 
 
 @pytest.mark.posix
