@@ -14,7 +14,7 @@ import win32ts
 
 from opsi.logging import get_logger
 
-from ._common import DisplaySession, WindowsDisplaySessionState
+from ._common import DisplaySession, WindowsDisplaySessionProtocol, WindowsDisplaySessionState
 
 logger = get_logger("opsi")
 
@@ -25,18 +25,18 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 	for session in win32ts.WTSEnumerateSessions(server):
 		session_id = session["SessionId"]
 
-		windows_state = None
 		try:
 			windows_state = WindowsDisplaySessionState(session.get("State"))
 		except ValueError:
-			logger.warning("Unknown session state %r for session %r", session.get("State"), session_id)
+			logger.warning("Invalid session state %r for session %r", session.get("State"), session_id)
 			continue
 
-		windows_protocol = None
 		try:
-			windows_protocol = win32ts.WTSQuerySessionInformation(server, session_id, win32ts.WTSClientProtocolType)
+			windows_protocol = WindowsDisplaySessionProtocol(
+				win32ts.WTSQuerySessionInformation(server, session_id, win32ts.WTSClientProtocolType)
+			)
 		except ValueError:
-			logger.warning("Unknown session protocol %r for session %r", windows_protocol, session_id)
+			logger.warning("Invalid session protocol %r for session %r", windows_protocol, session_id)
 			continue
 
 		session_user = win32ts.WTSQuerySessionInformation(server, session_id, win32ts.WTSUserName)
