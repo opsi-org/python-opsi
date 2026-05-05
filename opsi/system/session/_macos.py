@@ -9,7 +9,7 @@ from ._common import DisplaySession
 
 
 def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySession]:
-	return [DisplaySession(id=1, desktop="default", user=os.getenv("USER") or "")]
+	return [DisplaySession(id="1", desktop="default", user=os.getenv("USER") or "")]
 
 
 def get_console_session() -> DisplaySession | None:
