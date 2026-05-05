@@ -27,7 +27,6 @@ def test_get_display_sessions(one_session_per_user: bool) -> None:
 	users = set()
 	for session in sessions:
 		assert session.id
-		assert session.desktop
 
 		if is_windows():
 			assert isinstance(session.windows_state, WindowsDisplaySessionState)
@@ -55,5 +54,4 @@ def test_get_console_session() -> None:
 
 	assert session
 	assert session.id
-	assert session.desktop
 	assert session.console

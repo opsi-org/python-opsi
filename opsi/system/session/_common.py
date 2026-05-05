@@ -132,7 +132,6 @@ class LinuxDisplaySessionClass(StrEnum):
 @dataclass(kw_only=True)
 class DisplaySession:
 	id: str
-	desktop: str
 	console: bool = False
 	user: str | None = None
 	windows_state: WindowsDisplaySessionState | None = None

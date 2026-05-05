@@ -71,7 +71,6 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 
 			display_session = DisplaySession(
 				id=session_id,
-				desktop=session_class.value.lower(),
 				user=user,
 				linux_session_type=linux_session_type,
 				linux_session_class=session_class,

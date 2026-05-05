@@ -22,7 +22,6 @@ logger = get_logger("opsi")
 def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySession]:
 	server = win32ts.WTS_CURRENT_SERVER_HANDLE
 	sessions: list[DisplaySession] = []
-	console_session_id = str(win32ts.WTSGetActiveConsoleSessionId())
 	for session in win32ts.WTSEnumerateSessions(server):
 		session_id = session["SessionId"]
 
@@ -44,8 +43,7 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 		sessions.append(
 			DisplaySession(
 				id=str(session_id),
-				desktop=str(win32ts.WTSQuerySessionInformation(server, session_id, win32ts.WTSWorkingDirectory)).lower() or "default",
-				console=session_id == console_session_id,
+				console=windows_protocol == WindowsDisplaySessionProtocol.CONSOLE,
 				user=session_user,
 				windows_state=windows_state,
 				windows_protocol=windows_protocol,
