@@ -817,7 +817,6 @@ class Process:
 		"""
 		Stop the process by sending a signal if it is still running.
 		"""
-		print("Stopping process...")
 		self._close_stdin()
 		if self._proc and self._exit_code is None:
 			signals = [(signal.SIGTERM, 0.75), (signal.SIGKILL, 0.25)] if os.name != "nt" else [(signal.SIGTERM, 1.0)]
