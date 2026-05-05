@@ -20,7 +20,6 @@ import psutil
 import pytest
 
 from opsi.process import Process, ProcessError, run_command, run_script, run_script_file
-from opsi.process._linux import prepare_sudo_in_session
 from opsi.process._process import _get_interpreter_command, get_process_io_encoding
 from opsi.system.info import is_windows
 from opsi.system.session import DisplaySession, LinuxDisplaySessionType, WindowsDisplaySessionState, get_display_sessions
@@ -1147,6 +1146,8 @@ def test_run_process_in_session_windows() -> None:
 	],
 )
 def test_prepare_sudo_in_session(session: DisplaySession, expected_env: dict, expected_full_env: dict) -> None:
+	from opsi.process._linux import prepare_sudo_in_session
+
 	with patch("opsi.process._linux.get_display_sessions", lambda: [session]):
 		command, env, user = prepare_sudo_in_session(
 			session.id, ["echo", "test"], {"COMMON_VAR": "common_original", "PATH": "/original/path"}, full_user_env=False
@@ -1169,7 +1170,10 @@ def test_prepare_sudo_in_session(session: DisplaySession, expected_env: dict, ex
 		assert env == expected_full_env
 
 
+@pytest.mark.linux
 def test_prepare_sudo_in_session_error() -> None:
+	from opsi.process._linux import prepare_sudo_in_session
+
 	session = DisplaySession(id=":0", user="test")
 	with patch("opsi.process._linux.get_display_sessions", lambda: [session]):
 		with pytest.raises(RuntimeError, match="Session ':3' not found"):
