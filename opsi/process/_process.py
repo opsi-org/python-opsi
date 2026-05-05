@@ -187,8 +187,10 @@ def get_process_io_encoding(interpreter: Literal["cmd", "powershell", "bash"] | 
 
 def _get_interpreter_command(
 	interpreter: Literal["cmd", "powershell", "bash"],
+	*,
 	script_file: str | os.PathLike[str] | TempFile = "-",
 	arguments: list[str] | None = None,
+	hide_window: bool = True,
 ) -> list[str]:
 	script_file = (
 		str(script_file.path) if isinstance(script_file, TempFile) else os.fspath(script_file)
@@ -244,13 +246,10 @@ def _get_interpreter_command(
 				"-NoLogo",
 				"-NonInteractive",
 				"-NoProfile",
-				"-WindowStyle",
-				"Hidden",
-				"-ExecutionPolicy",
-				"Bypass",
-				"-File",
-				script_file,
 			]
+			if hide_window:
+				args.extend(["-WindowStyle", "Hidden"])
+			args.extend(["-ExecutionPolicy", "Bypass", "-File", script_file])
 			if arguments:
 				args.extend(arguments)
 
@@ -314,6 +313,8 @@ class Process:
 		encoding: str | None = None,
 		exit_on_error: bool = False,
 		success_exit_codes: Collection[int] | None = (0,),
+		hide_window: bool = True,
+		detach: bool = False,
 		session_id: int | None = None,
 		session_desktop: str | None = None,
 		session_elevated: bool = False,
@@ -372,6 +373,10 @@ class Process:
 			Only valid with script execution and interpreter bash or powershell.
 			If True the script will exit on the first error.
 			If False the script will continue execution even if some commands fail.
+		:param hide_window:
+			If True, hide the process window on Windows.
+		:param detach:
+			If True, start the process detached from the current process session.
 		:param session_id:
 			If specified (Windows only), the process will be started in the given session ID.
 		:param session_desktop:
@@ -393,6 +398,8 @@ class Process:
 		self._exit_on_error = bool(exit_on_error)
 		self._working_dir = Path(working_dir) if working_dir else None
 		self._timeout = timeout
+		self._hide_window = bool(hide_window)
+		self._detach = bool(detach)
 		self._environment: dict[str, str] | None = None
 		self._session_id: int | None = None
 		self._session_desktop: str | None = None
@@ -521,6 +528,7 @@ class Process:
 						cast(Literal["cmd", "powershell", "bash"], interpreter),
 						script_file=str(self._temp_script_file.path) if self._temp_script_file else "-",
 						arguments=arguments or None,
+						hide_window=self._hide_window,
 					)
 				except Exception as exc:
 					raise ProcessError(f"Failed to get interpreter command for interpreter '{interpreter}': {exc}", process=self) from exc
@@ -677,12 +685,19 @@ class Process:
 
 		env = get_subprocess_environment(self._environment)
 		startupinfo = None
+		creationflags = 0
+		start_new_session = False
 		if os.name == "nt":
-			from subprocess import STARTF_USESHOWWINDOW, STARTUPINFO, SW_HIDE
+			if self._hide_window:
+				from subprocess import STARTF_USESHOWWINDOW, STARTUPINFO, SW_HIDE
 
-			startupinfo = STARTUPINFO()
-			startupinfo.dwFlags |= STARTF_USESHOWWINDOW
-			startupinfo.wShowWindow = SW_HIDE
+				startupinfo = STARTUPINFO()
+				startupinfo.dwFlags |= STARTF_USESHOWWINDOW
+				startupinfo.wShowWindow = SW_HIDE
+			if self._detach:
+				from subprocess import CREATE_NEW_PROCESS_GROUP, DETACHED_PROCESS
+
+				creationflags |= DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
 
 			if self._session_id is not None:
 				from opsi.process._windows import patch_create_process
@@ -693,6 +708,8 @@ class Process:
 				env["_opsi_process_session_elevated"] = str(int(bool(self._session_elevated)))
 				if self._session_desktop:
 					env["_opsi_process_session_desktop"] = str(self._session_desktop)
+		elif self._detach:
+			start_new_session = True
 
 		self._start_time = time.monotonic()
 
@@ -739,6 +756,8 @@ class Process:
 				cwd=self._working_dir,
 				env=env,
 				startupinfo=startupinfo,
+				creationflags=creationflags,
+				start_new_session=start_new_session,
 			)
 		self._pid = self._proc.pid
 		logger.info("Started process %r with PID %d (attempt %d)", self.get_command(), self._pid, self._attempts)
@@ -1150,6 +1169,8 @@ def run_command(
 	discard_output: DiscardOutput = "none",
 	encoding: str | None = None,
 	success_exit_codes: Collection[int] | None = (0,),
+	hide_window: bool = True,
+	detach: bool = False,
 	session_id: int | None = None,
 	session_desktop: str | None = None,
 	session_elevated: bool = False,
@@ -1169,6 +1190,8 @@ def run_command(
 		discard_output=discard_output,
 		encoding=encoding,
 		success_exit_codes=success_exit_codes,
+		hide_window=hide_window,
+		detach=detach,
 		session_id=session_id,
 		session_desktop=session_desktop,
 		session_elevated=session_elevated,
@@ -1197,6 +1220,8 @@ def run_script(
 	encoding: str | None = None,
 	exit_on_error: bool = False,
 	success_exit_codes: Collection[int] | None = (0,),
+	hide_window: bool = True,
+	detach: bool = False,
 	session_id: int | None = None,
 	session_desktop: str | None = None,
 	session_elevated: bool = False,
@@ -1219,6 +1244,8 @@ def run_script(
 		encoding=encoding,
 		exit_on_error=exit_on_error,
 		success_exit_codes=success_exit_codes,
+		hide_window=hide_window,
+		detach=detach,
 		session_id=session_id,
 		session_desktop=session_desktop,
 		session_elevated=session_elevated,
@@ -1247,6 +1274,8 @@ def run_script_file(
 	encoding: str | None = None,
 	exit_on_error: bool = False,
 	success_exit_codes: Collection[int] | None = (0,),
+	hide_window: bool = True,
+	detach: bool = False,
 	session_id: int | None = None,
 	session_desktop: str | None = None,
 	session_elevated: bool = False,
@@ -1268,6 +1297,8 @@ def run_script_file(
 		discard_output=discard_output,
 		encoding=encoding,
 		exit_on_error=exit_on_error,
+		hide_window=hide_window,
+		detach=detach,
 		session_id=session_id,
 		session_desktop=session_desktop,
 		session_elevated=session_elevated,

@@ -6,8 +6,11 @@
 import os
 import sys
 import time
+from collections.abc import Mapping
+from contextlib import nullcontext
 from pathlib import Path
 from subprocess import list2cmdline
+from types import ModuleType
 from typing import Literal
 from unittest.mock import patch
 
@@ -101,6 +104,139 @@ def test_get_interpreter_command_error(path_type) -> None:
 	assert isinstance(exc, ProcessError)
 	assert isinstance(exc.cause, FileNotFoundError)
 	assert exc.command_not_found
+
+
+@pytest.mark.windows
+def test_get_interpreter_command_powershell_hide_window_false() -> None:
+	command = _get_interpreter_command(interpreter="powershell", script_file="script_file.ps1", hide_window=False)
+	command[0] = os.path.basename(command[0])
+
+	assert command == [
+		"powershell.exe",
+		"-NoLogo",
+		"-NonInteractive",
+		"-NoProfile",
+		"-ExecutionPolicy",
+		"Bypass",
+		"-File",
+		"script_file.ps1",
+	]
+
+
+@pytest.mark.parametrize("hide_window", [True, False])
+def test_process_hide_window_sets_windows_startupinfo(hide_window: bool, monkeypatch: pytest.MonkeyPatch) -> None:
+	class FakeStartupInfo:
+		dwFlags = 0
+		wShowWindow = 0
+
+	startupinfos: list[FakeStartupInfo | None] = []
+
+	class FakePopen:
+		pid = 42
+		stdin = None
+		stdout = None
+		stderr = None
+
+		def __init__(
+			self,
+			_command: list[str],
+			*,
+			startupinfo: FakeStartupInfo | None,
+			**_kwargs: object,
+		) -> None:
+			startupinfos.append(startupinfo)
+
+		def poll(self) -> int:
+			return 0
+
+	startf_useshowwindow = 1
+	sw_hide = 0
+	fake_subprocess_module = ModuleType("subprocess")
+	setattr(fake_subprocess_module, "STARTF_USESHOWWINDOW", startf_useshowwindow)
+	setattr(fake_subprocess_module, "SW_HIDE", sw_hide)
+	setattr(fake_subprocess_module, "STARTUPINFO", FakeStartupInfo)
+	setattr(fake_subprocess_module, "check_output", lambda _command, shell=False: b"Active code page: 65001\r\n")
+
+	def fake_get_subprocess_environment(env: Mapping[str, str] | None = None) -> dict[str, str]:
+		return dict(env) if env else {}
+
+	monkeypatch.setattr(os, "name", "nt")
+	monkeypatch.setitem(sys.modules, "subprocess", fake_subprocess_module)
+	monkeypatch.setattr("opsi.process._process.subprocess", fake_subprocess_module)
+	monkeypatch.setattr("opsi.process._process.Popen", FakePopen)
+	monkeypatch.setattr("opsi.process._process.get_subprocess_environment", fake_get_subprocess_environment)
+	monkeypatch.setattr("opsi.process._process._disable_file_system_redirection", nullcontext)
+
+	proc = run_command(["cmd.exe", "/c", "exit", "0"], capture_output="none", hide_window=hide_window)
+
+	assert proc.exit_code == 0
+	assert len(startupinfos) == 1
+	startupinfo = startupinfos[0]
+	if hide_window:
+		assert startupinfo is not None
+		assert startupinfo.dwFlags == startf_useshowwindow
+		assert startupinfo.wShowWindow == sw_hide
+	else:
+		assert startupinfo is None
+
+
+@pytest.mark.parametrize(
+	("os_name", "detach", "expected_creationflags", "expected_start_new_session"),
+	[
+		("posix", True, 0, True),
+		("posix", False, 0, False),
+		("nt", True, 3, False),
+		("nt", False, 0, False),
+	],
+)
+def test_process_detach_sets_popen_flags(
+	os_name: str,
+	detach: bool,
+	expected_creationflags: int,
+	expected_start_new_session: bool,
+	monkeypatch: pytest.MonkeyPatch,
+) -> None:
+	creationflags_seen: list[int] = []
+	start_new_sessions: list[bool] = []
+
+	class FakePopen:
+		pid = 42
+		stdin = None
+		stdout = None
+		stderr = None
+
+		def __init__(
+			self,
+			_command: list[str],
+			*,
+			creationflags: int,
+			start_new_session: bool,
+			**_kwargs: object,
+		) -> None:
+			creationflags_seen.append(creationflags)
+			start_new_sessions.append(start_new_session)
+
+		def poll(self) -> int:
+			return 0
+
+	def fake_get_subprocess_environment(env: Mapping[str, str] | None = None) -> dict[str, str]:
+		return dict(env) if env else {}
+
+	monkeypatch.setattr(os, "name", os_name)
+	monkeypatch.setattr("opsi.process._process.Popen", FakePopen)
+	monkeypatch.setattr("opsi.process._process.get_subprocess_environment", fake_get_subprocess_environment)
+	if os_name == "nt":
+		fake_subprocess_module = ModuleType("subprocess")
+		setattr(fake_subprocess_module, "DETACHED_PROCESS", 1)
+		setattr(fake_subprocess_module, "CREATE_NEW_PROCESS_GROUP", 2)
+		monkeypatch.setitem(sys.modules, "subprocess", fake_subprocess_module)
+		monkeypatch.setattr("opsi.process._process._disable_file_system_redirection", nullcontext)
+
+	proc = run_command(["cmd", "/c", "exit", "0"], capture_output="none", hide_window=False, detach=detach)
+
+	assert proc.exit_code == 0
+	assert creationflags_seen == [expected_creationflags]
+	assert start_new_sessions == [expected_start_new_session]
 
 
 @pytest.mark.parametrize("interpreter", ["cmd", "powershell", None] if is_windows() else ["bash", None])
