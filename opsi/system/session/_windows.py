@@ -55,9 +55,15 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 		)
 
 	if one_session_per_user:
+		# Prefer active sessions over inactive ones, and if there are multiple active sessions for a user, prefer the one with the lowest session ID.
 		relevant_sessions: list[DisplaySession] = []
 		for user in {entry.user for entry in sessions}:
-			relevant_sessions.append(min([user_session for user_session in sessions if user_session.user == user], key=lambda x: x.id))
+			relevant_sessions.append(
+				min(
+					[user_session for user_session in sessions if user_session.user == user],
+					key=lambda x: (0 if x.windows_state == DisplaySessionWindowsState.ACTIVE else 1, x.id),
+				)
+			)
 		sessions = relevant_sessions
 
 	return sessions
