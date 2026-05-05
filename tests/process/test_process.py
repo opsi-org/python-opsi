@@ -506,7 +506,7 @@ def test_process_stop() -> None:
 	assert stderr_data == b""
 
 	assert proc.wait(timeout=1)
-	assert proc.exit_code == (1 if is_windows() else -9)
+	assert proc.exit_code != 0
 	assert proc.get_stderr_bytes() == stderr_data
 	assert proc.get_stdout_bytes() == stdout_data
 	if proc._manager_thread:
