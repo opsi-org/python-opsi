@@ -26,7 +26,7 @@ else:
 
 def get_console_session() -> DisplaySession | None:
 	for session in get_display_sessions(one_session_per_user=False):
-		if session.console:
+		if session.is_current_console_session:
 			return session
 	return None
 

@@ -43,7 +43,8 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 		sessions.append(
 			DisplaySession(
 				id=str(session_id),
-				console=windows_protocol == WindowsDisplaySessionProtocol.CONSOLE,
+				is_current_console_session=windows_protocol == WindowsDisplaySessionProtocol.CONSOLE
+				and windows_state == WindowsDisplaySessionState.ACTIVE,
 				user=session_user,
 				windows_state=windows_state,
 				windows_protocol=windows_protocol,

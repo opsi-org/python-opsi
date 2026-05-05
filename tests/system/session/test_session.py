@@ -25,13 +25,17 @@ def test_get_display_sessions(one_session_per_user: bool) -> None:
 
 	assert sessions
 	users = set()
+	active_console_session_id = None
 	for session in sessions:
 		assert session.id
 
 		if is_windows():
 			assert isinstance(session.windows_state, WindowsDisplaySessionState)
 			assert isinstance(session.windows_protocol, WindowsDisplaySessionProtocol)
-			if not session.console:
+			if session.is_current_console_session:
+				if active_console_session_id is not None:
+					raise AssertionError(f"Multiple active console sessions found: {active_console_session_id} and {session.id}")
+				active_console_session_id = session.id
 				assert session.user
 		if is_linux():
 			assert isinstance(session.linux_session_type, LinuxDisplaySessionType)
@@ -46,12 +50,16 @@ def test_get_display_sessions(one_session_per_user: bool) -> None:
 			assert session.user not in users
 		users.add(session.user)
 
+	if is_windows():
+		assert active_console_session_id is not None
+
 
 def test_get_console_session() -> None:
 	session = get_console_session()
+	print(session)
 	if not session and is_linux():
 		pytest.skip("No console session found, might be running in a headless Linux environment")
 
 	assert session
 	assert session.id
-	assert session.console
+	assert session.is_current_console_session

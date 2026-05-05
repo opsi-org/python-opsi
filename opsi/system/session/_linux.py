@@ -86,13 +86,16 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 	sessions = list(sessions_by_id.values())
 	if sessions:
 		console_session = min(sessions, key=lambda x: x.id)
-		console_session.console = True
+		console_session.is_current_console_session = True
 
 	if one_session_per_user:
 		relevant_sessions: list[DisplaySession] = []
 		for user in {entry.user for entry in sessions}:
 			relevant_sessions.append(
-				min([user_session for user_session in sessions if user_session.user == user], key=lambda x: (0 if x.console else 1, x.id))
+				min(
+					[user_session for user_session in sessions if user_session.user == user],
+					key=lambda x: (0 if x.is_current_console_session else 1, x.id),
+				)
 			)
 		sessions = relevant_sessions
 
