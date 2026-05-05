@@ -14,7 +14,7 @@ import win32ts
 
 from opsi.logging import get_logger
 
-from ._common import DisplaySession, DisplaySessionWindowsState
+from ._common import DisplaySession, WindowsDisplaySessionState
 
 logger = get_logger("opsi")
 
@@ -23,25 +23,25 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 	server = win32ts.WTS_CURRENT_SERVER_HANDLE
 	sessions: list[DisplaySession] = []
 	for session in win32ts.WTSEnumerateSessions(server):
-		session_id = int(session["SessionId"])
+		session_id = str(session["SessionId"])
 
 		windows_state = None
 		try:
-			windows_state = DisplaySessionWindowsState(session.get("State"))
+			windows_state = WindowsDisplaySessionState(session.get("State"))
 		except ValueError:
-			logger.warning("Unknown session state %r for session %d", session.get("State"), session_id)
+			logger.warning("Unknown session state %r for session %r", session.get("State"), session_id)
 			continue
 
 		windows_protocol = None
 		try:
 			windows_protocol = win32ts.WTSQuerySessionInformation(server, session_id, win32ts.WTSClientProtocolType)
 		except ValueError:
-			logger.warning("Unknown session protocol %r for session %d", windows_protocol, session_id)
+			logger.warning("Unknown session protocol %r for session %r", windows_protocol, session_id)
 			continue
 
 		session_user = win32ts.WTSQuerySessionInformation(server, session_id, win32ts.WTSUserName)
 		if not session_user:
-			logger.debug("Session %d has no user, skipping", session_id)
+			logger.debug("Session %r has no user, skipping", session_id)
 			continue
 
 		sessions.append(
@@ -61,7 +61,7 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 			relevant_sessions.append(
 				min(
 					[user_session for user_session in sessions if user_session.user == user],
-					key=lambda x: (0 if x.windows_state == DisplaySessionWindowsState.ACTIVE else 1, x.id),
+					key=lambda x: (0 if x.windows_state == WindowsDisplaySessionState.ACTIVE else 1, int(x.id)),
 				)
 			)
 		sessions = relevant_sessions
@@ -70,7 +70,7 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 
 
 def get_console_session() -> DisplaySession | None:
-	session_id = int(win32ts.WTSGetActiveConsoleSessionId())
+	session_id = str(win32ts.WTSGetActiveConsoleSessionId())
 	for session in get_display_sessions(one_session_per_user=False):
 		if session.id == session_id:
 			return session

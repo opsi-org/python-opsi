@@ -27,8 +27,8 @@ from opsi.logging import get_logger
 logger = get_logger("opsi")
 
 
-def _get_process(process_name: str, session_id: int) -> psutil.Process | None:
-	logger.debug("Looking for process '%s' in session %d", process_name, session_id)
+def _get_process(process_name: str, session_id: int | str) -> psutil.Process | None:
+	logger.debug("Looking for process '%s' in session %r", process_name, session_id)
 	process_name = process_name.lower()
 	session_id = int(session_id)
 	for proc in psutil.process_iter():

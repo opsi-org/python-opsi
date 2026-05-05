@@ -7,11 +7,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import Path
 
 from opsi.system.info import is_windows
 
 
-class DisplaySessionWindowsState(StrEnum):
+class WindowsDisplaySessionState(StrEnum):
 	ACTIVE = "active"
 	CONNECTED = "connected"
 	CONNECT_QUERY = "connect_query"
@@ -24,7 +25,7 @@ class DisplaySessionWindowsState(StrEnum):
 	INIT = "init"
 
 	@classmethod
-	def _missing_(cls, value: object) -> DisplaySessionWindowsState:
+	def _missing_(cls, value: object) -> WindowsDisplaySessionState:
 		if isinstance(value, str):
 			value = value.lower()
 			for member in cls:
@@ -52,13 +53,13 @@ class DisplaySessionWindowsState(StrEnum):
 		raise ValueError(f"{value!r} is not a valid {cls.__name__}")
 
 
-class DisplaySessionWindowsProtocol(StrEnum):
+class WindowsDisplaySessionProtocol(StrEnum):
 	RDP = "rdp"
 	ICA = "ica"
 	CONSOLE = "console"
 
 	@classmethod
-	def _missing_(cls, value: object) -> DisplaySessionWindowsProtocol:
+	def _missing_(cls, value: object) -> WindowsDisplaySessionProtocol:
 		if isinstance(value, str):
 			value = value.lower()
 			for member in cls:
@@ -79,10 +80,65 @@ class DisplaySessionWindowsProtocol(StrEnum):
 		raise ValueError(f"{value!r} is not a valid {cls.__name__}")
 
 
-@dataclass
+class LinuxDisplaySessionType(StrEnum):
+	X11 = "x11"
+	WAYLAND = "wayland"
+
+
+class LinuxDisplaySessionClass(StrEnum):
+	"""Display session Linux class types.
+
+	user: A regular interactive user session. This is the default class for sessions
+		for which a TTY or X display is known at session registration time.
+	user-early: Similar to user but sessions of this class are not ordered after
+		systemd-user-sessions.service(8), i.e. may be started before regular sessions
+		are allowed to be established. (Added in v256.)
+	user-light: Similar to user, but sessions of this class will not pull in the
+		user@.service(5) of the user. (Added in v258.)
+	user-early-light: Similar to user-early, but sessions of this class will not
+		pull in the user@.service(5) of the user. (Added in v258.)
+	user-incomplete: Similar to user but for sessions which are not fully set up yet.
+		Used by systemd-homed.service(8) to allow users to log in via ssh(1) before
+		their home directory is mounted.
+	greeter: Similar to user but for sessions spawned by a display manager ephemerally
+		which prompt the user for login credentials.
+	lock-screen: Similar to user but for sessions spawned by a display manager
+		ephemerally which show a lock screen.
+	background: Used for background sessions, such as those invoked by cron(8).
+		This is the default class for sessions with no TTY or X display.
+	background-light: Similar to background, but sessions of this class will not
+		pull in the user@.service(5) of the user. (Added in v256.)
+	manager: The user@.service(5) service of the user is registered under this
+		session class. (Added in v256.)
+	manager-early: Similar to manager, but for the root user. (Added in v256.)
+	none: Skips registering this session with systemd-logind. No session scope will
+		be created. (Added in v258.)
+	"""
+
+	USER = "user"
+	USER_EARLY = "user-early"
+	USER_LIGHT = "user-light"
+	USER_EARLY_LIGHT = "user-early-light"
+	USER_INCOMPLETE = "user-incomplete"
+	GREETER = "greeter"
+	LOCK_SCREEN = "lock-screen"
+	BACKGROUND = "background"
+	BACKGROUND_LIGHT = "background-light"
+	MANAGER = "manager"
+	MANAGER_EARLY = "manager-early"
+	NONE = "none"
+
+
+@dataclass(frozen=True, kw_only=True)
 class DisplaySession:
-	id: int
+	id: str
 	desktop: str
 	user: str
-	windows_state: DisplaySessionWindowsState | None = None
-	windows_protocol: str | None = None
+	windows_state: WindowsDisplaySessionState | None = None
+	windows_protocol: WindowsDisplaySessionProtocol | None = None
+	linux_session_type: LinuxDisplaySessionType | None = None
+	linux_session_class: LinuxDisplaySessionClass | None = None
+	linux_display: str | None = None
+	linux_wayland_display: str | None = None
+	linux_xauthority: Path | None = None
+	linux_xdg_runtime_dir: Path | None = None

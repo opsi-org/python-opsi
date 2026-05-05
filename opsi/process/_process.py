@@ -316,7 +316,7 @@ class Process:
 		success_exit_codes: Collection[int] | None = (0,),
 		hide_window: bool = True,
 		detach: bool = False,
-		session_id: int | None = None,
+		session_id: str | None = None,
 		session_desktop: str | None = None,
 		session_elevated: bool = False,
 		retry_config: RetryConfig | None = None,
@@ -379,7 +379,7 @@ class Process:
 		:param detach:
 			If True, start the process detached from the current process session.
 		:param session_id:
-			If specified (Windows only), the process will be started in the given session ID.
+			If specified the process will be started in the given session.
 		:param session_desktop:
 			If specified (Windows only), the process will be started with the given desktop (e.g. "WinSta0\\Default").
 		:param session_elevated:
@@ -402,7 +402,7 @@ class Process:
 		self._hide_window = bool(hide_window)
 		self._detach = bool(detach)
 		self._environment: dict[str, str] | None = None
-		self._session_id: int | None = None
+		self._session_id: str | None = None
 		self._session_desktop: str | None = None
 		self._session_elevated: bool = False
 
@@ -441,7 +441,7 @@ class Process:
 		if session_id is not None:
 			if not is_windows():
 				raise ProcessError("Parameter 'session_id' is only supported on Windows", process=self)
-			self._session_id = int(session_id)
+			self._session_id = str(session_id)
 			if session_desktop:
 				session_desktop = str(session_desktop)
 				if r"\\" not in session_desktop:
@@ -1212,7 +1212,7 @@ def run_command(
 	success_exit_codes: Collection[int] | None = (0,),
 	hide_window: bool = True,
 	detach: bool = False,
-	session_id: int | None = None,
+	session_id: str | None = None,
 	session_desktop: str | None = None,
 	session_elevated: bool = False,
 	wait: bool = True,
@@ -1263,7 +1263,7 @@ def run_script(
 	success_exit_codes: Collection[int] | None = (0,),
 	hide_window: bool = True,
 	detach: bool = False,
-	session_id: int | None = None,
+	session_id: str | None = None,
 	session_desktop: str | None = None,
 	session_elevated: bool = False,
 	wait: bool = True,
@@ -1317,7 +1317,7 @@ def run_script_file(
 	success_exit_codes: Collection[int] | None = (0,),
 	hide_window: bool = True,
 	detach: bool = False,
-	session_id: int | None = None,
+	session_id: str | None = None,
 	session_desktop: str | None = None,
 	session_elevated: bool = False,
 	wait: bool = True,

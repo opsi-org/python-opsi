@@ -6,7 +6,14 @@
 import pytest
 
 from opsi.system.info import is_linux, is_windows
-from opsi.system.session import get_console_session, get_display_sessions
+from opsi.system.session import (
+	LinuxDisplaySessionClass,
+	LinuxDisplaySessionType,
+	WindowsDisplaySessionProtocol,
+	WindowsDisplaySessionState,
+	get_console_session,
+	get_display_sessions,
+)
 
 
 @pytest.mark.parametrize("one_session_per_user", [True, False])
@@ -24,8 +31,15 @@ def test_get_display_sessions(one_session_per_user: bool) -> None:
 		assert session.user
 
 		if is_windows():
-			assert session.windows_state is not None
-			assert session.windows_protocol is not None
+			assert isinstance(session.windows_state, WindowsDisplaySessionState)
+			assert isinstance(session.windows_protocol, WindowsDisplaySessionProtocol)
+		if is_linux():
+			assert isinstance(session.linux_session_type, LinuxDisplaySessionType)
+			assert isinstance(session.linux_session_class, LinuxDisplaySessionClass)
+			if session.linux_session_type == LinuxDisplaySessionType.X11:
+				assert session.linux_display
+			elif session.linux_session_type == LinuxDisplaySessionType.WAYLAND:
+				assert session.linux_wayland_display
 
 		if one_session_per_user:
 			assert session.user not in users

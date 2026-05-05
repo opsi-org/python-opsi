@@ -20,7 +20,7 @@ import pytest
 from opsi.process import Process, ProcessError, run_command, run_script, run_script_file
 from opsi.process._process import _get_interpreter_command, get_process_io_encoding
 from opsi.system.info import is_windows
-from opsi.system.session import DisplaySessionWindowsState, get_display_sessions
+from opsi.system.session import WindowsDisplaySessionState, get_display_sessions
 from opsi.testing.helper import environment
 from tests.file.conftest import PATH_TYPES
 
@@ -1073,7 +1073,7 @@ def test_run_script_file(tmp_path: Path, path_type) -> None:
 @pytest.mark.windows
 def test_run_process_in_session() -> None:
 	sessions = [
-		s for s in get_display_sessions() if s.windows_state in (DisplaySessionWindowsState.ACTIVE, DisplaySessionWindowsState.CONNECTED)
+		s for s in get_display_sessions() if s.windows_state in (WindowsDisplaySessionState.ACTIVE, WindowsDisplaySessionState.CONNECTED)
 	]
 	if not sessions:
 		raise RuntimeError(f"No active or connected display sessions found: {sessions}")
