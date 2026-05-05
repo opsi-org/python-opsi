@@ -3,7 +3,6 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-
 def get_system_uuid() -> str:
 	# Import wmi only when needed
 	# Import on module level can lead to problems during system startup
