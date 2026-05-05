@@ -28,11 +28,12 @@ def test_get_display_sessions(one_session_per_user: bool) -> None:
 	for session in sessions:
 		assert session.id
 		assert session.desktop
-		assert session.user
 
 		if is_windows():
 			assert isinstance(session.windows_state, WindowsDisplaySessionState)
 			assert isinstance(session.windows_protocol, WindowsDisplaySessionProtocol)
+			if not session.console:
+				assert session.user
 		if is_linux():
 			assert isinstance(session.linux_session_type, LinuxDisplaySessionType)
 			assert isinstance(session.linux_session_class, LinuxDisplaySessionClass)
@@ -40,6 +41,7 @@ def test_get_display_sessions(one_session_per_user: bool) -> None:
 				assert session.linux_display
 			elif session.linux_session_type == LinuxDisplaySessionType.WAYLAND:
 				assert session.linux_wayland_display
+			assert session.user
 
 		if one_session_per_user:
 			assert session.user not in users
@@ -54,8 +56,4 @@ def test_get_console_session() -> None:
 	assert session
 	assert session.id
 	assert session.desktop
-	assert session.user
-
-	if is_windows():
-		assert session.windows_state is not None
-		assert session.windows_protocol is not None
+	assert session.console

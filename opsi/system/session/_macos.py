@@ -9,10 +9,4 @@ from ._common import DisplaySession
 
 
 def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySession]:
-	return [DisplaySession(id="1", desktop="default", user=os.getenv("USER") or None)]
-
-
-def get_console_session() -> DisplaySession | None:
-	sessions = get_display_sessions(one_session_per_user=False)
-	assert len(sessions) == 1
-	return sessions[0]
+	return [DisplaySession(id="1", desktop="default", console=True, user=os.getenv("USER") or None)]

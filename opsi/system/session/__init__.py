@@ -15,13 +15,21 @@ from ._common import (
 )
 
 if is_linux():
-	from ._linux import get_console_session, get_display_sessions
+	from ._linux import get_display_sessions
 elif is_macos():
-	from ._macos import get_console_session, get_display_sessions
+	from ._macos import get_display_sessions
 elif is_windows():
-	from ._windows import get_console_session, get_display_sessions
+	from ._windows import get_display_sessions
 else:
 	raise OperatingSystemUnsupportedError(f"{get_system()} not supported")
+
+
+def get_console_session() -> DisplaySession | None:
+	for session in get_display_sessions(one_session_per_user=False):
+		if session.console:
+			return session
+	return None
+
 
 __all__ = [
 	"get_display_sessions",

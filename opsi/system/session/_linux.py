@@ -85,17 +85,16 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 			logger.debug(err)
 
 	sessions = list(sessions_by_id.values())
+	if sessions:
+		console_session = min(sessions, key=lambda x: x.id)
+		console_session.console = True
+
 	if one_session_per_user:
 		relevant_sessions: list[DisplaySession] = []
 		for user in {entry.user for entry in sessions}:
-			relevant_sessions.append(min([user_session for user_session in sessions if user_session.user == user], key=lambda x: x.id))
+			relevant_sessions.append(
+				min([user_session for user_session in sessions if user_session.user == user], key=lambda x: (0 if x.console else 1, x.id))
+			)
 		sessions = relevant_sessions
 
 	return sessions
-
-
-def get_console_session() -> DisplaySession | None:
-	sessions = get_display_sessions(one_session_per_user=False)
-	if not sessions:
-		return None
-	return min(sessions, key=lambda x: x.id)
