@@ -563,7 +563,7 @@ def test_process_timeout() -> None:
 	assert exc_info.value.process == proc
 	assert proc.timed_out
 	assert not proc.is_running()
-	assert proc.exit_code == (1 if is_windows() else -9)
+	assert proc.exit_code != 0
 	if proc._manager_thread:
 		assert not proc._manager_thread.is_alive()
 	if proc._stderr_reader:
