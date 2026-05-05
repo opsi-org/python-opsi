@@ -495,7 +495,7 @@ def test_process_stop() -> None:
 		pid = proc.pid
 		assert pid is not None
 		time.sleep(2)
-		proc.stop()
+		assert not proc.stop()
 
 	assert not proc.is_running()
 	assert proc.runtime < 5
@@ -517,8 +517,41 @@ def test_process_stop() -> None:
 		assert not proc._stdout_reader.is_alive()
 	with Process(command=command) as proc:
 		time.sleep(1)
-		proc.stop()
+		assert not proc.stop()
 		assert not proc.is_running()
+
+
+def test_process_stop_wait_before_stop() -> None:
+	proc = Process(script="import time; time.sleep(1)", interpreter=sys.executable)
+	with proc:
+		start = time.time()
+		assert not proc.stop(wait_before_stop=5)
+		assert 1 < time.time() - start < 5
+
+	assert proc.exit_code == 0
+	assert proc.runtime < 5
+
+	proc = Process(script="import time; time.sleep(5)", interpreter=sys.executable)
+	with proc:
+		start = time.time()
+		assert not proc.stop(wait_before_stop=2)
+		assert 2 < time.time() - start < 5
+
+	assert proc.exit_code != 0
+	assert proc.runtime > 2
+
+
+def test_process_stop_wait_after_stop() -> None:
+	with patch("opsi.process._process.Process._stop") as mock_stop:
+		proc = Process(script="import time; time.sleep(4)", interpreter=sys.executable)
+		with proc:
+			start = time.time()
+			assert proc.stop(wait_after_stop=2)  # Still running
+			assert 2 < time.time() - start < 3
+			mock_stop.assert_called_once()
+
+			assert not proc.exit_code
+			assert proc.is_running()
 
 
 def test_process_timeout() -> None:

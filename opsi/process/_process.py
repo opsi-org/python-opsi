@@ -10,6 +10,7 @@ import locale
 import os
 import re
 import shlex
+import signal
 import subprocess
 import sys
 import time
@@ -415,6 +416,7 @@ class Process:
 		self._proc: Popen | None = None
 		self._attempts = 0
 		self._should_stop = False
+		self._wait_after_stop: float | int | None = 5
 		self._started = Event()
 		self._ended = Event()
 		self._data_lock = Lock()
@@ -813,12 +815,42 @@ class Process:
 
 	def _stop(self) -> None:
 		"""
-		Stop the process by killing it if it is still running.
+		Stop the process by sending a signal if it is still running.
 		"""
+		print("Stopping process...")
 		self._close_stdin()
-		if self._proc and not self._exit_code:
-			self._proc.kill()
-			self._exit_code = self._proc.wait(timeout=3)
+		if self._proc and self._exit_code is None:
+			signals = [(signal.SIGTERM, 0.75), (signal.SIGKILL, 0.25)] if os.name != "nt" else [(signal.SIGTERM, 1.0)]
+			# On Windows, SIGTERM is an alias for terminate() which calls TerminateProcess() to stop the child.
+			for idx, (signum, wait_fraction) in enumerate(signals):
+				signame = signal.Signals(signum).name
+				wait = None
+				if self._wait_after_stop is None:
+					if idx < len(signals) - 1:
+						wait = 5
+				else:
+					wait = self._wait_after_stop * wait_fraction
+
+				logger.info(
+					"Sending signal %s to process with PID %d and waiting %s for process to end",
+					signame,
+					self._pid,
+					f"{wait} seconds" if wait else "indefinitely",
+				)
+				self._proc.send_signal(signum)
+				try:
+					self._exit_code = self._proc.wait(timeout=wait)
+					break
+				except subprocess.TimeoutExpired:
+					logger.info(
+						"Process %r with PID %d did not stop within %r seconds after sending signal %s",
+						self.get_command(),
+						self._pid,
+						wait,
+						signame,
+					)
+			if self._exit_code is None:
+				logger.warning("Failed to stop process with PID %d", self._pid)
 
 	def __enter__(self) -> Self:
 		"""
@@ -928,14 +960,24 @@ class Process:
 		:param wait: Time to wait for the process to end before checking, in seconds.
 		:return: True if the process is still running, False if it has ended.
 		"""
-		return not self._ended.wait(timeout=wait)
+		self._ended.wait(timeout=wait)
+		return bool(self._proc and self._proc.poll() is None)
 
-	def stop(self) -> None:
+	def stop(self, *, wait_before_stop: float | int | None = None, wait_after_stop: float | int | None = 5) -> bool:
 		"""
-		Stop the process by killing it if it is still running.
+		Stop the process by sending a signal if it is still running.
+		:param wait_before_stop: Time to wait for the process to end before sending a stop signal, in seconds. If None, stop immediately.
+		:param wait_after_stop: Time to wait after sending the stop signal, in seconds.
+		:return: True if the process is still running, False if it has ended.
 		"""
+		if wait_before_stop is not None and self.wait(timeout=wait_before_stop):
+			return False
+
+		self._wait_after_stop = wait_after_stop
 		self._should_stop = True
-		self.wait()
+		# Wait a little longer than wait_after_stop to ensure _should_stop is fully processed
+		self.wait(timeout=None if wait_after_stop is None else wait_after_stop + 0.5)
+		return self.is_running(wait=0)
 
 	def wait(self, *, timeout: float | int | None = None) -> bool:
 		"""
