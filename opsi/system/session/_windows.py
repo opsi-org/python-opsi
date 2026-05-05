@@ -23,7 +23,7 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 	server = win32ts.WTS_CURRENT_SERVER_HANDLE
 	sessions: list[DisplaySession] = []
 	for session in win32ts.WTSEnumerateSessions(server):
-		session_id = str(session["SessionId"])
+		session_id = session["SessionId"]
 
 		windows_state = None
 		try:
@@ -46,7 +46,7 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 
 		sessions.append(
 			DisplaySession(
-				id=session_id,
+				id=str(session_id),
 				desktop=str(win32ts.WTSQuerySessionInformation(server, session_id, win32ts.WTSWorkingDirectory)).lower() or "default",
 				user=session_user or "",
 				windows_state=windows_state,
