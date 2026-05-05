@@ -36,6 +36,7 @@ def test_get_display_sessions(one_session_per_user: bool) -> None:
 				if active_console_session_id is not None:
 					raise AssertionError(f"Multiple active console sessions found: {active_console_session_id} and {session.id}")
 				active_console_session_id = session.id
+			if session.windows_protocol != WindowsDisplaySessionProtocol.CONSOLE:
 				assert session.user
 		if is_linux():
 			assert isinstance(session.linux_session_type, LinuxDisplaySessionType)

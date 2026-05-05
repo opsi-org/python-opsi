@@ -49,13 +49,11 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 			)
 		)
 
-	if sessions:
-		console_sessions = [session for session in sessions if session.windows_protocol == WindowsDisplaySessionProtocol.CONSOLE]
-		if console_sessions:
-			console_session = min(
-				console_sessions, key=lambda x: (0 if x.windows_state == WindowsDisplaySessionState.ACTIVE else 1, int(x.id))
-			)
-			console_session.is_current_console_session = True
+	console_sessions = [s for s in sessions if s.windows_protocol == WindowsDisplaySessionProtocol.CONSOLE]
+	if console_sessions:
+		min(
+			console_sessions, key=lambda x: (0 if x.windows_state == WindowsDisplaySessionState.ACTIVE else 1, int(x.id))
+		).is_current_console_session = True
 
 	if one_session_per_user:
 		# Prefer active sessions over inactive ones, and if there are multiple active sessions for a user, prefer the one with the lowest session ID.
