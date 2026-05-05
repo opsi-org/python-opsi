@@ -39,11 +39,7 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 			logger.warning("Invalid session protocol %r for session %r", windows_protocol, session_id)
 			continue
 
-		session_user = win32ts.WTSQuerySessionInformation(server, session_id, win32ts.WTSUserName)
-		if not session_user:
-			logger.debug("Session %r has no user, skipping", session_id)
-			continue
-
+		session_user = win32ts.WTSQuerySessionInformation(server, session_id, win32ts.WTSUserName) or None
 		sessions.append(
 			DisplaySession(
 				id=str(session_id),

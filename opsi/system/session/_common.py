@@ -133,7 +133,7 @@ class LinuxDisplaySessionClass(StrEnum):
 class DisplaySession:
 	id: str
 	desktop: str
-	user: str
+	user: str | None = None
 	windows_state: WindowsDisplaySessionState | None = None
 	windows_protocol: WindowsDisplaySessionProtocol | None = None
 	linux_session_type: LinuxDisplaySessionType | None = None
