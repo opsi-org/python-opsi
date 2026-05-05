@@ -2,7 +2,6 @@
 # Copyright (c) 2020-2026 uib GmbH <info@uib.de>
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
-
 import os
 import shutil
 import sys
@@ -1098,6 +1097,8 @@ def test_run_process_in_session_windows() -> None:
 					"COMMON_VAR": "common_session",
 					"PATH": "/session/path",
 					"LD_PRELOAD": "/session/preload",
+					"HOME": "/home/test",
+					"USER": "test",
 				},
 			),
 			{
@@ -1105,12 +1106,16 @@ def test_run_process_in_session_windows() -> None:
 				"XAUTHORITY": "/tmp/xauthority",
 				"COMMON_VAR": "common_original",
 				"PATH": "/original/path",
+				"HOME": "/home/test",
+				"USER": "test",
 			},
 			{
 				"DISPLAY": ":0",
 				"XAUTHORITY": "/tmp/xauthority",
 				"COMMON_VAR": "common_session",
 				"PATH": "/original/path",
+				"HOME": "/home/test",
+				"USER": "test",
 			},
 		),
 		(
@@ -1125,6 +1130,8 @@ def test_run_process_in_session_windows() -> None:
 					"COMMON_VAR": "common_session",
 					"NEW_VAR": "session_value",
 					"PATH": "/session/path",
+					"HOME": "/home/test",
+					"USER": "test",
 				},
 			),
 			{
@@ -1133,6 +1140,8 @@ def test_run_process_in_session_windows() -> None:
 				"DISPLAY": ":0",
 				"COMMON_VAR": "common_original",
 				"PATH": "/original/path",
+				"HOME": "/home/test",
+				"USER": "test",
 			},
 			{
 				"WAYLAND_DISPLAY": "wayland-0",
@@ -1141,6 +1150,8 @@ def test_run_process_in_session_windows() -> None:
 				"COMMON_VAR": "common_session",
 				"NEW_VAR": "session_value",
 				"PATH": "/original/path",
+				"HOME": "/home/test",
+				"USER": "test",
 			},
 		),
 	],
@@ -1148,10 +1159,9 @@ def test_run_process_in_session_windows() -> None:
 def test_prepare_sudo_in_session(session: DisplaySession, expected_env: dict, expected_full_env: dict) -> None:
 	from opsi.process._linux import prepare_sudo_in_session
 
+	orig_env = {"COMMON_VAR": "common_original", "PATH": "/original/path", "HOME": "/root", "USER": "root"}
 	with patch("opsi.process._linux.get_display_sessions", lambda: [session]):
-		command, env, user = prepare_sudo_in_session(
-			session.id, ["echo", "test"], {"COMMON_VAR": "common_original", "PATH": "/original/path"}, full_user_env=False
-		)
+		command, env, user = prepare_sudo_in_session(session.id, ["echo", "test"], orig_env, full_user_env=False)
 		assert command == ["sudo", "-n", "-u", session.user] + sorted([f"{key}={value}" for key, value in expected_env.items()]) + [
 			"--",
 			"echo",
@@ -1159,9 +1169,7 @@ def test_prepare_sudo_in_session(session: DisplaySession, expected_env: dict, ex
 		]
 		assert env == expected_env
 
-		command, env, user = prepare_sudo_in_session(
-			session.id, ["echo", "test"], {"COMMON_VAR": "common_original", "PATH": "/original/path"}, full_user_env=True
-		)
+		command, env, user = prepare_sudo_in_session(session.id, ["echo", "test"], orig_env, full_user_env=True)
 		assert command == ["sudo", "-n", "-u", session.user] + sorted([f"{key}={value}" for key, value in expected_full_env.items()]) + [
 			"--",
 			"echo",
@@ -1198,7 +1206,9 @@ def test_run_script_in_session_linux() -> None:
 	session_env = session.environment
 	if "DISPLAY" in session_env:
 		assert env.get("DISPLAY") == session_env["DISPLAY"]
+
 	assert env.get("USER") == session.user
+	assert session.user in env.get("HOME", "")
 	assert env.get("SUDO_USER") == getuser()
 
 
@@ -1211,7 +1221,7 @@ def test_run_process_in_session_linux() -> None:
 	if not shutil.which("xrandr"):
 		pytest.skip("xrandr not found, required for testing running process in session")
 
-	proc = run_command(command=["xrandr"], session_id=sessions[0].id)
+	proc = run_command(command=["gnome-text-editor"], session_id=sessions[0].id)
 	print(proc.get_output_text())
 
 

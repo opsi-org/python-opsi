@@ -24,11 +24,10 @@ def prepare_sudo_in_session(
 	if not session.user:
 		raise RuntimeError(f"Session {session_id!r} has no user")
 
-	if full_user_env:
-		for key, value in session.environment.items():
-			key = key.upper()
-			if key not in ("PATH", "LD_PRELOAD"):
-				env[key] = value
+	for key in list(session.environment) if full_user_env else ["HOME", "USER", "LANG"]:
+		val = session.environment.get(key)
+		if key not in ("PATH", "LD_PRELOAD") and val is not None:
+			env[key] = val
 
 	if session.linux_session_type == LinuxDisplaySessionType.X11:
 		assert session.environment.get("DISPLAY") and session.environment.get("XAUTHORITY")
