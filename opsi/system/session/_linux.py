@@ -2,7 +2,6 @@
 # Copyright (c) 2020-2026 uib GmbH <info@uib.de>
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
-from pathlib import Path
 
 import psutil
 
@@ -70,14 +69,7 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 					continue
 
 			display_session = DisplaySession(
-				id=session_id,
-				user=user,
-				linux_session_type=linux_session_type,
-				linux_session_class=session_class,
-				linux_display=display,
-				linux_wayland_display=wayland_display,
-				linux_xauthority=Path(xauthority) if xauthority else None,
-				linux_xdg_runtime_dir=Path(xdg_runtime_dir) if xdg_runtime_dir else None,
+				id=session_id, user=user, environment=env, linux_session_type=linux_session_type, linux_session_class=session_class
 			)
 			sessions_by_id[session_id] = display_session
 		except (psutil.AccessDenied, psutil.NoSuchProcess) as err:

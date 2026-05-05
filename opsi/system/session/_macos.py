@@ -3,10 +3,16 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-import os
+import psutil
 
 from ._common import DisplaySession
 
 
 def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySession]:
-	return [DisplaySession(id="1", is_current_console_session=True, user=os.getenv("USER") or None)]
+	for proc in psutil.process_iter():
+		try:
+			if proc.name() == "loginwindow":
+				return [DisplaySession(id="1", is_current_console_session=True, user=proc.username(), environment=proc.environ())]
+		except (psutil.AccessDenied, psutil.NoSuchProcess):
+			pass
+	return [DisplaySession(id="1", is_current_console_session=True, user="root" or None)]

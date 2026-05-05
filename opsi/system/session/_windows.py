@@ -40,6 +40,7 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 			continue
 
 		session_user = win32ts.WTSQuerySessionInformation(server, session_id, win32ts.WTSUserName) or None
+		# TODO: Get environment if needed
 		sessions.append(
 			DisplaySession(
 				id=str(session_id),

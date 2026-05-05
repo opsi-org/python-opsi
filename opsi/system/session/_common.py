@@ -5,9 +5,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
-from pathlib import Path
 
 from opsi.system.info import is_windows
 
@@ -134,11 +133,8 @@ class DisplaySession:
 	id: str
 	is_current_console_session: bool = False
 	user: str | None = None
+	environment: dict[str, str] = field(default_factory=dict)
 	windows_state: WindowsDisplaySessionState | None = None
 	windows_protocol: WindowsDisplaySessionProtocol | None = None
 	linux_session_type: LinuxDisplaySessionType | None = None
 	linux_session_class: LinuxDisplaySessionClass | None = None
-	linux_display: str | None = None
-	linux_wayland_display: str | None = None
-	linux_xauthority: Path | None = None
-	linux_xdg_runtime_dir: Path | None = None

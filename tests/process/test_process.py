@@ -4,10 +4,12 @@
 # License: AGPL-3.0-only
 
 import os
+import shutil
 import sys
 import time
 from collections.abc import Mapping
 from contextlib import nullcontext
+from getpass import getuser
 from pathlib import Path
 from subprocess import list2cmdline
 from types import ModuleType
@@ -18,9 +20,10 @@ import psutil
 import pytest
 
 from opsi.process import Process, ProcessError, run_command, run_script, run_script_file
+from opsi.process._linux import prepare_sudo_in_session
 from opsi.process._process import _get_interpreter_command, get_process_io_encoding
 from opsi.system.info import is_windows
-from opsi.system.session import WindowsDisplaySessionState, get_display_sessions
+from opsi.system.session import DisplaySession, LinuxDisplaySessionType, WindowsDisplaySessionState, get_display_sessions
 from opsi.testing.helper import environment
 from tests.file.conftest import PATH_TYPES
 
@@ -1071,7 +1074,7 @@ def test_run_script_file(tmp_path: Path, path_type) -> None:
 
 
 @pytest.mark.windows
-def test_run_process_in_session() -> None:
+def test_run_process_in_session_windows() -> None:
 	sessions = [
 		s for s in get_display_sessions() if s.windows_state in (WindowsDisplaySessionState.ACTIVE, WindowsDisplaySessionState.CONNECTED)
 	]
@@ -1081,7 +1084,134 @@ def test_run_process_in_session() -> None:
 	run_script(script="set", session_id=sessions[0].id)
 
 
-@pytest.mark.posix
-def test_run_process_in_session_non_windows() -> None:
-	with pytest.raises(ProcessError, match="Parameter 'session_id' is only supported on Windows"):
+@pytest.mark.linux
+@pytest.mark.parametrize(
+	"session, expected_env, expected_full_env",
+	[
+		(
+			DisplaySession(
+				id=":0",
+				user="test",
+				linux_session_type=LinuxDisplaySessionType.X11,
+				environment={
+					"DISPLAY": ":0",
+					"XAUTHORITY": "/tmp/xauthority",
+					"COMMON_VAR": "common_session",
+					"PATH": "/session/path",
+					"LD_PRELOAD": "/session/preload",
+				},
+			),
+			{
+				"DISPLAY": ":0",
+				"XAUTHORITY": "/tmp/xauthority",
+				"COMMON_VAR": "common_original",
+				"PATH": "/original/path",
+			},
+			{
+				"DISPLAY": ":0",
+				"XAUTHORITY": "/tmp/xauthority",
+				"COMMON_VAR": "common_session",
+				"PATH": "/original/path",
+			},
+		),
+		(
+			DisplaySession(
+				id="wayland-0",
+				user="test",
+				linux_session_type=LinuxDisplaySessionType.WAYLAND,
+				environment={
+					"WAYLAND_DISPLAY": "wayland-0",
+					"XDG_RUNTIME_DIR": "/tmp/xdg_runtime_dir",
+					"DISPLAY": ":0",
+					"COMMON_VAR": "common_session",
+					"NEW_VAR": "session_value",
+					"PATH": "/session/path",
+				},
+			),
+			{
+				"WAYLAND_DISPLAY": "wayland-0",
+				"XDG_RUNTIME_DIR": "/tmp/xdg_runtime_dir",
+				"DISPLAY": ":0",
+				"COMMON_VAR": "common_original",
+				"PATH": "/original/path",
+			},
+			{
+				"WAYLAND_DISPLAY": "wayland-0",
+				"XDG_RUNTIME_DIR": "/tmp/xdg_runtime_dir",
+				"DISPLAY": ":0",
+				"COMMON_VAR": "common_session",
+				"NEW_VAR": "session_value",
+				"PATH": "/original/path",
+			},
+		),
+	],
+)
+def test_prepare_sudo_in_session(session: DisplaySession, expected_env: dict, expected_full_env: dict) -> None:
+	with patch("opsi.process._linux.get_display_sessions", lambda: [session]):
+		command, env, user = prepare_sudo_in_session(
+			session.id, ["echo", "test"], {"COMMON_VAR": "common_original", "PATH": "/original/path"}, full_user_env=False
+		)
+		assert command == ["sudo", "-n", "-u", session.user] + sorted([f"{key}={value}" for key, value in expected_env.items()]) + [
+			"--",
+			"echo",
+			"test",
+		]
+		assert env == expected_env
+
+		command, env, user = prepare_sudo_in_session(
+			session.id, ["echo", "test"], {"COMMON_VAR": "common_original", "PATH": "/original/path"}, full_user_env=True
+		)
+		assert command == ["sudo", "-n", "-u", session.user] + sorted([f"{key}={value}" for key, value in expected_full_env.items()]) + [
+			"--",
+			"echo",
+			"test",
+		]
+		assert env == expected_full_env
+
+
+def test_prepare_sudo_in_session_error() -> None:
+	session = DisplaySession(id=":0", user="test")
+	with patch("opsi.process._linux.get_display_sessions", lambda: [session]):
+		with pytest.raises(RuntimeError, match="Session ':3' not found"):
+			prepare_sudo_in_session(":3", ["echo", "test"], {})
+
+
+@pytest.mark.linux
+@pytest.mark.admin_permissions
+def test_run_script_in_session_linux() -> None:
+	sessions = [s for s in get_display_sessions() if s.user and s.user != "root"]
+	if not sessions:
+		pytest.skip("No display sessions found, might be running in a headless Linux environment")
+
+	proc = run_script(script="env", session_id=sessions[0].id)
+	env = {}
+	for line in proc.get_output_lines():
+		if "=" in line:
+			key, value = line.split("=", 1)
+			env[key] = value
+
+	session = sessions[0]
+	session_env = session.environment
+	if "DISPLAY" in session_env:
+		assert env.get("DISPLAY") == session_env["DISPLAY"]
+	assert env.get("USER") == session.user
+	assert env.get("SUDO_USER") == getuser()
+
+
+@pytest.mark.linux
+@pytest.mark.admin_permissions
+def test_run_process_in_session_linux() -> None:
+	sessions = [s for s in get_display_sessions() if s.user and s.user != "root"]
+	if not sessions:
+		pytest.skip("No display sessions found, might be running in a headless Linux environment")
+	if not shutil.which("xrandr"):
+		pytest.skip("xrandr not found, required for testing running process in session")
+
+	proc = run_command(command=["xrandr"], session_id=sessions[0].id)
+	print(proc.get_output_text())
+
+
+@pytest.mark.macos
+def test_run_process_in_session_macos() -> None:
+	with pytest.raises(ProcessError, match="Parameter 'session_id' is only supported on Windows and Linux"):
 		Process(command=["sleep", "1"], session_id="1")

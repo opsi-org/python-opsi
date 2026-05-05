@@ -42,9 +42,11 @@ def test_get_display_sessions(one_session_per_user: bool) -> None:
 			assert isinstance(session.linux_session_type, LinuxDisplaySessionType)
 			assert isinstance(session.linux_session_class, LinuxDisplaySessionClass)
 			if session.linux_session_type == LinuxDisplaySessionType.X11:
-				assert session.linux_display
+				assert session.environment["DISPLAY"]
+				assert session.environment["XAUTHORITY"]
 			elif session.linux_session_type == LinuxDisplaySessionType.WAYLAND:
-				assert session.linux_wayland_display
+				assert session.environment["WAYLAND_DISPLAY"]
+				assert session.environment["XDG_RUNTIME_DIR"]
 			assert session.user
 
 		if one_session_per_user:

@@ -10,12 +10,14 @@ import locale
 import os
 import re
 import shlex
+import shutil
 import signal
 import subprocess
 import sys
 import time
 from contextlib import contextmanager
 from functools import lru_cache
+from getpass import getuser
 from pathlib import Path
 from shutil import which
 from subprocess import DEVNULL, PIPE, STDOUT, Popen, list2cmdline
@@ -26,7 +28,7 @@ from typing import Collection, Literal, Mapping, Self, cast
 from opsi.logging import LOG_TRACE, get_logger, is_log_level_enabled
 from opsi.retry import Retry, RetryConfig, get_retry_config
 from opsi.system.file.temp import TempFile
-from opsi.system.info import is_posix, is_windows
+from opsi.system.info import is_linux, is_posix, is_windows
 
 LD_LIBRARY_EXCLUDE_LIST = ["/usr/lib/opsiclientd", "/usr/lib/opsiconfd", "/usr/lib/opsi-agent"]
 
@@ -405,7 +407,6 @@ class Process:
 		self._session_id: str | None = None
 		self._session_desktop: str | None = None
 		self._session_elevated: bool = False
-
 		self._capture_output = capture_output
 		self._discard_output = discard_output
 		self._encoding = encoding or "utf-8"
@@ -439,17 +440,23 @@ class Process:
 				raise ProcessError("'interpreter' can only be used with 'script', not with 'command'", process=self)
 
 		if session_id is not None:
-			if not is_windows():
-				raise ProcessError("Parameter 'session_id' is only supported on Windows", process=self)
+			if not is_windows() and not is_linux():
+				raise ProcessError("Parameter 'session_id' is only supported on Windows and Linux", process=self)
 			self._session_id = str(session_id)
+
 			if session_desktop:
+				if not is_windows():
+					raise ProcessError("Parameter 'session_desktop' is only supported on Windows", process=self)
 				session_desktop = str(session_desktop)
 				if r"\\" not in session_desktop:
 					session_desktop = f"WinSta0\\{session_desktop}"
 				if session_desktop.split("\\")[-1].lower() not in ("default", "winlogon", "screensaver"):
 					raise ValueError(f"Invalid desktop '{session_desktop}'")
 				self._session_desktop = session_desktop
+
 			self._session_elevated = bool(session_elevated)
+			if self._session_elevated and not is_windows():
+				raise ProcessError("Parameter 'session_elevated' is only supported on Windows", process=self)
 		else:
 			if session_desktop is not None:
 				raise ProcessError("Parameter 'session_desktop' requires 'session_id' to be set", process=self)
@@ -683,7 +690,7 @@ class Process:
 		Run a single attempt to execute the process.
 		"""
 		self._reset_state()
-		logger.debug("Running process attempt %d: %r", self._attempts, self._command)
+		logger.debug("Running process attempt %d", self._attempts)
 
 		env = get_subprocess_environment(self._environment)
 		startupinfo = None
@@ -710,8 +717,18 @@ class Process:
 				env["_opsi_process_session_elevated"] = str(int(bool(self._session_elevated)))
 				if self._session_desktop:
 					env["_opsi_process_session_desktop"] = str(self._session_desktop)
-		elif self._detach:
-			start_new_session = True
+		else:
+			if self._detach:
+				start_new_session = True
+			if is_linux() and self._session_id is not None:
+				from opsi.process._linux import prepare_sudo_in_session
+
+				command, _env, user = prepare_sudo_in_session(self._session_id, self._command, env, full_user_env=False)
+				if self._attempts == 1:
+					self._command = command
+					if self._temp_script_file:
+						if user != getuser():
+							shutil.chown(self._temp_script_file.path, user=user)
 
 		self._start_time = time.monotonic()
 
