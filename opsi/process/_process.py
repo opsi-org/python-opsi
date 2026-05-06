@@ -193,7 +193,7 @@ def _get_interpreter_command(
 	*,
 	script_file: str | os.PathLike[str] | TempFile = "-",
 	arguments: list[str] | None = None,
-	hide_window: bool = True,
+	hide_window: bool = False,
 ) -> list[str]:
 	script_file = (
 		str(script_file.path) if isinstance(script_file, TempFile) else os.fspath(script_file)
@@ -316,7 +316,7 @@ class Process:
 		encoding: str | None = None,
 		exit_on_error: bool = False,
 		success_exit_codes: Collection[int] | None = (0,),
-		hide_window: bool = True,
+		hide_window: bool = False,
 		detach: bool = False,
 		session_id: str | None = None,
 		session_desktop: str | None = None,
@@ -1231,7 +1231,7 @@ def run_command(
 	discard_output: DiscardOutput = "none",
 	encoding: str | None = None,
 	success_exit_codes: Collection[int] | None = (0,),
-	hide_window: bool = True,
+	hide_window: bool = False,
 	detach: bool = False,
 	session_id: str | None = None,
 	session_desktop: str | None = None,
