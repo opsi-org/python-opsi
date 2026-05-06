@@ -28,22 +28,21 @@ from tests.file.conftest import PATH_TYPES
 
 
 @pytest.mark.parametrize(
-	"interpreter, script_file, arguments, expected_command",
+	"interpreter, script_file, arguments, hide_window, expected_command",
 	[
-		("cmd", Path("script_file.bat"), ["arg1", "arg2"], ["script_file.bat", "arg1", "arg2"]),
-		("cmd", "script_file.cmd", [], ["script_file.cmd"]),
-		("cmd", "-", None, ["cmd.exe", "/q", "/d", "/k", "@echo off"]),
+		("cmd", Path("script_file.bat"), ["arg1", "arg2"], False, ["script_file.bat", "arg1", "arg2"]),
+		("cmd", "script_file.cmd", [], True, ["script_file.cmd"]),
+		("cmd", "-", None, False, ["cmd.exe", "/q", "/d", "/k", "@echo off"]),
 		(
 			"powershell",
 			Path("script_file.ps1"),
 			["arg1", "arg2"],
+			False,
 			[
 				"powershell.exe",
 				"-NoLogo",
 				"-NonInteractive",
 				"-NoProfile",
-				"-WindowStyle",
-				"Hidden",
 				"-ExecutionPolicy",
 				"Bypass",
 				"-File",
@@ -56,6 +55,7 @@ from tests.file.conftest import PATH_TYPES
 			"powershell",
 			"-",
 			None,
+			True,
 			[
 				"powershell.exe",
 				"-NoLogo",
@@ -72,9 +72,9 @@ from tests.file.conftest import PATH_TYPES
 	]
 	if is_windows()
 	else [
-		("bash", Path("script_file"), ["arg1", "arg2"], ["bash", "script_file", "arg1", "arg2"]),
-		("bash", "-", None, ["bash", "-s", "--"]),
-		("bash", "-", ["arg 1", "arg 2"], ["bash", "-s", "--", "arg 1", "arg 2"]),
+		("bash", Path("script_file"), ["arg1", "arg2"], False, ["bash", "script_file", "arg1", "arg2"]),
+		("bash", "-", None, False, ["bash", "-s", "--"]),
+		("bash", "-", ["arg 1", "arg 2"], False, ["bash", "-s", "--", "arg 1", "arg 2"]),
 	],
 )
 @pytest.mark.parametrize("path_type", PATH_TYPES)
@@ -82,10 +82,13 @@ def test_get_interpreter_command(
 	interpreter: Literal["cmd", "powershell", "bash"],
 	script_file: Path | str,
 	arguments: list[str] | None,
+	hide_window: bool,
 	expected_command: list[str],
 	path_type,
 ) -> None:
-	command = _get_interpreter_command(interpreter=interpreter, script_file=path_type(str(script_file)), arguments=arguments)
+	command = _get_interpreter_command(
+		interpreter=interpreter, script_file=path_type(str(script_file)), arguments=arguments, hide_window=hide_window
+	)
 	command[0] = os.path.basename(command[0])
 	assert command == expected_command
 
