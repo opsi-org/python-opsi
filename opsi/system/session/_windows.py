@@ -19,6 +19,21 @@ from ._common import DisplaySession, WindowsDisplaySessionProtocol, WindowsDispl
 logger = get_logger("opsi")
 
 
+def _one_session_per_user(sessions: list[DisplaySession]) -> list[DisplaySession]:
+	# Prefer active sessions over inactive ones, and if there are multiple active sessions for a user, prefer the one with the lowest session ID.
+	relevant_sessions: list[DisplaySession] = []
+	for user in {entry.user for entry in sessions}:
+		user_sessions = [s for s in sessions if s.user == user]
+		if user:
+			relevant_sessions.append(
+				min(user_sessions, key=lambda s: (0 if s.windows_state == WindowsDisplaySessionState.ACTIVE else 1, int(s.id)))
+			)
+		else:
+			relevant_sessions.extend(user_sessions)
+
+	return relevant_sessions
+
+
 def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool = True) -> list[DisplaySession]:
 	server = win32ts.WTS_CURRENT_SERVER_HANDLE
 	sessions: list[DisplaySession] = []
@@ -39,7 +54,8 @@ def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool
 			logger.warning("Invalid session protocol %r for session %r", windows_protocol, session_id)
 			continue
 
-		is_usable = windows_state in (
+		# Session ID 0 is the "services" session
+		is_usable = session_id > 0 and windows_state in (
 			WindowsDisplaySessionState.ACTIVE,
 			WindowsDisplaySessionState.CONNECTED,
 			WindowsDisplaySessionState.DISCONNECTED,
@@ -59,22 +75,13 @@ def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool
 			)
 		)
 
-	console_sessions = [s for s in sessions if s.windows_protocol == WindowsDisplaySessionProtocol.CONSOLE]
+	console_sessions = [s for s in sessions if s.windows_protocol == WindowsDisplaySessionProtocol.CONSOLE and s.is_usable]
 	if console_sessions:
 		min(
 			console_sessions, key=lambda x: (0 if x.windows_state == WindowsDisplaySessionState.ACTIVE else 1, int(x.id))
 		).is_current_console_session = True
 
 	if one_session_per_user:
-		# Prefer active sessions over inactive ones, and if there are multiple active sessions for a user, prefer the one with the lowest session ID.
-		relevant_sessions: list[DisplaySession] = []
-		for user in {entry.user for entry in sessions}:
-			relevant_sessions.append(
-				min(
-					[user_session for user_session in sessions if user_session.user == user],
-					key=lambda x: (0 if x.windows_state == WindowsDisplaySessionState.ACTIVE else 1, int(x.id)),
-				)
-			)
-		sessions = relevant_sessions
+		sessions = _one_session_per_user(sessions)
 
 	return sessions

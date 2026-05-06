@@ -12,6 +12,18 @@ from ._common import DisplaySession, LinuxDisplaySessionClass, LinuxDisplaySessi
 logger = get_logger("opsi")
 
 
+def _one_session_per_user(sessions: list[DisplaySession]) -> list[DisplaySession]:
+	relevant_sessions: list[DisplaySession] = []
+	for user in {entry.user for entry in sessions}:
+		user_sessions = [s for s in sessions if s.user == user]
+		if user:
+			relevant_sessions.append(min(user_sessions, key=lambda x: (0 if x.is_current_console_session else 1, x.id)))
+		else:
+			relevant_sessions.extend(user_sessions)
+
+	return relevant_sessions
+
+
 def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool = True) -> list[DisplaySession]:
 	sessions_by_id: dict[str, DisplaySession] = {}
 	for proc in psutil.process_iter():
@@ -86,14 +98,6 @@ def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool
 		console_session.is_current_console_session = True
 
 	if one_session_per_user:
-		relevant_sessions: list[DisplaySession] = []
-		for user in {entry.user for entry in sessions}:
-			relevant_sessions.append(
-				min(
-					[user_session for user_session in sessions if user_session.user == user],
-					key=lambda x: (0 if x.is_current_console_session else 1, x.id),
-				)
-			)
-		sessions = relevant_sessions
+		sessions = _one_session_per_user(sessions)
 
 	return sessions
