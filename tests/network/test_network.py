@@ -43,10 +43,12 @@ def test_ip_address_in_network_ipv4_mapped_ipv6(address: IPv6Address, network: I
 	"hostname, expected_address",
 	[
 		("localhost", IPv4Address("127.0.0.1")),
-		("ip6-localhost", IPv6Address("::1")),
 		("::1", IPv6Address("::1")),
 		("127.0.0.1", IPv4Address("127.0.0.1")),
-	],
+	]
+	+ [("ip6-localhost", IPv6Address("::1"))]
+	if is_linux()
+	else [],
 )
 def test_resolve_hostname(hostname: str, expected_address: IPv4Address | IPv6Address) -> None:
 	ip_addresses = resolve_hostname(hostname)
