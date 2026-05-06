@@ -159,6 +159,7 @@ class DisplaySession:
 	is_current_console_session: Whether this session is the current console session.
 	is_usable: Whether the session is usable for running applications.
 	user: The user associated with the session, or None if no user is associated.
+	domain: The domain of the user associated with the session, or None if no domain is associated or applicable.
 	environment: The environment variables associated with the session.
 	windows_state: The Windows display session state, or None if not applicable.
 	windows_protocol: The Windows display session protocol, or None if not applicable.
@@ -170,6 +171,7 @@ class DisplaySession:
 	is_current_console_session: bool = False
 	is_usable: bool = True
 	user: str | None = None
+	domain: str | None = None
 	environment: dict[str, str] = field(default_factory=dict)
 	windows_state: WindowsDisplaySessionState | None = None
 	windows_protocol: WindowsDisplaySessionProtocol | None = None

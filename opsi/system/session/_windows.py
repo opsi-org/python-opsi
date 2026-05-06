@@ -64,12 +64,14 @@ def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool
 			continue
 
 		session_user = win32ts.WTSQuerySessionInformation(server, session_id, win32ts.WTSUserName) or None
+		session_domain = win32ts.WTSQuerySessionInformation(server, session_id, win32ts.WTSDomainName) or None
 		# TODO: Get environment if needed
 		sessions.append(
 			DisplaySession(
 				id=str(session_id),
 				is_usable=is_usable,
 				user=session_user,
+				domain=session_domain,
 				windows_state=windows_state,
 				windows_protocol=windows_protocol,
 			)
