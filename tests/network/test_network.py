@@ -8,6 +8,7 @@ from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 import pytest
 
 from opsi.network import ip_address_in_network, ping, resolve_hostname
+from opsi.system.info import is_linux
 
 
 @pytest.mark.parametrize(
@@ -61,10 +62,14 @@ def test_resolve_hostname(hostname: str, expected_address: IPv4Address | IPv6Add
 		("localhost", True),
 		("192.0.2.1", False),
 		("::1", True),
-		("ip6-localhost", True),
 		(IPv6Address("::1"), True),
 		("2001:db8::1", False),
-	],
+	]
+	+ [
+		("ip6-localhost", True),
+	]
+	if is_linux()
+	else [],
 )
 def test_ping(destination: str | IPv4Address | IPv6Address, reachable: bool) -> None:
 	ping_result = ping(destination, count=1, timeout=2.0)
