@@ -120,7 +120,8 @@ def CreateProcess(
 		__current_directory,
 		startup_info,
 	)
-	return (process_handle.Detach(), thread_handle.Detach(), process_id, thread_id)
+	# TODO: Call Detach() on the handles?
+	return (process_handle, thread_handle, process_id, thread_id)
 
 
 def patch_create_process() -> None:
