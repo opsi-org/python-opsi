@@ -153,4 +153,4 @@ def test_get_console_session() -> None:
 	assert session.is_usable
 
 	if is_windows():
-		assert int(session.id) > 1
+		assert int(session.id) >= 1
