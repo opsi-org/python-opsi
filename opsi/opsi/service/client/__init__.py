@@ -4,6 +4,7 @@
 # License: AGPL-3.0-only
 
 from opsi.opsi.service.client._service_client import (
+	DAVFileInfo,
 	Messagebus,
 	MessagebusListener,
 	Response,
@@ -16,6 +17,7 @@ from opsi.opsi.service.client._service_client import (
 )
 
 __all__ = [
+	"DAVFileInfo",
 	"Messagebus",
 	"MessagebusListener",
 	"Response",
