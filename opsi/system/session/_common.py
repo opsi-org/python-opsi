@@ -12,6 +12,26 @@ from opsi.system.info import is_windows
 
 
 class WindowsDisplaySessionState(StrEnum):
+	"""Windows display session states.
+
+	ACTIVE: A user is logged on to the WinStation.
+		This state occurs when a user is signed in and actively connected to the device.
+	CONNECTED: The WinStation is connected to the client.
+	CONNECT_QUERY: The WinStation is in the process of connecting to the client.
+	SHADOW: The WinStation is shadowing another WinStation.
+	DISCONNECTED: The WinStation is active but the client is disconnected.
+		This state occurs when a user is signed in but not actively connected to the device,
+		such as when the user has chosen to exit to the lock screen.
+	IDLE: The WinStation is waiting for a client to connect.
+	LISTEN: The WinStation is listening for a connection.
+		A listener session waits for requests for new client connections.
+		No user is logged on a listener session.
+		A listener session cannot be reset, shadowed, or changed to a regular client session.
+	RESET: The WinStation is being reset.
+	DOWN: The WinStation is down due to an error.
+	INIT: The WinStation is initializing.
+	"""
+
 	ACTIVE = "active"
 	CONNECTED = "connected"
 	CONNECT_QUERY = "connect_query"
@@ -87,30 +107,30 @@ class LinuxDisplaySessionType(StrEnum):
 class LinuxDisplaySessionClass(StrEnum):
 	"""Display session Linux class types.
 
-	user: A regular interactive user session. This is the default class for sessions
+	USER: A regular interactive user session. This is the default class for sessions
 		for which a TTY or X display is known at session registration time.
-	user-early: Similar to user but sessions of this class are not ordered after
+	USER_EARLY: Similar to USER but sessions of this class are not ordered after
 		systemd-user-sessions.service(8), i.e. may be started before regular sessions
 		are allowed to be established. (Added in v256.)
-	user-light: Similar to user, but sessions of this class will not pull in the
+	USER_LIGHT: Similar to USER, but sessions of this class will not pull in the
 		user@.service(5) of the user. (Added in v258.)
-	user-early-light: Similar to user-early, but sessions of this class will not
+	USER_EARLY_LIGHT: Similar to USER_EARLY, but sessions of this class will not
 		pull in the user@.service(5) of the user. (Added in v258.)
-	user-incomplete: Similar to user but for sessions which are not fully set up yet.
+	USER_INCOMPLETE: Similar to USER but for sessions which are not fully set up yet.
 		Used by systemd-homed.service(8) to allow users to log in via ssh(1) before
 		their home directory is mounted.
-	greeter: Similar to user but for sessions spawned by a display manager ephemerally
+	GREETER: Similar to USER but for sessions spawned by a display manager ephemerally
 		which prompt the user for login credentials.
-	lock-screen: Similar to user but for sessions spawned by a display manager
+	LOCK_SCREEN: Similar to USER but for sessions spawned by a display manager
 		ephemerally which show a lock screen.
-	background: Used for background sessions, such as those invoked by cron(8).
+	BACKGROUND: Used for background sessions, such as those invoked by cron(8).
 		This is the default class for sessions with no TTY or X display.
-	background-light: Similar to background, but sessions of this class will not
+	BACKGROUND_LIGHT: Similar to BACKGROUND, but sessions of this class will not
 		pull in the user@.service(5) of the user. (Added in v256.)
-	manager: The user@.service(5) service of the user is registered under this
+	MANAGER: The user@.service(5) service of the user is registered under this
 		session class. (Added in v256.)
-	manager-early: Similar to manager, but for the root user. (Added in v256.)
-	none: Skips registering this session with systemd-logind. No session scope will
+	MANAGER_EARLY: Similar to MANAGER, but for the root user. (Added in v256.)
+	NONE: Skips registering this session with systemd-logind. No session scope will
 		be created. (Added in v258.)
 	"""
 
@@ -130,8 +150,25 @@ class LinuxDisplaySessionClass(StrEnum):
 
 @dataclass(kw_only=True)
 class DisplaySession:
+	"""
+	Represents a display session on the system.
+
+	Parameters:
+	id: The session ID. On Windows, this is the session ID returned by WTSEnumerateSessions.
+		On Linux, this is the value of the DISPLAY or WAYLAND_DISPLAY environment variable.
+	is_current_console_session: Whether this session is the current console session.
+	is_usable: Whether the session is usable for running applications.
+	user: The user associated with the session, or None if no user is associated.
+	environment: The environment variables associated with the session.
+	windows_state: The Windows display session state, or None if not applicable.
+	windows_protocol: The Windows display session protocol, or None if not applicable.
+	linux_session_type: The Linux display session type, or None if not applicable.
+	linux_session_class: The Linux display session class, or None if not applicable.
+	"""
+
 	id: str
 	is_current_console_session: bool = False
+	is_usable: bool = True
 	user: str | None = None
 	environment: dict[str, str] = field(default_factory=dict)
 	windows_state: WindowsDisplaySessionState | None = None

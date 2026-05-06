@@ -12,7 +12,7 @@ from ._common import DisplaySession, LinuxDisplaySessionClass, LinuxDisplaySessi
 logger = get_logger("opsi")
 
 
-def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySession]:
+def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool = True) -> list[DisplaySession]:
 	sessions_by_id: dict[str, DisplaySession] = {}
 	for proc in psutil.process_iter():
 		try:
@@ -69,7 +69,12 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 					continue
 
 			display_session = DisplaySession(
-				id=session_id, user=user, environment=env, linux_session_type=linux_session_type, linux_session_class=session_class
+				id=session_id,
+				is_usable=True,
+				user=user,
+				environment=env,
+				linux_session_type=linux_session_type,
+				linux_session_class=session_class,
 			)
 			sessions_by_id[session_id] = display_session
 		except (psutil.AccessDenied, psutil.NoSuchProcess) as err:

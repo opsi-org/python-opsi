@@ -19,7 +19,7 @@ from ._common import DisplaySession, WindowsDisplaySessionProtocol, WindowsDispl
 logger = get_logger("opsi")
 
 
-def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySession]:
+def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool = True) -> list[DisplaySession]:
 	server = win32ts.WTS_CURRENT_SERVER_HANDLE
 	sessions: list[DisplaySession] = []
 	for session in win32ts.WTSEnumerateSessions(server):
@@ -39,11 +39,20 @@ def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySe
 			logger.warning("Invalid session protocol %r for session %r", windows_protocol, session_id)
 			continue
 
+		is_usable = windows_state in (
+			WindowsDisplaySessionState.ACTIVE,
+			WindowsDisplaySessionState.CONNECTED,
+			WindowsDisplaySessionState.DISCONNECTED,
+		)
+		if only_usable and not is_usable:
+			continue
+
 		session_user = win32ts.WTSQuerySessionInformation(server, session_id, win32ts.WTSUserName) or None
 		# TODO: Get environment if needed
 		sessions.append(
 			DisplaySession(
 				id=str(session_id),
+				is_usable=is_usable,
 				user=session_user,
 				windows_state=windows_state,
 				windows_protocol=windows_protocol,

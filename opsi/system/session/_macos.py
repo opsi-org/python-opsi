@@ -8,11 +8,15 @@ import psutil
 from ._common import DisplaySession
 
 
-def get_display_sessions(*, one_session_per_user: bool = True) -> list[DisplaySession]:
+def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool = True) -> list[DisplaySession]:
 	for proc in psutil.process_iter():
 		try:
 			if proc.name() == "loginwindow":
-				return [DisplaySession(id="1", is_current_console_session=True, user=proc.username(), environment=proc.environ())]
+				return [
+					DisplaySession(
+						id="1", is_current_console_session=True, is_usable=True, user=proc.username(), environment=proc.environ()
+					)
+				]
 		except (psutil.AccessDenied, psutil.NoSuchProcess):
 			pass
-	return [DisplaySession(id="1", is_current_console_session=True, user="root" or None)]
+	return [DisplaySession(id="1", is_current_console_session=True, is_usable=True, user="root" or None)]

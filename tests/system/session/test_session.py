@@ -66,3 +66,4 @@ def test_get_console_session() -> None:
 	assert session
 	assert session.id
 	assert session.is_current_console_session
+	assert session.is_usable
