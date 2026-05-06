@@ -779,7 +779,7 @@ class Process:
 				start_new_session=start_new_session,
 			)
 		self._pid = self._proc.pid
-		logger.info("Started process %r with PID %d (attempt %d)", self.get_command(), self._pid, self._attempts)
+		logger.info("Started process %r with PID %d on attempt %d", self.get_command(), self._pid, self._attempts)
 		assert self._proc
 		try:
 			logger.debug("Starting stdout reader thread")
@@ -804,6 +804,7 @@ class Process:
 
 			while True:
 				if self._should_stop:
+					logger.debug("Stop requested, stopping process")
 					self._stop()
 					return
 
@@ -819,6 +820,7 @@ class Process:
 					elapsed_time = time.monotonic() - self._start_time
 					if elapsed_time >= self._timeout:
 						self.timed_out = True
+						logger.debug("Process timed out after %.2f seconds, stopping process", elapsed_time)
 						self._stop()
 						raise TimeoutError(f"Process timed out after {elapsed_time:.2f} seconds")
 				time.sleep(0.1)
@@ -902,6 +904,7 @@ class Process:
 
 		:return: The Process instance.
 		"""
+		logger.debug("Starting process")
 		self._start_manager()
 		self._started.wait(self._start_wait_timeout)
 		return self
@@ -986,6 +989,7 @@ class Process:
 		:param wait_after_stop: Time to wait after sending the stop signal, in seconds.
 		:return: True if the process is still running, False if it has ended.
 		"""
+		logger.info("Stopping process with PID %r, wait_before_stop: %r, wait_after_stop: %r", self._pid, wait_before_stop, wait_after_stop)
 		if wait_before_stop is not None and self.wait(timeout=wait_before_stop):
 			return False
 
