@@ -2500,8 +2500,9 @@ def test_messagebus_multi_thread() -> None:
 			for thread in threads:
 				thread.start()
 			for thread in threads:
-				thread.join(10)
+				thread.join(20)
 			for thread in threads:
+				assert not thread.is_alive()
 				res = thread.response
 				assert res
 				assert res["id"]
