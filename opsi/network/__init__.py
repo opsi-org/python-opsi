@@ -3,8 +3,8 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from opsi.network._network import ip_address_in_network
+from opsi.network._network import ip_address_in_network, ipv6_available
 from opsi.network._ping import ping
 from opsi.network._resolve import resolve_hostname
 
-__all__ = ["ip_address_in_network", "ping", "resolve_hostname"]
+__all__ = ["ip_address_in_network", "ipv6_available", "ping", "resolve_hostname"]

@@ -5,7 +5,29 @@
 
 from __future__ import annotations
 
+import socket
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network, ip_address, ip_network
+
+
+def ipv6_available() -> bool:
+	"""
+	Check whether IPv6 is available on the local system.
+
+	Returns
+	-------
+	bool
+		True if IPv6 is available, False otherwise.
+	"""
+	if not socket.has_ipv6:
+		return False
+
+	try:
+		with socket.socket(socket.AF_INET6, socket.SOCK_DGRAM) as ipv6_socket:
+			ipv6_socket.bind(("::1", 0))
+	except OSError:
+		return False
+
+	return True
 
 
 def ip_address_in_network(address: str | IPv4Address | IPv6Address, network: str | IPv4Network | IPv6Network) -> bool:

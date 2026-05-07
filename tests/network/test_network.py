@@ -4,11 +4,26 @@
 # License: AGPL-3.0-only
 
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
+from typing import Any
 
 import pytest
 
-from opsi.network import ip_address_in_network, ping, resolve_hostname
+from opsi.network import _network, ip_address_in_network, ipv6_available, ping, resolve_hostname
 from opsi.system.info import is_linux
+
+
+class MockSocket:
+	def __init__(self) -> None:
+		self.bound_address: tuple[str, int] | None = None
+
+	def __enter__(self) -> "MockSocket":
+		return self
+
+	def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+		return None
+
+	def bind(self, address: tuple[str, int]) -> None:
+		self.bound_address = address
 
 
 @pytest.mark.parametrize(
@@ -39,6 +54,42 @@ def test_ip_address_in_network_ipv4_mapped_ipv6(address: IPv6Address, network: I
 	assert ip_address_in_network(address, network) == expected
 
 
+def test_ipv6_available_returns_true_if_loopback_socket_can_be_bound(monkeypatch: pytest.MonkeyPatch) -> None:
+	mock_socket = MockSocket()
+
+	def socket_factory(family: int, sock_type: int) -> MockSocket:
+		assert family == _network.socket.AF_INET6
+		assert sock_type == _network.socket.SOCK_DGRAM
+		return mock_socket
+
+	monkeypatch.setattr(_network.socket, "has_ipv6", True)
+	monkeypatch.setattr(_network.socket, "socket", socket_factory)
+
+	assert ipv6_available() is True
+	assert mock_socket.bound_address == ("::1", 0)
+
+
+def test_ipv6_available_returns_false_if_python_has_no_ipv6_support(monkeypatch: pytest.MonkeyPatch) -> None:
+	def socket_factory(family: int, sock_type: int) -> MockSocket:
+		raise AssertionError("socket must not be created if IPv6 support is disabled")
+
+	monkeypatch.setattr(_network.socket, "has_ipv6", False)
+	monkeypatch.setattr(_network.socket, "socket", socket_factory)
+
+	assert ipv6_available() is False
+
+
+def test_ipv6_available_returns_false_if_loopback_socket_cannot_be_bound(monkeypatch: pytest.MonkeyPatch) -> None:
+	class FailingSocket(MockSocket):
+		def bind(self, address: tuple[str, int]) -> None:
+			raise OSError("IPv6 is unavailable")
+
+	monkeypatch.setattr(_network.socket, "has_ipv6", True)
+	monkeypatch.setattr(_network.socket, "socket", lambda family, sock_type: FailingSocket())
+
+	assert ipv6_available() is False
+
+
 @pytest.mark.parametrize(
 	"hostname, expected_address",
 	[
@@ -63,14 +114,18 @@ def test_resolve_hostname(hostname: str, expected_address: IPv4Address | IPv6Add
 		(IPv4Address("127.0.0.1"), True),
 		("localhost", True),
 		("192.0.2.1", False),
+	]
+	+ [
 		("::1", True),
 		(IPv6Address("::1"), True),
 		("2001:db8::1", False),
 	]
+	if ipv6_available()
+	else []
 	+ [
 		("ip6-localhost", True),
 	]
-	if is_linux()
+	if is_linux() and ipv6_available()
 	else [],
 )
 def test_ping(destination: str | IPv4Address | IPv6Address, reachable: bool) -> None:
