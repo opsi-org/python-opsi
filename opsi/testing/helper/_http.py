@@ -367,12 +367,21 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 			with open(path, "wb") as file:
 				file.write(self.rfile.read(length))
 			self.send_response(201, "Created")
+			self.send_header("Content-Length", "0")
 			self.end_headers()
 		elif self.server.response_status:
+			length = int(self.headers.get("Content-Length", "0"))
+			if length:
+				self.rfile.read(length)
 			self.send_response(self.server.response_status[0], self.server.response_status[1])
+			self.send_header("Content-Length", "0")
 			self.end_headers()
 		else:
+			length = int(self.headers.get("Content-Length", "0"))
+			if length:
+				self.rfile.read(length)
 			self.send_response(500, "Not implemented")
+			self.send_header("Content-Length", "0")
 			self.end_headers()
 
 	def do_MKCOL(self) -> None:
