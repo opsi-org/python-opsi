@@ -334,15 +334,15 @@ class RepoMetaPackageCollection:
 	def write_metafile(self, path: Path) -> None:
 		encoding = "json"
 		compression: str | None = None
-		if ".messagepack" in path.suffixes:
-			encoding = "messagepack"
+		if ".msgpack" in path.suffixes:
+			encoding = "msgpack"
 		if ".zstd" in path.suffixes:
 			compression = "zstd"
 
 		logger.notice("Writing package metafile to %s (encoding=%s, compression=%s)", path, encoding, compression)
 
 		data = asdict(self)
-		bdata = msgpack_encode(data) if encoding == "messagepack" else json_encode(data)
+		bdata = msgpack_encode(data) if encoding == "msgpack" else json_encode(data)
 		if compression:
 			if compression != "zstd":
 				raise ValueError(f"Invalid compression: {compression}")
