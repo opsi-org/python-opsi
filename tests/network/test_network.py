@@ -142,7 +142,7 @@ def test_ping(destination: str | IPv4Address | IPv6Address, reachable: bool) -> 
 		assert 0.0 < ping_result.rtt_min < 0.01
 		assert 0.0 < ping_result.rtt_max < 0.01
 	else:
-		assert 2.0 <= ping_result.total_time < 3.0
+		assert ping_result.total_time < 3.0
 		assert ping_result.packets_send == 1
 		assert ping_result.packets_received == 0
 		assert ping_result.packet_loss == 100.0

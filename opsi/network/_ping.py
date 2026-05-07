@@ -253,7 +253,11 @@ def send_one_ping(raw_socket: socket.socket, target: PingTarget, identifier: int
 	logger.trace("Sending ping to %s with identifier %d", target.address, identifier)
 	source_address = None
 	if isinstance(target.address, IPv6Address):
-		raw_socket.connect(target.socket_address)
+		try:
+			raw_socket.connect(target.socket_address)
+		except OSError as error:
+			if error.errno != errno.EISCONN:
+				raise
 		source_address = ip_address(raw_socket.getsockname()[0])
 
 	packet = create_echo_request(
@@ -263,6 +267,10 @@ def send_one_ping(raw_socket: socket.socket, target: PingTarget, identifier: int
 		source_address=source_address if isinstance(source_address, IPv6Address) else None,
 		destination_address=target.address if isinstance(target.address, IPv6Address) else None,
 	)
+	if target.family == socket.AF_INET6:
+		raw_socket.send(packet)
+		return
+
 	raw_socket.sendto(packet, target.socket_address)
 
 
