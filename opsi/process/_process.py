@@ -385,7 +385,7 @@ class Process:
 		:param session_desktop:
 			If specified (Windows only), the process will be started with the given desktop (e.g. "WinSta0\\Default").
 		:param session_elevated:
-			If True and session_id is specified (Windows only), the process will be started elevated in the given session.
+			If True and session_id is specified, the process will be started elevated in the given session.
 		:param retry_config:
 			Configuration for automatic retry behavior on failure.
 			If None, uses the default retry configuration for process execution.
@@ -455,8 +455,8 @@ class Process:
 				self._session_desktop = session_desktop
 
 			self._session_elevated = bool(session_elevated)
-			if self._session_elevated and not is_windows():
-				raise ProcessError("Parameter 'session_elevated' is only supported on Windows", process=self)
+			if self._session_elevated and not (is_windows() or is_linux()):
+				raise ProcessError("Parameter 'session_elevated' is only supported on Windows and Linux", process=self)
 		else:
 			if session_desktop is not None:
 				raise ProcessError("Parameter 'session_desktop' requires 'session_id' to be set", process=self)
@@ -721,14 +721,23 @@ class Process:
 			if self._detach:
 				start_new_session = True
 			if is_linux() and self._session_id is not None:
-				from opsi.process._linux import prepare_sudo_in_session
+				from opsi.process._linux import prepare_run_in_session
 
-				command, _env, user = prepare_sudo_in_session(self._session_id, self._command, env, full_user_env=False)
+				if self._session_elevated and os.geteuid() != 0:
+					raise ProcessError("Cannot start elevated process in session on Linux when not running as root", process=self)
+
+				command, env, user = prepare_run_in_session(
+					session_id=self._session_id,
+					command=self._command,
+					env=env,
+					as_session_user=not self._session_elevated,
+					full_user_env=False,
+				)
 				if self._attempts == 1:
 					self._command = command
 					if self._temp_script_file:
 						if user != getuser():
-							shutil.chown(self._temp_script_file.path, user=user)
+							self._temp_script_file.path.chmod(0o755)
 
 		self._start_time = time.monotonic()
 

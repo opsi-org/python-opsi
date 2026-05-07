@@ -2,6 +2,7 @@
 # Copyright (c) 2020-2026 uib GmbH <info@uib.de>
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
+from cmath import e
 
 import os
 import shutil
@@ -1092,108 +1093,151 @@ def test_run_process_in_session_windows() -> None:
 
 @pytest.mark.linux
 @pytest.mark.parametrize(
-	"session, expected_env, expected_full_env",
+	"command, env, session, as_session_user, full_user_env, expected_command, expected_env",
 	[
 		(
+			["command", "arg1"],
+			{"COMMON_VAR": "common_original", "HOME": "/root", "PATH": "/original/path", "USER": "root"},
 			DisplaySession(
 				id=":0",
 				user="test",
 				linux_session_type=LinuxDisplaySessionType.X11,
 				environment={
-					"DISPLAY": ":0",
-					"XAUTHORITY": "/tmp/xauthority",
 					"COMMON_VAR": "common_session",
-					"PATH": "/session/path",
-					"LD_PRELOAD": "/session/preload",
+					"DISPLAY": ":0",
 					"HOME": "/home/test",
+					"LD_PRELOAD": "/session/preload",
+					"PATH": "/session/path",
 					"USER": "test",
+					"XAUTHORITY": "/tmp/xauthority",
 				},
 			),
+			True, # as_session_user
+			True, # full_user_env
+			[
+				"sudo",
+				"-n",
+				"-u",
+				"test",
+				"COMMON_VAR=common_session",
+				"DISPLAY=:0",
+				"HOME=/home/test",
+				"PATH=/original/path",
+				"USER=test",
+				"XAUTHORITY=/tmp/xauthority",
+				"--",
+				"command",
+				"arg1",
+			],
 			{
-				"DISPLAY": ":0",
-				"XAUTHORITY": "/tmp/xauthority",
-				"COMMON_VAR": "common_original",
-				"PATH": "/original/path",
-				"HOME": "/home/test",
-				"USER": "test",
-			},
-			{
-				"DISPLAY": ":0",
-				"XAUTHORITY": "/tmp/xauthority",
 				"COMMON_VAR": "common_session",
-				"PATH": "/original/path",
+				"DISPLAY": ":0",
 				"HOME": "/home/test",
+				"PATH": "/original/path",
 				"USER": "test",
+				"XAUTHORITY": "/tmp/xauthority",
 			},
 		),
 		(
+			["command", "arg1"],
+			{"COMMON_VAR": "common_original", "HOME": "/root", "PATH": "/original/path", "USER": "root"},
 			DisplaySession(
 				id="wayland-0",
 				user="test",
 				linux_session_type=LinuxDisplaySessionType.WAYLAND,
 				environment={
-					"WAYLAND_DISPLAY": "wayland-0",
-					"XDG_RUNTIME_DIR": "/tmp/xdg_runtime_dir",
-					"DISPLAY": ":0",
 					"COMMON_VAR": "common_session",
+					"DISPLAY": ":0",
+					"HOME": "/home/test",
 					"NEW_VAR": "session_value",
 					"PATH": "/session/path",
-					"HOME": "/home/test",
 					"USER": "test",
+					"WAYLAND_DISPLAY": "wayland-0",
+					"XDG_RUNTIME_DIR": "/tmp/xdg_runtime_dir",
 				},
 			),
+			True, # as_session_user
+			False, # full_user_env
+			[
+				"sudo",
+				"-n",
+				"-u",
+				"test",
+				"COMMON_VAR=common_original",
+				"DISPLAY=:0",
+				"HOME=/home/test",
+				"PATH=/original/path",
+				"USER=test",
+				"WAYLAND_DISPLAY=wayland-0",
+				"XDG_RUNTIME_DIR=/tmp/xdg_runtime_dir",
+				"--",
+				"command",
+				"arg1",
+			],
 			{
-				"WAYLAND_DISPLAY": "wayland-0",
-				"XDG_RUNTIME_DIR": "/tmp/xdg_runtime_dir",
-				"DISPLAY": ":0",
 				"COMMON_VAR": "common_original",
-				"PATH": "/original/path",
+				"DISPLAY": ":0",
 				"HOME": "/home/test",
+				"PATH": "/original/path",
 				"USER": "test",
-			},
-			{
 				"WAYLAND_DISPLAY": "wayland-0",
 				"XDG_RUNTIME_DIR": "/tmp/xdg_runtime_dir",
+			}
+		),
+		(
+			["command", "arg1"],
+			{"COMMON_VAR": "common_original", "HOME": "/root", "PATH": "/original/path", "USER": "root"},
+			DisplaySession(
+				id="wayland-0",
+				user="test",
+				linux_session_type=LinuxDisplaySessionType.WAYLAND,
+				environment={
+					"COMMON_VAR": "common_session",
+					"DISPLAY": ":0",
+					"HOME": "/home/test",
+					"NEW_VAR": "session_value",
+					"PATH": "/session/path",
+					"USER": "test",
+					"WAYLAND_DISPLAY": "wayland-0",
+					"XDG_RUNTIME_DIR": "/tmp/xdg_runtime_dir",
+				},
+			),
+			False, # as_session_user
+			False, # full_user_env
+			["command", "arg1"],
+			{
+				"COMMON_VAR": "common_original",
 				"DISPLAY": ":0",
-				"COMMON_VAR": "common_session",
-				"NEW_VAR": "session_value",
+				"HOME": "/root",
 				"PATH": "/original/path",
-				"HOME": "/home/test",
-				"USER": "test",
-			},
+				"USER": "root",
+				"WAYLAND_DISPLAY": "wayland-0",
+				"XDG_RUNTIME_DIR": "/tmp/xdg_runtime_dir",
+			}
 		),
 	],
 )
-def test_prepare_sudo_in_session(session: DisplaySession, expected_env: dict, expected_full_env: dict) -> None:
-	from opsi.process._linux import prepare_sudo_in_session
+def test_prepare_run_in_session(
+	command: list[str], env: dict[str, str], session: DisplaySession, as_session_user: bool, full_user_env: bool, expected_command: list, expected_env: dict,
+) -> None:
+	from opsi.process._linux import prepare_run_in_session
 
-	orig_env = {"COMMON_VAR": "common_original", "PATH": "/original/path", "HOME": "/root", "USER": "root"}
 	with patch("opsi.process._linux.get_display_sessions", lambda: [session]):
-		command, env, user = prepare_sudo_in_session(session.id, ["echo", "test"], orig_env, full_user_env=False)
-		assert command == ["sudo", "-n", "-u", session.user] + sorted([f"{key}={value}" for key, value in expected_env.items()]) + [
-			"--",
-			"echo",
-			"test",
-		]
+		command, env, user = prepare_run_in_session(
+			session_id=session.id, command=command, env=env, as_session_user=as_session_user, full_user_env=full_user_env
+		)
+		assert command == expected_command
 		assert env == expected_env
-
-		command, env, user = prepare_sudo_in_session(session.id, ["echo", "test"], orig_env, full_user_env=True)
-		assert command == ["sudo", "-n", "-u", session.user] + sorted([f"{key}={value}" for key, value in expected_full_env.items()]) + [
-			"--",
-			"echo",
-			"test",
-		]
-		assert env == expected_full_env
 
 
 @pytest.mark.linux
-def test_prepare_sudo_in_session_error() -> None:
-	from opsi.process._linux import prepare_sudo_in_session
+def test_prepare_run_in_session_error() -> None:
+	from opsi.process._linux import prepare_run_in_session
 
 	session = DisplaySession(id=":0", user="test")
 	with patch("opsi.process._linux.get_display_sessions", lambda: [session]):
 		with pytest.raises(RuntimeError, match="Session ':3' not found"):
-			prepare_sudo_in_session(":3", ["echo", "test"], {})
+			prepare_run_in_session(session_id=":3", command=["echo", "test"], env={}, as_session_user=False, full_user_env=False)
 
 
 @pytest.mark.linux
