@@ -11,7 +11,7 @@ if sys.platform != "linux":
 	raise OperatingSystemUnsupportedError("This module is only supported on Linux")
 
 from getpass import getuser
-from opsi.system.session import LinuxDisplaySessionType, get_display_sessions
+from opsi.system.session import get_display_sessions
 
 
 def prepare_run_in_session(

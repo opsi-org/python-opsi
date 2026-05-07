@@ -2,7 +2,6 @@
 # Copyright (c) 2020-2026 uib GmbH <info@uib.de>
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
-from cmath import e
 
 import os
 import shutil
@@ -1112,8 +1111,8 @@ def test_run_process_in_session_windows() -> None:
 					"XAUTHORITY": "/tmp/xauthority",
 				},
 			),
-			True, # as_session_user
-			True, # full_user_env
+			True,  # as_session_user
+			True,  # full_user_env
 			[
 				"sudo",
 				"-n",
@@ -1156,8 +1155,8 @@ def test_run_process_in_session_windows() -> None:
 					"XDG_RUNTIME_DIR": "/tmp/xdg_runtime_dir",
 				},
 			),
-			True, # as_session_user
-			False, # full_user_env
+			True,  # as_session_user
+			False,  # full_user_env
 			[
 				"sudo",
 				"-n",
@@ -1182,7 +1181,7 @@ def test_run_process_in_session_windows() -> None:
 				"USER": "test",
 				"WAYLAND_DISPLAY": "wayland-0",
 				"XDG_RUNTIME_DIR": "/tmp/xdg_runtime_dir",
-			}
+			},
 		),
 		(
 			["command", "arg1"],
@@ -1202,8 +1201,8 @@ def test_run_process_in_session_windows() -> None:
 					"XDG_RUNTIME_DIR": "/tmp/xdg_runtime_dir",
 				},
 			),
-			False, # as_session_user
-			False, # full_user_env
+			False,  # as_session_user
+			False,  # full_user_env
 			["command", "arg1"],
 			{
 				"COMMON_VAR": "common_original",
@@ -1213,12 +1212,18 @@ def test_run_process_in_session_windows() -> None:
 				"USER": "root",
 				"WAYLAND_DISPLAY": "wayland-0",
 				"XDG_RUNTIME_DIR": "/tmp/xdg_runtime_dir",
-			}
+			},
 		),
 	],
 )
 def test_prepare_run_in_session(
-	command: list[str], env: dict[str, str], session: DisplaySession, as_session_user: bool, full_user_env: bool, expected_command: list, expected_env: dict,
+	command: list[str],
+	env: dict[str, str],
+	session: DisplaySession,
+	as_session_user: bool,
+	full_user_env: bool,
+	expected_command: list,
+	expected_env: dict,
 ) -> None:
 	from opsi.process._linux import prepare_run_in_session
 
