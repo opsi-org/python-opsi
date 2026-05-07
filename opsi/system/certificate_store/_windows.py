@@ -4,6 +4,7 @@
 # License: AGPL-3.0-only
 
 import ctypes
+import warnings
 from contextlib import contextmanager
 from typing import Any, Generator
 
@@ -11,6 +12,7 @@ import pywintypes  # type: ignore[import]
 import win32crypt  # type: ignore[import]
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.utils import CryptographyDeprecationWarning
 
 from opsi.logging import get_logger
 
@@ -103,16 +105,27 @@ def install_ca(ca_cert: x509.Certificate) -> None:
 		)
 
 
+def _load_der_x509_certificate(data: bytes) -> x509.Certificate | None:
+	try:
+		with warnings.catch_warnings():
+			warnings.filterwarnings(
+				"ignore",
+				message="Parsed a serial number which wasn't positive.*",
+				category=CryptographyDeprecationWarning,
+			)
+			return x509.load_der_x509_certificate(data=data)
+	except ValueError as err:
+		logger.warning("Failed to load certificate because of illegal values: %s", err)
+	return None
+
+
 def load_cas(subject_name: str) -> Generator[x509.Certificate, None, None]:
 	store_name = "Root"
 	logger.debug("Trying to find %s in certificate store", subject_name)
 	with _open_cert_store(store_name, force_close=False) as store:
 		for certificate in store.CertEnumCertificatesInStore():
-			# logger.trace("checking certificate %s", certificate.SerialNumber)	# ASN1 encoded integer
-			try:
-				ca_cert = x509.load_der_x509_certificate(data=certificate.CertEncoded)
-			except ValueError as err:
-				logger.warning("Failed to load certificate because of illegal values: %s", err)
+			ca_cert = _load_der_x509_certificate(data=certificate.CertEncoded)
+			if ca_cert is None:
 				continue
 			try:
 				common_name = ca_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value
@@ -142,7 +155,9 @@ def remove_ca(subject_name: str, sha1_fingerprint: str | None = None) -> bool:
 	removed = 0
 	with _open_cert_store(store_name, force_close=False) as store:
 		for certificate in store.CertEnumCertificatesInStore():
-			ca_cert = x509.load_der_x509_certificate(data=certificate.CertEncoded)
+			ca_cert = _load_der_x509_certificate(data=certificate.CertEncoded)
+			if ca_cert is None:
+				continue
 			try:
 				common_name = ca_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value
 			except IndexError:
