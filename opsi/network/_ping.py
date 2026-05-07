@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from ipaddress import IPv4Address, IPv6Address, ip_address
 from typing import TypeAlias
 
+from opsi.logging import get_logger
 from opsi.network._resolve import resolve_hostname
 
 ICMP_ECHO_REPLY = 0
@@ -24,6 +25,8 @@ PING_PAYLOAD_SIZE = 192
 
 IPAddress: TypeAlias = IPv4Address | IPv6Address
 SocketAddress: TypeAlias = tuple[str, int] | tuple[str, int, int, int]
+
+logger = get_logger("opsi")
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -208,6 +211,7 @@ def receive_one_ping(raw_socket: socket.socket, identifier: int, timeout: float,
 	float | None
 		The round-trip delay in seconds, or None if no matching reply was received before the timeout.
 	"""
+	logger.trace("Waiting for ping reply with identifier %d", identifier)
 	time_left = timeout
 	while time_left > 0:
 		select_started = time.perf_counter()
@@ -246,6 +250,7 @@ def send_one_ping(raw_socket: socket.socket, target: PingTarget, identifier: int
 	sequence : int, default: 1
 		The echo request sequence number.
 	"""
+	logger.trace("Sending ping to %s with identifier %d", target.address, identifier)
 	source_address = None
 	if isinstance(target.address, IPv6Address):
 		raw_socket.connect(target.socket_address)
@@ -295,8 +300,13 @@ def ping(destination: str | IPv4Address | IPv6Address, timeout: float = 2, count
 	try:
 		for idx in range(count):
 			identifier = int(time.time() * 100000) & 0xFFFF
-			send_one_ping(raw_socket, target, identifier)
-			rtt = receive_one_ping(raw_socket, identifier, timeout, target.family)
+			rtt = None
+			try:
+				send_one_ping(raw_socket, target, identifier)
+				rtt = receive_one_ping(raw_socket, identifier, timeout, target.family)
+			except Exception as exc:
+				logger.debug("Error sending or receiving ping: %s", exc)
+			logger.trace("Ping RTT: %s seconds", rtt)
 			if rtt is not None:
 				rtts.append(rtt)
 			if idx < count - 1:
