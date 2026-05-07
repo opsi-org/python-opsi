@@ -576,6 +576,10 @@ def test_process_timeout() -> None:
 	if proc._stdout_reader:
 		assert not proc._stdout_reader.is_alive()
 
+	for timeout in (None, -1, 0, -2):
+		proc = Process(command=command, timeout=timeout)
+		assert proc._timeout is None
+
 
 def test_process_stdin() -> None:
 	command = ["findstr" if is_windows() else "grep", "opsi"]

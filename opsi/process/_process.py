@@ -351,7 +351,7 @@ class Process:
 			Environment variables for the process. If None, inherits the current environment.
 		:param timeout:
 			Maximum execution time in seconds.
-			If exceeded, the process is killed and a TimeoutError is raised.
+			If exceeded, the process is killed and a ProcessError is raised.
 			If None, no timeout is enforced.
 		:param stdin:
 			Initial data to send to the process's standard input, as a string or bytes.
@@ -400,7 +400,7 @@ class Process:
 		self._script_file: Path | None = None
 		self._exit_on_error = bool(exit_on_error)
 		self._working_dir = Path(working_dir) if working_dir else None
-		self._timeout = timeout
+		self._timeout = float(timeout) if timeout is not None and timeout > 0 else None
 		self._hide_window = bool(hide_window)
 		self._detach = bool(detach)
 		self._environment: dict[str, str] | None = None
@@ -822,6 +822,8 @@ class Process:
 						self.timed_out = True
 						logger.debug("Process timed out after %.2f seconds, stopping process", elapsed_time)
 						self._stop()
+						# Raise a TimeoutError which can be handled separately from other ProcessErrors by the retry logic.
+						# _raise_exception() will raise a ProcessError from the original exception.
 						raise TimeoutError(f"Process timed out after {elapsed_time:.2f} seconds")
 				time.sleep(0.1)
 		finally:
@@ -883,13 +885,7 @@ class Process:
 		Exit the context, wait for the process to finish and raise any exceptions that occurred during execution.
 		"""
 		self.wait()
-		if self._exception:
-			if isinstance(self._exception, ProcessError):
-				raise self._exception
-			else:
-				raise ProcessError(
-					f"Failed to run process after {self._attempts} attempts: {self._exception}", process=self
-				) from self._exception
+		self._raise_exception()
 
 	def _start_manager(self) -> None:
 		"""
@@ -909,7 +905,7 @@ class Process:
 		self._started.wait(self._start_wait_timeout)
 		return self
 
-	def _raise_start_error(self) -> None:
+	def _raise_exception(self) -> None:
 		if not self._exception:
 			return
 		if isinstance(self._exception, ProcessError):
@@ -1264,7 +1260,7 @@ def run_command(
 			pass
 	else:
 		proc.start()
-		proc._raise_start_error()
+		proc._raise_exception()
 	return proc
 
 
@@ -1318,7 +1314,7 @@ def run_script(
 			pass
 	else:
 		proc.start()
-		proc._raise_start_error()
+		proc._raise_exception()
 	return proc
 
 
@@ -1372,5 +1368,5 @@ def run_script_file(
 			pass
 	else:
 		proc.start()
-		proc._raise_start_error()
+		proc._raise_exception()
 	return proc
