@@ -910,7 +910,7 @@ class Process:
 		return self
 
 	def _raise_start_error(self) -> None:
-		if not self._exception or self._pid is not None:
+		if not self._exception:
 			return
 		if isinstance(self._exception, ProcessError):
 			raise self._exception
