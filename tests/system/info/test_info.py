@@ -13,6 +13,7 @@ import pytest
 
 from opsi.system import info
 from opsi.system.info import (
+	OperatingSystemType,
 	get_system,
 	is_deb_based,
 	is_linux,
@@ -31,7 +32,8 @@ from opsi.system.info import (
 
 
 def test_get_system() -> None:
-	assert get_system() in ("linux", "windows", "macos")
+	assert get_system() in (OperatingSystemType.LINUX, OperatingSystemType.WINDOWS, OperatingSystemType.MACOS)
+	assert str(get_system()) in ("linux", "windows", "macos")
 
 
 def test_is_windows() -> None:

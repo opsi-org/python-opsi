@@ -3,7 +3,7 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from ._info import get_system, is_linux, is_macos, is_posix, is_unix, is_windows
+from ._info import get_system, is_linux, is_macos, is_posix, is_unix, is_windows, OperatingSystemType
 from ._linux import (
 	is_deb_based,
 	is_pacman_based,
@@ -32,4 +32,5 @@ __all__ = [
 	"linux_distro_id_like_contains",
 	"linux_distro_version",
 	"linux_distro_version_id",
+	"OperatingSystemType",
 ]

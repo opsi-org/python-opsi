@@ -4,31 +4,44 @@
 # License: AGPL-3.0-only
 
 import platform
+import enum
+from opsi.util.pattern import MappedStrEnum
+from opsi.exception import OperatingSystemUnsupportedError
 
-SYSTEM = platform.system().lower()
-if SYSTEM == "darwin":
-	SYSTEM = "macos"
+class OperatingSystemType(MappedStrEnum):
+	WINDOWS = "windows"
+	MACOS = "macos"
+	LINUX = "linux"
+
+	_NAME = enum.nonmember("operating system type")
+	_ALIASES = enum.nonmember({"darwin": "macos"})
 
 
-def get_system() -> str:
-	return SYSTEM
+try:
+	OPERATING_SYSTEM_TYPE = OperatingSystemType(platform.system())
+except ValueError:
+	raise OperatingSystemUnsupportedError(f"Unsupported operating system: {platform.system()}")
+
+
+def get_system() -> OperatingSystemType:
+	return OPERATING_SYSTEM_TYPE
 
 
 def is_linux() -> bool:
-	return SYSTEM == "linux"
+	return OPERATING_SYSTEM_TYPE == OperatingSystemType.LINUX
 
 
 def is_windows() -> bool:
-	return SYSTEM == "windows"
+	return OPERATING_SYSTEM_TYPE == OperatingSystemType.WINDOWS
 
 
 def is_macos() -> bool:
-	return SYSTEM == "macos"
+	return OPERATING_SYSTEM_TYPE == OperatingSystemType.MACOS
 
 
 def is_unix() -> bool:
-	return SYSTEM in ("linux", "macos")
+	return OPERATING_SYSTEM_TYPE in (OperatingSystemType.LINUX, OperatingSystemType.MACOS)
 
 
 def is_posix() -> bool:
-	return SYSTEM in ("linux", "macos")
+	return OPERATING_SYSTEM_TYPE in (OperatingSystemType.LINUX, OperatingSystemType.MACOS)
