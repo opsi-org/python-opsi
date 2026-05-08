@@ -5,11 +5,13 @@
 
 from contextlib import contextmanager
 from time import monotonic, sleep
-from typing import IO, BinaryIO, Generator, Literal, TextIO
+from typing import IO, BinaryIO, Generator, TextIO
 
 import pywintypes  # type: ignore[import]
 import win32con  # type: ignore[import]
 import win32file  # type: ignore[import]
+
+from opsi.system.file.lock._common import LockMethod
 
 
 def _lock_file(file: TextIO | BinaryIO | IO, exclusive: bool = False, timeout: float = 5.0) -> None:
@@ -33,7 +35,7 @@ def _unlock_file(file: TextIO | BinaryIO | IO) -> None:
 
 @contextmanager
 def lock_file(
-	file: TextIO | BinaryIO | IO, exclusive: bool = False, timeout: float = 5.0, lock_method: Literal["flock", "lockf"] | None = None
+	file: TextIO | BinaryIO | IO, exclusive: bool = False, timeout: float = 5.0, lock_method: LockMethod | None = None
 ) -> Generator[None, None, None]:
 	"""
 	An exclusive or write lock gives a process exclusive access for writing to the specified part of the file.

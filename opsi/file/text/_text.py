@@ -19,7 +19,7 @@ from typing import Literal, Self, get_args
 from opsi.exception import OperatingSystemUnsupportedError
 from opsi.logging import get_logger
 from opsi.logging._const import INFO
-from opsi.retry import Retry, RetryConfig, get_retry_config
+from opsi.retry import Retry, RetryConfig, get_retry_config, RetryConfigType
 from opsi.system.info import is_linux, is_windows
 
 if is_linux():
@@ -104,7 +104,7 @@ class TextFile:
 		self._line_index = 0
 		self._file_read = False
 		self._changed = False
-		self._retry_config = retry_config or get_retry_config("file_io")
+		self._retry_config = retry_config or get_retry_config(RetryConfigType.FILE_IO)
 
 		if encoding is not None:
 			self.set_encoding(encoding)

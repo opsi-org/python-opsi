@@ -4,30 +4,29 @@
 # License: AGPL-3.0-only
 
 import random
-from typing import Literal
 
 import pytest
 
-from opsi.compression import compress, decompress
+from opsi.compression import compress, decompress, Compression
 
 
 @pytest.mark.parametrize(
 	"compression",
-	("lz4", "deflate", "gz", "gzip", "zstd"),
+	("lz4", "deflate", "gz", "gzip", "zstd", Compression.LZ4, Compression.DEFLATE, Compression.GZIP, Compression.ZSTD),
 )
 @pytest.mark.parametrize(
 	"compression_level",
 	(1, 5, 9),
 )
-def test_compress_decompress(compression: Literal["lz4", "deflate", "gz", "gzip", "zstd"], compression_level: int) -> None:
+def test_compress_decompress(compression: str | Compression, compression_level: int) -> None:
 	data = random.randbytes(50_000)
 	comp_data = compress(data=data, compression=compression, compression_level=compression_level)
 	assert decompress(data=comp_data, compression=compression) == data
 
 
 def test_invalid_compression() -> None:
-	with pytest.raises(ValueError, match="Invalid compression 'invalid'"):
-		compress(data=b"data", compression="invalid")  # type: ignore
+	with pytest.raises(ValueError, match="Invalid value 'invalid' for compression, supported values are: 'deflate', 'gzip', 'lz4', 'zstd'"):
+		compress(data=b"data", compression="invalid")
 
-	with pytest.raises(ValueError, match="Invalid compression 'invalid'"):
-		decompress(data=b"data", compression="invalid")  # type: ignore
+	with pytest.raises(ValueError, match="Invalid value 'invalid' for compression, supported values are: 'deflate', 'gzip', 'lz4', 'zstd'"):
+		decompress(data=b"data", compression="invalid")

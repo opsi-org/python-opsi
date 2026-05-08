@@ -5,19 +5,34 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Literal, cast
+from typing import Callable
 
 from pyzsync import create_zsync_file
 
 from opsi.crypt.hash import compute_file_hash
 from opsi.logging import get_logger
+from opsi.util.pattern import MappedStrEnum
+import enum
 
 logger = get_logger("opsi")
 
 
+class PackageContentFileEntryType(MappedStrEnum):
+	DIRECTORY = "directory"
+	FILE = "file"
+	SYMLINK = "symlink"
+
+	_NAME = enum.nonmember("package content file entry type")
+	_ALIASES = enum.nonmember({"d": "directory", "f": "file", "l": "symlink"})
+
+	@property
+	def file_value(self) -> str:
+		return {"directory": "d", "file": "f", "symlink": "l"}[self.value]
+
+
 @dataclass
 class PackageContentFileEntry:
-	type: Literal["d", "f", "l"]
+	type: PackageContentFileEntryType
 	filename: str
 	size: int = 0
 	target: str | None = None
@@ -27,12 +42,12 @@ class PackageContentFileEntry:
 def create_package_content_file(base_dir: Path, *, links_as_links: bool = True) -> Path:
 	def handle_directory(path: Path) -> PackageContentFileEntry:
 		logger.trace("Processing '%s' as directory", path)
-		return PackageContentFileEntry(type="d", filename=path.relative_to(base_dir).as_posix())
+		return PackageContentFileEntry(type=PackageContentFileEntryType.DIRECTORY, filename=path.relative_to(base_dir).as_posix())
 
 	def handle_file(path: Path) -> PackageContentFileEntry:
 		logger.trace("Processing '%s' as file", path)
 		return PackageContentFileEntry(
-			type="f",
+			type=PackageContentFileEntryType.FILE,
 			filename=path.relative_to(base_dir).as_posix(),
 			size=path.stat().st_size,
 			md5sum=compute_file_hash(path, algorithm="md5"),
@@ -45,7 +60,9 @@ def create_package_content_file(base_dir: Path, *, links_as_links: bool = True) 
 			target_str = target.relative_to(base_dir).as_posix()
 		else:
 			target_str = "/" + target.relative_to(base_dir.parent).as_posix()
-		return PackageContentFileEntry(type="l", filename=path.relative_to(base_dir).as_posix(), target=target_str)
+		return PackageContentFileEntry(
+			type=PackageContentFileEntryType.SYMLINK, filename=path.relative_to(base_dir).as_posix(), target=target_str
+		)
 
 	package_content_file = base_dir / f"{base_dir.name}.files"
 	package_content_file.unlink(missing_ok=True)
@@ -68,7 +85,7 @@ def create_package_content_file(base_dir: Path, *, links_as_links: bool = True) 
 				elif entry.md5sum:
 					additional = f" {entry.md5sum}"
 
-				lines.append(f"{entry.type} '{entry.filename.replace("'", "\\'")}' {entry.size}{additional}")
+				lines.append(f"{entry.type.file_value} '{entry.filename.replace("'", "\\'")}' {entry.size}{additional}")
 			except Exception as err:
 				logger.warning(err, exc_info=True)
 
@@ -126,13 +143,15 @@ def parse_package_content_file(file: Path) -> list[PackageContentFileEntry]:
 				continue
 
 			try:
-				entry_type, remaining = stripped_line.split(None, 1)
+				entry_type_str, remaining = stripped_line.split(None, 1)
 			except ValueError:
 				logger.warning("Skipping invalid line in package content file '%s': %s", file, stripped_line)
 				continue
 
-			if entry_type not in ("d", "f", "l"):
-				logger.warning("Unknown entry type '%s' in package content file '%s'", entry_type, file)
+			try:
+				entry_type = PackageContentFileEntryType(entry_type_str)
+			except ValueError:
+				logger.warning("Unknown entry type '%s' in package content file '%s'", entry_type_str, file)
 				continue
 
 			filename, remaining = split_quoted_value(remaining)
@@ -145,16 +164,16 @@ def parse_package_content_file(file: Path) -> list[PackageContentFileEntry]:
 			target = None
 			md5 = None
 
-			if entry_type == "f":
+			if entry_type == PackageContentFileEntryType.FILE:
 				md5 = additional
-			elif entry_type == "l":
+			elif entry_type == PackageContentFileEntryType.SYMLINK:
 				target, remaining = split_quoted_value(additional)
 				if remaining:
 					raise ValueError(f"Invalid symlink target in package content file '{file}': {stripped_line!r}")
 
 			entries.append(
 				PackageContentFileEntry(
-					type=cast(Literal["d", "f", "l"], entry_type),
+					type=entry_type,
 					filename=filename,
 					size=size,
 					target=target,

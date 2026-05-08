@@ -11,6 +11,10 @@ from opsi.process._process import (
 	run_command,
 	run_script,
 	run_script_file,
+	InterpreterType,
+	CaptureOutputMode,
+	DiscardOutputMode,
+	DecodingErrors,
 )
 
 __all__ = [
@@ -21,4 +25,8 @@ __all__ = [
 	"run_script_file",
 	"get_subprocess_environment",
 	"get_process_io_encoding",
+	"InterpreterType",
+	"CaptureOutputMode",
+	"DiscardOutputMode",
+	"DecodingErrors",
 ]

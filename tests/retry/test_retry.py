@@ -12,6 +12,7 @@ from opsi.retry._retry import (
 	Retry,
 	RetryConfig,
 	RetryDetails,
+	RetryConfigType,
 	_file_io_backoff_hook,
 	_run_process_backoff_hook,
 	add_retry_hook,
@@ -86,18 +87,20 @@ def test_retry_decorator():
 
 
 def test_get_retry_config():
-	config = get_retry_config("file_io")
+	config = get_retry_config(RetryConfigType.FILE_IO)
 	assert config.on is _file_io_backoff_hook
 	assert config.attempts == 5
 	assert config.wait_initial == 0.1
 
-	config = get_retry_config("run_process")
+	config = get_retry_config(RetryConfigType.RUN_PROCESS)
 	assert config.on is _run_process_backoff_hook
 	assert config.attempts == 5
 	assert config.wait_initial == 0.1
 
-	with pytest.raises(ValueError, match="Invalid retry config type: invalid_type"):
-		get_retry_config("invalid_type")  # type: ignore[invalid-argument-type]
+	with pytest.raises(
+		ValueError, match="Invalid value 'invalid_type' for retry config type, supported values are: 'file_io', 'run_process'"
+	):
+		get_retry_config("invalid_type")
 
 
 def test_retry_hook():

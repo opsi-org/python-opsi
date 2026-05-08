@@ -31,7 +31,7 @@ from opsi.system.storage import (
 	StorageDevice,
 	get_disks,
 )
-from opsi.system.storage._storage import _run_command
+from opsi.system.storage._storage import _run_command, PartitionTableType
 
 
 @pytest.mark.storage_utils
@@ -303,7 +303,7 @@ def test_create_boot_record(tmp_path: Path) -> None:
 	device_path.write_bytes(bytearray(10 * 1024 * 1024))
 	device = StorageDevice(path=device_path)
 
-	table = device.create_partition_table("MBR")
+	table = device.create_partition_table(PartitionTableType.MBR)
 	partition = table.create_partition(type="07")
 	partition.path.write_bytes(bytearray(partition.size))
 	partition.create_filesystem("ntfs")
@@ -455,7 +455,7 @@ def test_create_partition_table_and_filesystem_commands(monkeypatch: pytest.Monk
 	monkeypatch.setattr(MBRPartitionTable, "read", fake_read)
 	monkeypatch.setattr(storage_module, "_run_command", fake_run_command)
 
-	gpt_table = device.create_partition_table("GPT")
+	gpt_table = device.create_partition_table(PartitionTableType.GPT)
 	mbr_table = device.create_partition_table("MBR", 123)
 
 	assert isinstance(gpt_table, GPTPartitionTable)
@@ -463,8 +463,8 @@ def test_create_partition_table_and_filesystem_commands(monkeypatch: pytest.Monk
 	assert created == ["GPTPartitionTable", "MBRPartitionTable"]
 	assert read == ["GPTPartitionTable", "MBRPartitionTable"]
 
-	with pytest.raises(ValueError, match="Invalid partition table type"):
-		device.create_partition_table("bsd")  # type: ignore[arg-type]
+	with pytest.raises(ValueError, match="Invalid value 'bsd' for partition table type, supported values are: 'GPT', 'MBR'"):
+		device.create_partition_table("bsd")
 
 	device.create_filesystem("fat32", "EFI")
 	device.create_filesystem("ntfs", "System")

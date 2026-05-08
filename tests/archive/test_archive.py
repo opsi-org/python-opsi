@@ -27,6 +27,7 @@ from opsi.archive._archive import (
 	CPIO_EXTRACT_COMMAND,
 	TAR_EXTRACT_COMMAND,
 	ArchiveFile,
+	ArchiveCompression,
 	ArchiveProgress,
 	ArchiveProgressListener,
 	create_archive,
@@ -73,6 +74,26 @@ def make_source_files(path: Path) -> Path:
 	(source / "some_file").write_bytes(randbytes(100))
 	os.symlink(source / "some_file", source / "link_to_some_file")
 	return source
+
+
+def test_archive_compression_from_suffix() -> None:
+	assert ArchiveCompression.from_suffix(".gz") == ArchiveCompression.GZIP
+	assert ArchiveCompression.from_suffix(".gzip") == ArchiveCompression.GZIP
+	assert ArchiveCompression.from_suffix(".zst") == ArchiveCompression.ZSTD
+	assert ArchiveCompression.from_suffix(".zstd") == ArchiveCompression.ZSTD
+	assert ArchiveCompression.from_suffix(".zstandard") == ArchiveCompression.ZSTD
+	assert ArchiveCompression.from_suffix(".bz2") == ArchiveCompression.BZIP2
+	assert ArchiveCompression.from_suffix(".bzip2") == ArchiveCompression.BZIP2
+	assert ArchiveCompression.from_suffix("bzip2") == ArchiveCompression.BZIP2
+
+	with pytest.raises(ValueError, match="Unknown file suffix '.unknown' for archive compression"):
+		ArchiveCompression.from_suffix(".unknown")
+
+
+def test_archive_compression_suffix() -> None:
+	assert ArchiveCompression.GZIP.suffix == ".gz"
+	assert ArchiveCompression.ZSTD.suffix == ".zstd"
+	assert ArchiveCompression.BZIP2.suffix == ".bz2"
 
 
 def test_archive_progress() -> None:
@@ -204,7 +225,7 @@ def test_decompress_command(tmp_path: Path) -> None:
 	assert decompress_command(bz2_file) == "bunzip2 --stdout --quiet --decompress"
 
 	unknown_file = tmp_path / "file.unknown"
-	with pytest.raises(RuntimeError, match=f"Unknown compression of file '{unknown_file}'"):
+	with pytest.raises(RuntimeError, match=f"Invalid compression of file '{unknown_file}'"):
 		decompress_command(unknown_file)
 
 
@@ -355,8 +376,13 @@ def test_get_archive_files(tmp_path: Path, test_defect_link: bool, follow_symlin
 # Cannot use function scoped fixtures with hypothesis
 @pytest.mark.linux
 @settings(deadline=10_000)
-@given(from_regex(FILENAME_REGEX), binary(max_size=4096), sampled_from((True, False)), sampled_from(("zstd", "bz2", "gz")))
-def test_archive_hypothesis(filename: str, data: bytes, internal: bool, compression: Literal["zstd", "bz2", "gz"]) -> None:
+@given(
+	from_regex(FILENAME_REGEX),
+	binary(max_size=4096),
+	sampled_from((True, False)),
+	sampled_from((ArchiveCompression.ZSTD, ArchiveCompression.BZIP2, ArchiveCompression.GZIP)),
+)
+def test_archive_hypothesis(filename: str, data: bytes, internal: bool, compression: ArchiveCompression) -> None:
 	with tempfile.TemporaryDirectory() as tempdir:
 		filename = filename.replace("\x00", "").replace("\n", "")
 		if filename.startswith("-"):
@@ -366,7 +392,7 @@ def test_archive_hypothesis(filename: str, data: bytes, internal: bool, compress
 		source.mkdir()
 		file_path = source / filename
 		file_path.write_bytes(data)
-		archive = tmp_path / f"archive.tar.{compression}"
+		archive = tmp_path / f"archive.tar{compression.suffix}"
 		create_archive = create_archive_internal if internal else create_archive_external
 		files = list(get_archive_files(source))
 		if filename.endswith("~"):
@@ -388,9 +414,14 @@ def test_archive_hypothesis(filename: str, data: bytes, internal: bool, compress
 @pytest.mark.linux
 @pytest.mark.parametrize(
 	"compression, dereference",
-	(("zstd", False), ("zstd", True), ("bz2", False), ("gz", False)),
+	(
+		(ArchiveCompression.ZSTD, False),
+		(ArchiveCompression.ZSTD, True),
+		(ArchiveCompression.BZIP2, False),
+		(ArchiveCompression.GZIP, False),
+	),
 )
-def test_archive_external(tmp_path: Path, compression: Literal["zstd", "bz2", "gz"], dereference: bool) -> None:
+def test_archive_external(tmp_path: Path, compression: ArchiveCompression, dereference: bool) -> None:
 	source = make_source_files(tmp_path)
 	with memory_usage_monitor(interval=0.01) as mem_monitor:
 		try:
@@ -399,7 +430,7 @@ def test_archive_external(tmp_path: Path, compression: Literal["zstd", "bz2", "g
 		except PermissionError:
 			pass
 
-		archive = tmp_path / f"archive.tar.{compression}"
+		archive = tmp_path / f"archive.tar{compression.suffix}"
 		progress_listener = ProgressListener()
 
 		files = list(get_archive_files(source, follow_symlinks=dereference))
@@ -447,12 +478,17 @@ def test_archive_external(tmp_path: Path, compression: Literal["zstd", "bz2", "g
 
 @pytest.mark.parametrize(
 	"compression, dereference",
-	(("zstd", False), ("zstd", True), ("bz2", False), ("gz", False)),
+	(
+		(ArchiveCompression.ZSTD, False),
+		(ArchiveCompression.ZSTD, True),
+		(ArchiveCompression.BZIP2, False),
+		(ArchiveCompression.GZIP, False),
+	),
 )
-def test_archive_internal(tmp_path: Path, compression: Literal["zstd", "bz2", "gz"], dereference: bool) -> None:
+def test_archive_internal(tmp_path: Path, compression: ArchiveCompression, dereference: bool) -> None:
 	source = make_source_files(tmp_path)
 	with memory_usage_monitor(interval=0.01) as mem_monitor:
-		archive = tmp_path / f"archive.tar.{compression}"
+		archive = tmp_path / f"archive.tar{compression.suffix}"
 		progress_listener = ProgressListener()
 
 		files = list(get_archive_files(source, follow_symlinks=dereference))
@@ -492,23 +528,23 @@ def test_archive_internal(tmp_path: Path, compression: Literal["zstd", "bz2", "g
 	(
 		# external
 		("external", None, 85),
-		("external", "zstd", 85),
-		("external", "bz2", 0),
-		("external", "gz", 72),
+		("external", ArchiveCompression.ZSTD, 85),
+		("external", ArchiveCompression.BZIP2, 0),
+		("external", ArchiveCompression.GZIP, 72),
 		# internal
 		("internal", None, 85),
-		("internal", "zstd", 85),
-		("internal", "bz2", 0),
-		("internal", "gz", 55),
+		("internal", ArchiveCompression.ZSTD, 85),
+		("internal", ArchiveCompression.BZIP2, 0),
+		("internal", ArchiveCompression.GZIP, 55),
 		# auto
 		("auto", None, 85),
-		("auto", "zstd", 85),
-		("auto", "bz2", 0),
-		("auto", "gz", 74),
+		("auto", ArchiveCompression.ZSTD, 85),
+		("auto", ArchiveCompression.BZIP2, 0),
+		("auto", ArchiveCompression.GZIP, 74),
 	),
 )
 def test_syncable(
-	tmp_path: Path, mode: Literal["external", "internal"], compression: Literal["zstd", "bz2", "gz"], expect_min_percent_same: float
+	tmp_path: Path, mode: Literal["external", "internal"], compression: ArchiveCompression, expect_min_percent_same: float
 ) -> None:
 	create_archive_func = create_archive
 	if mode == "external":

@@ -9,11 +9,10 @@ import queue
 import threading
 import time
 from pathlib import Path
-from typing import Literal
 
 import pytest
 
-from opsi.system.file.lock import lock_file
+from opsi.system.file.lock import lock_file, LockMethod
 
 
 class Task:
@@ -24,7 +23,7 @@ class Task:
 		res_queue: queue.Queue,
 		exclusive: bool,
 		timeout: float,
-		lock_method: Literal["flock", "lockf"] | None,
+		lock_method: LockMethod | None,
 		wait: float,
 	) -> None:
 		self.task_id = task_id
@@ -62,7 +61,7 @@ class ThreadTask(threading.Thread):
 		res_queue: queue.Queue,
 		exclusive: bool,
 		timeout: float,
-		lock_method: Literal["flock", "lockf"] | None,
+		lock_method: LockMethod | None,
 		wait: float,
 	) -> None:
 		threading.Thread.__init__(self)
@@ -80,7 +79,7 @@ class MultiprocessTask(multiprocessing.Process):
 		res_queue: queue.Queue,
 		exclusive: bool,
 		timeout: float,
-		lock_method: Literal["flock", "lockf"] | None,
+		lock_method: LockMethod | None,
 		wait: float,
 	) -> None:
 		multiprocessing.Process.__init__(self)
@@ -94,9 +93,9 @@ class MultiprocessTask(multiprocessing.Process):
 	"task_type, lock_method",
 	# (ThreadTask, MultiprocessTask),
 	(
-		(MultiprocessTask, "flock"),
-		(ThreadTask, "flock"),
-		(MultiprocessTask, "lockf"),
+		(MultiprocessTask, LockMethod.FLOCK),
+		(ThreadTask, LockMethod.FLOCK),
+		(MultiprocessTask, LockMethod.LOCKF),
 	)
 	if platform.system() == "Linux"
 	else (
@@ -104,7 +103,7 @@ class MultiprocessTask(multiprocessing.Process):
 		(ThreadTask, None),
 	),
 )
-def test_lock_file(tmp_path: Path, task_type: type, lock_method: Literal["flock", "lockf"] | None) -> None:
+def test_lock_file(tmp_path: Path, task_type: type, lock_method: LockMethod | None) -> None:
 	test_file = tmp_path / "test.bin"
 	res_queue: queue.Queue | multiprocessing.Queue = queue.Queue() if task_type == ThreadTask else multiprocessing.Queue()
 

@@ -19,7 +19,7 @@ from unittest.mock import patch
 import psutil
 import pytest
 
-from opsi.process import Process, ProcessError, run_command, run_script, run_script_file
+from opsi.process import Process, ProcessError, run_command, run_script, run_script_file, InterpreterType, DecodingErrors
 from opsi.process._process import _get_interpreter_command, get_process_io_encoding
 from opsi.system.info import is_windows
 from opsi.system.session import DisplaySession, LinuxDisplaySessionType, WindowsDisplaySessionState, get_display_sessions
@@ -30,11 +30,11 @@ from tests.file.conftest import PATH_TYPES
 @pytest.mark.parametrize(
 	"interpreter, script_file, arguments, hide_window, expected_command",
 	[
-		("cmd", Path("script_file.bat"), ["arg1", "arg2"], False, ["script_file.bat", "arg1", "arg2"]),
-		("cmd", "script_file.cmd", [], True, ["script_file.cmd"]),
-		("cmd", "-", None, False, ["cmd.exe", "/q", "/d", "/k", "@echo off"]),
+		(InterpreterType.CMD, Path("script_file.bat"), ["arg1", "arg2"], False, ["script_file.bat", "arg1", "arg2"]),
+		(InterpreterType.CMD, "script_file.cmd", [], True, ["script_file.cmd"]),
+		(InterpreterType.CMD, "-", None, False, ["cmd.exe", "/q", "/d", "/k", "@echo off"]),
 		(
-			"powershell",
+			InterpreterType.POWERSHELL,
 			Path("script_file.ps1"),
 			["arg1", "arg2"],
 			False,
@@ -52,7 +52,7 @@ from tests.file.conftest import PATH_TYPES
 			],
 		),
 		(
-			"powershell",
+			InterpreterType.POWERSHELL,
 			"-",
 			None,
 			True,
@@ -72,14 +72,14 @@ from tests.file.conftest import PATH_TYPES
 	]
 	if is_windows()
 	else [
-		("bash", Path("script_file"), ["arg1", "arg2"], False, ["bash", "script_file", "arg1", "arg2"]),
-		("bash", "-", None, False, ["bash", "-s", "--"]),
-		("bash", "-", ["arg 1", "arg 2"], False, ["bash", "-s", "--", "arg 1", "arg 2"]),
+		(InterpreterType.BASH, Path("script_file"), ["arg1", "arg2"], False, ["bash", "script_file", "arg1", "arg2"]),
+		(InterpreterType.BASH, "-", None, False, ["bash", "-s", "--"]),
+		(InterpreterType.BASH, "-", ["arg 1", "arg 2"], False, ["bash", "-s", "--", "arg 1", "arg 2"]),
 	],
 )
 @pytest.mark.parametrize("path_type", PATH_TYPES)
 def test_get_interpreter_command(
-	interpreter: Literal["cmd", "powershell", "bash"],
+	interpreter: InterpreterType,
 	script_file: Path | str,
 	arguments: list[str] | None,
 	hide_window: bool,
@@ -94,7 +94,7 @@ def test_get_interpreter_command(
 
 	if is_windows():
 		with pytest.raises(ValueError, match="cmd.exe interpreter requires script file with .cmd or .bat extension"):
-			_get_interpreter_command(interpreter="cmd", script_file=path_type("script"))
+			_get_interpreter_command(interpreter=InterpreterType.CMD, script_file=path_type("script"))
 
 
 @pytest.mark.parametrize("path_type", PATH_TYPES)
@@ -113,7 +113,7 @@ def test_get_interpreter_command_error(path_type) -> None:
 
 @pytest.mark.windows
 def test_get_interpreter_command_powershell_hide_window_false() -> None:
-	command = _get_interpreter_command(interpreter="powershell", script_file="script_file.ps1", hide_window=False)
+	command = _get_interpreter_command(interpreter=InterpreterType.POWERSHELL, script_file="script_file.ps1", hide_window=False)
 	command[0] = os.path.basename(command[0])
 
 	assert command == [
@@ -245,7 +245,7 @@ def test_process_detach_sets_popen_flags(
 
 
 @pytest.mark.parametrize("interpreter", ["cmd", "powershell", None] if is_windows() else ["bash", None])
-def testget_process_io_encoding(interpreter: Literal["cmd", "powershell", "bash"] | None) -> None:
+def testget_process_io_encoding(interpreter: InterpreterType | None) -> None:
 	get_process_io_encoding.cache_clear()
 	encoding = get_process_io_encoding(interpreter)
 	if is_windows():
@@ -384,6 +384,24 @@ def test_process_read(size_limit: int, capture_output: Literal["stdout", "stderr
 		assert not proc._stderr_reader.is_alive()
 	if proc._stdout_reader:
 		assert not proc._stdout_reader.is_alive()
+
+
+def test_decoding_error_handling_mode() -> None:
+	proc = run_script("exit 0")
+	for mode in (
+		DecodingErrors.IGNORE,
+		DecodingErrors.REPLACE,
+		DecodingErrors.STRICT,
+		"ignore",
+		"replace",
+		"strict",
+	):
+		assert proc.get_stdout_text(errors=mode) == ""
+	with pytest.raises(
+		ValueError,
+		match="Invalid value 'invalid_value' for decoding error handling mode, supported values are: 'strict', 'ignore', 'replace'",
+	):
+		proc.get_stdout_text(errors="invalid_value")
 
 
 def test_process_read_long(tmp_path: Path) -> None:
@@ -527,7 +545,7 @@ def test_process_stop() -> None:
 
 
 def test_process_stop_wait_before_stop() -> None:
-	proc = Process(script="import time; time.sleep(1)", interpreter=sys.executable)
+	proc = Process(script="import time; time.sleep(1)", interpreter=Path(sys.executable))
 	with proc:
 		start = time.time()
 		assert not proc.stop(wait_before_stop=5)
@@ -757,10 +775,16 @@ def test_process_argument_validation() -> None:
 		Process(command="echo test", interpreter="python")
 	with pytest.raises(ProcessError, match="'exit_on_error' can only be used with 'bash' or 'powershell' interpreter"):
 		Process(script="exit 0", interpreter="cmd", exit_on_error=True)
-	with pytest.raises(ProcessError, match="Invalid capture_output value"):
-		Process(script="exit 0", interpreter="bash", capture_output="invalid_value")  # type: ignore[invalid-argument-type]
-	with pytest.raises(ProcessError, match="Invalid discard_output value"):
-		Process(script="exit 0", interpreter="bash", discard_output="invalid_value")  # type: ignore[invalid-argument-type]
+	with pytest.raises(
+		ProcessError,
+		match="Invalid value 'invalid_value' for output capture mode, supported values are: 'stdout', 'stderr', 'both', 'combined', 'none'",
+	):
+		Process(script="exit 0", interpreter="bash", capture_output="invalid_value")
+	with pytest.raises(
+		ProcessError,
+		match="Invalid value 'invalid_value' for output discard mode, supported values are: 'stdout', 'stderr', 'both', 'none'",
+	):
+		Process(script="exit 0", interpreter="bash", discard_output="invalid_value")
 
 
 @pytest.mark.parametrize(

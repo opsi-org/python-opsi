@@ -6,6 +6,8 @@
 from opsi.exception import OperatingSystemUnsupportedError
 from opsi.system.info import get_system, is_posix, is_windows
 
+from opsi.system.file.lock._common import LockMethod
+
 if is_posix():
 	from opsi.system.file.lock._posix import lock_file
 elif is_windows():
@@ -14,4 +16,4 @@ else:
 	raise OperatingSystemUnsupportedError(f"{get_system()} not supported")
 
 
-__all__ = ["lock_file"]
+__all__ = ["lock_file", "LockMethod"]

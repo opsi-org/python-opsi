@@ -72,6 +72,7 @@ from opsi.opsi.service.client._service_client import (
 	UIB_OPSI_CA,
 	BackendManager,
 	DAVFileInfo,
+	DAVFileType,
 	Messagebus,
 	MessagebusListener,
 	OpsiCaState,
@@ -1758,19 +1759,19 @@ def test_download(tmp_path: Path) -> None:
 	def mocked_webdav_content(self, path: str, include_base_path: bool = False) -> list[DAVFileInfo]:
 		responsens: dict[str, list[DAVFileInfo]] = {
 			"/some_dir": [
-				DAVFileInfo(path="/some_dir", type="dir", size=0),
-				DAVFileInfo(path="/some_dir/some_nested_dir", type="dir", size=0),
-				DAVFileInfo(path="/some_dir/some_file", type="file", size=1_000_000),
+				DAVFileInfo(path="/some_dir", type=DAVFileType.DIR, size=0),
+				DAVFileInfo(path="/some_dir/some_nested_dir", type=DAVFileType.DIR, size=0),
+				DAVFileInfo(path="/some_dir/some_file", type=DAVFileType.FILE, size=1_000_000),
 			],
 			"/some_dir/some_nested_dir": [
-				DAVFileInfo(path="/some_dir/some_nested_dir", type="dir", size=0),
-				DAVFileInfo(path="/some_dir/some_nested_dir/some_deep_file", type="file", size=1_000_000),
+				DAVFileInfo(path="/some_dir/some_nested_dir", type=DAVFileType.DIR, size=0),
+				DAVFileInfo(path="/some_dir/some_nested_dir/some_deep_file", type=DAVFileType.FILE, size=1_000_000),
 			],
 			"/some_dir/some_file": [
-				DAVFileInfo(path="/some_dir/some_file", type="file", size=1_000_000),
+				DAVFileInfo(path="/some_dir/some_file", type=DAVFileType.FILE, size=1_000_000),
 			],
 			"/some_dir/some_nested_dir/some_deep_file": [
-				DAVFileInfo(path="/some_dir/some_nested_dir/some_deep_file", type="file", size=1_000_000),
+				DAVFileInfo(path="/some_dir/some_nested_dir/some_deep_file", type=DAVFileType.FILE, size=1_000_000),
 			],
 		}
 		return responsens[path]

@@ -13,7 +13,7 @@ from types import TracebackType
 from typing import Self
 
 from opsi.logging import get_logger
-from opsi.retry import Retry, RetryConfig, get_retry_config
+from opsi.retry import Retry, RetryConfig, RetryConfigType, get_retry_config
 
 logger = get_logger("opsi")
 
@@ -37,7 +37,7 @@ class TempDir:
 			If None, uses the default retry configuration for file I/O operations.
 		"""
 		base_dir = Path(base_dir) if base_dir else Path(gettempdir())
-		self._retry_config = retry_config or get_retry_config("file_io")
+		self._retry_config = retry_config or get_retry_config(RetryConfigType.FILE_IO)
 		name = "".join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=8))
 		self._path = base_dir / f"{TEMP_DIR_PREFIX}{name}"
 
@@ -121,7 +121,7 @@ class TempFile:
 			Configuration for automatic retry behavior on failure.
 			If None, uses the default retry configuration for file I/O operations.
 		"""
-		self._retry_config = retry_config or get_retry_config("file_io")
+		self._retry_config = retry_config or get_retry_config(RetryConfigType.FILE_IO)
 		name = "".join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=8))
 		self._path = Path(gettempdir()) / f"{TEMP_FILE_PREFIX}{name}.{extension}"
 		self._content = content

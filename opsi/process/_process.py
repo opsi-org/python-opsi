@@ -22,19 +22,54 @@ from shutil import which
 from subprocess import DEVNULL, PIPE, STDOUT, Popen, list2cmdline
 from threading import Event, Lock, Thread
 from types import TracebackType
-from typing import Collection, Literal, Mapping, Self, cast
+from typing import Collection, Literal, Mapping, Self
 
 from opsi.logging import LOG_TRACE, get_logger, is_log_level_enabled
-from opsi.retry import Retry, RetryConfig, get_retry_config
+from opsi.retry import Retry, RetryConfig, get_retry_config, RetryConfigType
 from opsi.system.file.temp import TempFile
 from opsi.system.info import is_linux, is_posix, is_windows
+from opsi.util.pattern import MappedStrEnum
+import enum
+
 
 LD_LIBRARY_EXCLUDE_LIST = ["/usr/lib/opsiclientd", "/usr/lib/opsiconfd", "/usr/lib/opsi-agent"]
 
 logger = get_logger("opsi")
 
-CaptureOutput = Literal["stdout", "stderr", "both", "combined", "none"]
-DiscardOutput = Literal["stdout", "stderr", "both", "none"]
+
+class CaptureOutputMode(MappedStrEnum):
+	STDOUT = "stdout"
+	STDERR = "stderr"
+	BOTH = "both"
+	COMBINED = "combined"
+	NONE = "none"
+
+	_NAME = enum.nonmember("output capture mode")
+
+
+class DiscardOutputMode(MappedStrEnum):
+	STDOUT = "stdout"
+	STDERR = "stderr"
+	BOTH = "both"
+	NONE = "none"
+
+	_NAME = enum.nonmember("output discard mode")
+
+
+class InterpreterType(MappedStrEnum):
+	CMD = "cmd"
+	POWERSHELL = "powershell"
+	BASH = "bash"
+
+	_NAME = enum.nonmember("interpreter type")
+
+
+class DecodingErrors(MappedStrEnum):
+	STRICT = "strict"
+	IGNORE = "ignore"
+	REPLACE = "replace"
+
+	_NAME = enum.nonmember("decoding error handling mode")
 
 
 def _get_executable_path() -> Path:
@@ -161,9 +196,9 @@ def _disable_file_system_redirection():
 
 
 @lru_cache()
-def get_process_io_encoding(interpreter: Literal["cmd", "powershell", "bash"] | None = None) -> str:
+def get_process_io_encoding(interpreter: InterpreterType | None = None) -> str:
 	encoding = ""
-	if is_windows() and interpreter in ("cmd", None):
+	if is_windows() and interpreter in (InterpreterType.CMD, None):
 		# Windows suggests cp1252 even if using something else like cp850
 		try:
 			output = subprocess.check_output("chcp", shell=True).decode("ascii", errors="replace")
@@ -181,14 +216,14 @@ def get_process_io_encoding(interpreter: Literal["cmd", "powershell", "bash"] | 
 	if not encoding:
 		encoding = "utf-8"
 	if interpreter:
-		logger.info("Using encoding %r for process I/O with interpreter %r", encoding, interpreter)
+		logger.info("Using encoding %r for process I/O with interpreter '%s'", encoding, interpreter)
 	else:
 		logger.info("Using encoding %r for process I/O", encoding)
 	return encoding
 
 
 def _get_interpreter_command(
-	interpreter: Literal["cmd", "powershell", "bash"],
+	interpreter: InterpreterType,
 	*,
 	script_file: str | os.PathLike[str] | TempFile = "-",
 	arguments: list[str] | None = None,
@@ -200,7 +235,7 @@ def _get_interpreter_command(
 	if is_windows():
 		system_root = Path(os.environ.get("SystemRoot") or r"c:\Windows")
 
-		if interpreter == "cmd":
+		if interpreter == InterpreterType.CMD:
 			if script_file == "-" and arguments:
 				raise ValueError("Cannot use arguments with piped cmd.exe script input")
 
@@ -239,7 +274,7 @@ def _get_interpreter_command(
 
 			raise FileNotFoundError("cmd.exe not found")
 
-		elif interpreter == "powershell":
+		elif interpreter == InterpreterType.POWERSHELL:
 			if script_file == "-" and arguments:
 				raise ValueError("Cannot use arguments with piped PowerShell script input")
 
@@ -272,7 +307,7 @@ def _get_interpreter_command(
 				return args
 			raise FileNotFoundError("PowerShell executable not found")
 
-	path = which(interpreter)
+	path = which(str(interpreter))
 	if path:
 		args = [path]
 		if script_file == "-":
@@ -303,15 +338,15 @@ class Process:
 		*,
 		command: Collection[str] | str | None = None,
 		script: str | Collection[str] | Path | None = None,
-		interpreter: Literal["cmd", "powershell", "bash"] | Collection[str] | str | None = None,
+		interpreter: InterpreterType | str | Path | Collection[str] | None = None,
 		arguments: Collection[str | int | float] | None = None,
 		working_dir: str | os.PathLike[str] | None = None,
 		environment: Mapping[str, str] | None = None,
 		timeout: float | int | None = None,
 		stdin: str | bytes | None = None,
 		close_stdin: bool = True,
-		capture_output: CaptureOutput = "both",
-		discard_output: DiscardOutput = "none",
+		capture_output: CaptureOutputMode | str = CaptureOutputMode.BOTH,
+		discard_output: DiscardOutputMode | str = DiscardOutputMode.NONE,
 		encoding: str | None = None,
 		exit_on_error: bool = False,
 		success_exit_codes: Collection[int] | None = (0,),
@@ -340,7 +375,8 @@ class Process:
 			The interpreter to use for running a script. Only valid with ``script``.
 			Can be a well-known interpreter name: ``"cmd"``, ``"powershell"``, ``"bash"``.
 			None selects the interpreter based on the script file extension (if script is a Path) or defaults to the OS shell (if script is a string).
-			Can also be a list of strings for a custom interpreter command, e.g. ``["uv", "run", "python"]``.
+			Can also be a list of strings for a custom interpreter command, e.g. ``["uv", "run", "python"]``
+			It is also possible to pass a command name as string or Path.
 		:param arguments:
 			Optional list of arguments to pass to the script or command.
 		:param working_dir:
@@ -394,7 +430,7 @@ class Process:
 
 		self._command: list[str] = []
 		self._script: str | None = None
-		self._interpreter = interpreter
+		self._interpreter: InterpreterType | Collection[str] | None = None
 		self._temp_script_file: TempFile | None = None
 		self._script_file: Path | None = None
 		self._exit_on_error = bool(exit_on_error)
@@ -406,13 +442,11 @@ class Process:
 		self._session_id: str | None = None
 		self._session_desktop: str | None = None
 		self._session_elevated: bool = False
-		self._capture_output = capture_output
-		self._discard_output = discard_output
 		self._encoding = encoding or "utf-8"
 		self._stdin_data: bytes | None = None
 		self._close_stdin_after_start = bool(close_stdin)
 		self._success_exit_codes = None if success_exit_codes is None else set(success_exit_codes)
-		self._retry_config = retry_config or get_retry_config("run_process")
+		self._retry_config = retry_config or get_retry_config(RetryConfigType.RUN_PROCESS)
 		self._proc: Popen | None = None
 		self._attempts = 0
 		self._should_stop = False
@@ -426,10 +460,6 @@ class Process:
 
 		self._reset_state()
 
-		if capture_output not in ("stdout", "stderr", "both", "combined", "none"):
-			raise ProcessError(f"Invalid capture_output value: {capture_output}", process=self)
-		if discard_output not in ("stdout", "stderr", "both", "none"):
-			raise ProcessError(f"Invalid discard_output value: {discard_output}", process=self)
 		if command is not None and script is not None:
 			raise ProcessError("'command' and 'script' are mutually exclusive", process=self)
 		if command is None and script is None:
@@ -437,6 +467,12 @@ class Process:
 		if command is not None:
 			if interpreter is not None:
 				raise ProcessError("'interpreter' can only be used with 'script', not with 'command'", process=self)
+
+		try:
+			self._capture_output = CaptureOutputMode(capture_output)
+			self._discard_output = DiscardOutputMode(discard_output)
+		except ValueError as exc:
+			raise ProcessError(str(exc), process=self) from exc
 
 		if session_id is not None:
 			if not is_windows() and not is_linux():
@@ -477,27 +513,33 @@ class Process:
 				if isinstance(script, Path):
 					extension = str(script).lower().rsplit(".", 1)[-1]
 					if extension in ("cmd", "bat"):
-						interpreter = "cmd"
+						interpreter = InterpreterType.CMD
 					elif extension in ("ps1",):
-						interpreter = "powershell"
+						interpreter = InterpreterType.POWERSHELL
 					elif extension in ("sh",):
-						interpreter = "bash"
+						interpreter = InterpreterType.BASH
 					else:
-						interpreter = "cmd" if is_windows() else "bash"
+						interpreter = InterpreterType.CMD if is_windows() else InterpreterType.BASH
 						logger.info("Cannot auto-detect interpreter for file extension '.%s', defaulting to %r", extension, interpreter)
 				else:
-					interpreter = "cmd" if is_windows() else "bash"
-			elif interpreter in ("cmd", "powershell", "bash"):
+					interpreter = InterpreterType.CMD if is_windows() else InterpreterType.BASH
+			elif isinstance(interpreter, InterpreterType):
 				pass
-			elif not isinstance(interpreter, list):
-				interpreter = [str(interpreter)]
-
+			elif isinstance(interpreter, (str, Path)):
+				try:
+					interpreter = InterpreterType(interpreter)
+				except ValueError:
+					# Not a known interpreter type, treat as custom command
+					interpreter = [str(interpreter)]
+			else:
+				interpreter: list[str] = [str(part) for part in interpreter]
 			self._interpreter = interpreter
-			if self._exit_on_error and self._interpreter not in ("bash", "powershell"):
+
+			if self._exit_on_error and interpreter not in (InterpreterType.BASH, InterpreterType.POWERSHELL):
 				raise ProcessError("'exit_on_error' can only be used with 'bash' or 'powershell' interpreter", process=self)
 
 			if not encoding:
-				self._encoding = get_process_io_encoding(interpreter=interpreter if interpreter in ("cmd", "powershell", "bash") else None)
+				self._encoding = get_process_io_encoding(interpreter=interpreter if isinstance(interpreter, InterpreterType) else None)
 				logger.debug("Using auto-detected encoding for process I/O: %r", self._encoding)
 
 			if isinstance(script, Path):
@@ -520,20 +562,20 @@ class Process:
 				if self._script_file:
 					extension = self._script_file.suffix.lstrip(".")
 				if not extension:
-					if interpreter == "cmd":
+					if interpreter == InterpreterType.CMD:
 						extension = "cmd"
-					elif interpreter == "powershell":
+					elif interpreter == InterpreterType.POWERSHELL:
 						extension = "ps1"
-					elif interpreter == "bash":
+					elif interpreter == InterpreterType.BASH:
 						extension = "sh"
 				if not extension:
 					extension = "tmp"
 				self._temp_script_file = TempFile(encoding=self._encoding, extension=extension)
 
-			if interpreter in ("cmd", "powershell", "bash"):
+			if isinstance(interpreter, InterpreterType):
 				try:
 					self._command = _get_interpreter_command(
-						cast(Literal["cmd", "powershell", "bash"], interpreter),
+						interpreter=interpreter,
 						script_file=str(self._temp_script_file.path) if self._temp_script_file else "-",
 						arguments=arguments or None,
 						hide_window=self._hide_window,
@@ -654,12 +696,12 @@ class Process:
 
 		script_lines = script.splitlines()
 		assert script_lines
-		if self._interpreter == "cmd" and not script_lines[0].startswith("@echo "):
+		if self._interpreter == InterpreterType.CMD and not script_lines[0].startswith("@echo "):
 			script_lines.insert(0, "@echo off")
 		if self._exit_on_error:
-			if self._interpreter == "bash":
+			if self._interpreter == InterpreterType.BASH:
 				script_lines.insert(0, "set -e")
-			elif self._interpreter == "powershell":
+			elif self._interpreter == InterpreterType.POWERSHELL:
 				script_lines.insert(0, '$ErrorActionPreference = "Stop"')
 
 		self._script = os.linesep.join(script_lines) + os.linesep
@@ -750,18 +792,18 @@ class Process:
 
 		stdout = (
 			DEVNULL
-			if self._discard_output in ("stdout", "both")
+			if self._discard_output in (DiscardOutputMode.STDOUT, DiscardOutputMode.BOTH)
 			else PIPE
-			if self._capture_output in ("stdout", "both", "combined")
+			if self._capture_output in (CaptureOutputMode.STDOUT, CaptureOutputMode.BOTH, CaptureOutputMode.COMBINED)
 			else None
 		)
 		stderr = (
 			DEVNULL
-			if self._discard_output in ("stderr", "both")
+			if self._discard_output in (DiscardOutputMode.STDERR, DiscardOutputMode.BOTH)
 			else PIPE
-			if self._capture_output in ("stderr", "both")
+			if self._capture_output in (CaptureOutputMode.STDERR, CaptureOutputMode.BOTH)
 			else STDOUT
-			if self._capture_output == "combined"
+			if self._capture_output == CaptureOutputMode.COMBINED
 			else None
 		)
 		stdin = PIPE if stdin_data is not None or not close_stdin else None
@@ -1046,21 +1088,21 @@ class Process:
 		"""
 		return bytes(self._stdout_data)
 
-	def get_stdout_text(self, errors: Literal["ignore", "replace", "strict"] = "replace") -> str:
+	def get_stdout_text(self, errors: DecodingErrors | str = DecodingErrors.REPLACE) -> str:
 		"""
 		Get the standard output of the process as text.
 		:param errors: How to handle decoding errors.
 		:return: Standard output as text.
 		"""
-		return self.get_stdout_bytes().decode(self._encoding, errors=errors)
+		return self.get_stdout_bytes().decode(self._encoding, errors=DecodingErrors(errors).value)
 
-	def get_stdout_lines(self, errors: Literal["ignore", "replace", "strict"] = "replace") -> list[str]:
+	def get_stdout_lines(self, errors: DecodingErrors | str = DecodingErrors.REPLACE) -> list[str]:
 		"""
 		Get the standard output of the process as a list of lines.
 		:param errors: How to handle decoding errors.
 		:return: Standard output as a list of lines.
 		"""
-		stdout_text = self.get_stdout_text(errors=errors)
+		stdout_text = self.get_stdout_text(errors=DecodingErrors(errors).value)
 		return stdout_text.splitlines()
 
 	def get_stderr_bytes(self) -> bytes:
@@ -1070,21 +1112,21 @@ class Process:
 		"""
 		return bytes(self._stderr_data)
 
-	def get_stderr_text(self, *, errors: Literal["ignore", "replace", "strict"] = "replace") -> str:
+	def get_stderr_text(self, *, errors: DecodingErrors | str = DecodingErrors.REPLACE) -> str:
 		"""
 		Get the standard error of the process as text.
 		:param errors: How to handle decoding errors.
 		:return: Standard error as text.
 		"""
-		return self.get_stderr_bytes().decode(self._encoding, errors=errors)
+		return self.get_stderr_bytes().decode(self._encoding, errors=DecodingErrors(errors).value)
 
-	def get_stderr_lines(self, *, errors: Literal["ignore", "replace", "strict"] = "replace") -> list[str]:
+	def get_stderr_lines(self, *, errors: DecodingErrors | str = DecodingErrors.REPLACE) -> list[str]:
 		"""
 		Get the standard error of the process as a list of lines.
 		:param errors: How to handle decoding errors.
 		:return: Standard error as a list of lines.
 		"""
-		stderr_text = self.get_stderr_text(errors=errors)
+		stderr_text = self.get_stderr_text(errors=DecodingErrors(errors).value)
 		return stderr_text.splitlines()
 
 	def get_output_bytes(self) -> bytes:
@@ -1094,21 +1136,21 @@ class Process:
 		"""
 		return bytes(self._stdout_data) + bytes(self._stderr_data)
 
-	def get_output_text(self, *, errors: Literal["ignore", "replace", "strict"] = "replace") -> str:
+	def get_output_text(self, *, errors: DecodingErrors | str = DecodingErrors.REPLACE) -> str:
 		"""
 		Get the combined standard output and standard error of the process as text.
 		:param errors: How to handle decoding errors.
 		:return: Combined output as text.
 		"""
-		return self.get_output_bytes().decode(self._encoding, errors=errors)
+		return self.get_output_bytes().decode(self._encoding, errors=DecodingErrors(errors).value)
 
-	def get_output_lines(self, *, errors: Literal["ignore", "replace", "strict"] = "replace") -> list[str]:
+	def get_output_lines(self, *, errors: DecodingErrors | str = DecodingErrors.REPLACE) -> list[str]:
 		"""
 		Get the combined standard output and standard error of the process as a list of lines.
 		:param errors: How to handle decoding errors.
 		:return: Combined output as a list of lines.
 		"""
-		output_text = self.get_output_text(errors=errors)
+		output_text = self.get_output_text(errors=DecodingErrors(errors).value)
 		return output_text.splitlines()
 
 	def read_bytes(
@@ -1187,7 +1229,11 @@ class Process:
 		return self.read_bytes(timeout=timeout, truncate=truncate, stdout=False, stderr=True)[1]
 
 	def read_text(
-		self, *, timeout: float | int | None = None, errors: Literal["ignore", "replace", "strict"] = "replace", truncate: bool = True
+		self,
+		*,
+		timeout: float | int | None = None,
+		errors: DecodingErrors | str = DecodingErrors.REPLACE,
+		truncate: bool = True,
 	) -> tuple[str, str]:
 		"""
 		Read new data from the process's standard output and standard error since the last read, and decode it as text.
@@ -1197,10 +1243,16 @@ class Process:
 		:return: A tuple containing the new standard output and standard error as text.
 		"""
 		stdout_bytes, stderr_bytes = self.read_bytes(timeout=timeout, truncate=truncate)
-		return stdout_bytes.decode(self._encoding, errors=errors), stderr_bytes.decode(self._encoding, errors=errors)
+		return stdout_bytes.decode(self._encoding, errors=DecodingErrors(errors).value), stderr_bytes.decode(
+			self._encoding, errors=DecodingErrors(errors).value
+		)
 
 	def read_stdout_text(
-		self, *, timeout: float | int | None = None, errors: Literal["ignore", "replace", "strict"] = "replace", truncate: bool = True
+		self,
+		*,
+		timeout: float | int | None = None,
+		errors: DecodingErrors | str = DecodingErrors.REPLACE,
+		truncate: bool = True,
 	) -> str:
 		"""
 		Read new data from the process's standard output since the last read, and decode it as text.
@@ -1209,10 +1261,16 @@ class Process:
 		:param truncate: Whether to truncate the buffer after reading.
 		:return: New standard output data as text.
 		"""
-		return self.read_bytes(timeout=timeout, truncate=truncate, stdout=True, stderr=False)[0].decode(self._encoding, errors=errors)
+		return self.read_bytes(timeout=timeout, truncate=truncate, stdout=True, stderr=False)[0].decode(
+			self._encoding, errors=DecodingErrors(errors).value
+		)
 
 	def read_stderr_text(
-		self, *, timeout: float | int | None = None, errors: Literal["ignore", "replace", "strict"] = "replace", truncate: bool = True
+		self,
+		*,
+		timeout: float | int | None = None,
+		errors: DecodingErrors | str = DecodingErrors.REPLACE,
+		truncate: bool = True,
 	) -> str:
 		"""
 		Read new data from the process's standard error since the last read, and decode it as text.
@@ -1221,7 +1279,9 @@ class Process:
 		:param truncate: Whether to truncate the buffer after reading.
 		:return: New standard error data as text.
 		"""
-		return self.read_bytes(timeout=timeout, truncate=truncate, stdout=False, stderr=True)[1].decode(self._encoding, errors=errors)
+		return self.read_bytes(timeout=timeout, truncate=truncate, stdout=False, stderr=True)[1].decode(
+			self._encoding, errors=DecodingErrors(errors).value
+		)
 
 
 def run_command(
@@ -1231,8 +1291,8 @@ def run_command(
 	environment: Mapping[str, str] | None = None,
 	timeout: float | int | None = None,
 	stdin: str | bytes | None = None,
-	capture_output: CaptureOutput = "both",
-	discard_output: DiscardOutput = "none",
+	capture_output: CaptureOutputMode | str = CaptureOutputMode.BOTH,
+	discard_output: DiscardOutputMode | str = DiscardOutputMode.NONE,
 	encoding: str | None = None,
 	success_exit_codes: Collection[int] | None = (0,),
 	hide_window: bool = False,
@@ -1275,14 +1335,14 @@ def run_command(
 def run_script(
 	script: str | Collection[str] | Path,
 	*,
-	interpreter: Literal["cmd", "powershell", "bash"] | Collection[str] | str | None = None,
+	interpreter: InterpreterType | Collection[str] | str | Path | None = None,
 	arguments: Collection[str | int | float] | None = None,
 	working_dir: str | os.PathLike[str] | None = None,
 	environment: Mapping[str, str] | None = None,
 	timeout: float | int | None = None,
 	stdin: str | bytes | None = None,
-	capture_output: CaptureOutput = "both",
-	discard_output: DiscardOutput = "none",
+	capture_output: CaptureOutputMode | str = CaptureOutputMode.BOTH,
+	discard_output: DiscardOutputMode | str = DiscardOutputMode.NONE,
 	encoding: str | None = None,
 	exit_on_error: bool = False,
 	success_exit_codes: Collection[int] | None = (0,),
@@ -1329,14 +1389,14 @@ def run_script(
 def run_script_file(
 	script_file: str | os.PathLike[str],
 	*,
-	interpreter: Literal["cmd", "powershell", "bash"] | Collection[str] | str | None = None,
+	interpreter: InterpreterType | Collection[str] | str | Path | None = None,
 	arguments: Collection[str | int | float] | None = None,
 	working_dir: str | os.PathLike[str] | None = None,
 	environment: Mapping[str, str] | None = None,
 	timeout: float | int | None = None,
 	stdin: str | bytes | None = None,
-	capture_output: CaptureOutput = "both",
-	discard_output: DiscardOutput = "none",
+	capture_output: CaptureOutputMode | str = CaptureOutputMode.BOTH,
+	discard_output: DiscardOutputMode | str = DiscardOutputMode.NONE,
 	encoding: str | None = None,
 	exit_on_error: bool = False,
 	success_exit_codes: Collection[int] | None = (0,),

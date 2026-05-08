@@ -5,15 +5,16 @@
 
 from __future__ import annotations
 
+
 from dataclasses import dataclass
-from typing import Literal
 
 from stamina import retry as _retry_decorator
 from stamina import retry_context as _retry_context
 from stamina._core import ExcOrBackoffHook, _RetryContextIterator
 from stamina.instrumentation import RetryDetails, RetryHook, get_on_retry_hooks, set_on_retry_hooks
-
+from opsi.util.pattern import MappedStrEnum
 from opsi.logging import get_logger
+import enum
 
 logger = get_logger("opsi")
 
@@ -24,6 +25,13 @@ Retry helpers and predefined retry configurations.
 This module wraps stamina retry primitives used across opsi and provides
 shared retry presets for common retry scenarios.
 """
+
+
+class RetryConfigType(MappedStrEnum):
+	FILE_IO = "file_io"
+	RUN_PROCESS = "run_process"
+
+	_NAME = enum.nonmember("retry config type")
 
 
 @dataclass(kw_only=True, slots=True, frozen=True)
@@ -141,13 +149,13 @@ def _run_process_backoff_hook(exception: Exception) -> bool:
 	return not isinstance(exception, (ProcessError, FileNotFoundError, TimeoutError))
 
 
-def get_retry_config(type: Literal["file_io", "run_process"] = "file_io") -> RetryConfig:
+def get_retry_config(type: RetryConfigType | str = RetryConfigType.FILE_IO) -> RetryConfig:
 	"""
 	Return a predefined retry configuration.
 
 	Parameters
 	----------
-	type : Literal["file_io", "run_process"], default: "file_io"
+	type : RetryConfigType, default: RetryConfigType.FILE_IO
 		Name of the retry configuration preset.
 
 	Returns
@@ -160,9 +168,10 @@ def get_retry_config(type: Literal["file_io", "run_process"] = "file_io") -> Ret
 	ValueError
 		If the retry configuration type is unknown.
 	"""
-	if type == "file_io":
+	type = RetryConfigType(type)
+	if type == RetryConfigType.FILE_IO:
 		return RetryConfig(on=_file_io_backoff_hook, attempts=5, wait_initial=0.1)
-	if type == "run_process":
+	if type == RetryConfigType.RUN_PROCESS:
 		return RetryConfig(on=_run_process_backoff_hook, attempts=5, wait_initial=0.1)
 	raise ValueError(f"Invalid retry config type: {type}")
 

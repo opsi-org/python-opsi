@@ -3,6 +3,6 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from opsi.compression._compression import compress, decompress
+from opsi.compression._compression import compress, decompress, Compression
 
-__all__ = ["compress", "decompress"]
+__all__ = ["compress", "decompress", "Compression"]

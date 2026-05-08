@@ -25,7 +25,7 @@ from opsi.opsi.package import (
 	package_data_from_archive,
 	parse_package_content_file,
 )
-from opsi.opsi.package._associated_files import PackageContentFileEntry
+from opsi.opsi.package._associated_files import PackageContentFileEntry, PackageContentFileEntryType
 from opsi.opsi.service.model.object import NetbootProduct
 from opsi.system.file.temp import TempDir
 from opsi.testing.helper import log_stream
@@ -678,24 +678,44 @@ def test_package_content_file(tmp_path: Path, links_as_links: bool) -> None:
 		)
 		entries: list[PackageContentFileEntry] = parse_package_content_file(content_file)
 		assert len(entries) == 9
-		assert entries[0] == PackageContentFileEntry(type="d", filename="testdir", size=0, target=None, md5sum=None)
+		assert entries[0] == PackageContentFileEntry(
+			type=PackageContentFileEntryType.DIRECTORY, filename="testdir", size=0, target=None, md5sum=None
+		)
 		assert entries[1] == PackageContentFileEntry(
-			type="f", filename="control.toml", size=1514, target=None, md5sum="7f96aebe3ebbaf189970f9426cc331a6"
+			type=PackageContentFileEntryType.FILE,
+			filename="control.toml",
+			size=1514,
+			target=None,
+			md5sum="7f96aebe3ebbaf189970f9426cc331a6",
 		)
 		assert entries[2] == PackageContentFileEntry(
-			type="f", filename="testdir/testfile 2.bin", size=9, target=None, md5sum="e795abeef2c38de2b064be9f6364ceae"
+			type=PackageContentFileEntryType.FILE,
+			filename="testdir/testfile 2.bin",
+			size=9,
+			target=None,
+			md5sum="e795abeef2c38de2b064be9f6364ceae",
 		)
 		assert entries[3] == PackageContentFileEntry(
-			type="f", filename="testfile-with-special-chars-%@äö'.bin", size=9, target=None, md5sum="818959a8b06ccb5667ff3d72c1284fcc"
+			type=PackageContentFileEntryType.FILE,
+			filename="testfile-with-special-chars-%@äö'.bin",
+			size=9,
+			target=None,
+			md5sum="818959a8b06ccb5667ff3d72c1284fcc",
 		)
-		assert entries[4] == PackageContentFileEntry(type="l", filename="dir_link1", size=0, target="testdir", md5sum=None)
-		assert entries[5] == PackageContentFileEntry(type="l", filename="dir_link2", size=0, target="/out_of_package/subdir", md5sum=None)
-		assert entries[6] == PackageContentFileEntry(type="l", filename="dir_link3", size=0, target="/not_existing_dir", md5sum=None)
+		assert entries[4] == PackageContentFileEntry(
+			type=PackageContentFileEntryType.SYMLINK, filename="dir_link1", size=0, target="testdir", md5sum=None
+		)
+		assert entries[5] == PackageContentFileEntry(
+			type=PackageContentFileEntryType.SYMLINK, filename="dir_link2", size=0, target="/out_of_package/subdir", md5sum=None
+		)
+		assert entries[6] == PackageContentFileEntry(
+			type=PackageContentFileEntryType.SYMLINK, filename="dir_link3", size=0, target="/not_existing_dir", md5sum=None
+		)
 		assert entries[7] == PackageContentFileEntry(
-			type="l", filename="file_link1.bin", size=0, target="testdir/testfile 2.bin", md5sum=None
+			type=PackageContentFileEntryType.SYMLINK, filename="file_link1.bin", size=0, target="testdir/testfile 2.bin", md5sum=None
 		)
 		assert entries[8] == PackageContentFileEntry(
-			type="l", filename="file_link2.bin", size=0, target="testdir/testfile 2.bin", md5sum=None
+			type=PackageContentFileEntryType.SYMLINK, filename="file_link2.bin", size=0, target="testdir/testfile 2.bin", md5sum=None
 		)
 	else:
 		assert result == (
@@ -711,26 +731,48 @@ def test_package_content_file(tmp_path: Path, links_as_links: bool) -> None:
 		)
 		entries: list[PackageContentFileEntry] = parse_package_content_file(content_file)
 		assert len(entries) == 9
-		assert entries[0] == PackageContentFileEntry(type="d", filename="dir_link1", size=0, target=None, md5sum=None)
-		assert entries[1] == PackageContentFileEntry(type="d", filename="dir_link2", size=0, target=None, md5sum=None)
-		assert entries[2] == PackageContentFileEntry(type="d", filename="testdir", size=0, target=None, md5sum=None)
+		assert entries[0] == PackageContentFileEntry(
+			type=PackageContentFileEntryType.DIRECTORY, filename="dir_link1", size=0, target=None, md5sum=None
+		)
+		assert entries[1] == PackageContentFileEntry(
+			type=PackageContentFileEntryType.DIRECTORY, filename="dir_link2", size=0, target=None, md5sum=None
+		)
+		assert entries[2] == PackageContentFileEntry(
+			type=PackageContentFileEntryType.DIRECTORY, filename="testdir", size=0, target=None, md5sum=None
+		)
 		assert entries[3] == PackageContentFileEntry(
-			type="f", filename="control.toml", size=1514, target=None, md5sum="7f96aebe3ebbaf189970f9426cc331a6"
+			type=PackageContentFileEntryType.FILE,
+			filename="control.toml",
+			size=1514,
+			target=None,
+			md5sum="7f96aebe3ebbaf189970f9426cc331a6",
 		)
 		assert entries[4] == PackageContentFileEntry(
-			type="f", filename="dir_link1/testfile 2.bin", size=9, target=None, md5sum="e795abeef2c38de2b064be9f6364ceae"
+			type=PackageContentFileEntryType.FILE,
+			filename="dir_link1/testfile 2.bin",
+			size=9,
+			target=None,
+			md5sum="e795abeef2c38de2b064be9f6364ceae",
 		)
 		assert entries[5] == PackageContentFileEntry(
-			type="f", filename="file_link1.bin", size=9, target=None, md5sum="e795abeef2c38de2b064be9f6364ceae"
+			type=PackageContentFileEntryType.FILE, filename="file_link1.bin", size=9, target=None, md5sum="e795abeef2c38de2b064be9f6364ceae"
 		)
 		assert entries[6] == PackageContentFileEntry(
-			type="f", filename="file_link2.bin", size=9, target=None, md5sum="e795abeef2c38de2b064be9f6364ceae"
+			type=PackageContentFileEntryType.FILE, filename="file_link2.bin", size=9, target=None, md5sum="e795abeef2c38de2b064be9f6364ceae"
 		)
 		assert entries[7] == PackageContentFileEntry(
-			type="f", filename="testdir/testfile 2.bin", size=9, target=None, md5sum="e795abeef2c38de2b064be9f6364ceae"
+			type=PackageContentFileEntryType.FILE,
+			filename="testdir/testfile 2.bin",
+			size=9,
+			target=None,
+			md5sum="e795abeef2c38de2b064be9f6364ceae",
 		)
 		assert entries[8] == PackageContentFileEntry(
-			type="f", filename="testfile-with-special-chars-%@äö'.bin", size=9, target=None, md5sum="818959a8b06ccb5667ff3d72c1284fcc"
+			type=PackageContentFileEntryType.FILE,
+			filename="testfile-with-special-chars-%@äö'.bin",
+			size=9,
+			target=None,
+			md5sum="818959a8b06ccb5667ff3d72c1284fcc",
 		)
 
 
@@ -753,9 +795,9 @@ def test_parse_package_content_file_skips_unknown_entries_and_unescapes_values(t
 		entries = parse_package_content_file(content_file)
 
 	assert entries == [
-		PackageContentFileEntry(type="d", filename="directory'", size=0, target=None, md5sum=None),
-		PackageContentFileEntry(type="f", filename="file'name.txt", size=42, target=None, md5sum="deadbeef"),
-		PackageContentFileEntry(type="l", filename="link'name", size=0, target="target'value", md5sum=None),
+		PackageContentFileEntry(type=PackageContentFileEntryType.DIRECTORY, filename="directory'", size=0, target=None, md5sum=None),
+		PackageContentFileEntry(type=PackageContentFileEntryType.FILE, filename="file'name.txt", size=42, target=None, md5sum="deadbeef"),
+		PackageContentFileEntry(type=PackageContentFileEntryType.SYMLINK, filename="link'name", size=0, target="target'value", md5sum=None),
 	]
 	assert "Unknown entry type 'x'" in stream.getvalue()
 

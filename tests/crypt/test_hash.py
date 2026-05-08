@@ -46,6 +46,6 @@ def test_file_hash(tmp_path: Path, algorithm: Literal["md5", "blake3"], progress
 		"04e6c8245213920d3be812de6ed1fb7e", file_path, algorithm, progress_callback=progress_callback if progress else None
 	)
 
-	with pytest.raises(ValueError, match="Invalid hash method 'sha256', supported are 'blake3' and 'md5'"):
-		compute_file_hash(file_path, "sha256")  # type: ignore[invalid-argument-type]
-		verify_file_hash("somehash", file_path, "sha256")  # type: ignore[invalid-argument-type]
+	with pytest.raises(ValueError, match="Invalid value 'sha256' for hash algorithm, supported values are: 'blake3', 'md5'"):
+		compute_file_hash(file_path, "sha256")
+		verify_file_hash("somehash", file_path, "sha256")

@@ -4,7 +4,9 @@
 # License: AGPL-3.0-only
 
 from __future__ import annotations
+from opsi.util.pattern import MappedStrEnum
 
+import enum
 import asyncio
 import json
 import locale
@@ -333,10 +335,17 @@ class UploadFile:
 		return data
 
 
+class DAVFileType(MappedStrEnum):
+	FILE = "file"
+	DIR = "dir"
+
+	_NAME = enum.nonmember("DAV file type")
+
+
 @dataclass(kw_only=True)
 class DAVFileInfo:
 	path: str
-	type: Literal["file", "dir"]
+	type: DAVFileType
 	size: int = 0
 
 	@property
@@ -357,7 +366,7 @@ def _get_file_infos_from_dav_xml(dav_xml: str) -> list[DAVFileInfo]:
 		if child[0].tag != "{DAV:}href" or not child[0].text or child[1].tag != "{DAV:}propstat":
 			continue
 
-		file_info = DAVFileInfo(path=unquote(child[0].text).rstrip("/"), type="file", size=0)
+		file_info = DAVFileInfo(path=unquote(child[0].text).rstrip("/"), type=DAVFileType.FILE, size=0)
 		if file_info.name in (".", ".."):
 			continue
 
@@ -367,11 +376,11 @@ def _get_file_infos_from_dav_xml(dav_xml: str) -> list[DAVFileInfo]:
 
 			for childnode in node:
 				if childnode.tag == "{DAV:}getcontenttype" and childnode.text and "directory" in childnode.text:
-					file_info.type = "dir"
+					file_info.type = DAVFileType.DIR
 				elif childnode.tag == "{DAV:}resourcetype":
 					for res_child in childnode:
 						if res_child.tag == "{DAV:}collection":
-							file_info.type = "dir"
+							file_info.type = DAVFileType.DIR
 				elif childnode.tag == "{DAV:}getcontentlength" and childnode.text:
 					file_info.size = int(childnode.text)
 

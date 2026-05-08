@@ -14,23 +14,31 @@ import struct
 from pathlib import Path, PureWindowsPath
 from random import randrange
 from subprocess import run
-from typing import Generic, Literal, TypeVar, overload
+from typing import Generic, Literal, TypeVar, cast, overload
 from uuid import UUID, uuid4
-
+import enum
+from opsi.util.pattern import MappedStrEnum
 from opsi.logging import get_logger
 
 logger = get_logger("opsi.system.storage")
 
 
+class PartitionTableType(MappedStrEnum):
+	GPT = "GPT"
+	MBR = "MBR"
+
+	_NAME = enum.nonmember("partition table type")
+
+
 PARTITION_TYPE_ALIASES = {
-	"linux": {"MBR": "83", "GPT": "0fc63daf-8483-4772-8e79-3d69d8477de4"},
-	"swap": {"MBR": "82", "GPT": "0657fd6d-a4ab-43c4-84e5-0933c84b4f4f"},
-	"raid": {"MBR": "fd", "GPT": "a19d880f-05fc-4d3b-a006-743f0f84911e"},
-	"lvm": {"MBR": "8e", "GPT": "e6d6d379-f507-44c2-a23c-238f2a3df928"},
-	"uefi": {"MBR": "ef", "GPT": "c12a7328-f81f-11d2-ba4b-00a0c93ec93b"},
-	"ms_reserved": {"MBR": "07", "GPT": "e3c9e316-0b5c-4db8-817d-f92df00215ae"},
-	"ms_basic_data": {"MBR": "07", "GPT": "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7"},
-	"ms_recovery": {"MBR": "07", "GPT": "de94bba4-06d1-4d40-a16a-bfd50179d6ac"},
+	"linux": {PartitionTableType.MBR: "83", PartitionTableType.GPT: "0fc63daf-8483-4772-8e79-3d69d8477de4"},
+	"swap": {PartitionTableType.MBR: "82", PartitionTableType.GPT: "0657fd6d-a4ab-43c4-84e5-0933c84b4f4f"},
+	"raid": {PartitionTableType.MBR: "fd", PartitionTableType.GPT: "a19d880f-05fc-4d3b-a006-743f0f84911e"},
+	"lvm": {PartitionTableType.MBR: "8e", PartitionTableType.GPT: "e6d6d379-f507-44c2-a23c-238f2a3df928"},
+	"uefi": {PartitionTableType.MBR: "ef", PartitionTableType.GPT: "c12a7328-f81f-11d2-ba4b-00a0c93ec93b"},
+	"ms_reserved": {PartitionTableType.MBR: "07", PartitionTableType.GPT: "e3c9e316-0b5c-4db8-817d-f92df00215ae"},
+	"ms_basic_data": {PartitionTableType.MBR: "07", PartitionTableType.GPT: "ebd0a0a2-b9e5-4433-87c0-68b6b72699c7"},
+	"ms_recovery": {PartitionTableType.MBR: "07", PartitionTableType.GPT: "de94bba4-06d1-4d40-a16a-bfd50179d6ac"},
 }
 # ioctl constants from linux/fs.h
 BLKSSZGET = 0x1268
@@ -154,17 +162,26 @@ class StorageDevice:
 			dev.write(bytearray(1024))
 
 	@overload
-	def create_partition_table(self, type: Literal["GPT"], id: str | UUID | None = None) -> GPTPartitionTable: ...
+	def create_partition_table(
+		self, type: Literal[PartitionTableType.GPT, "GPT"] = PartitionTableType.GPT, id: str | UUID | None = None
+	) -> GPTPartitionTable: ...
 
 	@overload
-	def create_partition_table(self, type: Literal["MBR"], id: str | int | None = None) -> MBRPartitionTable: ...
+	def create_partition_table(self, type: Literal[PartitionTableType.MBR, "MBR"], id: str | int | None = None) -> MBRPartitionTable: ...
+
+	@overload
+	def create_partition_table(
+		self, type: PartitionTableType | str = PartitionTableType.GPT, id: str | int | UUID | None = None
+	) -> GPTPartitionTable: ...
 
 	def create_partition_table(
-		self, type: Literal["GPT", "MBR"] = "GPT", id: str | int | UUID | None = None
+		self, type: PartitionTableType | str = PartitionTableType.GPT, id: str | int | UUID | None = None
 	) -> GPTPartitionTable | MBRPartitionTable:
-		if type not in ("GPT", "MBR"):
-			raise ValueError(f"Invalid partition table type {type}, valid types are GPT and MBR")
-		self.partition_table = MBRPartitionTable(self, id) if type == "MBR" else GPTPartitionTable(self, id)  # type: ignore[arg-type]
+		type = PartitionTableType(type)
+		if type == PartitionTableType.MBR:
+			self.partition_table = MBRPartitionTable(self, cast(str | int | None, id))
+		else:
+			self.partition_table = GPTPartitionTable(self, cast(str | UUID | None, id))
 		self.partition_table.create()
 		self.partition_table.read()
 		return self.partition_table
@@ -283,7 +300,7 @@ class MBRPartition(Partition):
 			alias = PARTITION_TYPE_ALIASES.get(type)
 			if not alias:
 				raise ValueError(f"Invalid type {type!r}")
-			type = alias["MBR"]
+			type = alias[PartitionTableType.MBR]
 		super().__init__(partition_table=partition_table, number=number, type=type, start=start, size=size, path=path)
 		self.bootable = bootable
 
@@ -353,7 +370,7 @@ class GPTPartition(Partition):
 
 		alias = PARTITION_TYPE_ALIASES.get(type)
 		if alias:
-			self.type = alias["GPT"]
+			self.type = alias[PartitionTableType.GPT]
 			return self.type
 
 		try:

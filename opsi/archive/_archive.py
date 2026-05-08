@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+
 import fnmatch
 import os
 import re
@@ -18,7 +19,7 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path, PurePosixPath
 from threading import Lock
-from typing import TYPE_CHECKING, Any, Generator
+from typing import TYPE_CHECKING, Any, Generator, Literal
 
 import packaging.version
 import zstandard
@@ -27,6 +28,8 @@ from opsi.logging import get_logger
 from opsi.opsi.service.server import OpsiConfig
 from opsi.process import Process, ProcessError, run_command
 from opsi.system.info import is_linux
+from opsi.util.pattern import MappedStrEnum
+import enum
 
 if TYPE_CHECKING:
 	from _typeshed import SupportsRead
@@ -38,6 +41,34 @@ CPIO_EXTRACT_COMMAND = "cpio --unconditional --extract --make-directories --quie
 TAR_EXTRACT_COMMAND = "tar --wildcards --no-same-owner --extract --file -"
 TAR_CREATE_COMMAND = "tar --owner=nobody --group=nogroup --create --file"
 ZSTD_COMPRESS_LEVEL = 3
+
+
+class ArchiveCompression(MappedStrEnum):
+	GZIP = "gzip"
+	ZSTD = "zstd"
+	BZIP2 = "bzip2"
+
+	_NAME = enum.nonmember("package compression")
+	_ALIASES = enum.nonmember({"bz2": "bzip2", "gz": "gzip", "zst": "zstd", "zstandard": "zstd"})
+	_FILE_SUFFIXES = enum.nonmember(
+		{
+			GZIP: ["gz", "gzip"],
+			ZSTD: ["zstd", "zst", "zstandard"],
+			BZIP2: ["bz2", "bzip2"],
+		}
+	)
+
+	@classmethod
+	def from_suffix(cls, suffix: str) -> ArchiveCompression:
+		normalized = suffix.lower().lstrip(".")
+		for compression, suffixes in cls._FILE_SUFFIXES.items():
+			if normalized in suffixes:
+				return ArchiveCompression(compression)
+		raise ValueError(f"Unknown file suffix '{suffix}' for archive compression")
+
+	@property
+	def suffix(self) -> str:
+		return "." + self._FILE_SUFFIXES[self][0]
 
 
 @dataclass
@@ -145,20 +176,20 @@ def use_pigz() -> bool:
 		return False
 
 
-def get_file_type(filename: str | Path) -> str:
+def get_file_type(filename: str | Path) -> Literal["zstd", "gzip", "bzip2", "cpio", "tar"]:
 	with open(filename, "rb") as file:
 		head = file.read(262)
 	if head[1:4] == b"\xb5\x2f\xfd":
 		return "zstd"
 	if head[:3] == b"\x1f\x8b\x08" or head[:8] == b"\x5c\x30\x33\x37\x5c\x32\x31\x33":
-		return "gz"
+		return "gzip"
 	if head[:3] == b"\x42\x5a\x68":
 		return "bzip2"
 	if head[:5] == b"\x30\x37\x30\x37\x30":
 		return "cpio"
 	if head[257:262] == b"\x75\x73\x74\x61\x72":
 		return "tar"
-	raise TypeError("get_file_type only accepts gz, bzip2, zstd, cpio and tar files.")
+	raise TypeError("get_file_type only accepts gzip, bzip2, zstd, cpio and tar files.")
 
 
 def extract_command(archive: Path, file_pattern: str | None = None) -> str:
@@ -175,24 +206,30 @@ def extract_command(archive: Path, file_pattern: str | None = None) -> str:
 		elif file_type == "cpio":
 			cmd = CPIO_EXTRACT_COMMAND
 		else:
-			raise TypeError(f"Archive to extract must be 'tar' or 'cpio', found: {file_type}")
+			raise TypeError(f"Archive to extract must be 'tar' or 'cpio', found: {file_type} for file '{archive}'")
 	if file_pattern:
 		cmd += f" '{file_pattern}'"
 	return cmd
 
 
 def decompress_command(archive: Path) -> str:
-	if archive.suffix in (".gzip", ".gz"):
+	try:
+		archive_compression = ArchiveCompression.from_suffix(archive.suffix)
+	except ValueError as exc:
+		raise RuntimeError(f"Invalid compression of file '{archive}'") from exc
+
+	if archive_compression == ArchiveCompression.GZIP:
 		if use_pigz():
 			return "pigz --stdout --quiet --decompress"
 		return "gunzip --stdout --quiet --decompress"
-	if archive.suffix in (".bzip2", ".bz2"):
+	if archive_compression == ArchiveCompression.BZIP2:
 		return "bunzip2 --stdout --quiet --decompress"
-	if archive.suffix in (".zstd", ".zst"):
+	if archive_compression == ArchiveCompression.ZSTD:
 		if not shutil.which("zstdcat"):
 			raise RuntimeError("Zstdcat not available.")
 		return "zstd --stdout --quiet --decompress"
-	raise RuntimeError(f"Unknown compression of file '{archive}'")
+
+	raise RuntimeError(f"Invalid compression of file '{archive}'")
 
 
 def untar(tar: tarfile.TarFile, destination: Path, file_pattern: str | None = None) -> None:
@@ -280,21 +317,21 @@ def extract_archive(
 		file_type = get_file_type(archive)
 		if archive.suffixes and ".cpio" in archive.suffixes[-2:] or file_type == "cpio":
 			use_commands = True
-		elif (archive.suffixes and archive.suffixes[-1] in (".gz", ".gzip") or file_type == "gz") and use_pigz():
+		elif (archive.suffixes and archive.suffixes[-1] in (".gz", ".gzip") or file_type == "gzip") and use_pigz():
 			use_commands = True
 	if use_commands:
 		return extract_archive_external(archive, destination, file_pattern=file_pattern, progress_listener=progress_listener)
 	return extract_archive_internal(archive, destination, file_pattern=file_pattern, progress_listener=progress_listener)
 
 
-def compress_command(archive: Path, compression: str) -> str:
-	if compression in ("gzip", "gz"):
+def compress_command(archive: Path, compression: ArchiveCompression) -> str:
+	if compression == ArchiveCompression.GZIP:
 		if use_pigz():
 			return f"pigz --rsyncable --quiet - > '{archive}'"
 		return f"gzip --rsyncable --quiet - > '{archive}'"
-	if compression in ("bzip2", "bz2"):
+	if compression == ArchiveCompression.BZIP2:
 		return f"bzip2 --quiet - > '{archive}'"
-	if compression == "zstd":
+	if compression == ArchiveCompression.ZSTD:
 		zstd_version = "0"
 		try:
 			match = re.search(r"\sv([\d\.]+)", run_command(["zstd", "--version"]).get_stdout_text())
@@ -307,7 +344,7 @@ def compress_command(archive: Path, compression: str) -> str:
 			# With version 1.3.8 zstd introduced --rsyncable mode.
 			opts = f"{opts} --rsyncable"
 		return f"zstd - {opts} -o '{archive}' 2> /dev/null"  # --no-progress is not available for deb9 zstd
-	raise RuntimeError(f"Unknown compression '{compression}'")
+	raise RuntimeError(f"Invalid compression '{compression}'")
 
 
 @dataclass
@@ -380,7 +417,7 @@ def create_archive_external(
 	archive: Path,
 	files: list[ArchiveFile],
 	*,
-	compression: str | None = None,
+	compression: ArchiveCompression | None = None,
 	dereference: bool = False,
 	progress_listener: ArchiveProgressListener | None = None,
 ) -> None:
@@ -402,7 +439,7 @@ def create_archive_external(
 	if not base_dir:
 		raise ValueError("No files to archive")
 
-	if compression == "bz2":
+	if compression == ArchiveCompression.BZIP2:
 		logger.warning("Creating unsyncable package (no zsync or rsync support)")
 
 	if archive.exists():
@@ -459,7 +496,7 @@ def create_archive_internal(
 	archive: Path,
 	files: list[ArchiveFile],
 	*,
-	compression: str | None = None,
+	compression: ArchiveCompression | None = None,
 	dereference: bool = False,
 	progress_listener: ArchiveProgressListener | None = None,
 ) -> None:
@@ -469,15 +506,15 @@ def create_archive_internal(
 	archive = archive.absolute()
 	logger.info("Creating archive '%s'", archive)
 
-	if compression == "bz2":
+	if compression == ArchiveCompression.BZIP2:
 		logger.warning("Creating unsyncable package (no zsync or rsync support)")
 
 	if archive.exists():
 		archive.unlink()
 	mode = "w|"
-	if compression == "bz2":
+	if compression == ArchiveCompression.BZIP2:
 		mode = "w|bz2"
-	elif compression == "gz":
+	elif compression == ArchiveCompression.GZIP:
 		mode = "w|gz"
 
 	logger.trace("Files: %r", files)
@@ -496,7 +533,7 @@ def create_archive_internal(
 		tarinfo.gname = "nogroup"
 		return tarinfo
 
-	if compression == "zstd":
+	if compression == ArchiveCompression.ZSTD:
 		compressor = zstandard.ZstdCompressor(level=ZSTD_COMPRESS_LEVEL)
 		with open(archive, "wb") as archive_file:
 			with compressor.stream_writer(archive_file) as zstd_writer:
@@ -522,11 +559,12 @@ def create_archive(
 	archive: Path,
 	files: list[ArchiveFile],
 	*,
-	compression: str | None = None,
+	compression: ArchiveCompression | str | None = None,
 	dereference: bool = False,
 	progress_listener: ArchiveProgressListener | None = None,
 ) -> None:
-	if compression == "gz" and is_linux() and use_pigz():
+	compression = ArchiveCompression(compression) if compression else None
+	if compression == ArchiveCompression.GZIP and is_linux() and use_pigz():
 		return create_archive_external(
 			archive, files, compression=compression, dereference=dereference, progress_listener=progress_listener
 		)

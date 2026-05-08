@@ -8,7 +8,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-from opsi.retry import Retry, RetryConfig, get_retry_config
+from opsi.retry import Retry, RetryConfig, get_retry_config, RetryConfigType
 
 
 def _delete_attempt(path: Path) -> None:
@@ -40,7 +40,7 @@ def delete(path: Path | str, *, missing_ok: bool = False, retry_config: RetryCon
 			return
 		raise FileNotFoundError(path)
 
-	retry_config = retry_config or get_retry_config("file_io")
+	retry_config = retry_config or get_retry_config(RetryConfigType.FILE_IO)
 	for attempt in Retry(retry_config):
 		with attempt:
 			_delete_attempt(path)

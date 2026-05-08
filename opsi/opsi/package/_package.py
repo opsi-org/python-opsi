@@ -17,6 +17,7 @@ from opsi.archive import (
 	create_archive,
 	extract_archive,
 	get_archive_files,
+	ArchiveCompression,
 )
 from opsi.logging import get_logger
 from opsi.opsi.package._control_file_handling import (
@@ -34,6 +35,7 @@ from opsi.system.file.temp import TempDir
 from opsi.util.version import compare_versions
 
 PACKAGE_DIR_TYPES = Literal["OPSI", "CLIENT_DATA", "SERVER_DATA"]
+
 
 logger = get_logger("opsi")
 
@@ -312,12 +314,11 @@ class OpsiPackage:
 
 		return dirs
 
-	# compression zstd, gz or bz2
 	def create_package_archive(
 		self,
 		base_dir: Path,
 		*,
-		compression: Literal["zstd", "bz2", "gz"] = "zstd",
+		compression: ArchiveCompression | str = ArchiveCompression.ZSTD,
 		destination: Path | None = None,
 		dereference: bool = False,
 		custom_name: str | None = None,
@@ -327,6 +328,10 @@ class OpsiPackage:
 		create_missing_legacy_control_file: bool = True,
 		create_missing_toml_control_file: bool = False,
 	) -> Path:
+		compression = ArchiveCompression(compression)
+		if compression not in (ArchiveCompression.ZSTD, ArchiveCompression.GZIP, ArchiveCompression.BZIP2):
+			raise ValueError(f"Unsupported package archive compression '{compression}'")
+
 		dirs = self.get_dirs(base_dir, custom_name, custom_only)
 		opsi_dir = dirs["OPSI"][0]
 		primary_control_file = self.find_and_parse_control_file(opsi_dir)
@@ -388,7 +393,7 @@ class OpsiPackage:
 
 		with TempDir(base_dir=self.temp_dir) as temp_dir:
 			for dir_name, files in files_by_archive_name.items():
-				archive = temp_dir / f"{dir_name}.tar.{compression}"
+				archive = temp_dir / f"{dir_name}.tar{compression.suffix}"
 				logger.info("Creating archive '%s'", archive)
 				create_archive(
 					archive,

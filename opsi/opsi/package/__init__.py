@@ -5,6 +5,7 @@
 
 from opsi.opsi.package._associated_files import (
 	PackageContentFileEntry,
+	PackageContentFileEntryType,
 	create_package_content_file,
 	create_package_md5_file,
 	create_package_zsync_file,
@@ -12,6 +13,7 @@ from opsi.opsi.package._associated_files import (
 )
 from opsi.opsi.package._control_file_handling import create_product_dependencies
 from opsi.opsi.package._package import OpsiPackage, PackageDependency, package_data_from_archive
+from opsi.archive import ArchiveCompression
 from opsi.opsi.package._repo_meta import (
 	RepoMetaMetadataFileType,
 	RepoMetaPackage,
@@ -25,8 +27,10 @@ from opsi.opsi.package._repo_meta import (
 __all__ = [
 	"OpsiPackage",
 	"PackageDependency",
+	"ArchiveCompression",
 	"package_data_from_archive",
 	"PackageContentFileEntry",
+	"PackageContentFileEntryType",
 	"create_package_content_file",
 	"parse_package_content_file",
 	"create_package_md5_file",

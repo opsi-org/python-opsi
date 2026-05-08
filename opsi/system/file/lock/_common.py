@@ -3,11 +3,9 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-
 from opsi.util.pattern import MappedStrEnum
 
 
-class LinkType(MappedStrEnum):
-	SYMLINK = "symlink"
-	HARDLINK = "hardlink"
-	JUNCTION = "junction"
+class LockMethod(MappedStrEnum):
+	FLOCK = "flock"
+	LOCKF = "lockf"

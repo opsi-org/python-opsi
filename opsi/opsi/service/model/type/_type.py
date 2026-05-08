@@ -17,11 +17,12 @@ import os
 import re
 import time
 import types
-from enum import StrEnum
+import enum
 from typing import TYPE_CHECKING, Any, Callable
 from uuid import UUID
 
 from opsi.logging import get_logger
+from opsi.util.pattern import MappedStrEnum
 
 if os.name != "nt":
 	WindowsError = RuntimeError
@@ -66,22 +67,16 @@ _LANGUAGE_CODE_REGEX = re.compile(r"^([a-z]{2,3})[-_]?([a-z]{4})?[-_]?([a-z]{2})
 _ARCHITECTURE_REGEX = re.compile(r"^(x86|x64|arm64|all)$")
 
 
-class OperatingSystem(StrEnum):
+class OperatingSystem(MappedStrEnum):
 	WINDOWS = "windows"
 	MACOS = "macos"
 	LINUX = "linux"
 	OPSI_LOCAL_IMAGE = "opsi-local-image"
 
-	@classmethod
-	def _missing_(cls, value: object) -> OperatingSystem:
-		value = str(value).lower()
-		for member in cls:
-			if member.value == value:
-				return member
-		raise ValueError(f"{value!r} is not a valid {cls.__name__}")
+	_NAME = enum.nonmember("operating system")
 
 
-class Architecture(StrEnum):
+class Architecture(MappedStrEnum):
 	X86 = "x86"
 	X64 = "x64"
 	IA64 = "ia64"
@@ -89,15 +84,8 @@ class Architecture(StrEnum):
 	ARM64 = "arm64"
 	ALL = "all"
 
-	@classmethod
-	def _missing_(cls, value: object) -> Architecture:
-		value = str(value).lower()
-		if value in ("x86_64", "amd64"):
-			value = "x64"
-		for member in cls:
-			if member.value == value:
-				return member
-		raise ValueError(f"{value!r} is not a valid {cls.__name__}")
+	_NAME = enum.nonmember("architecture")
+	_ALIASES = enum.nonmember({"x86_64": "x64", "amd64": "x64", "aarch64": "arm64"})
 
 	@property
 	def inf_value(self) -> str:
@@ -106,17 +94,11 @@ class Architecture(StrEnum):
 		return self.value
 
 
-class FirmwareType(StrEnum):
+class FirmwareType(MappedStrEnum):
 	BIOS = "BIOS"
 	UEFI = "UEFI"
 
-	@classmethod
-	def _missing_(cls, value: object) -> FirmwareType:
-		value = str(value).upper()
-		for member in cls:
-			if member.value == value:
-				return member
-		raise ValueError(f"{value!r} is not a valid {cls.__name__}")
+	_NAME = enum.nonmember("firmware type")
 
 
 def to_list(value: Any) -> list[Any]:
