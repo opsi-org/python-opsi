@@ -19,7 +19,7 @@ from unittest.mock import patch
 import psutil
 import pytest
 
-from opsi.process import Process, ProcessError, run_command, run_script, run_script_file, InterpreterType, DecodingErrors
+from opsi.process import DecodingErrors, InterpreterType, Process, ProcessError, run_command, run_script, run_script_file
 from opsi.process._process import _get_interpreter_command, get_process_io_encoding
 from opsi.system.info import is_windows
 from opsi.system.session import DisplaySession, LinuxDisplaySessionType, WindowsDisplaySessionState, get_display_sessions
@@ -890,7 +890,7 @@ def test_process_custom_interpreter_list() -> None:
 	) as proc:
 		pass
 	assert proc.exit_code == 0
-	assert proc.get_output_text().strip() == "Running with uv: arg1"
+	assert proc.get_stdout_text().strip() == "Running with uv: arg1"
 
 
 @pytest.mark.posix
@@ -898,7 +898,7 @@ def test_process_custom_interpreter_string() -> None:
 	with Process(script='echo "from shell: $1"', interpreter="sh", arguments=["arg1"]) as proc:
 		pass
 	assert proc.exit_code == 0
-	assert proc.get_output_text().strip() == "from shell: arg1"
+	assert proc.get_stdout_text().strip() == "from shell: arg1"
 
 
 @pytest.mark.parametrize("exit_on_error", [True, False])
