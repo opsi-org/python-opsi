@@ -3,16 +3,16 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
+import enum
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
 from pyzsync import create_zsync_file
 
-from opsi.crypt.hash import compute_file_hash
+from opsi.crypt.hash import hash_file
 from opsi.logging import get_logger
 from opsi.util.pattern import MappedStrEnum
-import enum
 
 logger = get_logger("opsi")
 
@@ -50,7 +50,7 @@ def create_package_content_file(base_dir: Path, *, links_as_links: bool = True) 
 			type=PackageContentFileEntryType.FILE,
 			filename=path.relative_to(base_dir).as_posix(),
 			size=path.stat().st_size,
-			md5sum=compute_file_hash(path, algorithm="md5"),
+			md5sum=hash_file(path, algorithm="md5"),
 		)
 
 	def handle_symlink(path: Path) -> PackageContentFileEntry:
@@ -189,7 +189,7 @@ def create_package_md5_file(
 ) -> Path:
 	if not filename:
 		filename = Path(f"{package_path}.md5")
-	file_hash = compute_file_hash(package_path, algorithm="md5", progress_callback=progress_callback)
+	file_hash = hash_file(package_path, algorithm="md5", progress_callback=progress_callback)
 	filename.write_text(file_hash, encoding="utf-8", newline="")
 	return filename
 

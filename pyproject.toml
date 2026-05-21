@@ -34,6 +34,9 @@ dependencies = [
 	"wmi>=1.5; platform_system == 'Windows'",
 	"zstandard>=0.21",
 	"pycryptodome>=3.23.0",
+	"bcrypt>=5.0.0",
+	"crypt-r>=3.13.1",
+	"argon2-cffi>=25.1.0",
 ]
 
 [[project.authors]]

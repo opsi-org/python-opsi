@@ -8,6 +8,7 @@ import enum
 from opsi.util.pattern import MappedStrEnum
 from opsi.exception import OperatingSystemUnsupportedError
 
+
 class OperatingSystemType(MappedStrEnum):
 	WINDOWS = "windows"
 	MACOS = "macos"

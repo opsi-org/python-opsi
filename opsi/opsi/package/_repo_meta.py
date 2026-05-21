@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Callable, Generator
 
 from opsi.compression import compress, decompress
-from opsi.crypt.hash import compute_file_hash
+from opsi.crypt.hash import hash_file
 from opsi.logging import get_logger
 from opsi.opsi.package import OpsiPackage, PackageDependency
 from opsi.opsi.service.model.object import ProductDependency
@@ -141,8 +141,8 @@ class RepoMetaPackage:
 		data: dict[str, Any] = {
 			"url": url,
 			"size": package_file.stat().st_size,
-			"md5_hash": compute_file_hash(package_file, "md5"),
-			"blake3_hash": compute_file_hash(package_file, "blake3"),
+			"md5_hash": hash_file(package_file, "md5"),
+			"blake3_hash": hash_file(package_file, "blake3"),
 			"sha256_hash": "",  # Replaced by blake3
 		}
 		if package_file.with_name(f"{package_file.name}.zsync").exists():
