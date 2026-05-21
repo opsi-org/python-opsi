@@ -1,6 +1,6 @@
 # python-opsi
 
-`python-opsi` is a Python package with shared libraries for OPSI tooling and services.
+`opsi` is a Python package with shared libraries for OPSI tooling and services.
 
 It includes helpers for archives, compression, cryptography, files, logging, networking, OPSI packages and services, processes, serialization, system integration, testing, time handling, and utility functions.
 
