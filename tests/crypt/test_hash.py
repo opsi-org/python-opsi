@@ -17,6 +17,7 @@ from opsi.crypt.hash import (
 	verify_password,
 )
 from opsi.crypt.hash._hash import _get_password_hash_algorithm
+from opsi.system.info import is_linux
 
 
 @pytest.mark.parametrize("algorithm", ("md5", FileHashAlgorithm.BLAKE3))
@@ -98,6 +99,9 @@ def test_password_hash(
 	expected_exception: type[Exception] | None,
 	expected_exception_message: str | None,
 ) -> None:
+	if algorithm == "SHA512" and not is_linux():
+		pytest.skip("SHA512 hashing only supported on Linux")
+
 	kwargs = {"password": password, "algorithm": algorithm, "rounds": rounds, "generate_salt": generate_salt}
 	if format:
 		kwargs["format"] = PasswordHashFormat(format)

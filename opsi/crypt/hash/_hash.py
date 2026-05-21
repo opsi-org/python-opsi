@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Callable
 
 import bcrypt
-import crypt_r
 from argon2 import DEFAULT_HASH_LENGTH as ARGON2_DEFAULT_HASH_LENGTH
 from argon2 import DEFAULT_MEMORY_COST as ARGON2_DEFAULT_MEMORY_COST
 from argon2 import DEFAULT_PARALLELISM as ARGON2_DEFAULT_PARALLELISM
@@ -26,7 +25,11 @@ from argon2.low_level import Type as Argon2Type
 from argon2.low_level import hash_secret as argon2_hash_secret
 from blake3 import blake3
 
+from opsi.system.info import is_linux
 from opsi.util.pattern import MappedStrEnum
+
+if is_linux():
+	import crypt_r
 
 
 class FileHashAlgorithm(MappedStrEnum):
@@ -160,6 +163,8 @@ def hash_password(
 		).decode("ascii")
 
 	if algorithm == PasswordHashAlgorithm.SHA512:
+		if not is_linux():
+			raise ValueError("SHA512 hashing only supported on Linux")
 		if format != PasswordHashFormat.SHADOW:
 			raise ValueError("SHA512 only supported with SHADOW format")
 		rounds = rounds or 5000
@@ -209,6 +214,8 @@ def verify_password(password: str, password_hash: str, algorithm: PasswordHashAl
 			return False
 
 	if algorithm == PasswordHashAlgorithm.SHA512:
+		if not is_linux():
+			raise ValueError("SHA512 hashing only supported on Linux")
 		return crypt_r.crypt(password, password_hash) == password_hash
 
 	if algorithm == PasswordHashAlgorithm.BCRYPT:
