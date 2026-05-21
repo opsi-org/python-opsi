@@ -5,8 +5,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Self
 from enum import StrEnum, nonmember
+from typing import Any, Self
 
 
 class Singleton(type):
@@ -30,16 +30,14 @@ class MappedStrEnum(StrEnum):
 
 	@classmethod
 	def _missing_(cls, value: object) -> Self:
-		value = str(value)
-		if value in cls._ALIASES:
-			value = str(cls._ALIASES[value])
-
-		value = value.lower()
-		if value in cls._ALIASES:
-			value = str(cls._ALIASES[value])
+		search_value = str(value).lower()
+		for key, val in cls._ALIASES.items():
+			if key.lower() == search_value:
+				search_value = str(val).lower()
+				break
 
 		for member in cls:
-			if member.value.lower() == value:
+			if member.value.lower() == search_value:
 				return member
 
 		valid_values = ", ".join(repr(member.value) for member in cls)

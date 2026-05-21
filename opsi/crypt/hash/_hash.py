@@ -113,7 +113,7 @@ class PasswordHashAlgorithm(MappedStrEnum):
 		raise ValueError(f"Unsupported hashing algorithm {identifier!r}")
 
 
-def _get_password_hash_algorithm(password_hash: str) -> PasswordHashAlgorithm:
+def get_password_hash_algorithm(password_hash: str) -> PasswordHashAlgorithm:
 	"""
 	Get the hashing algorithm used for a given hash string.
 	"""
@@ -202,7 +202,7 @@ def verify_password(password: str, password_hash: str, algorithm: PasswordHashAl
 	Verify a password against a given hash string.
 	"""
 	if not algorithm:
-		algorithm = _get_password_hash_algorithm(password_hash)
+		algorithm = get_password_hash_algorithm(password_hash)
 	elif not isinstance(algorithm, PasswordHashAlgorithm):
 		algorithm = PasswordHashAlgorithm(algorithm)
 

@@ -16,7 +16,7 @@ from opsi.crypt.hash import (
 	verify_file_hash,
 	verify_password,
 )
-from opsi.crypt.hash._hash import _get_password_hash_algorithm
+from opsi.crypt.hash._hash import get_password_hash_algorithm
 from opsi.system.info import is_linux
 
 
@@ -80,11 +80,11 @@ def test_PasswordHashAlgorithm_identifier_and_from_identifier() -> None:
 		(r"5&|F{#(OO+y?z`Zg];AL&TIJ;", "SHA512", None, "SHADOW", None, None),
 		(r"c5e9b99b0e4a4d3f8a6722b2e91a8cd4d274a923e56d43f4d2b1187b9b09f6a3", "SHA512", None, "SHADOW", None, None),
 		("x" * 65, "SHA512", None, "SHADOW", ValueError, "Password cannot be longer than 64 bytes"),
-		("secret", "PBKDF2_SHA512", None, "GRUB", None, None),
+		("secret", "pbkdf2-sha512", None, "GRUB", None, None),
 		("secret", "PBKDF2_SHA512", None, "SHADOW", ValueError, "PBKDF2_SHA512 only supported with GRUB format"),
 		("secret", "BCRYPT", None, "GRUB", ValueError, "BCRYPT only supported with SHADOW format"),
 		("secret", "SHA512", None, "GRUB", ValueError, "SHA512 only supported with SHADOW format"),
-		("secret", "MD5", None, None, ValueError, "Invalid value 'md5' for password hash algorithm"),
+		("secret", "MD5", None, None, ValueError, "Invalid value 'MD5' for password hash algorithm"),
 		("secret", "ARGON2ID", 4, "SHADOW", None, None),
 		(r"7ERlz[I|12by1ycIqe?ES6t`2r<F,y", "ARGON2ID", None, None, None, None),
 		("secret", "ARGON2ID", 4, "GRUB", ValueError, "ARGON2ID only supported with SHADOW format"),
@@ -117,9 +117,9 @@ def test_password_hash(
 		assert password_hash != password_hash2
 	else:
 		assert password_hash == password_hash2
-	if algorithm == "PBKDF2_SHA512":
+	if PasswordHashAlgorithm(algorithm) == PasswordHashAlgorithm.PBKDF2_SHA512:
 		assert password_hash.startswith("grub.pbkdf2.sha512")
-		assert _get_password_hash_algorithm(password_hash) == PasswordHashAlgorithm.PBKDF2_SHA512
+		assert get_password_hash_algorithm(password_hash) == PasswordHashAlgorithm.PBKDF2_SHA512
 		assert verify_password(password, password_hash)
 		assert verify_password(password, password_hash, algorithm=algorithm)
 		assert not verify_password("wrong_password", password_hash)
@@ -128,15 +128,15 @@ def test_password_hash(
 	assert len(password_hash) <= 128
 	assert password_hash.startswith("$")
 	parts = password_hash.split("$")
-	if algorithm == "BCRYPT":
+	if PasswordHashAlgorithm(algorithm) == PasswordHashAlgorithm.BCRYPT:
 		assert parts[1] == "2b"
 		assert parts[2] == str(rounds or 12)
-	elif algorithm == "SHA512":
+	elif PasswordHashAlgorithm(algorithm) == PasswordHashAlgorithm.SHA512:
 		assert parts[1] == "6"
 		if rounds:
 			assert parts[2] == f"rounds={rounds}"
 
-	alg = _get_password_hash_algorithm(password_hash)
+	alg = get_password_hash_algorithm(password_hash)
 	assert alg.name == algorithm
 	assert verify_password(password, password_hash)
 	assert verify_password(password, password_hash, algorithm=alg)
