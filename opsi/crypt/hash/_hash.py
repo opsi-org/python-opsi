@@ -88,6 +88,7 @@ class PasswordHashAlgorithm(MappedStrEnum):
 	BCRYPT = "BCRYPT"
 	PBKDF2_SHA512 = "PBKDF2_SHA512"
 	ARGON2ID = "ARGON2ID"
+	MD5 = "MD5"
 
 	def identifier(self) -> str:
 		if self == PasswordHashAlgorithm.ARGON2ID:
@@ -98,6 +99,8 @@ class PasswordHashAlgorithm(MappedStrEnum):
 			return "2b"
 		if self == PasswordHashAlgorithm.PBKDF2_SHA512:
 			return "pbkdf2.sha512"
+		if self == PasswordHashAlgorithm.MD5:
+			return "1"
 		raise ValueError(f"Unsupported hashing algorithm: {self!r}")
 
 	@classmethod
@@ -110,6 +113,8 @@ class PasswordHashAlgorithm(MappedStrEnum):
 			return PasswordHashAlgorithm.BCRYPT
 		if identifier == "pbkdf2.sha512":
 			return PasswordHashAlgorithm.PBKDF2_SHA512
+		if identifier == "1":
+			return PasswordHashAlgorithm.MD5
 		raise ValueError(f"Unsupported hashing algorithm {identifier!r}")
 
 
@@ -194,7 +199,19 @@ def hash_password(
 		hash_bytes = hashlib.pbkdf2_hmac("sha512", password.encode("utf-8"), salt, rounds)
 		return f"grub.pbkdf2.sha512.{rounds}.{binascii.hexlify(salt).decode().upper()}.{binascii.hexlify(hash_bytes).decode().upper()}"
 
-	raise ValueError(f"Only 'SHA512', 'BCRYPT' and 'PBKDF2_SHA512' methods are supported, not {algorithm!r}")
+	if algorithm == PasswordHashAlgorithm.MD5:
+		if format != PasswordHashFormat.SHADOW:
+			raise ValueError("MD5 only supported with SHADOW format")
+		salt = (
+			crypt_r.mksalt(
+				method=crypt_r.METHOD_MD5,  # ty: ignore[unresolved-attribute]
+			)
+			if generate_salt
+			else "$1$................$"
+		)
+		return crypt_r.crypt(password, salt=salt)
+
+	raise ValueError(f"Only 'SHA512', 'BCRYPT', 'PBKDF2_SHA512' and 'MD5' methods are supported, not {algorithm!r}")
 
 
 def verify_password(password: str, password_hash: str, algorithm: PasswordHashAlgorithm | str | None = None) -> bool:
@@ -235,4 +252,9 @@ def verify_password(password: str, password_hash: str, algorithm: PasswordHashAl
 		computed_hash = hashlib.pbkdf2_hmac("sha512", password.encode("utf-8"), salt_bytes, rounds_int)
 		return hmac.compare_digest(computed_hash, expected_hash_bytes)
 
-	raise ValueError("Only 'ARGON2ID', 'SHA512', 'BCRYPT' and 'PBKDF2_SHA512' methods are supported")
+	if algorithm == PasswordHashAlgorithm.MD5:
+		if not is_linux():
+			raise ValueError("MD5 hashing only supported on Linux")
+		return crypt_r.crypt(password, password_hash) == password_hash
+
+	raise ValueError("Only 'ARGON2ID', 'SHA512', 'BCRYPT', 'PBKDF2_SHA512' and 'MD5' methods are supported")

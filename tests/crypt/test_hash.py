@@ -84,7 +84,8 @@ def test_PasswordHashAlgorithm_identifier_and_from_identifier() -> None:
 		("secret", "PBKDF2_SHA512", None, "SHADOW", ValueError, "PBKDF2_SHA512 only supported with GRUB format"),
 		("secret", "BCRYPT", None, "GRUB", ValueError, "BCRYPT only supported with SHADOW format"),
 		("secret", "SHA512", None, "GRUB", ValueError, "SHA512 only supported with SHADOW format"),
-		("secret", "MD5", None, None, ValueError, "Invalid value 'MD5' for password hash algorithm"),
+		("secret", "MD5", None, "SHADOW", None, None),
+		("secret", "MD5", None, "GRUB", ValueError, "MD5 only supported with SHADOW format"),
 		("secret", "ARGON2ID", 4, "SHADOW", None, None),
 		(r"7ERlz[I|12by1ycIqe?ES6t`2r<F,y", "ARGON2ID", None, None, None, None),
 		("secret", "ARGON2ID", 4, "GRUB", ValueError, "ARGON2ID only supported with SHADOW format"),
@@ -99,8 +100,8 @@ def test_password_hash(
 	expected_exception: type[Exception] | None,
 	expected_exception_message: str | None,
 ) -> None:
-	if algorithm == "SHA512" and not is_linux():
-		pytest.skip("SHA512 hashing only supported on Linux")
+	if algorithm in ("SHA512", "MD5") and not is_linux():
+		pytest.skip(f"{algorithm} hashing only supported on Linux")
 
 	kwargs = {"password": password, "algorithm": algorithm, "rounds": rounds, "generate_salt": generate_salt}
 	if format:
@@ -135,6 +136,8 @@ def test_password_hash(
 		assert parts[1] == "6"
 		if rounds:
 			assert parts[2] == f"rounds={rounds}"
+	elif PasswordHashAlgorithm(algorithm) == PasswordHashAlgorithm.MD5:
+		assert parts[1] == "1"
 
 	alg = get_password_hash_algorithm(password_hash)
 	assert alg.name == algorithm
