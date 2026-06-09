@@ -14,7 +14,7 @@ if sys.platform != "win32":
 
 import _winapi
 import os
-from enum import Enum
+from enum import IntEnum
 from typing import Any
 
 import ntsecuritycon
@@ -25,7 +25,6 @@ import win32process
 import win32profile
 import win32security
 import win32ts
-from _win32typing import PySID
 
 from opsi.logging import get_logger
 
@@ -133,7 +132,7 @@ def patch_create_process() -> None:
 	_winapi.CreateProcess = CreateProcess
 
 
-class ProcessIntegrityLevel(Enum):
+class ProcessIntegrityLevel(IntEnum):
 	UNTRUSTED = 0x0
 	LOW = 0x1000
 	MEDIUM_LOW = 0x1100
@@ -145,9 +144,7 @@ class ProcessIntegrityLevel(Enum):
 	SECURE_PROCESS = 0x7000
 
 	@classmethod
-	def from_sid(cls, sid: str | PySID) -> ProcessIntegrityLevel:
-		if isinstance(sid, PySID):
-			sid = win32security.ConvertSidToStringSid(sid)
+	def from_sid(cls, sid: str) -> ProcessIntegrityLevel:
 		rid = int(str(sid).split("-")[-1])
 		return cls.from_int(rid)
 
@@ -167,7 +164,7 @@ def get_process_integrity_level(pid: int | None = None) -> ProcessIntegrityLevel
 	"""
 	if pid is None:
 		pid = os.getpid()
-	currentProcess = win32api.OpenProcess(win32con.MAXIMUM_ALLOWED, False, pid)
-	currentProcessToken = win32security.OpenProcessToken(currentProcess, win32con.MAXIMUM_ALLOWED)
-	sid, _unused = win32security.GetTokenInformation(currentProcessToken, ntsecuritycon.TokenIntegrityLevel)
-	return ProcessIntegrityLevel.from_sid(sid)
+	current_process = win32api.OpenProcess(win32con.MAXIMUM_ALLOWED, False, pid)
+	current_process_token = win32security.OpenProcessToken(current_process, win32con.MAXIMUM_ALLOWED)
+	sid, _ = win32security.GetTokenInformation(current_process_token, ntsecuritycon.TokenIntegrityLevel)
+	return ProcessIntegrityLevel.from_sid(win32security.ConvertSidToStringSid(sid))
