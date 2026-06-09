@@ -1113,7 +1113,10 @@ def test_run_process_in_session_windows() -> None:
 
 	from opsi.process import ProcessIntegrityLevel, get_process_integrity_level
 
-	if get_process_integrity_level() < ProcessIntegrityLevel.SYSTEM:
+	integrity_level = get_process_integrity_level()
+	print(f"Current process integrity level: {integrity_level}")
+
+	if integrity_level < ProcessIntegrityLevel.SYSTEM:
 		pytest.skip("Test requires SYSTEM integrity level")
 
 	run_script(script="set", session_id=sessions[0].id)
