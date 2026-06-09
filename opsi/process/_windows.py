@@ -3,6 +3,8 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
+from __future__ import annotations
+
 import sys
 
 from opsi.exception import OperatingSystemUnsupportedError
@@ -11,6 +13,8 @@ if sys.platform != "win32":
 	raise OperatingSystemUnsupportedError("This module is only supported on Windows")
 
 import _winapi
+import os
+from enum import Enum
 from typing import Any
 
 import ntsecuritycon
@@ -21,6 +25,7 @@ import win32process
 import win32profile
 import win32security
 import win32ts
+from _win32typing import PySID
 
 from opsi.logging import get_logger
 
@@ -126,3 +131,43 @@ def CreateProcess(
 
 def patch_create_process() -> None:
 	_winapi.CreateProcess = CreateProcess
+
+
+class ProcessIntegrityLevel(Enum):
+	UNTRUSTED = 0x0
+	LOW = 0x1000
+	MEDIUM_LOW = 0x1100
+	MEDIUM = 0x2000
+	MEDIUM_PLUS = 0x2100
+	HIGH = 0x3000
+	SYSTEM = 0x4000
+	PROTECTED_PROCESS = 0x5000
+	SECURE_PROCESS = 0x7000
+
+	@classmethod
+	def from_sid(cls, sid: str | PySID) -> ProcessIntegrityLevel:
+		if isinstance(sid, PySID):
+			sid = win32security.ConvertSidToStringSid(sid)
+		rid = int(str(sid).split("-")[-1])
+		return cls.from_int(rid)
+
+	@classmethod
+	def from_int(cls, value: int) -> ProcessIntegrityLevel:
+		for sorted_member in sorted(ProcessIntegrityLevel, key=lambda m: m.value, reverse=True):
+			if value >= sorted_member.value:
+				return sorted_member
+		return cls.UNTRUSTED
+
+
+def get_process_integrity_level(pid: int | None = None) -> ProcessIntegrityLevel:
+	"""
+	Get the integrity level of a process.
+	:param pid: Process ID. If None, the current process is used.
+	:return: Integrity level of the process.
+	"""
+	if pid is None:
+		pid = os.getpid()
+	currentProcess = win32api.OpenProcess(win32con.MAXIMUM_ALLOWED, False, pid)
+	currentProcessToken = win32security.OpenProcessToken(currentProcess, win32con.MAXIMUM_ALLOWED)
+	sid, _unused = win32security.GetTokenInformation(currentProcessToken, ntsecuritycon.TokenIntegrityLevel)
+	return ProcessIntegrityLevel.from_sid(sid)

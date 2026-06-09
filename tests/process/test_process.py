@@ -1310,3 +1310,31 @@ def test_run_process_in_session_linux() -> None:
 def test_run_process_in_session_macos() -> None:
 	with pytest.raises(ProcessError, match="Parameter 'session_id' is only supported on Windows and Linux"):
 		Process(command=["sleep", "1"], session_id="1")
+
+
+@pytest.mark.windows
+def test_process_integrity_level() -> None:
+	from opsi.process import ProcessIntegrityLevel, get_process_integrity_level
+
+	assert ProcessIntegrityLevel.from_sid("S-1-16-0") == ProcessIntegrityLevel.UNTRUSTED
+	assert ProcessIntegrityLevel.from_sid("S-1-16-4096") == ProcessIntegrityLevel.LOW
+	assert ProcessIntegrityLevel.from_sid("S-1-16-4352") == ProcessIntegrityLevel.MEDIUM_LOW
+	assert ProcessIntegrityLevel.from_sid("S-1-16-8192") == ProcessIntegrityLevel.MEDIUM
+	assert ProcessIntegrityLevel.from_sid("S-1-16-8448") == ProcessIntegrityLevel.MEDIUM_PLUS
+	assert ProcessIntegrityLevel.from_sid("S-1-16-12288") == ProcessIntegrityLevel.HIGH
+	assert ProcessIntegrityLevel.from_sid("S-1-16-16384") == ProcessIntegrityLevel.SYSTEM
+	assert ProcessIntegrityLevel.from_sid("S-1-16-20480") == ProcessIntegrityLevel.PROTECTED_PROCESS
+	assert ProcessIntegrityLevel.from_sid("S-1-16-28672") == ProcessIntegrityLevel.SECURE_PROCESS
+
+	assert ProcessIntegrityLevel.from_int(-1) == ProcessIntegrityLevel.UNTRUSTED
+	assert ProcessIntegrityLevel.from_int(0) == ProcessIntegrityLevel.UNTRUSTED
+	assert ProcessIntegrityLevel.from_int(1000) == ProcessIntegrityLevel.UNTRUSTED
+	assert ProcessIntegrityLevel.from_int(4096) == ProcessIntegrityLevel.LOW
+	assert ProcessIntegrityLevel.from_int(33333) == ProcessIntegrityLevel.SECURE_PROCESS
+
+	assert ProcessIntegrityLevel.UNTRUSTED < ProcessIntegrityLevel.LOW
+	assert ProcessIntegrityLevel.PROTECTED_PROCESS < ProcessIntegrityLevel.SECURE_PROCESS
+
+	process_level = get_process_integrity_level()
+	assert isinstance(process_level, ProcessIntegrityLevel)
+	assert process_level >= ProcessIntegrityLevel.UNTRUSTED

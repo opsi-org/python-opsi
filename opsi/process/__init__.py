@@ -4,6 +4,10 @@
 # License: AGPL-3.0-only
 
 from opsi.process._process import (
+	CaptureOutputMode,
+	DecodingErrors,
+	DiscardOutputMode,
+	InterpreterType,
 	Process,
 	ProcessError,
 	get_process_io_encoding,
@@ -11,10 +15,6 @@ from opsi.process._process import (
 	run_command,
 	run_script,
 	run_script_file,
-	InterpreterType,
-	CaptureOutputMode,
-	DiscardOutputMode,
-	DecodingErrors,
 )
 
 __all__ = [
@@ -30,3 +30,10 @@ __all__ = [
 	"DiscardOutputMode",
 	"DecodingErrors",
 ]
+
+from opsi.system.info import is_windows
+
+if is_windows():
+	from opsi.process._windows import ProcessIntegrityLevel, get_process_integrity_level  # noqa F401
+
+	__all__.extend(["ProcessIntegrityLevel", "get_process_integrity_level"])
