@@ -70,6 +70,7 @@ def _load_windows_module(monkeypatch: pytest.MonkeyPatch) -> tuple[ModuleType, l
 	return module, net_use_add_calls, net_use_del_calls
 
 
+@pytest.mark.linux
 def test_linux_mount_cifs_share_creates_mount_point_and_uses_credentials_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 	module = _load_linux_module(monkeypatch)
 	run_command_calls: list[dict[str, Any]] = []
@@ -111,6 +112,7 @@ def test_linux_mount_cifs_share_creates_mount_point_and_uses_credentials_file(tm
 	}
 
 
+@pytest.mark.linux
 def test_linux_mount_cifs_share_unmounts_existing_mount_before_mounting(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 	module = _load_linux_module(monkeypatch)
 	events: list[tuple[str, Path | list[str]]] = []
@@ -140,6 +142,7 @@ def test_linux_mount_cifs_share_unmounts_existing_mount_before_mounting(tmp_path
 	assert mount_command[6].startswith("credentials=")
 
 
+@pytest.mark.linux
 def test_linux_mount_cifs_share_rejects_domain_with_double_quote(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 	module = _load_linux_module(monkeypatch)
 
@@ -147,6 +150,7 @@ def test_linux_mount_cifs_share_rejects_domain_with_double_quote(tmp_path: Path,
 		module.mount_cifs_share("server", "share", tmp_path / "mnt", 'DO"MAIN\\user', "secret")
 
 
+@pytest.mark.linux
 def test_linux_get_mount_finds_device_and_mount_point(monkeypatch: pytest.MonkeyPatch) -> None:
 	module = _load_linux_module(monkeypatch)
 
@@ -160,6 +164,7 @@ def test_linux_get_mount_finds_device_and_mount_point(monkeypatch: pytest.Monkey
 	assert module._get_mount(mount_point="/mnt/share") == ("//server/share", Path("/mnt/share"))
 
 
+@pytest.mark.linux
 def test_linux_get_mount_requires_device_or_mount_point(monkeypatch: pytest.MonkeyPatch) -> None:
 	module = _load_linux_module(monkeypatch)
 
@@ -167,6 +172,7 @@ def test_linux_get_mount_requires_device_or_mount_point(monkeypatch: pytest.Monk
 		module._get_mount()
 
 
+@pytest.mark.linux
 def test_linux_mount_webdav_share_uses_rclone_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 	module = _load_linux_module(monkeypatch)
 	run_command_calls: list[dict[str, Any]] = []
@@ -214,6 +220,7 @@ def test_linux_mount_webdav_share_uses_rclone_config(tmp_path: Path, monkeypatch
 	]
 
 
+@pytest.mark.linux
 def test_linux_mount_webdav_share_requires_rclone(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 	module = _load_linux_module(monkeypatch)
 
@@ -223,6 +230,7 @@ def test_linux_mount_webdav_share_requires_rclone(tmp_path: Path, monkeypatch: p
 		module.mount_webdav_share("server", 4447, "depot", tmp_path / "webdav", "user", "secret")
 
 
+@pytest.mark.linux
 @pytest.mark.parametrize(
 	("mount_exists", "expected_calls"),
 	[
@@ -255,6 +263,7 @@ def test_linux_unmount_network_share_uses_umount_for_existing_mount(
 		assert run_command_calls == []
 
 
+@pytest.mark.linux
 def test_linux_unmount_network_share_requires_mount_point(monkeypatch: pytest.MonkeyPatch) -> None:
 	module = _load_linux_module(monkeypatch)
 
@@ -262,6 +271,7 @@ def test_linux_unmount_network_share_requires_mount_point(monkeypatch: pytest.Mo
 		module.unmount_network_share(None)
 
 
+@pytest.mark.macos
 def test_macos_mount_cifs_share_uses_mount_smbfs_and_writes_prompted_password(
 	tmp_path: Path,
 	monkeypatch: pytest.MonkeyPatch,
@@ -305,6 +315,7 @@ def test_macos_mount_cifs_share_uses_mount_smbfs_and_writes_prompted_password(
 	assert processes[0].sent_lines == ["secret"]
 
 
+@pytest.mark.macos
 def test_macos_run_mount_command_raises_with_complete_output(monkeypatch: pytest.MonkeyPatch) -> None:
 	module = _load_macos_module(monkeypatch)
 	processes: list[FakeMacosProcess] = []
@@ -347,6 +358,7 @@ def test_macos_run_mount_command_raises_with_complete_output(monkeypatch: pytest
 	assert "Username: Password: first diagnostic line\nsecond diagnostic line" in str(error.value)
 
 
+@pytest.mark.macos
 def test_macos_run_mount_command_raises_ssl_certificate_error(monkeypatch: pytest.MonkeyPatch) -> None:
 	module = _load_macos_module(monkeypatch)
 
@@ -371,6 +383,7 @@ def test_macos_run_mount_command_raises_ssl_certificate_error(monkeypatch: pytes
 		module._run_mount_command(["mount_webdav", "-i", "https://server/share", "/mnt"], username=None, password="secret")
 
 
+@pytest.mark.macos
 def test_macos_get_mount_finds_device_and_mount_point(monkeypatch: pytest.MonkeyPatch) -> None:
 	module = _load_macos_module(monkeypatch)
 
@@ -384,6 +397,7 @@ def test_macos_get_mount_finds_device_and_mount_point(monkeypatch: pytest.Monkey
 	assert module._get_mount(mount_point="/Volumes/share") == ("//server/share", Path("/Volumes/share"))
 
 
+@pytest.mark.macos
 def test_macos_mount_webdav_share_installs_ca_and_runs_mount_command(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 	module = _load_macos_module(monkeypatch)
 	ca_cert: Any = object()
@@ -406,6 +420,7 @@ def test_macos_mount_webdav_share_installs_ca_and_runs_mount_command(tmp_path: P
 	assert run_mount_calls == [(["mount_webdav", "-i", "https://server:4447/depot", str(mount_point.absolute())], "user", "secret")]
 
 
+@pytest.mark.macos
 def test_macos_mount_cifs_share_unmounts_existing_mount_before_mounting(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 	module = _load_macos_module(monkeypatch)
 	events: list[tuple[str, Path | str]] = []
@@ -448,6 +463,7 @@ def test_macos_mount_cifs_share_unmounts_existing_mount_before_mounting(tmp_path
 	]
 
 
+@pytest.mark.macos
 def test_macos_unmount_network_share_uses_umount_for_existing_mount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 	module = _load_macos_module(monkeypatch)
 	run_command_calls: list[tuple[list[str], int]] = []
@@ -465,6 +481,7 @@ def test_macos_unmount_network_share_uses_umount_for_existing_mount(tmp_path: Pa
 	assert run_command_calls == [(["umount", str(mount_point.absolute())], 15)]
 
 
+@pytest.mark.macos
 def test_macos_unmount_network_share_skips_missing_mount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 	module = _load_macos_module(monkeypatch)
 	run_command_calls: list[list[str]] = []
@@ -477,6 +494,7 @@ def test_macos_unmount_network_share_skips_missing_mount(tmp_path: Path, monkeyp
 	assert run_command_calls == []
 
 
+@pytest.mark.macos
 def test_macos_module_rejects_non_macos_platform(monkeypatch: pytest.MonkeyPatch) -> None:
 	monkeypatch.setattr(sys, "platform", "linux")
 	sys.modules.pop("opsi.system.network._macos", None)
@@ -485,6 +503,7 @@ def test_macos_module_rejects_non_macos_platform(monkeypatch: pytest.MonkeyPatch
 		importlib.import_module("opsi.system.network._macos")
 
 
+@pytest.mark.windows
 def test_windows_mount_cifs_share_calls_net_use_add(monkeypatch: pytest.MonkeyPatch) -> None:
 	module, net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
 	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: None)
@@ -507,6 +526,7 @@ def test_windows_mount_cifs_share_calls_net_use_add(monkeypatch: pytest.MonkeyPa
 	]
 
 
+@pytest.mark.windows
 def test_windows_mount_cifs_share_unmounts_existing_mount_before_mounting(monkeypatch: pytest.MonkeyPatch) -> None:
 	module, _net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
 	events: list[tuple[str, Path | tuple[Any, ...]]] = []
@@ -543,6 +563,7 @@ def test_windows_mount_cifs_share_unmounts_existing_mount_before_mounting(monkey
 	]
 
 
+@pytest.mark.windows
 def test_windows_mount_webdav_share_installs_ca_and_adds_connection(monkeypatch: pytest.MonkeyPatch) -> None:
 	module, _net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
 	ca_cert: Any = object()
@@ -559,6 +580,7 @@ def test_windows_mount_webdav_share_installs_ca_and_adds_connection(monkeypatch:
 	assert add_connection_calls == [(1, "z:", "https://server:4447/depot", None, "user", "secret", 0)]
 
 
+@pytest.mark.windows
 def test_windows_mount_webdav_share_unmounts_existing_mount_before_mounting(monkeypatch: pytest.MonkeyPatch) -> None:
 	module, _net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
 	events: list[tuple[str, Path | tuple[Any, ...]]] = []
@@ -579,12 +601,14 @@ def test_windows_mount_webdav_share_unmounts_existing_mount_before_mounting(monk
 	]
 
 
+@pytest.mark.windows
 def test_windows_get_mount_returns_none_for_empty_mount_list(monkeypatch: pytest.MonkeyPatch) -> None:
 	module, _net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
 
 	assert module._get_mount(mount_point="Z:") is None
 
 
+@pytest.mark.windows
 def test_windows_get_mount_finds_wnet_connection_by_mount_point(monkeypatch: pytest.MonkeyPatch) -> None:
 	module, _net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
 
@@ -593,6 +617,7 @@ def test_windows_get_mount_finds_wnet_connection_by_mount_point(monkeypatch: pyt
 	assert module._get_mount(mount_point="Z:") == (r"\\server@SSL\DavWWWRoot\share", Path("z:"))
 
 
+@pytest.mark.windows
 def test_windows_get_mount_finds_wnet_connection_by_device(monkeypatch: pytest.MonkeyPatch) -> None:
 	module, _net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
 
@@ -606,6 +631,7 @@ def test_windows_get_mount_finds_wnet_connection_by_device(monkeypatch: pytest.M
 	assert module._get_mount(device=r"\\server@SSL\DavWWWRoot\share") == (r"\\server@SSL\DavWWWRoot\share", Path("x:"))
 
 
+@pytest.mark.windows
 @pytest.mark.parametrize("mount_point", ["z", "zz:", "/mnt/share"])
 def test_windows_mount_cifs_share_requires_drive_letter(monkeypatch: pytest.MonkeyPatch, mount_point: str) -> None:
 	module, _net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
@@ -615,6 +641,7 @@ def test_windows_mount_cifs_share_requires_drive_letter(monkeypatch: pytest.Monk
 		module.mount_cifs_share("server", "share", mount_point, "user", "secret")
 
 
+@pytest.mark.windows
 @pytest.mark.parametrize(
 	("mount_exists", "expected_net_use_del_calls"),
 	[
@@ -635,6 +662,7 @@ def test_windows_unmount_network_share_calls_net_use_del_for_existing_mount(
 	assert net_use_del_calls == expected_net_use_del_calls
 
 
+@pytest.mark.windows
 def test_windows_unmount_network_share_requires_drive_letter(monkeypatch: pytest.MonkeyPatch) -> None:
 	module, _net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
 
