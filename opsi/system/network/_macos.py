@@ -5,6 +5,7 @@
 
 import re
 import sys
+from io import BytesIO
 from pathlib import Path
 from shlex import join
 
@@ -44,22 +45,29 @@ def _get_mount(device: str | None = None, mount_point: Path | str | None = None)
 def _run_mount_command(command: list[str], *, username: str | None, password: str) -> None:
 	command_str = join(command)
 	logger.info("Running mount command: %s", command_str)
+	output_buffer = BytesIO()
 	process = pexpect.spawn(command_str)
-	if username:
-		process.expect("Username.*: ", timeout=10)
-		process.sendline(username)
+	process.logfile_read = output_buffer
+	try:
+		if username:
+			process.expect("Username.*: ", timeout=10)
+			process.sendline(username)
 
-	index = process.expect(["Password.*: ", pexpect.EOF], timeout=10)
-	if index == 0:
-		# It is possible that mount_smbfs caches a password and does not prompt for it again.
-		process.sendline(password)
-		process.expect(pexpect.EOF)
-	output = process.before.decode("utf-8", "replace") if process.before else ""
-	process.close()
+		index = process.expect(["Password.*: ", pexpect.EOF], timeout=10)
+		if index == 0:
+			# It is possible that mount_smbfs caches a password and does not prompt for it again.
+			process.sendline(password)
+			process.expect(pexpect.EOF, timeout=10)
+	finally:
+		process.close()
+	output = output_buffer.getvalue().decode("utf-8", "replace")
 	exit_code = process.exitstatus
-	logger.debug("Command exit code is %s, output: %s", exit_code, output)
-	if exit_code != 0:
-		raise RuntimeError(f"Command {command!r} failed with exit code {exit_code}: {output}")
+	logger.debug("Mount command exit code is %s, output: %s", exit_code, output)
+	if exit_code == 0:
+		return
+	if exit_code == 19:
+		raise RuntimeError(f"Mount command {command!r} failed - SSL certificate verification failure")
+	raise RuntimeError(f"Mount command {command!r} failed with exit code {exit_code}: {output}")
 
 
 def mount_cifs_share(address: str, share: str, mount_point: Path | str, username: str, password: str) -> None:

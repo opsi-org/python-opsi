@@ -198,4 +198,4 @@ def unmount_network_share(mount_point: Path | str | None) -> None:
 		logger.info("Mount point '%s' is not mounted, skipping unmount", mount_point)
 		return
 
-	win32wnet.WNetCancelConnection2(mount_point, win32netcon.CONNECT_UPDATE_PROFILE, True)
+	win32net.NetUseDel(None, mount_point, getattr(win32netcon, "USE_LOTS_OF_FORCE", 2))

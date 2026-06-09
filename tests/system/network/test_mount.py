@@ -147,6 +147,82 @@ def test_linux_mount_cifs_share_rejects_domain_with_double_quote(tmp_path: Path,
 		module.mount_cifs_share("server", "share", tmp_path / "mnt", 'DO"MAIN\\user', "secret")
 
 
+def test_linux_get_mount_finds_device_and_mount_point(monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_linux_module(monkeypatch)
+
+	def fake_read_text(path: Path, *_args: Any, **_kwargs: Any) -> str:
+		assert path == Path("/proc/mounts")
+		return "//server/share /mnt/share cifs rw,relatime 0 0\n/dev/sda1 / ext4 rw 0 0\n"
+
+	monkeypatch.setattr(Path, "read_text", fake_read_text)
+
+	assert module._get_mount(device="//server/share") == ("//server/share", Path("/mnt/share"))
+	assert module._get_mount(mount_point="/mnt/share") == ("//server/share", Path("/mnt/share"))
+
+
+def test_linux_get_mount_requires_device_or_mount_point(monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_linux_module(monkeypatch)
+
+	with pytest.raises(ValueError, match="Either device or mount_point must be provided"):
+		module._get_mount()
+
+
+def test_linux_mount_webdav_share_uses_rclone_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_linux_module(monkeypatch)
+	run_command_calls: list[dict[str, Any]] = []
+
+	class FakeCommandResult:
+		def get_stdout_text(self) -> str:
+			return "obscured-secret\n"
+
+	def fake_run_command(command: list[str], *, timeout: int, stdin: str | None = None) -> FakeCommandResult:
+		call: dict[str, Any] = {"command": command, "timeout": timeout, "stdin": stdin}
+		if command[1] == "mount":
+			config_path = Path(command[command.index("--config") + 1])
+			call["config"] = config_path.read_text(encoding="utf-8")
+		run_command_calls.append(call)
+		return FakeCommandResult()
+
+	monkeypatch.setattr(module.shutil, "which", lambda name: "/usr/bin/opsi-rclone" if name == "opsi-rclone" else None)
+	monkeypatch.setattr(module, "generate_secret", lambda *, length, alphabet: "abcdef12")
+	monkeypatch.setattr(module, "run_command", fake_run_command)
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: None)
+	mount_point = tmp_path / "webdav"
+
+	module.mount_webdav_share("server", 4447, "/depot", mount_point, "user", "secret")
+
+	assert mount_point.is_dir()
+	assert run_command_calls == [
+		{"command": ["/usr/bin/opsi-rclone", "obscure", "-"], "timeout": 10, "stdin": "secret\n"},
+		{
+			"command": [
+				"/usr/bin/opsi-rclone",
+				"mount",
+				"--config",
+				run_command_calls[1]["command"][3],
+				"--daemon",
+				"--vfs-cache-mode",
+				"writes",
+				"--use-cookies",
+				"abcdef12:",
+				str(mount_point.absolute()),
+			],
+			"timeout": 15,
+			"stdin": None,
+			"config": "[abcdef12]\ntype = webdav\nurl = https://server:4447/depot\nvendor = other\nuser = user\npass = obscured-secret\n",
+		},
+	]
+
+
+def test_linux_mount_webdav_share_requires_rclone(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_linux_module(monkeypatch)
+
+	monkeypatch.setattr(module.shutil, "which", lambda _name: None)
+
+	with pytest.raises(RuntimeError, match="rclone is required"):
+		module.mount_webdav_share("server", 4447, "depot", tmp_path / "webdav", "user", "secret")
+
+
 @pytest.mark.parametrize(
 	("mount_exists", "expected_calls"),
 	[
@@ -194,30 +270,30 @@ def test_macos_mount_cifs_share_uses_mount_smbfs_and_writes_prompted_password(
 	processes: list[FakeMacosProcess] = []
 
 	class FakeMacosProcess:
-		def __init__(self, *, command: list[str], timeout: int, close_stdin: bool) -> None:
+		before = b""
+		exitstatus = 0
+
+		def __init__(self, command: str) -> None:
 			self.command = command
-			self.timeout = timeout
-			self.close_stdin = close_stdin
-			self.writes: list[tuple[str, bool]] = []
+			self.logfile_read: Any = None
+			self.sent_lines: list[str] = []
 			processes.append(self)
 
-		def __enter__(self) -> FakeMacosProcess:
-			return self
+		def expect(self, patterns: Any, *, timeout: int) -> int:
+			assert timeout == 10
+			if isinstance(patterns, list):
+				self.logfile_read.write(b"Password: ")
+				return 0
+			self.logfile_read.write(b"Mounted successfully\n")
+			return 0
 
-		def __exit__(self, *_args: object) -> None:
+		def sendline(self, text: str) -> None:
+			self.sent_lines.append(text)
+
+		def close(self) -> None:
 			return None
 
-		def is_running(self) -> bool:
-			return True
-
-		def read_stdout_text(self, *, timeout: float) -> str:
-			assert timeout == 0.2
-			return "Password:"
-
-		def write_text(self, text: str, *, close: bool) -> None:
-			self.writes.append((text, close))
-
-	monkeypatch.setattr(module, "Process", FakeMacosProcess)
+	monkeypatch.setattr(module.pexpect, "spawn", FakeMacosProcess)
 	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: None)
 	mount_point = tmp_path / "mnt"
 
@@ -225,38 +301,142 @@ def test_macos_mount_cifs_share_uses_mount_smbfs_and_writes_prompted_password(
 
 	assert mount_point.is_dir()
 	assert len(processes) == 1
-	assert processes[0].command == ["mount_smbfs", "//DOMAIN;user@server/share/folder", str(mount_point.absolute())]
-	assert processes[0].timeout == 15
-	assert processes[0].close_stdin is False
-	assert processes[0].writes == [("secret\n", True)]
+	assert processes[0].command == f"mount_smbfs '//DOMAIN;user@server/share/folder' {mount_point.absolute()}"
+	assert processes[0].sent_lines == ["secret"]
+
+
+def test_macos_run_mount_command_raises_with_complete_output(monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_macos_module(monkeypatch)
+	processes: list[FakeMacosProcess] = []
+
+	class FakeMacosProcess:
+		before = b"only the final chunk\n"
+		exitstatus = 67
+
+		def __init__(self, _command: str) -> None:
+			self.logfile_read: Any = None
+			self.sent_lines: list[str] = []
+			self.expect_calls = 0
+			processes.append(self)
+
+		def expect(self, patterns: Any, *, timeout: int) -> int:
+			assert timeout == 10
+			self.expect_calls += 1
+			if patterns == "Username.*: ":
+				self.logfile_read.write(b"Username: ")
+				return 0
+			if isinstance(patterns, list):
+				self.logfile_read.write(b"Password: ")
+				return 0
+			self.logfile_read.write(b"first diagnostic line\nsecond diagnostic line\n")
+			return 0
+
+		def sendline(self, text: str) -> None:
+			self.sent_lines.append(text)
+
+		def close(self) -> None:
+			return None
+
+	monkeypatch.setattr(module.pexpect, "spawn", FakeMacosProcess)
+
+	with pytest.raises(RuntimeError) as error:
+		module._run_mount_command(["mount_webdav", "-i", "https://server/share", "/mnt"], username="user", password="secret")
+
+	assert len(processes) == 1
+	assert processes[0].sent_lines == ["user", "secret"]
+	assert "Username: Password: first diagnostic line\nsecond diagnostic line" in str(error.value)
+
+
+def test_macos_run_mount_command_raises_ssl_certificate_error(monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_macos_module(monkeypatch)
+
+	class FakeMacosProcess:
+		exitstatus = 19
+
+		def __init__(self, _command: str) -> None:
+			self.logfile_read: Any = None
+
+		def expect(self, patterns: Any, *, timeout: int) -> int:
+			assert timeout == 10
+			if isinstance(patterns, list):
+				return 1
+			return 0
+
+		def close(self) -> None:
+			return None
+
+	monkeypatch.setattr(module.pexpect, "spawn", FakeMacosProcess)
+
+	with pytest.raises(RuntimeError, match="SSL certificate verification failure"):
+		module._run_mount_command(["mount_webdav", "-i", "https://server/share", "/mnt"], username=None, password="secret")
+
+
+def test_macos_get_mount_finds_device_and_mount_point(monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_macos_module(monkeypatch)
+
+	class FakeMountOutput:
+		def get_stdout_lines(self) -> list[str]:
+			return ["//server/share on /Volumes/share (smbfs, nodev, nosuid, mounted by user)", "/dev/disk1s1 on / (apfs)"]
+
+	monkeypatch.setattr(module, "run_command", lambda command, *, timeout: FakeMountOutput())
+
+	assert module._get_mount(device="//server/share") == ("//server/share", Path("/Volumes/share"))
+	assert module._get_mount(mount_point="/Volumes/share") == ("//server/share", Path("/Volumes/share"))
+
+
+def test_macos_mount_webdav_share_installs_ca_and_runs_mount_command(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_macos_module(monkeypatch)
+	ca_cert: Any = object()
+	installed_certs: list[Any] = []
+	run_mount_calls: list[tuple[list[str], str | None, str]] = []
+	mount_point = tmp_path / "webdav"
+
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: None)
+	monkeypatch.setattr(module, "install_ca", lambda cert: installed_certs.append(cert))
+	monkeypatch.setattr(
+		module,
+		"_run_mount_command",
+		lambda command, *, username, password: run_mount_calls.append((command, username, password)),
+	)
+
+	module.mount_webdav_share("server", 4447, "/depot", mount_point, "user", "secret", ca_cert)
+
+	assert mount_point.is_dir()
+	assert installed_certs == [ca_cert]
+	assert run_mount_calls == [(["mount_webdav", "-i", "https://server:4447/depot", str(mount_point.absolute())], "user", "secret")]
 
 
 def test_macos_mount_cifs_share_unmounts_existing_mount_before_mounting(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 	module = _load_macos_module(monkeypatch)
-	events: list[tuple[str, Path | list[str]]] = []
+	events: list[tuple[str, Path | str]] = []
 	mount_point = tmp_path / "mnt"
 	mounted_point = mount_point.absolute()
 
 	class FakeMacosProcess:
-		def __init__(self, *, command: list[str], timeout: int, close_stdin: bool) -> None:
-			assert timeout == 15
-			assert close_stdin is False
+		before = b""
+		exitstatus = 0
+
+		def __init__(self, command: str) -> None:
+			self.logfile_read: Any = None
 			events.append(("mount", command))
 
-		def __enter__(self) -> FakeMacosProcess:
-			return self
+		def expect(self, patterns: Any, *, timeout: int) -> int:
+			assert timeout == 10
+			if isinstance(patterns, list):
+				return 1
+			return 0
 
-		def __exit__(self, *_args: object) -> None:
+		def sendline(self, text: str) -> None:
+			raise AssertionError(f"Unexpected input: {text}")
+
+		def close(self) -> None:
 			return None
-
-		def is_running(self) -> bool:
-			return False
 
 	def fake_unmount_network_share(mount_point: Path | str | None) -> None:
 		assert mount_point is not None
 		events.append(("unmount", Path(mount_point)))
 
-	monkeypatch.setattr(module, "Process", FakeMacosProcess)
+	monkeypatch.setattr(module.pexpect, "spawn", FakeMacosProcess)
 	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: ("//server/old", mounted_point))
 	monkeypatch.setattr(module, "unmount_network_share", fake_unmount_network_share)
 
@@ -264,7 +444,7 @@ def test_macos_mount_cifs_share_unmounts_existing_mount_before_mounting(tmp_path
 
 	assert events == [
 		("unmount", mounted_point),
-		("mount", ["mount_smbfs", "//user@server/share", str(mounted_point)]),
+		("mount", f"mount_smbfs //user@server/share {mounted_point}"),
 	]
 
 
@@ -360,6 +540,42 @@ def test_windows_mount_cifs_share_unmounts_existing_mount_before_mounting(monkey
 				},
 			),
 		),
+	]
+
+
+def test_windows_mount_webdav_share_installs_ca_and_adds_connection(monkeypatch: pytest.MonkeyPatch) -> None:
+	module, _net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
+	ca_cert: Any = object()
+	installed_certs: list[Any] = []
+	add_connection_calls: list[tuple[Any, ...]] = []
+
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: None)
+	monkeypatch.setattr(module, "install_ca", lambda cert: installed_certs.append(cert))
+	monkeypatch.setattr(module.win32wnet, "WNetAddConnection2", lambda *args: add_connection_calls.append(args))
+
+	module.mount_webdav_share("server", 4447, "/depot", "Z:", "user", "secret", ca_cert)
+
+	assert installed_certs == [ca_cert]
+	assert add_connection_calls == [(1, "z:", "https://server:4447/depot", None, "user", "secret", 0)]
+
+
+def test_windows_mount_webdav_share_unmounts_existing_mount_before_mounting(monkeypatch: pytest.MonkeyPatch) -> None:
+	module, _net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
+	events: list[tuple[str, Path | tuple[Any, ...]]] = []
+
+	def fake_unmount_network_share(mount_point: Path | str | None) -> None:
+		assert mount_point is not None
+		events.append(("unmount", Path(mount_point)))
+
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: ("https://server:4447/old", Path("z:")))
+	monkeypatch.setattr(module, "unmount_network_share", fake_unmount_network_share)
+	monkeypatch.setattr(module.win32wnet, "WNetAddConnection2", lambda *args: events.append(("mount", args)))
+
+	module.mount_webdav_share("server", 4447, "depot", "Z:", "user", "secret")
+
+	assert events == [
+		("unmount", Path("z:")),
+		("mount", (1, "z:", "https://server:4447/depot", None, "user", "secret", 0)),
 	]
 
 
