@@ -28,7 +28,7 @@ def _get_mount(device: str | None = None, mount_point: Path | str | None = None)
 	if not device and not mount_point:
 		raise ValueError("Either device or mount_point must be provided")
 	if mount_point:
-		mount_point = str(Path(mount_point).absolute())
+		mount_point = str(Path(mount_point).resolve())
 
 	dev_or_mountpoint = (device or str(mount_point)).lower()
 	for line in Path("/proc/mounts").read_text().splitlines():

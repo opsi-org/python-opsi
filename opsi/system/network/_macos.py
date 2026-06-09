@@ -6,6 +6,9 @@
 import re
 import sys
 from pathlib import Path
+from shlex import join
+
+import pexpect
 
 from opsi.exception import OperatingSystemUnsupportedError
 
@@ -15,7 +18,7 @@ if sys.platform != "darwin":
 from cryptography import x509
 
 from opsi.logging import get_logger, secret_filter
-from opsi.process import Process, run_command
+from opsi.process import run_command
 from opsi.system.certificate_store import install_ca
 
 logger = get_logger("opsi")
@@ -26,16 +29,37 @@ def _get_mount(device: str | None = None, mount_point: Path | str | None = None)
 	if not device and not mount_point:
 		raise ValueError("Either device or mount_point must be provided")
 	if mount_point:
-		mount_point = str(Path(mount_point).absolute())
+		mount_point = str(Path(mount_point).resolve())
 
 	dev_or_mountpoint = (device or str(mount_point)).lower()
-	regex = re.compile(r"^(.*)\s+on\s+(.*)\s\(.*$")
+	regex = re.compile(r"^(\S+)\s+on\s+(\S+)\s")
 	for line in run_command(["mount"], timeout=15).get_stdout_lines():
-		line = line.strip().lower()
+		line = line.strip()
 		match = regex.match(line)
-		if match and dev_or_mountpoint in (match.group(1), match.group(2)):
+		if match and dev_or_mountpoint in (match.group(1).lower(), match.group(2).lower()):
 			return match.group(1), Path(match.group(2))
 	return None
+
+
+def _run_mount_command(command: list[str], *, username: str | None, password: str) -> None:
+	command_str = join(command)
+	logger.info("Running mount command: %s", command_str)
+	process = pexpect.spawn(command_str)
+	if username:
+		process.expect("Username.*: ", timeout=10)
+		process.sendline(username)
+
+	index = process.expect(["Password.*: ", pexpect.EOF], timeout=10)
+	if index == 0:
+		# It is possible that mount_smbfs caches a password and does not prompt for it again.
+		process.sendline(password)
+		process.expect(pexpect.EOF)
+	output = process.before.decode("utf-8", "replace") if process.before else ""
+	process.close()
+	exit_code = process.exitstatus
+	logger.debug("Command exit code is %s, output: %s", exit_code, output)
+	if exit_code != 0:
+		raise RuntimeError(f"Command {command!r} failed with exit code {exit_code}: {output}")
 
 
 def mount_cifs_share(address: str, share: str, mount_point: Path | str, username: str, password: str) -> None:
@@ -58,16 +82,7 @@ def mount_cifs_share(address: str, share: str, mount_point: Path | str, username
 	logger.info("Mounting CIFS share '%s' to '%s' with username '%s'", remote, mount_point, username)
 
 	mount_command = ["mount_smbfs", remote, str(mount_point)]
-
-	with Process(command=mount_command, timeout=15, close_stdin=False) as proc:
-		password_prompted = False
-		while proc.is_running() and not password_prompted:
-			# Reads password from stdin.
-			# It is possible that mount_smbfs caches a password and does not prompt for it again.
-			out = proc.read_stdout_text(timeout=0.2)
-			if "password" in out.lower():
-				password_prompted = True
-				proc.write_text(f"{password}\n", close=True)
+	_run_mount_command(mount_command, username=None, password=password)
 
 
 def mount_webdav_share(
@@ -88,18 +103,7 @@ def mount_webdav_share(
 
 	logger.info("Mounting WebDAV share '%s' to '%s' with username '%s'", remote, mount_point, username)
 	mount_command = ["mount_webdav", "-i", remote, str(mount_point)]
-	with Process(command=mount_command, timeout=15, close_stdin=False) as proc:
-		username_prompted = False
-		password_prompted = False
-		while proc.is_running() and not password_prompted and not username_prompted:
-			# Reads username and password from stdin.
-			out = proc.read_stdout_text(timeout=0.2)
-			if "username" in out.lower() and not username_prompted:
-				username_prompted = True
-				proc.write_text(f"{username}\n", close=False)
-			if "password" in out.lower() and not password_prompted:
-				password_prompted = True
-				proc.write_text(f"{password}\n", close=True)
+	_run_mount_command(mount_command, username=username, password=password)
 
 
 def unmount_network_share(mount_point: Path | str | None) -> None:
