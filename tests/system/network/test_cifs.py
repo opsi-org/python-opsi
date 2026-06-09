@@ -56,9 +56,7 @@ def _load_windows_module(monkeypatch: pytest.MonkeyPatch) -> tuple[ModuleType, l
 	fake_win32net.error = FakeWin32NetError  # ty: ignore[unresolved-attribute]
 
 	fake_win32netcon = ModuleType("win32netcon")
-	fake_win32netcon.USE_DISKDEV = 0  # ty: ignore[unresolved-attribute]
 	fake_win32netcon.USE_FORCE = 1  # ty: ignore[unresolved-attribute]
-	fake_win32netcon.USE_LOTS_OF_FORCE = 1  # ty: ignore[unresolved-attribute]
 	fake_win32netcon.RESOURCETYPE_DISK = 1  # ty: ignore[unresolved-attribute]
 
 	fake_win32wnet = ModuleType("win32wnet")
@@ -311,7 +309,7 @@ def test_windows_mount_cifs_share_calls_net_use_add(monkeypatch: pytest.MonkeyPa
 	module, net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
 	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: None)
 
-	module.mount_cifs_share("server", "share", "Z:", "DOMAIN\\user", "secret")
+	module.mount_cifs_share("server", "share", "Z:", r"DOMAIN\\user", "secret")
 
 	assert net_use_add_calls == [
 		(
@@ -321,7 +319,8 @@ def test_windows_mount_cifs_share_calls_net_use_add(monkeypatch: pytest.MonkeyPa
 				"remote": "\\\\server\\share",
 				"local": "z:",
 				"password": "secret",
-				"username": "DOMAIN\\user",
+				"username": "user",
+				"domainname": "DOMAIN",
 				"asg_type": 0,
 			},
 		)
@@ -364,6 +363,33 @@ def test_windows_mount_cifs_share_unmounts_existing_mount_before_mounting(monkey
 	]
 
 
+def test_windows_get_mount_returns_none_for_empty_mount_list(monkeypatch: pytest.MonkeyPatch) -> None:
+	module, _net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
+
+	assert module._get_mount(mount_point="Z:") is None
+
+
+def test_windows_get_mount_finds_wnet_connection_by_mount_point(monkeypatch: pytest.MonkeyPatch) -> None:
+	module, _net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
+
+	monkeypatch.setattr(module.win32wnet, "WNetGetConnection", lambda _mount_point: r"\\server@SSL\DavWWWRoot\share", raising=False)
+
+	assert module._get_mount(mount_point="Z:") == (r"\\server@SSL\DavWWWRoot\share", Path("z:"))
+
+
+def test_windows_get_mount_finds_wnet_connection_by_device(monkeypatch: pytest.MonkeyPatch) -> None:
+	module, _net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
+
+	def fake_wnet_get_connection(mount_point: str) -> str:
+		if mount_point == "x:":
+			return r"\\server@SSL\DavWWWRoot\share"
+		raise OSError("No network connection")
+
+	monkeypatch.setattr(module.win32wnet, "WNetGetConnection", fake_wnet_get_connection, raising=False)
+
+	assert module._get_mount(device=r"\\server@SSL\DavWWWRoot\share") == (r"\\server@SSL\DavWWWRoot\share", Path("x:"))
+
+
 @pytest.mark.parametrize("mount_point", ["z", "zz:", "/mnt/share"])
 def test_windows_mount_cifs_share_requires_drive_letter(monkeypatch: pytest.MonkeyPatch, mount_point: str) -> None:
 	module, _net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
@@ -376,7 +402,7 @@ def test_windows_mount_cifs_share_requires_drive_letter(monkeypatch: pytest.Monk
 @pytest.mark.parametrize(
 	("mount_exists", "expected_net_use_del_calls"),
 	[
-		(True, [(None, "z:", 1)]),
+		(True, [(None, "z:", 2)]),
 		(False, []),
 	],
 )

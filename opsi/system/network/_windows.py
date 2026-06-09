@@ -32,6 +32,7 @@ netapi32 = ctypes.WinDLL("Netapi32.dll")
 # Constants
 MAX_PREFERRED_LENGTH = 0xFFFFFFFF
 ERROR_MORE_DATA = 234
+USE_DISKDEV = 0
 
 
 # USE_INFO_0 structure (simplest level)
@@ -74,9 +75,17 @@ def _get_mount(device: str | None = None, mount_point: Path | str | None = None)
 	if not device and not mount_point:
 		raise ValueError("Either device or mount_point must be provided")
 	if mount_point:
-		mount_point = str(mount_point).lower()
+		mount_point = _normalize_drive(mount_point)
 
 	dev_or_mountpoint = (device or str(mount_point)).lower()
+
+	if mount := _get_mount_from_net_use(dev_or_mountpoint):
+		return mount
+	return _get_mount_from_wnet_connection(dev_or_mountpoint, mount_point)
+
+
+def _get_mount_from_net_use(dev_or_mountpoint: str) -> tuple[str, Path] | None:
+	"""Return a mount reported by the Windows NetUse API."""
 
 	bufptr = ctypes.c_void_p()
 	entries_read = wintypes.DWORD()
@@ -95,6 +104,8 @@ def _get_mount(device: str | None = None, mount_point: Path | str | None = None)
 
 	if status != 0 and status != ERROR_MORE_DATA:
 		raise ctypes.WinError(status)
+	if not entries_read.value or not bufptr:
+		return None
 
 	try:
 		array_type = USE_INFO_0 * entries_read.value
@@ -111,28 +122,49 @@ def _get_mount(device: str | None = None, mount_point: Path | str | None = None)
 	return None
 
 
+def _get_mount_from_wnet_connection(dev_or_mountpoint: str, mount_point: str | None = None) -> tuple[str, Path] | None:
+	"""Return a mount reported by the Windows WNet API."""
+	mount_points = (mount_point,) if mount_point else (f"{chr(drive)}:" for drive in range(ord("a"), ord("z") + 1))
+	for local_mount_point in mount_points:
+		try:
+			remote = win32wnet.WNetGetConnection(local_mount_point)
+		except Exception:
+			continue
+		logger.debug("Found WNet mount: local='%s', remote='%s'", local_mount_point, remote)
+		if dev_or_mountpoint in (remote.lower(), local_mount_point.lower()):
+			return remote, Path(local_mount_point)
+	return None
+
+
 def mount_cifs_share(address: str, share: str, mount_point: Path | str, username: str, password: str) -> None:
 	"""Mount a CIFS share on Windows."""
 	secret_filter.add_secrets(password)
 	remote = f"\\\\{address}\\{share}"
 	mount_point = _normalize_drive(mount_point)
+	domain = None
+	if "\\" in username:
+		username = re.sub(r"\\+", r"\\", username)
+		(domain, username) = username.split("\\", 1)
 
 	if current_mount := _get_mount(mount_point=mount_point):
 		logger.info("'%s' is already mounted on '%s', unmounting first", current_mount[0], current_mount[1])
 		unmount_network_share(current_mount[1])
 
 	logger.info("Mounting CIFS share '%s' to '%s' with username '%s'", remote, mount_point, username)
+	use_info = {
+		"remote": remote,
+		"local": mount_point,
+		"password": password,
+		"username": username,
+		"asg_type": USE_DISKDEV,
+	}
+	if domain:
+		use_info["domainname"] = domain
 
 	win32net.NetUseAdd(
 		None,
 		2,
-		{
-			"remote": remote,
-			"local": mount_point,
-			"password": password,
-			"username": username,
-			"asg_type": win32netcon.USE_DISKDEV,
-		},
+		use_info,
 	)
 
 
@@ -166,4 +198,4 @@ def unmount_network_share(mount_point: Path | str | None) -> None:
 		logger.info("Mount point '%s' is not mounted, skipping unmount", mount_point)
 		return
 
-	win32net.NetUseDel(None, mount_point, win32netcon.USE_LOTS_OF_FORCE)
+	win32wnet.WNetCancelConnection2(mount_point, win32netcon.CONNECT_UPDATE_PROFILE, True)
