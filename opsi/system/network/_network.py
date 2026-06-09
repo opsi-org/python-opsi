@@ -10,17 +10,21 @@ import ipaddress
 import os
 import socket
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 import netifaces
 from dns.resolver import Resolver
 
+from opsi.exception import OperatingSystemUnsupportedError
 from opsi.logging import get_logger
 from opsi.opsi.service.model.type import to_fqdn
 from opsi.process import run_command
-from opsi.system.info import is_linux, is_posix
+from opsi.system.info import get_system, is_linux, is_macos, is_posix, is_windows
 
 if TYPE_CHECKING:
+	from cryptography import x509
 	from requests import Session
 
 logger = get_logger("opsi")
@@ -307,3 +311,55 @@ def prepare_proxy_environment(
 		os.environ.get("no_proxy"),
 	)
 	return session
+
+
+def mount_network_share(
+	url: str, mount_point: Path | str, *, username: str | None = None, password: str | None = None, ca_cert: x509.Certificate | None = None
+) -> None:
+	"""Mount a network share on the current system."""
+	parsed_url = urlparse(url)
+
+	if parsed_url.username and not username:
+		username = parsed_url.username
+	if not username:
+		raise ValueError("Username is required to mount a network share")
+
+	if parsed_url.password and not password:
+		password = parsed_url.password
+	if not password:
+		raise ValueError("Password is required to mount a network share")
+
+	if not parsed_url.hostname:
+		raise ValueError("Hostname is required to mount a network share")
+
+	path = parsed_url.path.lstrip("/")
+
+	if parsed_url.scheme in ("smb", "cifs"):
+		if not path:
+			raise ValueError("Share name is required to mount a CIFS share")
+
+		if is_linux():
+			from opsi.system.network._linux import mount_cifs_share
+		elif is_macos():
+			from opsi.system.network._macos import mount_cifs_share
+		elif is_windows():
+			from opsi.system.network._windows import mount_cifs_share
+		else:
+			raise OperatingSystemUnsupportedError(f"{get_system()} not supported")
+
+		mount_cifs_share(parsed_url.hostname, path, mount_point, username, password)
+
+	elif parsed_url.scheme in ("webdavs", "https"):
+		if is_linux():
+			from opsi.system.network._linux import mount_webdav_share
+		elif is_macos():
+			from opsi.system.network._macos import mount_webdav_share
+		elif is_windows():
+			from opsi.system.network._windows import mount_webdav_share
+		else:
+			raise OperatingSystemUnsupportedError(f"{get_system()} not supported")
+
+		mount_webdav_share(parsed_url.hostname, parsed_url.port or 443, path, mount_point, username, password, ca_cert)
+
+	else:
+		raise NotImplementedError(f"Mounting '{parsed_url.scheme}' is not supported")

@@ -1,0 +1,400 @@
+# This file is part of the device management solution OPSI http://www.opsi.org
+# Copyright (c) 2020-2026 uib GmbH <info@uib.de>
+# This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
+# License: AGPL-3.0-only
+
+from __future__ import annotations
+
+import ctypes
+import importlib
+import sys
+from pathlib import Path
+from types import ModuleType
+from typing import Any
+
+import pytest
+
+import opsi.system.network
+
+
+def _load_platform_module(monkeypatch: pytest.MonkeyPatch, module_name: str, platform: str) -> ModuleType:
+	monkeypatch.setattr(sys, "platform", platform)
+	sys.modules.pop(module_name, None)
+	return importlib.import_module(module_name)
+
+
+def _load_linux_module(monkeypatch: pytest.MonkeyPatch) -> ModuleType:
+	return _load_platform_module(monkeypatch, "opsi.system.network._linux", "linux")
+
+
+def _load_macos_module(monkeypatch: pytest.MonkeyPatch) -> ModuleType:
+	return _load_platform_module(monkeypatch, "opsi.system.network._macos", "darwin")
+
+
+def _load_windows_module(monkeypatch: pytest.MonkeyPatch) -> tuple[ModuleType, list[tuple[Any, ...]], list[tuple[Any, ...]]]:
+	net_use_add_calls: list[tuple[Any, ...]] = []
+	net_use_del_calls: list[tuple[Any, ...]] = []
+
+	class FakeWinFunction:
+		argtypes: list[Any]
+		restype: Any
+
+		def __call__(self, *_args: Any) -> int:
+			return 0
+
+	class FakeNetapi32:
+		NetUseEnum = FakeWinFunction()
+		NetApiBufferFree = FakeWinFunction()
+
+	class FakeWin32NetError(Exception):
+		pass
+
+	fake_win32net = ModuleType("win32net")
+	fake_win32net.NetUseAdd = lambda *args: net_use_add_calls.append(args)  # ty: ignore[unresolved-attribute]
+	fake_win32net.NetUseDel = lambda *args: net_use_del_calls.append(args)  # ty: ignore[unresolved-attribute]
+	fake_win32net.NetUseGet = lambda *_args: (_ for _ in ()).throw(FakeWin32NetError())  # ty: ignore[unresolved-attribute]
+	fake_win32net.error = FakeWin32NetError  # ty: ignore[unresolved-attribute]
+
+	fake_win32netcon = ModuleType("win32netcon")
+	fake_win32netcon.USE_DISKDEV = 0  # ty: ignore[unresolved-attribute]
+	fake_win32netcon.USE_FORCE = 1  # ty: ignore[unresolved-attribute]
+	fake_win32netcon.USE_LOTS_OF_FORCE = 1  # ty: ignore[unresolved-attribute]
+	fake_win32netcon.RESOURCETYPE_DISK = 1  # ty: ignore[unresolved-attribute]
+
+	fake_win32wnet = ModuleType("win32wnet")
+	fake_win32wnet.WNetAddConnection2 = lambda *_args: None  # ty: ignore[unresolved-attribute]
+
+	monkeypatch.setattr(ctypes, "WinDLL", lambda _name: FakeNetapi32(), raising=False)
+	monkeypatch.setitem(sys.modules, "win32net", fake_win32net)
+	monkeypatch.setitem(sys.modules, "win32netcon", fake_win32netcon)
+	monkeypatch.setitem(sys.modules, "win32wnet", fake_win32wnet)
+	module = _load_platform_module(monkeypatch, "opsi.system.network._windows", "win32")
+	return module, net_use_add_calls, net_use_del_calls
+
+
+def test_linux_mount_cifs_share_creates_mount_point_and_uses_credentials_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_linux_module(monkeypatch)
+	run_command_calls: list[dict[str, Any]] = []
+
+	def fake_run_command(command: list[str], *, environment: dict[str, str], timeout: int) -> None:
+		credentials_path = command[6].split(",", 1)[0].removeprefix("credentials=")
+		run_command_calls.append(
+			{
+				"command": command,
+				"environment": environment,
+				"timeout": timeout,
+				"credentials_path": credentials_path,
+				"credentials": Path(credentials_path).read_text(encoding="utf-8"),
+			}
+		)
+
+	monkeypatch.setattr(module, "run_command", fake_run_command)
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: None)
+	mount_point = tmp_path / "mnt"
+
+	module.mount_cifs_share("server", "share", mount_point, r"DOMAIN\\user", "secret")
+
+	assert mount_point.is_dir()
+	assert len(run_command_calls) == 1
+	assert run_command_calls[0] == {
+		"command": [
+			"mount",
+			"-t",
+			"cifs",
+			"//server/share",
+			str(mount_point.absolute()),
+			"-o",
+			f"credentials={run_command_calls[0]['credentials_path']},domain=DOMAIN",
+		],
+		"environment": {"LC_ALL": "C"},
+		"timeout": 15,
+		"credentials_path": run_command_calls[0]["credentials_path"],
+		"credentials": "username=user\npassword=secret\n",
+	}
+
+
+def test_linux_mount_cifs_share_unmounts_existing_mount_before_mounting(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_linux_module(monkeypatch)
+	events: list[tuple[str, Path | list[str]]] = []
+	mount_point = tmp_path / "mnt"
+	mounted_point = mount_point.absolute()
+
+	def fake_run_command(command: list[str], *, environment: dict[str, str], timeout: int) -> None:
+		assert environment == {"LC_ALL": "C"}
+		assert timeout == 15
+		events.append(("mount", command))
+
+	def fake_unmount_network_share(mount_point: Path | str | None) -> None:
+		assert mount_point is not None
+		events.append(("unmount", Path(mount_point)))
+
+	monkeypatch.setattr(module, "run_command", fake_run_command)
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: ("//server/old", mounted_point))
+	monkeypatch.setattr(module, "unmount_network_share", fake_unmount_network_share)
+
+	module.mount_cifs_share("server", "share", mount_point, "user", "secret")
+
+	assert events[0] == ("unmount", mounted_point)
+	assert events[1][0] == "mount"
+	mount_command = events[1][1]
+	assert isinstance(mount_command, list)
+	assert mount_command[:6] == ["mount", "-t", "cifs", "//server/share", str(mounted_point), "-o"]
+	assert mount_command[6].startswith("credentials=")
+
+
+def test_linux_mount_cifs_share_rejects_domain_with_double_quote(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_linux_module(monkeypatch)
+
+	with pytest.raises(ValueError, match="Domain cannot contain double quotes"):
+		module.mount_cifs_share("server", "share", tmp_path / "mnt", 'DO"MAIN\\user', "secret")
+
+
+@pytest.mark.parametrize(
+	("mount_exists", "expected_calls"),
+	[
+		(True, 1),
+		(False, 0),
+	],
+)
+def test_linux_unmount_network_share_uses_umount_for_existing_mount(
+	tmp_path: Path,
+	monkeypatch: pytest.MonkeyPatch,
+	mount_exists: bool,
+	expected_calls: int,
+) -> None:
+	module = _load_linux_module(monkeypatch)
+	run_command_calls: list[tuple[list[str], int]] = []
+	mount_point = tmp_path / "mnt"
+	mounted_point = mount_point.absolute()
+
+	def fake_run_command(command: list[str], *, timeout: int) -> None:
+		run_command_calls.append((command, timeout))
+
+	monkeypatch.setattr(module, "run_command", fake_run_command)
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: ("//server/share", mounted_point) if mount_exists else None)
+
+	module.unmount_network_share(mount_point)
+
+	if expected_calls:
+		assert run_command_calls == [(["umount", str(mounted_point)], 15)]
+	else:
+		assert run_command_calls == []
+
+
+def test_linux_unmount_network_share_requires_mount_point(monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_linux_module(monkeypatch)
+
+	with pytest.raises(ValueError, match="Either device or mount_point must be provided"):
+		module.unmount_network_share(None)
+
+
+def test_macos_mount_cifs_share_uses_mount_smbfs_and_writes_prompted_password(
+	tmp_path: Path,
+	monkeypatch: pytest.MonkeyPatch,
+) -> None:
+	module = _load_macos_module(monkeypatch)
+	processes: list[FakeMacosProcess] = []
+
+	class FakeMacosProcess:
+		def __init__(self, *, command: list[str], timeout: int, close_stdin: bool) -> None:
+			self.command = command
+			self.timeout = timeout
+			self.close_stdin = close_stdin
+			self.writes: list[tuple[str, bool]] = []
+			processes.append(self)
+
+		def __enter__(self) -> FakeMacosProcess:
+			return self
+
+		def __exit__(self, *_args: object) -> None:
+			return None
+
+		def is_running(self) -> bool:
+			return True
+
+		def read_stdout_text(self, *, timeout: float) -> str:
+			assert timeout == 0.2
+			return "Password:"
+
+		def write_text(self, text: str, *, close: bool) -> None:
+			self.writes.append((text, close))
+
+	monkeypatch.setattr(module, "Process", FakeMacosProcess)
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: None)
+	mount_point = tmp_path / "mnt"
+
+	module.mount_cifs_share("server", r"share\folder", mount_point, r"DOMAIN\\user", "secret")
+
+	assert mount_point.is_dir()
+	assert len(processes) == 1
+	assert processes[0].command == ["mount_smbfs", "//DOMAIN;user@server/share/folder", str(mount_point.absolute())]
+	assert processes[0].timeout == 15
+	assert processes[0].close_stdin is False
+	assert processes[0].writes == [("secret\n", True)]
+
+
+def test_macos_mount_cifs_share_unmounts_existing_mount_before_mounting(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_macos_module(monkeypatch)
+	events: list[tuple[str, Path | list[str]]] = []
+	mount_point = tmp_path / "mnt"
+	mounted_point = mount_point.absolute()
+
+	class FakeMacosProcess:
+		def __init__(self, *, command: list[str], timeout: int, close_stdin: bool) -> None:
+			assert timeout == 15
+			assert close_stdin is False
+			events.append(("mount", command))
+
+		def __enter__(self) -> FakeMacosProcess:
+			return self
+
+		def __exit__(self, *_args: object) -> None:
+			return None
+
+		def is_running(self) -> bool:
+			return False
+
+	def fake_unmount_network_share(mount_point: Path | str | None) -> None:
+		assert mount_point is not None
+		events.append(("unmount", Path(mount_point)))
+
+	monkeypatch.setattr(module, "Process", FakeMacosProcess)
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: ("//server/old", mounted_point))
+	monkeypatch.setattr(module, "unmount_network_share", fake_unmount_network_share)
+
+	module.mount_cifs_share("server", "share", mount_point, "user", "secret")
+
+	assert events == [
+		("unmount", mounted_point),
+		("mount", ["mount_smbfs", "//user@server/share", str(mounted_point)]),
+	]
+
+
+def test_macos_unmount_network_share_uses_umount_for_existing_mount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_macos_module(monkeypatch)
+	run_command_calls: list[tuple[list[str], int]] = []
+	mount_point = tmp_path / "mnt"
+	mounted_point = mount_point.absolute()
+
+	def fake_run_command(command: list[str], *, timeout: int) -> None:
+		run_command_calls.append((command, timeout))
+
+	monkeypatch.setattr(module, "run_command", fake_run_command)
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: ("//server/share", mounted_point))
+
+	module.unmount_network_share(mount_point)
+
+	assert run_command_calls == [(["umount", str(mount_point.absolute())], 15)]
+
+
+def test_macos_unmount_network_share_skips_missing_mount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_macos_module(monkeypatch)
+	run_command_calls: list[list[str]] = []
+
+	monkeypatch.setattr(module, "run_command", lambda command, *, timeout: run_command_calls.append(command))
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: None)
+
+	module.unmount_network_share(tmp_path / "mnt")
+
+	assert run_command_calls == []
+
+
+def test_macos_module_rejects_non_macos_platform(monkeypatch: pytest.MonkeyPatch) -> None:
+	monkeypatch.setattr(sys, "platform", "linux")
+	sys.modules.pop("opsi.system.network._macos", None)
+
+	with pytest.raises(opsi.system.network.OperatingSystemUnsupportedError, match="macOS"):
+		importlib.import_module("opsi.system.network._macos")
+
+
+def test_windows_mount_cifs_share_calls_net_use_add(monkeypatch: pytest.MonkeyPatch) -> None:
+	module, net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: None)
+
+	module.mount_cifs_share("server", "share", "Z:", "DOMAIN\\user", "secret")
+
+	assert net_use_add_calls == [
+		(
+			None,
+			2,
+			{
+				"remote": "\\\\server\\share",
+				"local": "z:",
+				"password": "secret",
+				"username": "DOMAIN\\user",
+				"asg_type": 0,
+			},
+		)
+	]
+
+
+def test_windows_mount_cifs_share_unmounts_existing_mount_before_mounting(monkeypatch: pytest.MonkeyPatch) -> None:
+	module, _net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
+	events: list[tuple[str, Path | tuple[Any, ...]]] = []
+
+	def fake_net_use_add(*args: Any) -> None:
+		events.append(("mount", args))
+
+	def fake_unmount_network_share(mount_point: Path | str | None) -> None:
+		assert mount_point is not None
+		events.append(("unmount", Path(mount_point)))
+
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: ("\\\\server\\old", Path("z:")))
+	monkeypatch.setattr(module, "unmount_network_share", fake_unmount_network_share)
+	monkeypatch.setattr(module.win32net, "NetUseAdd", fake_net_use_add)
+
+	module.mount_cifs_share("server", "share", "Z:", "user", "secret")
+
+	assert events == [
+		("unmount", Path("z:")),
+		(
+			"mount",
+			(
+				None,
+				2,
+				{
+					"remote": "\\\\server\\share",
+					"local": "z:",
+					"password": "secret",
+					"username": "user",
+					"asg_type": 0,
+				},
+			),
+		),
+	]
+
+
+@pytest.mark.parametrize("mount_point", ["z", "zz:", "/mnt/share"])
+def test_windows_mount_cifs_share_requires_drive_letter(monkeypatch: pytest.MonkeyPatch, mount_point: str) -> None:
+	module, _net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: None)
+
+	with pytest.raises(ValueError, match="Mount point must be a drive letter"):
+		module.mount_cifs_share("server", "share", mount_point, "user", "secret")
+
+
+@pytest.mark.parametrize(
+	("mount_exists", "expected_net_use_del_calls"),
+	[
+		(True, [(None, "z:", 1)]),
+		(False, []),
+	],
+)
+def test_windows_unmount_network_share_calls_net_use_del_for_existing_mount(
+	monkeypatch: pytest.MonkeyPatch,
+	mount_exists: bool,
+	expected_net_use_del_calls: list[tuple[None, str, int]],
+) -> None:
+	module, _net_use_add_calls, net_use_del_calls = _load_windows_module(monkeypatch)
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: ("\\\\server\\share", Path("z:")) if mount_exists else None)
+
+	module.unmount_network_share("Z:")
+
+	assert net_use_del_calls == expected_net_use_del_calls
+
+
+def test_windows_unmount_network_share_requires_drive_letter(monkeypatch: pytest.MonkeyPatch) -> None:
+	module, _net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
+
+	with pytest.raises(ValueError, match="Mount point must be a drive letter"):
+		module.unmount_network_share(None)
