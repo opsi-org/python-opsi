@@ -21,7 +21,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from socket import AF_INET
 from ssl import SSLContext
-from threading import Thread
+from threading import Event, Thread
 from typing import Any, Generator, Iterable
 from unittest import mock
 from urllib.parse import unquote
@@ -1575,6 +1575,7 @@ def test_messagebus_reconnect() -> None:
 
 def test_messagebus_connect_503() -> None:
 	connect_attempts = 0
+	third_connect_attempt = Event()
 
 	class MBListener(MessagebusListener):
 		next_connect_wait = []
@@ -1586,6 +1587,8 @@ def test_messagebus_connect_503() -> None:
 		nonlocal connect_attempts
 		if request["path"].startswith("/messagebus"):
 			connect_attempts += 1
+			if connect_attempts >= 3:
+				third_connect_attempt.set()
 			handler.set_response_status(503, "Service Unavailable")
 			handler.set_response_headers({"server": "opsiconfd 4.3.0.0 (uvicorn)", "Retry-After": "5", "x-opsi-error": "maintenance mode"})
 		else:
@@ -1599,7 +1602,7 @@ def test_messagebus_connect_503() -> None:
 		handler.ws_send_message(compress(smsg.to_msgpack(), compression="lz4", compression_level=0, block_linked=True))
 
 	with http_test_server(generate_cert=True, ws_connect_callback=ws_connect_callback, request_callback=request_callback) as server:
-		with ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
+		with ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all", connect_timeout=1) as client:
 			client.messagebus.reconnect_wait_min = 1
 			client.messagebus.reconnect_wait_max = 3
 
@@ -1607,7 +1610,7 @@ def test_messagebus_connect_503() -> None:
 
 			with listener.register(client.messagebus):
 				client.messagebus.connect(wait=False)
-				time.sleep(20)
+				assert third_connect_attempt.wait(30)
 
 			assert connect_attempts >= 3
 
