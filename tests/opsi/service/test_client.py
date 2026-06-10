@@ -2514,6 +2514,33 @@ def test_messagebus_multi_thread() -> None:
 				assert res["error"] is None
 
 
+def test_messagebus_jsonrpc_receives_immediate_response() -> None:
+	with ServiceClient("https://127.0.0.1:4447", verify="accept_all") as client:
+		messagebus = client.messagebus
+		messagebus.compression = None
+		messagebus.threaded_callbacks = False
+
+		def send_message(message: Message) -> None:
+			assert isinstance(message, JSONRPCRequestMessage)
+			response = JSONRPCResponseMessage(
+				sender="service:worker:test:1",
+				channel="host:test-client.uib.local",
+				rpc_id=message.rpc_id,
+				result=f"RESULT {message.rpc_id}",
+			)
+			messagebus._on_message(mock.Mock(), response.to_msgpack())
+
+		with (
+			mock.patch.object(messagebus, "send_message", side_effect=send_message),
+			mock.patch("opsi.opsi.service.client._service_client.get_rpc_timeout", return_value=1),
+		):
+			res = messagebus.jsonrpc("test", return_result_only=False)
+
+		assert res["id"]
+		assert res["result"] == f"RESULT {res['id']}"
+		assert res["error"] is None
+
+
 def test_messagebus_listener() -> None:
 	class StoringListener(MessagebusListener):
 		def __init__(self, message_types: Iterable[MessageType | str] | None = None) -> None:

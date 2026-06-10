@@ -1903,6 +1903,24 @@ class MessagebusListener(ABC):
 class Messagebus(Thread):
 	_messagebus_path = "/messagebus/v1"
 
+	class JSONRPCResponseListener(MessagebusListener):
+		def __init__(self, rpc_id: str | int, timeout: float | None = None) -> None:
+			super().__init__(message_types=(MessageType.JSONRPC_RESPONSE,))
+			self.rpc_id = rpc_id
+			self.timeout = timeout
+			self.message_received_event = Event()
+			self.message: JSONRPCResponseMessage | None = None
+
+		def wait_for_message(self) -> JSONRPCResponseMessage:
+			if self.message_received_event.wait(self.timeout) and self.message:
+				return self.message
+			raise OpsiServiceTimeoutError(f"Timed out waiting for JSONRPCResponseMessage with rpc_id={self.rpc_id}")
+
+		def message_received(self, message: Message) -> None:
+			if isinstance(message, JSONRPCResponseMessage) and message.rpc_id == self.rpc_id:
+				self.message = message
+				self.message_received_event.set()
+
 	def __init__(self, opsi_service_client: ServiceClient) -> None:
 		super().__init__(daemon=True, name="opsiservice-Messagebus")
 		self._context = copy_context()
@@ -2088,25 +2106,7 @@ class Messagebus(Thread):
 			logger.error("Error running callback %r on listener %r: %s (id=%r)", callback_name, listener, err, self.id, exc_info=True)
 
 	def wait_for_jsonrpc_response_message(self, rpc_id: str | int, timeout: float | None = None) -> JSONRPCResponseMessage:
-		class JSONRPCResponseListener(MessagebusListener):
-			def __init__(self, rpc_id: str | int, timeout: float | None = None) -> None:
-				super().__init__(message_types=(MessageType.JSONRPC_RESPONSE,))
-				self.rpc_id = rpc_id
-				self.timeout = timeout
-				self.message_received_event = Event()
-				self.message: JSONRPCResponseMessage | None = None
-
-			def wait_for_message(self) -> JSONRPCResponseMessage:
-				if self.message_received_event.wait(self.timeout) and self.message:
-					return self.message
-				raise OpsiServiceTimeoutError(f"Timed out waiting for JSONRPCResponseMessage with rpc_id={self.rpc_id}")
-
-			def message_received(self, message: Message) -> None:
-				if isinstance(message, JSONRPCResponseMessage) and message.rpc_id == self.rpc_id:
-					self.message = message
-					self.message_received_event.set()
-
-		listener = JSONRPCResponseListener(rpc_id, timeout)
+		listener = self.JSONRPCResponseListener(rpc_id, timeout)
 		with listener.register(self):
 			return listener.wait_for_message()
 
@@ -2115,9 +2115,11 @@ class Messagebus(Thread):
 		if isinstance(params, list):
 			params = tuple(params)
 		msg = JSONRPCRequestMessage(sender="*", channel="service:config:jsonrpc", method=method, params=params)
-		self.send_message(msg)
 		timeout = get_rpc_timeout(method)
-		res = self.wait_for_jsonrpc_response_message(rpc_id=msg.rpc_id, timeout=timeout)
+		listener = self.JSONRPCResponseListener(msg.rpc_id, timeout)
+		with listener.register(self):
+			self.send_message(msg)
+			res = listener.wait_for_message()
 		if not return_result_only:
 			return {"jsonrpc": "2.0", "id": res.rpc_id, "result": res.result, "error": res.error}
 
