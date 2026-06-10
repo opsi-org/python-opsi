@@ -14,6 +14,7 @@ if sys.platform != "win32":
 import ctypes
 import re
 from ctypes import wintypes
+from ipaddress import IPv6Address, ip_address
 
 import win32net
 import win32netcon
@@ -149,6 +150,17 @@ def mount_cifs_share(
 ) -> None:
 	"""Mount a CIFS share on Windows."""
 	secret_filter.add_secrets(password)
+
+	try:
+		if isinstance(ip_address(address), IPv6Address):
+			# Windows does not support IPv6 addresses in UNC paths, but supports a special syntax for them
+			# https://de.wikipedia.org/wiki/Uniform_Naming_Convention
+			logger.debug("Address '%s' is an IPv6 address, converting to Windows UNC format", address)
+			address = f"{address.replace(':', '-').replace('[', '').replace(']', '')}.ipv6-literal.net"
+	except ValueError:
+		# Not an IP address
+		pass
+
 	remote = f"\\\\{address}\\{share}"
 	mount_point = _normalize_drive(mount_point)
 	domain = None

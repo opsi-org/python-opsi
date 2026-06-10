@@ -683,6 +683,28 @@ def test_windows_mount_cifs_share_calls_net_use_add(monkeypatch: pytest.MonkeyPa
 
 
 @pytest.mark.windows
+def test_windows_mount_cifs_share_converts_ipv6_address_to_unc_literal(monkeypatch: pytest.MonkeyPatch) -> None:
+	module, net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: None)
+
+	module.mount_cifs_share(address="2001:db8::1", share="share", mount_point="Z:", username="user", password="secret")
+
+	assert net_use_add_calls == [
+		(
+			None,
+			2,
+			{
+				"remote": r"\\2001-db8--1.ipv6-literal.net\share",
+				"local": "z:",
+				"password": "secret",
+				"username": "user",
+				"asg_type": 0,
+			},
+		)
+	]
+
+
+@pytest.mark.windows
 def test_windows_mount_cifs_share_unmounts_existing_mount_before_mounting(monkeypatch: pytest.MonkeyPatch) -> None:
 	module, _net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
 	events: list[tuple[str, Path | tuple[Any, ...]]] = []
