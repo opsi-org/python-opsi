@@ -271,7 +271,11 @@ def test_linux_mount_webdav_share_adds_requested_mount_options_and_ca_certs(tmp_
 
 	monkeypatch.setattr(module.shutil, "which", lambda name: "/usr/bin/opsi-rclone" if name == "opsi-rclone" else None)
 	monkeypatch.setattr(module, "generate_secret", lambda *, length, alphabet: "abcdef12")
-	monkeypatch.setattr(module, "as_pem", lambda cert: f"pem-{cert}")
+	monkeypatch.setattr(
+		module,
+		"write_certs_to_file",
+		lambda certs, path: Path(path).write_text("\n".join(f"pem-{cert}" for cert in certs), encoding="utf-8"),
+	)
 	monkeypatch.setattr(module, "run_command", fake_run_command)
 	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: None)
 	mount_point = tmp_path / "webdav"
