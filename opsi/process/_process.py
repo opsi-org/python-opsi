@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import ctypes
+import enum
 import locale
 import os
 import re
@@ -25,12 +26,10 @@ from types import TracebackType
 from typing import Collection, Literal, Mapping, Self
 
 from opsi.logging import LOG_TRACE, get_logger, is_log_level_enabled
-from opsi.retry import Retry, RetryConfig, get_retry_config, RetryConfigType
+from opsi.retry import Retry, RetryConfig, RetryConfigType, get_retry_config
 from opsi.system.file.temp import TempFile
 from opsi.system.info import is_linux, is_posix, is_windows
 from opsi.util.pattern import MappedStrEnum
-import enum
-
 
 LD_LIBRARY_EXCLUDE_LIST = ["/usr/lib/opsiclientd", "/usr/lib/opsiconfd", "/usr/lib/opsi-agent"]
 
@@ -1021,12 +1020,11 @@ class Process:
 
 	def is_running(self, *, wait: float | int = 0.01) -> bool:
 		"""
-		Check if the process is still running.
+		Check if the process is still running and
 		:param wait: Time to wait for the process to end before checking, in seconds.
 		:return: True if the process is still running, False if it has ended.
 		"""
-		self._ended.wait(timeout=wait)
-		return bool(self._proc and self._proc.poll() is None)
+		return not self._ended.wait(timeout=wait)
 
 	def stop(self, *, wait_before_stop: float | int | None = None, wait_after_stop: float | int | None = 5) -> bool:
 		"""
@@ -1053,7 +1051,7 @@ class Process:
 		"""
 		ended = self._ended.wait(timeout=timeout)
 		if ended and self._manager_thread:
-			self._manager_thread.join(timeout=10)
+			self._manager_thread.join(timeout=3)
 		return ended
 
 	def write_bytes(self, data: bytes, close: bool = False) -> None:
