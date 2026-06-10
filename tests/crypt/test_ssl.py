@@ -24,7 +24,9 @@ from opsi.crypt.ssl import (
 	create_server_cert_signing_request,
 	create_x509_name,
 	is_self_signed,
-	load_key,
+	read_certs_from_file,
+	read_key_from_file,
+	write_certs_to_file,
 	x509_name_from_dict,
 	x509_name_to_dict,
 )
@@ -200,15 +202,15 @@ def test_as_pem() -> None:
 		as_pem(create_x509_name({}))  # type: ignore[arg-type]
 
 
-def test_load_key(tmp_path: Path) -> None:
+def test_load_key_from_file(tmp_path: Path) -> None:
 	key_file = tmp_path / "key.pem"
 	key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 	key_file.write_text(as_pem(key, passphrase="password"), encoding="utf-8", newline="")
 	with pytest.raises(RuntimeError, match=r".*Incorrect password, could not decrypt key.*"):
-		load_key(key_file, "wrongpassword")
+		read_key_from_file(key_file, "wrongpassword")
 	with pytest.raises(TypeError, match=r".*Password was not given but private key is encrypted.*"):
-		load_key(key_file)
-	l_key = load_key(key_file, "password")
+		read_key_from_file(key_file)
+	l_key = read_key_from_file(key_file, "password")
 	assert l_key.private_bytes(
 		encoding=serialization.Encoding.PEM,
 		format=serialization.PrivateFormat.TraditionalOpenSSL,
@@ -218,3 +220,32 @@ def test_load_key(tmp_path: Path) -> None:
 		format=serialization.PrivateFormat.TraditionalOpenSSL,
 		encryption_algorithm=serialization.NoEncryption(),
 	)
+
+
+def test_write_certs_to_file_writes_multiple_pem_certificates(tmp_path: Path) -> None:
+	cert_file = tmp_path / "certs.pem"
+	ca_cert, ca_key = create_ca(subject={"CN": "opsi CA"}, valid_days=100)
+	server_cert, _server_key = create_server_cert(
+		subject={"CN": "server.opsi.test"},
+		valid_days=100,
+		ip_addresses=set(),
+		hostnames={"server.opsi.test"},
+		ca_key=ca_key,
+		ca_cert=ca_cert,
+	)
+
+	write_certs_to_file([ca_cert, server_cert], cert_file)
+
+	assert cert_file.read_text(encoding="utf-8") == f"{as_pem(ca_cert)}{as_pem(server_cert)}"
+	assert [as_pem(cert) for cert in read_certs_from_file(cert_file)] == [as_pem(ca_cert), as_pem(server_cert)]
+
+
+def test_read_certs_from_file_skips_invalid_pem_blocks(tmp_path: Path) -> None:
+	cert_file = tmp_path / "certs.pem"
+	ca_cert, _ca_key = create_ca(subject={"CN": "opsi CA"}, valid_days=100)
+	cert_file.write_text(
+		f"not a certificate\n-----BEGIN CERTIFICATE-----\ninvalid\n-----END CERTIFICATE-----\n{as_pem(ca_cert)}",
+		encoding="utf-8",
+	)
+
+	assert [as_pem(cert) for cert in read_certs_from_file(cert_file)] == [as_pem(ca_cert)]

@@ -137,12 +137,12 @@ def _get_mount_from_wnet_connection(dev_or_mountpoint: str, mount_point: str | N
 
 
 def mount_cifs_share(
+	*,
 	address: str,
 	share: str,
 	mount_point: Path | str,
 	username: str,
 	password: str,
-	*,
 	read_only: bool = False,
 	dir_mode: int | None = None,
 	file_mode: int | None = None,
@@ -177,17 +177,17 @@ def mount_cifs_share(
 
 
 def mount_webdav_share(
+	*,
 	address: str,
 	port: int,
 	path: str,
 	mount_point: Path | str,
 	username: str,
 	password: str,
-	*,
 	read_only: bool = False,
 	dir_mode: int | None = None,
 	file_mode: int | None = None,
-	ca_cert: x509.Certificate | None = None,
+	ca_certs: list[x509.Certificate] | None = None,
 ) -> None:
 	secret_filter.add_secrets(password)
 	remote = f"https://{address}:{port}/{path.lstrip('/')}"
@@ -197,8 +197,9 @@ def mount_webdav_share(
 		logger.info("'%s' is already mounted on '%s', unmounting first", current_mount[0], current_mount[1])
 		unmount_network_share(current_mount[1])
 
-	if ca_cert:
-		install_ca(ca_cert)
+	if ca_certs:
+		for ca_cert in ca_certs:
+			install_ca(ca_cert)
 
 	logger.info("Mounting WebDAV share '%s' to '%s' with username '%s'", remote, mount_point, username)
 	# HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WebClient\Parameters FileSizeLimitInBytes = 0xffffffff

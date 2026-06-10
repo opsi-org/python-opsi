@@ -10,7 +10,9 @@ from opsi.crypt.ssl._ssl import (
 	create_server_cert_signing_request,
 	create_x509_name,
 	is_self_signed,
-	load_key,
+	read_certs_from_file,
+	read_key_from_file,
+	write_certs_to_file,
 	x509_name_from_dict,
 	x509_name_to_dict,
 )
@@ -22,7 +24,9 @@ __all__ = [
 	"create_server_cert_signing_request",
 	"create_x509_name",
 	"is_self_signed",
-	"load_key",
+	"read_certs_from_file",
+	"read_key_from_file",
+	"write_certs_to_file",
 	"x509_name_from_dict",
 	"x509_name_to_dict",
 ]

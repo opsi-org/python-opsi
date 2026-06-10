@@ -15,7 +15,7 @@ if sys.platform != "linux":
 from cryptography import x509
 
 from opsi.crypt.secret import SecretAlphabet, generate_secret
-from opsi.crypt.ssl import as_pem
+from opsi.crypt.ssl import write_certs_to_file
 from opsi.logging import get_logger, secret_filter
 from opsi.process import run_command
 from opsi.system.file.temp import TempDir, TempFile
@@ -39,12 +39,12 @@ def _get_mount(device: str | None = None, mount_point: Path | str | None = None)
 
 
 def mount_cifs_share(
+	*,
 	address: str,
 	share: str,
 	mount_point: Path | str,
 	username: str,
 	password: str,
-	*,
 	read_only: bool = False,
 	dir_mode: int | None = None,
 	file_mode: int | None = None,
@@ -85,17 +85,17 @@ def mount_cifs_share(
 
 
 def mount_webdav_share(
+	*,
 	address: str,
 	port: int,
 	path: str,
 	mount_point: Path | str,
 	username: str,
 	password: str,
-	*,
 	read_only: bool = False,
 	dir_mode: int | None = None,
 	file_mode: int | None = None,
-	ca_cert: x509.Certificate | None = None,
+	ca_certs: list[x509.Certificate] | None = None,
 ) -> None:
 	secret_filter.add_secrets(password)
 	rclone = shutil.which("opsi-rclone") or shutil.which("rclone")
@@ -122,26 +122,17 @@ def mount_webdav_share(
 			f"[{share_name}]\ntype = webdav\nurl = {url}\nvendor = other\nuser = {username}\npass = {obscured_password}\n",
 			encoding="utf-8",
 		)
-		command = [
-			rclone,
-			"mount",
-			"--config",
-			str(config_file),
-			"--daemon",
-			"--vfs-cache-mode",
-			"writes",
-			"--use-cookies",
-		]
+		command = [rclone, "mount", "--config", str(config_file), "--daemon", "--vfs-cache-mode", "writes", "--use-cookies"]
 		if read_only:
 			command.append("--read-only")
 		if dir_mode is not None:
 			command.append(f"--dir-perms={dir_mode:04o}")
 		if file_mode is not None:
 			command.append(f"--file-perms={file_mode:04o}")
-		if ca_cert:
-			ca_cert_file = temp_dir / "ca_cert.pem"
-			ca_cert_file.write_text(as_pem(ca_cert), encoding="utf-8")
-			command.extend(["--ca-cert", str(ca_cert_file)])
+		if ca_certs:
+			ca_certs_file = temp_dir / "ca_certs.pem"
+			write_certs_to_file(ca_certs, ca_certs_file)
+			command.extend(["--ca-cert", str(ca_certs_file)])
 		command.extend([f"{share_name}:", str(Path(mount_point).absolute())])
 		run_command(command, timeout=15)
 

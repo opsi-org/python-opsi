@@ -322,7 +322,7 @@ def mount_network_share(
 	read_only: bool = False,
 	dir_mode: int | None = None,
 	file_mode: int | None = None,
-	ca_cert: x509.Certificate | None = None,
+	ca_certs: list[x509.Certificate] | None = None,
 ) -> None:
 	"""Mount a network share on the current system."""
 	parsed_url = urlparse(url)
@@ -355,16 +355,7 @@ def mount_network_share(
 		else:
 			raise OperatingSystemUnsupportedError(f"{get_system()} not supported")
 
-		mount_cifs_share(
-			parsed_url.hostname,
-			path,
-			mount_point,
-			username,
-			password,
-			read_only=read_only,
-			dir_mode=dir_mode,
-			file_mode=file_mode,
-		)
+		mount_cifs_share(address=parsed_url.hostname, share=path, mount_point=mount_point, username=username, password=password)
 
 	elif parsed_url.scheme in ("webdavs", "https"):
 		if is_linux():
@@ -377,16 +368,13 @@ def mount_network_share(
 			raise OperatingSystemUnsupportedError(f"{get_system()} not supported")
 
 		mount_webdav_share(
-			parsed_url.hostname,
-			parsed_url.port or 443,
-			path,
-			mount_point,
-			username,
-			password,
-			read_only=read_only,
-			dir_mode=dir_mode,
-			file_mode=file_mode,
-			ca_cert=ca_cert,
+			address=parsed_url.hostname,
+			port=parsed_url.port or 443,
+			path=path,
+			mount_point=mount_point,
+			username=username,
+			password=password,
+			ca_certs=ca_certs,
 		)
 
 	else:

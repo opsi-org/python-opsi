@@ -71,12 +71,12 @@ def _run_mount_command(command: list[str], *, username: str | None, password: st
 
 
 def mount_cifs_share(
+	*,
 	address: str,
 	share: str,
 	mount_point: Path | str,
 	username: str,
 	password: str,
-	*,
 	read_only: bool = False,
 	dir_mode: int | None = None,
 	file_mode: int | None = None,
@@ -97,17 +97,13 @@ def mount_cifs_share(
 		logger.info("'%s' is already mounted on '%s', unmounting first", current_mount[0], current_mount[1])
 		unmount_network_share(current_mount[1])
 
-	mount_options = []
-	if read_only:
-		mount_options.append("ro")
-	if dir_mode is not None:
-		mount_options.append(f"dir_mode={dir_mode:04o}")
-	if file_mode is not None:
-		mount_options.append(f"file_mode={file_mode:04o}")
-
 	mount_command = ["mount_smbfs"]
-	if mount_options:
-		mount_command.extend(["-o", ",".join(mount_options)])
+	if read_only:
+		mount_command.append("-o")
+	if dir_mode is not None:
+		mount_command.extend(["-d", f"{dir_mode:04o}"])
+	if file_mode is not None:
+		mount_command.extend(["-f", f"{file_mode:04o}"])
 	mount_command.extend([remote, str(mount_point)])
 
 	logger.info("Mounting CIFS share '%s' to '%s' with username '%s'", remote, mount_point, username)
@@ -115,17 +111,17 @@ def mount_cifs_share(
 
 
 def mount_webdav_share(
+	*,
 	address: str,
 	port: int,
 	path: str,
 	mount_point: Path | str,
 	username: str,
 	password: str,
-	*,
 	read_only: bool = False,
 	dir_mode: int | None = None,
 	file_mode: int | None = None,
-	ca_cert: x509.Certificate | None = None,
+	ca_certs: list[x509.Certificate] | None = None,
 ) -> None:
 	secret_filter.add_secrets(password)
 	mount_point = Path(mount_point).absolute()
@@ -137,20 +133,13 @@ def mount_webdav_share(
 		logger.info("'%s' is already mounted on '%s', unmounting first", current_mount[0], current_mount[1])
 		unmount_network_share(current_mount[1])
 
-	if ca_cert:
-		install_ca(ca_cert)
-
-	mount_options = []
-	if read_only:
-		mount_options.append("ro")
-	if dir_mode is not None:
-		mount_options.append(f"dir_mode={dir_mode:04o}")
-	if file_mode is not None:
-		mount_options.append(f"file_mode={file_mode:04o}")
+	if ca_certs:
+		for ca_cert in ca_certs:
+			install_ca(ca_cert)
 
 	mount_command = ["mount_webdav", "-i"]
-	if mount_options:
-		mount_command.extend(["-o", ",".join(mount_options)])
+	if read_only:
+		mount_command.append("-o")
 	mount_command.extend([remote, str(mount_point)])
 
 	logger.info("Mounting WebDAV share '%s' to '%s' with username '%s'", remote, mount_point, username)

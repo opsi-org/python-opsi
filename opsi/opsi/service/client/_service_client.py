@@ -4,10 +4,9 @@
 # License: AGPL-3.0-only
 
 from __future__ import annotations
-from opsi.util.pattern import MappedStrEnum
 
-import enum
 import asyncio
+import enum
 import json
 import locale
 import os
@@ -57,7 +56,7 @@ from websocket._abnf import ABNF
 
 from opsi import __version__
 from opsi.compression import compress, decompress
-from opsi.crypt.ssl import load_key, x509_name_to_dict
+from opsi.crypt.ssl import read_key_from_file, x509_name_to_dict
 from opsi.exception import (
 	OpsiRpcError,
 	OpsiServiceAuthenticationError,
@@ -89,6 +88,7 @@ from opsi.system.file.lock import lock_file
 from opsi.system.info import is_windows
 from opsi.system.network import get_hostnames, get_network_info, prepare_proxy_environment
 from opsi.system.time import set_system_datetime
+from opsi.util.pattern import MappedStrEnum
 
 if TYPE_CHECKING:
 	from urllib3._base_connection import BaseHTTPSConnection
@@ -492,7 +492,7 @@ class ServiceClient:
 
 			logger.debug("Trying to load private key")
 			# Test key loading (passphrase)
-			load_key(_client_key_file, self._client_key_password)
+			read_key_from_file(_client_key_file, self._client_key_password)
 
 			_patch_https_connection_pool_key_password(self._client_key_password)
 

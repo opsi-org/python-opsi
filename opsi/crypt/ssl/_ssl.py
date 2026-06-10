@@ -3,6 +3,7 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
+import re
 from datetime import datetime, timedelta, timezone
 from ipaddress import ip_address
 from pathlib import Path
@@ -95,7 +96,7 @@ def as_pem(cert_or_key: x509.Certificate | rsa.RSAPrivateKey, passphrase: str | 
 	raise TypeError(f"Invalid type: {cert_or_key}")
 
 
-def load_key(key_file: str | Path, passphrase: str | None = None) -> rsa.RSAPrivateKey:
+def read_key_from_file(key_file: str | Path, passphrase: str | None = None) -> rsa.RSAPrivateKey:
 	if not isinstance(key_file, Path):
 		key_file = Path(key_file)
 	try:
@@ -107,6 +108,25 @@ def load_key(key_file: str | Path, passphrase: str | None = None) -> rsa.RSAPriv
 		return private_key
 	except ValueError as err:
 		raise RuntimeError(f"Failed to load private key from '{key_file}': {err}") from err
+
+
+def read_certs_from_file(cert_file: str | Path) -> list[x509.Certificate]:
+	"""
+	Load one or more PEM encoded certificates from a file.
+	"""
+	cert_file = Path(cert_file)
+	ca_certs: list[x509.Certificate] = []
+	for match in re.finditer(r"(-+BEGIN CERTIFICATE-+.*?-+END CERTIFICATE-+)", cert_file.read_text(encoding="utf-8"), re.DOTALL):
+		try:
+			ca_certs.append(x509.load_pem_x509_certificate(match.group(1).encode("ascii")))
+		except Exception as err:
+			logger.error("Failed to load certificate from '%s': %s", cert_file, err, exc_info=True)
+	return ca_certs
+
+
+def write_certs_to_file(certs: list[x509.Certificate], cert_file: str | Path) -> None:
+	cert_file = Path(cert_file)
+	cert_file.write_text("".join(as_pem(c) for c in certs), encoding="utf-8")
 
 
 def is_self_signed(ca_cert: x509.Certificate) -> bool:
