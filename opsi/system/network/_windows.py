@@ -161,11 +161,9 @@ def mount_cifs_share(address: str, share: str, mount_point: Path | str, username
 	if domain:
 		use_info["domainname"] = domain
 
-	win32net.NetUseAdd(
-		None,
-		2,
-		use_info,
-	)
+	# Using NetUseAdd instead of WNetAddConnection2 to avoid Windows falling back to WebDAV
+	# https://www.synacktiv.com/publications/taking-the-relaying-capabilities-of-multicast-poisoning-to-the-next-level-tricking
+	win32net.NetUseAdd(None, 2, use_info)
 
 
 def mount_webdav_share(
