@@ -38,7 +38,17 @@ def _get_mount(device: str | None = None, mount_point: Path | str | None = None)
 	return None
 
 
-def mount_cifs_share(address: str, share: str, mount_point: Path | str, username: str, password: str) -> None:
+def mount_cifs_share(
+	address: str,
+	share: str,
+	mount_point: Path | str,
+	username: str,
+	password: str,
+	*,
+	read_only: bool = False,
+	dir_mode: int | None = None,
+	file_mode: int | None = None,
+) -> None:
 	"""Mount a CIFS share on Linux."""
 	secret_filter.add_secrets(password)
 	remote = f"//{address}/{share}"
@@ -64,12 +74,28 @@ def mount_cifs_share(address: str, share: str, mount_point: Path | str, username
 		mount_options = [f"credentials={credentials_file.path}"]
 		if domain:
 			mount_options.append(f"domain={domain}")
+		if read_only:
+			mount_options.append("ro")
+		if dir_mode is not None:
+			mount_options.append(f"dir_mode={dir_mode:04o}")
+		if file_mode is not None:
+			mount_options.append(f"file_mode={file_mode:04o}")
 		mount_command = ["mount", "-t", "cifs", remote, str(mount_point), "-o", ",".join(mount_options)]
 		run_command(mount_command, environment={"LC_ALL": "C"}, timeout=15)
 
 
 def mount_webdav_share(
-	address: str, port: int, path: str, mount_point: Path | str, username: str, password: str, ca_cert: x509.Certificate | None = None
+	address: str,
+	port: int,
+	path: str,
+	mount_point: Path | str,
+	username: str,
+	password: str,
+	*,
+	read_only: bool = False,
+	dir_mode: int | None = None,
+	file_mode: int | None = None,
+	ca_cert: x509.Certificate | None = None,
 ) -> None:
 	secret_filter.add_secrets(password)
 	rclone = shutil.which("opsi-rclone") or shutil.which("rclone")
@@ -105,8 +131,13 @@ def mount_webdav_share(
 			"--vfs-cache-mode",
 			"writes",
 			"--use-cookies",
-			# "--read-only"
 		]
+		if read_only:
+			command.append("--read-only")
+		if dir_mode is not None:
+			command.append(f"--dir-perms={dir_mode:04o}")
+		if file_mode is not None:
+			command.append(f"--file-perms={file_mode:04o}")
 		if ca_cert:
 			ca_cert_file = temp_dir / "ca_cert.pem"
 			ca_cert_file.write_text(as_pem(ca_cert), encoding="utf-8")

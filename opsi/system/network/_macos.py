@@ -70,7 +70,17 @@ def _run_mount_command(command: list[str], *, username: str | None, password: st
 	raise RuntimeError(f"Mount command {command!r} failed with exit code {exit_code}: {output}")
 
 
-def mount_cifs_share(address: str, share: str, mount_point: Path | str, username: str, password: str) -> None:
+def mount_cifs_share(
+	address: str,
+	share: str,
+	mount_point: Path | str,
+	username: str,
+	password: str,
+	*,
+	read_only: bool = False,
+	dir_mode: int | None = None,
+	file_mode: int | None = None,
+) -> None:
 	"""Mount a CIFS share on macOS."""
 	secret_filter.add_secrets(password)
 	mount_point = Path(mount_point).absolute()
@@ -87,14 +97,35 @@ def mount_cifs_share(address: str, share: str, mount_point: Path | str, username
 		logger.info("'%s' is already mounted on '%s', unmounting first", current_mount[0], current_mount[1])
 		unmount_network_share(current_mount[1])
 
-	logger.info("Mounting CIFS share '%s' to '%s' with username '%s'", remote, mount_point, username)
+	mount_options = []
+	if read_only:
+		mount_options.append("ro")
+	if dir_mode is not None:
+		mount_options.append(f"dir_mode={dir_mode:04o}")
+	if file_mode is not None:
+		mount_options.append(f"file_mode={file_mode:04o}")
 
-	mount_command = ["mount_smbfs", remote, str(mount_point)]
+	mount_command = ["mount_smbfs"]
+	if mount_options:
+		mount_command.extend(["-o", ",".join(mount_options)])
+	mount_command.extend([remote, str(mount_point)])
+
+	logger.info("Mounting CIFS share '%s' to '%s' with username '%s'", remote, mount_point, username)
 	_run_mount_command(mount_command, username=None, password=password)
 
 
 def mount_webdav_share(
-	address: str, port: int, path: str, mount_point: Path | str, username: str, password: str, ca_cert: x509.Certificate | None = None
+	address: str,
+	port: int,
+	path: str,
+	mount_point: Path | str,
+	username: str,
+	password: str,
+	*,
+	read_only: bool = False,
+	dir_mode: int | None = None,
+	file_mode: int | None = None,
+	ca_cert: x509.Certificate | None = None,
 ) -> None:
 	secret_filter.add_secrets(password)
 	mount_point = Path(mount_point).absolute()
@@ -109,8 +140,20 @@ def mount_webdav_share(
 	if ca_cert:
 		install_ca(ca_cert)
 
+	mount_options = []
+	if read_only:
+		mount_options.append("ro")
+	if dir_mode is not None:
+		mount_options.append(f"dir_mode={dir_mode:04o}")
+	if file_mode is not None:
+		mount_options.append(f"file_mode={file_mode:04o}")
+
+	mount_command = ["mount_webdav", "-i"]
+	if mount_options:
+		mount_command.extend(["-o", ",".join(mount_options)])
+	mount_command.extend([remote, str(mount_point)])
+
 	logger.info("Mounting WebDAV share '%s' to '%s' with username '%s'", remote, mount_point, username)
-	mount_command = ["mount_webdav", "-i", remote, str(mount_point)]
 	_run_mount_command(mount_command, username=username, password=password)
 
 

@@ -314,7 +314,15 @@ def prepare_proxy_environment(
 
 
 def mount_network_share(
-	url: str, mount_point: Path | str, *, username: str | None = None, password: str | None = None, ca_cert: x509.Certificate | None = None
+	url: str,
+	mount_point: Path | str,
+	*,
+	username: str | None = None,
+	password: str | None = None,
+	read_only: bool = False,
+	dir_mode: int | None = None,
+	file_mode: int | None = None,
+	ca_cert: x509.Certificate | None = None,
 ) -> None:
 	"""Mount a network share on the current system."""
 	parsed_url = urlparse(url)
@@ -347,7 +355,16 @@ def mount_network_share(
 		else:
 			raise OperatingSystemUnsupportedError(f"{get_system()} not supported")
 
-		mount_cifs_share(parsed_url.hostname, path, mount_point, username, password)
+		mount_cifs_share(
+			parsed_url.hostname,
+			path,
+			mount_point,
+			username,
+			password,
+			read_only=read_only,
+			dir_mode=dir_mode,
+			file_mode=file_mode,
+		)
 
 	elif parsed_url.scheme in ("webdavs", "https"):
 		if is_linux():
@@ -359,7 +376,18 @@ def mount_network_share(
 		else:
 			raise OperatingSystemUnsupportedError(f"{get_system()} not supported")
 
-		mount_webdav_share(parsed_url.hostname, parsed_url.port or 443, path, mount_point, username, password, ca_cert)
+		mount_webdav_share(
+			parsed_url.hostname,
+			parsed_url.port or 443,
+			path,
+			mount_point,
+			username,
+			password,
+			read_only=read_only,
+			dir_mode=dir_mode,
+			file_mode=file_mode,
+			ca_cert=ca_cert,
+		)
 
 	else:
 		raise NotImplementedError(f"Mounting '{parsed_url.scheme}' is not supported")

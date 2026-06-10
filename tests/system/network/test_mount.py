@@ -10,11 +10,13 @@ import importlib
 import sys
 from pathlib import Path
 from types import ModuleType
-from typing import Any
+from typing import Any, cast
 
 import pytest
+from cryptography import x509
 
 import opsi.system.network
+from opsi.system.network import _network
 
 
 def _load_platform_module(monkeypatch: pytest.MonkeyPatch, module_name: str, platform: str) -> ModuleType:
@@ -110,6 +112,28 @@ def test_linux_mount_cifs_share_creates_mount_point_and_uses_credentials_file(tm
 		"credentials_path": run_command_calls[0]["credentials_path"],
 		"credentials": "username=user\npassword=secret\n",
 	}
+
+
+@pytest.mark.linux
+def test_linux_mount_cifs_share_adds_requested_mount_options(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_linux_module(monkeypatch)
+	run_command_calls: list[list[str]] = []
+
+	def fake_run_command(command: list[str], *, environment: dict[str, str], timeout: int) -> None:
+		assert environment == {"LC_ALL": "C"}
+		assert timeout == 15
+		run_command_calls.append(command)
+
+	monkeypatch.setattr(module, "run_command", fake_run_command)
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: None)
+	mount_point = tmp_path / "mnt"
+
+	module.mount_cifs_share("server", "share", mount_point, "user", "secret", read_only=True, dir_mode=0o755, file_mode=0o640)
+
+	assert len(run_command_calls) == 1
+	mount_options = run_command_calls[0][6].split(",")
+	assert mount_options[0].startswith("credentials=")
+	assert mount_options[1:] == ["ro", "dir_mode=0755", "file_mode=0640"]
 
 
 @pytest.mark.linux
@@ -221,6 +245,46 @@ def test_linux_mount_webdav_share_uses_rclone_config(tmp_path: Path, monkeypatch
 
 
 @pytest.mark.linux
+def test_linux_mount_webdav_share_adds_requested_mount_options(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_linux_module(monkeypatch)
+	run_command_calls: list[list[str]] = []
+
+	class FakeCommandResult:
+		def get_stdout_text(self) -> str:
+			return "obscured-secret\n"
+
+	def fake_run_command(command: list[str], *, timeout: int, stdin: str | None = None) -> FakeCommandResult:
+		assert timeout in (10, 15)
+		assert stdin in ("secret\n", None)
+		run_command_calls.append(command)
+		return FakeCommandResult()
+
+	monkeypatch.setattr(module.shutil, "which", lambda name: "/usr/bin/opsi-rclone" if name == "opsi-rclone" else None)
+	monkeypatch.setattr(module, "generate_secret", lambda *, length, alphabet: "abcdef12")
+	monkeypatch.setattr(module, "run_command", fake_run_command)
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: None)
+	mount_point = tmp_path / "webdav"
+
+	module.mount_webdav_share("server", 4447, "depot", mount_point, "user", "secret", read_only=True, dir_mode=0o755, file_mode=0o640)
+
+	assert run_command_calls[1] == [
+		"/usr/bin/opsi-rclone",
+		"mount",
+		"--config",
+		run_command_calls[1][3],
+		"--daemon",
+		"--vfs-cache-mode",
+		"writes",
+		"--use-cookies",
+		"--read-only",
+		"--dir-perms=0755",
+		"--file-perms=0640",
+		"abcdef12:",
+		str(mount_point.absolute()),
+	]
+
+
+@pytest.mark.linux
 def test_linux_mount_webdav_share_requires_rclone(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 	module = _load_linux_module(monkeypatch)
 
@@ -313,6 +377,26 @@ def test_macos_mount_cifs_share_uses_mount_smbfs_and_writes_prompted_password(
 	assert len(processes) == 1
 	assert processes[0].command == f"mount_smbfs '//DOMAIN;user@server/share/folder' {mount_point.absolute()}"
 	assert processes[0].sent_lines == ["secret"]
+
+
+@pytest.mark.macos
+def test_macos_mount_cifs_share_adds_requested_mount_options(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_macos_module(monkeypatch)
+	run_mount_calls: list[tuple[list[str], str | None, str]] = []
+	mount_point = tmp_path / "mnt"
+
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: None)
+	monkeypatch.setattr(
+		module,
+		"_run_mount_command",
+		lambda command, *, username, password: run_mount_calls.append((command, username, password)),
+	)
+
+	module.mount_cifs_share("server", "share", mount_point, "user", "secret", read_only=True, dir_mode=0o755, file_mode=0o640)
+
+	assert run_mount_calls == [
+		(["mount_smbfs", "-o", "ro,dir_mode=0755,file_mode=0640", "//user@server/share", str(mount_point.absolute())], None, "secret")
+	]
 
 
 @pytest.mark.macos
@@ -413,11 +497,35 @@ def test_macos_mount_webdav_share_installs_ca_and_runs_mount_command(tmp_path: P
 		lambda command, *, username, password: run_mount_calls.append((command, username, password)),
 	)
 
-	module.mount_webdav_share("server", 4447, "/depot", mount_point, "user", "secret", ca_cert)
+	module.mount_webdav_share("server", 4447, "/depot", mount_point, "user", "secret", ca_cert=ca_cert)
 
 	assert mount_point.is_dir()
 	assert installed_certs == [ca_cert]
 	assert run_mount_calls == [(["mount_webdav", "-i", "https://server:4447/depot", str(mount_point.absolute())], "user", "secret")]
+
+
+@pytest.mark.macos
+def test_macos_mount_webdav_share_adds_requested_mount_options(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+	module = _load_macos_module(monkeypatch)
+	run_mount_calls: list[tuple[list[str], str | None, str]] = []
+	mount_point = tmp_path / "webdav"
+
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: None)
+	monkeypatch.setattr(
+		module,
+		"_run_mount_command",
+		lambda command, *, username, password: run_mount_calls.append((command, username, password)),
+	)
+
+	module.mount_webdav_share("server", 4447, "/depot", mount_point, "user", "secret", read_only=True, dir_mode=0o755, file_mode=0o640)
+
+	assert run_mount_calls == [
+		(
+			["mount_webdav", "-i", "-o", "ro,dir_mode=0755,file_mode=0640", "https://server:4447/depot", str(mount_point.absolute())],
+			"user",
+			"secret",
+		)
+	]
 
 
 @pytest.mark.macos
@@ -574,10 +682,85 @@ def test_windows_mount_webdav_share_installs_ca_and_adds_connection(monkeypatch:
 	monkeypatch.setattr(module, "install_ca", lambda cert: installed_certs.append(cert))
 	monkeypatch.setattr(module.win32wnet, "WNetAddConnection2", lambda *args: add_connection_calls.append(args))
 
-	module.mount_webdav_share("server", 4447, "/depot", "Z:", "user", "secret", ca_cert)
+	module.mount_webdav_share("server", 4447, "/depot", "Z:", "user", "secret", ca_cert=ca_cert)
 
 	assert installed_certs == [ca_cert]
 	assert add_connection_calls == [(1, "z:", "https://server:4447/depot", None, "user", "secret", 0)]
+
+
+@pytest.mark.windows
+def test_windows_mount_functions_accept_ignored_mount_options(monkeypatch: pytest.MonkeyPatch) -> None:
+	module, net_use_add_calls, _net_use_del_calls = _load_windows_module(monkeypatch)
+	add_connection_calls: list[tuple[Any, ...]] = []
+
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: None)
+	monkeypatch.setattr(module.win32wnet, "WNetAddConnection2", lambda *args: add_connection_calls.append(args))
+
+	module.mount_cifs_share("server", "share", "Z:", "user", "secret", read_only=True, dir_mode=0o755, file_mode=0o640)
+	module.mount_webdav_share("server", 4447, "/depot", "Y:", "user", "secret", read_only=True, dir_mode=0o755, file_mode=0o640)
+
+	assert net_use_add_calls == [
+		(None, 2, {"remote": "\\\\server\\share", "local": "z:", "password": "secret", "username": "user", "asg_type": 0})
+	]
+	assert add_connection_calls == [(1, "y:", "https://server:4447/depot", None, "user", "secret", 0)]
+
+
+def test_mount_network_share_forwards_cifs_mount_options(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+	calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
+	fake_linux_module = ModuleType("opsi.system.network._linux")
+	setattr(fake_linux_module, "mount_cifs_share", lambda *args, **kwargs: calls.append((args, kwargs)))
+
+	monkeypatch.setattr(_network, "is_linux", lambda: True)
+	monkeypatch.setattr(_network, "is_macos", lambda: False)
+	monkeypatch.setattr(_network, "is_windows", lambda: False)
+	monkeypatch.setitem(sys.modules, "opsi.system.network._linux", fake_linux_module)
+	mount_point = tmp_path / "mnt"
+
+	_network.mount_network_share(
+		"cifs://url-user:url-pass@server/share",
+		mount_point,
+		read_only=True,
+		dir_mode=0o755,
+		file_mode=0o640,
+	)
+
+	assert calls == [
+		(
+			("server", "share", mount_point, "url-user", "url-pass"),
+			{"read_only": True, "dir_mode": 0o755, "file_mode": 0o640},
+		)
+	]
+
+
+def test_mount_network_share_forwards_webdav_mount_options_and_ca_cert(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+	calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
+	ca_cert = cast(x509.Certificate, object())
+	fake_linux_module = ModuleType("opsi.system.network._linux")
+	setattr(fake_linux_module, "mount_webdav_share", lambda *args, **kwargs: calls.append((args, kwargs)))
+
+	monkeypatch.setattr(_network, "is_linux", lambda: True)
+	monkeypatch.setattr(_network, "is_macos", lambda: False)
+	monkeypatch.setattr(_network, "is_windows", lambda: False)
+	monkeypatch.setitem(sys.modules, "opsi.system.network._linux", fake_linux_module)
+	mount_point = tmp_path / "webdav"
+
+	_network.mount_network_share(
+		"https://server:4447/depot",
+		mount_point,
+		username="user",
+		password="secret",
+		read_only=True,
+		dir_mode=0o755,
+		file_mode=0o640,
+		ca_cert=ca_cert,
+	)
+
+	assert calls == [
+		(
+			("server", 4447, "depot", mount_point, "user", "secret"),
+			{"read_only": True, "dir_mode": 0o755, "file_mode": 0o640, "ca_cert": ca_cert},
+		)
+	]
 
 
 @pytest.mark.windows

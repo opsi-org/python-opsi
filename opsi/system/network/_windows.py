@@ -136,7 +136,17 @@ def _get_mount_from_wnet_connection(dev_or_mountpoint: str, mount_point: str | N
 	return None
 
 
-def mount_cifs_share(address: str, share: str, mount_point: Path | str, username: str, password: str) -> None:
+def mount_cifs_share(
+	address: str,
+	share: str,
+	mount_point: Path | str,
+	username: str,
+	password: str,
+	*,
+	read_only: bool = False,
+	dir_mode: int | None = None,
+	file_mode: int | None = None,
+) -> None:
 	"""Mount a CIFS share on Windows."""
 	secret_filter.add_secrets(password)
 	remote = f"\\\\{address}\\{share}"
@@ -167,7 +177,17 @@ def mount_cifs_share(address: str, share: str, mount_point: Path | str, username
 
 
 def mount_webdav_share(
-	address: str, port: int, path: str, mount_point: Path | str, username: str, password: str, ca_cert: x509.Certificate | None = None
+	address: str,
+	port: int,
+	path: str,
+	mount_point: Path | str,
+	username: str,
+	password: str,
+	*,
+	read_only: bool = False,
+	dir_mode: int | None = None,
+	file_mode: int | None = None,
+	ca_cert: x509.Certificate | None = None,
 ) -> None:
 	secret_filter.add_secrets(password)
 	remote = f"https://{address}:{port}/{path.lstrip('/')}"
