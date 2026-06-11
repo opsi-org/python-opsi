@@ -9,13 +9,13 @@ import os
 import re
 import socket
 from copy import deepcopy
-from functools import lru_cache
 from pathlib import Path
 from shutil import chown
 from threading import Lock
 from typing import Any
 from urllib.parse import urlparse
 
+import psutil
 from tomlkit import dumps, loads
 from tomlkit.items import Item
 
@@ -31,7 +31,6 @@ GLOBAL_CONF = "/etc/opsi/global.conf"
 DISPATCH_CONF = "/etc/opsi/backendManager/dispatch.conf"
 JSONRPC_CONF = "/etc/opsi/backends/jsonrpc.conf"
 MYSQL_CONF = "/etc/opsi/backends/mysql.conf"
-OPSICONFD_CONF = "/etc/opsi/opsiconfd.conf"
 
 DEFAULT_ADMIN_GROUP = "opsiadmin"
 DEFAULT_FILEADMIN_GROUP = "opsifileadmins"
@@ -41,17 +40,15 @@ DEFAULT_DEPOT_USER_HOME = "/var/lib/opsi"
 DEFAULT_OPSICONFD_USER = "opsiconfd"
 
 
-@lru_cache
 def get_opsiconfd_user() -> str:
-	opsiconfd_conf = Path(OPSICONFD_CONF)
-	if opsiconfd_conf.exists():
-		for line in opsiconfd_conf.read_text(encoding="utf-8").split("\n"):
-			line = line.strip()
-			if not line or line.startswith("#") or "=" not in line:
-				continue
-			if "run-as-user" == line.split("=", 1)[0].strip():
-				return line.split("=", 1)[1].strip()
-	return DEFAULT_OPSICONFD_USER
+	for proc in psutil.process_iter(attrs=["name", "username"]):
+		try:
+			if proc.info["name"] == "opsiconfd":
+				return proc.info["username"]
+		except (psutil.NoSuchProcess, psutil.AccessDenied):
+			continue
+
+	return os.environ.get("OPSICONFD_RUN_AS_USER") or DEFAULT_OPSICONFD_USER
 
 
 def read_backend_config_file(file: Path) -> dict[str, Any]:

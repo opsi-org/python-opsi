@@ -6,11 +6,12 @@
 from pathlib import Path
 from textwrap import dedent
 from time import sleep
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
 
-from opsi.opsi.service.server._config import DEFAULT_OPSICONFD_USER, OPSICONFD_CONF, OpsiConfig, get_opsiconfd_user
+from opsi.opsi.service.server._config import DEFAULT_OPSICONFD_USER, OpsiConfig, get_opsiconfd_user
 from opsi.testing.helper import environment
 
 
@@ -224,82 +225,26 @@ def test_set_config_invalid_category_or_config() -> None:
 		config.set("invalid", "invalid", True)
 
 
-def test_default_user_when_config_file_not_exist() -> None:
-	# Remove the opsiconfd configuration file if it exists
-	if Path(OPSICONFD_CONF).exists():
-		Path(OPSICONFD_CONF).unlink()
-	get_opsiconfd_user.cache_clear()
-	# Call the function and assert the return value is the default opsiconfd user
-	assert get_opsiconfd_user() == DEFAULT_OPSICONFD_USER
+def test_get_opsiconfd_user_returns_process_user() -> None:
+	processes = [
+		SimpleNamespace(info={"name": "python", "username": "ignored"}),
+		SimpleNamespace(info={"name": "opsiconfd", "username": "process_user"}),
+	]
+	with (
+		patch("opsi.opsi.service.server._config.psutil.process_iter", return_value=processes),
+		environment({"OPSICONFD_RUN_AS_USER": "env_user"}),
+	):
+		assert get_opsiconfd_user() == "process_user"
 
 
-def test_run_as_user_value_from_config_file(tmp_path: Path) -> None:
-	confd_conf = tmp_path / "opsiconfd.conf"
-	with patch("opsi.opsi.service.server._config.OPSICONFD_CONF", str(confd_conf)):
-		get_opsiconfd_user.cache_clear()
-		config_file = Path(confd_conf)
-		config_file.write_text("run-as-user = test_user", encoding="utf-8", newline="")
-
-		# Call the function and assert the return value is the run-as-user value from the config file
-		assert get_opsiconfd_user() == "test_user"
+def test_get_opsiconfd_user_returns_env_user_without_process() -> None:
+	with patch("opsi.opsi.service.server._config.psutil.process_iter", return_value=[]), environment({"OPSICONFD_RUN_AS_USER": "env_user"}):
+		assert get_opsiconfd_user() == "env_user"
 
 
-def test_ignore_commented_and_invalid_lines_in_config_file(tmp_path: Path) -> None:
-	confd_conf = tmp_path / "opsiconfd.conf"
-	with patch("opsi.opsi.service.server._config.OPSICONFD_CONF", str(confd_conf)):
-		get_opsiconfd_user.cache_clear()
-		config_file = Path(confd_conf)
-		config_file.write_text("# run-as-user = test_user\ninvalid_line\n", encoding="utf-8", newline="")
-
-		# Call the function and assert the return value is the default opsiconfd user
+def test_get_opsiconfd_user_returns_default_without_process_or_env() -> None:
+	with patch("opsi.opsi.service.server._config.psutil.process_iter", return_value=[]), environment({"OPSICONFD_RUN_AS_USER": ""}):
 		assert get_opsiconfd_user() == DEFAULT_OPSICONFD_USER
-
-
-def test_config_file_with_run_as_user_line(tmp_path: Path) -> None:
-	confd_conf = tmp_path / "opsiconfd.conf"
-	with patch("opsi.opsi.service.server._config.OPSICONFD_CONF", str(confd_conf)):
-		get_opsiconfd_user.cache_clear()
-		config_file = Path(confd_conf)
-		config_file.write_text(
-			"""
-# For available options see: opsiconfd --help
-# config examples:
-# log-level-file = 5
-# networks = [192.168.0.0/16, 10.0.0.0/8, ::/0]
-# update-ip = true
-# skip-setup = [ssl, file_permissions]
-run-as-user = opsiconfd-dev
-grafana-internal-url = http://opsiconfd:aqmfgATF@localhost:3000
-port = 443
-		""",
-			encoding="utf-8",
-			newline="",
-		)
-		# Call the function and assert the return value is the default opsiconfd user
-		assert get_opsiconfd_user() == "opsiconfd-dev"
-
-
-def test_config_file_without_run_as_user_line(tmp_path: Path) -> None:
-	confd_conf = tmp_path / "opsiconfd.conf"
-	with patch("opsi.opsi.service.server._config.OPSICONFD_CONF", str(confd_conf)):
-		get_opsiconfd_user.cache_clear()
-	config_file = Path(confd_conf)
-	config_file.write_text(
-		"""
-# For available options see: opsiconfd --help
-# config examples:
-# log-level-file = 5
-# networks = [192.168.0.0/16, 10.0.0.0/8, ::/0]
-# update-ip = true
-# skip-setup = [ssl, file_permissions]
-grafana-internal-url = http://opsiconfd:aqmfgATF@localhost:3000
-port = 443
-	""",
-		encoding="utf-8",
-		newline="",
-	)
-	# Call the function and assert the return value is the default opsiconfd user
-	assert get_opsiconfd_user() == DEFAULT_OPSICONFD_USER
 
 
 def test_read_config_file_with_invalid_groups(tmp_path: Path) -> None:

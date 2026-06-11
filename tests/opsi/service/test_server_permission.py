@@ -54,6 +54,17 @@ def test_permission_registry() -> None:
 
 
 @pytest.mark.linux
+def test_permission_registry_set_opsiconfd_user_reinitializes_default_permissions() -> None:
+	with opsi_config({"groups.admingroup": "opsiadmin", "groups.fileadmingroup": "opsifileadmins", "depot_user.username": "pcpatch"}):
+		registry = PermissionRegistry()
+		registry.set_opsiconfd_user("custom-opsiconfd")
+
+		assert registry.permissions["/etc/opsi"].username == "custom-opsiconfd"
+		assert registry.permissions["/var/log/opsi"].username == "custom-opsiconfd"
+		assert registry.permissions["/var/lib/opsi"].username == "custom-opsiconfd"
+
+
+@pytest.mark.linux
 def test_set_rights_recursive(tmp_path: Path, some_secondary_group_name: str) -> None:
 	with opsi_config({"groups.admingroup": "opsiadmin", "groups.fileadmingroup": "opsifileadmins", "depot_user.username": "pcpatch"}):
 		registry = PermissionRegistry()
