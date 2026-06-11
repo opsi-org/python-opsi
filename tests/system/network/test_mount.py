@@ -59,9 +59,11 @@ def _load_windows_module(monkeypatch: pytest.MonkeyPatch) -> tuple[ModuleType, l
 	fake_win32netcon = ModuleType("win32netcon")
 	fake_win32netcon.USE_FORCE = 1  # ty: ignore[unresolved-attribute]
 	fake_win32netcon.RESOURCETYPE_DISK = 1  # ty: ignore[unresolved-attribute]
+	fake_win32netcon.CONNECT_UPDATE_PROFILE = 1  # ty: ignore[unresolved-attribute]
 
 	fake_win32wnet = ModuleType("win32wnet")
 	fake_win32wnet.WNetAddConnection2 = lambda *_args: None  # ty: ignore[unresolved-attribute]
+	fake_win32wnet.WNetCancelConnection2 = lambda *_args: None  # ty: ignore[unresolved-attribute]
 
 	monkeypatch.setattr(ctypes, "WinDLL", lambda _name: FakeNetapi32(), raising=False)
 	monkeypatch.setitem(sys.modules, "win32net", fake_win32net)
@@ -925,23 +927,29 @@ def test_windows_mount_cifs_share_requires_drive_letter(monkeypatch: pytest.Monk
 
 @pytest.mark.windows
 @pytest.mark.parametrize(
-	("mount_exists", "expected_net_use_del_calls"),
+	("mount_device", "mount_exists", "expected_cancel_connection_calls"),
 	[
-		(True, [(None, "z:", 2)]),
-		(False, []),
+		(r"\\server\share", True, [("z:", 1, True)]),
+		(r"\\server@SSL\DavWWWRoot\share", True, [("z:", 1, True)]),
+		(r"\\server\share", False, []),
 	],
 )
-def test_windows_unmount_network_share_calls_net_use_del_for_existing_mount(
+def test_windows_unmount_network_share_cancels_wnet_connection_for_existing_mount(
 	monkeypatch: pytest.MonkeyPatch,
+	mount_device: str,
 	mount_exists: bool,
-	expected_net_use_del_calls: list[tuple[None, str, int]],
+	expected_cancel_connection_calls: list[tuple[str, int, bool]],
 ) -> None:
 	module, _net_use_add_calls, net_use_del_calls = _load_windows_module(monkeypatch)
-	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: ("\\\\server\\share", Path("z:")) if mount_exists else None)
+	cancel_connection_calls: list[tuple[Any, ...]] = []
+
+	monkeypatch.setattr(module, "_get_mount", lambda **_kwargs: (mount_device, Path("z:")) if mount_exists else None)
+	monkeypatch.setattr(module.win32wnet, "WNetCancelConnection2", lambda *args: cancel_connection_calls.append(args), raising=False)
 
 	module.unmount_network_share("Z:")
 
-	assert net_use_del_calls == expected_net_use_del_calls
+	assert cancel_connection_calls == expected_cancel_connection_calls
+	assert net_use_del_calls == []
 
 
 @pytest.mark.windows
