@@ -16,6 +16,7 @@ import re
 import ssl
 import sys
 import time
+import traceback
 import warnings
 import webbrowser
 from abc import ABC
@@ -1036,6 +1037,7 @@ class ServiceClient:
 			self.stop()
 
 	def connect(self, connect_messagebus: bool = False) -> None:
+		logger.info("Connecting to service...")
 		if not self._addresses:
 			raise OpsiServiceConnectionError("Service address undefined")
 
@@ -1829,6 +1831,7 @@ class ServiceClient:
 		self._messagebus.disconnect()
 
 	def stop(self) -> None:
+		logger.info("Stopping service client")
 		self.disconnect()
 		self.messagebus.stop()
 		if self.messagebus.is_alive():
@@ -2179,6 +2182,7 @@ class Messagebus(Thread):
 				raise cls(str(self._connect_exception)) from self._connect_exception
 
 	def disconnect(self, wait: bool = True) -> None:
+		logger.info("Messagebus.disconnect (id=%r)\n%r", self.id, traceback.format_stack())
 		self._should_be_connected = False
 		if not self._connected:
 			return
@@ -2327,6 +2331,7 @@ class Messagebus(Thread):
 			logger.error(err, exc_info=True)
 
 	def stop(self) -> None:
+		logger.info("Stopping messagebus (id=%r)", self.id)
 		self.disconnect()
 		self._should_stop.set()
 
