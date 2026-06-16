@@ -2184,7 +2184,7 @@ class Messagebus(Thread):
 				raise cls(str(self._connect_exception)) from self._connect_exception
 
 	def disconnect(self, wait: bool = True) -> None:
-		logger.info("Messagebus.disconnect (id=%r)\n%r", self.id, traceback.format_stack())
+		logger.info("Messagebus.disconnect (id=%r)\n%s", self.id, "".join(traceback.format_stack()))
 		self._should_be_connected = False
 		if not self._connected:
 			return
