@@ -407,6 +407,7 @@ class ServiceClient:
 		ca_cert_file: str | Path | None = None,
 		verify: str | Iterable[str] = ServiceVerificationFlags.STRICT_CHECK,
 		session_cookie: str | None = None,
+		keep_session_on_disconnect: bool = False,
 		session_lifetime: int = 150,
 		proxy_url: str | None = "system",
 		user_agent: str | None = None,
@@ -460,6 +461,7 @@ class ServiceClient:
 		self._password: str | None = None
 		self._totp: str | None = None
 		self._sso = sso
+		self._keep_session_on_disconnect = keep_session_on_disconnect
 
 		self._uib_opsi_ca_cert = x509.load_pem_x509_certificate(UIB_OPSI_CA.encode("ascii"))
 
@@ -1277,7 +1279,7 @@ class ServiceClient:
 
 	def disconnect(self) -> None:
 		self.disconnect_messagebus()
-		if self._connected:
+		if self._connected and not self._keep_session_on_disconnect:
 			try:
 				if self.server_version >= MIN_VERSION_SESSION_API:
 					self.post("/session/logout", connect_timeout=3.0, read_timeout=3.0)
@@ -2374,6 +2376,7 @@ def get_service_client(
 	auto_connect: bool = True,
 	sso: bool = False,
 	session_cookie: str | None = None,
+	keep_session_on_disconnect: bool = False,
 	session_lifetime: int = 150,
 	proxy_url: str | None = "system",
 	user_agent: str | None = None,
@@ -2440,6 +2443,7 @@ def get_service_client(
 		jsonrpc_create_objects=jsonrpc_create_objects,
 		jsonrpc_create_methods=jsonrpc_create_methods,
 		session_cookie=session_cookie,
+		keep_session_on_disconnect=keep_session_on_disconnect,
 		session_lifetime=session_lifetime,
 		proxy_url=proxy_url,
 		connect_timeout=connect_timeout,

@@ -1225,6 +1225,48 @@ def test_server_name_handling(
 		log_file.write_bytes(b"")
 
 
+@pytest.mark.parametrize(
+	("server_name", "expected_logout_path"),
+	(
+		("opsiconfd 4.1.0.1 (uvicorn)", "/rpc"),
+		("opsiconfd 4.2.1.0 (uvicorn)", "/session/logout"),
+	),
+)
+def test_keep_session_on_disconnect_skips_logout_and_keeps_cookie(tmp_path: Path, server_name: str, expected_logout_path: str) -> None:
+	log_file = tmp_path / "keep-session-on-disconnect.log"
+	session_cookie = "opsiconfd-session=keep-session"
+	with http_test_server(
+		generate_cert=True,
+		log_file=log_file,
+		response_headers={"server": server_name, "Set-Cookie": f"{session_cookie}; SameSite=Lax"},
+	) as server:
+		base_url = f"https://127.0.0.1:{server.port}"
+		client = ServiceClient(base_url, verify="accept_all", keep_session_on_disconnect=True)
+		try:
+			client.connect()
+			client.disconnect()
+			assert client.connected is False
+			assert client.session_cookie == session_cookie
+		finally:
+			client.stop()
+
+		reqs = [json.loads(req) for req in log_file.read_text(encoding="utf-8").strip().split("\n")]
+		assert len(reqs) == 1
+		assert reqs[0]["method"] == "HEAD"
+		log_file.write_bytes(b"")
+
+		with ServiceClient(base_url, verify="accept_all", session_cookie=session_cookie) as client2:
+			client2.connect()
+
+		reqs = [json.loads(req) for req in log_file.read_text(encoding="utf-8").strip().split("\n")]
+		assert reqs[0]["method"] == "HEAD"
+		assert reqs[0]["headers"]["Cookie"] == session_cookie
+		assert reqs[1]["method"] == "POST"
+		assert reqs[1]["path"] == expected_logout_path
+		if expected_logout_path == "/rpc":
+			assert reqs[1]["request"]["method"] == "backend_exit"
+
+
 def test_connect_disconnect() -> None:
 	with http_test_server(generate_cert=True, response_headers={"server": "opsiconfd 4.1.0.1 (uvicorn)"}) as server:
 		listener = MyConnectionListener()
