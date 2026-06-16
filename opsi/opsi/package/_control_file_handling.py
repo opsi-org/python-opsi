@@ -21,7 +21,7 @@ from opsi.opsi.service.model.object import (
 	ProductProperty,
 	UnicodeProductProperty,
 )
-from opsi.opsi.service.model.type import to_dict_list
+from opsi.opsi.service.model.type import to_dict_list, to_product_id
 
 
 def multiline_string(value: str) -> tomlkit.items.String:
@@ -48,13 +48,17 @@ def create_package_dependencies(pdeps: list[dict[str, str | None]]) -> list[dict
 
 def create_product_dependencies(pid: str, prod_v: str, pack_v: str, pdeps: list[dict[str, str]]) -> list[ProductDependency]:
 	result = []
+	product_id = to_product_id(pid)
 	for dep in pdeps:
+		required_product_id = to_product_id(dep["requiredProduct"])
+		if required_product_id == product_id:
+			raise ValueError(f"Product '{product_id}' can not define a dependency to itself")
 		dependency = ProductDependency(
-			pid,
+			product_id,
 			prod_v,
 			pack_v,
 			dep["action"],
-			dep["requiredProduct"],
+			required_product_id,
 			requiredProductVersion=dep.get("requiredProductVersion"),
 			requiredPackageVersion=dep.get("requiredPackageVersion"),
 			requiredAction=dep.get("requiredAction"),

@@ -946,6 +946,22 @@ def test_create_product_dependencies(dep_args: list[str | list[dict[str, str]]],
 	assert result[0].to_hash() == result_dict
 
 
+def test_create_product_dependencies_raises_for_self_dependency() -> None:
+	with pytest.raises(ValueError, match="can not define a dependency to itself"):
+		create_product_dependencies(
+			"testid",
+			"1.0",
+			"1",
+			[
+				{
+					"action": "setup",
+					"requiredProduct": "testid",
+					"requiredAction": "setup",
+				}
+			],
+		)
+
+
 @pytest.mark.parametrize(
 	"json_string, package_dependencies",
 	(
