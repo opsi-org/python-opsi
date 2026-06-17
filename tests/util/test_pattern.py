@@ -57,6 +57,18 @@ def test_mapped_str_enum_invalid_aliases() -> None:
 			_ALIASES = enum.nonmember("wrong")
 
 
+def test_mapped_str_enum_fallback() -> None:
+	class Compression(MappedStrEnum):
+		DEFLATE = "deflate"
+		GZIP = "gzip"
+		INVALID = "invalid"
+
+		_FALLBACK = enum.nonmember("invalid")
+
+	assert Compression("deflate") == Compression.DEFLATE
+	assert Compression("bzip") == Compression.INVALID
+
+
 def test_mapped_str_name() -> None:
 	class Compression(MappedStrEnum):
 		DEFLATE = "deflate"

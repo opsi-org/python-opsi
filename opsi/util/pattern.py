@@ -21,6 +21,7 @@ class Singleton(type):
 class MappedStrEnum(StrEnum):
 	_NAME = nonmember("")
 	_ALIASES = nonmember({})
+	_FALLBACK = nonmember(None)
 
 	def __init_subclass__(cls, **kwargs: Any) -> None:
 		super().__init_subclass__(**kwargs)
@@ -39,6 +40,9 @@ class MappedStrEnum(StrEnum):
 		for member in cls:
 			if member.value.lower() == search_value:
 				return member
+
+		if cls._FALLBACK is not None:
+			return cls(cls._FALLBACK)
 
 		valid_values = ", ".join(repr(member.value) for member in cls)
 		raise ValueError(f"Invalid value {value!r} for {cls._NAME or cls.__name__}, supported values are: {valid_values}")
