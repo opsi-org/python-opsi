@@ -663,7 +663,7 @@ def test_audit_log_serializes_nested_authentication_dict() -> None:
 		authentication={"authMethods": ["password", "totp"], "failureReason": 401, "ignored": "value"},
 	)
 
-	assert audit_log.id == 7
+	assert audit_log.id == "7"
 	assert audit_log.created == "2026-06-17 12:13:14"
 	assert audit_log.username == "admin"
 	assert audit_log.clientAddress == "127.0.0.1"
@@ -698,7 +698,7 @@ def test_audit_log_deserialize_creates_nested_authentication() -> None:
 	)
 
 	assert isinstance(audit_log, AuditLog)
-	assert audit_log.id == 42
+	assert audit_log.id == "42"
 	assert audit_log.eventType == AuditLogEventType.AUTHENTICATION_LOGOUT
 	assert isinstance(audit_log.authentication, AuditLogAuthentication)
 	assert audit_log.authentication.authMethods == ["session"]
