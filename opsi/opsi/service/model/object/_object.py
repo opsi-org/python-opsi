@@ -672,7 +672,7 @@ class AuditLog(Entity):
 
 	def __init__(
 		self,
-		id: int | None = None,
+		id: int | str | None = None,
 		created: str | None = None,
 		eventType: AuditLogEventType | str | None = None,
 		username: str | None = None,
@@ -683,7 +683,7 @@ class AuditLog(Entity):
 		message: str | None = None,
 		authentication: AuditLogAuthentication | dict[str, Any] | None = None,
 	) -> None:
-		self.id: int | None = None
+		self.id: str | None = None
 		self.created: str | None = None
 		self.eventType: AuditLogEventType | None = None
 		self.username: str | None = None
@@ -718,11 +718,11 @@ class AuditLog(Entity):
 	def getIdentAttributes(self) -> tuple[str, ...]:
 		return ("id",)
 
-	def getId(self) -> int | None:
+	def getId(self) -> str | None:
 		return self.id
 
-	def setId(self, id: int) -> None:
-		self.id = to_unsigned_int(id)
+	def setId(self, id: int | str) -> None:
+		self.id = str(to_unsigned_int(id))
 
 	def getCreated(self) -> str | None:
 		return self.created
