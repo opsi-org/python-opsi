@@ -7,6 +7,8 @@ from opsi.opsi.service.model.object._object import (
 	OBJECT_CLASSES,
 	AuditHardware,
 	AuditHardwareOnHost,
+	AuditLog,
+	AuditLogAuthentication,
 	AuditSoftware,
 	AuditSoftwareOnClient,
 	AuditSoftwareToLicensePool,
@@ -66,6 +68,8 @@ from opsi.opsi.service.model.object._object import (
 __all__ = (
 	"AuditHardware",
 	"AuditHardwareOnHost",
+	"AuditLog",
+	"AuditLogAuthentication",
 	"AuditSoftware",
 	"AuditSoftwareOnClient",
 	"AuditSoftwareToLicensePool",

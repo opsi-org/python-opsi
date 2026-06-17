@@ -12,7 +12,7 @@ As an example this contains classes for hosts, products, configurations.
 from __future__ import annotations
 
 import secrets
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from datetime import date, datetime, timezone
 from enum import Enum
 from functools import lru_cache
@@ -603,6 +603,171 @@ class User(Entity):
 
 
 Entity.sub_classes["User"] = User
+
+
+@dataclass
+class AuditLogAuthentication:
+	authMethods: list[str] | None = None
+	failureReason: str | None = None
+	logoutReason: str | None = None
+
+	@classmethod
+	def from_dict(cls, data: dict[str, Any]) -> Self:
+		return cls(**{key: value for key, value in data.items() if key in cls.__dataclass_fields__})
+
+	def __post_init__(self) -> None:
+		if self.authMethods is not None:
+			self.authMethods = to_string_list(self.authMethods)
+		if self.failureReason is not None:
+			self.failureReason = to_string(self.failureReason)
+		if self.logoutReason is not None:
+			self.logoutReason = to_string(self.logoutReason)
+
+
+class AuditLog(Entity):
+	sub_classes: dict[str, type] = {}
+	foreign_id_attributes = Entity.foreign_id_attributes + ["auditLogId"]
+	backend_method_prefix = "auditLog"
+	valid_event_types = frozenset(
+		(
+			"authentication.login.succeeded",
+			"authentication.login.failed",
+			"authentication.logout",
+		)
+	)
+
+	def __init__(
+		self,
+		id: int | None = None,
+		created: str | None = None,
+		eventType: str | None = None,
+		username: str | None = None,
+		actorType: str | None = None,
+		actorId: str | None = None,
+		clientAddress: str | None = None,
+		userAgent: str | None = None,
+		message: str | None = None,
+		authentication: AuditLogAuthentication | dict[str, Any] | None = None,
+	) -> None:
+		self.id: int | None = None
+		self.created: str | None = None
+		self.eventType: str | None = None
+		self.username: str | None = None
+		self.actorType: str | None = None
+		self.actorId: str | None = None
+		self.clientAddress: str | None = None
+		self.userAgent: str | None = None
+		self.message: str | None = None
+		self.authentication: AuditLogAuthentication | None = None
+
+		if id is not None:
+			self.setId(id)
+		if created is not None:
+			self.setCreated(created)
+		if eventType is not None:
+			self.setEventType(eventType)
+		if username is not None:
+			self.setUsername(username)
+		if actorType is not None:
+			self.setActorType(actorType)
+		if actorId is not None:
+			self.setActorId(actorId)
+		if clientAddress is not None:
+			self.setClientAddress(clientAddress)
+		if userAgent is not None:
+			self.setUserAgent(userAgent)
+		if message is not None:
+			self.setMessage(message)
+		if authentication is not None:
+			self.setAuthentication(authentication)
+
+	def getIdentAttributes(self) -> tuple[str, ...]:
+		return ("id",)
+
+	def getId(self) -> int | None:
+		return self.id
+
+	def setId(self, id: int) -> None:
+		self.id = to_unsigned_int(id)
+
+	def getCreated(self) -> str | None:
+		return self.created
+
+	def setCreated(self, created: str) -> None:
+		self.created = to_opsi_timestamp(created)
+
+	def getEventType(self) -> str | None:
+		return self.eventType
+
+	def setEventType(self, eventType: str) -> None:
+		self.eventType = to_string(eventType)
+
+	def getUsername(self) -> str | None:
+		return self.username
+
+	def setUsername(self, username: str) -> None:
+		self.username = to_user_id(username)
+
+	def getActorType(self) -> str | None:
+		return self.actorType
+
+	def setActorType(self, actorType: str) -> None:
+		self.actorType = to_string(actorType)
+
+	def getActorId(self) -> str | None:
+		return self.actorId
+
+	def setActorId(self, actorId: str) -> None:
+		self.actorId = to_string(actorId)
+
+	def getClientAddress(self) -> str | None:
+		return self.clientAddress
+
+	def setClientAddress(self, clientAddress: str) -> None:
+		self.clientAddress = to_ip_address(clientAddress)
+
+	def getUserAgent(self) -> str | None:
+		return self.userAgent
+
+	def setUserAgent(self, userAgent: str) -> None:
+		self.userAgent = to_string(userAgent)
+
+	def getMessage(self) -> str | None:
+		return self.message
+
+	def setMessage(self, message: str) -> None:
+		self.message = to_string(message)
+
+	def getAuthentication(self) -> AuditLogAuthentication | None:
+		return self.authentication
+
+	def setAuthentication(self, authentication: AuditLogAuthentication | dict[str, Any]) -> None:
+		if isinstance(authentication, dict):
+			self.authentication = AuditLogAuthentication.from_dict(cast(dict[str, Any], authentication))
+			return
+		self.authentication = authentication
+
+	def to_dict(self) -> dict[str, Any]:
+		object_dict = super().to_dict()
+		if self.authentication is not None:
+			object_dict["authentication"] = asdict(self.authentication)
+		return object_dict
+
+	toHash = to_dict
+	to_hash = to_dict
+
+	def __str__(self) -> str:
+		infos = []
+		if self.id is not None:
+			infos.append(f"id={self.id}")
+		if self.eventType:
+			infos.append(f"eventType='{self.eventType}'")
+		if self.username:
+			infos.append(f"username='{self.username}'")
+		return f"<{self.getType()}({', '.join(infos)})>"
+
+
+Entity.sub_classes["AuditLog"] = AuditLog
 
 
 class Host(Object):
