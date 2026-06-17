@@ -622,6 +622,7 @@ class AuditLogAuthenticationFailureReason(MappedStrEnum):
 	PASSWORD_REQUIRED = "password_required"
 	SESSION_NOT_FOUND = "session_not_found"
 	TOKEN_NOT_FOUND = "token_not_found"
+	AUTHENTICATION_FAILURE = "authentication_failure"
 	UNKNOWN = "unknown"
 
 	_FALLBACK = nonmember("unknown")
