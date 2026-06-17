@@ -9,6 +9,8 @@ from typing import Generator
 import pytest
 from hypothesis import given, strategies
 
+from opsi.opsi.service.model.object import AuditLogAuthenticationFailureReason
+
 
 class FixtureRequest:
 	param: str
@@ -81,3 +83,29 @@ def test_exception_is_sub_class_of_opsi_error(exception_class: type[Exception]) 
 def test_exception_constuctor_hypothesis(message: str) -> None:
 	for cls in exception_classes:
 		cls(message)
+
+
+def test_opsi_service_authentication_error_has_no_authentication_failure_reason_by_default() -> None:
+	error = OpsiServiceAuthenticationError("Authentication failed", status_code=401, content="Unauthorized")
+
+	assert error.message == "Authentication failed"
+	assert error.status_code == 401
+	assert error.content == "Unauthorized"
+	assert error.authentication_failure_reason is None
+
+
+@pytest.mark.parametrize(
+	("authentication_failure_reason", "expected"),
+	(
+		("invalid_credentials", AuditLogAuthenticationFailureReason.INVALID_CREDENTIALS),
+		(AuditLogAuthenticationFailureReason.HOST_NOT_FOUND, AuditLogAuthenticationFailureReason.HOST_NOT_FOUND),
+		("not_a_known_reason", AuditLogAuthenticationFailureReason.UNKNOWN),
+	),
+)
+def test_opsi_service_authentication_error_coerces_authentication_failure_reason(
+	authentication_failure_reason: AuditLogAuthenticationFailureReason | str,
+	expected: AuditLogAuthenticationFailureReason,
+) -> None:
+	error = OpsiServiceAuthenticationError(authentication_failure_reason=authentication_failure_reason)
+
+	assert error.authentication_failure_reason == expected

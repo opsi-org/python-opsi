@@ -28,6 +28,11 @@ from opsi.opsi.service.model.object import (
 	serialize,
 	to_json,
 )
+from opsi.opsi.service.model.object._object import (
+	AuditLogAuthenticationFailureReason,
+	AuditLogAuthenticationLogoutReason,
+	AuditLogEventType,
+)
 
 object_classes = []
 pre_globals = list(globals())
@@ -620,16 +625,28 @@ def test_audit_log_authentication_from_dict_filters_unknown_fields_and_coerces_v
 	authentication = AuditLogAuthentication.from_dict(
 		{
 			"authMethods": "password",
-			"failureReason": 401,
-			"logoutReason": "timeout",
+			"failureReason": "invalid_credentials",
+			"logoutReason": "session_expired",
 			"ignored": "value",
 		}
 	)
 
 	assert authentication.authMethods == ["password"]
-	assert authentication.failureReason == "401"
-	assert authentication.logoutReason == "timeout"
+	assert authentication.failureReason == AuditLogAuthenticationFailureReason.INVALID_CREDENTIALS
+	assert authentication.logoutReason == AuditLogAuthenticationLogoutReason.SESSION_EXPIRED
 	assert not hasattr(authentication, "ignored")
+
+
+def test_audit_log_authentication_from_dict_falls_back_to_unknown_reasons() -> None:
+	authentication = AuditLogAuthentication.from_dict(
+		{
+			"failureReason": 401,
+			"logoutReason": "timeout",
+		}
+	)
+
+	assert authentication.failureReason == AuditLogAuthenticationFailureReason.UNKNOWN
+	assert authentication.logoutReason == AuditLogAuthenticationLogoutReason.UNKNOWN
 
 
 def test_audit_log_serializes_nested_authentication_dict() -> None:
@@ -651,13 +668,22 @@ def test_audit_log_serializes_nested_authentication_dict() -> None:
 	assert audit_log.username == "admin"
 	assert audit_log.clientAddress == "127.0.0.1"
 	assert audit_log.getIdent() == "7"
+	assert audit_log.eventType == AuditLogEventType.AUTHENTICATION_LOGIN_FAILED
 	assert isinstance(audit_log.authentication, AuditLogAuthentication)
 	assert audit_log.authentication.authMethods == ["password", "totp"]
-	assert audit_log.authentication.failureReason == "401"
-	assert audit_log.to_hash()["authentication"] == {"authMethods": ["password", "totp"], "failureReason": "401", "logoutReason": None}
+	assert audit_log.authentication.failureReason == AuditLogAuthenticationFailureReason.UNKNOWN
+	assert audit_log.to_hash()["authentication"] == {"authMethods": ["password", "totp"], "failureReason": "unknown", "logoutReason": None}
 	assert "id=7" in str(audit_log)
 	assert "eventType='authentication.login.failed'" in str(audit_log)
 	assert "username='admin'" in str(audit_log)
+
+
+def test_audit_log_unknown_event_type_falls_back_to_unknown() -> None:
+	audit_log = AuditLog(eventType="not.a.known.event")
+
+	assert audit_log.eventType == AuditLogEventType.UNKNOWN
+	assert audit_log.to_hash()["eventType"] == "unknown"
+	assert "eventType='unknown'" in str(audit_log)
 
 
 def test_audit_log_deserialize_creates_nested_authentication() -> None:
@@ -673,11 +699,11 @@ def test_audit_log_deserialize_creates_nested_authentication() -> None:
 
 	assert isinstance(audit_log, AuditLog)
 	assert audit_log.id == 42
-	assert audit_log.eventType == "authentication.logout"
+	assert audit_log.eventType == AuditLogEventType.AUTHENTICATION_LOGOUT
 	assert isinstance(audit_log.authentication, AuditLogAuthentication)
 	assert audit_log.authentication.authMethods == ["session"]
-	assert audit_log.authentication.logoutReason == "123"
-	assert audit_log.to_hash()["authentication"] == {"authMethods": ["session"], "failureReason": None, "logoutReason": "123"}
+	assert audit_log.authentication.logoutReason == AuditLogAuthenticationLogoutReason.UNKNOWN
+	assert audit_log.to_hash()["authentication"] == {"authMethods": ["session"], "failureReason": None, "logoutReason": "unknown"}
 
 
 def test_object_fom_json() -> None:

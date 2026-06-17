@@ -21,6 +21,7 @@ from types import GeneratorType
 from typing import Any, Callable, Generator, Self, Type, TypeVar, cast
 
 from opsi.logging import get_logger
+from opsi.util.pattern import MappedStrEnum, nonmember
 from opsi.opsi.service.model.type import (
 	to_action_progress,
 	to_action_request,
@@ -605,11 +606,41 @@ class User(Entity):
 Entity.sub_classes["User"] = User
 
 
+class AuditLogAuthenticationFailureReason(MappedStrEnum):
+	AUTH_MODULE_NOT_AVAILABLE = "auth_module_not_available"
+	CLIENT_TLS_CERTIFICATE_CN_MISMATCH = "client_tls_certificate_cn_mismatch"
+	CLIENT_TLS_CERTIFICATE_CN_REQUIRED = "client_tls_certificate_cn_required"
+	HOST_KEY_NOT_FOUND = "host_key_not_found"
+	HOST_NOT_FOUND = "host_not_found"
+	INCORRECT_MFA_OTP = "incorrect_mfa_otp"
+	INVALID_CREDENTIALS = "invalid_credentials"
+	INVALID_MFA_OTP = "invalid_mfa_otp"
+	INVALID_USERNAME = "invalid_username"
+	MFA_CONFIGURATION_ERROR = "mfa_configuration_error"
+	MFA_REQUIRED = "mfa_required"
+	MULTIPLE_HOSTS_FOUND = "multiple_hosts_found"
+	PASSWORD_REQUIRED = "password_required"
+	SESSION_NOT_FOUND = "session_not_found"
+	TOKEN_NOT_FOUND = "token_not_found"
+	UNKNOWN = "unknown"
+
+	_FALLBACK = nonmember("unknown")
+
+
+class AuditLogAuthenticationLogoutReason(MappedStrEnum):
+	USER_REQUESTED = "user_requested"
+	SESSION_EXPIRED = "session_expired"
+	SERVICE_SHUTDOWN = "service_shutdown"
+	UNKNOWN = "unknown"
+
+	_FALLBACK = nonmember("unknown")
+
+
 @dataclass
 class AuditLogAuthentication:
 	authMethods: list[str] | None = None
-	failureReason: str | None = None
-	logoutReason: str | None = None
+	failureReason: AuditLogAuthenticationFailureReason | str | None = None
+	logoutReason: AuditLogAuthenticationLogoutReason | str | None = None
 
 	@classmethod
 	def from_dict(cls, data: dict[str, Any]) -> Self:
@@ -619,28 +650,30 @@ class AuditLogAuthentication:
 		if self.authMethods is not None:
 			self.authMethods = to_string_list(self.authMethods)
 		if self.failureReason is not None:
-			self.failureReason = to_string(self.failureReason)
+			self.failureReason = AuditLogAuthenticationFailureReason(self.failureReason)
 		if self.logoutReason is not None:
-			self.logoutReason = to_string(self.logoutReason)
+			self.logoutReason = AuditLogAuthenticationLogoutReason(self.logoutReason)
+
+
+class AuditLogEventType(MappedStrEnum):
+	AUTHENTICATION_LOGIN_SUCCEEDED = "authentication.login.succeeded"
+	AUTHENTICATION_LOGIN_FAILED = "authentication.login.failed"
+	AUTHENTICATION_LOGOUT = "authentication.logout"
+	UNKNOWN = "unknown"
+
+	_FALLBACK = nonmember("unknown")
 
 
 class AuditLog(Entity):
 	sub_classes: dict[str, type] = {}
 	foreign_id_attributes = Entity.foreign_id_attributes + ["auditLogId"]
 	backend_method_prefix = "auditLog"
-	valid_event_types = frozenset(
-		(
-			"authentication.login.succeeded",
-			"authentication.login.failed",
-			"authentication.logout",
-		)
-	)
 
 	def __init__(
 		self,
 		id: int | None = None,
 		created: str | None = None,
-		eventType: str | None = None,
+		eventType: AuditLogEventType | str | None = None,
 		username: str | None = None,
 		actorType: str | None = None,
 		actorId: str | None = None,
@@ -651,7 +684,7 @@ class AuditLog(Entity):
 	) -> None:
 		self.id: int | None = None
 		self.created: str | None = None
-		self.eventType: str | None = None
+		self.eventType: AuditLogEventType | None = None
 		self.username: str | None = None
 		self.actorType: str | None = None
 		self.actorId: str | None = None
@@ -696,11 +729,11 @@ class AuditLog(Entity):
 	def setCreated(self, created: str) -> None:
 		self.created = to_opsi_timestamp(created)
 
-	def getEventType(self) -> str | None:
+	def getEventType(self) -> AuditLogEventType | None:
 		return self.eventType
 
-	def setEventType(self, eventType: str) -> None:
-		self.eventType = to_string(eventType)
+	def setEventType(self, eventType: AuditLogEventType | str) -> None:
+		self.eventType = AuditLogEventType(eventType)
 
 	def getUsername(self) -> str | None:
 		return self.username

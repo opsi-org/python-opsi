@@ -3,7 +3,12 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from typing import Any
+from __future__ import annotations
+
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+	from opsi.opsi.service.model.object import AuditLogAuthenticationFailureReason
 
 
 class OpsiError(Exception):
@@ -75,6 +80,20 @@ class OpsiServiceConnectionRefusedError(OpsiServiceError):
 
 class OpsiServiceAuthenticationError(OpsiServiceError):
 	"""Raised when authentication with the OPSI Service fails."""
+
+	def __init__(
+		self,
+		message: str = "",
+		status_code: int | None = None,
+		content: str | None = None,
+		authentication_failure_reason: AuditLogAuthenticationFailureReason | str | None = None,
+	) -> None:
+		super().__init__(message, status_code=status_code, content=content)
+		self.authentication_failure_reason = None
+		if authentication_failure_reason:
+			from opsi.opsi.service.model.object import AuditLogAuthenticationFailureReason
+
+			self.authentication_failure_reason = AuditLogAuthenticationFailureReason(authentication_failure_reason)
 
 
 class OpsiServiceClientCertificateError(OpsiServiceAuthenticationError):
