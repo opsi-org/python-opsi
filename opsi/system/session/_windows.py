@@ -58,6 +58,7 @@ def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool
 		is_usable = session_id > 0 and windows_state in (
 			WindowsDisplaySessionState.ACTIVE,
 			WindowsDisplaySessionState.CONNECTED,
+			WindowsDisplaySessionState.DOWN,  # e.g. at shutdown/restart (still usable)
 			WindowsDisplaySessionState.DISCONNECTED,
 		)
 		if only_usable and not is_usable:
