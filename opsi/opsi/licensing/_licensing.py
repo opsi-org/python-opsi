@@ -58,6 +58,7 @@ OPSI_MODULE_STATE_CLOSE_TO_LIMIT = "close_to_limit"
 
 OPSI_MODULE_IDS = (
 	"2fa",
+	"audit_log",
 	"background_install",
 	"custom_ca",
 	"directory-connector",
@@ -113,6 +114,7 @@ OPSI_MODULE_BUNDLES = {
 	),
 	"enterprise": (
 		"2fa",
+		"audit_log",
 		"custom_ca",
 		"directory-connector",
 		"letsencrypt",
