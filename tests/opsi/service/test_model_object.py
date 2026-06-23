@@ -724,6 +724,23 @@ def test_audit_log_serializes_nested_client_product_action_request_dict() -> Non
 	assert "eventType='client.product.action_request'" in str(audit_log)
 
 
+@pytest.mark.parametrize(
+	("event_type", "expected_event_type"),
+	(
+		("client.terminal.open", AuditLogEventType.CLIENT_TERMINAL_OPEN),
+		("client.terminal.close", AuditLogEventType.CLIENT_TERMINAL_CLOSE),
+		("server.terminal.open", AuditLogEventType.SERVER_TERMINAL_OPEN),
+		("server.terminal.close", AuditLogEventType.SERVER_TERMINAL_CLOSE),
+	),
+)
+def test_audit_log_terminal_event_types_are_supported(event_type: str, expected_event_type: AuditLogEventType) -> None:
+	audit_log = AuditLog(eventType=event_type)
+
+	assert audit_log.eventType == expected_event_type
+	assert audit_log.to_hash()["eventType"] == event_type
+	assert f"eventType='{event_type}'" in str(audit_log)
+
+
 def test_audit_log_unknown_event_type_falls_back_to_unknown() -> None:
 	audit_log = AuditLog(eventType="not.a.known.event")
 

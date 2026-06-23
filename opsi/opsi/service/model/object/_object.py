@@ -675,6 +675,10 @@ class AuditLogEventType(MappedStrEnum):
 	AUTHENTICATION_LOGIN_FAILED = "authentication.login.failed"
 	AUTHENTICATION_LOGOUT = "authentication.logout"
 	CLIENT_PRODUCT_ACTION_REQUEST = "client.product.action_request"
+	CLIENT_TERMINAL_OPEN = "client.terminal.open"
+	CLIENT_TERMINAL_CLOSE = "client.terminal.close"
+	SERVER_TERMINAL_OPEN = "server.terminal.open"
+	SERVER_TERMINAL_CLOSE = "server.terminal.close"
 	UNKNOWN = "unknown"
 
 	_FALLBACK = nonmember("unknown")
