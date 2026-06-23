@@ -41,7 +41,7 @@ from opsi.opsi.service.model.object import (  # noqa: E402
 	AuditHardwareOnHost,
 	AuditLog,
 	AuditLogAuthentication,
-	AuditLogClientProductActionRequest,
+	AuditLogProductActionRequest,
 	AuditSoftware,
 	AuditSoftwareOnClient,
 	AuditSoftwareToLicensePool,
@@ -88,15 +88,15 @@ def test_object_classes() -> None:
 	objs = (
 		User("testuser", "2023-01-01 07:07:07", "2023-01-01 08:08:08", "totp_active", "Q23E3B6XN5MTTPV67LL7EVNZHPZO6XN7"),
 		AuditLog(
-			1,
-			"2026-06-17 12:13:14",
-			"authentication.login.succeeded",
-			"testuser",
-			"user",
-			"testuser",
-			"127.0.0.1",
-			"agent",
-			"Login succeeded",
+			id=1,
+			created="2026-06-17 12:13:14",
+			eventType="authentication.login.succeeded",
+			username="testuser",
+			actorType="user",
+			actorId="testuser",
+			clientAddress="127.0.0.1",
+			userAgent="agent",
+			message="Login succeeded",
 		),
 		Host("test.dom.tld", "desc", "notes", "00:01:02:03:04:05", "172.16.1.1", "inv001", "9f3f1c96-1821-413c-b850-0507a17c7e47"),
 		OpsiClient(
@@ -651,17 +651,15 @@ def test_audit_log_authentication_from_dict_falls_back_to_unknown_reasons() -> N
 
 
 def test_audit_log_client_product_action_request_from_dict_filters_unknown_fields_and_coerces_values() -> None:
-	client_product_action_request = AuditLogClientProductActionRequest.from_dict(
+	client_product_action_request = AuditLogProductActionRequest.from_dict(
 		{
 			"productId": "TestProduct1",
-			"clientId": "CLIENT.test.invalid",
 			"actionRequest": "undefined",
 			"ignored": "value",
 		}
 	)
 
 	assert client_product_action_request.productId == "testproduct1"
-	assert client_product_action_request.clientId == "client.test.invalid"
 	assert client_product_action_request.actionRequest == "none"
 	assert not hasattr(client_product_action_request, "ignored")
 
@@ -705,23 +703,22 @@ def test_audit_log_serializes_nested_client_product_action_request_dict() -> Non
 		actorId="Admin",
 		clientAddress="127.0.0.1",
 		userAgent="test-agent",
+		hostId="CLIENT.test.invalid",
 		message="Action request changed",
-		clientProductActionRequest={
+		productActionRequest={
 			"productId": "TestProduct1",
-			"clientId": "CLIENT.test.invalid",
 			"actionRequest": "setup",
 			"ignored": "value",
 		},
 	)
 
 	assert audit_log.eventType == AuditLogEventType.CLIENT_PRODUCT_ACTION_REQUEST
-	assert isinstance(audit_log.clientProductActionRequest, AuditLogClientProductActionRequest)
-	assert audit_log.clientProductActionRequest.productId == "testproduct1"
-	assert audit_log.clientProductActionRequest.clientId == "client.test.invalid"
-	assert audit_log.clientProductActionRequest.actionRequest == "setup"
-	assert audit_log.to_hash()["clientProductActionRequest"] == {
+	assert isinstance(audit_log.productActionRequest, AuditLogProductActionRequest)
+	assert audit_log.hostId == "client.test.invalid"
+	assert audit_log.productActionRequest.productId == "testproduct1"
+	assert audit_log.productActionRequest.actionRequest == "setup"
+	assert audit_log.to_hash()["productActionRequest"] == {
 		"productId": "testproduct1",
-		"clientId": "client.test.invalid",
 		"actionRequest": "setup",
 	}
 	assert "eventType='client.product.action_request'" in str(audit_log)
@@ -762,9 +759,9 @@ def test_audit_log_deserialize_creates_nested_client_product_action_request() ->
 			"id": 43,
 			"eventType": "client.product.action_request",
 			"username": "admin",
-			"clientProductActionRequest": {
+			"hostId": "CLIENT.test.invalid",
+			"productActionRequest": {
 				"productId": "TestProduct1",
-				"clientId": "CLIENT.test.invalid",
 				"actionRequest": "undefined",
 			},
 		}
@@ -773,13 +770,12 @@ def test_audit_log_deserialize_creates_nested_client_product_action_request() ->
 	assert isinstance(audit_log, AuditLog)
 	assert audit_log.id == "43"
 	assert audit_log.eventType == AuditLogEventType.CLIENT_PRODUCT_ACTION_REQUEST
-	assert isinstance(audit_log.clientProductActionRequest, AuditLogClientProductActionRequest)
-	assert audit_log.clientProductActionRequest.productId == "testproduct1"
-	assert audit_log.clientProductActionRequest.clientId == "client.test.invalid"
-	assert audit_log.clientProductActionRequest.actionRequest == "none"
-	assert audit_log.to_hash()["clientProductActionRequest"] == {
+	assert isinstance(audit_log.productActionRequest, AuditLogProductActionRequest)
+	assert audit_log.hostId == "client.test.invalid"
+	assert audit_log.productActionRequest.productId == "testproduct1"
+	assert audit_log.productActionRequest.actionRequest == "none"
+	assert audit_log.to_hash()["productActionRequest"] == {
 		"productId": "testproduct1",
-		"clientId": "client.test.invalid",
 		"actionRequest": "none",
 	}
 

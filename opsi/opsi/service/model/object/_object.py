@@ -657,9 +657,8 @@ class AuditLogAuthentication:
 
 
 @dataclass
-class AuditLogClientProductActionRequest:
+class AuditLogProductActionRequest:
 	productId: str
-	clientId: str
 	actionRequest: str
 
 	@classmethod
@@ -668,7 +667,6 @@ class AuditLogClientProductActionRequest:
 
 	def __post_init__(self) -> None:
 		self.productId = to_product_id(self.productId)
-		self.clientId = to_host_id(self.clientId)
 		self.actionRequest = to_action_request(self.actionRequest) or "none" if self.actionRequest else "none"
 
 
@@ -697,9 +695,10 @@ class AuditLog(Entity):
 		actorId: str | None = None,
 		clientAddress: str | None = None,
 		userAgent: str | None = None,
+		hostId: str | None = None,
 		message: str | None = None,
 		authentication: AuditLogAuthentication | dict[str, Any] | None = None,
-		clientProductActionRequest: AuditLogClientProductActionRequest | dict[str, Any] | None = None,
+		productActionRequest: AuditLogProductActionRequest | dict[str, Any] | None = None,
 	) -> None:
 		self.id: str | None = None
 		self.created: str | None = None
@@ -709,9 +708,10 @@ class AuditLog(Entity):
 		self.actorId: str | None = None
 		self.clientAddress: str | None = None
 		self.userAgent: str | None = None
+		self.hostId: str | None = None
 		self.message: str | None = None
 		self.authentication: AuditLogAuthentication | None = None
-		self.clientProductActionRequest: AuditLogClientProductActionRequest | None = None
+		self.productActionRequest: AuditLogProductActionRequest | None = None
 
 		if id is not None:
 			self.setId(id)
@@ -729,12 +729,14 @@ class AuditLog(Entity):
 			self.setClientAddress(clientAddress)
 		if userAgent is not None:
 			self.setUserAgent(userAgent)
+		if hostId is not None:
+			self.setHostId(hostId)
 		if message is not None:
 			self.setMessage(message)
 		if authentication is not None:
 			self.setAuthentication(authentication)
-		if clientProductActionRequest is not None:
-			self.setClientProductActionRequest(clientProductActionRequest)
+		if productActionRequest is not None:
+			self.setProductActionRequest(productActionRequest)
 
 	def getIdentAttributes(self) -> tuple[str, ...]:
 		return ("id",)
@@ -787,6 +789,12 @@ class AuditLog(Entity):
 	def setUserAgent(self, userAgent: str) -> None:
 		self.userAgent = to_string(userAgent)
 
+	def getHostId(self) -> str | None:
+		return self.hostId
+
+	def setHostId(self, hostId: str) -> None:
+		self.hostId = to_host_id(hostId)
+
 	def getMessage(self) -> str | None:
 		return self.message
 
@@ -802,21 +810,21 @@ class AuditLog(Entity):
 			return
 		self.authentication = authentication
 
-	def getClientProductActionRequest(self) -> AuditLogClientProductActionRequest | None:
-		return self.clientProductActionRequest
+	def getProductActionRequest(self) -> AuditLogProductActionRequest | None:
+		return self.productActionRequest
 
-	def setClientProductActionRequest(self, clientProductActionRequest: AuditLogClientProductActionRequest | dict[str, Any]) -> None:
-		if isinstance(clientProductActionRequest, dict):
-			self.clientProductActionRequest = AuditLogClientProductActionRequest.from_dict(cast(dict[str, Any], clientProductActionRequest))
+	def setProductActionRequest(self, productActionRequest: AuditLogProductActionRequest | dict[str, Any]) -> None:
+		if isinstance(productActionRequest, dict):
+			self.productActionRequest = AuditLogProductActionRequest.from_dict(cast(dict[str, Any], productActionRequest))
 			return
-		self.clientProductActionRequest = clientProductActionRequest
+		self.productActionRequest = productActionRequest
 
 	def to_dict(self) -> dict[str, Any]:
 		object_dict = super().to_dict()
 		if self.authentication is not None:
 			object_dict["authentication"] = asdict(self.authentication)
-		if self.clientProductActionRequest is not None:
-			object_dict["clientProductActionRequest"] = asdict(self.clientProductActionRequest)
+		if self.productActionRequest is not None:
+			object_dict["productActionRequest"] = asdict(self.productActionRequest)
 		return object_dict
 
 	toHash = to_dict
