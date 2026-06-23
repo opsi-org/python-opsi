@@ -21,7 +21,6 @@ from types import GeneratorType
 from typing import Any, Callable, Generator, Self, Type, TypeVar, cast
 
 from opsi.logging import get_logger
-from opsi.util.pattern import MappedStrEnum, nonmember
 from opsi.opsi.service.model.type import (
 	to_action_progress,
 	to_action_request,
@@ -69,6 +68,7 @@ from opsi.opsi.service.model.type import (
 	to_uuid_string,
 )
 from opsi.serialization import json_decode, json_encode
+from opsi.util.pattern import MappedStrEnum, nonmember
 
 logger = get_logger("opsi")
 
@@ -656,10 +656,27 @@ class AuditLogAuthentication:
 			self.logoutReason = AuditLogAuthenticationLogoutReason(self.logoutReason)
 
 
+@dataclass
+class AuditLogClientProductActionRequest:
+	productId: str
+	clientId: str
+	actionRequest: str
+
+	@classmethod
+	def from_dict(cls, data: dict[str, Any]) -> Self:
+		return cls(**{key: value for key, value in data.items() if key in cls.__dataclass_fields__})
+
+	def __post_init__(self) -> None:
+		self.productId = to_product_id(self.productId)
+		self.clientId = to_host_id(self.clientId)
+		self.actionRequest = to_action_request(self.actionRequest) or "none" if self.actionRequest else "none"
+
+
 class AuditLogEventType(MappedStrEnum):
 	AUTHENTICATION_LOGIN_SUCCEEDED = "authentication.login.succeeded"
 	AUTHENTICATION_LOGIN_FAILED = "authentication.login.failed"
 	AUTHENTICATION_LOGOUT = "authentication.logout"
+	CLIENT_PRODUCT_ACTION_REQUEST = "client.product.action_request"
 	UNKNOWN = "unknown"
 
 	_FALLBACK = nonmember("unknown")
@@ -682,6 +699,7 @@ class AuditLog(Entity):
 		userAgent: str | None = None,
 		message: str | None = None,
 		authentication: AuditLogAuthentication | dict[str, Any] | None = None,
+		clientProductActionRequest: AuditLogClientProductActionRequest | dict[str, Any] | None = None,
 	) -> None:
 		self.id: str | None = None
 		self.created: str | None = None
@@ -693,6 +711,7 @@ class AuditLog(Entity):
 		self.userAgent: str | None = None
 		self.message: str | None = None
 		self.authentication: AuditLogAuthentication | None = None
+		self.clientProductActionRequest: AuditLogClientProductActionRequest | None = None
 
 		if id is not None:
 			self.setId(id)
@@ -714,6 +733,8 @@ class AuditLog(Entity):
 			self.setMessage(message)
 		if authentication is not None:
 			self.setAuthentication(authentication)
+		if clientProductActionRequest is not None:
+			self.setClientProductActionRequest(clientProductActionRequest)
 
 	def getIdentAttributes(self) -> tuple[str, ...]:
 		return ("id",)
@@ -781,10 +802,21 @@ class AuditLog(Entity):
 			return
 		self.authentication = authentication
 
+	def getClientProductActionRequest(self) -> AuditLogClientProductActionRequest | None:
+		return self.clientProductActionRequest
+
+	def setClientProductActionRequest(self, clientProductActionRequest: AuditLogClientProductActionRequest | dict[str, Any]) -> None:
+		if isinstance(clientProductActionRequest, dict):
+			self.clientProductActionRequest = AuditLogClientProductActionRequest.from_dict(cast(dict[str, Any], clientProductActionRequest))
+			return
+		self.clientProductActionRequest = clientProductActionRequest
+
 	def to_dict(self) -> dict[str, Any]:
 		object_dict = super().to_dict()
 		if self.authentication is not None:
 			object_dict["authentication"] = asdict(self.authentication)
+		if self.clientProductActionRequest is not None:
+			object_dict["clientProductActionRequest"] = asdict(self.clientProductActionRequest)
 		return object_dict
 
 	toHash = to_dict

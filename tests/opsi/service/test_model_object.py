@@ -41,6 +41,7 @@ from opsi.opsi.service.model.object import (  # noqa: E402
 	AuditHardwareOnHost,
 	AuditLog,
 	AuditLogAuthentication,
+	AuditLogClientProductActionRequest,
 	AuditSoftware,
 	AuditSoftwareOnClient,
 	AuditSoftwareToLicensePool,
@@ -649,6 +650,22 @@ def test_audit_log_authentication_from_dict_falls_back_to_unknown_reasons() -> N
 	assert authentication.logoutReason == AuditLogAuthenticationLogoutReason.UNKNOWN
 
 
+def test_audit_log_client_product_action_request_from_dict_filters_unknown_fields_and_coerces_values() -> None:
+	client_product_action_request = AuditLogClientProductActionRequest.from_dict(
+		{
+			"productId": "TestProduct1",
+			"clientId": "CLIENT.test.invalid",
+			"actionRequest": "undefined",
+			"ignored": "value",
+		}
+	)
+
+	assert client_product_action_request.productId == "testproduct1"
+	assert client_product_action_request.clientId == "client.test.invalid"
+	assert client_product_action_request.actionRequest == "none"
+	assert not hasattr(client_product_action_request, "ignored")
+
+
 def test_audit_log_serializes_nested_authentication_dict() -> None:
 	audit_log = AuditLog(
 		id=7,
@@ -678,6 +695,38 @@ def test_audit_log_serializes_nested_authentication_dict() -> None:
 	assert "username='admin'" in str(audit_log)
 
 
+def test_audit_log_serializes_nested_client_product_action_request_dict() -> None:
+	audit_log = AuditLog(
+		id=8,
+		created="2026-06-17 12:13:14",
+		eventType="client.product.action_request",
+		username="Admin",
+		actorType="user",
+		actorId="Admin",
+		clientAddress="127.0.0.1",
+		userAgent="test-agent",
+		message="Action request changed",
+		clientProductActionRequest={
+			"productId": "TestProduct1",
+			"clientId": "CLIENT.test.invalid",
+			"actionRequest": "setup",
+			"ignored": "value",
+		},
+	)
+
+	assert audit_log.eventType == AuditLogEventType.CLIENT_PRODUCT_ACTION_REQUEST
+	assert isinstance(audit_log.clientProductActionRequest, AuditLogClientProductActionRequest)
+	assert audit_log.clientProductActionRequest.productId == "testproduct1"
+	assert audit_log.clientProductActionRequest.clientId == "client.test.invalid"
+	assert audit_log.clientProductActionRequest.actionRequest == "setup"
+	assert audit_log.to_hash()["clientProductActionRequest"] == {
+		"productId": "testproduct1",
+		"clientId": "client.test.invalid",
+		"actionRequest": "setup",
+	}
+	assert "eventType='client.product.action_request'" in str(audit_log)
+
+
 def test_audit_log_unknown_event_type_falls_back_to_unknown() -> None:
 	audit_log = AuditLog(eventType="not.a.known.event")
 
@@ -704,6 +753,35 @@ def test_audit_log_deserialize_creates_nested_authentication() -> None:
 	assert audit_log.authentication.authMethods == ["session"]
 	assert audit_log.authentication.logoutReason == AuditLogAuthenticationLogoutReason.UNKNOWN
 	assert audit_log.to_hash()["authentication"] == {"authMethods": ["session"], "failureReason": None, "logoutReason": "unknown"}
+
+
+def test_audit_log_deserialize_creates_nested_client_product_action_request() -> None:
+	audit_log = deserialize(
+		{
+			"type": "AuditLog",
+			"id": 43,
+			"eventType": "client.product.action_request",
+			"username": "admin",
+			"clientProductActionRequest": {
+				"productId": "TestProduct1",
+				"clientId": "CLIENT.test.invalid",
+				"actionRequest": "undefined",
+			},
+		}
+	)
+
+	assert isinstance(audit_log, AuditLog)
+	assert audit_log.id == "43"
+	assert audit_log.eventType == AuditLogEventType.CLIENT_PRODUCT_ACTION_REQUEST
+	assert isinstance(audit_log.clientProductActionRequest, AuditLogClientProductActionRequest)
+	assert audit_log.clientProductActionRequest.productId == "testproduct1"
+	assert audit_log.clientProductActionRequest.clientId == "client.test.invalid"
+	assert audit_log.clientProductActionRequest.actionRequest == "none"
+	assert audit_log.to_hash()["clientProductActionRequest"] == {
+		"productId": "testproduct1",
+		"clientId": "client.test.invalid",
+		"actionRequest": "none",
+	}
 
 
 def test_object_fom_json() -> None:
