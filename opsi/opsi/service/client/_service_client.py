@@ -1822,8 +1822,7 @@ class ServiceClient:
 		if not self.messagebus_available:
 			raise RuntimeError(f"Messagebus not available (connected to: {self.server_name})")
 		with self._messagebus_connect_lock:
-			if not self._messagebus.connected:
-				self._messagebus.connect()
+			self._messagebus.connect()
 
 	def connect_messagebus(self) -> Messagebus:
 		self.assert_messagebus_connected()
@@ -2159,11 +2158,15 @@ class Messagebus(Thread):
 		if not self._client.addresses:
 			raise OpsiServiceConnectionError("Service address undefined")
 
-		self._connected_result.clear()
 		self._should_be_connected = True
+
+		if not self._connected:
+			self._connected_result.clear()
+
 		if not self.is_alive():
 			logger.debug("Starting thread (id=%r)", self.id)
 			self.start()
+
 		if wait:
 			logger.debug("Waiting for connected result (timeout=%r)", self._connect_timeout)
 			if not self._connected_result.wait(self._connect_timeout):
@@ -2317,7 +2320,10 @@ class Messagebus(Thread):
 		logger.debug("Messagebus thread started (id=%r)", self.id)
 		try:
 			while not self._should_stop.wait(1):
-				if self._should_be_connected and not self._connected:
+				if self._connected:
+					if not self._connected_result.is_set():
+						self._connected_result.set()
+				elif self._should_be_connected:
 					if self._next_connect_wait:
 						logger.info("Waiting %d seconds before reconnect (id=%r)", self._next_connect_wait, self.id)
 						for _ in range(round(self._next_connect_wait)):
