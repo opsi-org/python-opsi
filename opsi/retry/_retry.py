@@ -5,16 +5,16 @@
 
 from __future__ import annotations
 
-
+import enum
 from dataclasses import dataclass
 
 from stamina import retry as _retry_decorator
 from stamina import retry_context as _retry_context
 from stamina._core import ExcOrBackoffHook, _RetryContextIterator
 from stamina.instrumentation import RetryDetails, RetryHook, get_on_retry_hooks, set_on_retry_hooks
-from opsi.util.pattern import MappedStrEnum
+
 from opsi.logging import get_logger
-import enum
+from opsi.util.pattern import MappedStrEnum
 
 logger = get_logger("opsi")
 
@@ -42,38 +42,39 @@ class RetryConfig:
 	Attributes
 	----------
 	on : ExcOrBackoffHook
-		Callable deciding whether an exception should trigger a retry.
+		Exception type(s) to retry on, or a hook callable that receives the exception
+		and returns True to retry. The hook may instead return a float or
+		datetime.timedelta as a custom backoff, bypassing the exponential backoff parameters.
 
-	attempts : int, default: 5
-		Number of total attempts including the initial attempt.
+	attempts : int | None, default: 5
+		Total number of attempts including the initial one. None means unlimited.
 
-	timeout : float, default: 45.0
-		Maximum total time in seconds for all attempts.
+	timeout : float | None, default: 45.0
+		Maximum total time in seconds for all attempts. None means no timeout.
 
 	wait_initial : float, default: 0.1
-		Minimum backoff time in seconds before the first retry.
+		Backoff time in seconds before the first retry.
 
 	wait_max : float, default: 5.0
-		Maximum backoff time in seconds between retries at any time.
+		Maximum backoff time in seconds between retries.
 
 	wait_jitter : float, default: 1.0
-		Maximum jitter that is added to retry backoff delays in seconds.
-		The actual jitter added is a random number between 0 and <wait_jitter>.
+		Maximum random jitter in seconds added to each backoff delay.
 
 	wait_exp_base : float, default: 2
-		The exponential base used to compute the retry backoff.
+		Exponential base used to compute the backoff.
 	"""
 
 	on: ExcOrBackoffHook
-	attempts: int = 5
-	timeout: float = 45.0
+	attempts: int | None = 5
+	timeout: float | None = 45.0
 	wait_initial: float = 0.1
 	wait_max: float = 5.0
 	wait_jitter: float = 1.0
 	wait_exp_base: float = 2
 
 
-NoRetry = RetryConfig(on=lambda exc: False, attempts=0)
+NoRetry = RetryConfig(on=lambda exc: False, attempts=1)
 
 
 def retry(retry_config: RetryConfig | None = None):
