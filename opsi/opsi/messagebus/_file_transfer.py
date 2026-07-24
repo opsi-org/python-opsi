@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from pathlib import Path
 from threading import Lock
 from time import time
@@ -28,6 +29,7 @@ from opsi.opsi.messagebus._message import (
 	FileUploadResultMessage,
 	Message,
 )
+from opsi.process import disable_file_system_redirection
 
 DEFAULT_CHUNK_SIZE = 262144  # 256 KiB
 
@@ -35,6 +37,29 @@ file_transfers: dict[str, FileTransfer] = {}
 file_transfers_lock = Lock()
 
 logger = get_logger("opsi")
+
+
+def _open_without_redirection(path: str, flags: int) -> int:
+	"""
+	File opener that disables WOW64 file system redirection while opening.
+
+	WOW64 redirection is thread-local, so redirection must be disabled in the
+	thread that actually performs the open (e.g. an aiofiles executor thread).
+
+	Parameters
+	----------
+	path : str
+		The path of the file to open.
+
+	flags : int
+		The flags to pass to :func:`os.open`.
+
+	Returns
+	-------
+	int : The file descriptor of the opened file.
+	"""
+	with disable_file_system_redirection():
+		return os.open(path, flags)
 
 
 class FileTransfer:
@@ -76,7 +101,8 @@ class FileTransfer:
 	def _append_to_file(self, data: bytes) -> None:
 		if not self._file_path:
 			raise RuntimeError("File path not set")
-		with open(self._file_path, mode="ab") as file:
+		# Runs in an executor thread, redirection must be disabled in this thread.
+		with disable_file_system_redirection(), open(self._file_path, mode="ab") as file:
 			file.write(data)
 
 	async def process_file_chunk(self, message: FileChunkMessage) -> None:
@@ -169,19 +195,20 @@ class FileUpload(FileTransfer):
 			if not self._file_path.is_relative_to(destination_path):
 				raise ValueError("Invalid name")
 
-			if self._file_path.exists():
-				if self._file_request.overwrite:
-					logger.debug("Overwriting existing file %s", self._file_path)
-					self._file_path.unlink()
-				else:
-					orig_name = self._file_path.name
-					ext = 0
-					while self._file_path.exists():
-						ext += 1
-						self._file_path = self._file_path.with_name(f"{orig_name}.{ext}")
+			with disable_file_system_redirection():
+				if self._file_path.exists():
+					if self._file_request.overwrite:
+						logger.debug("Overwriting existing file %s", self._file_path)
+						self._file_path.unlink()
+					else:
+						orig_name = self._file_path.name
+						ext = 0
+						while self._file_path.exists():
+							ext += 1
+							self._file_path = self._file_path.with_name(f"{orig_name}.{ext}")
 
-			self._file_path.touch()
-			self._file_path.chmod(0o660)
+				self._file_path.touch()
+				self._file_path.chmod(0o660)
 
 		except Exception as error:
 			logger.error(error, exc_info=True)
@@ -217,7 +244,8 @@ class FileUpload(FileTransfer):
 	def _append_to_file(self, data: bytes) -> None:
 		if not self._file_path:
 			raise RuntimeError("File path not set")
-		with open(self._file_path, mode="ab") as file:
+		# Runs in an executor thread, redirection must be disabled in this thread.
+		with disable_file_system_redirection(), open(self._file_path, mode="ab") as file:
 			file.write(data)
 
 	async def process_file_chunk(self, message: FileChunkMessage) -> None:
@@ -273,8 +301,9 @@ class FileDownload(FileTransfer):
 		try:
 			if not self._file_request.path:
 				raise ValueError("File path missing")
-			if not Path(self._file_request.path).is_file():
-				raise FileNotFoundError(f"File '{self._file_request.path}' is missing or file path is incorrect")
+			with disable_file_system_redirection():
+				if not Path(self._file_request.path).is_file():
+					raise FileNotFoundError(f"File '{self._file_request.path}' is missing or file path is incorrect")
 		except Exception as error:
 			logger.error(error, exc_info=True)
 			await self._process_error(str(error), message=self._file_request)
@@ -283,7 +312,8 @@ class FileDownload(FileTransfer):
 		if self._file_request.follow:
 			self._size = None
 		else:
-			self._size = Path(self._file_request.path).stat().st_size
+			with disable_file_system_redirection():
+				self._size = Path(self._file_request.path).stat().st_size
 
 		self._manager_task = self._loop.create_task(self._manager())
 
@@ -333,7 +363,8 @@ class FileDownload(FileTransfer):
 		assert isinstance(self._file_request.path, str)
 		logger.notice("Started reading file")
 		try:
-			async with aiofiles.open(self._file_request.path, "rb") as file:
+			# The opener runs in the aiofiles executor thread, where redirection must be disabled.
+			async with aiofiles.open(self._file_request.path, "rb", opener=_open_without_redirection) as file:
 				while not self.last and not self._should_stop:
 					tmp = await file.read(self._chunk_size)
 					if tmp:

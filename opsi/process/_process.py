@@ -23,7 +23,7 @@ from shutil import which
 from subprocess import DEVNULL, PIPE, STDOUT, Popen, list2cmdline
 from threading import Event, Lock, Thread
 from types import TracebackType
-from typing import Collection, Literal, Mapping, Self
+from typing import Collection, Iterator, Literal, Mapping, Self
 
 from opsi.logging import LOG_TRACE, get_logger, is_log_level_enabled
 from opsi.retry import Retry, RetryConfig, RetryConfigType, get_retry_config
@@ -180,7 +180,29 @@ class ProcessError(Exception):
 
 
 @contextmanager
-def _disable_file_system_redirection():
+def disable_file_system_redirection() -> Iterator[None]:
+	"""
+	Temporarily disable WOW64 file system redirection.
+
+	In a 32-bit process on 64-bit Windows, access to ``C:\\Windows\\System32``
+	is redirected to ``C:\\Windows\\SysWOW64``. This context manager disables
+	the redirection and reverts it on exit. On other platforms it is a no-op.
+
+	The redirection state is thread-local, so redirection must be disabled
+	in the thread that actually performs the file system access.
+
+	Yields
+	------
+	None
+
+	Examples
+	--------
+	::
+
+		with disable_file_system_redirection():
+			data = Path(r"C:\\Windows\\System32\\drivers\\etc\\hosts").read_bytes()
+
+	"""
 	if os.name != "nt":
 		yield
 		return
@@ -815,7 +837,7 @@ class Process:
 			stderr,
 			stdin,
 		)
-		with _disable_file_system_redirection():
+		with disable_file_system_redirection():
 			self._proc = Popen(
 				self._command,
 				stdout=stdout,

@@ -8,13 +8,20 @@ messagebus.file_transfer tests
 """
 
 import asyncio
+import os
+from collections.abc import Callable, Iterator
+from contextlib import AbstractContextManager, contextmanager
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 
 from opsi.opsi.messagebus._const import CONNECTION_USER_CHANNEL
 from opsi.opsi.messagebus._file_transfer import (
 	DEFAULT_CHUNK_SIZE,
 	FileDownload,
+	FileUpload,
+	_open_without_redirection,
 	get_file_transfers,
 	process_file_transfer_message,
 	stop_running_file_transfers,
@@ -365,3 +372,88 @@ async def test_file_download_follow(tmp_path: Path) -> None:
 	new_data_message = await message_sender.wait_for_messages(count=1)
 	assert isinstance(new_data_message[0], FileTransferErrorMessage)
 	assert "not found" in new_data_message[0].error.message
+
+
+def _recording_disable_redirection(events: list[str]) -> Callable[[], AbstractContextManager[None]]:
+	"""Create a fake disable_file_system_redirection context manager that records enter/exit events."""
+
+	@contextmanager
+	def fake_disable() -> Iterator[None]:
+		events.append("disable")
+		yield
+		events.append("revert")
+
+	return fake_disable
+
+
+def test_open_without_redirection_disables_redirection_while_opening(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+	events: list[str] = []
+	real_open = os.open
+
+	def recording_open(path: str, flags: int) -> int:
+		events.append("open")
+		return real_open(path, flags)
+
+	monkeypatch.setattr("opsi.opsi.messagebus._file_transfer.disable_file_system_redirection", _recording_disable_redirection(events))
+	monkeypatch.setattr(os, "open", recording_open)
+
+	test_file = tmp_path / "file.txt"
+	test_file.write_bytes(b"opsi")
+
+	fd = _open_without_redirection(str(test_file), os.O_RDONLY)
+	try:
+		assert os.read(fd, 10) == b"opsi"
+	finally:
+		os.close(fd)
+
+	# The open must happen while redirection is disabled
+	assert events == ["disable", "open", "revert"]
+
+
+async def test_append_to_file_disables_redirection(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+	events: list[str] = []
+	monkeypatch.setattr("opsi.opsi.messagebus._file_transfer.disable_file_system_redirection", _recording_disable_redirection(events))
+
+	file_upload_request = FileUploadRequestMessage(
+		sender="test_sender",
+		channel="test_channel",
+		content_type="text/plain",
+		name="file.txt",
+		size=4,
+		destination_dir=str(tmp_path),
+	)
+	file_upload = FileUpload(send_message=lambda message: None, file_upload_request=file_upload_request)
+	file_upload._file_path = tmp_path / "file.txt"
+
+	file_upload._append_to_file(b"opsi")
+
+	assert (tmp_path / "file.txt").read_bytes() == b"opsi"
+	assert events == ["disable", "revert"]
+
+
+async def test_file_download_read_file_uses_redirection_free_opener(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+	opened_paths: list[str] = []
+
+	def recording_opener(path: str, flags: int) -> int:
+		opened_paths.append(path)
+		return _open_without_redirection(path, flags)
+
+	monkeypatch.setattr("opsi.opsi.messagebus._file_transfer._open_without_redirection", recording_opener)
+
+	test_file = tmp_path / "download.txt"
+	test_file.write_bytes(b"opsi" * 100)
+
+	file_download_request = FileDownloadRequestMessage(
+		sender="test_sender",
+		channel="test_channel",
+		path=str(test_file),
+	)
+	file_download = FileDownload(send_message=lambda message: None, file_download_request=file_download_request)
+	file_download.last = False
+
+	data = b""
+	async for chunk in file_download.read_file():
+		data += chunk
+
+	assert data == b"opsi" * 100
+	assert opened_paths == [str(test_file)]

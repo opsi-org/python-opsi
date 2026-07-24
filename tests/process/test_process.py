@@ -3,6 +3,7 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
+import ctypes
 import os
 import shutil
 import sys
@@ -12,14 +13,23 @@ from contextlib import nullcontext
 from getpass import getuser
 from pathlib import Path
 from subprocess import list2cmdline
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 from typing import Literal
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import psutil
 import pytest
 
-from opsi.process import DecodingErrors, InterpreterType, Process, ProcessError, run_command, run_script, run_script_file
+from opsi.process import (
+	DecodingErrors,
+	InterpreterType,
+	Process,
+	ProcessError,
+	disable_file_system_redirection,
+	run_command,
+	run_script,
+	run_script_file,
+)
 from opsi.process._process import _get_interpreter_command, get_process_io_encoding
 from opsi.system.info import is_windows
 from opsi.system.session import DisplaySession, LinuxDisplaySessionType, WindowsDisplaySessionState, get_display_sessions
@@ -170,7 +180,7 @@ def test_process_hide_window_sets_windows_startupinfo(hide_window: bool, monkeyp
 	monkeypatch.setattr("opsi.process._process.subprocess", fake_subprocess_module)
 	monkeypatch.setattr("opsi.process._process.Popen", FakePopen)
 	monkeypatch.setattr("opsi.process._process.get_subprocess_environment", fake_get_subprocess_environment)
-	monkeypatch.setattr("opsi.process._process._disable_file_system_redirection", nullcontext)
+	monkeypatch.setattr("opsi.process._process.disable_file_system_redirection", nullcontext)
 
 	proc = run_command(["cmd.exe", "/c", "exit", "0"], capture_output="none", hide_window=hide_window)
 
@@ -235,7 +245,7 @@ def test_process_detach_sets_popen_flags(
 		setattr(fake_subprocess_module, "DETACHED_PROCESS", 1)
 		setattr(fake_subprocess_module, "CREATE_NEW_PROCESS_GROUP", 2)
 		monkeypatch.setitem(sys.modules, "subprocess", fake_subprocess_module)
-		monkeypatch.setattr("opsi.process._process._disable_file_system_redirection", nullcontext)
+		monkeypatch.setattr("opsi.process._process.disable_file_system_redirection", nullcontext)
 
 	proc = run_command(["cmd", "/c", "exit", "0"], capture_output="none", hide_window=False, detach=detach)
 
@@ -1340,3 +1350,51 @@ def test_process_integrity_level() -> None:
 	process_level = get_process_integrity_level()
 	assert isinstance(process_level, ProcessIntegrityLevel)
 	assert process_level >= ProcessIntegrityLevel.UNTRUSTED
+
+
+def _fake_kernel32(monkeypatch: pytest.MonkeyPatch, *, disable_success: int) -> Mock:
+	"""Patch os.name and ctypes.windll to simulate a Windows environment with a mocked kernel32."""
+	kernel32 = Mock()
+	kernel32.Wow64DisableWow64FsRedirection.return_value = disable_success
+	monkeypatch.setattr(os, "name", "nt")
+	monkeypatch.setattr(ctypes, "windll", SimpleNamespace(kernel32=kernel32), raising=False)
+	return kernel32
+
+
+def test_disable_file_system_redirection_is_noop_on_non_windows(monkeypatch: pytest.MonkeyPatch) -> None:
+	monkeypatch.setattr(os, "name", "posix")
+
+	# Must not touch ctypes.windll (which does not exist on non-Windows platforms)
+	with disable_file_system_redirection():
+		pass
+
+
+def test_disable_file_system_redirection_disables_and_reverts_on_windows(monkeypatch: pytest.MonkeyPatch) -> None:
+	kernel32 = _fake_kernel32(monkeypatch, disable_success=1)
+
+	with disable_file_system_redirection():
+		kernel32.Wow64DisableWow64FsRedirection.assert_called_once()
+		kernel32.Wow64RevertWow64FsRedirection.assert_not_called()
+
+	kernel32.Wow64RevertWow64FsRedirection.assert_called_once()
+	assert isinstance(kernel32.Wow64RevertWow64FsRedirection.call_args.args[0], ctypes.c_long)
+
+
+def test_disable_file_system_redirection_reverts_on_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+	kernel32 = _fake_kernel32(monkeypatch, disable_success=1)
+
+	with pytest.raises(RuntimeError, match="test error"):
+		with disable_file_system_redirection():
+			raise RuntimeError("test error")
+
+	kernel32.Wow64RevertWow64FsRedirection.assert_called_once()
+
+
+def test_disable_file_system_redirection_skips_revert_if_disable_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+	kernel32 = _fake_kernel32(monkeypatch, disable_success=0)
+
+	with disable_file_system_redirection():
+		pass
+
+	kernel32.Wow64DisableWow64FsRedirection.assert_called_once()
+	kernel32.Wow64RevertWow64FsRedirection.assert_not_called()
