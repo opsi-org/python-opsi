@@ -3,6 +3,17 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from opsi.file.ini._ini import get_option, has_option, has_section, list_sections, open, remove_option, remove_section, set_option
+from opsi.file.ini._ini import (
+    INIFile,
+    IniParseError,
+    get_option,
+    has_option,
+    has_section,
+    list_sections,
+    open,
+    remove_option,
+    remove_section,
+    set_option,
+)
 
-__all__ = ["open", "set_option", "get_option", "has_option", "has_section", "list_sections", "remove_option", "remove_section"]
+__all__ = ["IniParseError", "INIFile", "open", "set_option", "get_option", "has_option", "has_section", "list_sections", "remove_option", "remove_section"]

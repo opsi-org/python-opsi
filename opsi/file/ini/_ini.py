@@ -7,9 +7,8 @@ from __future__ import annotations
 
 import builtins
 import os
-from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator
+from types import TracebackType
 
 from configupdater import ConfigUpdater
 
@@ -35,6 +34,19 @@ class INIFile:
 	Represents an INI configuration file and provides methods to read
 	and modify its contents.
 	"""
+
+	def __enter__(self) -> INIFile:
+		return self
+
+	def __exit__(
+		self,
+		exception_type: type[BaseException] | None,
+		exception: BaseException | None,
+		traceback: TracebackType | None,
+	) -> bool:
+		if exception_type is None:
+			self._update_file()
+		return False
 
 	def __init__(self, filename: str | os.PathLike[str], /, *, encoding: str = ENCODING) -> None:
 		"""
@@ -193,8 +205,7 @@ class INIFile:
 			self._updater.write(f)
 
 
-@contextmanager
-def open(ini_file: str | os.PathLike[str], /, *, encoding: str = ENCODING) -> Generator[INIFile, None, None]:
+def open(ini_file: str | os.PathLike[str], /, *, encoding: str = ENCODING) -> INIFile:
 	"""
 	Open an INI file for reading and modification.
 
@@ -212,13 +223,7 @@ def open(ini_file: str | os.PathLike[str], /, *, encoding: str = ENCODING) -> Ge
 	version = ini_file.get_option("General", "version")
 	ini_file.set_option("General", "version", "5.0")
 	"""
-
-	logger.debug("Opening INI file '%s'", ini_file)
-	_ini_file = INIFile(ini_file, encoding=encoding)
-
-	yield _ini_file
-	logger.debug("Closing INI file '%s'", ini_file)
-	_ini_file._update_file()
+	return INIFile(ini_file, encoding=encoding)
 
 
 def set_option(
