@@ -130,7 +130,7 @@ class Process:
 			else:
 				self._proc = await asyncio.create_subprocess_exec(*self._command, env=sp_env, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 		except Exception as error:
-			logger.exception("Failed to start process")
+			logger.error("Failed to start process", exc_info=True)
 			async with self._message_send_lock:
 				message = ProcessErrorMessage(
 					sender=self._sender,
@@ -196,7 +196,7 @@ class Process:
 				)
 				await self._send_message(message)
 		except Exception:
-			logger.exception("Failed to stop process")
+			logger.error("Failed to stop process", exc_info=True)
 		finally:
 			await self._loop.run_in_executor(None, remove_process, self._process_id)
 

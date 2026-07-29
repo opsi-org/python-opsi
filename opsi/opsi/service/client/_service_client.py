@@ -231,7 +231,7 @@ class CallbackThread(Thread):
 		try:
 			self.callback(**self.kwargs)
 		except Exception:
-			logger.exception("Error in %s", self)
+			logger.error("Error in %s", self, exc_info=True)
 
 
 class ServiceConnectionListener(ABC):
@@ -851,7 +851,7 @@ class ServiceClient:
 				pem = f"-----BEGIN CERTIFICATE-----{match.group(1)}-----END CERTIFICATE-----"
 				certs.append(x509.load_pem_x509_certificate(pem.encode("utf-8")))
 			except Exception:
-				logger.exception("Failed to load cert %r", match.group(1))
+				logger.error("Failed to load cert %r", match.group(1), exc_info=True)
 		return certs
 
 	def read_ca_cert_file(self, with_lock: bool = True) -> list[x509.Certificate]:
@@ -1190,13 +1190,13 @@ class ServiceClient:
 				try:
 					self.new_host_id = to_host_id(response.headers["x-opsi-new-host-id"])
 				except ValueError:
-					logger.exception("Could not get HostId from header")
+					logger.error("Could not get HostId from header", exc_info=True)
 
 			if "x-opsi-new-host-key" in response.headers:
 				try:
 					self.new_host_key = to_opsi_host_key(response.headers["x-opsi-new-host-key"])
 				except ValueError:
-					logger.exception("Could not get OpsiHostKey from header")
+					logger.error("Could not get OpsiHostKey from header", exc_info=True)
 
 			logger.debug("max_time_diff: %r", self._max_time_diff)
 			if self._max_time_diff > 0 and not self.service_is_opsiclientd():
@@ -1242,7 +1242,7 @@ class ServiceClient:
 				try:
 					self.fetch_ca_certs(skip_verify=not verify)
 				except Exception as err:
-					logger.exception("Failed to fetch CA certs")
+					logger.error("Failed to fetch CA certs", exc_info=True)
 					raise OpsiServiceVerificationError(f"Failed to fetch CA certs: {err}") from err
 
 			self._jsonrpc_method_params = {}
@@ -1997,7 +1997,7 @@ class Messagebus(Thread):
 					if dat.startswith("retry-after:"):
 						retry_after = int(dat.split(":", 1)[1].strip())
 		except Exception:
-			logger.exception("Error in websocket error handler")
+			logger.error("Error in websocket error handler", exc_info=True)
 		if retry_after:
 			self._next_connect_wait = max(1, min(retry_after, 7200))
 			logger.debug("Setting next connect wait to %d seconds based on Retry-After header", self._next_connect_wait)
@@ -2076,7 +2076,7 @@ class Messagebus(Thread):
 					continue
 				self._run_listener_callback(listener, callback, message=msg)
 		except Exception:
-			logger.exception("Failed to process websocket message (id=%r)", self.id)
+			logger.error("Failed to process websocket message (id=%r)", self.id, exc_info=True)
 
 	def _on_ping(self, websocket: WebSocket, message: bytes) -> None:
 		logger.debug("Ping message received (id=%r)", self.id)
@@ -2105,7 +2105,7 @@ class Messagebus(Thread):
 			else:
 				callback(**kwargs)
 		except Exception:
-			logger.exception("Error running callback %r on listener %r (id=%r)", callback_name, listener, self.id)
+			logger.error("Error running callback %r on listener %r (id=%r)", callback_name, listener, self.id, exc_info=True)
 
 	def wait_for_jsonrpc_response_message(self, rpc_id: str | int, timeout: float | None = None) -> JSONRPCResponseMessage:
 		listener = self.JSONRPCResponseListener(rpc_id, timeout)
@@ -2306,7 +2306,7 @@ class Messagebus(Thread):
 			try:
 				self._app.close()
 			except Exception:
-				logger.exception("Failed to process messagebus message")
+				logger.error("Failed to process messagebus message", exc_info=True)
 		self._app = None
 		self._connected = False
 		self._disconnected_result.set()
@@ -2333,7 +2333,7 @@ class Messagebus(Thread):
 					# Call of _connect() will block until the connection is lost
 					self._connect()
 		except Exception:
-			logger.exception("Messagebus connection failed")
+			logger.error("Messagebus connection failed", exc_info=True)
 
 	def stop(self) -> None:
 		logger.info("Stopping messagebus (id=%r)", self.id)

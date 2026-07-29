@@ -302,7 +302,7 @@ class Terminal:
 		except Exception as err:
 			logger.debug("Terminal error: %s", err)
 			if not self._closing:
-				logger.exception("Failed to stop terminal")
+				logger.error("Failed to stop terminal", exc_info=True)
 		if not self._closing:
 			await self.close()
 
@@ -351,7 +351,7 @@ class Terminal:
 			if self._pty_reader_task:
 				self._pty_reader_task.cancel()
 		except Exception:
-			logger.exception("Failed to process terminal message")
+			logger.error("Failed to process terminal message", exc_info=True)
 		finally:
 			self._pty_pid = None
 			self._pty_read = None

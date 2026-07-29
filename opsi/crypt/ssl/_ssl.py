@@ -120,7 +120,7 @@ def read_certs_from_file(cert_file: str | Path) -> list[x509.Certificate]:
 		try:
 			ca_certs.append(x509.load_pem_x509_certificate(match.group(1).encode("ascii")))
 		except Exception:
-			logger.exception("Failed to load certificate from '%s'", cert_file)
+			logger.error("Failed to load certificate from '%s'", cert_file, exc_info=True)
 	return ca_certs
 
 

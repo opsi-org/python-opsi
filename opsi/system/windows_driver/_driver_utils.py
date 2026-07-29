@@ -142,8 +142,8 @@ def add_drivers_to_driver_store(
 			target_os_version = INFTargetOSVersion(Architecture=architecture)
 			registry += inf_file.get_driver_database_reg(target_os_version=target_os_version, oem_inf_name=inf_file.inf_name)
 			registry += inf_file.get_services_reg(target_os_version=target_os_version)
-		except Exception:
-			logger.exception("Failed to add driver to driver store")
+		except Exception as err:
+			logger.error(err, exc_info=True)
 
 	if registry:
 		logger.info("Adding to registry: %s", registry)

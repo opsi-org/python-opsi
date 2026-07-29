@@ -211,7 +211,7 @@ class FileUpload(FileTransfer):
 				self._file_path.chmod(0o660)
 
 		except Exception as error:
-			logger.exception("Failed to process file chunk")
+			logger.error("Failed to process file chunk", exc_info=True)
 			await self._process_error(str(error), message=self._file_request)
 			return
 
@@ -305,7 +305,7 @@ class FileDownload(FileTransfer):
 				if not Path(self._file_request.path).is_file():
 					raise FileNotFoundError(f"File '{self._file_request.path}' is missing or file path is incorrect")
 		except Exception as error:
-			logger.exception("Failed to process file chunk")
+			logger.error("Failed to process file chunk", exc_info=True)
 			await self._process_error(str(error), message=self._file_request)
 			return
 

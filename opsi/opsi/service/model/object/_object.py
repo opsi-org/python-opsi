@@ -3737,7 +3737,7 @@ def deserialize(obj: Any, deep: bool = False, prevent_object_creation: bool = Fa
 			except KeyError:
 				pass
 			except Exception as err:
-				logger.exception("Failed to deserialize object")
+				logger.error("Failed to deserialize object", exc_info=True)
 				raise ValueError(f"Failed to create object from dict {obj}: {err}") from err
 		if deep:
 			return {k: deserialize(v, deep=deep, prevent_object_creation=prevent_object_creation) for k, v in obj.items()}
