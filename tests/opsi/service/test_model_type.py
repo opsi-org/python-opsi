@@ -343,18 +343,18 @@ def test_to_ip_address(inp: str, expected: str) -> None:
 
 
 @pytest.mark.parametrize(
-	"malformed_input",
+	"malformed_input, exc",
 	[
-		"1922.1.1.1",
-		None,
-		True,
-		"1.1.1.1.",
-		"2.2.2.2.2",
-		"a.2.3.4",
+		("1922.1.1.1", ValueError),
+		(None, TypeError),
+		(True, TypeError),
+		("1.1.1.1.", ValueError),
+		("2.2.2.2.2", ValueError),
+		("a.2.3.4", ValueError),
 	],
 )
-def test_to_ip_address_raises_errors_on_invalid_input(malformed_input: Any) -> None:
-	with pytest.raises(ValueError):
+def test_to_ip_address_raises_errors_on_invalid_input(malformed_input: Any, exc: type[Exception]) -> None:
+	with pytest.raises(exc):
 		to_ip_address(malformed_input)
 
 
@@ -406,18 +406,18 @@ def test_to_network_address(address: str, expected: str) -> None:
 
 
 @pytest.mark.parametrize(
-	"address",
+	"address, exc",
 	(
-		"192.168.101",
-		"192.1.1.1/40",
-		None,
-		True,
-		"10.10.1/24",
-		"a.2.3.4/0",
+		("192.168.101", ValueError),
+		("192.1.1.1/40", ValueError),
+		(None, TypeError),
+		(True, TypeError),
+		("10.10.1/24", ValueError),
+		("a.2.3.4/0", ValueError),
 	),
 )
-def test_to_network_address_raises_exceptions_on_invalid_addresses(address: Any) -> None:
-	with pytest.raises(ValueError):
+def test_to_network_address_raises_exceptions_on_invalid_addresses(address: Any, exc: type[Exception]) -> None:
+	with pytest.raises(exc):
 		to_network_address(address)
 
 
