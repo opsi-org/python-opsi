@@ -26,8 +26,8 @@ from hypothesis.strategies import binary, from_regex, sampled_from
 from opsi.archive._archive import (
 	CPIO_EXTRACT_COMMAND,
 	TAR_EXTRACT_COMMAND,
-	ArchiveFile,
 	ArchiveCompression,
+	ArchiveFile,
 	ArchiveProgress,
 	ArchiveProgressListener,
 	create_archive,
@@ -215,9 +215,8 @@ def test_decompress_command(tmp_path: Path) -> None:
 
 	for ext in (".zstd", ".zst"):
 		zst_file = tmp_path / f"file{ext}"
-		with patch("shutil.which", return_value=False):
-			with pytest.raises(RuntimeError, match="Zstdcat not available."):
-				decompress_command(zst_file)
+		with patch("shutil.which", return_value=False), pytest.raises(RuntimeError, match="Zstdcat not available."):
+			decompress_command(zst_file)
 		with patch("shutil.which", return_value=True):
 			assert decompress_command(zst_file) == "zstd --stdout --quiet --decompress"
 
@@ -385,8 +384,7 @@ def test_get_archive_files(tmp_path: Path, test_defect_link: bool, follow_symlin
 def test_archive_hypothesis(filename: str, data: bytes, internal: bool, compression: ArchiveCompression) -> None:
 	with tempfile.TemporaryDirectory() as tempdir:
 		filename = filename.replace("\x00", "").replace("\n", "")
-		if filename.startswith("-"):
-			filename = filename[1:]
+		filename = filename.removeprefix("-")
 		tmp_path = Path(tempdir)
 		source = tmp_path / "source"
 		source.mkdir()

@@ -8,7 +8,7 @@ WIM handling
 """
 
 from dataclasses import dataclass, fields
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from types import GenericAlias, UnionType
 from typing import Any, cast
@@ -161,7 +161,7 @@ def wim_info(wim_file: Path | str) -> WIMInfo:
 				# Fri Jul 10 16:37:14 2015 UTC
 				tmp = val.split(" ", 2)
 				mon = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec").index(tmp[1]) + 1
-				val = cast(Any, datetime.strptime(f"{mon} {tmp[2]}", "%m %d %H:%M:%S %Y %Z").replace(tzinfo=timezone.utc))
+				val = cast(Any, datetime.strptime(f"{mon} {tmp[2]}", "%m %d %H:%M:%S %Y %Z").replace(tzinfo=UTC))
 			elif attr_type is list[str]:
 				val = val.split(" ")
 			else:

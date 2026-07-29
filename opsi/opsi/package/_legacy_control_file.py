@@ -139,9 +139,7 @@ class LegacyControlFile:
 
 			if sectionType == "package":
 				option = key
-				if key == "version":
-					value = to_string_lower(value)
-				elif key == "depends":
+				if key == "version" or key == "depends":
 					value = to_string_lower(value)
 				else:  # Unsupported key
 					continue
@@ -152,11 +150,7 @@ class LegacyControlFile:
 					value = to_product_id(value)
 				elif key == "type":
 					value = to_product_type(value)
-				elif key == "name":
-					value = to_string(value or "")
-				elif key == "description":
-					value = to_string(value or "")
-				elif key == "advice":
+				elif key == "name" or key == "description" or key == "advice":
 					value = to_string(value or "")
 				elif key == "version":
 					value = to_product_version(value)
@@ -168,21 +162,7 @@ class LegacyControlFile:
 					value = to_bool(value)
 				elif key == "productclasses":
 					value = to_string_lower(value or "")
-				elif key == "pxeconfigtemplate":
-					value = to_filename(value or "")
-				elif key == "setupscript":
-					value = to_filename(value or "")
-				elif key == "uninstallscript":
-					value = to_filename(value or "")
-				elif key == "updatescript":
-					value = to_filename(value or "")
-				elif key == "alwaysscript":
-					value = to_filename(value or "")
-				elif key == "oncescript":
-					value = to_filename(value or "")
-				elif key == "customscript":
-					value = to_filename(value or "")
-				elif key == "userloginscript":
+				elif key == "pxeconfigtemplate" or key == "setupscript" or key == "uninstallscript" or key == "updatescript" or key == "alwaysscript" or key == "oncescript" or key == "customscript" or key == "userloginscript":
 					value = to_filename(value or "")
 
 				if value and isinstance(value, str) and value.lower() == "none":
@@ -217,15 +197,9 @@ class LegacyControlFile:
 					value = to_product_property_type(value)
 				elif key == "name":
 					value = to_string_lower(value)
-				elif key == "default":
+				elif key == "default" or key == "values" or key == "description":
 					value = to_string(value)
-				elif key == "values":
-					value = to_string(value)
-				elif key == "description":
-					value = to_string(value)
-				elif key == "editable":
-					value = to_bool(value)
-				elif key == "multivalue":
+				elif key == "editable" or key == "multivalue":
 					value = to_bool(value)
 
 			else:

@@ -5,9 +5,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import asdict, is_dataclass
 from datetime import datetime
-from typing import Any, Callable
+from typing import Any
 
 _msgspec_msgpack_encode: Callable | None = None
 _msgspec_msgpack_decode: Callable | None = None

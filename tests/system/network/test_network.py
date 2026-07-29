@@ -93,7 +93,7 @@ def test_gethostbyaddr_with_timeout() -> None:
 	exc: Exception | None = None
 	try:
 		_gethostbyaddr_with_timeout("test.unavail.lan", 0.001)
-	except (TimeoutError, socket.error) as err:
+	except (OSError, TimeoutError) as err:
 		exc = err
 	assert exc
 	assert _gethostbyaddr_with_timeout("127.0.0.1", 1.0)[0] in ("localhost", socket.gethostname())

@@ -5,9 +5,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import asdict, is_dataclass
 from datetime import datetime
-from typing import Any, Callable
+from typing import Any
 
 from pydantic_core import from_json as _pydantic_json_decode
 from pydantic_core import to_json as _pydantic_json_encode

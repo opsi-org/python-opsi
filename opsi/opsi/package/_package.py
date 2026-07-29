@@ -11,13 +11,13 @@ from typing import Literal
 import tomlkit
 
 from opsi.archive import (
+	ArchiveCompression,
 	ArchiveFile,
 	ArchiveProgress,
 	ArchiveProgressListener,
 	create_archive,
 	extract_archive,
 	get_archive_files,
-	ArchiveCompression,
 )
 from opsi.logging import get_logger
 from opsi.opsi.package._control_file_handling import (

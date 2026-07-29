@@ -410,12 +410,12 @@ class RegistryWatcher:
 	@staticmethod
 	def _get_kernel32() -> Any:
 		"""Return the Windows kernel32 DLL wrapper."""
-		return getattr(ctypes, "windll").kernel32
+		return ctypes.windll.kernel32
 
 	@staticmethod
 	def _get_advapi32() -> Any:
 		"""Return the Windows advapi32 DLL wrapper."""
-		return getattr(ctypes, "windll").advapi32
+		return ctypes.windll.advapi32
 
 	@staticmethod
 	def _raise_windows_error(error_code: int) -> None:

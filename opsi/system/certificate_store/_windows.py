@@ -5,8 +5,9 @@
 
 import ctypes
 import warnings
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any, Generator
+from typing import Any
 
 import pywintypes  # type: ignore[import]
 import win32crypt  # type: ignore[import]
@@ -71,7 +72,7 @@ def _open_cert_store(
 	store_name: str,
 	ctype: bool = False,
 	force_close: bool = False,
-) -> Generator[Any, None, None]:  # should be _win32typing.PyCERTSTORE if present
+) -> Generator[Any]:  # should be _win32typing.PyCERTSTORE if present
 	_open = win32crypt.CertOpenStore
 	if ctype:
 		_open = crypt32.CertOpenStore
@@ -119,7 +120,7 @@ def _load_der_x509_certificate(data: bytes) -> x509.Certificate | None:
 	return None
 
 
-def load_cas(subject_name: str) -> Generator[x509.Certificate, None, None]:
+def load_cas(subject_name: str) -> Generator[x509.Certificate]:
 	store_name = "Root"
 	logger.debug("Trying to find %s in certificate store", subject_name)
 	with _open_cert_store(store_name, force_close=False) as store:

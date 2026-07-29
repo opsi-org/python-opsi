@@ -9,8 +9,8 @@ import asyncio
 import platform
 from asyncio.subprocess import PIPE
 from asyncio.subprocess import Process as AsyncioProcess
+from collections.abc import Callable
 from threading import Lock
-from typing import Callable
 
 from opsi.logging import get_logger
 from opsi.opsi.messagebus._const import CONNECTION_SESSION_CHANNEL, CONNECTION_USER_CHANNEL

@@ -608,7 +608,7 @@ def test_create_package_empty() -> None:
 		assert package_archive.exists()
 		with TempDir() as result_dir:
 			OpsiPackage().extract_package_archive(package_archive, result_dir)
-			result_contents = list((_dir.relative_to(result_dir) for _dir in result_dir.rglob("*")))
+			result_contents = list(_dir.relative_to(result_dir) for _dir in result_dir.rglob("*"))
 			assert (temp_dir / "OPSI").relative_to(temp_dir) in result_contents
 
 

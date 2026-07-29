@@ -21,10 +21,11 @@ import warnings
 import webbrowser
 from abc import ABC
 from base64 import b64encode
+from collections.abc import Callable, Generator, Iterable
 from contextlib import contextmanager, nullcontext
 from contextvars import copy_context
 from dataclasses import astuple, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from functools import lru_cache
 from ipaddress import IPv6Address, ip_address
@@ -32,7 +33,7 @@ from pathlib import Path
 from random import randint
 from threading import Event, Lock, Thread
 from types import MethodType, TracebackType
-from typing import TYPE_CHECKING, Any, BinaryIO, Callable, Generator, Iterable, Literal, overload
+from typing import TYPE_CHECKING, Any, BinaryIO, Literal, overload
 from urllib.parse import quote, unquote, urlparse
 from uuid import uuid4
 from xml.etree import ElementTree
@@ -260,7 +261,7 @@ class ServiceConnectionListener(ABC):
 		"""
 
 	@contextmanager
-	def register(self, service_client: ServiceClient) -> Generator[None, None, None]:
+	def register(self, service_client: ServiceClient) -> Generator[None]:
 		"""
 		Context manager for register this listener on and off the message bus.
 		"""
@@ -281,7 +282,7 @@ class Response:
 	def __getitem__(self, item: int) -> int | str | CaseInsensitiveDict | bytes:
 		return astuple(self)[item]
 
-	def __iter__(self) -> Generator[int | str | CaseInsensitiveDict | bytes, None, None]:
+	def __iter__(self) -> Generator[int | str | CaseInsensitiveDict | bytes]:
 		for item in astuple(self):
 			yield item
 
@@ -294,7 +295,7 @@ def _patch_https_connection_pool_key_password(key_password: str | None) -> None:
 		self.key_password = key_password
 		return HTTPSConnectionPool_orig_new_conn(self)
 
-	setattr(HTTPSConnectionPool, "_new_conn", _new_conn)
+	HTTPSConnectionPool._new_conn = _new_conn
 
 
 class KeyPasswordHTTPAdapter(HTTPAdapter):
@@ -510,7 +511,7 @@ class ServiceClient:
 			verify = [verify]
 
 		self._verify: list[ServiceVerificationFlags] = []
-		for verify_flag in list(verify):
+		for verify_flag in verify:
 			if not isinstance(verify_flag, ServiceVerificationFlags):
 				verify_flag = ServiceVerificationFlags(verify_flag)
 			if verify_flag not in ServiceVerificationFlags:
@@ -858,10 +859,9 @@ class ServiceClient:
 		ca_cert_file = self.ca_cert_file
 		if not ca_cert_file:
 			raise OpsiServiceError("No CA cert file defined")
-		with self._ca_cert_lock if with_lock else nullcontext():
-			with open(ca_cert_file, "r", encoding="utf-8") as file:
-				with lock_file(file=file, exclusive=False, timeout=5.0):
-					return self.certs_from_pem(file.read())
+		with self._ca_cert_lock if with_lock else nullcontext(), open(ca_cert_file, "r", encoding="utf-8") as file:
+			with lock_file(file=file, exclusive=False, timeout=5.0):
+				return self.certs_from_pem(file.read())
 
 	def write_ca_cert_file(self, certs: list[x509.Certificate], *, force: bool = False, with_lock: bool = True) -> None:
 		ca_cert_file = self.ca_cert_file
@@ -885,11 +885,10 @@ class ServiceClient:
 				certs_pem.append(cert.public_bytes(encoding=serialization.Encoding.PEM).decode("utf-8").strip() + "\n")
 				subjects.append(subj)
 
-			with open(ca_cert_file, "a+", encoding="utf-8") as file:
-				with lock_file(file=file, exclusive=True, timeout=5.0):
-					file.seek(0)
-					file.truncate()
-					file.write("".join(certs_pem))
+			with open(ca_cert_file, "a+", encoding="utf-8") as file, lock_file(file=file, exclusive=True, timeout=5.0):
+				file.seek(0)
+				file.truncate()
+				file.write("".join(certs_pem))
 
 			logger.info("CA cert file '%s' successfully updated (%d certificates total)", ca_cert_file, len(certs))
 
@@ -957,7 +956,7 @@ class ServiceClient:
 		return ca_certs
 
 	def get_opsi_ca_certs_state(self) -> OpsiCaState:
-		now = datetime.now(tz=timezone.utc)
+		now = datetime.now(tz=UTC)
 		uib_opsi_ca_cn = self._uib_opsi_ca_cert.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value
 		for cert in self.get_opsi_ca_certs():
 			if cert.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value != uib_opsi_ca_cn:
@@ -1031,7 +1030,7 @@ class ServiceClient:
 				logger.error("Failed to create instance method '%s': %s", method, err)
 
 	@contextmanager
-	def connection(self, connect_messagebus: bool = False) -> Generator[None, None, None]:
+	def connection(self, connect_messagebus: bool = False) -> Generator[None]:
 		self.connect(connect_messagebus=connect_messagebus)
 		try:
 			yield
@@ -1208,7 +1207,7 @@ class ServiceClient:
 					date_hdr = response.headers.get("date")
 					logger.debug("uxts_hdr: %r, date_hdr: %r", uxts_hdr, date_hdr)
 					if uxts_hdr:
-						server_dt = datetime.fromtimestamp(int(uxts_hdr), tz=timezone.utc)
+						server_dt = datetime.fromtimestamp(int(uxts_hdr), tz=UTC)
 					elif date_hdr:
 						times, timez = date_hdr.rsplit(" ", 1)
 						if timez == "UTC":
@@ -1219,11 +1218,11 @@ class ServiceClient:
 							except locale.Error as err:
 								logger.debug("Failed to set locale: %s, continuing with locale %r", err, loc)
 							try:
-								server_dt = datetime.strptime(times, "%a, %d %b %Y %H:%M:%S").replace(tzinfo=timezone.utc)
+								server_dt = datetime.strptime(times, "%a, %d %b %Y %H:%M:%S").replace(tzinfo=UTC)
 							finally:
 								locale.setlocale(locale.LC_ALL, loc)
 					if server_dt:
-						local_dt = datetime.now(timezone.utc)
+						local_dt = datetime.now(UTC)
 						diff = (server_dt - local_dt).total_seconds()
 						logger.debug("server_dt: %r, local_dt: %r, diff: %r", server_dt, local_dt, diff)
 						if abs(diff) > self._max_time_diff:
@@ -1842,7 +1841,7 @@ class ServiceClient:
 	def messagebus_connected(self) -> bool:
 		return self._messagebus.connected
 
-	def __enter__(self) -> "ServiceClient":
+	def __enter__(self) -> ServiceClient:
 		return self
 
 	def __exit__(
@@ -1892,7 +1891,7 @@ class MessagebusListener(ABC):
 		"""
 
 	@contextmanager
-	def register(self, messagebus: Messagebus) -> Generator[None, None, None]:
+	def register(self, messagebus: Messagebus) -> Generator[None]:
 		"""
 		Context manager for register this listener on and off the message bus.
 		"""
@@ -2247,7 +2246,7 @@ class Messagebus(Thread):
 			url = f"{url}?compression={self.compression}"
 		header = [f"{k}: {v + ('/messagebus' if k.lower() == 'user-agent' else '')}" for k, v in self._client.default_headers.items()]
 		if self._client.username is not None or self._client.password is not None:
-			basic_auth = b64encode(f"{self._client.username or ''}:{self._client.password or ''}".encode("utf-8")).decode("ascii")
+			basic_auth = b64encode(f"{self._client.username or ''}:{self._client.password or ''}".encode()).decode("ascii")
 			header.append(f"Authorization: Basic {basic_auth}")
 
 		cookie = self._client.session_cookie

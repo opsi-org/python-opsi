@@ -19,7 +19,7 @@ from typing import Literal, Self, get_args
 from opsi.exception import OperatingSystemUnsupportedError
 from opsi.logging import get_logger
 from opsi.logging._const import INFO
-from opsi.retry import Retry, RetryConfig, get_retry_config, RetryConfigType
+from opsi.retry import Retry, RetryConfig, RetryConfigType, get_retry_config
 from opsi.system.info import is_linux, is_windows
 
 if is_linux():
@@ -419,7 +419,7 @@ class TextFile:
 		elif start == "above_selected":
 			search_range = range(self._line_index - 1, -1, -1)
 		elif start == "top":
-			search_range = range(0, len(self._lines))
+			search_range = range(len(self._lines))
 		elif start == "bottom":
 			search_range = range(len(self._lines) - 1, -1, -1)
 

@@ -7,7 +7,6 @@
 messagebus.message tests
 """
 
-from typing import Type, Union
 
 import pydantic_core
 import pytest
@@ -412,7 +411,7 @@ def test_message_to_from_messagepack() -> None:
 		),
 	],
 )
-def test_message_types(message_class: type[Message], attributes: Union[dict, None], exception: Union[Type[BaseException], None]) -> None:
+def test_message_types(message_class: type[Message], attributes: dict | None, exception: type[BaseException] | None) -> None:
 	attributes = attributes or {}
 	if exception:
 		with pytest.raises(exception):

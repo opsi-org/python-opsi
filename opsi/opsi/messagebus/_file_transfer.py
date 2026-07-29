@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import asyncio
 import os
+from collections.abc import AsyncGenerator, Callable
 from pathlib import Path
 from threading import Lock
 from time import time
-from typing import AsyncGenerator, Callable
 
 import aiofiles
 
@@ -340,7 +340,7 @@ class FileDownload(FileTransfer):
 		file_data_stream = self.read_file()
 		while not self._should_stop:
 			try:
-				data = await anext(file_data_stream)  # noqa: F821
+				data = await anext(file_data_stream)
 			except StopAsyncIteration:
 				logger.notice("File interaction stopped")
 				break
@@ -358,7 +358,7 @@ class FileDownload(FileTransfer):
 
 		await self._loop.run_in_executor(None, remove_file_transfer, self._file_id)
 
-	async def read_file(self) -> AsyncGenerator[bytes, None]:
+	async def read_file(self) -> AsyncGenerator[bytes]:
 		assert isinstance(self._file_request, FileDownloadRequestMessage)
 		assert isinstance(self._file_request.path, str)
 		logger.notice("Started reading file")
@@ -374,8 +374,8 @@ class FileDownload(FileTransfer):
 					else:
 						self.last = True
 						yield tmp
-		except IOError:
-			await self._process_error(f"Unexpected IOError: {str(IOError)}")
+		except OSError:
+			await self._process_error(f"Unexpected IOError: {IOError!s}")
 
 
 async def process_file_transfer_message(

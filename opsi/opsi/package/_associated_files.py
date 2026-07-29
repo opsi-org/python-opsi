@@ -4,9 +4,9 @@
 # License: AGPL-3.0-only
 
 import enum
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 from pyzsync import create_zsync_file
 

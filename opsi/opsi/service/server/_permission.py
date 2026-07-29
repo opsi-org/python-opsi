@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
 from typing import Any
 
@@ -36,12 +36,12 @@ class FilePermission:
 	file_permissions: int
 
 	@staticmethod
-	@lru_cache(maxsize=None)
+	@cache
 	def username_to_uid(username: str) -> int:
 		return pwd.getpwnam(username)[2]
 
 	@staticmethod
-	@lru_cache(maxsize=None)
+	@cache
 	def groupname_to_gid(groupname: str) -> int:
 		try:
 			return grp.getgrnam(groupname)[2]

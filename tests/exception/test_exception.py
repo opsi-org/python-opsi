@@ -4,7 +4,7 @@
 # License: AGPL-3.0-only
 
 import time
-from typing import Generator
+from collections.abc import Generator
 
 import pytest
 from hypothesis import given, strategies
@@ -18,7 +18,7 @@ class FixtureRequest:
 
 exception_classes = []
 pre_globals = list(globals())
-from opsi.exception import (  # noqa: E402,F401
+from opsi.exception import (  # noqa: F401
 	OperatingSystemUnsupportedError,
 	OpsiBadRpcError,
 	OpsiError,
@@ -43,7 +43,7 @@ exception_classes = [obj for name, obj in dict(globals()).items() if name not in
 @pytest.fixture(
 	params=exception_classes,
 )
-def exception_class(request: FixtureRequest) -> Generator[str, None, None]:
+def exception_class(request: FixtureRequest) -> Generator[str]:
 	yield request.param
 
 
@@ -61,12 +61,12 @@ def exception_class(request: FixtureRequest) -> Generator[str, None, None]:
 	],
 	ids=["empty", "int", "bool", "time", "unicode", "utf8-encoded", "windows-1258-encoded", "utf16-encoded", "latin1-encoded"],
 )
-def exception_parameter(request: FixtureRequest) -> Generator[str, None, None]:
+def exception_parameter(request: FixtureRequest) -> Generator[str]:
 	yield request.param
 
 
 @pytest.fixture
-def exception(exception_class: type[Exception], exception_parameter: str) -> Generator[Exception, None, None]:
+def exception(exception_class: type[Exception], exception_parameter: str) -> Generator[Exception]:
 	yield exception_class(exception_parameter)
 
 

@@ -3,9 +3,10 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
+from collections.abc import Generator
 from contextlib import contextmanager
 from time import monotonic, sleep
-from typing import IO, BinaryIO, Generator, TextIO
+from typing import IO, BinaryIO, TextIO
 
 import pywintypes  # type: ignore[import]
 import win32con  # type: ignore[import]
@@ -36,7 +37,7 @@ def _unlock_file(file: TextIO | BinaryIO | IO) -> None:
 @contextmanager
 def lock_file(
 	file: TextIO | BinaryIO | IO, exclusive: bool = False, timeout: float = 5.0, lock_method: LockMethod | None = None
-) -> Generator[None, None, None]:
+) -> Generator[None]:
 	"""
 	An exclusive or write lock gives a process exclusive access for writing to the specified part of the file.
 	While a write lock is in place, no other process can lock that part of the file.

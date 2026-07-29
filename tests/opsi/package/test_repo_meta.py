@@ -9,7 +9,7 @@ tests for opsicommon.package.repo_meta
 
 import shutil
 from dataclasses import asdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -282,7 +282,7 @@ def test_repo_meta_package_collection_add_package(tmp_path: Path) -> None:
 	package_collection.add_package(
 		repository_dir, repository_dir / "localboot_new_1.0-1.opsi", num_allowed_versions=1, add_callback=add_callback
 	)
-	utc_now = datetime.now(tz=timezone.utc)
+	utc_now = datetime.now(tz=UTC)
 	assert len(package_collection.packages["localboot_new"]) == 1
 	print(package_collection.packages["localboot_new"])
 	assert package_collection.packages["localboot_new"]["1.0-1"].url == "localboot_new_1.0-1.opsi"
@@ -294,7 +294,7 @@ def test_repo_meta_package_collection_add_package(tmp_path: Path) -> None:
 
 	# Check if update adds new package and keeps others with --num-allowed-versions
 	package_collection.add_package(repository_dir, repository_dir / "localboot_new_2.0-1.opsi", num_allowed_versions=2, url="my/url.opsi")
-	utc_now = datetime.now(tz=timezone.utc)
+	utc_now = datetime.now(tz=UTC)
 	assert len(package_collection.packages["localboot_new"]) == 2
 	assert package_collection.packages["localboot_new"]["1.0-1"].url == "localboot_new_1.0-1.opsi"
 	assert package_collection.packages["localboot_new"]["1.0-1"].compatibility == compatibility

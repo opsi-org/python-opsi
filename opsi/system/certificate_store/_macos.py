@@ -6,8 +6,8 @@
 import os
 import re
 import tempfile
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -19,7 +19,7 @@ logger = get_logger("opsi")
 
 
 @contextmanager
-def security_authorization() -> Generator[None, None, None]:
+def security_authorization() -> Generator[None]:
 	try:  # Allow to make changes to certificate settings
 		run_command(["security", "authorizationdb", "write", "com.apple.trust-settings.admin", "allow"], timeout=10)
 		yield
@@ -43,7 +43,7 @@ def install_ca(ca_cert: x509.Certificate) -> None:
 		os.remove(pem_file.name)
 
 
-def load_cas(subject_name: str) -> Generator[x509.Certificate, None, None]:
+def load_cas(subject_name: str) -> Generator[x509.Certificate]:
 	try:
 		pem = run_command(
 			["security", "find-certificate", "-a", "-p", "-c", subject_name, "/Library/Keychains/System.keychain"], timeout=10

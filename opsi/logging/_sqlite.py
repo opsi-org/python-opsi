@@ -10,11 +10,11 @@ import queue
 import sqlite3
 import threading
 import time
-from datetime import datetime, timezone
+from collections.abc import Generator
+from datetime import UTC, datetime
 from logging import Formatter, Handler, LogRecord
 from pathlib import Path
 from types import TracebackType
-from typing import Generator
 
 from colorlog import ColoredFormatter
 
@@ -35,7 +35,7 @@ def _timestamp_ms(time: float | datetime) -> int:
 	if isinstance(time, datetime):
 		if not time.tzinfo:
 			time = time.astimezone()
-		time = time.astimezone(timezone.utc).timestamp()
+		time = time.astimezone(UTC).timestamp()
 	return int(time * 1000)
 
 
@@ -115,7 +115,7 @@ class SQLiteLogDatabase:
 		max_records: int | None = None,
 		follow: bool = False,
 		timeout: float | None = None,
-	) -> Generator[LogRecord, None, None]:
+	) -> Generator[LogRecord]:
 		"""
 		Retrieves records from the SQLite database.
 		Can filter records based on since, until, max_level, and context.
@@ -180,7 +180,7 @@ class SQLiteLogDatabase:
 					if row[4]:
 						record.exc_text = row[4]
 					if row[7]:
-						setattr(record, "context", json_decode(row[7]))
+						record.context = json_decode(row[7])
 					yield record
 				except Exception:
 					continue
@@ -213,7 +213,7 @@ class SQLiteLogDatabase:
 		datefmt: str = DATETIME_FORMAT,
 		colored: bool = False,
 		timeout: float | None = None,
-	) -> Generator[str, None, None]:
+	) -> Generator[str]:
 		format = format or (DEFAULT_COLORED_FORMAT if colored else DEFAULT_FORMAT)
 		formatter = ContextSecretFormatter(
 			ColoredFormatter(format, datefmt=datefmt, log_colors=LOG_COLORS) if colored else Formatter(format, datefmt=datefmt)

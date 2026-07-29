@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from opsi.system.file.lock import lock_file, LockMethod
+from opsi.system.file.lock import LockMethod, lock_file
 
 
 class Task:

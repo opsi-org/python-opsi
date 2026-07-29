@@ -15,11 +15,12 @@ import struct
 import uuid
 import zlib
 from collections import OrderedDict
+from collections.abc import Callable, Generator
 from datetime import date, timedelta
-from functools import lru_cache
+from functools import cache
 from json.encoder import encode_basestring_ascii
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Generator, Literal, Self, cast, overload
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Self, cast, overload
 
 from Crypto.Hash import MD5, SHA3_512
 from Crypto.Signature import pss
@@ -217,7 +218,7 @@ def generate_key_pair(return_pem: bool = False, bits: int = 2048) -> tuple[str, 
 	return key.export_key().decode(), key.publickey().export_key().decode()
 
 
-@lru_cache(maxsize=None)
+@cache
 def get_signature_public_key_schema_version_1() -> RSA.RsaKey:
 	# RSA import is slow, lazy import
 	from Crypto.PublicKey import RSA
@@ -241,7 +242,7 @@ def get_signature_public_key_schema_version_1() -> RSA.RsaKey:
 	return RSA.construct((tmp[1], tmp[0]))
 
 
-@lru_cache(maxsize=None)
+@cache
 def get_signature_public_key_schema_version_2() -> RSA.RsaKey:
 	# RSA import is slow, lazy import
 	from Crypto.PublicKey import RSA
@@ -370,14 +371,14 @@ class OpsiLicense(BaseModel):
 		return data
 
 	@classmethod
-	def from_dict(cls, data: dict) -> "OpsiLicense":
+	def from_dict(cls, data: dict) -> OpsiLicense:
 		return cls(**data)
 
 	def to_json(self, with_state: bool = False) -> bytes:
 		return json_encode(self.to_dict(serializable=True, with_state=with_state))
 
 	@classmethod
-	def from_json(cls, json_data: bytes) -> "OpsiLicense":
+	def from_json(cls, json_data: bytes) -> OpsiLicense:
 		return cls.from_dict(json_decode(json_data))
 
 	def _hash_base(self, with_signature: bool = True) -> bytes:
@@ -683,7 +684,7 @@ class OpsiLicensePool:
 		test_revoked: bool = True,
 		types: list[str] | None = None,
 		at_date: date | None = None,
-	) -> Generator[OpsiLicense, None, None]:
+	) -> Generator[OpsiLicense]:
 		if not at_date:
 			at_date = date.today()
 
@@ -774,8 +775,7 @@ class OpsiLicensePool:
 				modules[module_id]["state"] = OPSI_MODULE_STATE_LICENSED
 				modules[module_id]["license_ids"].append(lic.id)
 				if lic.type == OPSI_LICENSE_TYPE_CORE:
-					if modules[module_id]["client_number"] < lic.client_number:
-						modules[module_id]["client_number"] = lic.client_number
+					modules[module_id]["client_number"] = max(modules[module_id]["client_number"], lic.client_number)
 				else:
 					modules[module_id]["client_number"] += lic.client_number
 				modules[module_id]["client_number"] = min(modules[module_id]["client_number"], OPSI_LICENSE_CLIENT_NUMBER_UNLIMITED)

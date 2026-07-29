@@ -15,6 +15,7 @@ import signal
 import subprocess
 import sys
 import time
+from collections.abc import Collection, Iterator, Mapping
 from contextlib import contextmanager
 from functools import lru_cache
 from getpass import getuser
@@ -23,7 +24,7 @@ from shutil import which
 from subprocess import DEVNULL, PIPE, STDOUT, Popen, list2cmdline
 from threading import Event, Lock, Thread
 from types import TracebackType
-from typing import Collection, Iterator, Literal, Mapping, Self
+from typing import Literal, Self
 
 from opsi.logging import LOG_TRACE, get_logger, is_log_level_enabled
 from opsi.retry import Retry, RetryConfig, RetryConfigType, get_retry_config
@@ -216,7 +217,7 @@ def disable_file_system_redirection() -> Iterator[None]:
 			ctypes.windll.kernel32.Wow64RevertWow64FsRedirection(old_value)
 
 
-@lru_cache()
+@lru_cache
 def get_process_io_encoding(interpreter: InterpreterType | None = None) -> str:
 	encoding = ""
 	if is_windows() and interpreter in (InterpreterType.CMD, None):
@@ -363,7 +364,7 @@ class Process:
 		arguments: Collection[str | int | float] | None = None,
 		working_dir: str | os.PathLike[str] | None = None,
 		environment: Mapping[str, str] | None = None,
-		timeout: float | int | None = None,
+		timeout: float | None = None,
 		stdin: str | bytes | None = None,
 		close_stdin: bool = True,
 		capture_output: CaptureOutputMode | str = CaptureOutputMode.BOTH,
@@ -1040,7 +1041,7 @@ class Process:
 		"""
 		return self._script
 
-	def is_running(self, *, wait: float | int = 0.01) -> bool:
+	def is_running(self, *, wait: float = 0.01) -> bool:
 		"""
 		Check if the process is still running and
 		:param wait: Time to wait for the process to end before checking, in seconds.
@@ -1048,7 +1049,7 @@ class Process:
 		"""
 		return not self._ended.wait(timeout=wait)
 
-	def stop(self, *, wait_before_stop: float | int | None = None, wait_after_stop: float | int | None = 5) -> bool:
+	def stop(self, *, wait_before_stop: float | None = None, wait_after_stop: float | None = 5) -> bool:
 		"""
 		Stop the process by sending a signal if it is still running.
 		:param wait_before_stop: Time to wait for the process to end before sending a stop signal, in seconds. If None, stop immediately.
@@ -1065,7 +1066,7 @@ class Process:
 		self.wait(timeout=None if wait_after_stop is None else wait_after_stop + 0.5)
 		return self.is_running(wait=0)
 
-	def wait(self, *, timeout: float | int | None = None) -> bool:
+	def wait(self, *, timeout: float | None = None) -> bool:
 		"""
 		Wait for the process to finish.
 		:param timeout: Maximum time to wait in seconds, or None to wait indefinitely.
@@ -1174,7 +1175,7 @@ class Process:
 		return output_text.splitlines()
 
 	def read_bytes(
-		self, *, timeout: float | int | None = None, truncate: bool = True, stdout: bool = True, stderr: bool = True
+		self, *, timeout: float | None = None, truncate: bool = True, stdout: bool = True, stderr: bool = True
 	) -> tuple[bytes, bytes]:
 		"""
 		Read new data from the process's standard output and standard error since the last read.
@@ -1230,7 +1231,7 @@ class Process:
 
 		return stdout_data, stderr_data
 
-	def read_stdout_bytes(self, *, timeout: float | int | None = None, truncate: bool = True) -> bytes:
+	def read_stdout_bytes(self, *, timeout: float | None = None, truncate: bool = True) -> bytes:
 		"""
 		Read new data from the process's standard output since the last read.
 		:param timeout: Maximum time to wait in seconds, or None to wait indefinitely.
@@ -1239,7 +1240,7 @@ class Process:
 		"""
 		return self.read_bytes(timeout=timeout, truncate=truncate, stdout=True, stderr=False)[0]
 
-	def read_stderr_bytes(self, *, timeout: float | int | None = None, truncate: bool = True) -> bytes:
+	def read_stderr_bytes(self, *, timeout: float | None = None, truncate: bool = True) -> bytes:
 		"""
 		Read new data from the process's standard error since the last read.
 		:param timeout: Maximum time to wait in seconds, or None to wait indefinitely.
@@ -1251,7 +1252,7 @@ class Process:
 	def read_text(
 		self,
 		*,
-		timeout: float | int | None = None,
+		timeout: float | None = None,
 		errors: DecodingErrors | str = DecodingErrors.REPLACE,
 		truncate: bool = True,
 	) -> tuple[str, str]:
@@ -1270,7 +1271,7 @@ class Process:
 	def read_stdout_text(
 		self,
 		*,
-		timeout: float | int | None = None,
+		timeout: float | None = None,
 		errors: DecodingErrors | str = DecodingErrors.REPLACE,
 		truncate: bool = True,
 	) -> str:
@@ -1288,7 +1289,7 @@ class Process:
 	def read_stderr_text(
 		self,
 		*,
-		timeout: float | int | None = None,
+		timeout: float | None = None,
 		errors: DecodingErrors | str = DecodingErrors.REPLACE,
 		truncate: bool = True,
 	) -> str:
@@ -1309,7 +1310,7 @@ def run_command(
 	*,
 	working_dir: str | os.PathLike[str] | None = None,
 	environment: Mapping[str, str] | None = None,
-	timeout: float | int | None = None,
+	timeout: float | None = None,
 	stdin: str | bytes | None = None,
 	capture_output: CaptureOutputMode | str = CaptureOutputMode.BOTH,
 	discard_output: DiscardOutputMode | str = DiscardOutputMode.NONE,
@@ -1359,7 +1360,7 @@ def run_script(
 	arguments: Collection[str | int | float] | None = None,
 	working_dir: str | os.PathLike[str] | None = None,
 	environment: Mapping[str, str] | None = None,
-	timeout: float | int | None = None,
+	timeout: float | None = None,
 	stdin: str | bytes | None = None,
 	capture_output: CaptureOutputMode | str = CaptureOutputMode.BOTH,
 	discard_output: DiscardOutputMode | str = DiscardOutputMode.NONE,
@@ -1413,7 +1414,7 @@ def run_script_file(
 	arguments: Collection[str | int | float] | None = None,
 	working_dir: str | os.PathLike[str] | None = None,
 	environment: Mapping[str, str] | None = None,
-	timeout: float | int | None = None,
+	timeout: float | None = None,
 	stdin: str | bytes | None = None,
 	capture_output: CaptureOutputMode | str = CaptureOutputMode.BOTH,
 	discard_output: DiscardOutputMode | str = DiscardOutputMode.NONE,

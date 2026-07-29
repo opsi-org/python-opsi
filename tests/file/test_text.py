@@ -69,10 +69,9 @@ def test_detect_encoding(tmp_path: Path, encoding: str) -> None:
 	with TextFile(file_path) as file:
 		assert file.get_encoding() == "cp1250"
 
-	with patch("opsi.file.text._text.TextFile._encodings_to_try", ["utf-8", "utf-16"]):
-		with pytest.raises(UnicodeDecodeError):
-			with TextFile(file_path) as file:
-				file.get_encoding()
+	with patch("opsi.file.text._text.TextFile._encodings_to_try", ["utf-8", "utf-16"]), pytest.raises(UnicodeDecodeError):
+		with TextFile(file_path) as file:
+			file.get_encoding()
 
 
 @pytest.mark.parametrize("line_ending", ["\n", "\r\n"])
@@ -126,9 +125,8 @@ def test_change_encoding_and_line_ending(tmp_path: Path) -> None:
 		with TextFile(file_path) as text_file:
 			text_file.set_encoding("invalid-encoding")
 
-	with pytest.raises(ValueError, match=r"Line ending must be '\\n', '\\r\\n' or ''"):
-		with TextFile(file_path) as text_file:
-			text_file.set_line_ending("invalid-line-ending")  # type: ignore[invalid-argument-type]
+	with pytest.raises(ValueError, match=r"Line ending must be '\\n', '\\r\\n' or ''"), TextFile(file_path) as text_file:
+		text_file.set_line_ending("invalid-line-ending")  # type: ignore[invalid-argument-type]
 
 
 @pytest.mark.parametrize("path_type", PATH_TYPES)

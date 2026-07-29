@@ -22,4 +22,4 @@ else:
 	raise OperatingSystemUnsupportedError(f"{get_system()} not supported")
 
 
-__all__ = ["install_ca", "load_cas", "load_ca", "remove_ca"]
+__all__ = ["install_ca", "load_ca", "load_cas", "remove_ca"]

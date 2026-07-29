@@ -70,14 +70,15 @@ from opsi.opsi.service.model.object._object import (
 )
 
 __all__ = (
+	"OBJECT_CLASSES",
 	"AuditHardware",
 	"AuditHardwareOnHost",
 	"AuditLog",
 	"AuditLogAuthentication",
-	"AuditLogProductActionRequest",
 	"AuditLogAuthenticationFailureReason",
 	"AuditLogAuthenticationLogoutReason",
 	"AuditLogEventType",
+	"AuditLogProductActionRequest",
 	"AuditSoftware",
 	"AuditSoftwareOnClient",
 	"AuditSoftwareToLicensePool",
@@ -119,6 +120,8 @@ __all__ = (
 	"User",
 	"VolumeSoftwareLicense",
 	"decode_ident",
+	"deserialize",
+	"from_json",
 	"generate_opsi_host_key",
 	"get_backend_method_prefix",
 	"get_foreign_id_attributes",
@@ -128,9 +131,6 @@ __all__ = (
 	"mandatory_constructor_args",
 	"objects_differ",
 	"opsi_timestamp",
-	"OBJECT_CLASSES",
-	"from_json",
-	"to_json",
 	"serialize",
-	"deserialize",
+	"to_json",
 )

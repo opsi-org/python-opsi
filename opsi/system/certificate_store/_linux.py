@@ -4,9 +4,9 @@
 # License: AGPL-3.0-only
 
 import os
+from collections.abc import Generator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Generator
 
 import distro
 from cryptography import x509
@@ -90,7 +90,7 @@ def install_ca(ca_cert: x509.Certificate) -> None:
 	run_command(info.ca_cert_update_cmd, timeout=10)
 
 
-def load_cas(subject_name: str) -> Generator[x509.Certificate, None, None]:
+def load_cas(subject_name: str) -> Generator[x509.Certificate]:
 	cert_info = get_system_ca_cert_info()
 	if not cert_info.custom_ca_certs_path.exists():
 		return

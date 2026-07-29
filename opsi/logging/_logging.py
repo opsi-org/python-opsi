@@ -17,13 +17,14 @@ import re
 import sys
 import tempfile
 import warnings
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from logging import NOTSET, FileHandler, Formatter, Handler, LogRecord, NullHandler, PlaceHolder, StreamHandler
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from traceback import format_stack, format_tb
-from typing import IO, TYPE_CHECKING, Any, Generator
+from typing import IO, TYPE_CHECKING, Any
 from urllib.parse import quote
 
 from colorlog import ColoredFormatter
@@ -833,7 +834,7 @@ def use_logging_config(
 	log_file: str | None = None,
 	file_level: int | None = None,
 	file_format: str | None = None,
-) -> Generator[None, None, None]:
+) -> Generator[None]:
 	"""
 	Contextmanager to set a logging config and reset it afterwards.
 	"""
@@ -895,7 +896,7 @@ def set_format(
 
 
 @contextmanager
-def log_context(new_context: dict[str, Any] | None, *, replace: bool = True) -> Generator[None, None, None]:
+def log_context(new_context: dict[str, Any] | None, *, replace: bool = True) -> Generator[None]:
 	"""
 	Contextmanager to set a context.
 

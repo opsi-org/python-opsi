@@ -4,9 +4,9 @@
 # License: AGPL-3.0-only
 
 import platform
+from collections.abc import Iterable
 from functools import lru_cache
 from pathlib import Path
-from typing import Iterable
 
 
 @lru_cache

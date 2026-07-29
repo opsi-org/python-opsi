@@ -212,7 +212,7 @@ def get_hostnames() -> set[str]:
 				names.add(hostname)
 				for alias in aliases:
 					names.add(alias)
-		except (socket.error, TimeoutError) as err:
+		except (OSError, TimeoutError) as err:
 			logger.info("No hostname for %s: %s", addr, err)
 	return names
 

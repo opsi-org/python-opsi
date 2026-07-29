@@ -5,7 +5,6 @@
 
 import json
 import os
-import socket
 import ssl
 import struct
 import time
@@ -578,7 +577,7 @@ def test_http_request_handler_ws_send_and_read_error_paths() -> None:
 
 	class SocketFailingWriter:
 		def write(self, _data: bytes) -> None:
-			raise socket.error("broken")
+			raise OSError("broken")
 
 	handler_any.wfile = SocketFailingWriter()
 	handler._ws_send_message(handler._opcode_binary, b"data")
@@ -651,7 +650,7 @@ def test_http_request_handler_ws_read_messages_closes_on_errors() -> None:
 
 	def read_sequence() -> None:
 		if len(close_calls) == 0:
-			raise socket.error("fail")
+			raise OSError("fail")
 
 	handler_any._ws_read_next_message = read_sequence
 	handler._ws_read_messages()
@@ -932,7 +931,6 @@ def test_http_test_server_stop_restart_and_context_manager_failure() -> None:
 	with (
 		patch("opsi.testing.helper._http.HTTPTestServer.start", autospec=True),
 		patch("opsi.testing.helper._http.HTTPTestServer.wait_for_server_socket", return_value=False),
-		pytest.raises(RuntimeError, match="Failed to start HTTPTestServer"),
+		pytest.raises(RuntimeError, match="Failed to start HTTPTestServer"),http_test_server()
 	):
-		with http_test_server():
-			pass
+		pass

@@ -7,9 +7,9 @@ from __future__ import annotations
 
 import builtins
 import os
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator
 
 from configupdater import ConfigUpdater
 
@@ -26,7 +26,6 @@ logger = get_logger("opsi")
 class IniParseError(Exception):
 	"""Raised when an INI file cannot be read or parsed."""
 
-	pass
 
 
 # INIFile class, should be used via opsi.file.ini.open
@@ -194,7 +193,7 @@ class INIFile:
 
 
 @contextmanager
-def open(ini_file: str | os.PathLike[str], /, *, encoding: str = ENCODING) -> Generator[INIFile, None, None]:
+def open(ini_file: str | os.PathLike[str], /, *, encoding: str = ENCODING) -> Generator[INIFile]:
 	"""
 	Open an INI file for reading and modification.
 

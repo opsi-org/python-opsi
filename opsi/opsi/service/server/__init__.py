@@ -8,11 +8,11 @@ from opsi.opsi.service.server._opsiconfd import get_opsiconfd_config
 from opsi.opsi.service.server._permission import DirPermission, FilePermission, PermissionRegistry, set_rights
 
 __all__ = [
-	"OpsiConfig",
-	"get_opsiconfd_config",
-	"get_opsiconfd_user",
 	"DirPermission",
 	"FilePermission",
+	"OpsiConfig",
 	"PermissionRegistry",
+	"get_opsiconfd_config",
+	"get_opsiconfd_user",
 	"set_rights",
 ]

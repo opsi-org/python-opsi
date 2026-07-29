@@ -5,8 +5,9 @@
 
 import datetime
 import time
+from collections.abc import Generator
 from contextlib import nullcontext
-from typing import Any, Generator
+from typing import Any
 from uuid import UUID
 
 import pytest
@@ -135,7 +136,7 @@ def test_to_object_class_from_hash(opsi_client: OpsiClient, cls: type[Host | Ops
 	assert isinstance(to_object_class(opsi_client.toHash(), cls), cls)
 
 
-def funky_generator() -> Generator[str, None, None]:
+def funky_generator() -> Generator[str]:
 	yield "y"
 	yield "u"
 	yield "so"
@@ -214,7 +215,7 @@ def test_to_bool_list_with_negative_list() -> None:
 		assert i is False
 
 
-@pytest.mark.parametrize("value, expected", (("100", 100), ("-100", -100), (int(1000000000000000), 1000000000000000)))
+@pytest.mark.parametrize("value, expected", (("100", 100), ("-100", -100), (1000000000000000, 1000000000000000)))
 def test_to_int(value: Any, expected: Any) -> None:
 	assert expected == to_int(value)
 
@@ -853,7 +854,7 @@ def test_to_product_property_type(value: str, expected: str | None, exc: type[Ex
 @pytest.mark.parametrize(
 	"value, expected, exc", (("100", 100, None), (-101, -100, None), (1000, 100, None), (0.0, 0, None), ("high", None, ValueError))
 )
-def test_to_product_priority(value: int | float | str, expected: int | None, exc: type[Exception] | None) -> None:
+def test_to_product_priority(value: float | str, expected: int | None, exc: type[Exception] | None) -> None:
 	if exc:
 		with pytest.raises(exc):
 			to_product_priority(value)
@@ -964,7 +965,7 @@ def test_fto_group_type_standardises_case(inp: str, expected: str) -> None:
 		("	1.4   ", 1.4),
 	],
 )
-def test_to_float(inp: str | float | int, expected: float) -> None:
+def test_to_float(inp: str | float, expected: float) -> None:
 	assert expected == to_float(inp)
 
 

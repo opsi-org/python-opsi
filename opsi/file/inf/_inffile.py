@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field, fields
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 from uuid import UUID
@@ -617,7 +617,7 @@ class INFFile:
 				while len(ver) < 4:
 					ver.append(0)
 				month, day, year = (int(val) for val in date_str.split("/"))
-				date = datetime(year, month, day, tzinfo=timezone.utc)
+				date = datetime(year, month, day, tzinfo=UTC)
 				val = INFDriverVer(date=date, version=(ver[0], ver[1], ver[2], ver[3]))
 			kwargs[field_name] = val
 		self.version = INFVersion(**kwargs)  # type: ignore[arg-type]
@@ -1013,7 +1013,7 @@ class INFFile:
 		guid = UUID(self.version.ClassGUID)
 		version = self.version.DriverVer.version
 		# 100-nanoseconds since Jan 1 1601
-		timestamp = int((self.version.DriverVer.date.timestamp() - datetime(1601, 1, 1, tzinfo=timezone.utc).timestamp()) * 10_000_000)
+		timestamp = int((self.version.DriverVer.date.timestamp() - datetime(1601, 1, 1, tzinfo=UTC).timestamp()) * 10_000_000)
 		hex_version = reg_hex(
 			b"\x00\xff\x09\x00\x00\x00\x00\x00"
 			+ guid.bytes_le
@@ -1026,7 +1026,7 @@ class INFFile:
 			null_terminated=False,
 		)
 		import_date = reg_hex(
-			int((current_timestamp() - datetime(1601, 1, 1, tzinfo=timezone.utc).timestamp()) * 10_000_000).to_bytes(8, "little"),
+			int((current_timestamp() - datetime(1601, 1, 1, tzinfo=UTC).timestamp()) * 10_000_000).to_bytes(8, "little"),
 			null_terminated=False,
 		)
 		reg[package_root] = [

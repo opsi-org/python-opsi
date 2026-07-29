@@ -7,7 +7,7 @@
 test_package_wim
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal, cast
 from unittest.mock import PropertyMock, patch
@@ -492,8 +492,8 @@ def test_wim_info() -> None:
 					name="Windows 10 Pro N",
 					directory_count=19175,
 					file_count=91744,
-					creation_time=datetime(2015, 7, 10, 16, 37, 14, tzinfo=timezone.utc),
-					last_modification_time=datetime(2015, 7, 10, 16, 37, 49, tzinfo=timezone.utc),
+					creation_time=datetime(2015, 7, 10, 16, 37, 14, tzinfo=UTC),
+					last_modification_time=datetime(2015, 7, 10, 16, 37, 49, tzinfo=UTC),
 					total_bytes=13147213334,
 					hard_link_bytes=5789415254,
 					wimboot_compatible=False,
@@ -523,8 +523,8 @@ def test_wim_info() -> None:
 					name="Windows 10 Home N",
 					directory_count=19059,
 					file_count=91075,
-					creation_time=datetime(2015, 7, 10, 16, 42, 12, tzinfo=timezone.utc),
-					last_modification_time=datetime(2015, 7, 10, 16, 42, 35, tzinfo=timezone.utc),
+					creation_time=datetime(2015, 7, 10, 16, 42, 12, tzinfo=UTC),
+					last_modification_time=datetime(2015, 7, 10, 16, 42, 35, tzinfo=UTC),
 					total_bytes=13119745008,
 					hard_link_bytes=5748302305,
 					wimboot_compatible=False,
@@ -604,6 +604,6 @@ def test_wim_capture(tmp_path: Path) -> None:
 	assert img.file_count == 2
 	assert img.hard_link_bytes == 0
 	print(img.creation_time.tzinfo)
-	assert abs((img.creation_time - datetime.now(tz=timezone.utc)).total_seconds()) < 10
-	assert abs((img.last_modification_time - datetime.now(tz=timezone.utc)).total_seconds()) < 10
-	assert abs((img.last_modification_time - datetime.now(tz=timezone.utc)).total_seconds()) < 10
+	assert abs((img.creation_time - datetime.now(tz=UTC)).total_seconds()) < 10
+	assert abs((img.last_modification_time - datetime.now(tz=UTC)).total_seconds()) < 10
+	assert abs((img.last_modification_time - datetime.now(tz=UTC)).total_seconds()) < 10

@@ -12,13 +12,14 @@ This module contains valueious methods to convert objects to specific types.
 from __future__ import annotations
 
 import datetime
+import enum
 import ipaddress
 import os
 import re
 import time
 import types
-import enum
-from typing import TYPE_CHECKING, Any, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from opsi.logging import get_logger
@@ -322,8 +323,7 @@ def to_fqdn(value: Any) -> str:
 	value = to_string_lower(value)
 	if not _FQDN_REGEX.search(value):
 		raise ValueError(f"Bad fqdn: '{value}'")
-	if value.endswith("."):
-		value = value[:-1]
+	value = value.removesuffix(".")
 	return value
 
 

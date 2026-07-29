@@ -3,10 +3,11 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
+from collections.abc import Generator
 from contextlib import contextmanager
 from fcntl import LOCK_EX, LOCK_NB, LOCK_SH, LOCK_UN, flock, lockf
 from time import monotonic, sleep
-from typing import IO, BinaryIO, Generator, TextIO
+from typing import IO, BinaryIO, TextIO
 
 from opsi.logging import get_logger
 from opsi.system.file.lock._common import LockMethod
@@ -19,7 +20,7 @@ logger = get_logger("opsi")
 @contextmanager
 def lock_file(
 	file: TextIO | BinaryIO | IO, exclusive: bool = False, timeout: float = 5.0, lock_method: LockMethod | None = None
-) -> Generator[None, None, None]:
+) -> Generator[None]:
 	"""
 	Lock a file using either flock or lockf.
 	:param file: The file to lock.
@@ -36,7 +37,7 @@ def lock_file(
 		try:
 			lock_meth(file, lock_flags)
 			break
-		except (IOError, BlockingIOError):
+		except (OSError, BlockingIOError):
 			if monotonic() >= start + timeout:
 				raise TimeoutError(f"Failed to lock file after {timeout:0.2f} seconds") from None
 			sleep(0.1)

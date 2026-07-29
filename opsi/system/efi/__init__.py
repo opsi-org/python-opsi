@@ -26,12 +26,12 @@ else:
 
 
 __all__ = [
-	"EFIBootManager",
-	"EFIBootEntry",
 	"DevicePathType",
-	"EFIVariableAttribute",
-	"get_efi_nvram_stats",
+	"EFIBootEntry",
+	"EFIBootManager",
 	"EFINVRAMStats",
+	"EFIVariableAttribute",
 	"cleanup_efi_nvram",
+	"get_efi_nvram_stats",
 	"get_system_uuid",
 ]

@@ -3,10 +3,11 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-import platform
 import enum
-from opsi.util.pattern import MappedStrEnum
+import platform
+
 from opsi.exception import OperatingSystemUnsupportedError
+from opsi.util.pattern import MappedStrEnum
 
 
 class OperatingSystemType(MappedStrEnum):

@@ -4,16 +4,16 @@
 # License: AGPL-3.0-only
 
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from ipaddress import ip_address
 from pathlib import Path
 from typing import cast
+from warnings import deprecated
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509 import CertificateBuilder, CertificateSigningRequestBuilder
-from typing_extensions import deprecated
 
 from opsi.logging import get_logger
 
@@ -162,8 +162,8 @@ def create_ca(
 		subject_name=subject,
 		public_key=key.public_key(),
 		serial_number=x509.random_serial_number(),
-		not_valid_before=datetime.now(tz=timezone.utc),
-		not_valid_after=datetime.now(tz=timezone.utc) + timedelta(days=valid_days),
+		not_valid_before=datetime.now(tz=UTC),
+		not_valid_after=datetime.now(tz=UTC) + timedelta(days=valid_days),
 	)
 	builder = builder.add_extension(x509.SubjectKeyIdentifier.from_public_key(key.public_key()), critical=False)
 	builder = builder.add_extension(x509.AuthorityKeyIdentifier.from_issuer_public_key(key.public_key()), critical=False)
@@ -237,8 +237,8 @@ def create_server_cert(
 		subject_name=subject,
 		public_key=key.public_key(),
 		serial_number=x509.random_serial_number(),
-		not_valid_before=datetime.now(tz=timezone.utc),
-		not_valid_after=datetime.now(tz=timezone.utc) + timedelta(days=valid_days),
+		not_valid_before=datetime.now(tz=UTC),
+		not_valid_after=datetime.now(tz=UTC) + timedelta(days=valid_days),
 	)
 	builder = builder.add_extension(x509.SubjectKeyIdentifier.from_public_key(key.public_key()), critical=False)
 	builder = builder.add_extension(x509.AuthorityKeyIdentifier.from_issuer_public_key(ca_key.public_key()), critical=False)

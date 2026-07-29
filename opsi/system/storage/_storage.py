@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import enum
 import errno
 import fcntl
 import json
@@ -16,9 +17,9 @@ from random import randrange
 from subprocess import run
 from typing import Generic, Literal, TypeVar, cast, overload
 from uuid import UUID, uuid4
-import enum
-from opsi.util.pattern import MappedStrEnum
+
 from opsi.logging import get_logger
+from opsi.util.pattern import MappedStrEnum
 
 logger = get_logger("opsi.system.storage")
 

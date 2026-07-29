@@ -6,20 +6,17 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Generator
 
 from opsi.logging import get_logger
-
-if TYPE_CHECKING:
-	pass
 
 logger = get_logger("opsi")
 
 
 @contextmanager
-def chdir(new_dir: Path) -> Generator[None, None, None]:
+def chdir(new_dir: Path) -> Generator[None]:
 	try:
 		old_path = os.getcwd()
 	except FileNotFoundError:

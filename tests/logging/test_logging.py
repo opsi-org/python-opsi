@@ -13,7 +13,7 @@ import tempfile
 import threading
 import time
 import warnings
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from multiprocessing import Process
 from pathlib import Path
 from typing import Any
@@ -353,23 +353,22 @@ def test_context_threads() -> None:
 				logger.essential("MyModule.run")
 				common_work()
 
-	with log_context({"whoami": "MAIN"}):
-		with log_stream(LOG_INFO, format="%(contextstring)s %(message)s") as stream:
-			main = Main()
-			try:
-				main.run()
-			except KeyboardInterrupt:
-				pass
-			for _thread in threading.enumerate():
-				if hasattr(_thread, "stop"):
-					_thread.stop()  # type: ignore[attr-defined]
-					_thread.join()
+	with log_context({"whoami": "MAIN"}), log_stream(LOG_INFO, format="%(contextstring)s %(message)s") as stream:
+		main = Main()
+		try:
+			main.run()
+		except KeyboardInterrupt:
+			pass
+		for _thread in threading.enumerate():
+			if hasattr(_thread, "stop"):
+				_thread.stop()  # type: ignore[attr-defined]
+				_thread.join()
 
-			stream.seek(0)
-			log = stream.read()
-			assert re.search(r"module Client-1.*MyModule.run", log) is not None
-			# to check for corrent handling of async contexti when eventloop is not running in main thread
-			assert re.search(r"handler for client Client-0.*handling client Client-1", log) is None
+		stream.seek(0)
+		log = stream.read()
+		assert re.search(r"module Client-1.*MyModule.run", log) is not None
+		# to check for corrent handling of async contexti when eventloop is not running in main thread
+		assert re.search(r"handler for client Client-0.*handling client Client-1", log) is None
 
 
 def test_observable_handler() -> None:
@@ -701,17 +700,17 @@ def test_sqlite_handler_base(tmp_path: Path) -> None:
 
 	assert records[0].msecs == round(records[0].created % 1 * 1000)
 	assert records[0].levelno == logging.INFO
-	assert getattr(records[0], "opsilevel") == LOG_INFO
+	assert records[0].opsilevel == LOG_INFO
 	assert records[0].getMessage() == f"info message: arg1 1 {SECRET_REPLACEMENT_STRING}"
-	assert getattr(records[0], "context") == {"ctx1": "val1", "ctx2": "val2", "logger": "root"}
+	assert records[0].context == {"ctx1": "val1", "ctx2": "val2", "logger": "root"}
 
 	assert now_ms <= records[1].created * 1000 <= now_ms + 5000
 	assert records[1].msecs == round(records[1].created % 1 * 1000)
 	assert records[1].created > records[0].created
 	assert records[1].levelno == logging.DEBUG
-	assert getattr(records[1], "opsilevel") == LOG_DEBUG
+	assert records[1].opsilevel == LOG_DEBUG
 	assert records[1].getMessage() == f"debug {SECRET_REPLACEMENT_STRING} message"
-	assert getattr(records[1], "context") == {"logger": "root"}
+	assert records[1].context == {"logger": "root"}
 
 	assert records[1].created - records[0].created >= 1.09
 
@@ -764,17 +763,17 @@ def test_sqlite_handler_base(tmp_path: Path) -> None:
 	records = list(sqlite_handler.get_records(max_level=LOG_WARNING))
 	assert len(records) == 4_000 * 3
 	for record in records:
-		assert getattr(record, "opsilevel") <= LOG_WARNING
+		assert record.opsilevel <= LOG_WARNING
 
 	records = list(sqlite_handler.get_records(max_level=INFO))
 	assert len(records) == 6_000 * 3
 	for record in records:
-		assert getattr(record, "opsilevel") <= LOG_INFO
+		assert record.opsilevel <= LOG_INFO
 
 	records = list(sqlite_handler.get_records(max_level=LOG_WARNING))
 	assert len(records) == 4_000 * 3
 	for record in records:
-		assert getattr(record, "opsilevel") <= LOG_WARNING
+		assert record.opsilevel <= LOG_WARNING
 
 	records = list(sqlite_handler.get_records(pid=os.getpid()))
 	assert len(records) == 27_000
@@ -804,7 +803,7 @@ def test_sqlite_handler_base(tmp_path: Path) -> None:
 
 	time.sleep(1)
 	now_unix = unix_timestamp()
-	now_utc = datetime.now(timezone.utc)
+	now_utc = datetime.now(UTC)
 	now_loc: datetime = datetime.now()
 	if is_windows():
 		# On Windows, datetime with ZoneInfo("US/Pacific") does not exist
@@ -862,10 +861,9 @@ def test_sqlite_errors(tmp_path: Path) -> None:
 def test_sqlite_log_database_context_manager(tmp_path: Path) -> None:
 	log_db = Path(tmp_path) / "logs_context_manager.db"
 	sqlite_log_database = None
-	with pytest.raises(RuntimeError):
-		with SQLiteLogDatabase(db_path=log_db) as db:
-			sqlite_log_database = db
-			raise RuntimeError("Test exception to check context manager handling")
+	with pytest.raises(RuntimeError), SQLiteLogDatabase(db_path=log_db) as db:
+		sqlite_log_database = db
+		raise RuntimeError("Test exception to check context manager handling")
 
 	assert sqlite_log_database
 	assert sqlite_log_database._connection is None

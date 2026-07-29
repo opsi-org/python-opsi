@@ -8,11 +8,11 @@ from __future__ import annotations
 import shlex
 import time
 from asyncio import Event, Task, get_running_loop, sleep
+from collections.abc import Callable
 from contextlib import nullcontext
 from pathlib import Path
 from threading import Lock, Thread
 from time import monotonic
-from typing import Callable
 
 from psutil import AccessDenied, NoSuchProcess, Process
 
@@ -295,7 +295,7 @@ class Terminal:
 		except TimeoutError as err:
 			logger.info("Terminal timed out: %s", err)
 			logger.debug(err, exc_info=True)
-		except (IOError, EOFError) as err:
+		except (OSError, EOFError) as err:
 			logger.debug("Terminal IO error: %s", err)
 			if not self._closing:
 				await self.close()

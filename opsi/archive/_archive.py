@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-
+import enum
 import fnmatch
 import os
 import re
@@ -14,12 +14,13 @@ import sys
 import tarfile
 import time
 from abc import ABC
+from collections.abc import Generator
 from contextlib import nullcontext
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path, PurePosixPath
 from threading import Lock
-from typing import TYPE_CHECKING, Any, Generator, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import packaging.version
 import zstandard
@@ -29,7 +30,6 @@ from opsi.opsi.service.server import OpsiConfig
 from opsi.process import Process, ProcessError, run_command
 from opsi.system.info import is_linux
 from opsi.util.pattern import MappedStrEnum
-import enum
 
 if TYPE_CHECKING:
 	from _typeshed import SupportsRead
@@ -269,17 +269,16 @@ def extract_archive_external(
 		progress = ArchiveProgress(total=archive.stat().st_size)
 		progress.register_progress_listener(progress_listener)
 
-	with Process(script=cmd, interpreter="bash", working_dir=destination, close_stdin=False) as proc:
-		with open(archive, "rb") as file:
-			while True:
-				data = file.read(chunk_size)
-				if data:
-					proc.write_bytes(data)
-					if progress:
-						progress.advance(len(data))
-				else:
-					proc.write_bytes(data, close=True)
-					break
+	with Process(script=cmd, interpreter="bash", working_dir=destination, close_stdin=False) as proc, open(archive, "rb") as file:
+		while True:
+			data = file.read(chunk_size)
+			if data:
+				proc.write_bytes(data)
+				if progress:
+					progress.advance(len(data))
+			else:
+				proc.write_bytes(data, close=True)
+				break
 
 
 def extract_archive_internal(
@@ -315,9 +314,7 @@ def extract_archive(
 	use_commands = False
 	if is_linux():
 		file_type = get_file_type(archive)
-		if archive.suffixes and ".cpio" in archive.suffixes[-2:] or file_type == "cpio":
-			use_commands = True
-		elif (archive.suffixes and archive.suffixes[-1] in (".gz", ".gzip") or file_type == "gzip") and use_pigz():
+		if archive.suffixes and ".cpio" in archive.suffixes[-2:] or file_type == "cpio" or (archive.suffixes and archive.suffixes[-1] in (".gz", ".gzip") or file_type == "gzip") and use_pigz():
 			use_commands = True
 	if use_commands:
 		return extract_archive_external(archive, destination, file_pattern=file_pattern, progress_listener=progress_listener)
@@ -363,7 +360,7 @@ class ArchiveFile:
 
 def get_archive_files(
 	base_dir: Path, follow_symlinks: bool = False, exclude_dirs: list[str] | None = None, exclude_files: list[str] | None = None
-) -> Generator[ArchiveFile, None, None]:
+) -> Generator[ArchiveFile]:
 	"""
 	Search files in base_dir and return a list of ArchiveFile objects.
 	Links and empty directories are also included.

@@ -12,13 +12,14 @@ As an example this contains classes for hosts, products, configurations.
 from __future__ import annotations
 
 import secrets
+from collections.abc import Callable, Generator
 from dataclasses import asdict, dataclass
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from enum import Enum
 from functools import lru_cache
 from inspect import getfullargspec
 from types import GeneratorType
-from typing import Any, Callable, Generator, Self, Type, TypeVar, cast
+from typing import Any, Self, TypeVar, cast
 
 from opsi.logging import get_logger
 from opsi.opsi.service.model.type import (
@@ -76,7 +77,7 @@ logger = get_logger("opsi")
 BaseObjectT = TypeVar("BaseObjectT", bound="BaseObject")
 
 _now = datetime.now
-_utc = timezone.utc
+_utc = UTC
 
 
 def opsi_timestamp(date_only: bool = False) -> str:
@@ -208,12 +209,12 @@ class BaseObject:
 		return self._is_generated_default
 
 	@classmethod
-	def from_dict(cls: type[BaseObjectT], _dict: dict[str, Any]) -> BaseObjectT:
+	def from_dict(cls, _dict: dict[str, Any]) -> Self:
 		if cls.copy_from_hash:
 			_dict = _dict.copy()
-		_cls: type[BaseObjectT] = cls
+		_cls: type[Self] = cls
 		try:
-			_cls = cast(type[BaseObjectT], get_object_type(_dict.pop("type")))
+			_cls = cast(type[Self], get_object_type(_dict.pop("type")))
 		except KeyError:
 			pass
 
@@ -288,7 +289,7 @@ class BaseObject:
 		return self.__str__()
 
 
-@lru_cache()
+@lru_cache
 def mandatory_constructor_args(_class: type[BaseObject]) -> list[str]:
 	cache_key = _class.__name__
 	spec = getfullargspec(_class.__init__)
@@ -304,7 +305,7 @@ def mandatory_constructor_args(_class: type[BaseObject]) -> list[str]:
 	return mandatory
 
 
-@lru_cache()
+@lru_cache
 def get_ident_attributes(_class: type[BaseObject]) -> tuple[str, ...]:
 	ident_attributes = tuple(mandatory_constructor_args(_class))
 	if "hardwareClass" in ident_attributes:
@@ -312,12 +313,12 @@ def get_ident_attributes(_class: type[BaseObject]) -> tuple[str, ...]:
 	return ident_attributes
 
 
-@lru_cache()
+@lru_cache
 def get_foreign_id_attributes(_class: type[BaseObject]) -> Any:
 	return _class.foreign_id_attributes
 
 
-@lru_cache()
+@lru_cache
 def get_possible_class_attributes(_class: type[BaseObject]) -> set[str]:
 	"""
 	Returns the possible attributes of a class.
@@ -337,7 +338,7 @@ def get_possible_class_attributes(_class: type[BaseObject]) -> set[str]:
 	return attributes_set
 
 
-@lru_cache()
+@lru_cache
 def get_backend_method_prefix(_class: type[BaseObject]) -> Any:
 	return _class.backend_method_prefix
 
@@ -1900,7 +1901,7 @@ class ProductProperty(Entity):
 			self.multiValue = True
 
 	def __str__(self) -> str:
-		def getAttributes() -> Generator[str, None, None]:
+		def getAttributes() -> Generator[str]:
 			yield f"productId='{self.productId}'"
 			yield f"productVersion='{self.productVersion}'"
 			yield f"packageVersion='{self.packageVersion}'"
@@ -1995,7 +1996,7 @@ class BoolProductProperty(ProductProperty):
 		self.editable = False
 
 	def __str__(self) -> str:
-		def getAttributes() -> Generator[str, None, None]:
+		def getAttributes() -> Generator[str]:
 			yield f"productId='{self.productId}'"
 			yield f"productVersion='{self.productVersion}'"
 			yield f"packageVersion='{self.packageVersion}'"
@@ -2411,7 +2412,7 @@ class ProductPropertyState(Relationship):
 		self.values.sort()
 
 	def __str__(self) -> str:
-		def get_attributes() -> Generator[str, None, None]:
+		def get_attributes() -> Generator[str]:
 			yield f"productId='{self.productId}'"
 			yield f"propertyId='{self.propertyId}'"
 			yield f"objectId='{self.objectId}'"
@@ -3706,8 +3707,8 @@ Relationship.sub_classes["AuditHardwareOnHost"] = AuditHardwareOnHost
 OBJECT_CLASSES = {name: cls for (name, cls) in globals().items() if isinstance(cls, type) and issubclass(cls, BaseObject)}
 
 
-@lru_cache()
-def get_object_type(object_type: str) -> Type[BaseObject]:
+@lru_cache
+def get_object_type(object_type: str) -> type[BaseObject]:
 	return OBJECT_CLASSES[object_type]
 
 

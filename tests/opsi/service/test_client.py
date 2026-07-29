@@ -16,13 +16,14 @@ import ssl
 import string
 import time
 import traceback
+from collections.abc import Generator, Iterable
 from contextlib import contextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from socket import AF_INET
 from ssl import SSLContext
 from threading import Event, Thread
-from typing import Any, Generator, Iterable
+from typing import Any
 from unittest import mock
 from urllib.parse import unquote
 from warnings import catch_warnings, simplefilter
@@ -123,7 +124,7 @@ class MyConnectionListener(ServiceConnectionListener):
 	def connection_open(self, service_client: ServiceClient) -> None:
 		self.events.append(("open", service_client, None))
 
-	def connection_established(self, service_client: "ServiceClient") -> None:
+	def connection_established(self, service_client: ServiceClient) -> None:
 		self.events.append(("established", service_client, None))
 
 	def connection_failed(self, service_client: ServiceClient, exception: Exception) -> None:
@@ -492,15 +493,15 @@ def test_get_opsi_ca_certs_state(tmp_path: Path) -> None:
 
 	class MockCertificateBuilder(x509.CertificateBuilder):
 		def __init__(self, **kwargs: Any) -> None:
-			kwargs["not_valid_before"] = datetime.now(tz=timezone.utc) - timedelta(days=200)
-			kwargs["not_valid_after"] = datetime.now(tz=timezone.utc) - timedelta(days=100)
+			kwargs["not_valid_before"] = datetime.now(tz=UTC) - timedelta(days=200)
+			kwargs["not_valid_after"] = datetime.now(tz=UTC) - timedelta(days=100)
 			print("MockCertificateBuilder", kwargs)
 			super().__init__(**kwargs)
 
 	with mock.patch("opsi.crypt.ssl._ssl.CertificateBuilder", MockCertificateBuilder):
 		ca_cert, _ca_key = create_ca(subject={"CN": "python-opsi-common test CA 1"}, valid_days=100)
-		assert ca_cert.not_valid_before_utc < datetime.now(tz=timezone.utc)
-		assert ca_cert.not_valid_after_utc < datetime.now(tz=timezone.utc)
+		assert ca_cert.not_valid_before_utc < datetime.now(tz=UTC)
+		assert ca_cert.not_valid_after_utc < datetime.now(tz=UTC)
 		certs = [ca_cert]
 	service_client.write_ca_cert_file(certs)
 	service_client.handle_uib_opsi_ca_in_cert_file("add")
@@ -539,7 +540,7 @@ def test_verify(tmp_path: Path, server_version: str, pem_name: str) -> None:
 
 	opsi_ca_file_on_client = tmp_path / "opsi_ca_file_on_client.pem"
 
-	print(f"UTC: {datetime.now(tz=timezone.utc)}")
+	print(f"UTC: {datetime.now(tz=UTC)}")
 	print(f"CA cert: {ca_cert.not_valid_before_utc} - {ca_cert.not_valid_after_utc}")
 	print(f"server cert: {server_cert.not_valid_before_utc} - {server_cert.not_valid_after_utc}")
 
@@ -646,14 +647,14 @@ def test_verify(tmp_path: Path, server_version: str, pem_name: str) -> None:
 
 		class MockCertificateBuilder(x509.CertificateBuilder):
 			def __init__(self, **kwargs: Any) -> None:
-				kwargs["not_valid_before"] = datetime.now(tz=timezone.utc) - timedelta(days=200)
-				kwargs["not_valid_after"] = datetime.now(tz=timezone.utc) - timedelta(days=1)
+				kwargs["not_valid_before"] = datetime.now(tz=UTC) - timedelta(days=200)
+				kwargs["not_valid_after"] = datetime.now(tz=UTC) - timedelta(days=1)
 				super().__init__(**kwargs)
 
 		with mock.patch("opsi.crypt.ssl._ssl.CertificateBuilder", MockCertificateBuilder):
 			ca_cert_expired, _ = create_ca(subject={"CN": "python-opsi-common test ca"}, valid_days=3, key=ca_key)
-			assert ca_cert_expired.not_valid_before_utc < datetime.now(tz=timezone.utc)
-			assert ca_cert_expired.not_valid_after_utc < datetime.now(tz=timezone.utc)
+			assert ca_cert_expired.not_valid_before_utc < datetime.now(tz=UTC)
+			assert ca_cert_expired.not_valid_after_utc < datetime.now(tz=UTC)
 			opsi_ca_file_on_client.write_text(as_pem(ca_cert_expired), encoding="utf-8", newline="")
 
 		with ServiceClient(f"https://127.0.0.1:{server.port}", ca_cert_file=opsi_ca_file_on_client, verify="opsi_ca") as client:
@@ -745,14 +746,13 @@ def test_client_certificate(tmp_path: Path, client_key_password: str) -> None:
 			ca_cert_file=ca_cert_file,
 			client_cert_file=client_cert_file,
 			client_key_password=client_key_password,
-		) as client:
-			with pytest.raises((OpsiServiceClientCertificateError, OpsiServiceConnectionError)) as err:
-				client.get("/")
-				# TODO: Why is this not always OpsiServiceClientCertificateError?
-				if isinstance(err.value, OpsiServiceClientCertificateError):
-					assert "unknown ca" in str(err.value)
-				else:
-					assert "EOF occurred in violation of protocol" in str(err.value)
+		) as client, pytest.raises((OpsiServiceClientCertificateError, OpsiServiceConnectionError)) as err:
+			client.get("/")
+			# TODO: Why is this not always OpsiServiceClientCertificateError?
+			if isinstance(err.value, OpsiServiceClientCertificateError):
+				assert "unknown ca" in str(err.value)
+			else:
+				assert "EOF occurred in violation of protocol" in str(err.value)
 
 	time.sleep(1)
 
@@ -804,24 +804,23 @@ def test_client_certificate(tmp_path: Path, client_key_password: str) -> None:
 		proxy_port = 18182
 		with (
 			run_proxy(proxy_port) as proxy_server,
-			mock.patch("opsi.opsi.service.client._service_client.ServiceClient.no_proxy_addresses", []),
+			mock.patch("opsi.opsi.service.client._service_client.ServiceClient.no_proxy_addresses", []),ServiceClient(
+			f"https://127.0.0.1:{server.port}",
+			verify=ServiceVerificationFlags.STRICT_CHECK,
+			ca_cert_file=ca_cert_file,
+			client_cert_file=client_cert_file,
+			client_key_file=client_key_file,
+			client_key_password=client_key_password,
+			proxy_url=f"http://127.0.0.1:{proxy_port}",
+		) as client
 		):
-			with ServiceClient(
-				f"https://127.0.0.1:{server.port}",
-				verify=ServiceVerificationFlags.STRICT_CHECK,
-				ca_cert_file=ca_cert_file,
-				client_cert_file=client_cert_file,
-				client_key_file=client_key_file,
-				client_key_password=client_key_password,
-				proxy_url=f"http://127.0.0.1:{proxy_port}",
-			) as client:
-				client.get("/")
-				# Force websocket authentication
-				client._session.cookies = None  # type: ignore[assignment]
-				client.connect_messagebus()
+			client.get("/")
+			# Force websocket authentication
+			client._session.cookies = None  # type: ignore[assignment]
+			client.connect_messagebus()
 
-				proxy_reqs = proxy_server.get_and_clear_requests()
-				print(proxy_reqs)
+			proxy_reqs = proxy_server.get_and_clear_requests()
+			print(proxy_reqs)
 
 
 def test_cookie_handling(tmp_path: Path) -> None:
@@ -1046,7 +1045,7 @@ class HTTPProxy(Thread):
 
 
 @contextmanager
-def run_proxy(port: int = 8080) -> Generator[HTTPProxy, None, None]:
+def run_proxy(port: int = 8080) -> Generator[HTTPProxy]:
 	proxy = HTTPProxy(port)
 	proxy.daemon = True
 	proxy.start()
@@ -1278,30 +1277,28 @@ def test_connect_disconnect() -> None:
 			with pytest.raises(OpsiServiceConnectionError, match="Service address undefined"):
 				client.messagebus.connect()
 
-		with ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
-			with listener.register(client):
-				assert not client.messagebus_available
-				assert client.connected
-				with pytest.raises(RuntimeError):
-					client.connect_messagebus()
-				client.disconnect()
-				assert len(listener.events) == 3
-				assert listener.events[0][0] == "open"
-				assert listener.events[1][0] == "established"
-				assert listener.events[2][0] == "closed"
+		with ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client, listener.register(client):
+			assert not client.messagebus_available
+			assert client.connected
+			with pytest.raises(RuntimeError):
+				client.connect_messagebus()
+			client.disconnect()
+			assert len(listener.events) == 3
+			assert listener.events[0][0] == "open"
+			assert listener.events[1][0] == "established"
+			assert listener.events[2][0] == "closed"
 
 		listener = MyConnectionListener()
-		with ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
-			with listener.register(client):
-				with pytest.raises(RuntimeError):
-					client.connect_messagebus()
-				assert client.connected
-				assert not client.messagebus_available
-				client.disconnect()
-				assert len(listener.events) == 3
-				assert listener.events[0][0] == "open"
-				assert listener.events[1][0] == "established"
-				assert listener.events[2][0] == "closed"
+		with ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client, listener.register(client):
+			with pytest.raises(RuntimeError):
+				client.connect_messagebus()
+			assert client.connected
+			assert not client.messagebus_available
+			client.disconnect()
+			assert len(listener.events) == 3
+			assert listener.events[0][0] == "open"
+			assert listener.events[1][0] == "established"
+			assert listener.events[2][0] == "closed"
 
 	with http_test_server(generate_cert=True, response_headers={"server": "opsiconfd 4.2.1.0 (uvicorn)"}) as server:
 		client = ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all", connect_timeout=15.0)
@@ -1542,77 +1539,76 @@ def test_messagebus_reconnect() -> None:
 		ws_connect_callback=ws_connect_callback,
 		ws_message_callback=ws_message_callback,
 		response_headers={"server": "opsiconfd 4.2.1.0 (uvicorn)"},
-	) as server:
-		with ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
-			client.messagebus.reconnect_wait_min = 5
-			client.messagebus.reconnect_wait_max = 5
-			listener = MBListener()
+	) as server, ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
+		client.messagebus.reconnect_wait_min = 5
+		client.messagebus.reconnect_wait_max = 5
+		listener = MBListener()
 
-			with listener.register(client.messagebus):
-				assert client.messagebus.connected is False
-				assert client.connected is False
+		with listener.register(client.messagebus):
+			assert client.messagebus.connected is False
+			assert client.connected is False
 
-				client.connect_messagebus()  # This will also "connect" the client
-				time.sleep(3)
-				assert client.messagebus.connected is True
-				assert client.connected is True
-				assert client.messagebus._subscribed_channels == [
-					"chan1",
-					"chan2",
-					"chan3",
-					"session:11111111-1111-1111-1111-111111111111",
-					"session:22222222-2222-2222-2222-222222222222",
-				]
+			client.connect_messagebus()  # This will also "connect" the client
+			time.sleep(3)
+			assert client.messagebus.connected is True
+			assert client.connected is True
+			assert client.messagebus._subscribed_channels == [
+				"chan1",
+				"chan2",
+				"chan3",
+				"session:11111111-1111-1111-1111-111111111111",
+				"session:22222222-2222-2222-2222-222222222222",
+			]
+			client.messagebus.send_message(TraceRequestMessage(sender="@", channel="service:worker:test:1"))
+
+			# Test reconnect on connection lost
+			rpc_id = 10
+			server.restart(new_cert=True)
+			time.sleep(2)
+			assert client.messagebus.connected is False
+			assert client.connected is False
+			with pytest.raises(RuntimeError, match=".*Messagebus not connected.*"):
+				client.messagebus.send_message(TraceRequestMessage(sender="@", channel="service:worker:test:1"))
+			time.sleep(8)
+			assert client.messagebus.connected is True
+			assert client.connected is True
+			# Should resubscribe to channels except session channels
+			assert client.messagebus._subscribed_channels == [
+				"chan4",
+				"session:33333333-3333-3333-3333-333333333333",
+				"chan1",
+				"chan2",
+				"chan3",
+			]
+			client.messagebus.send_message(TraceRequestMessage(sender="@", channel="service:worker:test:1"))
+
+			# Test manual disconnect and reconnect
+			client.disconnect()
+			time.sleep(2)
+			assert client.messagebus.connected is False
+			assert client.connected is False
+			with pytest.raises(RuntimeError, match=".*Messagebus not connected.*"):
 				client.messagebus.send_message(TraceRequestMessage(sender="@", channel="service:worker:test:1"))
 
-				# Test reconnect on connection lost
-				rpc_id = 10
-				server.restart(new_cert=True)
-				time.sleep(2)
-				assert client.messagebus.connected is False
-				assert client.connected is False
-				with pytest.raises(RuntimeError, match=".*Messagebus not connected.*"):
-					client.messagebus.send_message(TraceRequestMessage(sender="@", channel="service:worker:test:1"))
-				time.sleep(8)
-				assert client.messagebus.connected is True
-				assert client.connected is True
-				# Should resubscribe to channels except session channels
-				assert client.messagebus._subscribed_channels == [
-					"chan4",
-					"session:33333333-3333-3333-3333-333333333333",
-					"chan1",
-					"chan2",
-					"chan3",
-				]
-				client.messagebus.send_message(TraceRequestMessage(sender="@", channel="service:worker:test:1"))
+			client.connect_messagebus()
+			time.sleep(5)
+			assert client.messagebus.connected is True
+			assert client.connected is True
+			# Should resubscribe to channels except session channels
+			assert client.messagebus._subscribed_channels == [
+				"chan4",
+				"session:33333333-3333-3333-3333-333333333333",
+				"chan1",
+				"chan2",
+				"chan3",
+			]
+			client.messagebus.send_message(TraceRequestMessage(sender="@", channel="service:worker:test:1"))
 
-				# Test manual disconnect and reconnect
-				client.disconnect()
-				time.sleep(2)
-				assert client.messagebus.connected is False
-				assert client.connected is False
-				with pytest.raises(RuntimeError, match=".*Messagebus not connected.*"):
-					client.messagebus.send_message(TraceRequestMessage(sender="@", channel="service:worker:test:1"))
-
-				client.connect_messagebus()
-				time.sleep(5)
-				assert client.messagebus.connected is True
-				assert client.connected is True
-				# Should resubscribe to channels except session channels
-				assert client.messagebus._subscribed_channels == [
-					"chan4",
-					"session:33333333-3333-3333-3333-333333333333",
-					"chan1",
-					"chan2",
-					"chan3",
-				]
-				client.messagebus.send_message(TraceRequestMessage(sender="@", channel="service:worker:test:1"))
-
-			print("messages", listener.messages)
-			expected_messages = 3 + 9  # 3 * ChannelSubscriptionEventMessage + 9 * JSONRPCResponseMessage
-			assert len(listener.messages) == expected_messages
-			rpc_ids = [int(m.rpc_id) for m in listener.messages if hasattr(m, "rpc_id")]
-			assert all((rpc_id in rpc_ids for rpc_id in [1, 2, 3, 11, 12, 13]))
+		print("messages", listener.messages)
+		expected_messages = 3 + 9  # 3 * ChannelSubscriptionEventMessage + 9 * JSONRPCResponseMessage
+		assert len(listener.messages) == expected_messages
+		rpc_ids = [int(m.rpc_id) for m in listener.messages if hasattr(m, "rpc_id")]
+		assert all(rpc_id in rpc_ids for rpc_id in [1, 2, 3, 11, 12, 13])
 
 
 def test_messagebus_connect_503() -> None:
@@ -1690,25 +1686,24 @@ def test_messagebus_reconnect_exception() -> None:
 
 	with http_test_server(
 		generate_cert=True, ws_connect_callback=ws_connect_callback, response_headers={"server": "opsiconfd 4.2.1.0 (uvicorn)"}
-	) as server:
-		with ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
-			client.messagebus.reconnect_wait_min = 1
-			client.messagebus.reconnect_wait_max = 3
-			listener = MBListener()
+	) as server, ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
+		client.messagebus.reconnect_wait_min = 1
+		client.messagebus.reconnect_wait_max = 3
+		listener = MBListener()
 
-			with listener.register(client.messagebus):
-				client.connect_messagebus()
-				time.sleep(20)
+		with listener.register(client.messagebus):
+			client.connect_messagebus()
+			time.sleep(20)
 
-			assert listener.established >= 3
-			assert listener.closed >= 3
+		assert listener.established >= 3
+		assert listener.closed >= 3
 
-			# Between reconnect_wait min and max
-			assert 1 <= listener.next_connect_wait[0] <= 3
-			# Between reconnect_wait min and max + retry-after
-			assert 6 <= listener.next_connect_wait[1] <= 8
-			# Between reconnect_wait min and max
-			assert 1 <= listener.next_connect_wait[2] <= 3
+		# Between reconnect_wait min and max
+		assert 1 <= listener.next_connect_wait[0] <= 3
+		# Between reconnect_wait min and max + retry-after
+		assert 6 <= listener.next_connect_wait[1] <= 8
+		# Between reconnect_wait min and max
+		assert 1 <= listener.next_connect_wait[2] <= 3
 
 
 def test_get() -> None:
@@ -2334,133 +2329,131 @@ def test_backend_manager_and_get_service_client(tmp_path: Path) -> None:
 
 		return False
 
-	with http_test_server(generate_cert=True, log_file=log_file, request_callback=request_callback) as server:
-		with opsi_config(
-			{
-				"host.id": "test-host.opsi.org",
-				"host.key": "11111111111111111111111111111111",
-				"host.server-role": "depotserver",
-				"service.url": f"https://localhost:{server.port}",
-			}
-		) as opsi_conf:
-			with (
-				mock.patch("opsi.opsi.service.client._service_client.OPSI_CA_CERT_FILE", server.ca_cert),
-				mock.patch("opsi.opsi.service.client._service_client.get_opsi_config", lambda: opsi_conf),
-			):
-				with catch_warnings():
-					simplefilter("ignore")
-					backend = BackendManager()
-				backend.test_method(arg1=1, arg2=2)  # type: ignore[attr-defined]
+	with (
+		http_test_server(generate_cert=True, log_file=log_file, request_callback=request_callback) as server, opsi_config(
+		{
+			"host.id": "test-host.opsi.org",
+			"host.key": "11111111111111111111111111111111",
+			"host.server-role": "depotserver",
+			"service.url": f"https://localhost:{server.port}",
+		}
+	) as opsi_conf, mock.patch("opsi.opsi.service.client._service_client.OPSI_CA_CERT_FILE", server.ca_cert),
+		mock.patch("opsi.opsi.service.client._service_client.get_opsi_config", lambda: opsi_conf),
+	):
+		with catch_warnings():
+			simplefilter("ignore")
+			backend = BackendManager()
+		backend.test_method(arg1=1, arg2=2)  # type: ignore[attr-defined]
 
+		reqs = [json.loads(req) for req in log_file.read_text(encoding="utf-8").strip().split("\n")]
+
+		assert reqs[0]["method"] == "HEAD"
+		assert reqs[0]["path"] == "/rpc"
+		encoded_auth = reqs[0]["headers"]["Authorization"][6:]  # Stripping "Basic "
+		auth = base64.decodebytes(encoded_auth.encode("ascii")).decode("utf-8")
+		assert auth == "test-host.opsi.org:11111111111111111111111111111111"
+
+		# assert reqs[1]["method"] == "GET"
+		# assert reqs[1]["path"] == "/ssl/opsi-ca-cert.pem"
+
+		assert reqs[1]["method"] == "POST"
+		assert reqs[1]["path"] == "/rpc"
+		assert reqs[1]["request"]["method"] == "backend_getInterface"
+
+		assert reqs[2]["method"] == "POST"
+		assert reqs[2]["path"] == "/rpc"
+		assert reqs[2]["request"]["method"] == "test_method"
+
+		backend.disconnect()
+		log_file.unlink()
+
+		with catch_warnings():
+			simplefilter("ignore")
+			backend = BackendManager(username="user", password="pass")
+		reqs = [json.loads(req) for req in log_file.read_text(encoding="utf-8").strip().split("\n")]
+		assert reqs[0]["method"] == "HEAD"
+		assert reqs[0]["path"] == "/rpc"
+		encoded_auth = reqs[0]["headers"]["Authorization"][6:]  # Stripping "Basic "
+		auth = base64.decodebytes(encoded_auth.encode("ascii")).decode("utf-8")
+		assert auth == "user:pass"
+		backend.disconnect()
+		log_file.unlink()
+
+		for address in (
+			f"https://localhost:{server.port}",
+			f"https://127.0.0.1:{server.port}",
+			f"localhost:{server.port}",
+			f"127.0.0.1:{server.port}",
+			f"https://some-other-host.opsi.test:{server.port}",
+		):
+			if "some-other-host.opsi.test" in address:
+				service_client = get_service_client(address=address, auto_connect=False)
+				assert service_client.verify == [ServiceVerificationFlags.OPSI_CA]
+				assert service_client.ca_cert_file
+				path = service_client.ca_cert_file.parts
+				assert path[-1] == "ca-certs.pem"
+				assert path[-2] == f"some-other-host.opsi.test_{server.port}"
+			else:
+				service_client = get_service_client(address=address)
+				assert service_client.verify == [ServiceVerificationFlags.STRICT_CHECK]
 				reqs = [json.loads(req) for req in log_file.read_text(encoding="utf-8").strip().split("\n")]
-
 				assert reqs[0]["method"] == "HEAD"
 				assert reqs[0]["path"] == "/rpc"
 				encoded_auth = reqs[0]["headers"]["Authorization"][6:]  # Stripping "Basic "
 				auth = base64.decodebytes(encoded_auth.encode("ascii")).decode("utf-8")
 				assert auth == "test-host.opsi.org:11111111111111111111111111111111"
+				service_client.disconnect()
+			log_file.unlink(missing_ok=True)
 
-				# assert reqs[1]["method"] == "GET"
-				# assert reqs[1]["path"] == "/ssl/opsi-ca-cert.pem"
+		# Test client cert auth
+		server.client_verify_mode = ssl.CERT_REQUIRED
+		server.restart()
 
-				assert reqs[1]["method"] == "POST"
-				assert reqs[1]["path"] == "/rpc"
-				assert reqs[1]["request"]["method"] == "backend_getInterface"
+		# Explicit cert and key
+		service_client = get_service_client(
+			address=f"https://127.0.0.1:{server.port}", client_cert_file=server.server_cert, client_key_file=server.server_key
+		)
+		reqs = [json.loads(req) for req in log_file.read_text(encoding="utf-8").strip().split("\n")]
+		assert len(reqs) == 3
+		log_file.unlink()
 
-				assert reqs[2]["method"] == "POST"
-				assert reqs[2]["path"] == "/rpc"
-				assert reqs[2]["request"]["method"] == "test_method"
+		# Auto client cert auth, but no cert / key
+		with pytest.raises((OpsiServiceConnectionError, OpsiServiceClientCertificateError)):
+			service_client = get_service_client(address=f"https://127.0.0.1:{server.port}")
+		assert not log_file.exists()
 
-				backend.disconnect()
-				log_file.unlink()
+		# Explicit client cert auth, but no cert / key
+		with pytest.raises((OpsiServiceConnectionError, OpsiServiceClientCertificateError)):
+			service_client = get_service_client(address=f"https://127.0.0.1:{server.port}", client_cert_auth=True)
+		assert not log_file.exists()
 
-				with catch_warnings():
-					simplefilter("ignore")
-					backend = BackendManager(username="user", password="pass")
-				reqs = [json.loads(req) for req in log_file.read_text(encoding="utf-8").strip().split("\n")]
-				assert reqs[0]["method"] == "HEAD"
-				assert reqs[0]["path"] == "/rpc"
-				encoded_auth = reqs[0]["headers"]["Authorization"][6:]  # Stripping "Basic "
-				auth = base64.decodebytes(encoded_auth.encode("ascii")).decode("utf-8")
-				assert auth == "user:pass"
-				backend.disconnect()
-				log_file.unlink()
+		with mock.patch(
+			"opsi.opsi.service.client._service_client.get_opsiconfd_config",
+			lambda *args, **kwargs: {
+				"ssl_server_key": str(server.server_key),
+				"ssl_server_cert": str(server.server_cert),
+				"ssl_server_key_passphrase": "",
+			},
+		):
+			# No client cert auth, with auto cert / key
+			with pytest.raises((OpsiServiceConnectionError, OpsiServiceClientCertificateError)):
+				service_client = get_service_client(address=f"https://127.0.0.1:{server.port}", client_cert_auth=False)
+			assert not log_file.exists()
 
-				for address in (
-					f"https://localhost:{server.port}",
-					f"https://127.0.0.1:{server.port}",
-					f"localhost:{server.port}",
-					f"127.0.0.1:{server.port}",
-					f"https://some-other-host.opsi.test:{server.port}",
-				):
-					if "some-other-host.opsi.test" in address:
-						service_client = get_service_client(address=address, auto_connect=False)
-						assert service_client.verify == [ServiceVerificationFlags.OPSI_CA]
-						assert service_client.ca_cert_file
-						path = service_client.ca_cert_file.parts
-						assert path[-1] == "ca-certs.pem"
-						assert path[-2] == f"some-other-host.opsi.test_{server.port}"
-					else:
-						service_client = get_service_client(address=address)
-						assert service_client.verify == [ServiceVerificationFlags.STRICT_CHECK]
-						reqs = [json.loads(req) for req in log_file.read_text(encoding="utf-8").strip().split("\n")]
-						assert reqs[0]["method"] == "HEAD"
-						assert reqs[0]["path"] == "/rpc"
-						encoded_auth = reqs[0]["headers"]["Authorization"][6:]  # Stripping "Basic "
-						auth = base64.decodebytes(encoded_auth.encode("ascii")).decode("utf-8")
-						assert auth == "test-host.opsi.org:11111111111111111111111111111111"
-						service_client.disconnect()
-					log_file.unlink(missing_ok=True)
+			# Auto client cert auth, with auto cert / key
+			service_client = get_service_client(address=f"https://127.0.0.1:{server.port}")
+			reqs = [json.loads(req) for req in log_file.read_text(encoding="utf-8").strip().split("\n")]
+			assert len(reqs) == 3
+			log_file.unlink()
 
-				# Test client cert auth
-				server.client_verify_mode = ssl.CERT_REQUIRED
-				server.restart()
-
-				# Explicit cert and key
-				service_client = get_service_client(
-					address=f"https://127.0.0.1:{server.port}", client_cert_file=server.server_cert, client_key_file=server.server_key
-				)
-				reqs = [json.loads(req) for req in log_file.read_text(encoding="utf-8").strip().split("\n")]
-				assert len(reqs) == 3
-				log_file.unlink()
-
-				# Auto client cert auth, but no cert / key
-				with pytest.raises((OpsiServiceConnectionError, OpsiServiceClientCertificateError)):
-					service_client = get_service_client(address=f"https://127.0.0.1:{server.port}")
-				assert not log_file.exists()
-
-				# Explicit client cert auth, but no cert / key
-				with pytest.raises((OpsiServiceConnectionError, OpsiServiceClientCertificateError)):
-					service_client = get_service_client(address=f"https://127.0.0.1:{server.port}", client_cert_auth=True)
-				assert not log_file.exists()
-
-				with mock.patch(
-					"opsi.opsi.service.client._service_client.get_opsiconfd_config",
-					lambda *args, **kwargs: {
-						"ssl_server_key": str(server.server_key),
-						"ssl_server_cert": str(server.server_cert),
-						"ssl_server_key_passphrase": "",
-					},
-				):
-					# No client cert auth, with auto cert / key
-					with pytest.raises((OpsiServiceConnectionError, OpsiServiceClientCertificateError)):
-						service_client = get_service_client(address=f"https://127.0.0.1:{server.port}", client_cert_auth=False)
-					assert not log_file.exists()
-
-					# Auto client cert auth, with auto cert / key
-					service_client = get_service_client(address=f"https://127.0.0.1:{server.port}")
-					reqs = [json.loads(req) for req in log_file.read_text(encoding="utf-8").strip().split("\n")]
-					assert len(reqs) == 3
-					log_file.unlink()
-
-					# Client cert auth, with explicit cert / key
-					service_client = get_service_client(
-						address=f"https://127.0.0.1:{server.port}",
-						client_cert_file=server.server_cert,
-						client_key_file=server.server_key,
-					)
-					reqs = [json.loads(req) for req in log_file.read_text(encoding="utf-8").strip().split("\n")]
-					assert len(reqs) == 3
+			# Client cert auth, with explicit cert / key
+			service_client = get_service_client(
+				address=f"https://127.0.0.1:{server.port}",
+				client_cert_file=server.server_cert,
+				client_key_file=server.server_key,
+			)
+			reqs = [json.loads(req) for req in log_file.read_text(encoding="utf-8").strip().split("\n")]
+			assert len(reqs) == 3
 
 
 def test_messagebus_jsonrpc() -> None:
@@ -2483,40 +2476,39 @@ def test_messagebus_jsonrpc() -> None:
 
 	with http_test_server(
 		generate_cert=True, ws_message_callback=ws_message_callback, response_headers={"server": "opsiconfd 4.2.1.0 (uvicorn)"}
-	) as server:
-		with ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
-			messagebus = client.connect_messagebus()
-			params: list[tuple[Any, ...] | list[Any] | None] = [
-				[1],
-				(1, 2),
-				["1", "2", 3],
-				[None, "str"],
-				(True, False),
-				[],
-				None,
-				("test",),
-				tuple(),
-			]
-			for _params in params:
-				res = messagebus.jsonrpc("test", params=_params)
-				assert res == list(_params or [])
+	) as server, ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
+		messagebus = client.connect_messagebus()
+		params: list[tuple[Any, ...] | list[Any] | None] = [
+			[1],
+			(1, 2),
+			["1", "2", 3],
+			[None, "str"],
+			(True, False),
+			[],
+			None,
+			("test",),
+			tuple(),
+		]
+		for _params in params:
+			res = messagebus.jsonrpc("test", params=_params)
+			assert res == list(_params or [])
 
-			delay = 3.0
-			get_rpc_timeout.cache_clear()
-			with mock.patch("opsi.opsi.service.client._service_client.RPC_TIMEOUTS", {"test": 1}):
-				with pytest.raises(OpsiServiceTimeoutError):
-					res = messagebus.jsonrpc("test")
-			get_rpc_timeout.cache_clear()
-
-			rpc_error = {"code": 0, "message": "error_message", "data": {"class": "OpsiServicePermissionError", "details": "details"}}
-			with pytest.raises(OpsiServicePermissionError) as err:
+		delay = 3.0
+		get_rpc_timeout.cache_clear()
+		with mock.patch("opsi.opsi.service.client._service_client.RPC_TIMEOUTS", {"test": 1}):
+			with pytest.raises(OpsiServiceTimeoutError):
 				res = messagebus.jsonrpc("test")
-			assert err.value.message == "error_message"
+		get_rpc_timeout.cache_clear()
 
-			res = messagebus.jsonrpc("test", return_result_only=False)
-			assert res["jsonrpc"] == "2.0"
-			assert res["error"] == rpc_error
-			assert res["result"] is None
+		rpc_error = {"code": 0, "message": "error_message", "data": {"class": "OpsiServicePermissionError", "details": "details"}}
+		with pytest.raises(OpsiServicePermissionError) as err:
+			res = messagebus.jsonrpc("test")
+		assert err.value.message == "error_message"
+
+		res = messagebus.jsonrpc("test", return_result_only=False)
+		assert res["jsonrpc"] == "2.0"
+		assert res["error"] == rpc_error
+		assert res["result"] is None
 
 
 def test_messagebus_multi_thread() -> None:
@@ -2539,21 +2531,20 @@ def test_messagebus_multi_thread() -> None:
 
 	with http_test_server(
 		generate_cert=True, ws_message_callback=ws_message_callback, response_headers={"server": "opsiconfd 4.2.1.0 (uvicorn)"}
-	) as server:
-		with ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
-			client.messagebus.compression = None
-			threads = [ReqThread(client) for _ in range(10)]
-			for thread in threads:
-				thread.start()
-			for thread in threads:
-				thread.join(20)
-			for thread in threads:
-				assert not thread.is_alive()
-				res = thread.response
-				assert res
-				assert res["id"]
-				assert res["result"] == f"RESULT {res['id']}"
-				assert res["error"] is None
+	) as server, ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
+		client.messagebus.compression = None
+		threads = [ReqThread(client) for _ in range(10)]
+		for thread in threads:
+			thread.start()
+		for thread in threads:
+			thread.join(20)
+		for thread in threads:
+			assert not thread.is_alive()
+			res = thread.response
+			assert res
+			assert res["id"]
+			assert res["result"] == f"RESULT {res['id']}"
+			assert res["error"] is None
 
 
 def test_messagebus_jsonrpc_receives_immediate_response() -> None:
@@ -2670,34 +2661,33 @@ def test_messagebus_listener() -> None:
 
 	with http_test_server(
 		generate_cert=True, ws_connect_callback=ws_connect_callback, response_headers={"server": "opsiconfd 4.2.1.0 (uvicorn)"}
-	) as server:
-		with ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
-			client.messagebus.compression = None
-			with (
-				listener1.register(client.messagebus),
-				listener2.register(client.messagebus),
-				listener3.register(client.messagebus),
-				listener4.register(client.messagebus),
-			):
-				assert len(client.messagebus._listener) == 4
-				client.messagebus.reconnect_wait_min = 2
-				client.messagebus.reconnect_wait_max = 2
-				client.messagebus._connect_timeout = 2
-				client.connect_messagebus()
-				# Receive messages for 3 seconds
-				time.sleep(3)
-				# Stop server
-				server.stop()
-				# Wait for reconnect after 2 seconds (which will fail)
-				time.sleep(5)
+	) as server, ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
+		client.messagebus.compression = None
+		with (
+			listener1.register(client.messagebus),
+			listener2.register(client.messagebus),
+			listener3.register(client.messagebus),
+			listener4.register(client.messagebus),
+		):
+			assert len(client.messagebus._listener) == 4
+			client.messagebus.reconnect_wait_min = 2
+			client.messagebus.reconnect_wait_max = 2
+			client.messagebus._connect_timeout = 2
+			client.connect_messagebus()
+			# Receive messages for 3 seconds
+			time.sleep(3)
+			# Stop server
+			server.stop()
+			# Wait for reconnect after 2 seconds (which will fail)
+			time.sleep(5)
 
-			assert len(client.messagebus._listener) == 0
+		assert len(client.messagebus._listener) == 0
 
-			for listener in (listener1, listener2, listener3, listener4):
-				assert listener.connection_open_calls == 2
-				assert listener.connection_established_calls == 1
-				assert listener.connection_closed_calls in (1, 2)
-				assert listener.connection_failed_calls in (1, 2)
+		for listener in (listener1, listener2, listener3, listener4):
+			assert listener.connection_open_calls == 2
+			assert listener.connection_established_calls == 1
+			assert listener.connection_closed_calls in (1, 2)
+			assert listener.connection_failed_calls in (1, 2)
 
 	# listener1 / listener3: JSONRPC_RESPONSE + FILE_UPLOAD_RESULT
 	for listener in (listener1, listener3):
@@ -2737,7 +2727,7 @@ def test_server_date_update() -> None:
 		with ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all", max_time_diff=max_time_diff) as client:
 			for hdr in "date", "x-date-unix-timestamp":
 				# Difference smaller than max_time_diff => Keep time
-				now = datetime.now(timezone.utc)
+				now = datetime.now(UTC)
 				server_dt = now + timedelta(seconds=max_time_diff - 3)
 				if hdr == "date":
 					server_dt_str = datetime.strftime(server_dt, "%a, %d %b %Y %H:%M:%S UTC")
@@ -2752,7 +2742,7 @@ def test_server_date_update() -> None:
 
 				# Difference bigger than max_time_diff => Set time
 				for delta in (10, -10):
-					now = datetime.now(timezone.utc)
+					now = datetime.now(UTC)
 					server_dt = now + timedelta(seconds=max_time_diff + delta)
 					if hdr == "date":
 						server_dt_str = datetime.strftime(server_dt, "%a, %d %b %Y %H:%M:%S UTC")
@@ -2768,7 +2758,7 @@ def test_server_date_update() -> None:
 
 				if hdr == "date":
 					# None UTC time in header => Keep time
-					now = datetime.now(timezone.utc)
+					now = datetime.now(UTC)
 					server_dt = now + timedelta(seconds=max_time_diff + 100)
 					server_dt_str = datetime.strftime(server_dt, "%a, %d %b %Y %H:%M:%S GMT")
 					server.response_headers = {hdr: server_dt_str}
@@ -2832,17 +2822,16 @@ def test_permission_error_ca_cert_file_lock() -> None:
 
 	with (
 		mock.patch("ssl.SSLContext.load_verify_locations", load_verify_locations),
-		http_test_server(generate_cert=True) as server,
+		http_test_server(generate_cert=True) as server,ServiceClient(
+		f"https://localhost:{server.port}", verify="strict_check", ca_cert_file=server.ca_cert, jsonrpc_create_methods=True
+	) as client
 	):
-		with ServiceClient(
-			f"https://localhost:{server.port}", verify="strict_check", ca_cert_file=server.ca_cert, jsonrpc_create_methods=True
-		) as client:
-			assert server.ca_cert
-			with open(server.ca_cert, "a+", encoding="utf-8") as file:
-				file_handle = file
-				_lock_file(file, exclusive=True)
-				client.connect()
-				assert attempts == 3
+		assert server.ca_cert
+		with open(server.ca_cert, "a+", encoding="utf-8") as file:
+			file_handle = file
+			_lock_file(file, exclusive=True)
+			client.connect()
+			assert attempts == 3
 
 
 @pytest.mark.parametrize(

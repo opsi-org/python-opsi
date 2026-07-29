@@ -31,7 +31,7 @@ from opsi.system.storage import (
 	StorageDevice,
 	get_disks,
 )
-from opsi.system.storage._storage import _run_command, PartitionTableType
+from opsi.system.storage._storage import PartitionTableType, _run_command
 
 
 @pytest.mark.storage_utils

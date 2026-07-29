@@ -234,7 +234,7 @@ class BCD:
 		print(f"[{path}]", file=file)
 		for value_id in self.hive.node_values(node):
 			print(self.format_value(value_id), file=file)
-		print("", file=file)
+		print(file=file)
 		children = self.hive.node_children(node)
 		for child_id in children:
 			self.print_tree(f"{path}\\{self.hive.node_name(child_id)}", file)
@@ -406,7 +406,7 @@ class BCD:
 
 					val = str_repr
 				print(f"{attr}: {val}", file=file)
-			print("", file=file)
+			print(file=file)
 
 	def get_boot_entries(self) -> list[dict]:
 		entries = []

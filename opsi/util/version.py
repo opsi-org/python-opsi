@@ -10,7 +10,8 @@ General utility functions.
 from __future__ import annotations
 
 import re
-from typing import Generator, Literal
+from collections.abc import Generator
+from typing import Literal
 
 from packaging.version import InvalidVersion, Version
 
@@ -30,7 +31,7 @@ def _legacy_cmpkey(version: str) -> tuple[str, ...]:
 		"dev": "@",
 	}
 
-	def _parse_version_parts(instring: str) -> Generator[str, None, None]:
+	def _parse_version_parts(instring: str) -> Generator[str]:
 		for part in _legacy_version_component_re.split(instring):
 			part = _legacy_version_replacement_map.get(part, part)
 

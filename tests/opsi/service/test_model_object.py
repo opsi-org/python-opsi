@@ -36,7 +36,7 @@ from opsi.opsi.service.model.object._object import (
 
 object_classes = []
 pre_globals = list(globals())
-from opsi.opsi.service.model.object import (  # noqa: E402
+from opsi.opsi.service.model.object import (
 	AuditHardware,
 	AuditHardwareOnHost,
 	AuditLog,
@@ -851,7 +851,7 @@ def test_audit_hardware_on_host_unicode() -> None:
 
 def test_audit_hardware_on_host_unicode_with_additionals() -> None:
 	audit_hardware_on_host = AuditHardwareOnHost(**AUDIT_HARDWARE_ON_HOST1)
-	setattr(audit_hardware_on_host, "name", "Ünicöde name.")
+	audit_hardware_on_host.name = "Ünicöde name."
 	assert str(audit_hardware_on_host)
 
 

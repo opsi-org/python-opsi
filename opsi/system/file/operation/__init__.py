@@ -6,4 +6,4 @@
 from opsi.system.file.operation._delete import delete
 from opsi.system.file.operation._link import get_link_target, link
 
-__all__ = ["delete", "link", "get_link_target"]
+__all__ = ["delete", "get_link_target", "link"]

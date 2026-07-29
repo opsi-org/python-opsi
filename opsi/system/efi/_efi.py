@@ -7,11 +7,11 @@ import os
 import platform
 import re
 import uuid
+from collections.abc import Generator
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from struct import pack, unpack
-from typing import Dict, Generator, List, Tuple, Type
 
 from opsi.logging import get_logger
 
@@ -168,11 +168,11 @@ class EFIBootEntry:
 	label: str
 	bootnum: int
 	attributes: int
-	file_path_list: List[EFIFilePath]
+	file_path_list: list[EFIFilePath]
 	optional_data: bytes | None = None
 
 	@classmethod
-	def _read_description(cls: Type["EFIBootEntry"], data: bytes, offset: int = 0) -> Tuple[bytes, int]:
+	def _read_description(cls: type["EFIBootEntry"], data: bytes, offset: int = 0) -> tuple[bytes, int]:
 		description_bytes = b""
 		view = memoryview(data)
 		while True:
@@ -184,7 +184,7 @@ class EFIBootEntry:
 		return description_bytes, offset
 
 	@classmethod
-	def _read_file_path(cls: Type["EFIBootEntry"], data: bytes, offset: int = 0) -> Tuple[EFIFilePath, int]:
+	def _read_file_path(cls: type["EFIBootEntry"], data: bytes, offset: int = 0) -> tuple[EFIFilePath, int]:
 		file_path = EFIFilePath(type=unpack("<B", data[offset : offset + 1])[0], sub_type=unpack("<B", data[offset + 1 : offset + 2])[0])
 		length = unpack("<H", data[offset + 2 : offset + 4])[0]
 		offset += 4
@@ -201,7 +201,7 @@ class EFIBootEntry:
 		return file_path, offset
 
 	@classmethod
-	def from_file(cls: Type["EFIBootEntry"], file: Path) -> "EFIBootEntry":
+	def from_file(cls: type["EFIBootEntry"], file: Path) -> "EFIBootEntry":
 		match = BOOT_VAR_RE.match(file.name)
 		if not match:
 			raise ValueError("Invalid filename: {file!r}")
@@ -261,7 +261,7 @@ class EFIBootManager:
 
 		self.guid = match.group("guid")
 
-	def _get_var_files(self, pattern: re.Pattern) -> Generator[Path, None, None]:
+	def _get_var_files(self, pattern: re.Pattern) -> Generator[Path]:
 		for file in self.efivars_path.iterdir():
 			if not file.is_file():
 				continue
@@ -272,13 +272,13 @@ class EFIBootManager:
 				continue
 			yield file
 
-	def get_boot_entries(self) -> List[EFIBootEntry]:
+	def get_boot_entries(self) -> list[EFIBootEntry]:
 		entries = [EFIBootEntry.from_file(file) for file in self._get_var_files(BOOT_VAR_RE)]
 		# boot_order = self.get_boot_order()
 		# return sorted(entries, key=lambda e: boot_order.index(e.bootnum))
 		return sorted(entries, key=lambda e: e.bootnum)
 
-	def get_boot_order(self) -> List[int]:
+	def get_boot_order(self) -> list[int]:
 		boot_order = []
 		for file in self._get_var_files(BOOT_ORDER_VAR_RE):
 			data = file.read_bytes()
@@ -289,8 +289,8 @@ class EFIBootManager:
 			break
 		return boot_order
 
-	def set_boot_order(self, boot_order: List[int | str]) -> None:
-		bootnum_by_label: Dict[str, int] = {}
+	def set_boot_order(self, boot_order: list[int | str]) -> None:
+		bootnum_by_label: dict[str, int] = {}
 		for file in self._get_var_files(BOOT_ORDER_VAR_RE):
 			data = file.read_bytes()[0:4]
 			for bootnum in boot_order:

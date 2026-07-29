@@ -8,7 +8,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-from opsi.retry import Retry, RetryConfig, get_retry_config, RetryConfigType
+from opsi.retry import Retry, RetryConfig, RetryConfigType, get_retry_config
 
 
 def _delete_attempt(path: Path) -> None:
