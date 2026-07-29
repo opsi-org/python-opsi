@@ -54,7 +54,6 @@ Homepage = "https://www.opsi.org"
 [dependency-groups]
 dev = [
 	"hypothesis>=6.151.9",
-	"pproxy>=2.7",
 	"pytest-asyncio>=1.3.0",
 	"pytest-coverage>=0.0",
 	"pytest>=9.0",

@@ -5,13 +5,14 @@
 
 from __future__ import annotations
 
-import asyncio
 import base64
 import json
 import os
 import platform
 import random
 import re
+import select
+import socket
 import ssl
 import string
 import time
@@ -21,25 +22,20 @@ from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from socket import AF_INET
+from socketserver import StreamRequestHandler, ThreadingTCPServer
 from ssl import SSLContext
-from threading import Event, Thread
+from threading import Event, Lock, Thread
 from typing import Any, cast
 from unittest import mock
 from urllib.parse import unquote
 from warnings import catch_warnings, simplefilter
-
-from opsi.compression import compress, decompress
-from opsi.logging import LOG_TRACE, logger
-
-with catch_warnings():
-	simplefilter("ignore")
-	import pproxy
 
 import psutil
 import pytest
 from cryptography import x509
 
 from opsi import __version__
+from opsi.compression import compress, decompress
 from opsi.crypt.ssl import as_pem, create_ca, create_server_cert
 from opsi.exception import (
 	OpsiRpcError,
@@ -52,6 +48,7 @@ from opsi.exception import (
 	OpsiServiceUnavailableError,
 	OpsiServiceVerificationError,
 )
+from opsi.logging import LOG_TRACE, logger
 from opsi.opsi.messagebus import (
 	ChannelSubscriptionEventMessage,
 	ChannelSubscriptionRequestMessage,
@@ -1003,64 +1000,94 @@ def get_local_ipv4_address() -> str | None:
 	raise RuntimeError("No local IPv4 address found")
 
 
-class HTTPProxy(Thread):
-	REQUEST_RE = re.compile(r"^http\s+([\d\.a-f:]+):(\d+) -> ([\d\.a-f:]+):(\d+)$")
+class HTTPProxyRequestHandler(StreamRequestHandler):
+	server: HTTPProxy
 
-	def __init__(self, port: int):
-		super().__init__()
-		self._port = port
-		self._loop = asyncio.new_event_loop()
-		self._should_stop = False
+	def handle(self) -> None:
+		request_line = self.rfile.readline(65536).decode("ascii", "replace").strip()
+		while self.rfile.readline(65536).strip():
+			pass  # Skip headers
+		method, _, rest = request_line.partition(" ")
+		if method.upper() != "CONNECT":
+			self.wfile.write(b"HTTP/1.1 501 Not Implemented\r\nConnection: close\r\n\r\n")
+			return
+		server_address, _, server_port = rest.split(" ", 1)[0].rpartition(":")
+		server_address = server_address.strip("[]")
+		client_address, client_port = self.client_address[0], self.client_address[1]
+		print(f"Proxy request: http {client_address}:{client_port} -> {server_address}:{server_port}")
+		try:
+			remote_sock = socket.create_connection((server_address, int(server_port)), timeout=10)
+		except OSError:
+			self.wfile.write(b"HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\n\r\n")
+			return
+		self.server.add_request(
+			{
+				"client_address": client_address,
+				"client_port": client_port,
+				"server_address": server_address,
+				"server_port": int(server_port),
+			}
+		)
+		self.wfile.write(b"HTTP/1.1 200 Connection established\r\n\r\n")
+		with remote_sock:
+			self._tunnel(self.connection, remote_sock)
+
+	@staticmethod
+	def _tunnel(client_sock: socket.socket, remote_sock: socket.socket) -> None:
+		socks = [client_sock, remote_sock]
+		while True:
+			rlist, _, xlist = select.select(socks, [], socks, 10)
+			if xlist or not rlist:
+				return
+			for sock in rlist:
+				other_sock = remote_sock if sock is client_sock else client_sock
+				try:
+					data = sock.recv(65536)
+					if not data:
+						return
+					other_sock.sendall(data)
+				except OSError:
+					return
+
+
+class HTTPProxy(ThreadingTCPServer):
+	address_family = socket.AF_INET6
+	allow_reuse_address = True
+	daemon_threads = True
+
+	def __init__(self, port: int) -> None:
 		self._requests: list[dict[str, str | int]] = []
+		self._requests_lock = Lock()
+		super().__init__(("::", port), HTTPProxyRequestHandler)
+
+	def server_bind(self) -> None:
+		# Accept IPv6 and IPv4 connections on the same socket
+		self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+		super().server_bind()
+
+	def add_request(self, request: dict[str, str | int]) -> None:
+		with self._requests_lock:
+			self._requests.append(request)
 
 	def get_and_clear_requests(self) -> list[dict[str, str | int]]:
-		requests = self._requests.copy()
-		self._requests = []
+		with self._requests_lock:
+			requests = self._requests.copy()
+			self._requests = []
 		return requests
-
-	def verbose(self, msg: str) -> None:
-		# http 127.0.0.1:54464 -> 172.24.0.3:55987
-		# http ::1:58297 -> 192.168.109.63:58037
-		print("Proxy request:", msg)
-		match = self.REQUEST_RE.search(msg)
-		if match:
-			self._requests.append(
-				{
-					"client_address": match.group(1),
-					"client_port": int(match.group(2)),
-					"server_address": match.group(3),
-					"server_port": int(match.group(4)),
-				}
-			)
-
-	async def main(self) -> None:
-		args: dict[str, Any] = {"rserver": [], "verbose": self.verbose}
-		proxy_server = pproxy.Server(f"http://:{self._port}")
-		server = proxy_server.start_server(args)
-		server_task = asyncio.create_task(server)
-		while not self._should_stop:
-			await asyncio.sleep(0.3)
-		server_task.cancel()
-		await self._loop.shutdown_asyncgens()
-
-	def run(self) -> None:
-		self._loop.run_until_complete(self.main())
-
-	def stop(self) -> None:
-		self._should_stop = True
 
 
 @contextmanager
 def run_proxy(port: int = 8080) -> Generator[HTTPProxy]:
-	proxy = HTTPProxy(port)
-	proxy.daemon = True
-	proxy.start()
-	logger.info("HTTP proxy started on port %d", port)
-	time.sleep(2)
-	yield proxy
-	proxy.stop()
-	proxy.join(2)
-	logger.info("HTTP proxy stopped")
+	with HTTPProxy(port) as proxy:
+		thread = Thread(target=proxy.serve_forever, daemon=True, name="HTTPProxy")
+		thread.start()
+		logger.info("HTTP proxy started on port %d", port)
+		try:
+			yield proxy
+		finally:
+			proxy.shutdown()
+			thread.join(5)
+			logger.info("HTTP proxy stopped")
 
 
 def test_proxy(tmp_path: Path) -> None:
