@@ -294,7 +294,7 @@ def test_select_line(tmp_path: Path) -> None:
 
 		assert text_file.get_lines() == TEST_FILE.strip().splitlines() + [""] * 5
 
-	assert file_path.read_text() == TEST_FILE.strip().splitlines() + [""] * 4
+	assert file_path.read_text() == TEST_FILE + "\n" * 5
 
 
 def test_retry_on_io_error(tmp_path: Path) -> None:
