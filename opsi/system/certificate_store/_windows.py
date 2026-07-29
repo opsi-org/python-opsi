@@ -7,17 +7,17 @@ import ctypes
 import warnings
 from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, cast
 
-import pywintypes  # type: ignore[import]
-import win32crypt  # type: ignore[import]
+import pywintypes  # ty: ignore[unresolved-import]
+import win32crypt  # ty: ignore[unresolved-import]
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.utils import CryptographyDeprecationWarning
 
 from opsi.logging import get_logger
 
-crypt32 = ctypes.WinDLL("crypt32.dll")  # type: ignore[attr-defined]
+crypt32 = cast(Any, ctypes).WinDLL("crypt32.dll")
 
 # lpszStoreProvider
 CERT_STORE_PROV_SYSTEM = 0x0000000A

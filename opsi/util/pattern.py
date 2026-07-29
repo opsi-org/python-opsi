@@ -10,7 +10,7 @@ from typing import Any, Self
 
 
 class Singleton(type):
-	_instances: dict[type, type] = {}
+	_instances: dict[type, type] = {}  # noqa: RUF012
 
 	def __call__(cls: Singleton, *args: Any, **kwargs: Any) -> type:
 		if cls not in cls._instances:
@@ -27,7 +27,7 @@ class MappedStrEnum(StrEnum):
 		super().__init_subclass__(**kwargs)
 		cls._NAME = str(cls._NAME) or cls.__name__
 		if not isinstance(cls._ALIASES, dict):
-			raise ValueError(f"Invalid value {cls._ALIASES!r} for _ALIASES, must be a dict mapping alias to value")
+			raise TypeError(f"Invalid value {cls._ALIASES!r} for _ALIASES, must be a dict mapping alias to value")
 
 	@classmethod
 	def _missing_(cls, value: object) -> Self:

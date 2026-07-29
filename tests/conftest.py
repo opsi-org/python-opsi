@@ -9,12 +9,15 @@ import threading
 import time
 from functools import lru_cache
 from subprocess import check_output
+from typing import Any, cast
 
 import pytest
 from packaging.version import Version
 
 from opsi.logging import logging_config
 from opsi.system.info import get_system
+
+START_THREADS_STASH_KEY = pytest.StashKey[set[threading.Thread]]()
 
 
 @lru_cache
@@ -24,7 +27,7 @@ def _admin_permissions() -> bool:
 	except AttributeError:
 		import ctypes
 
-		return ctypes.windll.shell32.IsUserAnAdmin() != 0  # type: ignore[attr-defined]
+		return cast(Any, ctypes).windll.shell32.IsUserAnAdmin() != 0
 
 
 @lru_cache
@@ -74,7 +77,7 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
 			pytest.skip("Requires sfdisk/lsblk/ms-sys")
 			return
 
-	item.stash["start_threads"] = set(threading.enumerate())  # type: ignore[index]
+	item.stash[START_THREADS_STASH_KEY] = set(threading.enumerate())
 
 
 @pytest.hookimpl(trylast=True)
@@ -83,13 +86,13 @@ def pytest_runtest_teardown(item: pytest.Item) -> None:
 	logging_config(stderr_level=0)
 
 	for wait in range(6):
-		left_over_threads = set(
+		left_over_threads = {
 			t
 			for t in threading.enumerate()
 			if t.is_alive()
 			and t.name not in ("MainThread", "ServiceConnectionThread")
 			and "ThreadPoolExecutor" not in str((getattr(t, "_args", None) or [None])[0])
-		) - item.stash.get("start_threads", set())  # type: ignore[arg-type]
+		} - item.stash.get(START_THREADS_STASH_KEY, set())
 		if not left_over_threads:
 			break
 		if wait >= 5:

@@ -225,7 +225,7 @@ class JSONRPCRequestMessage(Message):
 	api_version: str = "1"
 	rpc_id: str | int = Field(default_factory=lambda: str(uuid4()))
 	method: str
-	params: tuple[Any, ...] = tuple()
+	params: tuple[Any, ...] = ()
 
 
 class JSONRPCResponseMessage(Message):
@@ -386,7 +386,7 @@ class ProcessStartRequestMessage(ProcessMessage):
 	"""
 
 	type: str = MessageType.PROCESS_START_REQUEST.value
-	command: tuple[str, ...] = tuple()
+	command: tuple[str, ...] = ()
 	timeout: int = 0
 	shell: bool = False
 	env: dict[str, str] = Field(default_factory=dict)

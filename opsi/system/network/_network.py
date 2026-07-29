@@ -235,7 +235,7 @@ def prepare_proxy_environment(
 		if not host or "://" in host:
 			return host
 		logger.debug("Adding schema '%s://' to form proxy url from host '%s'", protocol, host)
-		return "://".join((protocol, host))
+		return f"{protocol}://{host}"
 
 	if no_proxy_addresses is None:
 		no_proxy_addresses = ["::1", "127.0.0.1", "ip6-localhost", "ip6-loopback", "localhost"]

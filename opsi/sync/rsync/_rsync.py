@@ -186,7 +186,7 @@ def rsync_signature(file: Path | str, base64_encoded: bool = True) -> str | byte
 
 	try:
 		with open(file, "rb") as fh:
-			sigfile_handle = cast(BinaryIO, tempfile.SpooledTemporaryFile(max_size=MAX_SPOOL, mode="wb+"))
+			sigfile_handle = cast(BinaryIO, tempfile.SpooledTemporaryFile(max_size=MAX_SPOOL, mode="wb+"))  # noqa: SIM115
 			job = None
 			if hasattr(_librsync, "RS_DEFAULT_STRONG_LEN"):
 				# librsync < 1.0.0
@@ -222,7 +222,7 @@ def rsync_delta_file(file: Path | str, signature: bytes, delta_file: Path | str)
 		raise ValueError("filename and deltafile are the same file")
 
 	try:
-		sigfile_handle = tempfile.NamedTemporaryFile("wb+")
+		sigfile_handle = tempfile.NamedTemporaryFile("wb+")  # noqa: SIM115
 		sigfile_handle.write(signature)
 		sigfile_handle.seek(0)
 

@@ -51,7 +51,8 @@ def test_temp_dir_retry_on_io_error() -> None:
 
 	with (
 		patch("opsi.system.file.temp._temp.TempDir._create_attempt", side_effect=side_effect_create, autospec=True),
-		patch("opsi.system.file.temp._temp.TempDir._delete_attempt", side_effect=side_effect_delete, autospec=True),TempDir() as temp_dir
+		patch("opsi.system.file.temp._temp.TempDir._delete_attempt", side_effect=side_effect_delete, autospec=True),
+		TempDir() as temp_dir,
 	):
 		assert temp_dir.exists()
 
@@ -99,7 +100,8 @@ def test_temp_file_retry_on_io_error() -> None:
 
 	with (
 		patch("opsi.system.file.temp._temp.TempFile._create_attempt", side_effect=side_effect_create, autospec=True),
-		patch("opsi.system.file.temp._temp.TempFile._delete_attempt", side_effect=side_effect_delete, autospec=True),TempFile() as temp_file
+		patch("opsi.system.file.temp._temp.TempFile._delete_attempt", side_effect=side_effect_delete, autospec=True),
+		TempFile() as temp_file,
 	):
 		assert temp_file.path.exists()
 

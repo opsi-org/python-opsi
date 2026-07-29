@@ -486,9 +486,8 @@ class Process:
 			raise ProcessError("'command' and 'script' are mutually exclusive", process=self)
 		if command is None and script is None:
 			raise ProcessError("Either 'command' or 'script' must be provided", process=self)
-		if command is not None:
-			if interpreter is not None:
-				raise ProcessError("'interpreter' can only be used with 'script', not with 'command'", process=self)
+		if command is not None and interpreter is not None:
+			raise ProcessError("'interpreter' can only be used with 'script', not with 'command'", process=self)
 
 		try:
 			self._capture_output = CaptureOutputMode(capture_output)
@@ -798,9 +797,8 @@ class Process:
 				)
 				if self._attempts == 1:
 					self._command = command
-					if self._temp_script_file:
-						if user != getuser():
-							self._temp_script_file.path.chmod(0o755)
+					if self._temp_script_file and user != getuser():
+						self._temp_script_file.path.chmod(0o755)
 
 		self._start_time = time.monotonic()
 

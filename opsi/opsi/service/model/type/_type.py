@@ -120,7 +120,7 @@ def to_string(value: Any) -> str:
 	try:
 		if isinstance(value, bytes):
 			return value.decode()
-	except Exception:
+	except Exception:  # noqa
 		pass
 
 	try:
@@ -128,7 +128,7 @@ def to_string(value: Any) -> str:
 		if isinstance(value, str):
 			return value
 		return str(value, "utf-8", "replace")
-	except Exception:
+	except Exception:  # noqa
 		pass
 
 	return str(value)
@@ -182,13 +182,12 @@ def to_uuid_string(value: Any) -> str:
 def to_bool(value: Any) -> bool:
 	if isinstance(value, bool):
 		return value
-	if isinstance(value, str):
-		if len(value) <= 5:  # longest word is 5 characters ("false")
-			low_value = value.lower()
-			if low_value in ("true", "yes", "on", "1"):
-				return True
-			if low_value in ("false", "no", "off", "0"):
-				return False
+	if isinstance(value, str) and len(value) <= 5:  # longest word is 5 characters ("false")
+		low_value = value.lower()
+		if low_value in ("true", "yes", "on", "1"):
+			return True
+		if low_value in ("false", "no", "off", "0"):
+			return False
 
 	return bool(value)
 
@@ -348,7 +347,7 @@ def to_hardware_address(value: Any) -> str:
 
 def to_ip_address(value: Any) -> str:
 	if not isinstance(value, (ipaddress.IPv4Address, ipaddress.IPv6Address, str)):
-		raise ValueError(f"Invalid ip address: '{value}'")
+		raise TypeError(f"Invalid ip address: '{value}'")
 	value = ipaddress.ip_address(value)
 	if isinstance(value, ipaddress.IPv6Address) and value.ipv4_mapped:
 		return value.ipv4_mapped.compressed
@@ -379,7 +378,7 @@ def to_netmask(value: Any) -> str:
 
 def to_network_address(value: Any) -> str:
 	if not isinstance(value, (ipaddress.IPv4Network, ipaddress.IPv6Network, str)):
-		raise ValueError(f"Invalid network address: '{value}'")
+		raise TypeError(f"Invalid network address: '{value}'")
 	return ipaddress.ip_network(value).compressed
 
 

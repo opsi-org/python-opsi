@@ -30,7 +30,7 @@ from opsi.crypt.ssl import (
 	x509_name_from_dict,
 	x509_name_to_dict,
 )
-from opsi.crypt.ssl._ssl import subject_to_dict  # type: ignore[deprecated]
+from opsi.crypt.ssl._ssl import subject_to_dict  # ty: ignore[deprecated]
 
 
 def test_x509_name_to_dict() -> None:
@@ -56,7 +56,7 @@ def test_x509_name_to_dict() -> None:
 	}
 	assert x509_name_to_dict(x509_name) == subject
 	with pytest.deprecated_call():
-		assert subject_to_dict(x509_name) == subject  # type: ignore[deprecated]
+		assert subject_to_dict(x509_name) == subject  # ty: ignore[deprecated]
 	assert create_x509_name(subject) == x509_name
 
 
@@ -85,7 +85,7 @@ def test_create_ca() -> None:
 	permitted_domains = [".mycompany.com", "mycompany.org", "localhost"]
 	ca_cert, ca_key = create_ca(subject=subject, valid_days=100, permitted_domains=permitted_domains)
 
-	name_constraints = [extension for extension in ca_cert.extensions if extension.oid == x509.OID_NAME_CONSTRAINTS][0]
+	name_constraints = next(extension for extension in ca_cert.extensions if extension.oid == x509.OID_NAME_CONSTRAINTS)
 	assert name_constraints.critical
 	assert name_constraints.value.permitted_subtrees[0].value == "mycompany.com"
 	assert name_constraints.value.permitted_subtrees[1].value == "mycompany.org"
@@ -151,10 +151,10 @@ def test_create_server_cert() -> None:
 	assert isinstance(key, rsa.RSAPrivateKey)
 	assert cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value == kwargs["subject"]["CN"]
 
-	alt_names = [extension for extension in cert.extensions if extension.oid == x509.OID_SUBJECT_ALTERNATIVE_NAME][0]
+	alt_names = next(extension for extension in cert.extensions if extension.oid == x509.OID_SUBJECT_ALTERNATIVE_NAME)
 	assert not alt_names.critical
 	assert alt_names.value.get_values_for_type(x509.DNSName) == list(kwargs["hostnames"])
-	assert alt_names.value.get_values_for_type(x509.IPAddress) == list(ipaddress.ip_address(ip) for ip in kwargs["ip_addresses"])
+	assert alt_names.value.get_values_for_type(x509.IPAddress) == [ipaddress.ip_address(ip) for ip in kwargs["ip_addresses"]]
 
 
 def test_create_server_cert_signing_request() -> None:
@@ -173,10 +173,10 @@ def test_create_server_cert_signing_request() -> None:
 	assert isinstance(key, rsa.RSAPrivateKey)
 	assert cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value == kwargs["subject"]["CN"]
 
-	alt_names = [extension for extension in cert.extensions if extension.oid == x509.OID_SUBJECT_ALTERNATIVE_NAME][0]
+	alt_names = next(extension for extension in cert.extensions if extension.oid == x509.OID_SUBJECT_ALTERNATIVE_NAME)
 	assert not alt_names.critical
 	assert alt_names.value.get_values_for_type(x509.DNSName) == list(kwargs["hostnames"])
-	assert alt_names.value.get_values_for_type(x509.IPAddress) == list(ipaddress.ip_address(ip) for ip in kwargs["ip_addresses"])
+	assert alt_names.value.get_values_for_type(x509.IPAddress) == [ipaddress.ip_address(ip) for ip in kwargs["ip_addresses"]]
 
 
 def test_as_pem() -> None:
@@ -199,7 +199,7 @@ def test_as_pem() -> None:
 	assert pem.startswith("-----BEGIN ENCRYPTED PRIVATE KEY-----")
 
 	with pytest.raises(TypeError):
-		as_pem(create_x509_name({}))  # type: ignore[arg-type]
+		as_pem(create_x509_name({}))  # ty: ignore[invalid-argument-type]
 
 
 def test_load_key_from_file(tmp_path: Path) -> None:

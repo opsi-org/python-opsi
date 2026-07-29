@@ -24,7 +24,7 @@ from logging import NOTSET, FileHandler, Formatter, Handler, LogRecord, NullHand
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from traceback import format_stack, format_tb
-from typing import IO, TYPE_CHECKING, Any
+from typing import IO, TYPE_CHECKING, Any, Self, cast
 from urllib.parse import quote
 
 from colorlog import ColoredFormatter
@@ -48,9 +48,15 @@ from opsi.logging._const import (
 if TYPE_CHECKING:
 	from rich.console import Console
 
-_context: contextvars.ContextVar[dict[str, Any]] = contextvars.ContextVar("context", default={})
+_context: contextvars.ContextVar[dict[str, Any]] = contextvars.ContextVar("context", default={})  # noqa: B039
 
 _logger_context_names: dict[str, str] = {}
+
+
+class _OPSILogRecord(LogRecord):
+	opsilevel: int
+	context: dict[str, Any]
+	contextstring: str
 
 
 class OPSILogger(logging.Logger):
@@ -143,30 +149,30 @@ class OPSILogger(logging.Logger):
 		try:
 			while frame:
 				if frame.f_code.co_name == "_log":
-					caller = frame.f_back.f_back  # type: ignore[union-attr]
-					code = caller.f_code  # type: ignore[union-attr]
-					return code.co_filename, caller.f_lineno, code.co_name, None  # type: ignore[union-attr]
+					caller = frame.f_back.f_back  # ty: ignore[unresolved-attribute]
+					code = caller.f_code  # ty: ignore[unresolved-attribute]
+					return code.co_filename, caller.f_lineno, code.co_name, None  # ty: ignore[unresolved-attribute]
 				frame = frame.f_back
 		except AttributeError:
 			pass
 		raise ValueError("Failed to find caller")
 
 
-logging.Logger.secret = OPSILogger.secret  # type: ignore[attr-defined]
-logging.Logger.confidential = OPSILogger.confidential  # type: ignore[attr-defined]
-logging.Logger.trace = OPSILogger.trace  # type: ignore[attr-defined]
-logging.Logger.debug2 = OPSILogger.debug2  # type: ignore[attr-defined]
-logging.Logger.notice = OPSILogger.notice  # type: ignore[attr-defined]
-logging.Logger.essential = OPSILogger.essential  # type: ignore[attr-defined]
-logging.Logger.comment = OPSILogger.comment  # type: ignore[attr-defined]
-logging.Logger.devel = OPSILogger.devel  # type: ignore[attr-defined]
-logging.Logger.findCaller = OPSILogger.findCaller  # type: ignore[assignment]
+logging.Logger.secret = OPSILogger.secret  # ty: ignore[unresolved-attribute]
+logging.Logger.confidential = OPSILogger.confidential  # ty: ignore[unresolved-attribute]
+logging.Logger.trace = OPSILogger.trace  # ty: ignore[unresolved-attribute]
+logging.Logger.debug2 = OPSILogger.debug2  # ty: ignore[unresolved-attribute]
+logging.Logger.notice = OPSILogger.notice  # ty: ignore[unresolved-attribute]
+logging.Logger.essential = OPSILogger.essential  # ty: ignore[unresolved-attribute]
+logging.Logger.comment = OPSILogger.comment  # ty: ignore[unresolved-attribute]
+logging.Logger.devel = OPSILogger.devel  # ty: ignore[unresolved-attribute]
+logging.Logger.findCaller = OPSILogger.findCaller  # ty: ignore[invalid-assignment]
 
 
 logging.setLoggerClass(OPSILogger)
 if not hasattr(logging, "_orig_getLogger"):
-	logging._orig_getLogger = logging.getLogger  # type: ignore[attr-defined]
-orig_getLogger = logging._orig_getLogger  # type: ignore[attr-defined]
+	logging._orig_getLogger = logging.getLogger  # ty: ignore[unresolved-attribute]
+orig_getLogger = logging._orig_getLogger  # ty: ignore[unresolved-attribute]
 logger = orig_getLogger()
 
 
@@ -200,15 +206,15 @@ def logrecord_init(
 	:param sinfo: Call stack information.
 	:param **kwargs: Additional keyword-arguments.
 	"""
-	self.__init_orig__(name, level, pathname, lineno, msg, args, exc_info, func=func, sinfo=sinfo, **kwargs)  # type: ignore[attr-defined]
-	self.opsilevel = logging.level_to_opsi_level.get(level, level)  # type: ignore[attr-defined]
+	self.__init_orig__(name, level, pathname, lineno, msg, args, exc_info, func=func, sinfo=sinfo, **kwargs)  # ty: ignore[unresolved-attribute]
+	self.opsilevel = logging.level_to_opsi_level.get(level, level)  # ty: ignore[unresolved-attribute]
 	self.context = {}
 	self.contextstring = ""
 
 
 if not hasattr(logging.LogRecord, "__init_orig__"):
-	logging.LogRecord.__init_orig__ = logging.LogRecord.__init__  # type: ignore[attr-defined]
-	logging.LogRecord.__init__ = logrecord_init  # type: ignore[assignment]
+	logging.LogRecord.__init_orig__ = logging.LogRecord.__init__  # ty: ignore[unresolved-attribute]
+	logging.LogRecord.__init__ = logrecord_init  # ty: ignore[invalid-assignment]
 
 
 def handle_log_exception(
@@ -238,7 +244,7 @@ def handle_log_exception(
 				stat_info = os.stat(exc.filename)
 				text += f"File permissions: {stat_info.st_mode:o}, owner: {stat_info.st_uid}, group: {stat_info.st_gid}\n"
 				text += f"Process uid: {os.geteuid()}, gid: {os.getegid()}\n"
-			except Exception:
+			except Exception:  # noqa: S110
 				pass
 
 		text += "Traceback (most recent call last):\n"
@@ -259,7 +265,7 @@ def handle_log_exception(
 		if log:
 			logger.error(text)
 
-	except Exception:
+	except Exception:  # noqa: S110
 		pass
 
 
@@ -273,10 +279,10 @@ class ContextFilter(logging.Filter):
 
 	_instance: ContextFilter | None = None
 
-	def __new__(cls, *args: Any, **kwargs: Any) -> ContextFilter:
+	def __new__(cls, *args: Any, **kwargs: Any) -> Self:
 		if cls._instance is None:
 			cls._instance = super().__new__(cls)
-		return cls._instance
+		return cast(Self, cls._instance)
 
 	def __init__(self, filter_dict: dict[str, Any] | None = None):
 		"""
@@ -324,7 +330,7 @@ class ContextFilter(logging.Filter):
 			self.filter_dict = {}
 			return
 		if not isinstance(filter_dict, dict):
-			raise ValueError("filter_dict must be a python dictionary")
+			raise TypeError("filter_dict must be a python dictionary")
 
 		self.filter_dict = {}
 		for key, value in filter_dict.items():
@@ -349,10 +355,10 @@ class ContextFilter(logging.Filter):
 		"""
 		if not getattr(record, "context", None):
 			record.context = _context.get()
-			record.context["logger"] = record.name  # type: ignore[attr-defined]
+			record.context["logger"] = record.name  # ty: ignore[unresolved-attribute]
 
 		for filter_key, filter_values in self.filter_dict.items():
-			record_value = record.context.get(filter_key)  # type: ignore[attr-defined]
+			record_value = record.context.get(filter_key)  # ty: ignore[unresolved-attribute]
 			# Filter out record if key not present or value not in filter values
 			if record_value in (None, "") or record_value not in filter_values:
 				return False
@@ -468,10 +474,10 @@ class SecretFilter:
 
 	_instance: SecretFilter | None = None
 
-	def __new__(cls, *args: Any, **kwargs: Any) -> SecretFilter:
+	def __new__(cls, *args: Any, **kwargs: Any) -> Self:
 		if cls._instance is None:
 			cls._instance = super().__new__(cls)
-		return cls._instance
+		return cast(Self, cls._instance)
 
 	def __init__(self, min_length: int = 5):
 		"""
@@ -585,10 +591,10 @@ class RichConsoleHandler(Handler):
 class ObservableHandler(Handler):
 	_instance: ObservableHandler | None = None
 
-	def __new__(cls, *args: Any, **kwargs: Any) -> ObservableHandler:
+	def __new__(cls, *args: Any, **kwargs: Any) -> Self:
 		if cls._instance is None:
 			cls._instance = super().__new__(cls)
-		return cls._instance
+		return cast(Self, cls._instance)
 
 	def __init__(self) -> None:
 		if getattr(self, "_initialized", False):
@@ -733,9 +739,9 @@ def logging_config(
 			if stderr_level != LOG_NONE:
 				shandler: Handler
 				if stderr_is_rich_console:
-					shandler = RichConsoleHandler(console=stderr_file)  # type: ignore[arg-type]
+					shandler = RichConsoleHandler(console=stderr_file)  # ty: ignore[invalid-argument-type]
 				else:
-					shandler = StreamHandler(stream=stderr_file)  # type: ignore[arg-type,type-var]
+					shandler = StreamHandler(stream=stderr_file)  # ty: ignore[no-matching-overload]
 				shandler.name = "opsi_stderr_handler"
 				logging.root.addHandler(shandler)
 		for hdlr in get_all_handlers((StreamHandler, RichConsoleHandler)):
@@ -791,7 +797,7 @@ def logging_config(
 				if logger_re.match(logger_name):
 					if level < 10:
 						level = OPSI_LEVEL_TO_LEVEL[level]
-					logger_.setLevel(level)  # type: ignore[union-attr]
+					logger_.setLevel(level)  # ty: ignore[unresolved-attribute]
 
 	if (
 		stderr_format
@@ -800,7 +806,7 @@ def logging_config(
 		and not stderr_is_rich_console
 		and hasattr(stderr_file, "isatty")
 		and callable(stderr_file.isatty)
-		and not stderr_file.isatty()  # type: ignore[call-top-callable]
+		and not stderr_file.isatty()  # ty: ignore[call-top-callable]
 	):
 		stderr_format = stderr_format.replace("%(log_color)s", "").replace("%(reset)s", "")
 
@@ -935,7 +941,7 @@ def set_context(new_context: dict[str, Any] | None, *, replace: bool = True) -> 
 	if new_context is None:
 		new_context = {}
 	if not isinstance(new_context, dict):
-		raise ValueError("new_context must be a dictionary")
+		raise TypeError("new_context must be a dictionary")
 
 	if not replace:
 		cur_context = _context.get().copy()
@@ -994,7 +1000,7 @@ def set_filter_from_string(filter_string: str | list[str] | None) -> None:
 	if isinstance(filter_string, str):
 		filter_string = filter_string.split(";")
 	elif not isinstance(filter_string, list):
-		raise ValueError("filter_string must be either string or list")
+		raise TypeError("filter_string must be either string or list")
 
 	for part in filter_string:
 		entry = part.split("=")
@@ -1133,7 +1139,7 @@ def init_warnings_capture(traceback_log_level: int = logging.INFO) -> None:
 			for _line in entry.split("\n"):
 				log(traceback_log_level, _line)
 
-	warnings.showwarning = _log_warning  # type: ignore[assignment]
+	warnings.showwarning = _log_warning  # ty: ignore[invalid-assignment]
 
 
 def reset_logging() -> None:
@@ -1159,5 +1165,5 @@ def get_logger(name: str | None = None) -> OPSILogger:
 	return _logger
 
 
-logging.getLogger = get_logger  # type: ignore[invalid-assignment]
+logging.getLogger = get_logger  # ty: ignore[invalid-assignment]
 logging_config(stderr_level=logging.WARNING)

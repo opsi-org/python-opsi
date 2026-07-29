@@ -228,7 +228,7 @@ class RepoMetaPackageCollection:
 		if num_allowed_versions is None:
 			num_allowed_versions = self.repository.num_allowed_versions
 		versions = list(self.packages[name].keys())
-		real_versions = set([version.split("~")[0] for version in versions])  # ignore prelease and custom suffixes
+		real_versions = {version.split("~")[0] for version in versions}  # ignore prelease and custom suffixes
 		keep_versions = sorted(real_versions, key=LegacyVersion, reverse=True)[
 			:num_allowed_versions
 		]  # Need legacyversion for 1.0or2.0 like versions
@@ -301,9 +301,8 @@ class RepoMetaPackageCollection:
 				del self.packages[name]
 
 	def get_packages(self) -> Generator[RepoMetaPackage]:
-		for _name, versions in self.packages.items():
-			for _version, package in versions.items():
-				yield package
+		for versions in self.packages.values():
+			yield from versions.values()
 
 	def read_metafile_data(self, data: bytes) -> None:
 		p_data: dict[str, Any] = {}

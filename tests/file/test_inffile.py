@@ -70,7 +70,7 @@ def test_reg_expand_sz() -> None:
 
 
 def test_current_timestamp() -> None:
-	assert abs(current_timestamp() - datetime.now().timestamp()) < 1
+	assert abs(current_timestamp() - datetime.now(tz=UTC).timestamp()) < 1
 
 
 def test_inf_target_os_version() -> None:

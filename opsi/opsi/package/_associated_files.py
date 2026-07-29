@@ -93,7 +93,7 @@ def create_package_content_file(base_dir: Path, *, links_as_links: bool = True) 
 		package_content_file.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="")
 
 	except Exception as err:
-		logger.error(err, exc_info=True)
+		logger.exception("Failed to create package content file")
 		raise RuntimeError(f"Failed to create package content file of directory '{base_dir}': {err}") from err
 	return package_content_file
 

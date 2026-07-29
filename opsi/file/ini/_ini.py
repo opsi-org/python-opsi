@@ -27,7 +27,6 @@ class IniParseError(Exception):
 	"""Raised when an INI file cannot be read or parsed."""
 
 
-
 # INIFile class, should be used via opsi.file.ini.open
 class INIFile:
 	"""

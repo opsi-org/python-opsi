@@ -6,7 +6,7 @@
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal, cast
 
 import tomlkit
 
@@ -183,8 +183,8 @@ class OpsiPackage:
 	def parse_control_file_legacy(self, control_file: Path) -> None:
 		legacy_control_file = LegacyControlFile(control_file)
 		if not isinstance(legacy_control_file.product, Product):
-			raise ValueError("Could not extract product information from legacy control file.")
-		self.product = legacy_control_file.product
+			raise TypeError("Could not extract product information from legacy control file.")
+		self.product = cast(Any, legacy_control_file.product)
 		self.product_properties = legacy_control_file.productProperties
 		self.product_dependencies = legacy_control_file.productDependencies
 		self.package_dependencies = [
@@ -203,7 +203,7 @@ class OpsiPackage:
 		if not self.product:
 			raise ValueError("Product information is missing. Cannot generate control file.")
 		legacy_control_file = LegacyControlFile()
-		legacy_control_file.product = self.product
+		cast(Any, legacy_control_file).product = self.product
 		legacy_control_file.productDependencies = self.product_dependencies
 		legacy_control_file.productProperties = self.product_properties
 		legacy_control_file.packageDependencies = [asdict(pdep) for pdep in self.package_dependencies]
@@ -224,7 +224,7 @@ class OpsiPackage:
 				raise ValueError(f"Error in control file '{control_file}': Product {key} is required")
 		if "Package" not in doc:
 			raise ValueError(f"Error in control file '{control_file}': Section 'Package' not found")
-		self.product = create_product(doc)
+		self.product = cast(Any, create_product(doc))
 		self.package_dependencies = [
 			PackageDependency(package=str(pdep["package"]), version=pdep.get("version"), condition=pdep.get("condition"))
 			for pdep in create_package_dependencies(doc["Package"].get("depends", []))
@@ -261,8 +261,9 @@ class OpsiPackage:
 			"depends": [_remove_none_values(asdict(pdep)) for pdep in self.package_dependencies],
 		}
 		doc["Product"] = dictify_product(self.product)
-		if isinstance(doc["Product"], dict) and "pxeConfigTemplate" in doc["Product"]:
-			doc["Product"]["pxeConfigTemplate"] = tomlkit.string(str(doc["Product"]["pxeConfigTemplate"]), multiline=True)  # type: ignore[invalid-assignment]
+		product_doc = cast(dict[str, Any], doc["Product"])
+		if "pxeConfigTemplate" in product_doc:
+			product_doc["pxeConfigTemplate"] = tomlkit.string(str(product_doc["pxeConfigTemplate"]), multiline=True)
 
 		if self.product_properties:
 			doc["ProductProperty"] = dictify_product_properties(self.product_properties)
@@ -294,11 +295,10 @@ class OpsiPackage:
 				if dir_path.is_dir():
 					dir_names_found.append(dir_path.name)
 					cur_dir_paths = dirs.get(dir_type, [])
-					if not extension and custom_only:
+					if not extension and custom_only and (cur_dir_paths or dir_type != "OPSI"):
 						# With custom only the default CLIENT_DATA and SERVER_DATA directories are skipped
 						# The default OPSI directory must only be used if no custom directory is found
-						if cur_dir_paths or dir_type != "OPSI":
-							continue
+						continue
 					dirs[dir_type] = cur_dir_paths + [dir_path]
 					if extension:
 						custom_dirs += 1

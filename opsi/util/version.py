@@ -68,17 +68,17 @@ def _legacy_cmpkey(version: str) -> tuple[str, ...]:
 class LegacyVersion(Version):
 	def __init__(self, version: str):
 		self._version = str(version)
-		self._key = _legacy_cmpkey(self._version)  # type: ignore[invalid-assignment]
+		self._key = _legacy_cmpkey(self._version)  # ty: ignore[invalid-assignment]
 
 	def __str__(self) -> str:
 		return str(self._version)
 
 
-def compare_versions(version1: str, condition: Literal["==", "=", "<", "<=", ">", ">="], version2: str) -> bool:
+def compare_versions(version1: str, condition: Literal["", "==", "=", "<", "<=", ">", ">="], version2: str) -> bool:
 	"""
 	Compare the versions `v1` and `v2` with the given `condition`.
 
-	`condition` may be one of `==`, `=`, `<`, `<=`, `>`, `>=`.
+	`condition` may be one of `==`, `=`, `<`, `<=`, `>`, `>=`, or an empty string for equality.
 
 	:raises ValueError: If invalid value for version or condition if given.
 	:rtype: bool

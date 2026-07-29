@@ -30,9 +30,9 @@ def security_authorization() -> Generator[None]:
 def install_ca(ca_cert: x509.Certificate) -> None:
 	logger.info("Installing CA '%s' into system store", ca_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value)
 
-	pem_file = tempfile.NamedTemporaryFile(mode="wb", delete=False)
-	pem_file.write(ca_cert.public_bytes(encoding=serialization.Encoding.PEM))
-	pem_file.close()
+	with tempfile.NamedTemporaryFile(mode="wb", delete=False) as pem_file:
+		pem_file.write(ca_cert.public_bytes(encoding=serialization.Encoding.PEM))
+
 	try:
 		with security_authorization():
 			run_command(

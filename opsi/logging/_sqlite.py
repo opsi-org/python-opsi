@@ -15,6 +15,7 @@ from datetime import UTC, datetime
 from logging import Formatter, Handler, LogRecord
 from pathlib import Path
 from types import TracebackType
+from typing import Self
 
 from colorlog import ColoredFormatter
 
@@ -27,7 +28,7 @@ from opsi.logging._const import (
 	SECRET_REPLACEMENT_STRING,
 	LoggingError,
 )
-from opsi.logging._logging import ContextSecretFormatter, secret_filter
+from opsi.logging._logging import ContextSecretFormatter, _OPSILogRecord, secret_filter
 from opsi.serialization import json_decode, json_encode
 
 
@@ -53,7 +54,7 @@ class SQLiteLogDatabase:
 		except Exception as exc:
 			raise LoggingError(f"Failed to connect to SQLite database at {self.db_path}: {exc}") from exc
 
-	def __enter__(self) -> SQLiteLogDatabase:
+	def __enter__(self) -> Self:
 		return self
 
 	def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, traceback: TracebackType | None) -> None:
@@ -71,7 +72,7 @@ class SQLiteLogDatabase:
 			try:
 				self._connection.close()
 				self._connection = None
-			except Exception:
+			except Exception:  # noqa: S110
 				pass
 			if recreate:
 				raise
@@ -115,7 +116,7 @@ class SQLiteLogDatabase:
 		max_records: int | None = None,
 		follow: bool = False,
 		timeout: float | None = None,
-	) -> Generator[LogRecord]:
+	) -> Generator[_OPSILogRecord]:
 		"""
 		Retrieves records from the SQLite database.
 		Can filter records based on since, until, max_level, and context.
@@ -142,9 +143,7 @@ class SQLiteLogDatabase:
 			filter_clauses.append("pid = :pid")
 			filter_values["pid"] = pid
 		if context is not None:
-			idx = 0
-			for key, value in context.items():
-				idx += 1
+			for idx, (key, value) in enumerate(context.items(), start=1):
 				filter_clauses.append(f"json_extract(context, :context_key_{idx}) = :context_value_{idx}")
 				filter_values[f"context_key_{idx}"] = f"$.{key}"
 				filter_values[f"context_value_{idx}"] = value
@@ -174,7 +173,9 @@ class SQLiteLogDatabase:
 			for row in cursor:
 				try:
 					last_record_id_read = row[0] or 0
-					record = LogRecord(name="", level=row[2], pathname=row[5] or "", lineno=row[6], msg=row[3], args=None, exc_info=None)
+					record = _OPSILogRecord(
+						name="", level=row[2], pathname=row[5] or "", lineno=row[6], msg=row[3], args=None, exc_info=None
+					)
 					record.created = (row[1] or 0) / 1000
 					record.msecs = (row[1] or 0) % 1000
 					if row[4]:
@@ -182,7 +183,7 @@ class SQLiteLogDatabase:
 					if row[7]:
 						record.context = json_decode(row[7])
 					yield record
-				except Exception:
+				except Exception:  # noqa: S112
 					continue
 			if not follow:
 				return
@@ -263,7 +264,7 @@ class SQLiteLogDatabase:
 			if self._connection:
 				self._connection.close()
 				self._connection = None
-		except Exception:
+		except Exception:  # noqa: S110
 			pass
 
 

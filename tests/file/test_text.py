@@ -126,7 +126,7 @@ def test_change_encoding_and_line_ending(tmp_path: Path) -> None:
 			text_file.set_encoding("invalid-encoding")
 
 	with pytest.raises(ValueError, match=r"Line ending must be '\\n', '\\r\\n' or ''"), TextFile(file_path) as text_file:
-		text_file.set_line_ending("invalid-line-ending")  # type: ignore[invalid-argument-type]
+		text_file.set_line_ending("invalid-line-ending")  # ty: ignore[invalid-argument-type]
 
 
 @pytest.mark.parametrize("path_type", PATH_TYPES)
@@ -257,7 +257,7 @@ def test_find_line(tmp_path: Path) -> None:
 			ValueError,
 			match="Invalid start position 'invalid', must be one of: 'selected', 'above_selected', 'below_selected', 'top', 'bottom'",
 		):
-			text_file.find_line("coffee", start="invalid")  # type: ignore[invalid-argument-type]
+			text_file.find_line("coffee", start="invalid")  # ty: ignore[invalid-argument-type]
 
 
 def test_select_line(tmp_path: Path) -> None:
@@ -294,7 +294,7 @@ def test_select_line(tmp_path: Path) -> None:
 
 		assert text_file.get_lines() == TEST_FILE.strip().splitlines() + [""] * 5
 
-	file_path.read_text() == TEST_FILE.strip().splitlines() + [""] * 4
+	assert file_path.read_text() == TEST_FILE.strip().splitlines() + [""] * 4
 
 
 def test_retry_on_io_error(tmp_path: Path) -> None:
@@ -374,7 +374,7 @@ def test_line_editing_operations(tmp_path: Path) -> None:
 			ValueError,
 			match="Invalid insert position 'invalid', must be one of: 'selected', 'above_selected', 'below_selected', 'top', 'bottom'",
 		):
-			text_file.insert_line("invalid", where="invalid")  # type: ignore[invalid-argument-type]
+			text_file.insert_line("invalid", where="invalid")  # ty: ignore[invalid-argument-type]
 
 		# delete selected
 		assert text_file.write_text("one\ntwo\nthree\nfour\nfive\n") == 5
@@ -478,7 +478,7 @@ def test_line_editing_operations(tmp_path: Path) -> None:
 			ValueError,
 			match="Invalid delete position 'invalid', must be one of: 'selected', 'above_selected', 'below_selected', 'top', 'bottom'",
 		):
-			text_file.delete_line(where="invalid")  # type: ignore[invalid-argument-type]
+			text_file.delete_line(where="invalid")  # ty: ignore[invalid-argument-type]
 
 		# others
 		assert text_file.write_text("one\ntwo\nthree\nfour\nfive\n")

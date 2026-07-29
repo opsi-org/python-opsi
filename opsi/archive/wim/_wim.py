@@ -152,7 +152,7 @@ def wim_info(wim_file: Path | str) -> WIMInfo:
 			elif attr == "guid" and val.startswith("0x"):
 				val = val[2:]
 			elif attr_type is int and val.startswith("0x"):
-				val = cast(Any, int(val, base=16))
+				val = int(val, base=16)
 			elif attr_type is bool:
 				val = cast(Any, val in ("yes", "1"))
 			elif attr_type is int and val.endswith("bytes"):
@@ -161,12 +161,12 @@ def wim_info(wim_file: Path | str) -> WIMInfo:
 				# Fri Jul 10 16:37:14 2015 UTC
 				tmp = val.split(" ", 2)
 				mon = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec").index(tmp[1]) + 1
-				val = cast(Any, datetime.strptime(f"{mon} {tmp[2]}", "%m %d %H:%M:%S %Y %Z").replace(tzinfo=UTC))
+				val = datetime.strptime(f"{mon} {tmp[2]}", "%m %d %H:%M:%S %Y %Z").replace(tzinfo=UTC)
 			elif attr_type is list[str]:
 				val = val.split(" ")
 			else:
 				assert callable(attr_type)
-				val = attr_type(val)  # type: ignore[call-top-callable]
+				val = cast(Any, attr_type)(val)
 			data[attr] = val
 
 	info_data["images"] = []

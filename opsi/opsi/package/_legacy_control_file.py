@@ -9,6 +9,7 @@ handling for old control file format
 
 import re
 from pathlib import Path
+from typing import Any, cast
 
 from opsi.logging import get_logger
 from opsi.opsi.service.model.object import (
@@ -57,41 +58,37 @@ class LegacyControlFile:
 		if not control_file:
 			return
 
-		productAttributes = set(
-			[
-				"id",
-				"type",
-				"name",
-				"description",
-				"advice",
-				"version",
-				"packageversion",
-				"priority",
-				"licenserequired",
-				"productclasses",
-				"pxeconfigtemplate",
-				"setupscript",
-				"uninstallscript",
-				"updatescript",
-				"alwaysscript",
-				"oncescript",
-				"customscript",
-				"userloginscript",
-			]
-		)
-		dependencyAttributes = set(
-			[
-				"action",
-				"requiredproduct",
-				"requiredproductversion",
-				"requiredpackageversion",
-				"requiredclass",
-				"requiredstatus",
-				"requiredaction",
-				"requirementtype",
-			]
-		)
-		propertyAttributes = set(["type", "name", "default", "values", "description", "editable", "multivalue"])
+		productAttributes = {
+			"id",
+			"type",
+			"name",
+			"description",
+			"advice",
+			"version",
+			"packageversion",
+			"priority",
+			"licenserequired",
+			"productclasses",
+			"pxeconfigtemplate",
+			"setupscript",
+			"uninstallscript",
+			"updatescript",
+			"alwaysscript",
+			"oncescript",
+			"customscript",
+			"userloginscript",
+		}
+		dependencyAttributes = {
+			"action",
+			"requiredproduct",
+			"requiredproductversion",
+			"requiredpackageversion",
+			"requiredclass",
+			"requiredstatus",
+			"requiredaction",
+			"requirementtype",
+		}
+		propertyAttributes = {"type", "name", "default", "values", "description", "editable", "multivalue"}
 
 		sectionType = None
 		option = None
@@ -162,7 +159,16 @@ class LegacyControlFile:
 					value = to_bool(value)
 				elif key == "productclasses":
 					value = to_string_lower(value or "")
-				elif key == "pxeconfigtemplate" or key == "setupscript" or key == "uninstallscript" or key == "updatescript" or key == "alwaysscript" or key == "oncescript" or key == "customscript" or key == "userloginscript":
+				elif (
+					key == "pxeconfigtemplate"
+					or key == "setupscript"
+					or key == "uninstallscript"
+					or key == "updatescript"
+					or key == "alwaysscript"
+					or key == "oncescript"
+					or key == "customscript"
+					or key == "userloginscript"
+				):
 					value = to_filename(value or "")
 
 				if value and isinstance(value, str) and value.lower() == "none":
@@ -207,20 +213,24 @@ class LegacyControlFile:
 
 			if not option:
 				raise ValueError(f"Parse error in line '{lineNum}': no option / bad option defined")
+			if sectionType is None:
+				raise ValueError(f"Parse error in line '{lineNum}': no section defined")
 
-			if option not in self._sections[sectionType][-1]:  # type: ignore
-				self._sections[sectionType][-1][option] = value  # type: ignore
+			sections = cast(list[dict[str, Any]], self._sections[sectionType])
+			current_section = sections[-1]
+			if option not in current_section:
+				current_section[option] = value
 			else:
-				if isinstance(self._sections[sectionType][-1][option], str):  # type: ignore
-					if not self._sections[sectionType][-1][option].endswith("\n"):  # type: ignore
-						self._sections[sectionType][-1][option] += "\n"  # type: ignore
-					self._sections[sectionType][-1][option] += value.lstrip()  # type: ignore
+				if isinstance(current_section[option], str):
+					if not current_section[option].endswith("\n"):
+						current_section[option] += "\n"
+					current_section[option] += cast(str, value).lstrip()
 
 		for sectionType, secs in self._sections.items():
 			if sectionType == "changelog":
 				continue
 
-			for i, currentSection in enumerate(secs):
+			for i, currentSection in enumerate(cast(list[dict[str, str]], secs)):
 				for option, value in currentSection.items():
 					if (
 						(sectionType == "product" and option == "productclasses")
@@ -278,55 +288,55 @@ class LegacyControlFile:
 					self.packageDependencies.append({"package": package, "condition": condition, "version": version})
 
 		# Create Product object
-		product = self._sections["product"][0]
+		product = cast(list[dict[str, Any]], self._sections["product"])[0]
 		for key in ("id", "version", "type"):
-			if not product.get(key):  # type: ignore
+			if not product.get(key):
 				raise ValueError(f"Error in control file '{control_file}': Product {key} is required")
 
 		Class: type
-		if product.get("type") == "NetbootProduct":  # type: ignore
+		if product.get("type") == "NetbootProduct":
 			Class = NetbootProduct
-		elif product.get("type") == "LocalbootProduct":  # type: ignore
+		elif product.get("type") == "LocalbootProduct":
 			Class = LocalbootProduct
 		else:
-			raise ValueError(f"Error in control file '{control_file}': Invalid product type '{product.get('type')}'")  # type: ignore
+			raise ValueError(f"Error in control file '{control_file}': Invalid product type '{product.get('type')}'")
 
-		productVersion = product.get("version")  # type: ignore
+		productVersion = product.get("version")
 		if not productVersion:
 			logger.warning("No product version given! Assuming 1.0.")
 			productVersion = "1.0"
 
-		packageVersion = self._sections.get("package", [{}])[0].get("version") or product.get(  # type: ignore[union-attr]
-			"packageversion"
-		)
+		package_sections = cast(list[dict[str, Any]], self._sections.get("package", [{}]))
+		packageVersion = package_sections[0].get("version") or product.get("packageversion")
 		if not packageVersion:
 			logger.warning("No package version given! Assuming 1.")
 			packageVersion = "1"
+		windows_sections = cast(list[dict[str, Any]], self._sections.get("windows", [{}]))
 
 		self.product = Class(
-			id=product.get("id"),  # type: ignore
-			name=product.get("name"),  # type: ignore
+			id=cast(str, product.get("id")),
+			name=product.get("name"),
 			productVersion=productVersion,
 			packageVersion=packageVersion,
-			licenseRequired=product.get("licenserequired"),  # type: ignore
-			setupScript=product.get("setupscript"),  # type: ignore
-			uninstallScript=product.get("uninstallscript"),  # type: ignore
-			updateScript=product.get("updatescript"),  # type: ignore
-			alwaysScript=product.get("alwaysscript"),  # type: ignore
-			onceScript=product.get("oncescript"),  # type: ignore
-			customScript=product.get("customscript"),  # type: ignore
-			priority=product.get("priority"),  # type: ignore
-			description=product.get("description"),  # type: ignore
-			advice=product.get("advice"),  # type: ignore
-			productClassIds=product.get("productclasses"),  # type: ignore
-			windowsSoftwareIds=self._sections.get("windows", [{}])[0].get("softwareids", []),  # type: ignore
-			changelog=self._sections.get("changelog"),  # type: ignore
+			licenseRequired=product.get("licenserequired"),
+			setupScript=product.get("setupscript"),
+			uninstallScript=product.get("uninstallscript"),
+			updateScript=product.get("updatescript"),
+			alwaysScript=product.get("alwaysscript"),
+			onceScript=product.get("oncescript"),
+			customScript=product.get("customscript"),
+			priority=product.get("priority"),
+			description=product.get("description"),
+			advice=product.get("advice"),
+			productClassIds=product.get("productclasses"),
+			windowsSoftwareIds=windows_sections[0].get("softwareids", []),
+			changelog=cast(Any, self._sections.get("changelog")),
 		)
-		if isinstance(self.product, NetbootProduct) and product.get("pxeconfigtemplate") is not None:  # type: ignore
-			self.product.setPxeConfigTemplate(product.get("pxeconfigtemplate"))  # type: ignore
+		if isinstance(self.product, NetbootProduct) and product.get("pxeconfigtemplate") is not None:
+			self.product.setPxeConfigTemplate(cast(str, product.get("pxeconfigtemplate")))
 
-		if isinstance(self.product, LocalbootProduct) and product.get("userloginscript") is not None:  # type: ignore
-			self.product.setUserLoginScript(product.get("userloginscript"))  # type: ignore
+		if isinstance(self.product, LocalbootProduct) and product.get("userloginscript") is not None:
+			self.product.setUserLoginScript(cast(str, product.get("userloginscript")))
 		self.product.setDefaults()
 
 		# Create ProductDependency objects

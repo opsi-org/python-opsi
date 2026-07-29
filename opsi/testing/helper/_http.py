@@ -156,7 +156,7 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 			self.send_error(HTTPStatus.NOT_FOUND, "File not found")
 			return None
 		try:
-			file = open(path, "rb")
+			file = open(path, "rb")  # noqa: SIM115
 		except OSError:
 			self.send_error(HTTPStatus.NOT_FOUND, "File not found")
 			return None
@@ -254,9 +254,8 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 		}
 
 		self._log(request_info)
-		if self.server.request_callback:
-			if self.server.request_callback(self, request_info):
-				return
+		if self.server.request_callback and self.server.request_callback(self, request_info):
+			return
 
 		response = None
 		if self.server.response_body:
@@ -282,9 +281,8 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 		request_info = {"method": "GET", "client_address": self.client_address, "path": self.path, "headers": dict(self.headers)}
 		self._log(request_info)
 
-		if self.server.request_callback:
-			if self.server.request_callback(self, request_info):
-				return
+		if self.server.request_callback and self.server.request_callback(self, request_info):
+			return
 
 		if self.headers.get("Upgrade") == "websocket":
 			if self.server.response_status:
@@ -358,9 +356,8 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 		request_info = {"method": "PUT", "client_address": self.client_address, "path": self.path, "headers": dict(self.headers)}
 		self._log(request_info)
 
-		if self.server.request_callback:
-			if self.server.request_callback(self, request_info):
-				return
+		if self.server.request_callback and self.server.request_callback(self, request_info):
+			return
 
 		if self.server.serve_directory:
 			path = self.translate_path(self.path)
@@ -390,9 +387,8 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 		request_info = {"method": "MKCOL", "client_address": self.client_address, "path": self.path, "headers": dict(self.headers)}
 		self._log(request_info)
 
-		if self.server.request_callback:
-			if self.server.request_callback(self, request_info):
-				return
+		if self.server.request_callback and self.server.request_callback(self, request_info):
+			return
 
 		if self.server.serve_directory:
 			path = self.translate_path(self.path)
@@ -408,9 +404,8 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 		request_info = {"method": "DELETE", "client_address": self.client_address, "path": self.path, "headers": dict(self.headers)}
 		self._log(request_info)
 
-		if self.server.request_callback:
-			if self.server.request_callback(self, request_info):
-				return
+		if self.server.request_callback and self.server.request_callback(self, request_info):
+			return
 
 		if self.server.serve_directory:
 			path = self.translate_path(self.path)
@@ -432,9 +427,8 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 		request_info = {"method": "HEAD", "client_address": self.client_address, "path": self.path, "headers": dict(self.headers)}
 		self._log(request_info)
 
-		if self.server.request_callback:
-			if self.server.request_callback(self, request_info):
-				return
+		if self.server.request_callback and self.server.request_callback(self, request_info):
+			return
 
 		if self.server.serve_directory:
 			super().do_HEAD()
@@ -450,9 +444,8 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 		request_info = {"method": "PROPFIND", "client_address": self.client_address, "path": self.path, "headers": dict(self.headers)}
 		self._log(request_info)
 
-		if self.server.request_callback:
-			if self.server.request_callback(self, request_info):
-				return
+		if self.server.request_callback and self.server.request_callback(self, request_info):
+			return
 
 		response = self.server.response_body or b""
 		if self.server.serve_directory:
@@ -514,9 +507,8 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 		request_info = {"method": "CONNECT", "client_address": self.client_address, "path": self.path, "headers": dict(self.headers)}
 		self._log(request_info)
 
-		if self.server.request_callback:
-			if self.server.request_callback(self, request_info):
-				return
+		if self.server.request_callback and self.server.request_callback(self, request_info):
+			return
 
 		self.send_response(501, "I am not a proxy")
 		self.end_headers()
@@ -636,7 +628,7 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 				try:
 					self._ws_send_close(code, reason)
 					time.sleep(1)
-				except Exception:
+				except Exception:  # noqa
 					pass
 				self.on_ws_closed()
 			else:
@@ -798,14 +790,12 @@ class HTTPTestServer(threading.Thread, BaseServer):
 		# Use 2048 bits for speedup
 		ca_cert, ca_key = create_ca(subject={"CN": "http_test_server ca"}, valid_days=3, bits=2048)
 
-		tmp = NamedTemporaryFile(delete=False)
-		tmp.write(as_pem(ca_key).encode("utf-8"))
-		tmp.close()
+		with NamedTemporaryFile(delete=False) as tmp:
+			tmp.write(as_pem(ca_key).encode("utf-8"))
 		self.ca_key = Path(tmp.name)
 
-		tmp = NamedTemporaryFile(delete=False)
-		tmp.write(as_pem(ca_cert).encode("utf-8"))
-		tmp.close()
+		with NamedTemporaryFile(delete=False) as tmp:
+			tmp.write(as_pem(ca_cert).encode("utf-8"))
 		self.ca_cert = Path(tmp.name)
 
 		kwargs: dict[str, Any] = {
@@ -819,14 +809,12 @@ class HTTPTestServer(threading.Thread, BaseServer):
 		}
 		cert, key = create_server_cert(**kwargs)
 
-		tmp = NamedTemporaryFile(delete=False)
-		tmp.write(as_pem(key).encode("utf-8"))
-		tmp.close()
+		with NamedTemporaryFile(delete=False) as tmp:
+			tmp.write(as_pem(key).encode("utf-8"))
 		self.server_key = Path(tmp.name)
 
-		tmp = NamedTemporaryFile(delete=False)
-		tmp.write(as_pem(cert).encode("utf-8"))
-		tmp.close()
+		with NamedTemporaryFile(delete=False) as tmp:
+			tmp.write(as_pem(cert).encode("utf-8"))
 		self.server_cert = Path(tmp.name)
 
 	def _cleanup_cert(self) -> None:

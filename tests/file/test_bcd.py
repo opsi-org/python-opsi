@@ -10,6 +10,7 @@ bcd tests
 import io
 import platform
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -143,8 +144,8 @@ def test_format_value_fallback_without_key() -> None:
 			assert value_id == 1
 			return (9, 0)
 
-	bcd.hive = MockHive()
-	bcd.get_value = lambda value_id: b"abc"
+	cast(Any, bcd).hive = MockHive()
+	cast(Any, bcd).get_value = lambda value_id: b"abc"
 
 	assert bcd.format_value(1) == '"Element"={vtype}:{value}'
 	assert bcd.format_value(1, with_key=False) == "{vtype}:{value}"
@@ -152,7 +153,7 @@ def test_format_value_fallback_without_key() -> None:
 
 def test_print_boot_entries_formats_boot_and_ramdisk_and_unsupported() -> None:
 	bcd = BCD.__new__(BCD)
-	bcd.get_boot_entries = lambda: [
+	cast(Any, bcd).get_boot_entries = lambda: [
 		{
 			"identifier": "{boot-entry}",
 			"device": {

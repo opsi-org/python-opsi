@@ -2,11 +2,11 @@
 # Copyright (c) 2020-2026 uib GmbH <info@uib.de>
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
-
 import datetime
 import time
 from collections.abc import Generator
 from contextlib import nullcontext
+from datetime import UTC
 from typing import Any
 from uuid import UUID
 
@@ -262,8 +262,8 @@ def test_to_oct_raising_errors_on_invalid_value(value: Any) -> None:
 		(0, "0000-00-00 00:00:00"),
 		("", "0000-00-00 00:00:00"),
 		("2020-01-01", "2020-01-01 00:00:00"),
-		(datetime.datetime(2013, 9, 11, 10, 54, 23), "2013-09-11 10:54:23"),
-		(datetime.datetime(2013, 9, 11, 10, 54, 23, 123123), "2013-09-11 10:54:23"),
+		(datetime.datetime(2013, 9, 11, 10, 54, 23), "2013-09-11 10:54:23"),  # noqa: DTZ001
+		(datetime.datetime(2013, 9, 11, 10, 54, 23, 123123), "2013-09-11 10:54:23"),  # noqa: DTZ001
 	),
 )
 def test_to_opsi_timestamp(value: Any, expected: Any) -> None:
@@ -330,7 +330,6 @@ def test_to_hardware_address_raises_exceptions_on_invalid_addresses(address: Any
 	"inp, expected",
 	[
 		("1.1.1.1", "1.1.1.1"),
-		("192.168.101.1", "192.168.101.1"),
 		("192.168.101.1", "192.168.101.1"),
 		("2001:0db8:85a3::8a2e:0370:7334", "2001:db8:85a3::8a2e:370:7334"),
 		("2001:db8:85a3:0000:0000:8a2e:0370:7334", "2001:db8:85a3::8a2e:370:7334"),
@@ -748,7 +747,7 @@ def test_to_time_fails_if_no_time_given() -> None:
 	(
 		time.time(),
 		time.localtime(),
-		datetime.datetime.now(),
+		datetime.datetime.now(tz=UTC),
 	),
 )
 def test_to_time_returns_time_struct(time_info: Any) -> None:

@@ -323,7 +323,7 @@ def test_repo_meta_package_collection_remove_package(tmp_path: Path) -> None:
 	assert len(package_collection.packages["localboot_new"]) == 3
 
 	package_collection.remove_package("localboot_new", "1.0-1")
-	assert sorted(list(package_collection.packages["localboot_new"])) == ["2.0-1", "42.0-1337"]
+	assert sorted(package_collection.packages["localboot_new"]) == ["2.0-1", "42.0-1337"]
 
 	package_collection.remove_package("localboot_new", "42.0-1337")
 	assert list(package_collection.packages["localboot_new"]) == ["2.0-1"]

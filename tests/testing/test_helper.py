@@ -438,14 +438,14 @@ def _make_http_handler() -> HTTPTestServerRequestHandler:
 			return self.test_server.response_delay
 
 	handler = HTTPTestServerRequestHandler.__new__(HTTPTestServerRequestHandler)
-	handler.server = FakeServer(test_server)
+	cast(Any, handler).server = FakeServer(test_server)
 	handler.headers = _make_headers({"Host": "example.invalid"})
 	handler.client_address = ("127.0.0.1", 12345)
 	handler.path = "/websocket"
 	handler.rfile = BytesIO()
 	handler.wfile = BytesIO()
 	handler.connection = Mock()
-	handler._headers_buffer = []
+	cast(Any, handler)._headers_buffer = []
 	handler.request_version = "HTTP/1.1"
 	handler.command = "GET"
 	handler.requestline = "GET /websocket HTTP/1.1"
@@ -931,6 +931,7 @@ def test_http_test_server_stop_restart_and_context_manager_failure() -> None:
 	with (
 		patch("opsi.testing.helper._http.HTTPTestServer.start", autospec=True),
 		patch("opsi.testing.helper._http.HTTPTestServer.wait_for_server_socket", return_value=False),
-		pytest.raises(RuntimeError, match="Failed to start HTTPTestServer"),http_test_server()
+		pytest.raises(RuntimeError, match="Failed to start HTTPTestServer"),
+		http_test_server(),
 	):
 		pass

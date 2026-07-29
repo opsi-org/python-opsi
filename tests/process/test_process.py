@@ -14,7 +14,7 @@ from getpass import getuser
 from pathlib import Path
 from subprocess import list2cmdline
 from types import ModuleType, SimpleNamespace
-from typing import Literal
+from typing import Any, Literal, cast
 from unittest.mock import Mock, patch
 
 import psutil
@@ -110,7 +110,7 @@ def test_get_interpreter_command(
 @pytest.mark.parametrize("path_type", PATH_TYPES)
 def test_get_interpreter_command_error(path_type) -> None:
 	with pytest.raises(FileNotFoundError, match="Interpreter not found: unknown"):
-		_get_interpreter_command(interpreter="unknown", script_file=path_type("-"))  # type: ignore[invalid-argument-type]
+		_get_interpreter_command(interpreter="unknown", script_file=path_type("-"))  # ty: ignore[invalid-argument-type]
 
 	with pytest.raises(ProcessError, match=("WinError 2" if is_windows() else "No such file")) as exc_info:
 		with Process(script="x", interpreter="unknown"):
@@ -167,10 +167,10 @@ def test_process_hide_window_sets_windows_startupinfo(hide_window: bool, monkeyp
 	startf_useshowwindow = 1
 	sw_hide = 0
 	fake_subprocess_module = ModuleType("subprocess")
-	fake_subprocess_module.STARTF_USESHOWWINDOW = startf_useshowwindow
-	fake_subprocess_module.SW_HIDE = sw_hide
-	fake_subprocess_module.STARTUPINFO = FakeStartupInfo
-	fake_subprocess_module.check_output = lambda _command, shell=False: b"Active code page: 65001\r\n"
+	cast(Any, fake_subprocess_module).STARTF_USESHOWWINDOW = startf_useshowwindow
+	cast(Any, fake_subprocess_module).SW_HIDE = sw_hide
+	cast(Any, fake_subprocess_module).STARTUPINFO = FakeStartupInfo
+	cast(Any, fake_subprocess_module).check_output = lambda _command, shell=False: b"Active code page: 65001\r\n"
 
 	def fake_get_subprocess_environment(env: Mapping[str, str] | None = None) -> dict[str, str]:
 		return dict(env) if env else {}
@@ -242,8 +242,8 @@ def test_process_detach_sets_popen_flags(
 	monkeypatch.setattr("opsi.process._process.get_subprocess_environment", fake_get_subprocess_environment)
 	if os_name == "nt":
 		fake_subprocess_module = ModuleType("subprocess")
-		fake_subprocess_module.DETACHED_PROCESS = 1
-		fake_subprocess_module.CREATE_NEW_PROCESS_GROUP = 2
+		cast(Any, fake_subprocess_module).DETACHED_PROCESS = 1
+		cast(Any, fake_subprocess_module).CREATE_NEW_PROCESS_GROUP = 2
 		monkeypatch.setitem(sys.modules, "subprocess", fake_subprocess_module)
 		monkeypatch.setattr("opsi.process._process.disable_file_system_redirection", nullcontext)
 
@@ -700,7 +700,7 @@ def test_process_ld_library_path(
 	ld_library_path_orig: str, ld_library_path: str, executable_path: str, expected_ld_library_path: str
 ) -> None:
 	frozen = getattr(sys, "frozen", False)
-	sys.frozen = True
+	cast(Any, sys).frozen = True
 	try:
 		env_vars = {"_MEIPASS2": "/tmp/foobar", "_PYI_APPLICATION_HOME_DIR": "/tmp/foobar", "_PYI_LINUX_PROCESS_NAME": "frozen-proc"}
 		if ld_library_path_orig is not None:
@@ -729,7 +729,7 @@ def test_process_ld_library_path(
 			assert os.environ.get("_PYI_APPLICATION_HOME_DIR") == "/tmp/foobar"
 			assert os.environ.get("_PYI_LINUX_PROCESS_NAME") == "frozen-proc"
 	finally:
-		sys.frozen = frozen
+		cast(Any, sys).frozen = frozen
 
 
 def test_path_cleanup() -> None:
@@ -948,9 +948,12 @@ def test_process_error(tmp_path: Path) -> None:
 		assert proc.get_script() == ("@echo off" + os.linesep if is_windows() else "") + "echo exit 3 && exit 3" + os.linesep
 		assert proc.get_output_text().strip() == "exit 3"
 
-	with pytest.raises(
-		ProcessError, match="Failed to run process after 1 attempts.*" + ("WinError 2" if is_windows() else "No such file")
-	) as exc_info, Process(command=["not_available_command", "arg1"]):
+	with (
+		pytest.raises(
+			ProcessError, match="Failed to run process after 1 attempts.*" + ("WinError 2" if is_windows() else "No such file")
+		) as exc_info,
+		Process(command=["not_available_command", "arg1"]),
+	):
 		pass
 	assert exc_info.value.command == "not_available_command arg1"
 	assert exc_info.value.exit_code is None
@@ -958,9 +961,12 @@ def test_process_error(tmp_path: Path) -> None:
 	not_executable = tmp_path / "not_executable"
 	not_executable.write_text("echo not executable")
 	not_executable.chmod(0o644)
-	with pytest.raises(
-		ProcessError, match="Failed to run process after 5 attempts.*" + ("WinError 193" if is_windows() else "Permission denied")
-	) as exc_info, Process(command=[str(not_executable)]):
+	with (
+		pytest.raises(
+			ProcessError, match="Failed to run process after 5 attempts.*" + ("WinError 193" if is_windows() else "Permission denied")
+		) as exc_info,
+		Process(command=[str(not_executable)]),
+	):
 		pass
 	assert exc_info.value.command == str(not_executable)
 	assert exc_info.value.exit_code is None
@@ -1257,7 +1263,7 @@ def test_prepare_run_in_session(
 	from opsi.process._linux import prepare_run_in_session
 
 	with patch("opsi.process._linux.get_display_sessions", lambda: [session]):
-		command, env, user = prepare_run_in_session(
+		command, env, _user = prepare_run_in_session(
 			session_id=session.id, command=command, env=env, as_session_user=as_session_user, full_user_env=full_user_env
 		)
 		assert command == expected_command
@@ -1289,6 +1295,7 @@ def test_run_script_in_session_linux() -> None:
 			env[key] = value
 
 	session = sessions[0]
+	assert session.user is not None
 	session_env = session.environment
 	if "DISPLAY" in session_env:
 		assert env.get("DISPLAY") == session_env["DISPLAY"]

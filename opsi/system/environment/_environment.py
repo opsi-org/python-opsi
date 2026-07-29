@@ -16,7 +16,7 @@ def update_environment_from_config_files(files: list[Path] | None = None) -> Non
 	"""
 	Updates the environment variables from the config files.
 	"""
-	if not platform.system().lower() == "linux":
+	if platform.system().lower() != "linux":
 		return
 
 	if files is None:  # allow empty list

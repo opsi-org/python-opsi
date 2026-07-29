@@ -12,7 +12,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, Self
+from typing import Any, Self, cast
 
 from opsi.exception import OperatingSystemUnsupportedError
 from opsi.logging import get_logger
@@ -410,12 +410,12 @@ class RegistryWatcher:
 	@staticmethod
 	def _get_kernel32() -> Any:
 		"""Return the Windows kernel32 DLL wrapper."""
-		return ctypes.windll.kernel32
+		return cast(Any, ctypes).windll.kernel32
 
 	@staticmethod
 	def _get_advapi32() -> Any:
 		"""Return the Windows advapi32 DLL wrapper."""
-		return ctypes.windll.advapi32
+		return cast(Any, ctypes).windll.advapi32
 
 	@staticmethod
 	def _raise_windows_error(error_code: int) -> None:

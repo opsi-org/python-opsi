@@ -104,7 +104,7 @@ def read_key_from_file(key_file: str | Path, passphrase: str | None = None) -> r
 			key_file.read_text(encoding="utf-8").encode("utf-8"), password=passphrase.encode("utf-8") if passphrase else None
 		)
 		if not isinstance(private_key, rsa.RSAPrivateKey):
-			raise ValueError(f"Not a RSA private key, but {private_key.__class__.__name__}")
+			raise TypeError(f"Not a RSA private key, but {private_key.__class__.__name__}")
 		return private_key
 	except ValueError as err:
 		raise RuntimeError(f"Failed to load private key from '{key_file}': {err}") from err
@@ -119,8 +119,8 @@ def read_certs_from_file(cert_file: str | Path) -> list[x509.Certificate]:
 	for match in re.finditer(r"(-+BEGIN CERTIFICATE-+.*?-+END CERTIFICATE-+)", cert_file.read_text(encoding="utf-8"), re.DOTALL):
 		try:
 			ca_certs.append(x509.load_pem_x509_certificate(match.group(1).encode("ascii")))
-		except Exception as err:
-			logger.error("Failed to load certificate from '%s': %s", cert_file, err, exc_info=True)
+		except Exception:
+			logger.exception("Failed to load certificate from '%s'", cert_file)
 	return ca_certs
 
 

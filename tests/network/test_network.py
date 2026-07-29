@@ -4,7 +4,7 @@
 # License: AGPL-3.0-only
 
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
-from typing import Any
+from typing import Self
 
 import pytest
 
@@ -16,10 +16,10 @@ class MockSocket:
 	def __init__(self) -> None:
 		self.bound_address: tuple[str, int] | None = None
 
-	def __enter__(self) -> "MockSocket":
+	def __enter__(self) -> Self:
 		return self
 
-	def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+	def __exit__(self, exc_type: object, exc_value: object, traceback: object) -> None:
 		return None
 
 	def bind(self, address: tuple[str, int]) -> None:

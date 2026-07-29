@@ -12,7 +12,6 @@ import struct
 import time
 from dataclasses import dataclass
 from ipaddress import IPv4Address, IPv6Address, ip_address
-from typing import TypeAlias
 
 from opsi.logging import get_logger
 from opsi.network._resolve import resolve_hostname
@@ -23,8 +22,8 @@ ICMPV6_ECHO_REQUEST = 128
 ICMPV6_ECHO_REPLY = 129
 PING_PAYLOAD_SIZE = 192
 
-IPAddress: TypeAlias = IPv4Address | IPv6Address
-SocketAddress: TypeAlias = tuple[str, int] | tuple[str, int, int, int]
+type IPAddress = IPv4Address | IPv6Address
+type SocketAddress = tuple[str, int] | tuple[str, int, int, int]
 
 logger = get_logger("opsi")
 

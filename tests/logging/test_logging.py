@@ -167,14 +167,14 @@ def test_secret_formatter_attr() -> None:
 
 
 def test_logrecord_patch_is_idempotent() -> None:
-	original_init = logging.LogRecord.__init_orig__  # type: ignore[attr-defined]
+	original_init = logging.LogRecord.__init_orig__  # ty: ignore[unresolved-attribute]
 
 	importlib.reload(opsi_logging_module)
 	importlib.reload(opsi_logging_module)
 
-	assert logging.LogRecord.__init_orig__ is original_init  # type: ignore[attr-defined]
+	assert logging.LogRecord.__init_orig__ is original_init  # ty: ignore[unresolved-attribute]
 	log_record = logging.LogRecord(name="", level=logging.ERROR, pathname="", lineno=1, msg="t", args=None, exc_info=None)
-	assert log_record.opsilevel == logging.level_to_opsi_level.get(logging.ERROR, logging.ERROR)  # type: ignore[attr-defined]
+	assert log_record.opsilevel == logging.level_to_opsi_level.get(logging.ERROR, logging.ERROR)  # ty: ignore[unresolved-attribute]
 
 
 def test_secret_filter() -> None:
@@ -361,7 +361,7 @@ def test_context_threads() -> None:
 			pass
 		for _thread in threading.enumerate():
 			if hasattr(_thread, "stop"):
-				_thread.stop()  # type: ignore[attr-defined]
+				_thread.stop()  # ty: ignore[call-non-callable]
 				_thread.join()
 
 		stream.seek(0)
@@ -444,8 +444,8 @@ def test_set_context() -> None:
 
 		stream.seek(0)
 		stream.truncate()
-		with pytest.raises(ValueError):
-			set_context("suddenly a string")  # type: ignore[arg-type]
+		with pytest.raises(TypeError):
+			set_context("suddenly a string")  # ty: ignore[invalid-argument-type]
 		logger.error("test message")
 		stream.seek(0)
 		log = stream.read()
@@ -485,8 +485,8 @@ def test_filter() -> None:
 		assert "test2 that should appear" in log
 		assert "test2 that should not appear" not in log
 
-		with pytest.raises(ValueError):
-			set_filter("invalid")  # type: ignore[arg-type]
+		with pytest.raises(TypeError):
+			set_filter("invalid")  # ty: ignore[invalid-argument-type]
 
 
 def test_filter_from_string() -> None:
@@ -520,8 +520,8 @@ def test_filter_from_string() -> None:
 		assert "test that should not appear" not in log
 		assert "test that should appear after filter reset" in log
 
-		with pytest.raises(ValueError):
-			set_filter_from_string({"testkey": ["t1", "t3"]})  # type: ignore[arg-type]
+		with pytest.raises(TypeError):
+			set_filter_from_string({"testkey": ["t1", "t3"]})  # ty: ignore[invalid-argument-type]
 
 
 def test_log_devel() -> None:
@@ -546,7 +546,7 @@ def test_multi_call_logging_config(tmp_path: Path) -> None:
 	logger.info("LINE2")
 	logging_config(stderr_level=logging.INFO, log_file=log_file, file_level=logging.ERROR, file_format="%(message)s")
 	logger.info("LINE3")
-	logging_config(stderr_level=logging.NONE, file_level=logging.INFO)  # type: ignore[attr-defined]
+	logging_config(stderr_level=logging.NONE, file_level=logging.INFO)  # ty: ignore[unresolved-attribute]
 	logger.info("LINE4")
 	assert log_file.read_text(encoding="utf-8") == "LINE1\nLINE2\nLINE4\n"
 
@@ -804,10 +804,10 @@ def test_sqlite_handler_base(tmp_path: Path) -> None:
 	time.sleep(1)
 	now_unix = unix_timestamp()
 	now_utc = datetime.now(UTC)
-	now_loc: datetime = datetime.now()
+	now_loc: datetime = datetime.now()  # noqa: DTZ005
 	if is_windows():
 		# On Windows, datetime with ZoneInfo("US/Pacific") does not exist
-		now_pst = datetime.now()
+		now_pst = datetime.now()  # noqa: DTZ005
 	else:
 		now_pst = datetime.now(ZoneInfo("US/Pacific"))
 
@@ -1051,6 +1051,7 @@ def test_logging_config_log_db(tmp_path: Path) -> None:
 	logger.info("message")
 	time.sleep(1.0)  # Wait for flush
 	sqlite_handler = get_all_handlers(SQLiteHandler)[0]
+	assert isinstance(sqlite_handler, SQLiteHandler)
 	records = list(sqlite_handler.get_records())  # type: ignore[unresolved-attribute]
 	assert len(records) == 1
 	assert records[0].getMessage() == "message"

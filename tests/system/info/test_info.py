@@ -59,28 +59,36 @@ def test_is_unix() -> None:
 @pytest.mark.linux
 def test_linux_distro_id() -> None:
 	data = pathlib.Path("/etc/os-release").read_text(encoding="utf-8")
-	did = re.search(r"^ID=(.*)$", data, flags=re.MULTILINE).group(1)  # type: ignore[union-attr]
+	match = re.search(r"^ID=(.*)$", data, flags=re.MULTILINE)
+	assert match
+	did = match.group(1)
 	assert linux_distro_id() == did
 
 
 @pytest.mark.linux
 def test_linux_distro_version_id() -> None:
 	data = pathlib.Path("/etc/os-release").read_text(encoding="utf-8")
-	dvid = re.search(r"^VERSION_ID=(.*)$", data, flags=re.MULTILINE).group(1).strip('"')  # type: ignore[union-attr]
+	match = re.search(r"^VERSION_ID=(.*)$", data, flags=re.MULTILINE)
+	assert match
+	dvid = match.group(1).strip('"')
 	assert linux_distro_version_id() == dvid
 
 
 @pytest.mark.linux
 def test_linux_distro_version() -> None:
 	data = pathlib.Path("/etc/os-release").read_text(encoding="utf-8")
-	dversion = re.search(r"^VERSION=(.*)$", data, flags=re.MULTILINE).group(1).strip('"')  # type: ignore[union-attr]
+	match = re.search(r"^VERSION=(.*)$", data, flags=re.MULTILINE)
+	assert match
+	dversion = match.group(1).strip('"')
 	assert linux_distro_version() == dversion
 
 
 @pytest.mark.linux
 def test_linux_distro_id_like() -> None:
 	data = pathlib.Path("/etc/os-release").read_text(encoding="utf-8")
-	ids = [re.search(r"^ID=(.*)$", data, flags=re.MULTILINE).group(1)]  # type: ignore[union-attr]
+	id_match = re.search(r"^ID=(.*)$", data, flags=re.MULTILINE)
+	assert id_match
+	ids = [id_match.group(1)]
 	match = re.search(r"^ID_LIKE=(.*)$", data, flags=re.MULTILINE)
 	if match:
 		ids.extend(match.group(1).split())

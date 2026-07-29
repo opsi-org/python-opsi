@@ -8,9 +8,9 @@ from contextlib import contextmanager
 from time import monotonic, sleep
 from typing import IO, BinaryIO, TextIO
 
-import pywintypes  # type: ignore[import]
-import win32con  # type: ignore[import]
-import win32file  # type: ignore[import]
+import pywintypes  # ty: ignore[unresolved-import]
+import win32con  # ty: ignore[unresolved-import]
+import win32file  # ty: ignore[unresolved-import]
 
 from opsi.system.file.lock._common import LockMethod
 

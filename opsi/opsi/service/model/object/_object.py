@@ -109,9 +109,9 @@ class classproperty:
 
 class BaseObject:
 	copy_from_hash = False
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	ident_separator = ";"
-	foreign_id_attributes: list[str] = []
+	foreign_id_attributes: list[str] = []  # noqa: RUF012
 	backend_method_prefix = ""
 	_is_generated_default = False
 
@@ -192,7 +192,7 @@ class BaseObject:
 			pass
 
 		if not updateWithNoneValues:
-			to_delete = set(key for (key, value) in object_dict.items() if value is None)
+			to_delete = {key for (key, value) in object_dict.items() if value is None}
 
 			for key in to_delete:
 				del object_dict[key]
@@ -404,7 +404,7 @@ def objects_differ(obj1: Any, obj2: Any, exclude_attributes: list[str] | None = 
 
 
 class Entity(BaseObject):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 
 	def setDefaults(self) -> None:
 		BaseObject.setDefaults(self)
@@ -428,7 +428,7 @@ BaseObject.sub_classes["Entity"] = Entity
 
 
 class Relationship(BaseObject):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 
 	def setDefaults(self) -> None:
 		BaseObject.setDefaults(self)
@@ -455,7 +455,7 @@ BaseObject.sub_classes["Relationship"] = Relationship
 
 
 class Object(Entity):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	foreign_id_attributes = Entity.foreign_id_attributes + ["objectId"]
 
 	def __init__(self, id: str, description: str | None = None, notes: str | None = None) -> None:
@@ -497,7 +497,7 @@ Entity.sub_classes["Object"] = Object
 
 
 class User(Entity):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	foreign_id_attributes = Entity.foreign_id_attributes + ["userId"]
 	backend_method_prefix = "user"
 
@@ -686,7 +686,7 @@ class AuditLogEventType(MappedStrEnum):
 
 
 class AuditLog(Entity):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	foreign_id_attributes = Entity.foreign_id_attributes + ["auditLogId"]
 	backend_method_prefix = "auditLog"
 
@@ -850,7 +850,7 @@ Entity.sub_classes["AuditLog"] = AuditLog
 
 
 class Host(Object):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	foreign_id_attributes = Object.foreign_id_attributes + ["hostId"]
 	backend_method_prefix = "host"
 
@@ -924,7 +924,7 @@ Object.sub_classes["Host"] = Host
 
 
 class OpsiClient(Host):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	foreign_id_attributes = Host.foreign_id_attributes + ["clientId"]
 
 	def __init__(
@@ -994,7 +994,7 @@ Host.sub_classes["OpsiClient"] = OpsiClient
 
 
 class OpsiDepotserver(Host):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	foreign_id_attributes = Host.foreign_id_attributes + ["depotId"]
 
 	def __init__(
@@ -1156,7 +1156,7 @@ Host.sub_classes["OpsiDepotserver"] = OpsiDepotserver
 
 
 class OpsiConfigserver(OpsiDepotserver):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	foreign_id_attributes = OpsiDepotserver.foreign_id_attributes + ["serverId"]
 
 	def __init__(
@@ -1215,7 +1215,7 @@ Host.sub_classes["OpsiConfigserver"] = OpsiConfigserver
 
 
 class Config(Entity):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	foreign_id_attributes = Entity.foreign_id_attributes + ["configId"]
 	backend_method_prefix = "config"
 
@@ -1329,7 +1329,7 @@ Entity.sub_classes["Config"] = Config
 
 
 class UnicodeConfig(Config):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 
 	def __init__(
 		self,
@@ -1357,7 +1357,7 @@ Config.sub_classes["UnicodeConfig"] = UnicodeConfig
 
 
 class BoolConfig(Config):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 
 	def __init__(self, id: str, description: str | None = None, defaultValues: list[bool] | None = None) -> None:
 		Config.__init__(self, id, description, [True, False], defaultValues, False, False)
@@ -1384,7 +1384,7 @@ Config.sub_classes["BoolConfig"] = BoolConfig
 
 
 class ConfigState(Relationship):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	backend_method_prefix = "configState"
 
 	def __init__(self, configId: str, objectId: str, values: list[Any] | None = None) -> None:
@@ -1426,7 +1426,7 @@ Relationship.sub_classes["ConfigState"] = ConfigState
 
 
 class Product(Entity):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	foreign_id_attributes = Entity.foreign_id_attributes + ["productId"]
 	backend_method_prefix = "product"
 
@@ -1659,7 +1659,7 @@ Entity.sub_classes["Product"] = Product
 
 
 class LocalbootProduct(Product):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 
 	def __init__(
 		self,
@@ -1712,7 +1712,7 @@ Product.sub_classes["LocalbootProduct"] = LocalbootProduct
 
 
 class NetbootProduct(Product):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 
 	def __init__(
 		self,
@@ -1775,7 +1775,7 @@ Product.sub_classes["NetbootProduct"] = NetbootProduct
 
 
 class ProductProperty(Entity):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	backend_method_prefix = "productProperty"
 
 	def __init__(
@@ -1924,7 +1924,7 @@ Entity.sub_classes["ProductProperty"] = ProductProperty
 
 
 class UnicodeProductProperty(ProductProperty):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 
 	def __init__(
 		self,
@@ -1960,7 +1960,7 @@ ProductProperty.sub_classes["UnicodeProductProperty"] = UnicodeProductProperty
 
 
 class BoolProductProperty(ProductProperty):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 
 	def __init__(
 		self,
@@ -2014,7 +2014,7 @@ ProductProperty.sub_classes["BoolProductProperty"] = BoolProductProperty
 
 
 class ProductDependency(Relationship):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	backend_method_prefix = "productDependency"
 
 	def __init__(
@@ -2128,7 +2128,7 @@ Relationship.sub_classes["ProductDependency"] = ProductDependency
 
 
 class ProductOnDepot(Relationship):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	backend_method_prefix = "productOnDepot"
 
 	def __init__(
@@ -2201,7 +2201,7 @@ Relationship.sub_classes["ProductOnDepot"] = ProductOnDepot
 
 
 class ProductOnClient(Relationship):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	backend_method_prefix = "productOnClient"
 
 	def __init__(
@@ -2362,7 +2362,7 @@ Relationship.sub_classes["ProductOnClient"] = ProductOnClient
 
 
 class ProductPropertyState(Relationship):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	backend_method_prefix = "productPropertyState"
 
 	def __init__(
@@ -2427,7 +2427,7 @@ Relationship.sub_classes["ProductPropertyState"] = ProductPropertyState
 
 
 class Group(Object):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	foreign_id_attributes = Object.foreign_id_attributes + ["groupId"]
 	backend_method_prefix = "group"
 
@@ -2469,7 +2469,7 @@ Object.sub_classes["Group"] = Group
 
 
 class HostGroup(Group):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 
 	def __init__(
 		self,
@@ -2488,7 +2488,7 @@ Group.sub_classes["HostGroup"] = HostGroup
 
 
 class ProductGroup(Group):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 
 	def __init__(
 		self,
@@ -2507,7 +2507,7 @@ Group.sub_classes["ProductGroup"] = ProductGroup
 
 
 class ObjectToGroup(Relationship):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	backend_method_prefix = "objectToGroup"
 
 	def __init__(self, groupType: str, groupId: str, objectId: str) -> None:
@@ -2541,7 +2541,7 @@ Relationship.sub_classes["ObjectToGroup"] = ObjectToGroup
 
 
 class LicenseContract(Entity):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	foreign_id_attributes = Entity.foreign_id_attributes + ["licenseContractId"]
 	backend_method_prefix = "licenseContract"
 
@@ -2654,7 +2654,7 @@ Entity.sub_classes["LicenseContract"] = LicenseContract
 
 
 class SoftwareLicense(Entity):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	foreign_id_attributes = Entity.foreign_id_attributes + ["softwareLicenseId"]
 	backend_method_prefix = "softwareLicense"
 
@@ -2732,7 +2732,7 @@ Entity.sub_classes["LicenseContract"] = LicenseContract
 
 
 class RetailSoftwareLicense(SoftwareLicense):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 
 	def __init__(
 		self,
@@ -2752,7 +2752,7 @@ SoftwareLicense.sub_classes["RetailSoftwareLicense"] = RetailSoftwareLicense
 
 
 class OEMSoftwareLicense(SoftwareLicense):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 
 	def __init__(
 		self,
@@ -2783,7 +2783,7 @@ SoftwareLicense.sub_classes["OEMSoftwareLicense"] = OEMSoftwareLicense
 
 
 class VolumeSoftwareLicense(SoftwareLicense):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 
 	def __init__(
 		self,
@@ -2805,7 +2805,7 @@ SoftwareLicense.sub_classes["VolumeSoftwareLicense"] = VolumeSoftwareLicense
 
 
 class ConcurrentSoftwareLicense(SoftwareLicense):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 
 	def __init__(
 		self,
@@ -2825,7 +2825,7 @@ SoftwareLicense.sub_classes["ConcurrentSoftwareLicense"] = ConcurrentSoftwareLic
 
 
 class LicensePool(Entity):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	foreign_id_attributes = Entity.foreign_id_attributes + ["licensePoolId"]
 	backend_method_prefix = "licensePool"
 
@@ -2880,7 +2880,7 @@ Entity.sub_classes["LicensePool"] = LicensePool
 
 
 class AuditSoftwareToLicensePool(Relationship):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	backend_method_prefix = "auditSoftwareToLicensePool"
 
 	def __init__(self, name: str, version: str, subVersion: str, language: str, architecture: str, licensePoolId: str) -> None:
@@ -2960,7 +2960,7 @@ Relationship.sub_classes["AuditSoftwareToLicensePool"] = AuditSoftwareToLicenseP
 
 
 class SoftwareLicenseToLicensePool(Relationship):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	backend_method_prefix = "softwareLicenseToLicensePool"
 
 	def __init__(self, softwareLicenseId: str, licensePoolId: str, licenseKey: str | None = None) -> None:
@@ -3000,7 +3000,7 @@ Relationship.sub_classes["SoftwareLicenseToLicensePool"] = SoftwareLicenseToLice
 
 
 class LicenseOnClient(Relationship):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	backend_method_prefix = "licenseOnClient"
 
 	def __init__(
@@ -3065,7 +3065,7 @@ Relationship.sub_classes["LicenseOnClient"] = LicenseOnClient
 
 
 class AuditSoftware(Entity):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	foreign_id_attributes = Entity.foreign_id_attributes
 	backend_method_prefix = "auditSoftware"
 
@@ -3178,7 +3178,7 @@ Entity.sub_classes["AuditSoftware"] = AuditSoftware
 
 
 class AuditSoftwareOnClient(Relationship):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	backend_method_prefix = "auditSoftwareOnClient"
 
 	def __init__(
@@ -3343,10 +3343,10 @@ Relationship.sub_classes["AuditSoftwareOnClient"] = AuditSoftwareOnClient
 
 
 class AuditHardware(Entity):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	foreign_id_attributes = Entity.foreign_id_attributes
 	backend_method_prefix = "auditHardware"
-	hardware_attributes: dict[str, dict[str, Any]] = {}
+	hardware_attributes: dict[str, dict[str, Any]] = {}  # noqa: RUF012
 
 	def __init__(self, hardwareClass: str, **kwargs: Any) -> None:
 		self.setHardwareClass(hardwareClass)
@@ -3474,10 +3474,8 @@ class AuditHardware(Entity):
 		if hardware_class:
 			infos.append(f"hardwareClass={hardware_class}")
 
-		try:
-			infos.append(f"name='{self.name}'")  # type: ignore[attr-defined]
-		except AttributeError:
-			pass
+		if hasattr(self, "name"):
+			infos.append(f"name='{cast(Any, self).name}'")
 
 		try:
 			if self.vendorId:
@@ -3510,9 +3508,9 @@ Entity.sub_classes["AuditHardware"] = AuditHardware
 
 
 class AuditHardwareOnHost(Relationship):
-	sub_classes: dict[str, type] = {}
+	sub_classes: dict[str, type] = {}  # noqa: RUF012
 	backend_method_prefix = "auditHardwareOnHost"
-	hardware_attributes: dict[str, dict[str, Any]] = {}
+	hardware_attributes: dict[str, dict[str, Any]] = {}  # noqa: RUF012
 
 	def __init__(
 		self,
@@ -3694,10 +3692,8 @@ class AuditHardwareOnHost(Relationship):
 		if hardware_class:
 			additional.append(f"hardwareClass={hardware_class}")
 
-		try:
-			additional.append(f"name='{self.name}'")  # type: ignore[attr-defined]
-		except AttributeError:
-			pass
+		if hasattr(self, "name"):
+			additional.append(f"name='{cast(Any, self).name}'")
 
 		return f"<{self.getType()}({', '.join(additional)})>"
 
@@ -3741,7 +3737,7 @@ def deserialize(obj: Any, deep: bool = False, prevent_object_creation: bool = Fa
 			except KeyError:
 				pass
 			except Exception as err:
-				logger.error(err, exc_info=True)
+				logger.exception("Failed to deserialize object")
 				raise ValueError(f"Failed to create object from dict {obj}: {err}") from err
 		if deep:
 			return {k: deserialize(v, deep=deep, prevent_object_creation=prevent_object_creation) for k, v in obj.items()}

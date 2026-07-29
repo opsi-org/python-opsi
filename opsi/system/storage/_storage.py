@@ -15,7 +15,7 @@ import struct
 from pathlib import Path, PureWindowsPath
 from random import randrange
 from subprocess import run
-from typing import Generic, Literal, TypeVar, cast, overload
+from typing import Literal, TypeVar, cast, overload
 from uuid import UUID, uuid4
 
 from opsi.logging import get_logger
@@ -214,7 +214,7 @@ TPartition = TypeVar("TPartition", bound="Partition")
 
 
 class Partition(StorageDevice):
-	unit_to_exp = {"K": 1, "M": 2, "G": 3, "T": 4, "P": 5, "E": 6, "Z": 7, "Y": 8}
+	unit_to_exp = {"K": 1, "M": 2, "G": 3, "T": 4, "P": 5, "E": 6, "Z": 7, "Y": 8}  # noqa: RUF012
 
 	def __init__(
 		self,
@@ -401,7 +401,7 @@ class GPTPartition(Partition):
 		return f"type={self.type},uuid={self.uuid}{name}{start}{size}\n"
 
 
-class PartitionTable(Generic[TPartition]):
+class PartitionTable[TPartition: "Partition"]:
 	label = ""
 	partition_type = Partition
 

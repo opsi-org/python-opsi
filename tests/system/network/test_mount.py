@@ -10,7 +10,7 @@ import importlib
 import sys
 from pathlib import Path
 from types import ModuleType
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -801,7 +801,7 @@ def test_windows_mount_functions_accept_ignored_mount_options(monkeypatch: pytes
 def test_mount_network_share_forwards_cifs_required_arguments_only(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
 	calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
 	fake_linux_module = ModuleType("opsi.system.network._linux")
-	fake_linux_module.mount_cifs_share = lambda *args, **kwargs: calls.append((args, kwargs))
+	cast(Any, fake_linux_module).mount_cifs_share = lambda *args, **kwargs: calls.append((args, kwargs))
 
 	monkeypatch.setattr(_network, "is_linux", lambda: True)
 	monkeypatch.setattr(_network, "is_macos", lambda: False)
@@ -829,7 +829,7 @@ def test_mount_network_share_forwards_webdav_ca_certs_but_not_mount_options(monk
 	calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
 	ca_certs: list[Any] = [object(), object()]
 	fake_linux_module = ModuleType("opsi.system.network._linux")
-	fake_linux_module.mount_webdav_share = lambda *args, **kwargs: calls.append((args, kwargs))
+	cast(Any, fake_linux_module).mount_webdav_share = lambda *args, **kwargs: calls.append((args, kwargs))
 
 	monkeypatch.setattr(_network, "is_linux", lambda: True)
 	monkeypatch.setattr(_network, "is_macos", lambda: False)

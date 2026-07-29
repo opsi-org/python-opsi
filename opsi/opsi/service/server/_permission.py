@@ -9,7 +9,7 @@ import os
 from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Self, cast
 
 from opsi.logging import get_logger
 from opsi.opsi.service.server import OpsiConfig, get_opsiconfd_user
@@ -131,10 +131,10 @@ class DirPermission(FilePermission):
 class PermissionRegistry:
 	_instance: PermissionRegistry | None = None
 
-	def __new__(cls, *args: Any, **kwargs: Any) -> PermissionRegistry:
+	def __new__(cls, *args: Any, **kwargs: Any) -> Self:
 		if cls._instance is None:
 			cls._instance = super().__new__(cls)
-		return cls._instance
+		return cast(Self, cls._instance)
 
 	def __init__(self) -> None:
 		if getattr(self, "_initialized", False):
@@ -224,13 +224,12 @@ def set_rights(start_path: str | Path = "/") -> None:
 	permissions = PermissionRegistry().permissions
 	permissions_to_process = []
 	parent = None
-	for path in sorted(list(permissions)):
+	for path in sorted(permissions):
 		if not os.path.relpath(path, start_path).startswith(".."):
 			# Sub path of start_path
 			permissions_to_process.append(permissions[path])
-		elif not os.path.relpath(start_path, path).startswith(".."):
-			if not parent or len(str(parent.path)) < len(path):
-				parent = permissions[path]
+		elif not os.path.relpath(start_path, path).startswith("..") and (not parent or len(str(parent.path)) < len(path)):
+			parent = permissions[path]
 
 	if parent:
 		permissions_to_process.append(parent)

@@ -9,7 +9,7 @@ test_package_wim
 
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal
 from unittest.mock import PropertyMock, patch
 
 import pytest
@@ -471,7 +471,7 @@ def test_wim_info() -> None:
 		stdout = ""
 
 		def get_stdout_lines(self, errors: Literal["ignore", "replace", "strict"] = "replace") -> list[str]:
-			return cast(list[str], self.stdout.splitlines())
+			return self.stdout.splitlines()
 
 	with patch("opsi.archive.wim._wim.run_command", PropertyMock(return_value=Process())):
 		Process.stdout = WIM_INFO_WIN10

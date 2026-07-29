@@ -444,7 +444,9 @@ class BCD:
 						value = self.decode_device_data(value)
 					elif element in (BCDE_LIBRARY_TYPE_ALLOW_PRERELEASE_SIGNATURES, BCDE_OSLOADER_TYPE_LOG_INITIALIZATION):
 						value = value == b"\x01"
-					entries[-1][OSLOADER_ELEMENTS.get(element, {}).get("friendly_name")] = value
+					friendly_name = OSLOADER_ELEMENTS.get(element, {}).get("friendly_name")
+					if friendly_name:
+						entries[-1][friendly_name] = value
 		return entries
 
 	def get_boot_entry_by_id(self, identifier: str) -> dict:

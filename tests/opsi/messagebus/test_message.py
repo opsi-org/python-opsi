@@ -7,7 +7,6 @@
 messagebus.message tests
 """
 
-
 import pydantic_core
 import pytest
 from pydantic import ValidationError
@@ -55,7 +54,7 @@ def test_timestamp() -> None:
 
 def test_message() -> None:
 	with pytest.raises(pydantic_core.ValidationError, match="Field required"):
-		Message()  # type: ignore[call-arg]
+		Message()  # ty: ignore[missing-argument]
 	msg = Message(type=MessageType.JSONRPC_REQUEST, sender="291b9f3e-e370-428d-be30-1248a906ae86", channel="service:config:jsonrpc")
 	assert msg.type == "jsonrpc_request"
 	assert abs(messagebus_timestamp() - msg.created) <= 2

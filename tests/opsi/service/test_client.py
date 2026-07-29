@@ -23,7 +23,7 @@ from pathlib import Path
 from socket import AF_INET
 from ssl import SSLContext
 from threading import Event, Thread
-from typing import Any
+from typing import Any, cast
 from unittest import mock
 from urllib.parse import unquote
 from warnings import catch_warnings, simplefilter
@@ -429,14 +429,16 @@ def test_read_write_ca_cert_file(tmp_path: Path) -> None:
 	for idx in range(len(write_threads)):
 		write_threads[idx].join()
 		read_threads[idx].join()
-		if write_threads[idx].err:
-			print(write_threads[idx].err)
-			traceback.print_tb(write_threads[idx].err.__traceback__)  # type: ignore[union-attr]
-		assert not write_threads[idx].err
-		if write_threads[idx].err:
-			print(write_threads[idx].err)
-			traceback.print_tb(write_threads[idx].err.__traceback__)  # type: ignore[union-attr]
-		assert not read_threads[idx].err
+		write_error = write_threads[idx].err
+		if write_error:
+			print(write_error)
+			traceback.print_tb(write_error.__traceback__)
+		assert not write_error
+		read_error = read_threads[idx].err
+		if read_error:
+			print(read_error)
+			traceback.print_tb(read_error.__traceback__)
+		assert not read_error
 
 	certs = service_client.read_ca_cert_file()
 	assert len(certs) == 3
@@ -740,13 +742,16 @@ def test_client_certificate(tmp_path: Path, client_key_password: str) -> None:
 
 		time.sleep(1)
 
-		with ServiceClient(
-			f"https://127.0.0.1:{server.port}",
-			verify=ServiceVerificationFlags.STRICT_CHECK,
-			ca_cert_file=ca_cert_file,
-			client_cert_file=client_cert_file,
-			client_key_password=client_key_password,
-		) as client, pytest.raises((OpsiServiceClientCertificateError, OpsiServiceConnectionError)) as err:
+		with (
+			ServiceClient(
+				f"https://127.0.0.1:{server.port}",
+				verify=ServiceVerificationFlags.STRICT_CHECK,
+				ca_cert_file=ca_cert_file,
+				client_cert_file=client_cert_file,
+				client_key_password=client_key_password,
+			) as client,
+			pytest.raises((OpsiServiceClientCertificateError, OpsiServiceConnectionError)) as err,
+		):
 			client.get("/")
 			# TODO: Why is this not always OpsiServiceClientCertificateError?
 			if isinstance(err.value, OpsiServiceClientCertificateError):
@@ -777,7 +782,7 @@ def test_client_certificate(tmp_path: Path, client_key_password: str) -> None:
 		) as client:
 			client.get("/")
 			# Force websocket authentication
-			client._session.cookies = None  # type: ignore[assignment]
+			cast(Any, client._session).cookies = None
 			client.connect_messagebus()
 
 		client_key_file = tmp_path / "client_key.pem"
@@ -794,7 +799,7 @@ def test_client_certificate(tmp_path: Path, client_key_password: str) -> None:
 		) as client:
 			client.get("/")
 			# Force websocket authentication
-			client._session.cookies = None  # type: ignore[assignment]
+			cast(Any, client._session).cookies = None
 			client.connect_messagebus()
 
 		if not client_key_password:
@@ -804,19 +809,20 @@ def test_client_certificate(tmp_path: Path, client_key_password: str) -> None:
 		proxy_port = 18182
 		with (
 			run_proxy(proxy_port) as proxy_server,
-			mock.patch("opsi.opsi.service.client._service_client.ServiceClient.no_proxy_addresses", []),ServiceClient(
-			f"https://127.0.0.1:{server.port}",
-			verify=ServiceVerificationFlags.STRICT_CHECK,
-			ca_cert_file=ca_cert_file,
-			client_cert_file=client_cert_file,
-			client_key_file=client_key_file,
-			client_key_password=client_key_password,
-			proxy_url=f"http://127.0.0.1:{proxy_port}",
-		) as client
+			mock.patch("opsi.opsi.service.client._service_client.ServiceClient.no_proxy_addresses", []),
+			ServiceClient(
+				f"https://127.0.0.1:{server.port}",
+				verify=ServiceVerificationFlags.STRICT_CHECK,
+				ca_cert_file=ca_cert_file,
+				client_cert_file=client_cert_file,
+				client_key_file=client_key_file,
+				client_key_password=client_key_password,
+				proxy_url=f"http://127.0.0.1:{proxy_port}",
+			) as client,
 		):
 			client.get("/")
 			# Force websocket authentication
-			client._session.cookies = None  # type: ignore[assignment]
+			cast(Any, client._session).cookies = None
 			client.connect_messagebus()
 
 			proxy_reqs = proxy_server.get_and_clear_requests()
@@ -989,7 +995,7 @@ def test_sso(tmp_path: Path, sso_success: bool) -> None:
 
 
 def get_local_ipv4_address() -> str | None:
-	for _interface, snics in psutil.net_if_addrs().items():
+	for snics in psutil.net_if_addrs().values():
 		for snic in snics:
 			if snic.family != AF_INET or not snic.netmask or snic.address == "127.0.0.1":
 				continue
@@ -1420,7 +1426,7 @@ def test_request_exceptions() -> None:
 
 			server.response_status = (200, "OK")
 			with pytest.raises(OpsiServiceConnectionError) as exc_info:
-				client.get("/", read_timeout="FAIL")  # type: ignore[arg-type,call-overload]
+				client.get("/", read_timeout="FAIL")  # ty: ignore[no-matching-overload]
 
 			now = time.time()
 			server.response_status = (503, "Unavail")
@@ -1481,7 +1487,7 @@ def test_multi_address() -> None:
 
 def test_messagebus_reconnect() -> None:
 	class MBListener(MessagebusListener):
-		messages = []
+		messages = []  # noqa: RUF012
 
 		def message_received(self, message: Message) -> None:
 			self.messages.append(message)
@@ -1534,12 +1540,15 @@ def test_messagebus_reconnect() -> None:
 			)
 			handler.ws_send_message(compress(smsg.to_msgpack(), compression="lz4", compression_level=0, block_linked=True))
 
-	with http_test_server(
-		generate_cert=True,
-		ws_connect_callback=ws_connect_callback,
-		ws_message_callback=ws_message_callback,
-		response_headers={"server": "opsiconfd 4.2.1.0 (uvicorn)"},
-	) as server, ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
+	with (
+		http_test_server(
+			generate_cert=True,
+			ws_connect_callback=ws_connect_callback,
+			ws_message_callback=ws_message_callback,
+			response_headers={"server": "opsiconfd 4.2.1.0 (uvicorn)"},
+		) as server,
+		ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client,
+	):
 		client.messagebus.reconnect_wait_min = 5
 		client.messagebus.reconnect_wait_max = 5
 		listener = MBListener()
@@ -1616,7 +1625,7 @@ def test_messagebus_connect_503() -> None:
 	third_connect_attempt = Event()
 
 	class MBListener(MessagebusListener):
-		next_connect_wait = []
+		next_connect_wait = []  # noqa: RUF012
 
 		def messagebus_connection_closed(self, messagebus: Messagebus) -> None:
 			self.next_connect_wait.append(messagebus._next_connect_wait)
@@ -1658,7 +1667,7 @@ def test_messagebus_connect_503() -> None:
 
 def test_messagebus_reconnect_exception() -> None:
 	class MBListener(MessagebusListener):
-		next_connect_wait = []
+		next_connect_wait = []  # noqa: RUF012
 		established = 0
 		closed = 0
 
@@ -1684,9 +1693,12 @@ def test_messagebus_reconnect_exception() -> None:
 			if num <= 3:
 				handler._ws_close()
 
-	with http_test_server(
-		generate_cert=True, ws_connect_callback=ws_connect_callback, response_headers={"server": "opsiconfd 4.2.1.0 (uvicorn)"}
-	) as server, ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
+	with (
+		http_test_server(
+			generate_cert=True, ws_connect_callback=ws_connect_callback, response_headers={"server": "opsiconfd 4.2.1.0 (uvicorn)"}
+		) as server,
+		ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client,
+	):
 		client.messagebus.reconnect_wait_min = 1
 		client.messagebus.reconnect_wait_max = 3
 		listener = MBListener()
@@ -1714,11 +1726,11 @@ def test_get() -> None:
 		def __init__(self, client: ServiceClient) -> None:
 			super().__init__(daemon=True)
 			self.client = client
-			self.response: tuple[int, str, dict, bytes] = (0, "", {}, b"")
+			self.response: Response | tuple[int, str, dict, bytes] = (0, "", {}, b"")
 
 		def run(self) -> None:
 			self.client.get("/")
-			self.response = self.client.get("test")  # type: ignore[assignment]
+			self.response = self.client.get("test")
 
 	with http_test_server(
 		generate_cert=True, response_status=(202, "status"), response_headers={"x-1": "1", "x-2": "2"}, response_body=response_body
@@ -1730,17 +1742,19 @@ def test_get() -> None:
 			for thread in threads:
 				thread.join(10)
 			for thread in threads:
-				(status_code, reason, headers, content) = thread.response
-				assert status_code == 202
-				assert reason == "status"
-				assert headers["x-1"] == "1"
-				assert headers["x-2"] == "2"
-				assert content == response_body
+				response = thread.response
+				assert isinstance(response, Response)
+				assert response.status_code == 202
+				assert response.reason == "status"
+				assert response.headers["x-1"] == "1"
+				assert response.headers["x-2"] == "2"
+				assert response.content == response_body
 
 		client = ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all")
 		with client.connection():
-			(status_code, reason, headers, content) = thread.response
-			assert status_code == 202
+			response = thread.response
+			assert isinstance(response, Response)
+			assert response.status_code == 202
 
 
 def test_file_upload_and_delete(tmp_path: Path) -> None:
@@ -2013,7 +2027,7 @@ def test_messagebus_ping() -> None:
 		# Test original _on_pong method
 		with ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
 			client.messagebus.ping_interval = 1
-			client.messagebus.ping_timeout = None
+			cast(Any, client.messagebus).ping_timeout = None
 			client.connect_messagebus()
 			time.sleep(3)
 
@@ -2021,7 +2035,7 @@ def test_messagebus_ping() -> None:
 		with mock.patch("opsi.opsi.service.client._service_client.Messagebus._on_pong", _on_pong):
 			with ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
 				client.messagebus.ping_interval = 1
-				client.messagebus.ping_timeout = None
+				cast(Any, client.messagebus).ping_timeout = None
 				client.connect_messagebus()
 				time.sleep(5)
 				assert pong_count >= 3
@@ -2040,7 +2054,7 @@ def test_jsonrpc(tmp_path: Path) -> None:
 				[],
 				None,
 				("test",),
-				tuple(),
+				(),
 			]
 			for _params in params:
 				client.jsonrpc("method", params=_params)
@@ -2152,15 +2166,16 @@ def test_jsonrpc_interface(tmp_path: Path) -> None:
 			client.jsonrpc(method="test_method", params={"arg1": 1, "arg3": "3"})
 			client.jsonrpc(method="test_method", params={"arg2": 2})
 			client.jsonrpc(method="test_method", params={"arg3": "3"})
-			client.test_method(1, 2, x=3, y=4)  # type: ignore[attr-defined]
-			client.test_method(1, x="y")  # type: ignore[attr-defined]
-			client.test_method(1, x="y")  # type: ignore[attr-defined]
+			dynamic_client = cast(Any, client)
+			dynamic_client.test_method(1, 2, x=3, y=4)
+			dynamic_client.test_method(1, x="y")
+			dynamic_client.test_method(1, x="y")
 
-			client.boot_getConfig()  # type: ignore[attr-defined]
-			client.boot_getConfig(architecture="x64", firmware_type="UEFI", ip_version=4)  # type: ignore[attr-defined]
-			client.boot_getConfig(firmware_type="UEFI", ip_version=4, architecture="x64")  # type: ignore[attr-defined]
-			client.boot_getConfig("x64", ip_version=4, firmware_type="UEFI")  # type: ignore[attr-defined]
-			client.boot_getConfig(firmware_type="UEFI")  # type: ignore[attr-defined]
+			dynamic_client.boot_getConfig()
+			dynamic_client.boot_getConfig(architecture="x64", firmware_type="UEFI", ip_version=4)
+			dynamic_client.boot_getConfig(firmware_type="UEFI", ip_version=4, architecture="x64")
+			dynamic_client.boot_getConfig("x64", ip_version=4, firmware_type="UEFI")
+			dynamic_client.boot_getConfig(firmware_type="UEFI")
 
 			reqs = [json.loads(req) for req in log_file.read_text(encoding="utf-8").strip().split("\n")]
 			assert reqs[0]["method"] == "HEAD"
@@ -2187,9 +2202,10 @@ def test_jsonrpc_interface(tmp_path: Path) -> None:
 			log_file.unlink()
 			test_obj = Test()
 			client.create_jsonrpc_methods(test_obj)
-			test_obj.backend_getInterface()  # type: ignore[attr-defined]
-			test_obj.test_method(1, x="y")  # type: ignore[attr-defined]
-			test_obj.backend_exit()  # type: ignore[attr-defined]
+			dynamic_test_obj = cast(Any, test_obj)
+			dynamic_test_obj.backend_getInterface()
+			dynamic_test_obj.test_method(1, x="y")
+			dynamic_test_obj.backend_exit()
 			reqs = [json.loads(req) for req in log_file.read_text(encoding="utf-8").strip().split("\n")]
 			assert reqs[0]["request"]["method"] == "test_method"
 			assert reqs[1]["method"] == "POST"
@@ -2330,20 +2346,22 @@ def test_backend_manager_and_get_service_client(tmp_path: Path) -> None:
 		return False
 
 	with (
-		http_test_server(generate_cert=True, log_file=log_file, request_callback=request_callback) as server, opsi_config(
-		{
-			"host.id": "test-host.opsi.org",
-			"host.key": "11111111111111111111111111111111",
-			"host.server-role": "depotserver",
-			"service.url": f"https://localhost:{server.port}",
-		}
-	) as opsi_conf, mock.patch("opsi.opsi.service.client._service_client.OPSI_CA_CERT_FILE", server.ca_cert),
+		http_test_server(generate_cert=True, log_file=log_file, request_callback=request_callback) as server,
+		opsi_config(
+			{
+				"host.id": "test-host.opsi.org",
+				"host.key": "11111111111111111111111111111111",
+				"host.server-role": "depotserver",
+				"service.url": f"https://localhost:{server.port}",
+			}
+		) as opsi_conf,
+		mock.patch("opsi.opsi.service.client._service_client.OPSI_CA_CERT_FILE", server.ca_cert),
 		mock.patch("opsi.opsi.service.client._service_client.get_opsi_config", lambda: opsi_conf),
 	):
 		with catch_warnings():
 			simplefilter("ignore")
 			backend = BackendManager()
-		backend.test_method(arg1=1, arg2=2)  # type: ignore[attr-defined]
+			cast(Any, backend).test_method(arg1=1, arg2=2)
 
 		reqs = [json.loads(req) for req in log_file.read_text(encoding="utf-8").strip().split("\n")]
 
@@ -2474,9 +2492,12 @@ def test_messagebus_jsonrpc() -> None:
 		)
 		handler.ws_send_message(compress(res.to_msgpack(), compression="lz4", compression_level=0, block_linked=True))
 
-	with http_test_server(
-		generate_cert=True, ws_message_callback=ws_message_callback, response_headers={"server": "opsiconfd 4.2.1.0 (uvicorn)"}
-	) as server, ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
+	with (
+		http_test_server(
+			generate_cert=True, ws_message_callback=ws_message_callback, response_headers={"server": "opsiconfd 4.2.1.0 (uvicorn)"}
+		) as server,
+		ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client,
+	):
 		messagebus = client.connect_messagebus()
 		params: list[tuple[Any, ...] | list[Any] | None] = [
 			[1],
@@ -2487,7 +2508,7 @@ def test_messagebus_jsonrpc() -> None:
 			[],
 			None,
 			("test",),
-			tuple(),
+			(),
 		]
 		for _params in params:
 			res = messagebus.jsonrpc("test", params=_params)
@@ -2529,9 +2550,12 @@ def test_messagebus_multi_thread() -> None:
 		)
 		handler.ws_send_message(res.to_msgpack())
 
-	with http_test_server(
-		generate_cert=True, ws_message_callback=ws_message_callback, response_headers={"server": "opsiconfd 4.2.1.0 (uvicorn)"}
-	) as server, ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
+	with (
+		http_test_server(
+			generate_cert=True, ws_message_callback=ws_message_callback, response_headers={"server": "opsiconfd 4.2.1.0 (uvicorn)"}
+		) as server,
+		ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client,
+	):
 		client.messagebus.compression = None
 		threads = [ReqThread(client) for _ in range(10)]
 		for thread in threads:
@@ -2659,9 +2683,12 @@ def test_messagebus_listener() -> None:
 			).to_msgpack()
 		)
 
-	with http_test_server(
-		generate_cert=True, ws_connect_callback=ws_connect_callback, response_headers={"server": "opsiconfd 4.2.1.0 (uvicorn)"}
-	) as server, ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
+	with (
+		http_test_server(
+			generate_cert=True, ws_connect_callback=ws_connect_callback, response_headers={"server": "opsiconfd 4.2.1.0 (uvicorn)"}
+		) as server,
+		ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client,
+	):
 		client.messagebus.compression = None
 		with (
 			listener1.register(client.messagebus),
@@ -2822,9 +2849,10 @@ def test_permission_error_ca_cert_file_lock() -> None:
 
 	with (
 		mock.patch("ssl.SSLContext.load_verify_locations", load_verify_locations),
-		http_test_server(generate_cert=True) as server,ServiceClient(
-		f"https://localhost:{server.port}", verify="strict_check", ca_cert_file=server.ca_cert, jsonrpc_create_methods=True
-	) as client
+		http_test_server(generate_cert=True) as server,
+		ServiceClient(
+			f"https://localhost:{server.port}", verify="strict_check", ca_cert_file=server.ca_cert, jsonrpc_create_methods=True
+		) as client,
 	):
 		assert server.ca_cert
 		with open(server.ca_cert, "a+", encoding="utf-8") as file:

@@ -76,8 +76,25 @@ package = true
 [tool.ty.environment]
 python = ".venv/bin/python"
 
+[tool.ty.src]
+exclude = [".venv"]
+
 [tool.ruff]
 line-length = 140
+
+[tool.ruff.lint]
+ignore = [
+	"BLE001",  # Public boundaries intentionally catch third-party and platform exceptions.
+	"G201",    # Logging `.exception(...)` must not be used instead of `.error(..., exc_info=True)`
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+	"ASYNC230", # Test fixture I/O is intentionally synchronous.
+	"TRY002",   # Tests intentionally exercise base exception handling.
+	"S110",     # Best-effort cleanup and fallback paths intentionally suppress exceptions.
+	"SIM117",   # Nested context managers keep setup and assertion scopes distinct.
+]
 
 [tool.mypy]
 disallow_untyped_calls = true

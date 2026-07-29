@@ -95,7 +95,7 @@ class FileTransfer:
 		return self._file_request.response_channel
 
 	async def stop(self) -> None:
-		logger.info("Stopping %r (%r)", self)
+		logger.info("Stopping %r", self)
 		self._should_stop = True
 
 	def _append_to_file(self, data: bytes) -> None:
@@ -107,7 +107,7 @@ class FileTransfer:
 
 	async def process_file_chunk(self, message: FileChunkMessage) -> None:
 		if not isinstance(message, FileChunkMessage):
-			raise ValueError(f"Received invalid message type {message.type}")
+			raise TypeError(f"Received invalid message type {message.type}")
 
 		if self._error:
 			return
@@ -211,7 +211,7 @@ class FileUpload(FileTransfer):
 				self._file_path.chmod(0o660)
 
 		except Exception as error:
-			logger.error(error, exc_info=True)
+			logger.exception("Failed to process file chunk")
 			await self._process_error(str(error), message=self._file_request)
 			return
 
@@ -250,7 +250,7 @@ class FileUpload(FileTransfer):
 
 	async def process_file_chunk(self, message: FileChunkMessage) -> None:
 		if not isinstance(message, FileChunkMessage):
-			raise ValueError(f"Received invalid message type {message.type}")
+			raise TypeError(f"Received invalid message type {message.type}")
 
 		self._last_chunk_time = time()
 		if message.number != self._chunk_number + 1:
@@ -305,7 +305,7 @@ class FileDownload(FileTransfer):
 				if not Path(self._file_request.path).is_file():
 					raise FileNotFoundError(f"File '{self._file_request.path}' is missing or file path is incorrect")
 		except Exception as error:
-			logger.error(error, exc_info=True)
+			logger.exception("Failed to process file chunk")
 			await self._process_error(str(error), message=self._file_request)
 			return
 
@@ -428,7 +428,7 @@ async def process_file_transfer_message(
 			elif isinstance(message, FileDownloadAbortRequestMessage):
 				await file_transfer.stop()
 			else:
-				raise ValueError(f"Invalid message type {type(message)} received")
+				raise TypeError(f"Invalid message type {type(message)} received")
 		else:
 			raise RuntimeError(f"FileTransfer {message.file_id} not found")
 	except Exception as err:

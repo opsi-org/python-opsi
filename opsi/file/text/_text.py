@@ -46,7 +46,7 @@ def _get_params_from_file(params_file: str | os.PathLike[str]) -> dict[str, str]
 			if "=" in line:
 				key, value = line.split("=", 1)
 				try:
-					value = codecs.escape_decode(value.encode("utf-8"))[0].decode("utf-8")  # type: ignore[unresolved-attribute]
+					value = codecs.escape_decode(value.encode("utf-8"))[0].decode("utf-8")
 				except ValueError as err:
 					# Could be an invalid escape sequence like in linu\x
 					logger.warning("Failed to escape decode '%s': %s", value, err)
@@ -65,7 +65,7 @@ class TextFile:
 	Read, write and modify text files with support for different encodings and line endings, as well as patching placeholders with parameters.
 	"""
 
-	_encodings_to_try = ["utf-8", "utf-16", "cp1250"]
+	_encodings_to_try = ("utf-8", "utf-16", "cp1250")
 
 	def __init__(
 		self,

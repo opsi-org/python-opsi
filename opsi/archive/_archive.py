@@ -10,7 +10,6 @@ import fnmatch
 import os
 import re
 import shutil
-import sys
 import tarfile
 import time
 from abc import ABC
@@ -20,7 +19,7 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path, PurePosixPath
 from threading import Lock
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import packaging.version
 import zstandard
@@ -78,8 +77,8 @@ class ArchiveProgress:
 	percent_completed: float = 0.0
 	_listener: list[ArchiveProgressListener] = field(default_factory=list)
 	_listener_lock: Lock = field(default_factory=Lock)
-	_last_notification = 0
-	_notification_interval = 0.5
+	_last_notification: float = 0.0
+	_notification_interval: float = 0.5
 
 	def set_completed(self, completed: int) -> None:
 		self.completed = min(self.total, completed)
@@ -239,10 +238,7 @@ def untar(tar: tarfile.TarFile, destination: Path, file_pattern: str | None = No
 			logger.debug("Member does not match file pattern %r: %r", file_pattern, member.name)
 			continue
 		logger.debug("Extracting member: %r", member.name)
-		if sys.version_info.minor >= 12:
-			tar.extract(member, path=destination, filter="fully_trusted")
-		else:
-			tar.extract(member, path=destination)
+		tar.extract(member, path=destination, filter="fully_trusted")
 		extracted_members += 1
 
 	if file_pattern and not extracted_members:
@@ -302,9 +298,9 @@ def extract_archive_internal(
 	is_zstd = archive.suffixes and archive.suffixes[-1] == ".zstd"
 	with open(archive, "rb") as file:
 		file = ProgressFileWrapper(filesize=filesize, fileobj=file, progress=progress)
-		with zstandard.ZstdDecompressor().stream_reader(file) if is_zstd else nullcontext(file) as fileobj:  # type: ignore[attr-defined]
+		with zstandard.ZstdDecompressor().stream_reader(cast(Any, file)) if is_zstd else nullcontext(file) as fileobj:  # noqa: SIM117
 			# compression can be None, gz, bz2 or xz
-			with tarfile.open(fileobj=fileobj, mode="r:" if is_zstd else "r") as tar_object:  # type: ignore[no-matching-overload]
+			with tarfile.open(fileobj=cast(Any, fileobj), mode="r:" if is_zstd else "r") as tar_object:
 				untar(tar_object, destination, file_pattern)
 
 
@@ -314,7 +310,13 @@ def extract_archive(
 	use_commands = False
 	if is_linux():
 		file_type = get_file_type(archive)
-		if archive.suffixes and ".cpio" in archive.suffixes[-2:] or file_type == "cpio" or (archive.suffixes and archive.suffixes[-1] in (".gz", ".gzip") or file_type == "gzip") and use_pigz():
+		if (
+			archive.suffixes
+			and ".cpio" in archive.suffixes[-2:]
+			or file_type == "cpio"
+			or (archive.suffixes and archive.suffixes[-1] in (".gz", ".gzip") or file_type == "gzip")
+			and use_pigz()
+		):
 			use_commands = True
 	if use_commands:
 		return extract_archive_external(archive, destination, file_pattern=file_pattern, progress_listener=progress_listener)
@@ -393,18 +395,16 @@ def get_archive_files(
 				abs_path = root_path / dirname
 				archive_path = abs_path.relative_to(base_dir)
 				if abs_path.is_symlink():
-					if exclude_dirs:
-						if any(archive_path.match(pat) for pat in exclude_dirs):
-							logger.debug("Symlink to directory '%s' is excluded", abs_path)
-							continue
+					if exclude_dirs and any(archive_path.match(pat) for pat in exclude_dirs):
+						logger.debug("Symlink to directory '%s' is excluded", abs_path)
+						continue
 					yield ArchiveFile(path=abs_path, archive_path=archive_path, size=0)
 		for filename in filenames:
 			abs_path = root_path / filename
 			archive_path = abs_path.relative_to(base_dir)
-			if exclude_files:
-				if any(archive_path.match(pat) for pat in exclude_files):
-					logger.debug("File '%s' is excluded", abs_path)
-					continue
+			if exclude_files and any(archive_path.match(pat) for pat in exclude_files):
+				logger.debug("File '%s' is excluded", abs_path)
+				continue
 			size = 0 if abs_path.is_symlink() and not follow_symlinks else abs_path.stat().st_size
 			yield ArchiveFile(path=abs_path, archive_path=archive_path, size=size)
 
@@ -533,7 +533,7 @@ def create_archive_internal(
 	if compression == ArchiveCompression.ZSTD:
 		compressor = zstandard.ZstdCompressor(level=ZSTD_COMPRESS_LEVEL)
 		with open(archive, "wb") as archive_file:
-			with compressor.stream_writer(archive_file) as zstd_writer:
+			with compressor.stream_writer(archive_file) as zstd_writer:  # noqa: SIM117
 				with ProgressTarFile.open(fileobj=zstd_writer, dereference=dereference, mode="w:") as tar_object:
 					for file in files:
 						tar_object.add(file.path, arcname=file.archive_path, filter=set_tarinfo)
@@ -543,7 +543,7 @@ def create_archive_internal(
 				progress.set_completed(total_size)
 		return
 
-	with ProgressTarFile.open(name=str(archive), mode=mode, dereference=dereference, progress=progress) as tar_object:  # type: ignore[call-arg,call-overload]
+	with cast(Any, ProgressTarFile).open(name=str(archive), mode=mode, dereference=dereference, progress=progress) as tar_object:
 		for file in files:
 			tar_object.add(file.path, arcname=file.archive_path, filter=set_tarinfo)
 			if progress:

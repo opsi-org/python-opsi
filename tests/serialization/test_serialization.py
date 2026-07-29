@@ -31,7 +31,7 @@ def test_encode_decode(format: Literal["json", "msgpack"]) -> None:
 	encode = json_encode if format == "json" else msgpack_encode
 	decode = json_decode if format == "json" else msgpack_decode
 
-	now = datetime.datetime.now()
+	now = datetime.datetime.now()  # noqa: DTZ005
 	data = {"test": "value", "list": [1, 2, 3], "now": now}
 	encoded = json_encode(data)
 	data["now"] = data["now"].isoformat()

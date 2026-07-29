@@ -61,7 +61,7 @@ LEVEL_TO_NAME = {
 	ESSENTIAL: "ESSENTIAL",
 	NONE: "NONE",
 }
-logging._levelToName = logging.level_to_name = LEVEL_TO_NAME  # type: ignore[attr-defined]
+logging._levelToName = logging.level_to_name = LEVEL_TO_NAME  # ty: ignore[unresolved-attribute]
 
 NAME_TO_LEVEL = {
 	"SECRET": SECRET,
@@ -75,7 +75,7 @@ NAME_TO_LEVEL = {
 	"ESSENTIAL": ESSENTIAL,
 	"NONE": NONE,
 }
-logging._nameToLevel = logging.name_to_level = NAME_TO_LEVEL  # type: ignore[attr-defined]
+logging._nameToLevel = logging.name_to_level = NAME_TO_LEVEL  # ty: ignore[unresolved-attribute]
 
 LEVEL_TO_OPSI_LEVEL = {
 	SECRET: LOG_SECRET,
@@ -89,8 +89,8 @@ LEVEL_TO_OPSI_LEVEL = {
 	ESSENTIAL: LOG_ESSENTIAL,
 	NONE: LOG_NONE,
 }
-logging.level_to_opsi_level = LEVEL_TO_OPSI_LEVEL  # type: ignore[attr-defined]
-logging._levelToOpsiLevel = LEVEL_TO_OPSI_LEVEL  # type: ignore[attr-defined]
+logging.level_to_opsi_level = LEVEL_TO_OPSI_LEVEL  # ty: ignore[unresolved-attribute]
+logging._levelToOpsiLevel = LEVEL_TO_OPSI_LEVEL  # ty: ignore[unresolved-attribute]
 
 OPSI_LEVEL_TO_LEVEL = {
 	LOG_SECRET: SECRET,
@@ -104,8 +104,8 @@ OPSI_LEVEL_TO_LEVEL = {
 	LOG_ESSENTIAL: ESSENTIAL,
 	LOG_NONE: NONE,
 }
-logging.opsi_level_to_level = OPSI_LEVEL_TO_LEVEL  # type: ignore[attr-defined]
-logging._opsiLevelToLevel = OPSI_LEVEL_TO_LEVEL  # type: ignore[attr-defined]
+logging.opsi_level_to_level = OPSI_LEVEL_TO_LEVEL  # ty: ignore[unresolved-attribute]
+logging._opsiLevelToLevel = OPSI_LEVEL_TO_LEVEL  # ty: ignore[unresolved-attribute]
 
 
 class LoggingError(OpsiError):
