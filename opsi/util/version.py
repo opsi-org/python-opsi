@@ -11,9 +11,10 @@ from __future__ import annotations
 
 import re
 from collections.abc import Generator
+from functools import total_ordering
 from typing import Literal
 
-from packaging.version import InvalidVersion, Version
+from packaging.version import InvalidVersion
 
 from opsi.logging import get_logger
 from opsi.opsi.service.model.type._type import _PACKAGE_VERSION_REGEX, _PRODUCT_VERSION_REGEX
@@ -64,14 +65,38 @@ def _legacy_cmpkey(version: str) -> tuple[str, ...]:
 	return tuple(parts)
 
 
-# Inspired by packaging.version.LegacyVersion (deprecated)
-class LegacyVersion(Version):
-	def __init__(self, version: str):
+# Inspired by packaging.version.LegacyVersion (removed from packaging).
+# Implemented as a standalone class to not depend on packaging.version.Version internals.
+@total_ordering
+class LegacyVersion:
+	"""
+	Version class supporting legacy (non PEP 440) version strings like `1.0or2.0` or `1.2beta`.
+
+	Instances are ordered and compared based on a comparison key derived from the version string.
+	"""
+
+	def __init__(self, version: str) -> None:
 		self._version = str(version)
-		self._key = _legacy_cmpkey(self._version)  # ty: ignore[invalid-assignment]
+		self._key = _legacy_cmpkey(self._version)
 
 	def __str__(self) -> str:
-		return str(self._version)
+		return self._version
+
+	def __repr__(self) -> str:
+		return f"<LegacyVersion('{self._version}')>"
+
+	def __hash__(self) -> int:
+		return hash(self._key)
+
+	def __eq__(self, other: object) -> bool:
+		if not isinstance(other, LegacyVersion):
+			return NotImplemented
+		return self._key == other._key
+
+	def __lt__(self, other: LegacyVersion) -> bool:
+		if not isinstance(other, LegacyVersion):
+			return NotImplemented
+		return self._key < other._key
 
 
 def compare_versions(version1: str, condition: Literal["", "==", "=", "<", "<=", ">", ">="], version2: str) -> bool:
@@ -97,7 +122,7 @@ def compare_versions(version1: str, condition: Literal["", "==", "=", "<", "<=",
 			raise ValueError(f"Bad package version provided: '{version}'")
 
 	try:
-		# Don't use packaging.version.parse() here as packaging.version.Version cannot handle legacy formats
+		# Don't use packaging.version here as packaging.version.Version cannot handle legacy formats
 		first = LegacyVersion(version1)
 		second = LegacyVersion(version2)
 	except InvalidVersion as version_error:
