@@ -43,7 +43,7 @@ TRACE = DEBUG2 = logging.TRACE = logging.DEBUG2 = 20  # type: ignore
 DEBUG = logging.DEBUG = 30  # type: ignore
 INFO = logging.INFO = 40  # type: ignore
 NOTICE = logging.NOTICE = 50  # type: ignore
-WARNING = WARN = logging.WARNING = logging.WARNING = 60  # type: ignore
+WARNING = WARN = logging.WARN = logging.WARNING = 60  # type: ignore # noqa: LOG009
 ERROR = logging.ERROR = 70  # type: ignore
 CRITICAL = logging.CRITICAL = 80  # type: ignore
 ESSENTIAL = DEVEL = COMMENT = logging.ESSENTIAL = logging.DEVEL = logging.COMMENT = 90  # type: ignore
