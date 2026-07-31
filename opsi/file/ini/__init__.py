@@ -16,4 +16,4 @@ from opsi.file.ini._ini import (
     set_option,
 )
 
-__all__ = ["IniParseError", "INIFile", "open", "set_option", "get_option", "has_option", "has_section", "list_sections", "remove_option", "remove_section"]
+__all__ =  ["INIFile", "IniParseError", "get_option", "has_option", "has_section", "list_sections", "open", "remove_option", "remove_section", "set_option"]

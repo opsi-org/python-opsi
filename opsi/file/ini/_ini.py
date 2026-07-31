@@ -9,6 +9,7 @@ import builtins
 import os
 from pathlib import Path
 from types import TracebackType
+from typing import Self
 
 from configupdater import ConfigUpdater
 
@@ -33,7 +34,7 @@ class INIFile:
 	and modify its contents.
 	"""
 
-	def __enter__(self) -> INIFile:
+	def __enter__(self) -> Self:
 		return self
 
 	def __exit__(
