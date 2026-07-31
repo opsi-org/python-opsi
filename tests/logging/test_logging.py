@@ -13,7 +13,7 @@ import tempfile
 import threading
 import time
 import warnings
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from multiprocessing import Process
 from pathlib import Path
 from typing import Any
@@ -167,14 +167,14 @@ def test_secret_formatter_attr() -> None:
 
 
 def test_logrecord_patch_is_idempotent() -> None:
-	original_init = logging.LogRecord.__init_orig__  # type: ignore[attr-defined]
+	original_init = logging.LogRecord.__init_orig__  # ty: ignore[unresolved-attribute]
 
 	importlib.reload(opsi_logging_module)
 	importlib.reload(opsi_logging_module)
 
-	assert logging.LogRecord.__init_orig__ is original_init  # type: ignore[attr-defined]
+	assert logging.LogRecord.__init_orig__ is original_init  # ty: ignore[unresolved-attribute]
 	log_record = logging.LogRecord(name="", level=logging.ERROR, pathname="", lineno=1, msg="t", args=None, exc_info=None)
-	assert log_record.opsilevel == logging.level_to_opsi_level.get(logging.ERROR, logging.ERROR)  # type: ignore[attr-defined]
+	assert log_record.opsilevel == logging.level_to_opsi_level.get(logging.ERROR, logging.ERROR)  # ty: ignore[unresolved-attribute]
 
 
 def test_secret_filter() -> None:
@@ -353,23 +353,22 @@ def test_context_threads() -> None:
 				logger.essential("MyModule.run")
 				common_work()
 
-	with log_context({"whoami": "MAIN"}):
-		with log_stream(LOG_INFO, format="%(contextstring)s %(message)s") as stream:
-			main = Main()
-			try:
-				main.run()
-			except KeyboardInterrupt:
-				pass
-			for _thread in threading.enumerate():
-				if hasattr(_thread, "stop"):
-					_thread.stop()  # type: ignore[attr-defined]
-					_thread.join()
+	with log_context({"whoami": "MAIN"}), log_stream(LOG_INFO, format="%(contextstring)s %(message)s") as stream:
+		main = Main()
+		try:
+			main.run()
+		except KeyboardInterrupt:
+			pass
+		for _thread in threading.enumerate():
+			if hasattr(_thread, "stop"):
+				_thread.stop()  # ty: ignore[call-non-callable]
+				_thread.join()
 
-			stream.seek(0)
-			log = stream.read()
-			assert re.search(r"module Client-1.*MyModule.run", log) is not None
-			# to check for corrent handling of async contexti when eventloop is not running in main thread
-			assert re.search(r"handler for client Client-0.*handling client Client-1", log) is None
+		stream.seek(0)
+		log = stream.read()
+		assert re.search(r"module Client-1.*MyModule.run", log) is not None
+		# to check for corrent handling of async contexti when eventloop is not running in main thread
+		assert re.search(r"handler for client Client-0.*handling client Client-1", log) is None
 
 
 def test_observable_handler() -> None:
@@ -445,8 +444,8 @@ def test_set_context() -> None:
 
 		stream.seek(0)
 		stream.truncate()
-		with pytest.raises(ValueError):
-			set_context("suddenly a string")  # type: ignore[arg-type]
+		with pytest.raises(TypeError):
+			set_context("suddenly a string")  # ty: ignore[invalid-argument-type]
 		logger.error("test message")
 		stream.seek(0)
 		log = stream.read()
@@ -486,8 +485,8 @@ def test_filter() -> None:
 		assert "test2 that should appear" in log
 		assert "test2 that should not appear" not in log
 
-		with pytest.raises(ValueError):
-			set_filter("invalid")  # type: ignore[arg-type]
+		with pytest.raises(TypeError):
+			set_filter("invalid")  # ty: ignore[invalid-argument-type]
 
 
 def test_filter_from_string() -> None:
@@ -521,8 +520,8 @@ def test_filter_from_string() -> None:
 		assert "test that should not appear" not in log
 		assert "test that should appear after filter reset" in log
 
-		with pytest.raises(ValueError):
-			set_filter_from_string({"testkey": ["t1", "t3"]})  # type: ignore[arg-type]
+		with pytest.raises(TypeError):
+			set_filter_from_string({"testkey": ["t1", "t3"]})  # ty: ignore[invalid-argument-type]
 
 
 def test_log_devel() -> None:
@@ -547,7 +546,7 @@ def test_multi_call_logging_config(tmp_path: Path) -> None:
 	logger.info("LINE2")
 	logging_config(stderr_level=logging.INFO, log_file=log_file, file_level=logging.ERROR, file_format="%(message)s")
 	logger.info("LINE3")
-	logging_config(stderr_level=logging.NONE, file_level=logging.INFO)  # type: ignore[attr-defined]
+	logging_config(stderr_level=logging.NONE, file_level=logging.INFO)  # ty: ignore[unresolved-attribute]
 	logger.info("LINE4")
 	assert log_file.read_text(encoding="utf-8") == "LINE1\nLINE2\nLINE4\n"
 
@@ -701,17 +700,17 @@ def test_sqlite_handler_base(tmp_path: Path) -> None:
 
 	assert records[0].msecs == round(records[0].created % 1 * 1000)
 	assert records[0].levelno == logging.INFO
-	assert getattr(records[0], "opsilevel") == LOG_INFO
+	assert records[0].opsilevel == LOG_INFO
 	assert records[0].getMessage() == f"info message: arg1 1 {SECRET_REPLACEMENT_STRING}"
-	assert getattr(records[0], "context") == {"ctx1": "val1", "ctx2": "val2", "logger": "root"}
+	assert records[0].context == {"ctx1": "val1", "ctx2": "val2", "logger": "root"}
 
 	assert now_ms <= records[1].created * 1000 <= now_ms + 5000
 	assert records[1].msecs == round(records[1].created % 1 * 1000)
 	assert records[1].created > records[0].created
 	assert records[1].levelno == logging.DEBUG
-	assert getattr(records[1], "opsilevel") == LOG_DEBUG
+	assert records[1].opsilevel == LOG_DEBUG
 	assert records[1].getMessage() == f"debug {SECRET_REPLACEMENT_STRING} message"
-	assert getattr(records[1], "context") == {"logger": "root"}
+	assert records[1].context == {"logger": "root"}
 
 	assert records[1].created - records[0].created >= 1.09
 
@@ -764,17 +763,17 @@ def test_sqlite_handler_base(tmp_path: Path) -> None:
 	records = list(sqlite_handler.get_records(max_level=LOG_WARNING))
 	assert len(records) == 4_000 * 3
 	for record in records:
-		assert getattr(record, "opsilevel") <= LOG_WARNING
+		assert record.opsilevel <= LOG_WARNING
 
 	records = list(sqlite_handler.get_records(max_level=INFO))
 	assert len(records) == 6_000 * 3
 	for record in records:
-		assert getattr(record, "opsilevel") <= LOG_INFO
+		assert record.opsilevel <= LOG_INFO
 
 	records = list(sqlite_handler.get_records(max_level=LOG_WARNING))
 	assert len(records) == 4_000 * 3
 	for record in records:
-		assert getattr(record, "opsilevel") <= LOG_WARNING
+		assert record.opsilevel <= LOG_WARNING
 
 	records = list(sqlite_handler.get_records(pid=os.getpid()))
 	assert len(records) == 27_000
@@ -804,11 +803,11 @@ def test_sqlite_handler_base(tmp_path: Path) -> None:
 
 	time.sleep(1)
 	now_unix = unix_timestamp()
-	now_utc = datetime.now(timezone.utc)
-	now_loc: datetime = datetime.now()
+	now_utc = datetime.now(UTC)
+	now_loc: datetime = datetime.now()  # noqa: DTZ005
 	if is_windows():
 		# On Windows, datetime with ZoneInfo("US/Pacific") does not exist
-		now_pst = datetime.now()
+		now_pst = datetime.now()  # noqa: DTZ005
 	else:
 		now_pst = datetime.now(ZoneInfo("US/Pacific"))
 
@@ -862,10 +861,9 @@ def test_sqlite_errors(tmp_path: Path) -> None:
 def test_sqlite_log_database_context_manager(tmp_path: Path) -> None:
 	log_db = Path(tmp_path) / "logs_context_manager.db"
 	sqlite_log_database = None
-	with pytest.raises(RuntimeError):
-		with SQLiteLogDatabase(db_path=log_db) as db:
-			sqlite_log_database = db
-			raise RuntimeError("Test exception to check context manager handling")
+	with pytest.raises(RuntimeError), SQLiteLogDatabase(db_path=log_db) as db:
+		sqlite_log_database = db
+		raise RuntimeError("Test exception to check context manager handling")
 
 	assert sqlite_log_database
 	assert sqlite_log_database._connection is None
@@ -1053,6 +1051,7 @@ def test_logging_config_log_db(tmp_path: Path) -> None:
 	logger.info("message")
 	time.sleep(1.0)  # Wait for flush
 	sqlite_handler = get_all_handlers(SQLiteHandler)[0]
+	assert isinstance(sqlite_handler, SQLiteHandler)
 	records = list(sqlite_handler.get_records())  # type: ignore[unresolved-attribute]
 	assert len(records) == 1
 	assert records[0].getMessage() == "message"

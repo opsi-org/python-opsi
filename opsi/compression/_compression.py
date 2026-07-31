@@ -5,10 +5,11 @@
 
 from __future__ import annotations
 
+import enum
 import gzip
 import time
 import zlib
-import enum
+
 import lz4.frame
 from zstandard import ZstdCompressor, ZstdDecompressor
 

@@ -129,7 +129,7 @@ def _get_mount_from_wnet_connection(dev_or_mountpoint: str, mount_point: str | N
 	for local_mount_point in mount_points:
 		try:
 			remote = win32wnet.WNetGetConnection(local_mount_point)
-		except Exception:
+		except Exception:  # noqa
 			continue
 		logger.debug("Found WNet mount: local='%s', remote='%s'", local_mount_point, remote)
 		if dev_or_mountpoint in (remote.lower(), local_mount_point.lower()):

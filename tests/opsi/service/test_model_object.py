@@ -10,7 +10,7 @@ test_objects
 import json
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from pydantic_core import PydanticSerializationError
@@ -36,7 +36,7 @@ from opsi.opsi.service.model.object._object import (
 
 object_classes = []
 pre_globals = list(globals())
-from opsi.opsi.service.model.object import (  # noqa: E402
+from opsi.opsi.service.model.object import (
 	AuditHardware,
 	AuditHardwareOnHost,
 	AuditLog,
@@ -302,7 +302,7 @@ def test_object_classes() -> None:
 				setter(value)
 
 		if not isinstance(obj, (Entity, Relationship)):
-			raise ValueError(f"wrong type: {type(obj)}")
+			raise TypeError(f"wrong type: {type(obj)}")
 
 		_class = obj.__class__
 
@@ -319,7 +319,7 @@ def test_object_classes() -> None:
 
 		obj.update(obj.clone())
 		with pytest.raises(TypeError):
-			obj.update({"wrong": "type"})  # type: ignore[arg-type]
+			obj.update({"wrong": "type"})  # ty: ignore[invalid-argument-type]
 		obj.emptyValues()
 		obj.setDefaults()
 
@@ -358,7 +358,7 @@ def test_get_possible_class_attributes() -> None:
 	}
 
 	class Test(Entity):
-		sub_classes: dict[str, type] = {}
+		sub_classes: dict[str, type] = {}  # noqa: RUF012
 
 		def __init__(no_self: Any, arg: Any) -> None:
 			pass
@@ -450,27 +450,27 @@ def test_objects_differ() -> None:
 	assert objects_differ(config_server1, config_server2)
 	assert not objects_differ(config_server1, config_server2, exclude_attributes=["description"])
 
-	config_server2.description = 123  # type: ignore[assignment]
+	config_server2.description = 123  # ty: ignore[invalid-assignment]
 	assert objects_differ(config_server1, config_server2)
 
-	config_server1.description = {"test": 1}  # type: ignore[assignment]
-	config_server2.description = {"test": 1, "test2": 2}  # type: ignore[assignment]
+	config_server1.description = {"test": 1}  # ty: ignore[invalid-assignment]
+	config_server2.description = {"test": 1, "test2": 2}  # ty: ignore[invalid-assignment]
 	assert objects_differ(config_server1, config_server2)
 
-	config_server1.description = {"test": 1}  # type: ignore[assignment]
-	config_server2.description = {"test": 2}  # type: ignore[assignment]
+	config_server1.description = {"test": 1}  # ty: ignore[invalid-assignment]
+	config_server2.description = {"test": 2}  # ty: ignore[invalid-assignment]
 	assert objects_differ(config_server1, config_server2)
 
-	config_server1.description = ["test"]  # type: ignore[assignment]
-	config_server2.description = ["test", "test2"]  # type: ignore[assignment]
+	config_server1.description = ["test"]  # ty: ignore[invalid-assignment]
+	config_server2.description = ["test", "test2"]  # ty: ignore[invalid-assignment]
 	assert objects_differ(config_server1, config_server2)
 
-	config_server1.description = ["test", "test1"]  # type: ignore[assignment]
-	config_server2.description = ["test", "test2"]  # type: ignore[assignment]
+	config_server1.description = ["test", "test1"]  # ty: ignore[invalid-assignment]
+	config_server2.description = ["test", "test2"]  # ty: ignore[invalid-assignment]
 	assert objects_differ(config_server1, config_server2)
 
-	config_server1.description = ["test", "test2"]  # type: ignore[assignment]
-	config_server2.description = ["test", "test2", "test3"]  # type: ignore[assignment]
+	config_server1.description = ["test", "test2"]  # ty: ignore[invalid-assignment]
+	config_server2.description = ["test", "test2", "test3"]  # ty: ignore[invalid-assignment]
 	assert objects_differ(config_server1, config_server2)
 
 
@@ -851,7 +851,7 @@ def test_audit_hardware_on_host_unicode() -> None:
 
 def test_audit_hardware_on_host_unicode_with_additionals() -> None:
 	audit_hardware_on_host = AuditHardwareOnHost(**AUDIT_HARDWARE_ON_HOST1)
-	setattr(audit_hardware_on_host, "name", "Ünicöde name.")
+	cast(Any, audit_hardware_on_host).name = "Ünicöde name."
 	assert str(audit_hardware_on_host)
 
 

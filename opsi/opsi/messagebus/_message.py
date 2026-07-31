@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from abc import ABC
 from enum import StrEnum
-from typing import Annotated, Any, Type, TypeVar, cast
+from typing import Annotated, Any, Self, TypeVar, cast
 from uuid import uuid4
 
 from pydantic import AfterValidator, AliasChoices, BaseModel, Field, StringConstraints
@@ -95,14 +95,14 @@ class Message(BaseModel, ABC):
 	ref_id: str | None = None
 
 	@classmethod
-	def from_dict(cls: type[MessageT], data: dict[str, Any]) -> MessageT:
+	def from_dict(cls, data: dict[str, Any]) -> Self:
 		_cls = cls
 		if _cls is Message:
 			_type = data.get("type")
 			if _type:
 				if isinstance(_type, MessageType):
 					_type = _type.value
-				_cls = cast(Type[MessageT], MESSAGE_TYPE_TO_CLASS.get(_type, Message))
+				_cls = cast(type[Self], MESSAGE_TYPE_TO_CLASS.get(_type, Message))
 		return _cls(**data)
 
 	def to_dict(self, none_values: bool = False) -> dict[str, Any]:
@@ -116,7 +116,7 @@ class Message(BaseModel, ABC):
 		return self.back_channel or self.sender
 
 	@classmethod
-	def from_messagepack(cls: type[MessageT], data: bytes) -> MessageT:
+	def from_messagepack(cls, data: bytes) -> Self:
 		return cls.from_dict(msgpack_decode(data))
 
 	from_msgpack = from_messagepack
@@ -225,7 +225,7 @@ class JSONRPCRequestMessage(Message):
 	api_version: str = "1"
 	rpc_id: str | int = Field(default_factory=lambda: str(uuid4()))
 	method: str
-	params: tuple[Any, ...] = tuple()
+	params: tuple[Any, ...] = ()
 
 
 class JSONRPCResponseMessage(Message):
@@ -386,7 +386,7 @@ class ProcessStartRequestMessage(ProcessMessage):
 	"""
 
 	type: str = MessageType.PROCESS_START_REQUEST.value
-	command: tuple[str, ...] = tuple()
+	command: tuple[str, ...] = ()
 	timeout: int = 0
 	shell: bool = False
 	env: dict[str, str] = Field(default_factory=dict)

@@ -1,6 +1,6 @@
 [project]
 name = "python-opsi"
-version = "4.3.25.0"
+version = "4.3.26.2"
 description = "python-opsi"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -19,7 +19,7 @@ dependencies = [
 	"hivex>=1.3; platform_system == 'Linux'",
 	"msgspec>=0.19; platform_system != 'Windows'",
 	"netifaces>=0.11.0",
-	"packaging>=24.1,<25.0",  # TODO: LegacyVersion no longer working with packaging >= 25.0
+	"packaging>=26.2",
 	"psutil>=7.2.2",
 	"ptyprocess>=0.7",
 	"pydantic>=2.12.5",
@@ -54,7 +54,6 @@ Homepage = "https://www.opsi.org"
 [dependency-groups]
 dev = [
 	"hypothesis>=6.151.9",
-	"pproxy>=2.7",
 	"pytest-asyncio>=1.3.0",
 	"pytest-coverage>=0.0",
 	"pytest>=9.0",
@@ -76,8 +75,25 @@ package = true
 [tool.ty.environment]
 python = ".venv/bin/python"
 
+[tool.ty.src]
+exclude = [".venv"]
+
 [tool.ruff]
 line-length = 140
+
+[tool.ruff.lint]
+ignore = [
+	"BLE001",  # Public boundaries intentionally catch third-party and platform exceptions.
+	"G201",    # Logging `.exception(...)` must not be used instead of `.error(..., exc_info=True)`
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+	"ASYNC230", # Test fixture I/O is intentionally synchronous.
+	"TRY002",   # Tests intentionally exercise base exception handling.
+	"S110",     # Best-effort cleanup and fallback paths intentionally suppress exceptions.
+	"SIM117",   # Nested context managers keep setup and assertion scopes distinct.
+]
 
 [tool.mypy]
 disallow_untyped_calls = true

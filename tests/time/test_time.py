@@ -5,7 +5,7 @@
 
 import os
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 
 import pytest
 
@@ -25,7 +25,7 @@ def test_unix_timestamp() -> None:
 @pytest.mark.parametrize("local_timezone", ("UTC", "Europe/Berlin", "America/New_York", "Pacific/Auckland"))
 @pytest.mark.linux
 def test_unix_timestamp_with_tz(monkeypatch: pytest.MonkeyPatch, local_timezone: str) -> None:
-	fixed_datetime = datetime(2026, 3, 27, 12, 0, 1, 250000, tzinfo=timezone.utc)
+	fixed_datetime = datetime(2026, 3, 27, 12, 0, 1, 250000, tzinfo=UTC)
 	original_timezone = os.environ.get("TZ")
 
 	def fake_now(*, tz: timezone) -> datetime:
@@ -52,7 +52,7 @@ def test_unix_timestamp_with_tz(monkeypatch: pytest.MonkeyPatch, local_timezone:
 
 
 def test_unix_timestamp_uses_current_utc_time(monkeypatch: pytest.MonkeyPatch) -> None:
-	fixed_datetime = datetime(2026, 3, 27, 12, 0, 1, 250000, tzinfo=timezone.utc)
+	fixed_datetime = datetime(2026, 3, 27, 12, 0, 1, 250000, tzinfo=UTC)
 
 	def fake_now(*, tz: timezone) -> datetime:
 		assert tz is time_module._utc
@@ -66,7 +66,7 @@ def test_unix_timestamp_uses_current_utc_time(monkeypatch: pytest.MonkeyPatch) -
 
 
 def test_unix_timestamp_returns_milliseconds_when_requested(monkeypatch: pytest.MonkeyPatch) -> None:
-	fixed_datetime = datetime(2026, 3, 27, 12, 0, 1, 250000, tzinfo=timezone.utc)
+	fixed_datetime = datetime(2026, 3, 27, 12, 0, 1, 250000, tzinfo=UTC)
 
 	def fake_now(*, tz: timezone) -> datetime:
 		assert tz is time_module._utc

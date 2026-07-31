@@ -11,9 +11,10 @@ import os
 import platform
 import sys
 import threading
+from collections.abc import Generator, Mapping
 from contextlib import contextmanager
 from io import StringIO
-from typing import Any, Generator, Mapping, TextIO
+from typing import Any, TextIO
 
 from psutil import Process
 
@@ -88,7 +89,7 @@ class MemoryUsageMonitor(threading.Thread):
 
 
 @contextmanager
-def memory_usage_monitor(interval: float = 1.0) -> Generator[MemoryUsageMonitor, None, None]:
+def memory_usage_monitor(interval: float = 1.0) -> Generator[MemoryUsageMonitor]:
 	monitor = MemoryUsageMonitor(interval)
 	monitor.start()
 	monitor.started.wait(5.0)
@@ -100,7 +101,7 @@ def memory_usage_monitor(interval: float = 1.0) -> Generator[MemoryUsageMonitor,
 
 
 @contextmanager
-def environment(env_vars: Mapping[str, str]) -> Generator[dict[str, str], None, None]:
+def environment(env_vars: Mapping[str, str]) -> Generator[dict[str, str]]:
 	old_environ = os.environ.copy()
 	os.environ.update(env_vars)
 	try:
@@ -111,14 +112,14 @@ def environment(env_vars: Mapping[str, str]) -> Generator[dict[str, str], None, 
 
 
 @contextmanager
-def log_stream(new_level: int, format: str | None = None) -> Generator[StringIO, None, None]:
+def log_stream(new_level: int, format: str | None = None) -> Generator[StringIO]:
 	stream = StringIO()
 	with use_logging_config(stderr_level=new_level, stderr_format=format, stderr_file=stream):
 		yield stream
 
 
 @contextmanager
-def opsi_config(conf_vars: dict[str, Any]) -> Generator[OpsiConfig, None, None]:
+def opsi_config(conf_vars: dict[str, Any]) -> Generator[OpsiConfig]:
 	orig_config_file = OpsiConfig.config_file
 	with TempFile() as temp_config_file:
 		OpsiConfig.reset_singleton()

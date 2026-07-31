@@ -234,7 +234,7 @@ class BCD:
 		print(f"[{path}]", file=file)
 		for value_id in self.hive.node_values(node):
 			print(self.format_value(value_id), file=file)
-		print("", file=file)
+		print(file=file)
 		children = self.hive.node_children(node)
 		for child_id in children:
 			self.print_tree(f"{path}\\{self.hive.node_name(child_id)}", file)
@@ -406,7 +406,7 @@ class BCD:
 
 					val = str_repr
 				print(f"{attr}: {val}", file=file)
-			print("", file=file)
+			print(file=file)
 
 	def get_boot_entries(self) -> list[dict]:
 		entries = []
@@ -444,7 +444,9 @@ class BCD:
 						value = self.decode_device_data(value)
 					elif element in (BCDE_LIBRARY_TYPE_ALLOW_PRERELEASE_SIGNATURES, BCDE_OSLOADER_TYPE_LOG_INITIALIZATION):
 						value = value == b"\x01"
-					entries[-1][OSLOADER_ELEMENTS.get(element, {}).get("friendly_name")] = value
+					friendly_name = OSLOADER_ELEMENTS.get(element, {}).get("friendly_name")
+					if friendly_name:
+						entries[-1][friendly_name] = value
 		return entries
 
 	def get_boot_entry_by_id(self, identifier: str) -> dict:

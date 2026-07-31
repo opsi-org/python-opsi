@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from opsi.retry import Retry, RetryConfig, get_retry_config, RetryConfigType
+from opsi.retry import Retry, RetryConfig, RetryConfigType, get_retry_config
 from opsi.system.file.operation._common import LinkType
 from opsi.system.info import is_posix, is_windows
 
@@ -16,7 +16,7 @@ if is_posix():
 elif is_windows():
 	from opsi.system.file.operation._windows import get_link_target
 
-__all__ = ["link", "get_link_target"]
+__all__ = ["get_link_target", "link"]
 
 
 def _link_attempt(link_path: Path, target: Path, link_type: LinkType, target_is_directory: bool | None = None) -> None:

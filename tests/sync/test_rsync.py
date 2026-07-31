@@ -112,9 +112,8 @@ def test_rsync_patch_file_does_not_alter_if_unneeded(rsync_testfile: Path, tmp_p
 	rsync_patch_file(oldfile, delta_file, newfile)
 	assert newfile.exists()
 
-	with open(newfile, "rb") as new_f:
-		with open(base_file, "rb") as base_f:
-			assert base_f.readlines() == new_f.readlines()
+	with open(newfile, "rb") as new_f, open(base_file, "rb") as base_f:
+		assert base_f.readlines() == new_f.readlines()
 
 
 @pytest.mark.skipif(IMPORT_FAILED, reason="Import failed.")
@@ -162,9 +161,8 @@ def test_rsync_patch_file_creates_new_file_based_on_delta(rsync_testfile: Path, 
 
 	file_based_on_delta = tmp_path / "newnew.txt"
 	rsync_patch_file(base_file, delta_file_for_new_file, file_based_on_delta)
-	with open(new_file, mode="r", encoding="utf-8") as new_f:
-		with open(file_based_on_delta, mode="r", encoding="utf-8") as new_f2:
-			assert new_f.readlines() == new_f2.readlines()
+	with open(new_file, mode="r", encoding="utf-8") as new_f, open(file_based_on_delta, mode="r", encoding="utf-8") as new_f2:
+		assert new_f.readlines() == new_f2.readlines()
 
 	with open(file_based_on_delta, mode="r", encoding="utf-8") as new_f2:
 		assert any(additional_text in line for line in new_f2)

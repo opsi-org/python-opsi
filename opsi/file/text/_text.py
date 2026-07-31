@@ -19,7 +19,7 @@ from typing import Literal, Self, get_args
 from opsi.exception import OperatingSystemUnsupportedError
 from opsi.logging import get_logger
 from opsi.logging._const import INFO
-from opsi.retry import Retry, RetryConfig, get_retry_config, RetryConfigType
+from opsi.retry import Retry, RetryConfig, RetryConfigType, get_retry_config
 from opsi.system.info import is_linux, is_windows
 
 if is_linux():
@@ -46,7 +46,7 @@ def _get_params_from_file(params_file: str | os.PathLike[str]) -> dict[str, str]
 			if "=" in line:
 				key, value = line.split("=", 1)
 				try:
-					value = codecs.escape_decode(value.encode("utf-8"))[0].decode("utf-8")  # type: ignore[unresolved-attribute]
+					value = codecs.escape_decode(value.encode("utf-8"))[0].decode("utf-8")
 				except ValueError as err:
 					# Could be an invalid escape sequence like in linu\x
 					logger.warning("Failed to escape decode '%s': %s", value, err)
@@ -65,7 +65,7 @@ class TextFile:
 	Read, write and modify text files with support for different encodings and line endings, as well as patching placeholders with parameters.
 	"""
 
-	_encodings_to_try = ["utf-8", "utf-16", "cp1250"]
+	_encodings_to_try = ("utf-8", "utf-16", "cp1250")
 
 	def __init__(
 		self,
@@ -419,7 +419,7 @@ class TextFile:
 		elif start == "above_selected":
 			search_range = range(self._line_index - 1, -1, -1)
 		elif start == "top":
-			search_range = range(0, len(self._lines))
+			search_range = range(len(self._lines))
 		elif start == "bottom":
 			search_range = range(len(self._lines) - 1, -1, -1)
 

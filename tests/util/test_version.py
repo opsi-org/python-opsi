@@ -32,8 +32,8 @@ def test_comparing_versions_of_same_size(first: str, operator: Literal["<", "<="
 		("1.0", "", "1.0"),
 	],
 )
-def test_comparing_without_giving_operator_defaults_to_equal(ver1: str, operator: str, ver2: str) -> None:
-	assert compare_versions(ver1, operator, ver2)  # type: ignore[arg-type]
+def test_comparing_without_giving_operator_defaults_to_equal(ver1: str, operator: Literal[""], ver2: str) -> None:
+	assert compare_versions(ver1, operator, ver2)
 
 
 def test_comparing_with_only_one_equality_sign() -> None:
@@ -64,7 +64,7 @@ def test_comparing_letter_versions(first: str, operator: Literal["<"], second: s
 @pytest.mark.parametrize("operator", ["asdf", "+-", "<>", "!="])
 def test_using_unknown_operator_fails(operator: str) -> None:
 	with pytest.raises(ValueError):
-		compare_versions("1", operator, "2")  # type: ignore[arg-type]
+		compare_versions("1", operator, "2")  # ty: ignore[invalid-argument-type]
 
 
 @pytest.mark.parametrize(

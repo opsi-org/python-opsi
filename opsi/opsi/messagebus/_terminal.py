@@ -8,11 +8,11 @@ from __future__ import annotations
 import shlex
 import time
 from asyncio import Event, Task, get_running_loop, sleep
+from collections.abc import Callable
 from contextlib import nullcontext
 from pathlib import Path
 from threading import Lock, Thread
 from time import monotonic
-from typing import Callable
 
 from psutil import AccessDenied, NoSuchProcess, Process
 
@@ -57,7 +57,7 @@ if is_windows():
 		try:
 			# Import of winpty may sometimes fail because of problems with the needed dll.
 			# Therefore we do not import at toplevel
-			from winpty import PtyProcess  # type: ignore[import]
+			from winpty import PtyProcess  # ty: ignore[unresolved-import]
 
 			sp_env = get_subprocess_environment()
 			sp_env.update(env or {})
@@ -78,7 +78,7 @@ if is_windows():
 			try:
 				# Help _read_in_thread to terminate
 				process.pty.set_size(1, 1)
-			except Exception:
+			except Exception:  # noqa: S110
 				pass
 
 		return (process.pid, read, write, process.setwinsize, close)
@@ -295,14 +295,14 @@ class Terminal:
 		except TimeoutError as err:
 			logger.info("Terminal timed out: %s", err)
 			logger.debug(err, exc_info=True)
-		except (IOError, EOFError) as err:
+		except (OSError, EOFError) as err:
 			logger.debug("Terminal IO error: %s", err)
 			if not self._closing:
 				await self.close()
 		except Exception as err:
 			logger.debug("Terminal error: %s", err)
 			if not self._closing:
-				logger.error(err, exc_info=True)
+				logger.error("Failed to stop terminal", exc_info=True)
 		if not self._closing:
 			await self.close()
 
@@ -350,8 +350,8 @@ class Terminal:
 				await self._loop.run_in_executor(None, self._pty_stop)
 			if self._pty_reader_task:
 				self._pty_reader_task.cancel()
-		except Exception as err:
-			logger.error(err, exc_info=True)
+		except Exception:
+			logger.error("Failed to process terminal message", exc_info=True)
 		finally:
 			self._pty_pid = None
 			self._pty_read = None
@@ -396,7 +396,7 @@ async def process_terminal_message(
 			if isinstance(message, (TerminalDataWriteMessage, TerminalResizeRequestMessage, TerminalCloseRequestMessage)):
 				await terminal.process_message(message)
 			else:
-				raise ValueError(f"Invalid message type {type(message)} received")
+				raise TypeError(f"Invalid message type {type(message)} received")
 		else:
 			raise RuntimeError(f"Terminal {message.terminal_id} not found")
 	except Exception as err:

@@ -10,9 +10,9 @@ import enum
 import hashlib
 import hmac
 import os
+from collections.abc import Callable
 from hashlib import md5
 from pathlib import Path
-from typing import Callable
 
 import bcrypt
 from argon2 import DEFAULT_HASH_LENGTH as ARGON2_DEFAULT_HASH_LENGTH
@@ -187,7 +187,7 @@ def hash_password(
 		if format != PasswordHashFormat.SHADOW:
 			raise ValueError("BCRYPT only supported with SHADOW format")
 		rounds = rounds or 12
-		salt = bcrypt.gensalt(rounds=rounds) if generate_salt else f"$2b${rounds}$......................$".encode("utf-8")
+		salt = bcrypt.gensalt(rounds=rounds) if generate_salt else f"$2b${rounds}$......................$".encode()
 		return bcrypt.hashpw(encoded_password, salt).decode("utf-8")
 
 	if algorithm == PasswordHashAlgorithm.PBKDF2_SHA512:

@@ -11,7 +11,7 @@ from dataclasses import asdict, dataclass, field
 from enum import StrEnum
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Any
+from typing import Any, cast
 
 from opsi.file.inf import INFFile, INFTargetOSVersion
 from opsi.logging import get_logger
@@ -64,7 +64,7 @@ def integrate_windows_drivers(
 	if add_driver_classes_to_driver_store and not windows_base_path:
 		raise ValueError("windows_base_path must be provided if add_driver_classes_to_driver_store is specified")
 
-	sources = service.driver_getSources(  # type: ignore[attr-defined]
+	sources = cast(Any, service).driver_getSources(
 		productId=product_id,
 		clientId=client_id,
 		architecture=architecture,
@@ -147,7 +147,7 @@ def add_drivers_to_driver_store(
 
 	if registry:
 		logger.info("Adding to registry: %s", registry)
-		temp_file = NamedTemporaryFile(mode="w", encoding="utf-16", suffix=".reg", delete=False)
+		temp_file = NamedTemporaryFile(mode="w", encoding="utf-16", suffix=".reg", delete=False)  # noqa: SIM115
 		try:
 			temp_file.write(rf"Windows Registry Editor Version 5.00\r\n\r\n{registry}")
 			temp_file.close()

@@ -4,9 +4,9 @@
 # License: AGPL-3.0-only
 
 import enum
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 from pyzsync import create_zsync_file
 
@@ -93,7 +93,7 @@ def create_package_content_file(base_dir: Path, *, links_as_links: bool = True) 
 		package_content_file.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="")
 
 	except Exception as err:
-		logger.error(err, exc_info=True)
+		logger.error("Failed to create package content file", exc_info=True)
 		raise RuntimeError(f"Failed to create package content file of directory '{base_dir}': {err}") from err
 	return package_content_file
 

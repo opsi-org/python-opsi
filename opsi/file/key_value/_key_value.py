@@ -3,9 +3,9 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator
 
 from dotenv import dotenv_values
 
@@ -61,7 +61,7 @@ class KeyValueFile:
 
 
 @contextmanager
-def open(keyValue_file: str, /, *, encoding: str = ENCODING) -> Generator[KeyValueFile, None, None]:
+def open(keyValue_file: str, /, *, encoding: str = ENCODING) -> Generator[KeyValueFile]:
 	kv_file = KeyValueFile(keyValue_file)
 	yield kv_file
 	kv_file._update_file()

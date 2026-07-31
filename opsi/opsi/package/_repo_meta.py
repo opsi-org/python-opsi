@@ -9,11 +9,12 @@ opsi packages repository metadata handling
 
 from __future__ import annotations
 
+from collections.abc import Callable, Generator
 from dataclasses import asdict, dataclass, field, fields
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import Any, Callable, Generator
+from typing import Any
 
 from opsi.compression import compress, decompress
 from opsi.crypt.hash import hash_file
@@ -160,7 +161,7 @@ class RepoMetaPackage:
 		data["description"] = opsi_package.product.description
 		data["product_dependencies"] = [RepoMetaProductDependency.from_product_dependency(d) for d in opsi_package.product_dependencies]
 		data["package_dependencies"] = [RepoMetaPackageDependency.from_package_dependency(d) for d in opsi_package.package_dependencies]
-		data["release_date"] = datetime.now(tz=timezone.utc)
+		data["release_date"] = datetime.now(tz=UTC)
 
 		return RepoMetaPackage(**data)
 
@@ -227,7 +228,7 @@ class RepoMetaPackageCollection:
 		if num_allowed_versions is None:
 			num_allowed_versions = self.repository.num_allowed_versions
 		versions = list(self.packages[name].keys())
-		real_versions = set([version.split("~")[0] for version in versions])  # ignore prelease and custom suffixes
+		real_versions = {version.split("~")[0] for version in versions}  # ignore prelease and custom suffixes
 		keep_versions = sorted(real_versions, key=LegacyVersion, reverse=True)[
 			:num_allowed_versions
 		]  # Need legacyversion for 1.0or2.0 like versions
@@ -279,7 +280,7 @@ class RepoMetaPackageCollection:
 		if (
 			package.product_id not in self.packages
 			or num_allowed_versions == 1
-			and any((version != package.version for version in self.packages[package.product_id]))
+			and any(version != package.version for version in self.packages[package.product_id])
 		):
 			# if only one version is allowed, always delete previous versions, if any is different (allow downgrade)
 			self.packages[package.product_id] = {}
@@ -299,10 +300,9 @@ class RepoMetaPackageCollection:
 			if len(self.packages[name]) == 0:
 				del self.packages[name]
 
-	def get_packages(self) -> Generator[RepoMetaPackage, None, None]:
-		for _name, versions in self.packages.items():
-			for _version, package in versions.items():
-				yield package
+	def get_packages(self) -> Generator[RepoMetaPackage]:
+		for versions in self.packages.values():
+			yield from versions.values()
 
 	def read_metafile_data(self, data: bytes) -> None:
 		p_data: dict[str, Any] = {}
@@ -325,11 +325,10 @@ class RepoMetaPackageCollection:
 			self.packages[name] = {version: RepoMetaPackage.from_dict(data) for version, data in product.items()}
 
 	def read_metafile(self, path: Path) -> None:
-		with open(path, mode="rb") as file:
-			with lock_file(file):
-				data = file.read()
-				if data:
-					self.read_metafile_data(data)
+		with open(path, mode="rb") as file, lock_file(file):
+			data = file.read()
+			if data:
+				self.read_metafile_data(data)
 
 	def write_metafile(self, path: Path) -> None:
 		encoding = "json"
@@ -350,8 +349,7 @@ class RepoMetaPackageCollection:
 
 		if not path.exists():
 			path.touch()  # Need to create file before it can be opened with r+
-		with open(path, "rb+") as file:
-			with lock_file(file, exclusive=True):
-				file.seek(0)
-				file.truncate()
-				file.write(bdata)
+		with open(path, "rb+") as file, lock_file(file, exclusive=True):
+			file.seek(0)
+			file.truncate()
+			file.write(bdata)

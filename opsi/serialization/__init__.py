@@ -6,4 +6,4 @@
 from opsi.serialization._json import json_decode, json_encode
 from opsi.serialization._messagepack import msgpack_decode, msgpack_encode
 
-__all__ = ["json_decode", "json_encode", "msgpack_encode", "msgpack_decode"]
+__all__ = ["json_decode", "json_encode", "msgpack_decode", "msgpack_encode"]

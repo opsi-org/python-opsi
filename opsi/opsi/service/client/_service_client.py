@@ -21,10 +21,11 @@ import warnings
 import webbrowser
 from abc import ABC
 from base64 import b64encode
+from collections.abc import Callable, Generator, Iterable
 from contextlib import contextmanager, nullcontext
 from contextvars import copy_context
 from dataclasses import astuple, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from functools import lru_cache
 from ipaddress import IPv6Address, ip_address
@@ -32,7 +33,7 @@ from pathlib import Path
 from random import randint
 from threading import Event, Lock, Thread
 from types import MethodType, TracebackType
-from typing import TYPE_CHECKING, Any, BinaryIO, Callable, Generator, Iterable, Literal, overload
+from typing import TYPE_CHECKING, Any, BinaryIO, Literal, Self, cast, overload
 from urllib.parse import quote, unquote, urlparse
 from uuid import uuid4
 from xml.etree import ElementTree
@@ -176,11 +177,11 @@ def isEnabledForTrace() -> bool:
 	return logger.isEnabledFor(TRACE)
 
 
-websocket_handshake.dump = websocket_dump  # type: ignore[invalid-assignment]]
-websocket_http.dump = websocket_dump  # type: ignore[invalid-assignment]]
-websocket_http.trace = websocket_trace  # type: ignore[invalid-assignment]]
-websocket_core.trace = websocket_trace  # type: ignore[invalid-assignment]]
-websocket_core.isEnabledForTrace = isEnabledForTrace  # type: ignore[invalid-assignment]]
+websocket_handshake.dump = websocket_dump  # ty: ignore[invalid-assignment]
+websocket_http.dump = websocket_dump  # ty: ignore[invalid-assignment]
+websocket_http.trace = websocket_trace  # ty: ignore[invalid-assignment]
+websocket_core.trace = websocket_trace  # ty: ignore[invalid-assignment]
+websocket_core.isEnabledForTrace = isEnabledForTrace  # ty: ignore[invalid-assignment]
 
 
 @lru_cache
@@ -229,8 +230,8 @@ class CallbackThread(Thread):
 			var.set(self._context[var])
 		try:
 			self.callback(**self.kwargs)
-		except Exception as err:
-			logger.error("Error in %s: %s", self, err, exc_info=True)
+		except Exception:
+			logger.error("Error in %s", self, exc_info=True)
 
 
 class ServiceConnectionListener(ABC):
@@ -260,7 +261,7 @@ class ServiceConnectionListener(ABC):
 		"""
 
 	@contextmanager
-	def register(self, service_client: ServiceClient) -> Generator[None, None, None]:
+	def register(self, service_client: ServiceClient) -> Generator[None]:
 		"""
 		Context manager for register this listener on and off the message bus.
 		"""
@@ -281,9 +282,8 @@ class Response:
 	def __getitem__(self, item: int) -> int | str | CaseInsensitiveDict | bytes:
 		return astuple(self)[item]
 
-	def __iter__(self) -> Generator[int | str | CaseInsensitiveDict | bytes, None, None]:
-		for item in astuple(self):
-			yield item
+	def __iter__(self) -> Generator[int | str | CaseInsensitiveDict | bytes]:
+		yield from astuple(self)
 
 
 HTTPSConnectionPool_orig_new_conn = HTTPSConnectionPool._new_conn
@@ -294,7 +294,7 @@ def _patch_https_connection_pool_key_password(key_password: str | None) -> None:
 		self.key_password = key_password
 		return HTTPSConnectionPool_orig_new_conn(self)
 
-	setattr(HTTPSConnectionPool, "_new_conn", _new_conn)
+	cast(Any, HTTPSConnectionPool)._new_conn = _new_conn
 
 
 class KeyPasswordHTTPAdapter(HTTPAdapter):
@@ -316,7 +316,7 @@ class UploadFile:
 		self._file_handle: BinaryIO | None = None
 		self._position = 0
 
-	def __enter__(self) -> UploadFile:
+	def __enter__(self) -> Self:
 		self._file_handle = open(self.file, "rb")
 		self._position = 0
 		if self.progress_callback:
@@ -391,7 +391,7 @@ def _get_file_infos_from_dav_xml(dav_xml: str) -> list[DAVFileInfo]:
 
 
 class ServiceClient:
-	no_proxy_addresses = ["localhost", "127.0.0.1", "ip6-localhost", "ip6-loopback", "::1"]
+	no_proxy_addresses = ["localhost", "127.0.0.1", "ip6-localhost", "ip6-loopback", "::1"]  # noqa: RUF012
 
 	def __init__(
 		self,
@@ -510,7 +510,7 @@ class ServiceClient:
 			verify = [verify]
 
 		self._verify: list[ServiceVerificationFlags] = []
-		for verify_flag in list(verify):
+		for verify_flag in verify:
 			if not isinstance(verify_flag, ServiceVerificationFlags):
 				verify_flag = ServiceVerificationFlags(verify_flag)
 			if verify_flag not in ServiceVerificationFlags:
@@ -775,7 +775,7 @@ class ServiceClient:
 			self._session.auth = None
 			return
 
-		self._session.auth = (  # type:ignore[invalid-assignment] # session.auth should be tuple of str, but that is a problem with weird locales
+		self._session.auth = (  # ty: ignore[invalid-assignment] # session.auth should be tuple of str, but that is a problem with weird locales
 			(self._username or "").encode("utf-8"),
 			(self._password or "").encode("utf-8"),
 		)
@@ -850,18 +850,17 @@ class ServiceClient:
 			try:
 				pem = f"-----BEGIN CERTIFICATE-----{match.group(1)}-----END CERTIFICATE-----"
 				certs.append(x509.load_pem_x509_certificate(pem.encode("utf-8")))
-			except Exception as err:
-				logger.error("Failed to load cert %r: %s", match.group(1), err, exc_info=True)
+			except Exception:
+				logger.error("Failed to load cert %r", match.group(1), exc_info=True)
 		return certs
 
 	def read_ca_cert_file(self, with_lock: bool = True) -> list[x509.Certificate]:
 		ca_cert_file = self.ca_cert_file
 		if not ca_cert_file:
 			raise OpsiServiceError("No CA cert file defined")
-		with self._ca_cert_lock if with_lock else nullcontext():
-			with open(ca_cert_file, "r", encoding="utf-8") as file:
-				with lock_file(file=file, exclusive=False, timeout=5.0):
-					return self.certs_from_pem(file.read())
+		with self._ca_cert_lock if with_lock else nullcontext(), open(ca_cert_file, "r", encoding="utf-8") as file:  # noqa: SIM117
+			with lock_file(file=file, exclusive=False, timeout=5.0):
+				return self.certs_from_pem(file.read())
 
 	def write_ca_cert_file(self, certs: list[x509.Certificate], *, force: bool = False, with_lock: bool = True) -> None:
 		ca_cert_file = self.ca_cert_file
@@ -885,11 +884,10 @@ class ServiceClient:
 				certs_pem.append(cert.public_bytes(encoding=serialization.Encoding.PEM).decode("utf-8").strip() + "\n")
 				subjects.append(subj)
 
-			with open(ca_cert_file, "a+", encoding="utf-8") as file:
-				with lock_file(file=file, exclusive=True, timeout=5.0):
-					file.seek(0)
-					file.truncate()
-					file.write("".join(certs_pem))
+			with open(ca_cert_file, "a+", encoding="utf-8") as file, lock_file(file=file, exclusive=True, timeout=5.0):
+				file.seek(0)
+				file.truncate()
+				file.write("".join(certs_pem))
 
 			logger.info("CA cert file '%s' successfully updated (%d certificates total)", ca_cert_file, len(certs))
 
@@ -957,7 +955,7 @@ class ServiceClient:
 		return ca_certs
 
 	def get_opsi_ca_certs_state(self) -> OpsiCaState:
-		now = datetime.now(tz=timezone.utc)
+		now = datetime.now(tz=UTC)
 		uib_opsi_ca_cn = self._uib_opsi_ca_cert.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value
 		for cert in self.get_opsi_ca_certs():
 			if cert.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value != uib_opsi_ca_cn:
@@ -1021,17 +1019,17 @@ class ServiceClient:
 					logger.trace("%s: arg string is: %s", method_name, arg_string)
 					logger.trace("%s: call string is: %s", method_name, call_string)
 					with warnings.catch_warnings():
-						exec(
+						exec(  # noqa: S102 - JSON-RPC method signatures are generated from the trusted service interface.
 							f'def {method_name}(self, {arg_string}): return self.jsonrpc("{method_name}", [{call_string}])',
 							None,
 							exec_locals,
 						)
-				setattr(instance, method_name, MethodType(exec_locals[method_name] if exec_locals else eval(method_name), self))  # type: ignore[arg-type]
+				setattr(instance, method_name, MethodType(exec_locals[method_name] if exec_locals else eval(method_name), self))  # ty: ignore[invalid-argument-type]
 			except Exception as err:
 				logger.error("Failed to create instance method '%s': %s", method, err)
 
 	@contextmanager
-	def connection(self, connect_messagebus: bool = False) -> Generator[None, None, None]:
+	def connection(self, connect_messagebus: bool = False) -> Generator[None]:
 		self.connect(connect_messagebus=connect_messagebus)
 		try:
 			yield
@@ -1191,14 +1189,14 @@ class ServiceClient:
 			if "x-opsi-new-host-id" in response.headers:
 				try:
 					self.new_host_id = to_host_id(response.headers["x-opsi-new-host-id"])
-				except ValueError as error:
-					logger.error("Could not get HostId from header: %s", error, exc_info=True)
+				except ValueError:
+					logger.error("Could not get HostId from header", exc_info=True)
 
 			if "x-opsi-new-host-key" in response.headers:
 				try:
 					self.new_host_key = to_opsi_host_key(response.headers["x-opsi-new-host-key"])
-				except ValueError as error:
-					logger.error("Could not get OpsiHostKey from header: %s", error, exc_info=True)
+				except ValueError:
+					logger.error("Could not get OpsiHostKey from header", exc_info=True)
 
 			logger.debug("max_time_diff: %r", self._max_time_diff)
 			if self._max_time_diff > 0 and not self.service_is_opsiclientd():
@@ -1208,7 +1206,7 @@ class ServiceClient:
 					date_hdr = response.headers.get("date")
 					logger.debug("uxts_hdr: %r, date_hdr: %r", uxts_hdr, date_hdr)
 					if uxts_hdr:
-						server_dt = datetime.fromtimestamp(int(uxts_hdr), tz=timezone.utc)
+						server_dt = datetime.fromtimestamp(int(uxts_hdr), tz=UTC)
 					elif date_hdr:
 						times, timez = date_hdr.rsplit(" ", 1)
 						if timez == "UTC":
@@ -1219,11 +1217,11 @@ class ServiceClient:
 							except locale.Error as err:
 								logger.debug("Failed to set locale: %s, continuing with locale %r", err, loc)
 							try:
-								server_dt = datetime.strptime(times, "%a, %d %b %Y %H:%M:%S").replace(tzinfo=timezone.utc)
+								server_dt = datetime.strptime(times, "%a, %d %b %Y %H:%M:%S").replace(tzinfo=UTC)
 							finally:
 								locale.setlocale(locale.LC_ALL, loc)
 					if server_dt:
-						local_dt = datetime.now(timezone.utc)
+						local_dt = datetime.now(UTC)
 						diff = (server_dt - local_dt).total_seconds()
 						logger.debug("server_dt: %r, local_dt: %r, diff: %r", server_dt, local_dt, diff)
 						if abs(diff) > self._max_time_diff:
@@ -1244,7 +1242,7 @@ class ServiceClient:
 				try:
 					self.fetch_ca_certs(skip_verify=not verify)
 				except Exception as err:
-					logger.error("Failed to fetch CA certs: %s", err, exc_info=True)
+					logger.error("Failed to fetch CA certs", exc_info=True)
 					raise OpsiServiceVerificationError(f"Failed to fetch CA certs: {err}") from err
 
 			self._jsonrpc_method_params = {}
@@ -1285,11 +1283,11 @@ class ServiceClient:
 					self.post("/session/logout", connect_timeout=3.0, read_timeout=3.0)
 				else:
 					self.jsonrpc("backend_exit", connect_timeout=3.0, read_timeout=3.0)
-			except Exception:
+			except Exception:  # noqa: S110
 				pass
 		try:
 			self._session.close()
-		except Exception:
+		except Exception:  # noqa: S110
 			pass
 
 		self.connected = False
@@ -1674,7 +1672,7 @@ class ServiceClient:
 		start_time = time.monotonic()
 
 		allow_status_codes = (200, 500) if return_result_only else ...
-		response = self.post(  # type: ignore[call-overload]  # ellipsis -> object
+		response = self.post(  # ty: ignore[no-matching-overload]  # ellipsis -> object
 			self._jsonrpc_path,
 			headers=headers,
 			data=data,
@@ -1718,7 +1716,7 @@ class ServiceClient:
 				return rpc
 		except Exception:
 			if error_cls:
-				raise error_cls(error_msg) from None
+				raise error_cls(error_msg) if error_msg else error_cls() from None
 			raise
 
 		if rpc.get("error"):
@@ -1731,7 +1729,7 @@ class ServiceClient:
 				error_msg = str(rpc["error"])
 
 		if error_cls:
-			raise error_cls(error_msg)
+			raise error_cls(error_msg) if error_msg else error_cls()
 
 		if create_objects is None:
 			create_objects = self.jsonrpc_create_objects and not method.endswith(("_hash", "_listOfHashes", "_getHashes"))
@@ -1842,7 +1840,7 @@ class ServiceClient:
 	def messagebus_connected(self) -> bool:
 		return self._messagebus.connected
 
-	def __enter__(self) -> "ServiceClient":
+	def __enter__(self) -> Self:
 		return self
 
 	def __exit__(
@@ -1892,7 +1890,7 @@ class MessagebusListener(ABC):
 		"""
 
 	@contextmanager
-	def register(self, messagebus: Messagebus) -> Generator[None, None, None]:
+	def register(self, messagebus: Messagebus) -> Generator[None]:
 		"""
 		Context manager for register this listener on and off the message bus.
 		"""
@@ -1998,8 +1996,8 @@ class Messagebus(Thread):
 				for dat in data_str.lower().splitlines():
 					if dat.startswith("retry-after:"):
 						retry_after = int(dat.split(":", 1)[1].strip())
-		except Exception as exc:
-			logger.error("Error in websocket error handler: %s", exc, exc_info=True)
+		except Exception:
+			logger.error("Error in websocket error handler", exc_info=True)
 		if retry_after:
 			self._next_connect_wait = max(1, min(retry_after, 7200))
 			logger.debug("Setting next connect wait to %d seconds based on Retry-After header", self._next_connect_wait)
@@ -2077,8 +2075,8 @@ class Messagebus(Thread):
 				if listener.message_types and msg.type not in listener.message_types:
 					continue
 				self._run_listener_callback(listener, callback, message=msg)
-		except Exception as err:
-			logger.error("Failed to process websocket message: %s (id=%r)", err, self.id, exc_info=True)
+		except Exception:
+			logger.error("Failed to process websocket message (id=%r)", self.id, exc_info=True)
 
 	def _on_ping(self, websocket: WebSocket, message: bytes) -> None:
 		logger.debug("Ping message received (id=%r)", self.id)
@@ -2106,8 +2104,8 @@ class Messagebus(Thread):
 				CallbackThread(callback, **kwargs).start()
 			else:
 				callback(**kwargs)
-		except Exception as err:
-			logger.error("Error running callback %r on listener %r: %s (id=%r)", callback_name, listener, err, self.id, exc_info=True)
+		except Exception:
+			logger.error("Error running callback %r on listener %r (id=%r)", callback_name, listener, self.id, exc_info=True)
 
 	def wait_for_jsonrpc_response_message(self, rpc_id: str | int, timeout: float | None = None) -> JSONRPCResponseMessage:
 		listener = self.JSONRPCResponseListener(rpc_id, timeout)
@@ -2115,7 +2113,7 @@ class Messagebus(Thread):
 			return listener.wait_for_message()
 
 	def jsonrpc(self, method: str, params: tuple[Any, ...] | list[Any] | None = None, return_result_only: bool = True) -> Any:
-		params = params or tuple()
+		params = params or ()
 		if isinstance(params, list):
 			params = tuple(params)
 		msg = JSONRPCRequestMessage(sender="*", channel="service:config:jsonrpc", method=method, params=params)
@@ -2194,9 +2192,8 @@ class Messagebus(Thread):
 
 		self._disconnected_result.clear()
 		self._disconnect()
-		if wait:
-			if not self._disconnected_result.wait(5):
-				logger.warning("Timed out after 5 seconds while waiting for disconnect result")
+		if wait and not self._disconnected_result.wait(5):
+			logger.warning("Timed out after 5 seconds while waiting for disconnect result")
 
 	def _connect(self) -> None:
 		logger.notice("Connecting to OPSI messagebus")
@@ -2247,7 +2244,7 @@ class Messagebus(Thread):
 			url = f"{url}?compression={self.compression}"
 		header = [f"{k}: {v + ('/messagebus' if k.lower() == 'user-agent' else '')}" for k, v in self._client.default_headers.items()]
 		if self._client.username is not None or self._client.password is not None:
-			basic_auth = b64encode(f"{self._client.username or ''}:{self._client.password or ''}".encode("utf-8")).decode("ascii")
+			basic_auth = b64encode(f"{self._client.username or ''}:{self._client.password or ''}".encode()).decode("ascii")
 			header.append(f"Authorization: Basic {basic_auth}")
 
 		cookie = self._client.session_cookie
@@ -2259,10 +2256,10 @@ class Messagebus(Thread):
 			url,
 			header=header,
 			cookie=cookie,
-			on_open=self._on_open,  # type: ignore[invalid-argument-type]
-			on_error=self._on_error,  # type: ignore[invalid-argument-type]
-			on_close=self._on_close,  # type: ignore[invalid-argument-type]
-			on_message=self._on_message,  # type: ignore[invalid-argument-type]
+			on_open=self._on_open,  # ty: ignore[invalid-argument-type]
+			on_error=self._on_error,  # ty: ignore[invalid-argument-type]
+			on_close=self._on_close,  # ty: ignore[invalid-argument-type]
+			on_message=self._on_message,  # ty: ignore[invalid-argument-type]
 			on_ping=self._on_ping,
 			on_pong=self._on_pong,
 		)
@@ -2290,11 +2287,11 @@ class Messagebus(Thread):
 		self._app.run_forever(
 			sslopt=sslopt,
 			skip_utf8_validation=True,
-			proxy_type=proxy_type,  # type: ignore[arg-type]
-			http_proxy_host=http_proxy_host,  # type: ignore[arg-type]
-			http_proxy_port=http_proxy_port,  # type: ignore[arg-type]
-			http_proxy_auth=http_proxy_auth,  # type: ignore[arg-type]
-			http_no_proxy=http_no_proxy,  # type: ignore[arg-type]
+			proxy_type=proxy_type,  # ty: ignore[invalid-argument-type]
+			http_proxy_host=http_proxy_host,  # ty: ignore[invalid-argument-type]
+			http_proxy_port=http_proxy_port,  # ty: ignore[invalid-argument-type]
+			http_proxy_auth=http_proxy_auth,  # ty: ignore[invalid-argument-type]
+			http_no_proxy=http_no_proxy,  # ty: ignore[invalid-argument-type]
 			http_proxy_timeout=self._connect_timeout,
 			ping_interval=self.ping_interval,
 			ping_timeout=self.ping_timeout,
@@ -2308,8 +2305,8 @@ class Messagebus(Thread):
 		if self._app and self._app.sock:
 			try:
 				self._app.close()
-			except Exception as err:
-				logger.error(err, exc_info=True)
+			except Exception:
+				logger.error("Failed to process messagebus message", exc_info=True)
 		self._app = None
 		self._connected = False
 		self._disconnected_result.set()
@@ -2335,8 +2332,8 @@ class Messagebus(Thread):
 					logger.debug("Calling _connect() (id=%r)", self.id)
 					# Call of _connect() will block until the connection is lost
 					self._connect()
-		except Exception as err:
-			logger.error(err, exc_info=True)
+		except Exception:
+			logger.error("Messagebus connection failed", exc_info=True)
 
 	def stop(self) -> None:
 		logger.info("Stopping messagebus (id=%r)", self.id)

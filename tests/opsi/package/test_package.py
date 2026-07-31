@@ -608,7 +608,7 @@ def test_create_package_empty() -> None:
 		assert package_archive.exists()
 		with TempDir() as result_dir:
 			OpsiPackage().extract_package_archive(package_archive, result_dir)
-			result_contents = list((_dir.relative_to(result_dir) for _dir in result_dir.rglob("*")))
+			result_contents = [_dir.relative_to(result_dir) for _dir in result_dir.rglob("*")]
 			assert (temp_dir / "OPSI").relative_to(temp_dir) in result_contents
 
 
@@ -779,15 +779,7 @@ def test_package_content_file(tmp_path: Path, links_as_links: bool) -> None:
 def test_parse_package_content_file_skips_unknown_entries_and_unescapes_values(tmp_path: Path) -> None:
 	content_file = tmp_path / "package.files"
 	content_file.write_text(
-		"\n".join(
-			(
-				"x 'ignored' 0",
-				"d 'directory\\'' 0",
-				"f 'file\\'name.txt' 42 deadbeef",
-				"l 'link\\'name' 0 'target\\'value'",
-				"",
-			)
-		),
+		"x 'ignored' 0\nd 'directory\\'' 0\nf 'file\\'name.txt' 42 deadbeef\nl 'link\\'name' 0 'target\\'value'\n",
 		encoding="utf-8",
 	)
 

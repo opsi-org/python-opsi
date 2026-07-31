@@ -6,4 +6,4 @@
 from opsi.testing.helper._common import environment, log_stream, memory_usage_monitor, opsi_config
 from opsi.testing.helper._http import HTTPTestServerRequestHandler, http_test_server
 
-__all__ = ["memory_usage_monitor", "opsi_config", "environment", "log_stream", "http_test_server", "HTTPTestServerRequestHandler"]
+__all__ = ["HTTPTestServerRequestHandler", "environment", "http_test_server", "log_stream", "memory_usage_monitor", "opsi_config"]

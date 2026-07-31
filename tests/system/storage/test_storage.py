@@ -31,7 +31,7 @@ from opsi.system.storage import (
 	StorageDevice,
 	get_disks,
 )
-from opsi.system.storage._storage import _run_command, PartitionTableType
+from opsi.system.storage._storage import PartitionTableType, _run_command
 
 
 @pytest.mark.storage_utils
@@ -585,7 +585,7 @@ def test_gpt_partition_and_partition_table_helpers(monkeypatch: pytest.MonkeyPat
 	assert partition.type == "0fc63daf-8483-4772-8e79-3d69d8477de4"
 	assert partition.uuid == str(partition_uuid)
 	assert partition.sfdisk_command() == (f'type=0fc63daf-8483-4772-8e79-3d69d8477de4,uuid={partition_uuid},name="data",start=1,size=2\n')
-	assert GPTPartition(table, 2, type=None).type == "00000000-0000-0000-0000-000000000000"  # type: ignore[arg-type]
+	assert GPTPartition(table, 2, type=None).type == "00000000-0000-0000-0000-000000000000"  # ty: ignore[invalid-argument-type]
 	assert partition._set_type(partition_uuid) == str(partition_uuid)
 
 	with pytest.raises(ValueError, match="Invalid type"):

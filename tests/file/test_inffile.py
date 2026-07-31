@@ -3,7 +3,7 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from textwrap import dedent
 from unittest import mock
@@ -70,7 +70,7 @@ def test_reg_expand_sz() -> None:
 
 
 def test_current_timestamp() -> None:
-	assert abs(current_timestamp() - datetime.now().timestamp()) < 1
+	assert abs(current_timestamp() - datetime.now(tz=UTC).timestamp()) < 1
 
 
 def test_inf_target_os_version() -> None:
@@ -159,7 +159,7 @@ def test_hash() -> None:
 				Class="SCSIAdapter",
 				ClassGUID="4D36E97B-E325-11CE-BFC1-08002BE10318",
 				Provider="LSI",
-				DriverVer=INFDriverVer(date=datetime(2008, 7, 7, tzinfo=timezone.utc), version=(1, 28, 3, 52)),
+				DriverVer=INFDriverVer(date=datetime(2008, 7, 7, tzinfo=UTC), version=(1, 28, 3, 52)),
 			),
 		),
 		(
@@ -168,7 +168,7 @@ def test_hash() -> None:
 				Class="Net",
 				ClassGUID="4D36E972-E325-11CE-BFC1-08002BE10318",
 				Provider="Red Hat, Inc.",
-				DriverVer=INFDriverVer(date=datetime(2022, 8, 18, tzinfo=timezone.utc), version=(100, 91, 104, 22500)),
+				DriverVer=INFDriverVer(date=datetime(2022, 8, 18, tzinfo=UTC), version=(100, 91, 104, 22500)),
 			),
 		),
 		(
@@ -177,7 +177,7 @@ def test_hash() -> None:
 				Class="Ports",
 				ClassGUID="4D36E978-E325-11CE-BFC1-08002BE10318",
 				Provider="Prolific",
-				DriverVer=INFDriverVer(date=datetime(2002, 12, 31, tzinfo=timezone.utc), version=(2, 0, 0, 7)),
+				DriverVer=INFDriverVer(date=datetime(2002, 12, 31, tzinfo=UTC), version=(2, 0, 0, 7)),
 			),
 		),
 		(
@@ -186,7 +186,7 @@ def test_hash() -> None:
 				Class="SCSIAdapter",
 				ClassGUID="4D36E97B-E325-11CE-BFC1-08002BE10318",
 				Provider="Red Hat, Inc.",
-				DriverVer=INFDriverVer(date=datetime(2021, 8, 30, tzinfo=timezone.utc), version=(100, 85, 104, 20800)),
+				DriverVer=INFDriverVer(date=datetime(2021, 8, 30, tzinfo=UTC), version=(100, 85, 104, 20800)),
 			),
 		),
 		(
@@ -195,7 +195,7 @@ def test_hash() -> None:
 				Class="SCSIAdapter",
 				ClassGUID="4D36E97B-E325-11CE-BFC1-08002BE10318",
 				Provider="Red Hat, Inc.",
-				DriverVer=INFDriverVer(date=datetime(2021, 12, 2, tzinfo=timezone.utc), version=(100, 90, 104, 21500)),
+				DriverVer=INFDriverVer(date=datetime(2021, 12, 2, tzinfo=UTC), version=(100, 90, 104, 21500)),
 			),
 		),
 		(
@@ -204,7 +204,7 @@ def test_hash() -> None:
 				Class="SCSIAdapter",
 				ClassGUID="4D36E97B-E325-11CE-BFC1-08002BE10318",
 				Provider="Red Hat, Inc.",
-				DriverVer=INFDriverVer(date=datetime(2022, 8, 18, tzinfo=timezone.utc), version=(100, 91, 104, 22500)),
+				DriverVer=INFDriverVer(date=datetime(2022, 8, 18, tzinfo=UTC), version=(100, 91, 104, 22500)),
 			),
 		),
 	),
@@ -437,7 +437,7 @@ def test_get_driver_database_reg_vioscsi_amd64() -> None:
 	test_file = DATA_PATH / "vioscsi_amd64.inf"
 	inf_file = INFFile(path=test_file, inf_name="vioscsi.inf")
 
-	with mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()):
+	with mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=UTC).timestamp()):
 		reg = inf_file.get_driver_database_reg(
 			target_os_version=INFTargetOSVersion(Architecture=Architecture.X64),
 			hardware_id=INFHardwareID(
@@ -550,7 +550,7 @@ def test_get_driver_database_reg_vioscsi_x86() -> None:
 	test_file = DATA_PATH / "vioscsi_x86.inf"
 	inf_file = INFFile(path=test_file, inf_name="vioscsi.inf")
 
-	with mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()):
+	with mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=UTC).timestamp()):
 		reg = inf_file.get_driver_database_reg(
 			target_os_version=INFTargetOSVersion(Architecture=Architecture.X86),
 			hardware_id=INFHardwareID(
@@ -917,7 +917,7 @@ def test_parse_dax3_ext_rtk() -> None:
 def test_get_reg_pvscsi() -> None:
 	filepath = DATA_PATH / "pvscsi.inf"
 	inf_file = INFFile(filepath)
-	with mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()):
+	with mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=UTC).timestamp()):
 		reg = inf_file.get_driver_database_reg(
 			target_os_version=INFTargetOSVersion(Architecture=Architecture.X64),
 			hardware_id=INFHardwareID(
@@ -996,7 +996,7 @@ def test_get_reg_pvscsi() -> None:
 def test_get_reg_netkvm() -> None:
 	filepath = DATA_PATH / "netkvm.inf"
 	inf_file = INFFile(filepath)
-	with mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()):
+	with mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=UTC).timestamp()):
 		reg = inf_file.get_driver_database_reg(
 			target_os_version=INFTargetOSVersion(Architecture=Architecture.X64),
 			hardware_id=INFHardwareID(
@@ -2266,7 +2266,7 @@ def test_hdxacpdellcsmb() -> None:
 		inf_file.version
 		and inf_file.version.Class == "MEDIA"
 		and inf_file.version.DriverVer.version == (6, 0, 9514, 1)
-		and inf_file.version.DriverVer.date == datetime(2023, 5, 9, tzinfo=timezone.utc)
+		and inf_file.version.DriverVer.date == datetime(2023, 5, 9, tzinfo=UTC)
 	)
 
 	devs = inf_file.get_devices(target_os_version=INFTargetOSVersion(Architecture=Architecture.X64))
@@ -2343,7 +2343,7 @@ def test_hdxacpdellcsmb() -> None:
 	]
 
 	with (
-		mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()),
+		mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=UTC).timestamp()),
 		mock.patch("opsi.file.inf._inffile.calc_hash", lambda x: 12345678),
 	):
 		reg = inf_file.get_driver_database_reg(
@@ -2377,7 +2377,7 @@ def test_ude() -> None:
 	]
 
 	with (
-		mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()),
+		mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=UTC).timestamp()),
 		mock.patch("opsi.file.inf._inffile.calc_hash", lambda x: 12345678),
 	):
 		reg = inf_file.get_driver_database_reg(
@@ -2499,7 +2499,7 @@ def test_hdbusext() -> None:
 	]
 
 	with (
-		mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()),
+		mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=UTC).timestamp()),
 		mock.patch("opsi.file.inf._inffile.calc_hash", lambda x: 12345678),
 	):
 		reg = inf_file.get_driver_database_reg(
@@ -2581,7 +2581,7 @@ def test_rtdusbad_dell() -> None:
 	]
 
 	with (
-		mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()),
+		mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=UTC).timestamp()),
 		mock.patch("opsi.file.inf._inffile.calc_hash", lambda x: 12345678),
 	):
 		reg = inf_file.get_driver_database_reg(
@@ -2679,7 +2679,7 @@ def test_vioprot() -> None:
 	]
 
 	with (
-		mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()),
+		mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=UTC).timestamp()),
 		mock.patch("opsi.file.inf._inffile.calc_hash", lambda x: 12345678),
 	):
 		with pytest.raises(RuntimeError, match=r"No devices found for INFTargetOSVersion\(NTamd64\) and INFHardwareID\(VIOPROT\)"):
@@ -3022,7 +3022,7 @@ def test_iaAHCIC() -> None:
 	]
 
 	with (
-		mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=timezone.utc).timestamp()),
+		mock.patch("opsi.file.inf._inffile.current_timestamp", lambda: datetime(2021, 1, 1, tzinfo=UTC).timestamp()),
 		mock.patch("opsi.file.inf._inffile.calc_hash", lambda x: 12345678),
 	):
 		reg = inf_file.get_driver_database_reg(

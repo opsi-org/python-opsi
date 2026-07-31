@@ -28,17 +28,17 @@ else:
 	raise OperatingSystemUnsupportedError(f"{get_system()} not supported")
 
 __all__ = [
-	"get_hostnames",
-	"get_domain",
-	"get_network_info",
-	"get_fqdn",
-	"NetworkInterface",
-	"NetworkRoute",
 	"DNSNameserver",
 	"NetworkInfo",
-	"prepare_proxy_environment",
-	"mount_network_share",
+	"NetworkInterface",
+	"NetworkRoute",
+	"get_domain",
+	"get_fqdn",
+	"get_hostnames",
+	"get_network_info",
 	"mount_cifs_share",
+	"mount_network_share",
 	"mount_webdav_share",
+	"prepare_proxy_environment",
 	"unmount_network_share",
 ]

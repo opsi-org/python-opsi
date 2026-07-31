@@ -17,8 +17,7 @@ def test_chdir(tmp_path: Path) -> None:
 	assert os.getcwd() == original_dir
 
 	orig_getcwd = os.getcwd
-	with patch("os.getcwd", side_effect=FileNotFoundError()):
-		with chdir(tmp_path):
-			assert orig_getcwd() == str(tmp_path)
+	with patch("os.getcwd", side_effect=FileNotFoundError()), chdir(tmp_path):
+		assert orig_getcwd() == str(tmp_path)
 	assert orig_getcwd() == str(tmp_path)
 	os.chdir(original_dir)

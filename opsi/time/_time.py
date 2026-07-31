@@ -3,10 +3,10 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 _now = datetime.now
-_utc = timezone.utc
+_utc = UTC
 
 
 def unix_timestamp(*, millis: bool = False, add_seconds: float = 0.0) -> float:

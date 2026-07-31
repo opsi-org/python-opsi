@@ -186,7 +186,7 @@ def rsync_signature(file: Path | str, base64_encoded: bool = True) -> str | byte
 
 	try:
 		with open(file, "rb") as fh:
-			sigfile_handle = cast(BinaryIO, tempfile.SpooledTemporaryFile(max_size=MAX_SPOOL, mode="wb+"))
+			sigfile_handle = cast(BinaryIO, tempfile.SpooledTemporaryFile(max_size=MAX_SPOOL, mode="wb+"))  # noqa: SIM115
 			job = None
 			if hasattr(_librsync, "RS_DEFAULT_STRONG_LEN"):
 				# librsync < 1.0.0
@@ -222,7 +222,7 @@ def rsync_delta_file(file: Path | str, signature: bytes, delta_file: Path | str)
 		raise ValueError("filename and deltafile are the same file")
 
 	try:
-		sigfile_handle = tempfile.NamedTemporaryFile("wb+")
+		sigfile_handle = tempfile.NamedTemporaryFile("wb+")  # noqa: SIM115
 		sigfile_handle.write(signature)
 		sigfile_handle.seek(0)
 
@@ -237,14 +237,13 @@ def rsync_delta_file(file: Path | str, signature: bytes, delta_file: Path | str)
 			if res != RS_DONE:
 				raise LibrsyncError(res)
 
-			with open(file, "rb") as filehandle:
-				with open(delta_file, "wb") as deltafile_handle:
-					job = _librsync.rs_delta_begin(sig)
-					try:
-						_execute(job, filehandle, deltafile_handle)
+			with open(file, "rb") as filehandle, open(delta_file, "wb") as deltafile_handle:
+				job = _librsync.rs_delta_begin(sig)
+				try:
+					_execute(job, filehandle, deltafile_handle)
 
-					finally:
-						_librsync.rs_job_free(job)
+				finally:
+					_librsync.rs_job_free(job)
 		finally:
 			sigfile_handle.close()
 			_librsync.rs_free_sumset(sig)
@@ -287,12 +286,11 @@ def rsync_patch_file(old_file: Path | str, delta_file: Path | str, new_file: Pat
 				buff_p.value = block
 				return RS_DONE
 
-			with open(delta_file, "rb") as deltafile_handle:
-				with open(new_file, "wb") as newfile_handle:
-					job = _librsync.rs_patch_begin(read_cb, None)
-					try:
-						_execute(job, deltafile_handle, newfile_handle)
-					finally:
-						_librsync.rs_job_free(job)
+			with open(delta_file, "rb") as deltafile_handle, open(new_file, "wb") as newfile_handle:
+				job = _librsync.rs_patch_begin(read_cb, None)
+				try:
+					_execute(job, deltafile_handle, newfile_handle)
+				finally:
+					_librsync.rs_job_free(job)
 	except Exception as patch_err:
 		raise RuntimeError(f"Failed to patch file {old_file}: {to_string(patch_err)}") from patch_err

@@ -19,18 +19,18 @@ from opsi.process._process import (
 )
 
 __all__ = [
+	"CaptureOutputMode",
+	"DecodingErrors",
+	"DiscardOutputMode",
+	"InterpreterType",
 	"Process",
 	"ProcessError",
+	"disable_file_system_redirection",
+	"get_process_io_encoding",
+	"get_subprocess_environment",
 	"run_command",
 	"run_script",
 	"run_script_file",
-	"disable_file_system_redirection",
-	"get_subprocess_environment",
-	"get_process_io_encoding",
-	"InterpreterType",
-	"CaptureOutputMode",
-	"DiscardOutputMode",
-	"DecodingErrors",
 ]
 
 from opsi.system.info import is_windows

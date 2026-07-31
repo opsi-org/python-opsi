@@ -4,20 +4,20 @@
 # License: AGPL-3.0-only
 
 from opsi.archive._archive import (
+	ArchiveCompression,
 	ArchiveFile,
 	ArchiveProgress,
 	ArchiveProgressListener,
-	ArchiveCompression,
 	create_archive,
 	extract_archive,
 	get_archive_files,
 )
 
 __all__ = [
+	"ArchiveCompression",
 	"ArchiveFile",
 	"ArchiveProgress",
 	"ArchiveProgressListener",
-	"ArchiveCompression",
 	"create_archive",
 	"extract_archive",
 	"get_archive_files",

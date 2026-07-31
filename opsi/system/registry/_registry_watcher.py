@@ -12,7 +12,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, Self
+from typing import Any, Self, cast
 
 from opsi.exception import OperatingSystemUnsupportedError
 from opsi.logging import get_logger
@@ -214,7 +214,7 @@ class RegistryWatcher:
 		try:
 			self._watch_registry_tree()
 		except Exception:
-			logger.exception("Registry watcher for %r stopped unexpectedly", self.base_key)
+			logger.error("Registry watcher for %r stopped unexpectedly", self.base_key, exc_info=True)
 
 	def _watch_registry_tree(self) -> None:
 		"""Run the registry notification loop."""
@@ -286,7 +286,7 @@ class RegistryWatcher:
 			try:
 				callback(event)
 			except Exception:
-				logger.exception("Registry watcher callback failed for %r", self.base_key)
+				logger.error("Registry watcher callback failed for %r", self.base_key, exc_info=True)
 
 	@classmethod
 	def _parse_base_key(cls, base_key: str, winreg: Any) -> tuple[int, str]:
@@ -410,12 +410,12 @@ class RegistryWatcher:
 	@staticmethod
 	def _get_kernel32() -> Any:
 		"""Return the Windows kernel32 DLL wrapper."""
-		return getattr(ctypes, "windll").kernel32
+		return cast(Any, ctypes).windll.kernel32
 
 	@staticmethod
 	def _get_advapi32() -> Any:
 		"""Return the Windows advapi32 DLL wrapper."""
-		return getattr(ctypes, "windll").advapi32
+		return cast(Any, ctypes).windll.advapi32
 
 	@staticmethod
 	def _raise_windows_error(error_code: int) -> None:

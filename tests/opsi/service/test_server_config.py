@@ -206,13 +206,13 @@ def test_set_config(tmp_path: Path) -> None:
 
 def test_set_config_type_check() -> None:
 	config = OpsiConfig()
-	with pytest.raises(ValueError, match=r"Wrong type 'str' for config 'use_pigz' \(bool\) in category 'packages'"):
+	with pytest.raises(TypeError, match=r"Wrong type 'str' for config 'use_pigz' \(bool\) in category 'packages'"):
 		config.set("packages", "use_pigz", "yes")
 
-	with pytest.raises(ValueError, match=r"Wrong type 'bool' for config 'fileadmingroup' \(str\) in category 'groups'"):
+	with pytest.raises(TypeError, match=r"Wrong type 'bool' for config 'fileadmingroup' \(str\) in category 'groups'"):
 		config.set("groups", "fileadmingroup", True)
 
-	with pytest.raises(ValueError, match=r"Wrong type 'int' for config 'ldap_url' \(str\) in category 'ldap_auth'"):
+	with pytest.raises(TypeError, match=r"Wrong type 'int' for config 'ldap_url' \(str\) in category 'ldap_auth'"):
 		config.set("ldap_auth", "ldap_url", 123)
 
 

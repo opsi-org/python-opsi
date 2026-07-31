@@ -133,10 +133,8 @@ def _file_io_backoff_hook(exception: Exception) -> bool:
 	"""
 	if isinstance(exception, OSError):
 		winerror = getattr(exception, "winerror", None)
-		if winerror and winerror >= 4390 and winerror <= 4394:
-			# Windows REPARSE errors will persist
-			return False
-		return True
+		# Windows REPARSE errors will persist
+		return not winerror or not 4390 <= winerror <= 4394
 	return False
 
 

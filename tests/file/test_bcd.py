@@ -10,6 +10,7 @@ bcd tests
 import io
 import platform
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -143,8 +144,8 @@ def test_format_value_fallback_without_key() -> None:
 			assert value_id == 1
 			return (9, 0)
 
-	bcd.hive = MockHive()
-	bcd.get_value = lambda value_id: b"abc"
+	cast(Any, bcd).hive = MockHive()
+	cast(Any, bcd).get_value = lambda value_id: b"abc"
 
 	assert bcd.format_value(1) == '"Element"={vtype}:{value}'
 	assert bcd.format_value(1, with_key=False) == "{vtype}:{value}"
@@ -152,7 +153,7 @@ def test_format_value_fallback_without_key() -> None:
 
 def test_print_boot_entries_formats_boot_and_ramdisk_and_unsupported() -> None:
 	bcd = BCD.__new__(BCD)
-	bcd.get_boot_entries = lambda: [
+	cast(Any, bcd).get_boot_entries = lambda: [
 		{
 			"identifier": "{boot-entry}",
 			"device": {
@@ -255,9 +256,8 @@ def test_update_device_info(tmp_path: Path) -> None:  # pylint: disable=too-many
 def test_update_boot_entry(tmp_path: Path) -> None:
 	bcd_winpe = DATA_PATH / "BCD.winpe"
 	bcd_file = tmp_path / "BCD"
-	with open(bcd_winpe, "rb") as inf:
-		with open(bcd_file, "wb") as outf:
-			outf.write(inf.read())
+	with open(bcd_winpe, "rb") as inf, open(bcd_file, "wb") as outf:
+		outf.write(inf.read())
 	bcd = BCD(filename=bcd_file)
 	bcd.update_boot_entry(entry="{default}", path=r"\Test\load.exe", description="opsi install", locale="en-US", system_root=r"\Windows")
 	default = bcd.get_default_boot_entry_guid()
@@ -298,9 +298,8 @@ def test_delete_boot_entry(tmp_path: Path) -> None:
 def test_boot_entry_testsigning(tmp_path: Path) -> None:
 	bcd_winpe = DATA_PATH / "BCD.options"
 	bcd_file = tmp_path / "BCD"
-	with open(bcd_winpe, "rb") as inf:
-		with open(bcd_file, "wb") as outf:
-			outf.write(inf.read())
+	with open(bcd_winpe, "rb") as inf, open(bcd_file, "wb") as outf:
+		outf.write(inf.read())
 	bcd = BCD(filename=bcd_file)
 	default = bcd.get_default_boot_entry_guid()
 	entry = bcd.get_boot_entry_by_id(default)
@@ -319,9 +318,8 @@ def test_boot_entry_testsigning(tmp_path: Path) -> None:
 def test_boot_entry_bootlog(tmp_path: Path) -> None:
 	bcd_winpe = DATA_PATH / "BCD.options"
 	bcd_file = tmp_path / "BCD"
-	with open(bcd_winpe, "rb") as inf:
-		with open(bcd_file, "wb") as outf:
-			outf.write(inf.read())
+	with open(bcd_winpe, "rb") as inf, open(bcd_file, "wb") as outf:
+		outf.write(inf.read())
 	bcd = BCD(filename=bcd_file)
 	default = bcd.get_default_boot_entry_guid()
 	entry = bcd.get_boot_entry_by_id(default)

@@ -6,4 +6,4 @@
 from opsi.system.environment._chdir import chdir
 from opsi.system.environment._environment import update_environment_from_config_files
 
-__all__ = ["update_environment_from_config_files", "chdir"]
+__all__ = ["chdir", "update_environment_from_config_files"]

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from types import ModuleType
+from typing import Any, cast
 
 import pytest
 
@@ -17,11 +18,11 @@ from opsi.system.registry import RegistryChangeEvent, RegistryChangeType, Regist
 @pytest.fixture
 def winreg() -> ModuleType:
 	winreg_module = ModuleType("winreg")
-	winreg_module.HKEY_CLASSES_ROOT = 1  # type: ignore[attr-defined]
-	winreg_module.HKEY_CURRENT_USER = 2  # type: ignore[attr-defined]
-	winreg_module.HKEY_LOCAL_MACHINE = 3  # type: ignore[attr-defined]
-	winreg_module.HKEY_USERS = 4  # type: ignore[attr-defined]
-	winreg_module.HKEY_CURRENT_CONFIG = 5  # type: ignore[attr-defined]
+	cast(Any, winreg_module).HKEY_CLASSES_ROOT = 1
+	cast(Any, winreg_module).HKEY_CURRENT_USER = 2
+	cast(Any, winreg_module).HKEY_LOCAL_MACHINE = 3
+	cast(Any, winreg_module).HKEY_USERS = 4
+	cast(Any, winreg_module).HKEY_CURRENT_CONFIG = 5
 	return winreg_module
 
 

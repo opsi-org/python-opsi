@@ -6,8 +6,8 @@
 import random
 import secrets
 import string
+from collections.abc import Iterable
 from enum import StrEnum
-from typing import Iterable
 
 from opsi.logging import secret_filter
 

@@ -19,4 +19,4 @@ def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool
 				]
 		except (psutil.AccessDenied, psutil.NoSuchProcess):
 			pass
-	return [DisplaySession(id="1", is_current_console_session=True, is_usable=True, user="root" or None)]
+	return [DisplaySession(id="1", is_current_console_session=True, is_usable=True, user="root")]

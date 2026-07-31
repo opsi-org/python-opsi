@@ -12,7 +12,7 @@ from copy import deepcopy
 from pathlib import Path
 from shutil import chown
 from threading import Lock
-from typing import Any
+from typing import Any, Self, cast
 from urllib.parse import urlparse
 
 import psutil
@@ -55,7 +55,7 @@ def read_backend_config_file(file: Path) -> dict[str, Any]:
 	if not file.exists():
 		return {}
 	loc: dict[str, Any] = {}
-	exec(compile(file.read_bytes(), "<string>", "exec"), None, loc)
+	exec(compile(file.read_bytes(), "<string>", "exec"), None, loc)  # noqa: S102 - Backend configuration files are executable Python.
 	return loc["config"]
 
 
@@ -85,7 +85,7 @@ def get_host_id(server_role: str) -> str:
 					match = regex.search(line.strip())
 					if match:
 						return to_fqdn(match.group(1))
-		except Exception:
+		except Exception:  # noqa
 			pass
 
 		try:
@@ -151,7 +151,7 @@ class OpsiConfig:
 	_instance: OpsiConfig | None = None
 	file_lock = Lock()
 	config_file = "/etc/opsi/opsi.conf"
-	default_config = {
+	default_config = {  # noqa: RUF012
 		"host": {"id": "", "key": "", "server-role": ""},
 		"service": {"url": ""},
 		"groups": {
@@ -164,10 +164,10 @@ class OpsiConfig:
 		"ldap_auth": {"ldap_url": "", "bind_user": "", "group_filter": "", "use_member_of_rdn": False},
 	}
 
-	def __new__(cls, *args: Any, **kwargs: Any) -> OpsiConfig:
+	def __new__(cls, *args: Any, **kwargs: Any) -> Self:
 		if cls._instance is None:
 			cls._instance = super().__new__(cls)
-		return cls._instance
+		return cast(Self, cls._instance)
 
 	def __init__(self, upgrade_config: bool = True) -> None:
 		if getattr(self, "_initialized", False):
@@ -193,14 +193,14 @@ class OpsiConfig:
 
 	@staticmethod
 	def _merge_config(destination: dict[str, Any], source: dict[str, Any]) -> None:
-		for key in source:
+		for key, value in source.items():
 			if key not in destination:
 				# Do not create new configs / categories
 				continue
-			if isinstance(source[key], dict):
-				OpsiConfig._merge_config(destination[key], source[key])
+			if isinstance(value, dict):
+				OpsiConfig._merge_config(destination[key], value)
 			else:
-				destination[key] = source[key]
+				destination[key] = value
 
 	def _assert_config_read(self) -> None:
 		cf_path = Path(self.config_file)
@@ -232,7 +232,7 @@ class OpsiConfig:
 		if isinstance(self._config[category][config], Item):
 			_type = type(self._config[category][config].unwrap())
 		if not isinstance(value, _type):
-			raise ValueError(f"Wrong type {type(value).__name__!r} for config {config!r} ({_type.__name__}) in category {category!r}")
+			raise TypeError(f"Wrong type {type(value).__name__!r} for config {config!r} ({_type.__name__}) in category {category!r}")
 		self._config[category][config] = value
 		if persistent:
 			self.write_config_file()
@@ -246,11 +246,11 @@ class OpsiConfig:
 			file.touch(mode=0o660)
 			try:
 				chown(file, group=DEFAULT_ADMIN_GROUP)
-			except Exception:
+			except Exception:  # noqa
 				pass
 			try:
 				chown(file, user=get_opsiconfd_user())
-			except Exception:
+			except Exception:  # noqa
 				pass
 		data = file.read_text(encoding="utf-8")
 		key_val_regex = re.compile(r"([^=]+)=(\s*)(.+)")
@@ -272,17 +272,19 @@ class OpsiConfig:
 		config = loads(new_data)
 		if not config.get("host"):
 			config["host"] = {}
-		if not config["host"].get("server-role"):  # type: ignore[union-attr]
-			config["host"]["server-role"] = get_role()  # type: ignore[union-attr,index]
-		if not config["host"].get("id"):  # type: ignore[union-attr]
-			config["host"]["id"] = get_host_id(str(config["host"]["server-role"]))  # type: ignore[union-attr,index]
-		if not config["host"].get("key"):  # type: ignore[union-attr]
-			config["host"]["key"] = get_host_key(str(config["host"]["server-role"]))  # type: ignore[union-attr,index]
+		host_config = cast(Any, config["host"])
+		if not host_config.get("server-role"):
+			host_config["server-role"] = get_role()
+		if not host_config.get("id"):
+			host_config["id"] = get_host_id(str(host_config["server-role"]))
+		if not host_config.get("key"):
+			host_config["key"] = get_host_key(str(host_config["server-role"]))
 
 		if not config.get("service"):
 			config["service"] = {}
-		if not config["service"].get("url"):  # type: ignore[union-attr]
-			config["service"]["url"] = get_service_url(str(config["host"]["server-role"]))  # type: ignore[union-attr,index]
+		service_config = cast(Any, config["service"])
+		if not service_config.get("url"):
+			service_config["url"] = get_service_url(str(host_config["server-role"]))
 
 		new_data = dumps(config)
 		if new_data != data:
@@ -301,8 +303,9 @@ class OpsiConfig:
 				conf = loads(data)
 				if "groups" in conf and isinstance(conf["groups"], dict):
 					# lowercase groups
-					conf["groups"]: dict[str, str] = {str(k).lower(): str(v).lower() for k, v in conf["groups"].items()}
-					if any([" " in name for name in conf["groups"].values()]):
+					groups = {str(k).lower(): str(v).lower() for k, v in cast(Any, conf["groups"]).items()}
+					conf["groups"] = groups
+					if any(" " in name for name in groups.values()):
 						raise ValueError("Group names do not allow spaces. Please remove spaces from group names in the config file.")
 				self._merge_config(self._config, conf)
 				self._config_file_read = True

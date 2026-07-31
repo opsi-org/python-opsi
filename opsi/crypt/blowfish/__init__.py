@@ -5,4 +5,4 @@
 
 from opsi.crypt.blowfish._blowfish import blowfish_decrypt, blowfish_encrypt
 
-__all__ = ["blowfish_encrypt", "blowfish_decrypt"]
+__all__ = ["blowfish_decrypt", "blowfish_encrypt"]

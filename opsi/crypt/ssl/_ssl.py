@@ -4,16 +4,16 @@
 # License: AGPL-3.0-only
 
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from ipaddress import ip_address
 from pathlib import Path
 from typing import cast
+from warnings import deprecated
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509 import CertificateBuilder, CertificateSigningRequestBuilder
-from typing_extensions import deprecated
 
 from opsi.logging import get_logger
 
@@ -104,7 +104,7 @@ def read_key_from_file(key_file: str | Path, passphrase: str | None = None) -> r
 			key_file.read_text(encoding="utf-8").encode("utf-8"), password=passphrase.encode("utf-8") if passphrase else None
 		)
 		if not isinstance(private_key, rsa.RSAPrivateKey):
-			raise ValueError(f"Not a RSA private key, but {private_key.__class__.__name__}")
+			raise TypeError(f"Not a RSA private key, but {private_key.__class__.__name__}")
 		return private_key
 	except ValueError as err:
 		raise RuntimeError(f"Failed to load private key from '{key_file}': {err}") from err
@@ -119,8 +119,8 @@ def read_certs_from_file(cert_file: str | Path) -> list[x509.Certificate]:
 	for match in re.finditer(r"(-+BEGIN CERTIFICATE-+.*?-+END CERTIFICATE-+)", cert_file.read_text(encoding="utf-8"), re.DOTALL):
 		try:
 			ca_certs.append(x509.load_pem_x509_certificate(match.group(1).encode("ascii")))
-		except Exception as err:
-			logger.error("Failed to load certificate from '%s': %s", cert_file, err, exc_info=True)
+		except Exception:
+			logger.error("Failed to load certificate from '%s'", cert_file, exc_info=True)
 	return ca_certs
 
 
@@ -162,8 +162,8 @@ def create_ca(
 		subject_name=subject,
 		public_key=key.public_key(),
 		serial_number=x509.random_serial_number(),
-		not_valid_before=datetime.now(tz=timezone.utc),
-		not_valid_after=datetime.now(tz=timezone.utc) + timedelta(days=valid_days),
+		not_valid_before=datetime.now(tz=UTC),
+		not_valid_after=datetime.now(tz=UTC) + timedelta(days=valid_days),
 	)
 	builder = builder.add_extension(x509.SubjectKeyIdentifier.from_public_key(key.public_key()), critical=False)
 	builder = builder.add_extension(x509.AuthorityKeyIdentifier.from_issuer_public_key(key.public_key()), critical=False)
@@ -237,8 +237,8 @@ def create_server_cert(
 		subject_name=subject,
 		public_key=key.public_key(),
 		serial_number=x509.random_serial_number(),
-		not_valid_before=datetime.now(tz=timezone.utc),
-		not_valid_after=datetime.now(tz=timezone.utc) + timedelta(days=valid_days),
+		not_valid_before=datetime.now(tz=UTC),
+		not_valid_after=datetime.now(tz=UTC) + timedelta(days=valid_days),
 	)
 	builder = builder.add_extension(x509.SubjectKeyIdentifier.from_public_key(key.public_key()), critical=False)
 	builder = builder.add_extension(x509.AuthorityKeyIdentifier.from_issuer_public_key(ca_key.public_key()), critical=False)

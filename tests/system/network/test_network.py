@@ -44,7 +44,7 @@ def test_get_network_info() -> None:
 	assert default_routes
 	default_route_interfaces = [interface for interface in network_info.interfaces if interface.is_default_gateway]
 	assert default_route_interfaces
-	assert set(route.interface_name for route in default_routes) == set(interface.name for interface in default_route_interfaces)
+	assert {route.interface_name for route in default_routes} == {interface.name for interface in default_route_interfaces}
 	assert any(interface.is_loopback for interface in network_info.interfaces)
 	assert any(not interface.is_loopback for interface in network_info.interfaces)
 	for interface in network_info.interfaces:
@@ -93,7 +93,7 @@ def test_gethostbyaddr_with_timeout() -> None:
 	exc: Exception | None = None
 	try:
 		_gethostbyaddr_with_timeout("test.unavail.lan", 0.001)
-	except (TimeoutError, socket.error) as err:
+	except (OSError, TimeoutError) as err:
 		exc = err
 	assert exc
 	assert _gethostbyaddr_with_timeout("127.0.0.1", 1.0)[0] in ("localhost", socket.gethostname())

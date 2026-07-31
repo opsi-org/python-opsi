@@ -5,18 +5,19 @@
 
 import ctypes
 import warnings
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any, Generator
+from typing import Any, cast
 
-import pywintypes  # type: ignore[import]
-import win32crypt  # type: ignore[import]
+import pywintypes  # ty: ignore[unresolved-import]
+import win32crypt  # ty: ignore[unresolved-import]
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.utils import CryptographyDeprecationWarning
 
 from opsi.logging import get_logger
 
-crypt32 = ctypes.WinDLL("crypt32.dll")  # type: ignore[attr-defined]
+crypt32 = cast(Any, ctypes).WinDLL("crypt32.dll")
 
 # lpszStoreProvider
 CERT_STORE_PROV_SYSTEM = 0x0000000A
@@ -71,7 +72,7 @@ def _open_cert_store(
 	store_name: str,
 	ctype: bool = False,
 	force_close: bool = False,
-) -> Generator[Any, None, None]:  # should be _win32typing.PyCERTSTORE if present
+) -> Generator[Any]:  # should be _win32typing.PyCERTSTORE if present
 	_open = win32crypt.CertOpenStore
 	if ctype:
 		_open = crypt32.CertOpenStore
@@ -119,7 +120,7 @@ def _load_der_x509_certificate(data: bytes) -> x509.Certificate | None:
 	return None
 
 
-def load_cas(subject_name: str) -> Generator[x509.Certificate, None, None]:
+def load_cas(subject_name: str) -> Generator[x509.Certificate]:
 	store_name = "Root"
 	logger.debug("Trying to find %s in certificate store", subject_name)
 	with _open_cert_store(store_name, force_close=False) as store:

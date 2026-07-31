@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
 	from opsi.opsi.service.model.object import AuditLogAuthenticationFailureReason

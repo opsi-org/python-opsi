@@ -3,7 +3,7 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -16,11 +16,11 @@ from opsi.system.time import set_system_datetime
 @pytest.mark.not_in_docker
 @pytest.mark.admin_permissions
 def test_set_system_datetime() -> None:
-	now = datetime.now(tz=timezone.utc)
+	now = datetime.now(tz=UTC)
 	try:
 		new_time = now - timedelta(seconds=10)
 		set_system_datetime(new_time)
-		cur = datetime.now(tz=timezone.utc)
+		cur = datetime.now(tz=UTC)
 		assert abs((new_time - cur).total_seconds()) <= 1
 	finally:
 		set_system_datetime(now)
@@ -28,7 +28,7 @@ def test_set_system_datetime() -> None:
 
 @pytest.mark.posix
 def test_set_system_datetime_calls_run_command_with_utc_time(monkeypatch: pytest.MonkeyPatch) -> None:
-	requested = datetime(2026, 4, 22, 9, 12, 33, tzinfo=timezone.utc)
+	requested = datetime(2026, 4, 22, 9, 12, 33, tzinfo=UTC)
 	called: list[list[str]] = []
 
 	def fake_run_command(command: list[str], *, timeout: float) -> None:
@@ -54,11 +54,11 @@ def test_set_system_datetime_raises_runtime_error_on_failure(monkeypatch: pytest
 		if is_linux():
 			monkeypatch.setattr(linux_time, "run_command", fake_run_command)
 			monkeypatch.setattr(linux_time.os, "geteuid", lambda: 42)
-			linux_time.set_system_datetime(datetime(2026, 4, 22, 9, 12, 33, tzinfo=timezone.utc))
+			linux_time.set_system_datetime(datetime(2026, 4, 22, 9, 12, 33, tzinfo=UTC))
 		elif is_macos():
 			monkeypatch.setattr(macos_time, "run_command", fake_run_command)
 			monkeypatch.setattr(macos_time.os, "geteuid", lambda: 42)
-			macos_time.set_system_datetime(datetime(2026, 4, 22, 9, 12, 33, tzinfo=timezone.utc))
+			macos_time.set_system_datetime(datetime(2026, 4, 22, 9, 12, 33, tzinfo=UTC))
 
 	assert "uid 42" in str(exc_info.value)
 	assert "no permission" in str(exc_info.value)

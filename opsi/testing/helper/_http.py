@@ -15,6 +15,7 @@ import struct
 import threading
 import time
 from base64 import b64encode
+from collections.abc import Callable, Generator
 from contextlib import closing, contextmanager
 from email.utils import parsedate_to_datetime
 from hashlib import sha1
@@ -24,7 +25,7 @@ from io import BufferedReader, BytesIO, UnsupportedOperation
 from pathlib import Path
 from socketserver import BaseServer, ThreadingMixIn
 from tempfile import NamedTemporaryFile
-from typing import Any, Callable, Generator
+from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 from xml.etree.ElementTree import Element, SubElement, tostring
 
@@ -47,7 +48,7 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 	_opcode_pong = 0xA
 
 	mutex = threading.Lock()
-	server: "ThreadingHTTPServer"
+	server: ThreadingHTTPServer
 
 	def __init__(self, *args: Any, **kwargs: Any) -> None:
 		if args[2].serve_directory:
@@ -155,7 +156,7 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 			self.send_error(HTTPStatus.NOT_FOUND, "File not found")
 			return None
 		try:
-			file = open(path, "rb")
+			file = open(path, "rb")  # noqa: SIM115
 		except OSError:
 			self.send_error(HTTPStatus.NOT_FOUND, "File not found")
 			return None
@@ -174,10 +175,10 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 					if ims.tzinfo is None:
 						# obsolete format with no timezone, cf.
 						# https://tools.ietf.org/html/rfc7231#section-7.1.1.1
-						ims = ims.replace(tzinfo=datetime.timezone.utc)
-					if ims.tzinfo is datetime.timezone.utc:
+						ims = ims.replace(tzinfo=datetime.UTC)
+					if ims.tzinfo is datetime.UTC:
 						# compare to UTC datetime of last modification
-						last_modif = datetime.datetime.fromtimestamp(fst.st_mtime, datetime.timezone.utc)
+						last_modif = datetime.datetime.fromtimestamp(fst.st_mtime, datetime.UTC)
 						# remove microseconds, like in If-Modified-Since
 						last_modif = last_modif.replace(microsecond=0)
 
@@ -253,9 +254,8 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 		}
 
 		self._log(request_info)
-		if self.server.request_callback:
-			if self.server.request_callback(self, request_info):
-				return None
+		if self.server.request_callback and self.server.request_callback(self, request_info):
+			return
 
 		response = None
 		if self.server.response_body:
@@ -281,21 +281,20 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 		request_info = {"method": "GET", "client_address": self.client_address, "path": self.path, "headers": dict(self.headers)}
 		self._log(request_info)
 
-		if self.server.request_callback:
-			if self.server.request_callback(self, request_info):
-				return None
+		if self.server.request_callback and self.server.request_callback(self, request_info):
+			return
 
 		if self.headers.get("Upgrade") == "websocket":
 			if self.server.response_status:
 				self.send_response(self.server.response_status[0], self.server.response_status[1])
 				self.end_headers()
-				return None
+				return
 
 			self._ws_handshake()
 			# This handler is in websocket mode now.
 			# do_GET only returns after client close or socket error.
 			self._ws_read_messages()
-			return None
+			return
 
 		if self.server.serve_directory:
 			file = self.send_head()
@@ -330,7 +329,7 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 					self.wfile.write(response)
 				finally:
 					file.close()
-			return None
+			return
 
 		if self.headers["X-Response-Status"]:
 			val = self.headers["X-Response-Status"].split(" ", 1)
@@ -344,22 +343,21 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 		if self.server.response_body:
 			response = self.server.response_body
 		else:
-			response = "OK".encode("utf-8")
+			response = b"OK"
 		if self.server.send_max_bytes:
 			response = response[: self.server.send_max_bytes]
 		self.send_header("Content-Length", str(len(response)))
 		self.end_headers()
 		self.wfile.write(response)
-		return None
+		return
 
 	def do_PUT(self) -> None:
 		"""Serve a PUT request."""
 		request_info = {"method": "PUT", "client_address": self.client_address, "path": self.path, "headers": dict(self.headers)}
 		self._log(request_info)
 
-		if self.server.request_callback:
-			if self.server.request_callback(self, request_info):
-				return None
+		if self.server.request_callback and self.server.request_callback(self, request_info):
+			return
 
 		if self.server.serve_directory:
 			path = self.translate_path(self.path)
@@ -389,9 +387,8 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 		request_info = {"method": "MKCOL", "client_address": self.client_address, "path": self.path, "headers": dict(self.headers)}
 		self._log(request_info)
 
-		if self.server.request_callback:
-			if self.server.request_callback(self, request_info):
-				return None
+		if self.server.request_callback and self.server.request_callback(self, request_info):
+			return
 
 		if self.server.serve_directory:
 			path = self.translate_path(self.path)
@@ -407,9 +404,8 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 		request_info = {"method": "DELETE", "client_address": self.client_address, "path": self.path, "headers": dict(self.headers)}
 		self._log(request_info)
 
-		if self.server.request_callback:
-			if self.server.request_callback(self, request_info):
-				return None
+		if self.server.request_callback and self.server.request_callback(self, request_info):
+			return
 
 		if self.server.serve_directory:
 			path = self.translate_path(self.path)
@@ -431,9 +427,8 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 		request_info = {"method": "HEAD", "client_address": self.client_address, "path": self.path, "headers": dict(self.headers)}
 		self._log(request_info)
 
-		if self.server.request_callback:
-			if self.server.request_callback(self, request_info):
-				return None
+		if self.server.request_callback and self.server.request_callback(self, request_info):
+			return
 
 		if self.server.serve_directory:
 			super().do_HEAD()
@@ -449,9 +444,8 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 		request_info = {"method": "PROPFIND", "client_address": self.client_address, "path": self.path, "headers": dict(self.headers)}
 		self._log(request_info)
 
-		if self.server.request_callback:
-			if self.server.request_callback(self, request_info):
-				return None
+		if self.server.request_callback and self.server.request_callback(self, request_info):
+			return
 
 		response = self.server.response_body or b""
 		if self.server.serve_directory:
@@ -513,9 +507,8 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 		request_info = {"method": "CONNECT", "client_address": self.client_address, "path": self.path, "headers": dict(self.headers)}
 		self._log(request_info)
 
-		if self.server.request_callback:
-			if self.server.request_callback(self, request_info):
-				return None
+		if self.server.request_callback and self.server.request_callback(self, request_info):
+			return
 
 		self.send_response(501, "I am not a proxy")
 		self.end_headers()
@@ -560,7 +553,7 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 						time.sleep(0.1)
 					else:
 						raise
-		except (socket.error, WebSocketError):
+		except (OSError, WebSocketError):
 			self._ws_close()
 		except Exception:
 			self._ws_close()
@@ -602,7 +595,7 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 				self.wfile.write(struct.pack(">Q", length))
 			if length > 0:
 				self.wfile.write(message)
-		except socket.error:
+		except OSError:
 			# Websocket content error, time-out or disconnect.
 			self._ws_close()
 		except Exception as err:
@@ -635,7 +628,7 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 				try:
 					self._ws_send_close(code, reason)
 					time.sleep(1)
-				except Exception:
+				except Exception:  # noqa
 					pass
 				self.on_ws_closed()
 			else:
@@ -797,35 +790,31 @@ class HTTPTestServer(threading.Thread, BaseServer):
 		# Use 2048 bits for speedup
 		ca_cert, ca_key = create_ca(subject={"CN": "http_test_server ca"}, valid_days=3, bits=2048)
 
-		tmp = NamedTemporaryFile(delete=False)
-		tmp.write(as_pem(ca_key).encode("utf-8"))
-		tmp.close()
+		with NamedTemporaryFile(delete=False) as tmp:
+			tmp.write(as_pem(ca_key).encode("utf-8"))
 		self.ca_key = Path(tmp.name)
 
-		tmp = NamedTemporaryFile(delete=False)
-		tmp.write(as_pem(ca_cert).encode("utf-8"))
-		tmp.close()
+		with NamedTemporaryFile(delete=False) as tmp:
+			tmp.write(as_pem(ca_cert).encode("utf-8"))
 		self.ca_cert = Path(tmp.name)
 
 		kwargs: dict[str, Any] = {
 			"subject": {"CN": "http_test_server server cert"},
 			"valid_days": 3,
 			"ip_addresses": {"127.0.0.1", "::1"},
-			"hostnames": {"localhost", "ip6-localhost", "ip6-localhost"},
+			"hostnames": {"localhost", "ip6-localhost"},
 			"ca_key": ca_key,
 			"ca_cert": ca_cert,
 			"bits": 2048,
 		}
 		cert, key = create_server_cert(**kwargs)
 
-		tmp = NamedTemporaryFile(delete=False)
-		tmp.write(as_pem(key).encode("utf-8"))
-		tmp.close()
+		with NamedTemporaryFile(delete=False) as tmp:
+			tmp.write(as_pem(key).encode("utf-8"))
 		self.server_key = Path(tmp.name)
 
-		tmp = NamedTemporaryFile(delete=False)
-		tmp.write(as_pem(cert).encode("utf-8"))
-		tmp.close()
+		with NamedTemporaryFile(delete=False) as tmp:
+			tmp.write(as_pem(cert).encode("utf-8"))
 		self.server_cert = Path(tmp.name)
 
 	def _cleanup_cert(self) -> None:
@@ -900,7 +889,7 @@ def http_test_server(
 	ws_message_callback: Callable | None = None,
 	serve_directory: str | Path | None = None,
 	send_max_bytes: int | None = None,
-) -> Generator[HTTPTestServer, None, None]:
+) -> Generator[HTTPTestServer]:
 	server = HTTPTestServer(
 		log_file=log_file,
 		ip_version=ip_version,

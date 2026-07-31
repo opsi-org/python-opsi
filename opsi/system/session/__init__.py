@@ -32,11 +32,11 @@ def get_console_session() -> DisplaySession | None:
 
 
 __all__ = [
-	"get_display_sessions",
-	"get_console_session",
 	"DisplaySession",
 	"LinuxDisplaySessionClass",
 	"LinuxDisplaySessionType",
-	"WindowsDisplaySessionState",
 	"WindowsDisplaySessionProtocol",
+	"WindowsDisplaySessionState",
+	"get_console_session",
+	"get_display_sessions",
 ]

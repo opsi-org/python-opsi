@@ -7,7 +7,7 @@ import json
 import re
 import shutil
 import time
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from unittest import mock
@@ -120,7 +120,7 @@ def test_sign_opsi_license() -> None:
 	private_key, public_key = generate_key_pair(return_pem=False)
 	with mock.patch("opsi.opsi.licensing._licensing.get_signature_public_key_schema_version_2", lambda: public_key):
 		lic = OpsiLicense(**LIC1)
-		lic.valid_from = lic.valid_until = date.today()
+		lic.valid_from = lic.valid_until = datetime.now(tz=UTC)
 		assert lic.get_state() == OPSI_LICENSE_STATE_INVALID_SIGNATURE
 		lic.sign(private_key)
 		assert lic.get_state() == OPSI_LICENSE_STATE_VALID
@@ -176,12 +176,12 @@ def test_opsi_license_defaults() -> None:
 		customer_address="Mainz",
 		module_id="scalability1",
 		client_number=1000,
-		valid_until=date.fromisoformat("2099-12-31"),
+		valid_until=datetime.fromisoformat("2099-12-31").replace(tzinfo=UTC),
 	)
 	assert lic.id
 	assert lic.type == "standard"
-	assert lic.valid_from == date.today()
-	assert lic.issued_at == date.today()
+	assert lic.valid_from == datetime.now(tz=UTC).date()
+	assert lic.issued_at == datetime.now(tz=UTC).date()
 
 
 @pytest.mark.parametrize(
@@ -211,7 +211,7 @@ def test_opsi_license_defaults() -> None:
 		("client_number", -1, ValueError),
 		("issued_at", "2021-01-01", None),
 		("issued_at", "", ValidationError),
-		("valid_from", date.today(), None),
+		("valid_from", datetime.now(tz=UTC).date(), None),
 		("valid_from", None, ValidationError),
 		("valid_until", OPSI_LICENSE_DATE_UNLIMITED, None),
 		("valid_until", "0000-00-00", ValueError),
@@ -612,37 +612,37 @@ def test_license_state() -> None:
 		lic = OpsiLicense(**LIC1)
 		lic.sign(private_key)
 
-		lic.valid_from = date.today() - timedelta(days=10)
-		lic.valid_until = date.today() - timedelta(days=1)
+		lic.valid_from = datetime.now(tz=UTC) - timedelta(days=10)
+		lic.valid_until = datetime.now(tz=UTC) - timedelta(days=1)
 		lic.sign(private_key)
 		assert lic.get_state() == OPSI_LICENSE_STATE_EXPIRED
 
-		lic.valid_until = date.today()
+		lic.valid_until = datetime.now(tz=UTC)
 		lic.sign(private_key)
 		assert lic.get_state() == OPSI_LICENSE_STATE_VALID
 
-		lic.valid_until = date.today() + timedelta(days=1)
+		lic.valid_until = datetime.now(tz=UTC) + timedelta(days=1)
 		lic.sign(private_key)
 		assert lic.get_state() == OPSI_LICENSE_STATE_VALID
 
-		lic.valid_from = date.today() + timedelta(days=1)
+		lic.valid_from = datetime.now(tz=UTC) + timedelta(days=1)
 		lic.sign(private_key)
 		assert lic.get_state() == OPSI_LICENSE_STATE_NOT_YET_VALID
 
-		lic.valid_from = date.today()
+		lic.valid_from = datetime.now(tz=UTC)
 		lic.sign(private_key)
 		assert lic.get_state() == OPSI_LICENSE_STATE_VALID
 
-		lic.valid_from = date.today() - timedelta(days=1)
+		lic.valid_from = datetime.now(tz=UTC) - timedelta(days=1)
 		lic.sign(private_key)
 		assert lic.get_state() == OPSI_LICENSE_STATE_VALID
 
-		lic.valid_from = date.today()
-		lic.valid_until = date.today()
+		lic.valid_from = datetime.now(tz=UTC)
+		lic.valid_until = datetime.now(tz=UTC)
 		lic.sign(private_key)
 		assert lic.get_state() == OPSI_LICENSE_STATE_VALID
-		assert lic.get_state(at_date=date.today() + timedelta(days=1)) == OPSI_LICENSE_STATE_EXPIRED
-		assert lic.get_state(at_date=date.today() - timedelta(days=1)) == OPSI_LICENSE_STATE_NOT_YET_VALID
+		assert lic.get_state(at_date=datetime.now(tz=UTC) + timedelta(days=1)) == OPSI_LICENSE_STATE_EXPIRED
+		assert lic.get_state(at_date=datetime.now(tz=UTC) - timedelta(days=1)) == OPSI_LICENSE_STATE_NOT_YET_VALID
 
 		lic.client_number = 1234567
 		assert lic.get_state() == OPSI_LICENSE_STATE_INVALID_SIGNATURE
@@ -701,18 +701,18 @@ def test_license_state_cache() -> None:
 
 		assert len(lic.cached_state) == 0
 
-		lic.valid_from = date.today() - timedelta(days=10)
-		lic.valid_until = date.today() - timedelta(days=1)
+		lic.valid_from = datetime.now(tz=UTC) - timedelta(days=10)
+		lic.valid_until = datetime.now(tz=UTC) - timedelta(days=1)
 		lic.sign(private_key)
 
 		for num in range(1, MAX_STATE_CACHE_VALUES + 5):
-			assert lic.get_state(at_date=date.today() + timedelta(days=num)) == OPSI_LICENSE_STATE_EXPIRED
+			assert lic.get_state(at_date=datetime.now(tz=UTC) + timedelta(days=num)) == OPSI_LICENSE_STATE_EXPIRED
 			assert len(lic.cached_state) == min(MAX_STATE_CACHE_VALUES, num)
 
 		lic.clear_cache()
 		assert len(lic.cached_state) == 0
 
-		today = date.today()
+		today = datetime.now(tz=UTC)
 		start = time.perf_counter_ns()
 		lic.get_state(at_date=today)
 		uncached_time_ns = time.perf_counter_ns() - start
@@ -752,31 +752,31 @@ def test_license_state_modules(tmp_path: Path) -> None:
 	omf.read()
 	lic = omf.licenses[0]
 
-	lic.valid_from = date.today() - timedelta(days=10)
+	lic.valid_from = datetime.now(tz=UTC) - timedelta(days=10)
 
-	lic.valid_until = date.today() - timedelta(days=1)
+	lic.valid_until = datetime.now(tz=UTC) - timedelta(days=1)
 	assert lic.get_state() == OPSI_LICENSE_STATE_EXPIRED
 
-	lic.valid_until = date.today()
+	lic.valid_until = datetime.now(tz=UTC)
 	assert lic.get_state() == OPSI_LICENSE_STATE_VALID
 
-	lic.valid_until = date.today() + timedelta(days=1)
+	lic.valid_until = datetime.now(tz=UTC) + timedelta(days=1)
 	assert lic.get_state() == OPSI_LICENSE_STATE_VALID
 
-	lic.valid_from = date.today() + timedelta(days=1)
+	lic.valid_from = datetime.now(tz=UTC) + timedelta(days=1)
 	assert lic.get_state() == OPSI_LICENSE_STATE_NOT_YET_VALID
 
-	lic.valid_from = date.today()
+	lic.valid_from = datetime.now(tz=UTC)
 	assert lic.get_state() == OPSI_LICENSE_STATE_VALID
 
-	lic.valid_from = date.today() - timedelta(days=1)
+	lic.valid_from = datetime.now(tz=UTC) - timedelta(days=1)
 	assert lic.get_state() == OPSI_LICENSE_STATE_VALID
 
-	lic.valid_from = date.today()
-	lic.valid_until = date.today()
+	lic.valid_from = datetime.now(tz=UTC)
+	lic.valid_until = datetime.now(tz=UTC)
 	assert lic.get_state() == OPSI_LICENSE_STATE_VALID
-	assert lic.get_state(at_date=date.today() + timedelta(days=1)) == OPSI_LICENSE_STATE_EXPIRED
-	assert lic.get_state(at_date=date.today() - timedelta(days=1)) == OPSI_LICENSE_STATE_NOT_YET_VALID
+	assert lic.get_state(at_date=datetime.now(tz=UTC) + timedelta(days=1)) == OPSI_LICENSE_STATE_EXPIRED
+	assert lic.get_state(at_date=datetime.now(tz=UTC) - timedelta(days=1)) == OPSI_LICENSE_STATE_NOT_YET_VALID
 
 	modules = re.sub(r"secureboot.*", "secureboot = 100", modules, flags=re.MULTILINE)
 	modules_file.write_text(modules, encoding="utf-8", newline="")

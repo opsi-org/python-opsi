@@ -3,9 +3,11 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-from opsi.util.pattern import Singleton, MappedStrEnum
-import pytest
 import enum
+
+import pytest
+
+from opsi.util.pattern import MappedStrEnum, Singleton
 
 
 def test_singleton() -> None:
@@ -49,7 +51,7 @@ def test_mapped_str_enum() -> None:
 
 
 def test_mapped_str_enum_invalid_aliases() -> None:
-	with pytest.raises(ValueError, match="Invalid value 'wrong' for _ALIASES, must be a dict mapping alias to value"):
+	with pytest.raises(TypeError, match="Invalid value 'wrong' for _ALIASES, must be a dict mapping alias to value"):
 
 		class Compression(MappedStrEnum):
 			DEFLATE = "deflate"

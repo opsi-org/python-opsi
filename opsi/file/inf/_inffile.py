@@ -7,12 +7,14 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field, fields
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
+from typing import Any
 from uuid import UUID
 
 from opsi.opsi.service.model.type import Architecture
+from opsi.time import unix_timestamp
 
 RE_SECTION = re.compile(r"\[\s*([^\]]+)\s*\]")
 RE_PLACEHOLDER = re.compile(r"%([^%]+)%")
@@ -76,7 +78,7 @@ def reg_expand_sz(value: bytes | str) -> str:
 
 
 def current_timestamp() -> float:
-	return datetime.now().timestamp()
+	return unix_timestamp()
 
 
 class INFSectionType(StrEnum):
@@ -196,9 +198,7 @@ class INFTargetOSVersion:
 			return False
 		if other.ProductType is not None and self.ProductType != other.ProductType:
 			return False
-		if other.SuiteMask is not None and self.SuiteMask != other.SuiteMask:
-			return False
-		return True
+		return not (other.SuiteMask is not None and self.SuiteMask != other.SuiteMask)
 
 
 @dataclass(kw_only=True)
@@ -597,15 +597,15 @@ class INFFile:
 			raise RuntimeError(f"INF file '{self._file_path}' has no version section")
 
 		field_names = [f.name for f in fields(INFVersion)]
-		kwargs: dict[str, str | INFDriverVer] = {}
+		kwargs: dict[str, Any] = {}
 		for line in version_section.lines:
 			if "=" not in line:
 				continue
 			val: str | INFDriverVer
 			attr, val = line.split("=", 1)
 			try:
-				field_name = [f for f in field_names if f.lower() == attr.strip().lower()][0]
-			except IndexError:
+				field_name = next(f for f in field_names if f.lower() == attr.strip().lower())
+			except StopIteration:
 				continue
 
 			val = val.strip()
@@ -617,10 +617,10 @@ class INFFile:
 				while len(ver) < 4:
 					ver.append(0)
 				month, day, year = (int(val) for val in date_str.split("/"))
-				date = datetime(year, month, day, tzinfo=timezone.utc)
+				date = datetime(year, month, day, tzinfo=UTC)
 				val = INFDriverVer(date=date, version=(ver[0], ver[1], ver[2], ver[3]))
 			kwargs[field_name] = val
-		self.version = INFVersion(**kwargs)  # type: ignore[arg-type]
+		self.version = INFVersion(**kwargs)
 
 	def _load_manufacturer(self) -> None:
 		# The INF must also contain a corresponding INF Models section of the same name.
@@ -846,9 +846,8 @@ class INFFile:
 							device.target_os_version.OSMinorVersion == target_os_version.OSMinorVersion
 							and device.target_os_version.BuildNumber is not None
 							and target_os_version.BuildNumber is not None
-						):
-							if device.target_os_version.BuildNumber > target_os_version.BuildNumber:
-								continue
+						) and device.target_os_version.BuildNumber > target_os_version.BuildNumber:
+							continue
 
 			# Check if already added device is closer to the target_os_version
 			hardware_id_str = device.hardware_id.to_string() if device.hardware_id else ""
@@ -1013,7 +1012,7 @@ class INFFile:
 		guid = UUID(self.version.ClassGUID)
 		version = self.version.DriverVer.version
 		# 100-nanoseconds since Jan 1 1601
-		timestamp = int((self.version.DriverVer.date.timestamp() - datetime(1601, 1, 1, tzinfo=timezone.utc).timestamp()) * 10_000_000)
+		timestamp = int((self.version.DriverVer.date.timestamp() - datetime(1601, 1, 1, tzinfo=UTC).timestamp()) * 10_000_000)
 		hex_version = reg_hex(
 			b"\x00\xff\x09\x00\x00\x00\x00\x00"
 			+ guid.bytes_le
@@ -1026,7 +1025,7 @@ class INFFile:
 			null_terminated=False,
 		)
 		import_date = reg_hex(
-			int((current_timestamp() - datetime(1601, 1, 1, tzinfo=timezone.utc).timestamp()) * 10_000_000).to_bytes(8, "little"),
+			int((current_timestamp() - datetime(1601, 1, 1, tzinfo=UTC).timestamp()) * 10_000_000).to_bytes(8, "little"),
 			null_terminated=False,
 		)
 		reg[package_root] = [
@@ -1077,7 +1076,7 @@ class INFFile:
 
 			for sid in service_install_directives:
 				svc_key = rf"{package_root}\Configurations\{configuration}\Services\{sid.ServiceName}"
-				if not any([not ar.subkey for ar in sid.AddReg]):
+				if not any(not ar.subkey for ar in sid.AddReg):
 					# No entry without subkey
 					reg[svc_key] = []
 				reg.update(self._add_reg_to_reg(svc_key, sid.AddReg))

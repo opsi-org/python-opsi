@@ -2,11 +2,12 @@
 # Copyright (c) 2020-2026 uib GmbH <info@uib.de>
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
-
 import datetime
 import time
+from collections.abc import Generator
 from contextlib import nullcontext
-from typing import Any, Generator
+from datetime import UTC
+from typing import Any
 from uuid import UUID
 
 import pytest
@@ -135,7 +136,7 @@ def test_to_object_class_from_hash(opsi_client: OpsiClient, cls: type[Host | Ops
 	assert isinstance(to_object_class(opsi_client.toHash(), cls), cls)
 
 
-def funky_generator() -> Generator[str, None, None]:
+def funky_generator() -> Generator[str]:
 	yield "y"
 	yield "u"
 	yield "so"
@@ -214,7 +215,7 @@ def test_to_bool_list_with_negative_list() -> None:
 		assert i is False
 
 
-@pytest.mark.parametrize("value, expected", (("100", 100), ("-100", -100), (int(1000000000000000), 1000000000000000)))
+@pytest.mark.parametrize("value, expected", (("100", 100), ("-100", -100), (1000000000000000, 1000000000000000)))
 def test_to_int(value: Any, expected: Any) -> None:
 	assert expected == to_int(value)
 
@@ -261,8 +262,8 @@ def test_to_oct_raising_errors_on_invalid_value(value: Any) -> None:
 		(0, "0000-00-00 00:00:00"),
 		("", "0000-00-00 00:00:00"),
 		("2020-01-01", "2020-01-01 00:00:00"),
-		(datetime.datetime(2013, 9, 11, 10, 54, 23), "2013-09-11 10:54:23"),
-		(datetime.datetime(2013, 9, 11, 10, 54, 23, 123123), "2013-09-11 10:54:23"),
+		(datetime.datetime(2013, 9, 11, 10, 54, 23), "2013-09-11 10:54:23"),  # noqa: DTZ001
+		(datetime.datetime(2013, 9, 11, 10, 54, 23, 123123), "2013-09-11 10:54:23"),  # noqa: DTZ001
 	),
 )
 def test_to_opsi_timestamp(value: Any, expected: Any) -> None:
@@ -330,7 +331,6 @@ def test_to_hardware_address_raises_exceptions_on_invalid_addresses(address: Any
 	[
 		("1.1.1.1", "1.1.1.1"),
 		("192.168.101.1", "192.168.101.1"),
-		("192.168.101.1", "192.168.101.1"),
 		("2001:0db8:85a3::8a2e:0370:7334", "2001:db8:85a3::8a2e:370:7334"),
 		("2001:db8:85a3:0000:0000:8a2e:0370:7334", "2001:db8:85a3::8a2e:370:7334"),
 		("::FFFF:129.144.52.38", "129.144.52.38"),
@@ -343,18 +343,18 @@ def test_to_ip_address(inp: str, expected: str) -> None:
 
 
 @pytest.mark.parametrize(
-	"malformed_input",
+	"malformed_input, exc",
 	[
-		"1922.1.1.1",
-		None,
-		True,
-		"1.1.1.1.",
-		"2.2.2.2.2",
-		"a.2.3.4",
+		("1922.1.1.1", ValueError),
+		(None, TypeError),
+		(True, TypeError),
+		("1.1.1.1.", ValueError),
+		("2.2.2.2.2", ValueError),
+		("a.2.3.4", ValueError),
 	],
 )
-def test_to_ip_address_raises_errors_on_invalid_input(malformed_input: Any) -> None:
-	with pytest.raises(ValueError):
+def test_to_ip_address_raises_errors_on_invalid_input(malformed_input: Any, exc: type[Exception]) -> None:
+	with pytest.raises(exc):
 		to_ip_address(malformed_input)
 
 
@@ -406,18 +406,18 @@ def test_to_network_address(address: str, expected: str) -> None:
 
 
 @pytest.mark.parametrize(
-	"address",
+	"address, exc",
 	(
-		"192.168.101",
-		"192.1.1.1/40",
-		None,
-		True,
-		"10.10.1/24",
-		"a.2.3.4/0",
+		("192.168.101", ValueError),
+		("192.1.1.1/40", ValueError),
+		(None, TypeError),
+		(True, TypeError),
+		("10.10.1/24", ValueError),
+		("a.2.3.4/0", ValueError),
 	),
 )
-def test_to_network_address_raises_exceptions_on_invalid_addresses(address: Any) -> None:
-	with pytest.raises(ValueError):
+def test_to_network_address_raises_exceptions_on_invalid_addresses(address: Any, exc: type[Exception]) -> None:
+	with pytest.raises(exc):
 		to_network_address(address)
 
 
@@ -747,7 +747,7 @@ def test_to_time_fails_if_no_time_given() -> None:
 	(
 		time.time(),
 		time.localtime(),
-		datetime.datetime.now(),
+		datetime.datetime.now(tz=UTC),
 	),
 )
 def test_to_time_returns_time_struct(time_info: Any) -> None:
@@ -853,7 +853,7 @@ def test_to_product_property_type(value: str, expected: str | None, exc: type[Ex
 @pytest.mark.parametrize(
 	"value, expected, exc", (("100", 100, None), (-101, -100, None), (1000, 100, None), (0.0, 0, None), ("high", None, ValueError))
 )
-def test_to_product_priority(value: int | float | str, expected: int | None, exc: type[Exception] | None) -> None:
+def test_to_product_priority(value: float | str, expected: int | None, exc: type[Exception] | None) -> None:
 	if exc:
 		with pytest.raises(exc):
 			to_product_priority(value)
@@ -964,7 +964,7 @@ def test_fto_group_type_standardises_case(inp: str, expected: str) -> None:
 		("	1.4   ", 1.4),
 	],
 )
-def test_to_float(inp: str | float | int, expected: float) -> None:
+def test_to_float(inp: str | float, expected: float) -> None:
 	assert expected == to_float(inp)
 
 

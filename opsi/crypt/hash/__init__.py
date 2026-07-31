@@ -16,11 +16,11 @@ from opsi.crypt.hash._hash import (
 
 __all__ = [
 	"FileHashAlgorithm",
-	"PasswordHashFormat",
 	"PasswordHashAlgorithm",
+	"PasswordHashFormat",
 	"get_password_hash_algorithm",
 	"hash_file",
-	"verify_file_hash",
 	"hash_password",
+	"verify_file_hash",
 	"verify_password",
 ]

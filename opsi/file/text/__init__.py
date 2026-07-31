@@ -5,4 +5,4 @@
 
 from opsi.file.text._text import TextFile, patch_text_file
 
-__all__ = ["patch_text_file", "TextFile"]
+__all__ = ["TextFile", "patch_text_file"]

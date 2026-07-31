@@ -53,7 +53,7 @@ def test_start_pty_params(tmp_path: Path) -> None:
 	lines = [line.strip() for line in data.decode("utf-8").split("\n")]
 
 	command = "cd" if is_windows() else "pwd"
-	pty_write(f"{command}\r\n".encode("utf-8"))
+	pty_write(f"{command}\r\n".encode())
 	time.sleep(2)
 	data = pty_read(4096)
 	print("read:", data)
@@ -62,7 +62,7 @@ def test_start_pty_params(tmp_path: Path) -> None:
 	assert lines[1].strip().endswith(str_path)
 
 	command = "set" if is_windows() else "env"
-	pty_write(f"{command}\r\n".encode("utf-8"))
+	pty_write(f"{command}\r\n".encode())
 	data = b""
 	for _ in range(30):
 		time.sleep(1)
@@ -82,7 +82,7 @@ def test_start_pty_params(tmp_path: Path) -> None:
 	if is_posix():
 		assert any(line.startswith("TERM=") for line in lines)
 
-		pty_write("stty size\r\n".encode("utf-8"))
+		pty_write(b"stty size\r\n")
 		data = b""
 		for _ in range(30):
 			time.sleep(1)
@@ -148,7 +148,7 @@ async def test_terminal_params() -> None:
 
 	command = "set" if is_windows() else "env"
 	terminal_data_write_message = TerminalDataWriteMessage(
-		sender="client", back_channel="back_channel", channel="channel", terminal_id=terminal_id, data=f"{command}\r\n".encode("utf-8")
+		sender="client", back_channel="back_channel", channel="channel", terminal_id=terminal_id, data=f"{command}\r\n".encode()
 	)
 	await process_terminal_message(message=terminal_data_write_message, send_message=message_sender.send_message, sender=sender)
 
@@ -164,7 +164,7 @@ async def test_terminal_params() -> None:
 
 	if is_posix():
 		terminal_data_write_message = TerminalDataWriteMessage(
-			sender="client", back_channel="back_channel", channel="channel", terminal_id=terminal_id, data="stty size\r\n".encode("utf-8")
+			sender="client", back_channel="back_channel", channel="channel", terminal_id=terminal_id, data=b"stty size\r\n"
 		)
 		await process_terminal_message(message=terminal_data_write_message, send_message=message_sender.send_message, sender=sender)
 
@@ -311,7 +311,7 @@ async def test_multiple_terminals() -> None:
 
 	for terminal_id in (terminal1_id, terminal2_id, terminal3_id):
 		terminal_data_write_message = TerminalDataWriteMessage(
-			sender="client", channel="channel", terminal_id=terminal_id, data="echo test\r\n".encode("utf-8")
+			sender="client", channel="channel", terminal_id=terminal_id, data=b"echo test\r\n"
 		)
 		await process_terminal_message(message=terminal_data_write_message, send_message=message_sender.send_message, sender=sender)
 

@@ -7,7 +7,7 @@ import random
 
 import pytest
 
-from opsi.compression import compress, decompress, Compression
+from opsi.compression import Compression, compress, decompress
 
 
 @pytest.mark.parametrize(
