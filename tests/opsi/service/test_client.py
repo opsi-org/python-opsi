@@ -80,7 +80,6 @@ from opsi.opsi.service.client._service_client import (
 	ServiceConnectionListener,
 	ServiceVerificationFlags,
 	WebSocketApp,
-	get_external_program_environment,
 	get_rpc_timeout,
 	get_service_client,
 	set_rpc_timeout,
@@ -992,21 +991,6 @@ def test_sso(tmp_path: Path, sso_success: bool) -> None:
 			else:
 				with pytest.raises(OpsiServiceAuthenticationError):
 					client.connect()
-
-
-def test_get_external_program_environment() -> None:
-	env_vars = {
-		"LD_LIBRARY_PATH": "/frozen/app/_internal",
-		"LD_LIBRARY_PATH_ORIG": "/original/lib/path",
-		"DYLD_LIBRARY_PATH": "/frozen/dylib/path",
-	}
-	with environment(env_vars):
-		with mock.patch("opsi.opsi.service.client._service_client.sys.frozen", True, create=True):
-			env = get_external_program_environment()
-			assert env["LD_LIBRARY_PATH"] == "/original/lib/path"
-			assert "LD_LIBRARY_PATH_ORIG" not in env
-			assert env.get("DYLD_LIBRARY_PATH") != "/frozen/dylib/path"
-			assert os.environ["LD_LIBRARY_PATH"] == "/frozen/app/_internal"
 
 
 def test_start_browser_for_sso_login_linux_fallback_uses_external_environment() -> None:
