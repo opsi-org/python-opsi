@@ -2186,10 +2186,10 @@ class Messagebus(Thread):
 
 	def disconnect(self, wait: bool = True) -> None:
 		logger.info("Messagebus.disconnect (id=%r)\n%s", self.id, "".join(traceback.format_stack()))
-		self._should_be_connected = False
 		if not self._connected:
 			return
 
+		self._should_be_connected = False
 		self._disconnected_result.clear()
 		self._disconnect()
 		if wait and not self._disconnected_result.wait(5):
