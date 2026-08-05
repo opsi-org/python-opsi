@@ -83,6 +83,7 @@ from opsi.opsi.service.client._service_client import (
 	get_rpc_timeout,
 	get_service_client,
 	set_rpc_timeout,
+	start_browser_for_sso_login,
 )
 from opsi.opsi.service.model.object import OpsiClient
 from opsi.system.info import is_macos, is_windows
@@ -904,11 +905,12 @@ def test_sso(tmp_path: Path, sso_success: bool) -> None:
 	# <session-id>: <authenticated>
 	sessions: dict[str, bool] = {}
 
-	def mock_webbrowser_open(url: str) -> None:
+	def mock_start_browser_for_sso_login(url: str) -> bool:
 		match = re.search(r"^(https://.*)/auth/saml/login\?session_id=([a-f0-9]{32})&redirect=close_window$", url)
 		assert match
 		assert match.group(1) == base_url
 		sessions[match.group(2)] = True
+		return True
 
 	def request_callback(handler: HTTPTestServerRequestHandler, request: dict) -> bool:
 		response_status = (200, "OK")
@@ -943,7 +945,7 @@ def test_sso(tmp_path: Path, sso_success: bool) -> None:
 
 	with (
 		http_test_server(generate_cert=True, log_file=log_file, request_callback=request_callback) as server,
-		mock.patch("opsi.opsi.service.client._service_client.webbrowser.open", mock_webbrowser_open),
+		mock.patch("opsi.opsi.service.client._service_client.start_browser_for_sso_login", mock_start_browser_for_sso_login),
 	):
 		base_url = f"https://127.0.0.1:{server.port}"
 		with ServiceClient(base_url, verify="accept_all", sso=True) as client:
@@ -989,6 +991,55 @@ def test_sso(tmp_path: Path, sso_success: bool) -> None:
 			else:
 				with pytest.raises(OpsiServiceAuthenticationError):
 					client.connect()
+
+
+def test_start_browser_for_sso_login_linux_prefers_run_command() -> None:
+	env_vars = {
+		"LD_LIBRARY_PATH": "/frozen/app/_internal",
+		"LD_LIBRARY_PATH_ORIG": "/original/lib/path",
+	}
+	with environment(env_vars):
+		with (
+			mock.patch("opsi.opsi.service.client._service_client.sys.platform", "linux"),
+			mock.patch("opsi.opsi.service.client._service_client.sys.frozen", True, create=True),
+			mock.patch.dict("opsi.opsi.service.client._service_client.os.environ", {"XDG_CURRENT_DESKTOP": "GNOME"}, clear=False),
+			mock.patch("opsi.opsi.service.client._service_client.run_command") as run_command_mock,
+			mock.patch("opsi.opsi.service.client._service_client.webbrowser.open") as webbrowser_open_mock,
+		):
+			assert start_browser_for_sso_login("https://example.test/auth/saml/login") is True
+			run_command_mock.assert_called_once_with(
+				["gio", "open", "https://example.test/auth/saml/login"],
+				capture_output="none",
+				detach=True,
+				wait=False,
+			)
+			assert "environment" not in run_command_mock.call_args.kwargs
+			webbrowser_open_mock.assert_not_called()
+
+
+def test_start_browser_for_sso_login_linux_launcher_oserror_fallback() -> None:
+	"""If a detected launcher fails to start, the next launcher should be tried."""
+
+	class FakeProcessError(Exception):
+		pass
+
+	with (
+		mock.patch("opsi.opsi.service.client._service_client.sys.platform", "linux"),
+		mock.patch("opsi.opsi.service.client._service_client.ProcessError", FakeProcessError),
+		mock.patch(
+			"opsi.opsi.service.client._service_client.run_command",
+			side_effect=[FakeProcessError("broken gio"), None],
+		) as run_command_mock,
+		mock.patch(
+			"opsi.opsi.service.client._service_client.webbrowser.open",
+			side_effect=RuntimeError("broken browser"),
+		) as webbrowser_open_mock,
+	):
+		assert start_browser_for_sso_login("https://example.test/auth/saml/login") is True
+		assert run_command_mock.call_count == 2
+		assert run_command_mock.call_args_list[0].args[0] == ["gio", "open", "https://example.test/auth/saml/login"]
+		assert run_command_mock.call_args_list[1].args[0] == ["xdg-open", "https://example.test/auth/saml/login"]
+		webbrowser_open_mock.assert_not_called()
 
 
 def get_local_ipv4_address() -> str | None:

@@ -85,6 +85,7 @@ from opsi.opsi.service.model.object import deserialize, serialize
 from opsi.opsi.service.model.type import to_host_id, to_opsi_host_key
 from opsi.opsi.service.server import get_opsiconfd_config
 from opsi.opsi.service.server._config import OPSI_CA_CERT_FILE, OpsiConfig
+from opsi.process import ProcessError, run_command
 from opsi.serialization import json_decode, json_encode, msgpack_decode, msgpack_encode
 from opsi.system.file.lock import lock_file
 from opsi.system.info import is_windows
@@ -197,6 +198,43 @@ def get_rpc_timeout(method: str) -> float:
 		if regex.match(method):
 			return float(timeout)
 	return float(RPC_TIMEOUTS_DEFAULT)
+
+
+def start_browser_for_sso_login(login_url: str) -> bool:
+	if sys.platform.startswith("linux"):
+		xdg_desktop = (os.environ.get("XDG_CURRENT_DESKTOP") or "").lower()
+		launchers: tuple[tuple[str, ...], ...]
+		if "kde" in xdg_desktop:
+			launchers = (
+				("kde-open5", login_url),
+				("kde-open", login_url),
+				("gio", "open", login_url),
+				("xdg-open", login_url),
+			)
+		else:
+			launchers = (
+				("gio", "open", login_url),
+				("xdg-open", login_url),
+				("kde-open5", login_url),
+				("kde-open", login_url),
+			)
+
+		for launcher in launchers:
+			try:
+				run_command(list(launcher), capture_output="none", detach=True, wait=False)
+				logger.debug("Started browser launcher: %s", launcher[0])
+				return True
+			except ProcessError as err:
+				logger.debug("Failed to start browser launcher %r: %s", launcher[0], err, exc_info=True)
+				continue
+
+	try:
+		if webbrowser.open(login_url):
+			return True
+	except Exception as err:
+		logger.debug("Failed to open browser via webbrowser module: %s", err, exc_info=True)
+
+	return False
 
 
 def set_rpc_timeout(method: str, timeout: float) -> None:
@@ -1141,10 +1179,12 @@ class ServiceClient:
 							)
 							session_id = response.json()
 
-							try:
-								webbrowser.open(f"{self.base_url}/auth/saml/login?session_id={session_id}&redirect=close_window")
-							except Exception as err:
-								raise OpsiServiceAuthenticationError(f"SSO failed: failed to open browser: {err}") from err
+							login_url = f"{self.base_url}/auth/saml/login?session_id={session_id}&redirect=close_window"
+							browser_opened = start_browser_for_sso_login(login_url)
+							if not browser_opened:
+								logger.warning(
+									"Failed to open a browser for SSO login automatically. Please open the login URL manually.",
+								)
 
 							response = self._request(
 								method="POST",
