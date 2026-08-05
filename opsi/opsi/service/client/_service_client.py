@@ -13,9 +13,7 @@ import os
 import posixpath
 import random
 import re
-import shutil
 import ssl
-import subprocess
 import sys
 import time
 import traceback
@@ -87,6 +85,7 @@ from opsi.opsi.service.model.object import deserialize, serialize
 from opsi.opsi.service.model.type import to_host_id, to_opsi_host_key
 from opsi.opsi.service.server import get_opsiconfd_config
 from opsi.opsi.service.server._config import OPSI_CA_CERT_FILE, OpsiConfig
+from opsi.process import ProcessError, run_command
 from opsi.serialization import json_decode, json_encode, msgpack_decode, msgpack_encode
 from opsi.system.file.lock import lock_file
 from opsi.system.info import is_windows
@@ -201,31 +200,8 @@ def get_rpc_timeout(method: str) -> float:
 	return float(RPC_TIMEOUTS_DEFAULT)
 
 
-def get_external_program_environment() -> dict[str, str]:
-	env = os.environ.copy()
-	if not getattr(sys, "frozen", False):
-		return env
-
-	for var in ("LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH", "LIBPATH"):
-		orig_var = f"{var}_ORIG"
-		orig_value = env.get(orig_var)
-		env.pop(orig_var, None)
-		if orig_value is None:
-			env.pop(var, None)
-		else:
-			env[var] = orig_value
-	return env
-
-
 def start_browser_for_sso_login(login_url: str) -> bool:
-	try:
-		if webbrowser.open(login_url):
-			return True
-	except Exception as err:
-		logger.debug("Failed to open browser via webbrowser module: %s", err, exc_info=True)
-
 	if sys.platform.startswith("linux"):
-		env = get_external_program_environment()
 		xdg_desktop = (os.environ.get("XDG_CURRENT_DESKTOP") or "").lower()
 		launchers: tuple[tuple[str, ...], ...]
 		if "kde" in xdg_desktop:
@@ -245,18 +221,18 @@ def start_browser_for_sso_login(login_url: str) -> bool:
 
 		for launcher in launchers:
 			try:
-				if not shutil.which(launcher[0]):
-					continue
-			except OSError as err:
-				logger.debug("Failed to check for browser launcher %r: %s", launcher[0], err, exc_info=True)
-				continue
-			try:
-				subprocess.Popen(launcher, env=env, start_new_session=True)
-				logger.debug("Browser launcher process started: %r", launcher)
+				run_command(list(launcher), capture_output="none", detach=True, wait=False)
+				logger.debug("Started browser launcher: %s", launcher[0])
 				return True
-			except OSError as err:
+			except ProcessError as err:
 				logger.debug("Failed to start browser launcher %r: %s", launcher[0], err, exc_info=True)
 				continue
+
+	try:
+		if webbrowser.open(login_url):
+			return True
+	except Exception as err:
+		logger.debug("Failed to open browser via webbrowser module: %s", err, exc_info=True)
 
 	return False
 
