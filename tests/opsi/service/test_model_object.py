@@ -741,6 +741,21 @@ def test_audit_log_terminal_event_types_are_supported(event_type: str, expected_
 	assert f"eventType='{event_type}'" in str(audit_log)
 
 
+@pytest.mark.parametrize(
+	("event_type", "expected_event_type"),
+	(
+		("config.value.set", AuditLogEventType.CONFIG_VALUE_SET),
+		("config.value.deleted", AuditLogEventType.CONFIG_VALUE_DELETED),
+	),
+)
+def test_audit_log_config_event_types_are_supported(event_type: str, expected_event_type: AuditLogEventType) -> None:
+	audit_log = AuditLog(eventType=event_type)
+
+	assert audit_log.eventType == expected_event_type
+	assert audit_log.to_hash()["eventType"] == expected_event_type.value
+	assert f"eventType='{expected_event_type.value}'" in str(audit_log)
+
+
 def test_audit_log_unknown_event_type_falls_back_to_unknown() -> None:
 	audit_log = AuditLog(eventType="not.a.known.event")
 
