@@ -676,6 +676,7 @@ class AuditLogEventType(MappedStrEnum):
 	AUTHENTICATION_LOGIN_FAILED = "authentication.login.failed"
 	AUTHENTICATION_LOGOUT = "authentication.logout"
 	CLIENT_PRODUCT_ACTION_REQUEST = "client.product.action_request"
+	HOST_PARAMETER_VALUE_SET = "host_parameter.value.set"
 	CLIENT_TERMINAL_OPEN = "client.terminal.open"
 	CLIENT_TERMINAL_CLOSE = "client.terminal.close"
 	SERVER_TERMINAL_OPEN = "server.terminal.open"
