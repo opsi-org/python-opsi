@@ -892,7 +892,7 @@ wheels = [
 
 [[package]]
 name = "python-opsi"
-version = "4.3.26.3"
+version = "4.3.27.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
@@ -970,7 +970,7 @@ requires-dist = [
     { name = "pycryptodome", specifier = ">=3.23.0" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pywin32", marker = "sys_platform == 'win32'", specifier = ">=308" },
-    { name = "pywinpty", marker = "sys_platform == 'win32'", specifier = ">=2.0,<3.0" },
+    { name = "pywinpty", marker = "sys_platform == 'win32'", specifier = ">=2.0" },
     { name = "pyzsync", specifier = ">=1.0" },
     { name = "requests", specifier = ">=2.32.5" },
     { name = "rich", specifier = ">=14.3.3" },

@@ -1,6 +1,6 @@
 [project]
 name = "python-opsi"
-version = "4.3.26.4"
+version = "4.3.27.0"
 description = "python-opsi"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -24,7 +24,7 @@ dependencies = [
 	"ptyprocess>=0.7",
 	"pydantic>=2.12.5",
 	"pywin32>=308; platform_system == 'Windows'",
-	"pywinpty>=2.0,<3.0; platform_system == 'Windows'", # pywinpty 3.0 is 64bit only
+	"pywinpty>=2.0; platform_system == 'Windows'", # pywinpty 3.0 is 64bit only
 	"pyzsync>=1.0",
 	"requests>=2.32.5",
 	"rich>=14.3.3",
