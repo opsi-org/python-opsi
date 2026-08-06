@@ -41,6 +41,7 @@ from opsi.opsi.service.model.object import (
 	AuditHardwareOnHost,
 	AuditLog,
 	AuditLogAuthentication,
+	AuditLogConfig,
 	AuditLogProductActionRequest,
 	AuditSoftware,
 	AuditSoftwareOnClient,
@@ -664,6 +665,22 @@ def test_audit_log_client_product_action_request_from_dict_filters_unknown_field
 	assert not hasattr(client_product_action_request, "ignored")
 
 
+def test_audit_log_config_from_dict_filters_unknown_fields_and_coerces_values() -> None:
+	audit_log_config = AuditLogConfig.from_dict(
+		{
+			"configId": "ClientConfig.Depot.Id",
+			"scope": "default",
+			"newValue": ("depot1.opsi.test",),
+			"ignored": "value",
+		}
+	)
+
+	assert audit_log_config.configId == "clientconfig.depot.id"
+	assert audit_log_config.scope == "default"
+	assert audit_log_config.newValue == ["depot1.opsi.test"]
+	assert not hasattr(audit_log_config, "ignored")
+
+
 def test_audit_log_serializes_nested_authentication_dict() -> None:
 	audit_log = AuditLog(
 		id=7,
@@ -722,6 +739,37 @@ def test_audit_log_serializes_nested_client_product_action_request_dict() -> Non
 		"actionRequest": "setup",
 	}
 	assert "eventType='client.product.action_request'" in str(audit_log)
+
+
+def test_audit_log_serializes_nested_config_dict() -> None:
+	audit_log = AuditLog(
+		id=9,
+		created="2026-06-17 12:13:14",
+		eventType="config.value.set",
+		username="Admin",
+		actorType="user",
+		actorId="Admin",
+		hostId="CLIENT.test.invalid",
+		message="Config changed",
+		config={
+			"configId": "ClientConfig.Depot.Id",
+			"scope": "client",
+			"newValue": ["depot1.opsi.test"],
+			"ignored": "value",
+		},
+	)
+
+	assert audit_log.eventType == AuditLogEventType.CONFIG_VALUE_SET
+	assert isinstance(audit_log.config, AuditLogConfig)
+	assert audit_log.config.configId == "clientconfig.depot.id"
+	assert audit_log.config.scope == "client"
+	assert audit_log.config.newValue == ["depot1.opsi.test"]
+	assert audit_log.to_hash()["config"] == {
+		"configId": "clientconfig.depot.id",
+		"scope": "client",
+		"newValue": ["depot1.opsi.test"],
+	}
+	assert "eventType='config.value.set'" in str(audit_log)
 
 
 @pytest.mark.parametrize(
