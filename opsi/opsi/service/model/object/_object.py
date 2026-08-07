@@ -671,11 +671,30 @@ class AuditLogProductActionRequest:
 		self.actionRequest = to_action_request(self.actionRequest) or "none" if self.actionRequest else "none"
 
 
+@dataclass
+class AuditLogConfig:
+	configId: str
+	scope: str
+	newValue: list[Any] | None = None
+
+	@classmethod
+	def from_dict(cls, data: dict[str, Any]) -> Self:
+		return cls(**{key: value for key, value in data.items() if key in cls.__dataclass_fields__})
+
+	def __post_init__(self) -> None:
+		self.configId = to_config_id(self.configId)
+		self.scope = to_string(self.scope)
+		if self.newValue is not None:
+			self.newValue = to_list(self.newValue)
+
+
 class AuditLogEventType(MappedStrEnum):
 	AUTHENTICATION_LOGIN_SUCCEEDED = "authentication.login.succeeded"
 	AUTHENTICATION_LOGIN_FAILED = "authentication.login.failed"
 	AUTHENTICATION_LOGOUT = "authentication.logout"
 	CLIENT_PRODUCT_ACTION_REQUEST = "client.product.action_request"
+	CONFIG_VALUE_SET = "config.value.set"
+	CONFIG_VALUE_DELETED = "config.value.deleted"
 	CLIENT_TERMINAL_OPEN = "client.terminal.open"
 	CLIENT_TERMINAL_CLOSE = "client.terminal.close"
 	SERVER_TERMINAL_OPEN = "server.terminal.open"
@@ -704,6 +723,7 @@ class AuditLog(Entity):
 		message: str | None = None,
 		authentication: AuditLogAuthentication | dict[str, Any] | None = None,
 		productActionRequest: AuditLogProductActionRequest | dict[str, Any] | None = None,
+		config: AuditLogConfig | dict[str, Any] | None = None,
 	) -> None:
 		self.id: str | None = None
 		self.created: str | None = None
@@ -717,6 +737,7 @@ class AuditLog(Entity):
 		self.message: str | None = None
 		self.authentication: AuditLogAuthentication | None = None
 		self.productActionRequest: AuditLogProductActionRequest | None = None
+		self.config: AuditLogConfig | None = None
 
 		if id is not None:
 			self.setId(id)
@@ -742,6 +763,8 @@ class AuditLog(Entity):
 			self.setAuthentication(authentication)
 		if productActionRequest is not None:
 			self.setProductActionRequest(productActionRequest)
+		if config is not None:
+			self.setConfig(config)
 
 	def getIdentAttributes(self) -> tuple[str, ...]:
 		return ("id",)
@@ -824,12 +847,23 @@ class AuditLog(Entity):
 			return
 		self.productActionRequest = productActionRequest
 
+	def getConfig(self) -> AuditLogConfig | None:
+		return self.config
+
+	def setConfig(self, config: AuditLogConfig | dict[str, Any]) -> None:
+		if isinstance(config, dict):
+			self.config = AuditLogConfig.from_dict(cast(dict[str, Any], config))
+			return
+		self.config = config
+
 	def to_dict(self) -> dict[str, Any]:
 		object_dict = super().to_dict()
 		if self.authentication is not None:
 			object_dict["authentication"] = asdict(self.authentication)
 		if self.productActionRequest is not None:
 			object_dict["productActionRequest"] = asdict(self.productActionRequest)
+		if self.config is not None:
+			object_dict["config"] = asdict(self.config)
 		return object_dict
 
 	toHash = to_dict
