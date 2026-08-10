@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import shlex
+import sys
 import time
 from asyncio import Event, Task, get_running_loop, sleep
 from collections.abc import Callable
@@ -58,11 +59,25 @@ if is_windows():
 			# Import of winpty may sometimes fail because of problems with the needed dll.
 			# Therefore we do not import at toplevel
 			from winpty import PtyProcess  # ty: ignore[unresolved-import]
+			from winpty.enums import Backend  # ty: ignore[unresolved-import]
 
 			sp_env = get_subprocess_environment()
 			sp_env.update(env or {})
 
-			process = PtyProcess.spawn(shlex.split(shell), dimensions=(rows, cols), env=sp_env, cwd=cwd)
+			backend: int | None = None
+			windows_build = sys.getwindowsversion().build  # ty: ignore[unresolved-attribute]
+			if windows_build < 22000:
+				# ConPTY is known to crash conhost.exe with STATUS_STACK_BUFFER_OVERRUN (0xc0000409) in ucrtbase.dll on Windows 10 builds.
+				# Use the winpty backend on builds older than Windows 11 (22000).
+				# Can be overridden via the PYWINPTY_BACKEND environment variable.
+				logger.info("Using WinPTY backend to avoid ConPTY crashes on Windows builds < 22000")
+				backend = Backend.WinPTY
+			else:
+				logger.info("Using ConPTY backend on Windows build %r", windows_build)
+				backend = Backend.ConPTY
+
+			# posix=False to keep backslashes in paths like C:\Windows\System32\cmd.exe intact
+			process = PtyProcess.spawn(shlex.split(shell, posix=False), dimensions=(rows, cols), env=sp_env, cwd=cwd, backend=backend)
 			process.fileobj.setblocking(True)  # To counteract socket.setdefaulttimeout(60)
 		except Exception as err:
 			raise RuntimeError(f"Failed to start pty with shell {shell!r}: {err}") from err
