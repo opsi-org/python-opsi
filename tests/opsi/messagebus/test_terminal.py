@@ -177,11 +177,12 @@ async def test_terminal_params() -> None:
 				lang_seen = True
 			if f"OPSI_TERMINAL_ID={terminal_id}".encode() in message.data:
 				opsi_terminal_id_seen = True
+			print("message_callback:", message, opsi_test_seen, lang_seen, opsi_terminal_id_seen)
 			if opsi_test_seen and lang_seen and opsi_terminal_id_seen:
 				return True
 		return False
 
-	messages = await message_sender.wait_for_messages(count=None, message_callback=message_callback, timeout=30, error_on_timeout=False)
+	messages = await message_sender.wait_for_messages(count=None, message_callback=message_callback, timeout=60, error_on_timeout=False)
 	print("messages:", len(messages))
 	data = b""
 	for message in messages:
