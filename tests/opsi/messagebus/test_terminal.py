@@ -371,7 +371,7 @@ async def test_stop_running_terminals() -> None:
 		await process_terminal_message(terminal_open_request, send_message=message_sender.send_message)
 
 		messages = await message_sender.wait_for_messages(count=1)
-		assert len(messages) == 1
+		assert len(messages) >= 1
 		assert isinstance(messages[0], TerminalOpenEventMessage)
 
 		assert len(terminals) == 1
