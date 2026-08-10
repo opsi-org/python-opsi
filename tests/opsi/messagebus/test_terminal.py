@@ -19,6 +19,7 @@ import pytest
 
 from opsi.opsi.messagebus._message import (
 	Error,
+	Message,
 	TerminalCloseEventMessage,
 	TerminalCloseRequestMessage,
 	TerminalDataReadMessage,
@@ -165,7 +166,22 @@ async def test_terminal_params() -> None:
 	)
 	await process_terminal_message(message=terminal_data_write_message, send_message=message_sender.send_message, sender=sender)
 
-	messages = await message_sender.wait_for_messages(count=50, timeout=15, error_on_timeout=False)
+	opsi_test_seen, lang_seen, opsi_terminal_id_seen = False, False, False
+
+	def message_callback(message: Message) -> bool:
+		nonlocal opsi_test_seen, lang_seen, opsi_terminal_id_seen
+		if isinstance(message, TerminalDataReadMessage):
+			if b"OPSI_TEST=foo" in message.data:
+				opsi_test_seen = True
+			if b"LANG=de" in message.data:
+				lang_seen = True
+			if f"OPSI_TERMINAL_ID={terminal_id}".encode() in message.data:
+				opsi_terminal_id_seen = True
+			if opsi_test_seen and lang_seen and opsi_terminal_id_seen:
+				return True
+		return False
+
+	messages = await message_sender.wait_for_messages(count=None, message_callback=message_callback, timeout=30, error_on_timeout=False)
 	print("messages:", len(messages))
 	data = b""
 	for message in messages:
