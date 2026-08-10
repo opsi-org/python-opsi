@@ -761,7 +761,9 @@ def test_path_cleanup() -> None:
 			r"C:\WINDOWS\System32\WindowsPowerShell\v1.0",
 			r"C:\Program Files (x86)\Git\cmd",
 		]
-		cmd = ["timeout", "1"]
+		# Do not use "timeout" here, it fails with "ERROR: Input redirection is not supported"
+		# if stdin is not an interactive console (as in CI runners).
+		cmd = ["ping", "-n", "2", "127.0.0.1"]
 
 	with environment({"PATH": os.pathsep.join(path)}):
 		assert os.environ["PATH"].split(os.pathsep) == path
