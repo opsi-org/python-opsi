@@ -188,8 +188,6 @@ async def test_terminal_params() -> None:
 		assert isinstance(message, TerminalDataReadMessage)
 		data += message.data
 	lines = data.decode("utf-8").split("\r\n")
-	for line in lines:
-		print("line:", line)
 
 	assert "OPSI_TEST=foo" in lines
 	assert "LANG=de" in lines
