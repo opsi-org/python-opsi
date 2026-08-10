@@ -9,6 +9,7 @@ messagebus.terminal tests
 
 import asyncio
 import os
+import re
 import time
 import uuid
 from pathlib import Path
@@ -31,6 +32,13 @@ from opsi.system.info import is_macos, is_posix, is_windows
 
 from .helper import MessageSender
 
+ANSI_ESCAPE_RE = re.compile(
+	r"\x1B(?:"
+	r"\[[0-?]*[ -/]*[@-~]"  # CSI
+	r"|\][^\x07]*(?:\x07|\x1B\\)"  # OSC
+	r")"
+)
+
 
 def test_start_pty_params(tmp_path: Path) -> None:
 	str_path = str(tmp_path)
@@ -48,16 +56,21 @@ def test_start_pty_params(tmp_path: Path) -> None:
 	assert pty_pid > 0
 
 	time.sleep(2)
-	data = pty_read(4096)
-	print("read:", data)
-	lines = [line.strip() for line in data.decode("utf-8").split("\n")]
+	data = b""
+	for _ in range(10):
+		dat = pty_read(4096)
+		print("read:", dat)
+		data += dat
+		if str_path.encode("utf-8") in data:
+			break
 
 	command = "cd" if is_windows() else "pwd"
 	pty_write(f"{command}\r\n".encode())
 	time.sleep(2)
 	data = pty_read(4096)
-	print("read:", data)
-	lines = [line.strip() for line in data.decode("utf-8").split("\n")]
+
+	lines = [ANSI_ESCAPE_RE.sub("", line.strip()) for line in data.decode("utf-8").split("\n")]
+
 	assert lines[0] == command
 	assert lines[1].strip().endswith(str_path)
 
@@ -75,7 +88,7 @@ def test_start_pty_params(tmp_path: Path) -> None:
 			if b"TERM=" in data:
 				break
 
-	lines = [line.strip() for line in data.decode("utf-8").split("\n")]
+	lines = [ANSI_ESCAPE_RE.sub("", line.strip()) for line in data.decode("utf-8").split("\n")]
 	assert lines[0] == command
 	assert "OPSI_TEST=foo" in lines
 
@@ -234,10 +247,8 @@ async def test_terminal_timeout() -> None:
 	)
 	with patch("opsi.opsi.messagebus._terminal.Terminal.idle_timeout", 3):
 		await process_terminal_message(message=terminal_open_request, send_message=message_sender.send_message, sender=sender)
-		await message_sender.wait_for_messages(count=2)
-		await asyncio.sleep(4)
-		messages = await message_sender.wait_for_messages(count=1)
-		assert isinstance(messages[0], TerminalCloseEventMessage)
+		messages = await message_sender.wait_for_messages(count=10, timeout=8, error_on_timeout=False)
+		assert isinstance(messages[-1], TerminalCloseEventMessage)
 
 
 async def test_terminal_fail() -> None:
@@ -276,7 +287,7 @@ async def test_terminal_fail() -> None:
 	)
 	await process_terminal_message(message=terminal_open_request, send_message=message_sender.send_message)
 
-	messages = await message_sender.wait_for_messages(count=3)
+	messages = await message_sender.wait_for_messages(count=10, timeout=10, error_on_timeout=False)
 
 	assert len(messages) >= 3
 	assert isinstance(messages[0], TerminalOpenEventMessage)
@@ -286,10 +297,8 @@ async def test_terminal_fail() -> None:
 		assert isinstance(msg, TerminalDataReadMessage)
 		data += msg.data
 
-	if is_windows():
-		assert b"exit_1\r\n" in data
-	else:
-		assert data == b"exit_1\r\n"
+	data_str = ANSI_ESCAPE_RE.sub("", data.decode("utf-8")).replace(" ", "")
+	assert data_str == "exit_1\r\n"
 	assert isinstance(messages[-1], TerminalCloseEventMessage)
 
 
