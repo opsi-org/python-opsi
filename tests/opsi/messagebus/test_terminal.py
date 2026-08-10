@@ -182,13 +182,13 @@ async def test_terminal_params() -> None:
 				return True
 		return False
 
-	messages = await message_sender.wait_for_messages(count=None, message_callback=message_callback, timeout=60, error_on_timeout=False)
-	print("messages:", len(messages))
+	messages = await message_sender.wait_for_messages(count=None, message_callback=message_callback, timeout=15, error_on_timeout=False)
+	print("number of messages:", len(messages))
 	data = b""
 	for message in messages:
 		assert isinstance(message, TerminalDataReadMessage)
 		data += message.data
-	lines = data.decode("utf-8").split("\r\n")
+	lines = [ANSI_ESCAPE_RE.sub("", line.strip()) for line in data.decode("utf-8").split("\n")]
 
 	assert "OPSI_TEST=foo" in lines
 	assert "LANG=de" in lines
