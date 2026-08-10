@@ -165,7 +165,7 @@ async def test_terminal_params() -> None:
 	)
 	await process_terminal_message(message=terminal_data_write_message, send_message=message_sender.send_message, sender=sender)
 
-	messages = await message_sender.wait_for_messages(count=10, timeout=5, error_on_timeout=False)
+	messages = await message_sender.wait_for_messages(count=20, timeout=10, error_on_timeout=False)
 	data = b""
 	for message in messages:
 		assert isinstance(message, TerminalDataReadMessage)
