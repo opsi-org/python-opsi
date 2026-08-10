@@ -58,13 +58,11 @@ def test_start_pty_params(tmp_path: Path) -> None:
 
 	time.sleep(2)
 	data = b""
-	for num in range(10):
+	for _ in range(10):
 		dat = pty_read(4096)
 		print("read:", dat)
 		data += dat
-		if str_path.encode("utf-8") in data:
-			break
-		if is_macos() and num >= 1:
+		if is_macos() or str_path.encode("utf-8") in data:
 			break
 
 	command = "cd" if is_windows() else "pwd"
