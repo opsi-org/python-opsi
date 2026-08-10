@@ -75,8 +75,7 @@ if is_windows():
 				logger.info("Using ConPTY backend on Windows build %r", windows_build)
 				backend = Backend.ConPTY
 
-			# posix=False to keep backslashes in paths like C:\Windows\System32\cmd.exe intact
-			process = PtyProcess.spawn(shlex.split(shell, posix=False), dimensions=(rows, cols), env=sp_env, cwd=cwd, backend=backend)
+			process = PtyProcess.spawn(shlex.split(shell), dimensions=(rows, cols), env=sp_env, cwd=cwd, backend=backend)
 			process.fileobj.setblocking(True)  # To counteract socket.setdefaulttimeout(60)
 		except Exception as err:
 			raise RuntimeError(f"Failed to start pty with shell {shell!r}: {err}") from err
