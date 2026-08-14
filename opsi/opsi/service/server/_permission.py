@@ -24,6 +24,9 @@ if is_linux():
 	_HAS_ROOT_RIGHTS = os.geteuid() == 0
 
 CHMOD_SUPPORTS_FOLLOW_SYMLINKS = os.chmod in os.supports_follow_symlinks
+SET_RIGHTS_FILENAME_EXCLUDES = [
+	".snapshot",
+]
 
 logger = get_logger("opsi")
 
@@ -241,7 +244,7 @@ def set_rights(start_path: str | Path = "/") -> None:
 			# permission.path is sub path of start_path
 			path = str(permission.path)
 
-		if path in processed_path or not os.path.lexists(path):
+		if path in processed_path or not os.path.lexists(path) or os.path.basename(path) in SET_RIGHTS_FILENAME_EXCLUDES:
 			continue
 		processed_path.add(path)
 
