@@ -244,7 +244,7 @@ def set_rights(start_path: str | Path = "/") -> None:
 			# permission.path is sub path of start_path
 			path = str(permission.path)
 
-		if path in processed_path or not os.path.lexists(path) or os.path.basename(path) in SET_RIGHTS_FILENAME_EXCLUDES:
+		if path in processed_path or not os.path.lexists(path):
 			continue
 		processed_path.add(path)
 
@@ -261,7 +261,7 @@ def set_rights(start_path: str | Path = "/") -> None:
 			# logger.debug("Processing '%s'", root)
 			for name in files:
 				abspath = os.path.join(root, name)
-				if abspath in permissions:
+				if abspath in permissions or name in SET_RIGHTS_FILENAME_EXCLUDES:
 					continue
 				# always set ownership
 				# do not set stat bits for symlinks
