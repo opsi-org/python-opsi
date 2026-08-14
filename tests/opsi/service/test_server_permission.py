@@ -244,3 +244,28 @@ def test_set_rights_link(tmp_path: Path) -> None:
 		assert os.stat(link1, follow_symlinks=False).st_mode == orig_stat_link1
 		assert os.stat(link2, follow_symlinks=False).st_mode == orig_stat_link2
 		assert os.stat(file1).st_mode & 0o7777 == 0o660
+
+
+@pytest.mark.linux
+def test_set_rights_excludes(tmp_path: Path) -> None:
+	with opsi_config({"groups.admingroup": "opsiadmin", "groups.fileadmingroup": "opsifileadmins", "depot_user.username": "pcpatch"}):
+		registry = PermissionRegistry()
+
+		registry.remove_permissions()
+
+		dir1 = os.path.join(tmp_path, "dir1")
+		file1 = os.path.join(dir1, "file1")
+		file2 = os.path.join(dir1, ".snapshot")
+
+		os.mkdir(dir1)
+		os.chmod(dir1, 0o777)
+		open(file1, "wb").close()
+		open(file2, "wb").close()
+
+		registry.register_permission(DirPermission(dir1, None, None, 0o600, 0o770, modify_file_exe=True))
+
+		set_rights(dir1)
+		print(os.stat(file1).st_mode & 0o7777)
+		print(os.stat(file2).st_mode & 0o7777)
+		assert os.stat(file1).st_mode & 0o7777 == 0o600
+		assert os.stat(file2).st_mode & 0o7777 != 0o600

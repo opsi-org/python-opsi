@@ -24,6 +24,9 @@ if is_linux():
 	_HAS_ROOT_RIGHTS = os.geteuid() == 0
 
 CHMOD_SUPPORTS_FOLLOW_SYMLINKS = os.chmod in os.supports_follow_symlinks
+SET_RIGHTS_FILENAME_EXCLUDES = [
+	".snapshot",
+]
 
 logger = get_logger("opsi")
 
@@ -258,7 +261,7 @@ def set_rights(start_path: str | Path = "/") -> None:
 			# logger.debug("Processing '%s'", root)
 			for name in files:
 				abspath = os.path.join(root, name)
-				if abspath in permissions:
+				if abspath in permissions or name in SET_RIGHTS_FILENAME_EXCLUDES:
 					continue
 				# always set ownership
 				# do not set stat bits for symlinks
