@@ -675,30 +675,18 @@ def test_process_arguments() -> None:
 
 @pytest.mark.linux
 @pytest.mark.parametrize(
-	"ld_library_path_orig, ld_library_path, executable_path, expected_ld_library_path",
+	"ld_library_path_orig, ld_library_path, expected_ld_library_path",
 	(
 		# LD_LIBRARY_PATH_ORIG is set to a valid value, LD_LIBRARY_PATH must be set to that value
-		("/orig/ld/path", "/usr/lib/opsi_component", "/usr/lib/opsi_component/bin/executable", "/orig/ld/path"),
-		("/orig/ld/path", "/some/path:/usr/lib/opsiclientd:/usr/lib/opsiconfd", "/usr/lib/opsi_component/bin/executable", "/orig/ld/path"),
+		("/orig/ld/path", "/some/path:/usr/lib/opsiclientd:/usr/lib/opsiconfd", "/orig/ld/path"),
 		# LD_LIBRARY_PATH_ORIG is not set, LD_LIBRARY_PATH must be removed
-		(None, "/usr/lib/opsi_component", "/usr/lib/opsi_component/bin/executable", None),
-		# LD_LIBRARY_PATH_ORIG is empty, LD_LIBRARY_PATH must be removed
-		("", "/usr/lib/opsi_component", "/usr/lib/opsi_component/bin/executable", None),
-		# LD_LIBRARY_PATH_ORIG is empty, LD_LIBRARY_PATH is valid and must be kept
-		("", "/some/path", "/usr/lib/opsi_component/bin/executable", "/some/path"),
-		# LD_LIBRARY_PATH_ORIG is empty, LD_LIBRARY_PATH is valid and must be kept
-		("", "/some/path: /other/path", "/usr/lib/opsi_component/bin/executable", "/some/path:/other/path"),
-		# LD_LIBRARY_PATH_ORIG is not set, executable path must be removed fom LD_LIBRARY_PATH
-		("", "/some/path:/usr/lib/opsi_component", "/usr/lib/opsi_component/bin/executable", "/some/path"),
-		# LD_LIBRARY_PATH_ORIG is not set, hardcoded excludes must be removed fom LD_LIBRARY_PATH
-		("", "/some/path:/usr/lib/opsiclientd:/usr/lib/opsiconfd", "/usr/lib/opsi_component/bin/executable", "/some/path"),
-		# LD_LIBRARY_PATH_ORIG is not set, hardcoded excludes must not be added to LD_LIBRARY_PATH
-		("", "/some/path:/usr/lib:/usr/lib/opsiclientd/_internal", "mount", "/some/path:/usr/lib"),
+		(None, "/usr/lib/opsi_component", None),
+		# LD_LIBRARY_PATH_ORIG is empty, LD_LIBRARY_PATH must be removed (never fall back to current value)
+		("", "/some/path:/usr/lib/opsiclientd:/usr/lib/opsiconfd", ""),
+		("", "/some/path:/usr/lib:/usr/lib/opsiclientd/_internal", ""),
 	),
 )
-def test_process_ld_library_path(
-	ld_library_path_orig: str, ld_library_path: str, executable_path: str, expected_ld_library_path: str
-) -> None:
+def test_process_ld_library_path(ld_library_path_orig: str, ld_library_path: str, expected_ld_library_path: str) -> None:
 	frozen = getattr(sys, "frozen", False)
 	cast(Any, sys).frozen = True
 	try:
@@ -708,7 +696,6 @@ def test_process_ld_library_path(
 		if ld_library_path is not None:
 			env_vars["LD_LIBRARY_PATH"] = ld_library_path
 		with (
-			patch("opsi.process._process._get_executable_path", lambda: Path(executable_path)),
 			environment(env_vars),
 		):
 			assert os.environ.get("LD_LIBRARY_PATH_ORIG") == ld_library_path_orig
