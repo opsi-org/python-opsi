@@ -14,6 +14,7 @@ from opsi.opsi.service.model.object._object import (
 	AuditLogConfig,
 	AuditLogEventType,
 	AuditLogProductActionRequest,
+	AuditLogProductPropertyState,
 	AuditSoftware,
 	AuditSoftwareOnClient,
 	AuditSoftwareToLicensePool,
