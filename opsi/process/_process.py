@@ -29,7 +29,7 @@ from typing import Literal, Self
 from opsi.logging import LOG_TRACE, get_logger, is_log_level_enabled
 from opsi.retry import Retry, RetryConfig, RetryConfigType, get_retry_config
 from opsi.system.file.temp import TempFile
-from opsi.system.info import is_linux, is_posix, is_windows
+from opsi.system.info import is_linux, is_windows
 from opsi.util.pattern import MappedStrEnum
 
 LD_LIBRARY_EXCLUDE_LIST = ["/usr/lib/opsiclientd", "/usr/lib/opsiconfd", "/usr/lib/opsi-agent"]
@@ -72,10 +72,6 @@ class DecodingErrors(MappedStrEnum):
 	_NAME = enum.nonmember("decoding error handling mode")
 
 
-def _get_executable_path() -> Path:
-	return Path(sys.executable).resolve().parent
-
-
 def get_subprocess_environment(env: Mapping[str, str] | None = None) -> dict[str, str]:
 	if env is None:
 		env = os.environ.copy()
@@ -83,29 +79,16 @@ def get_subprocess_environment(env: Mapping[str, str] | None = None) -> dict[str
 		env = dict(env)
 	logger.trace("Original environment: %s", env)
 
-	executable_path = _get_executable_path()
 	remove_vars = ["OPENSSL_MODULES"]
 	if getattr(sys, "frozen", False):
 		# Running in pyinstaller / frozen
-		pyi_home = env.get("_PYI_APPLICATION_HOME_DIR") or env.get("_MEIPASS2") or ""
-		if is_posix():
-			ldlp = []
-			for entry in (env.get("LD_LIBRARY_PATH_ORIG") or env.get("LD_LIBRARY_PATH") or "").split(os.pathsep):
-				entry = entry.strip()
-				if not entry:
-					continue
-				if entry == pyi_home:
-					continue
-				entry_path = Path(entry)
-				if any(entry_path.is_relative_to(Path(p)) for p in LD_LIBRARY_EXCLUDE_LIST):
-					continue
-				if executable_path.is_relative_to(entry_path):
-					continue
-				ldlp.append(entry)
-			if ldlp:
-				ldlp_str = os.pathsep.join(ldlp)
-				logger.debug("Setting LD_LIBRARY_PATH to '%s' in env for subprocess", ldlp_str)
-				env["LD_LIBRARY_PATH"] = ldlp_str
+
+		if is_linux():
+			# https://www.pyinstaller.org/en/stable/common-issues-and-pitfalls.html#linux-and-unix-like-oses
+			ldlp_orig = env.get("LD_LIBRARY_PATH_ORIG")
+			if ldlp_orig is not None:
+				logger.debug("Restoring LD_LIBRARY_PATH to '%s' in env for subprocess", ldlp_orig)
+				env["LD_LIBRARY_PATH"] = ldlp_orig
 			else:
 				logger.debug("Removing LD_LIBRARY_PATH from env for subprocess")
 				env.pop("LD_LIBRARY_PATH", None)
