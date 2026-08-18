@@ -82,6 +82,7 @@ __all__ = (
 	"AuditLogConfig",
 	"AuditLogEventType",
 	"AuditLogProductActionRequest",
+	"AuditLogProductPropertyState",
 	"AuditSoftware",
 	"AuditSoftwareOnClient",
 	"AuditSoftwareToLicensePool",
