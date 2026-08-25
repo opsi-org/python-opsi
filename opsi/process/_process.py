@@ -865,7 +865,7 @@ class Process:
 				if exit_code is not None:
 					self._exit_code = exit_code
 					if self._success_exit_codes and self._exit_code is not None and self._exit_code not in self._success_exit_codes:
-						raise ProcessError(f"Process exited with code {self._exit_code}", process=self)
+						raise ProcessError(f"Process with PID {self._pid} exited with code {self._exit_code}", process=self)
 					logger.info("Process %r with PID %d exited with code %d", self.get_command(), self._pid, self._exit_code)
 					return
 

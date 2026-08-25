@@ -926,7 +926,7 @@ def test_process_script_exit_on_error_error() -> None:
 
 
 def test_process_error(tmp_path: Path) -> None:
-	with pytest.raises(ProcessError, match="Process exited with code 3") as exc_info, Process(script="exit 3"):
+	with pytest.raises(ProcessError, match=r"Process with PID \d+ exited with code 3") as exc_info, Process(script="exit 3"):
 		pass
 	assert exc_info.value.script == ("@echo off" + os.linesep if is_windows() else "") + "exit 3" + os.linesep
 	assert exc_info.value.exit_code == 3
@@ -976,13 +976,13 @@ def test_process_error_max_output_length(tmp_path: Path) -> None:
 		script = f"cat {stderr_file} 1>&2 && cat {stdout_file} && exit 1"
 
 	with patch.object(ProcessError, "max_output_length", 100):
-		with pytest.raises(ProcessError, match="Process exited with code 1") as exc_info, Process(script=script):
+		with pytest.raises(ProcessError, match=r"Process with PID \d+ exited with code 1") as exc_info, Process(script=script) as proc:
 			pass
 
 		assert exc_info.value.exit_code == 1
 		assert exc_info.value.output == stdout_data + stderr_data
 		err_lines = str(exc_info.value).split("\n")
-		assert err_lines[0] == "Process exited with code 1"
+		assert err_lines[0] == f"Process with PID {proc.pid} exited with code 1"
 		assert err_lines[1].startswith("Command:")
 		assert err_lines[2] == "Exit code: 1"
 		assert err_lines[3] == "Output:"
@@ -1044,7 +1044,7 @@ def test_run_script(tmp_path: Path) -> None:
 	assert proc.read_stderr_bytes(truncate=False).strip() == stderr_data.encode("ascii")
 	assert proc.read_stdout_bytes(truncate=False).strip() == stdout_data.encode("ascii")
 
-	with pytest.raises(ProcessError, match="Process exited with code 3") as exc_info:
+	with pytest.raises(ProcessError, match=r"Process with PID \d+ exited with code 3") as exc_info:
 		run_script(script="exit 3")
 	assert exc_info.value.script == ("@echo off" + os.linesep if is_windows() else "") + "exit 3" + os.linesep
 
