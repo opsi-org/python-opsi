@@ -751,7 +751,10 @@ class Process:
 			if self._detach:
 				from subprocess import CREATE_NEW_PROCESS_GROUP, DETACHED_PROCESS
 
+				from opsi.process._windows import ProcessCreationFlags
+
 				creationflags |= DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+				logger.debug("Starting process detached with creation flags: %s", ProcessCreationFlags(creationflags).name)
 
 			if self._session_id is not None:
 				from opsi.process._windows import patch_create_process

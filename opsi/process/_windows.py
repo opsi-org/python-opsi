@@ -14,7 +14,7 @@ if sys.platform != "win32":
 
 import _winapi
 import os
-from enum import IntEnum
+from enum import IntEnum, IntFlag
 from typing import Any
 
 import ntsecuritycon
@@ -65,6 +65,41 @@ def _get_process_user_token(process_id: int, duplicate: bool = False) -> int:
 CreateProcessOrig = _winapi.CreateProcess
 
 
+class ProcessCreationFlags(IntFlag):
+	"""
+	Process creation flags for CreateProcess.
+
+	https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
+	"""
+
+	DEBUG_PROCESS = 0x00000001
+	DEBUG_ONLY_THIS_PROCESS = 0x00000002
+	CREATE_SUSPENDED = 0x00000004
+	DETACHED_PROCESS = 0x00000008
+	CREATE_NEW_CONSOLE = 0x00000010
+	NORMAL_PRIORITY_CLASS = 0x00000020
+	IDLE_PRIORITY_CLASS = 0x00000040
+	HIGH_PRIORITY_CLASS = 0x00000080
+	REALTIME_PRIORITY_CLASS = 0x00000100
+	CREATE_NEW_PROCESS_GROUP = 0x00000200
+	CREATE_UNICODE_ENVIRONMENT = 0x00000400
+	CREATE_SEPARATE_WOW_VDM = 0x00000800
+	CREATE_SHARED_WOW_VDM = 0x00001000
+	CREATE_FORCEDOS = 0x00002000
+	BELOW_NORMAL_PRIORITY_CLASS = 0x00004000
+	ABOVE_NORMAL_PRIORITY_CLASS = 0x00008000
+	INHERIT_PARENT_AFFINITY = 0x00010000
+	CREATE_PROTECTED_PROCESS = 0x00040000
+	EXTENDED_STARTUPINFO_PRESENT = 0x00080000
+	PROCESS_MODE_BACKGROUND_BEGIN = 0x00100000
+	PROCESS_MODE_BACKGROUND_END = 0x00200000
+	CREATE_SECURE_PROCESS = 0x00400000
+	CREATE_BREAKAWAY_FROM_JOB = 0x01000000
+	CREATE_PRESERVE_CODE_AUTHZ_LEVEL = 0x02000000
+	CREATE_DEFAULT_ERROR_MODE = 0x04000000
+	CREATE_NO_WINDOW = 0x08000000
+
+
 def CreateProcess(
 	__application_name: str | None,
 	__command_line: str | None,
@@ -97,6 +132,8 @@ def CreateProcess(
 	process_name = "winlogon.exe" if session_elevated else "explorer.exe"
 
 	logger.info("Creating process in session %d (elevated: %s, desktop: %r)", session_id, session_elevated, session_desktop)
+	logger.debug("Process creation flags: %s", ProcessCreationFlags(__creation_flags).name)
+
 	proc = _get_process(process_name=process_name, session_id=session_id)
 	if not proc:
 		raise RuntimeError(f"Failed to find '{process_name}' in session {session_id}")
