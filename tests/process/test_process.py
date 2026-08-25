@@ -10,6 +10,7 @@ import sys
 import time
 from collections.abc import Mapping
 from contextlib import nullcontext
+from enum import IntFlag
 from getpass import getuser
 from pathlib import Path
 from subprocess import list2cmdline
@@ -138,6 +139,23 @@ def test_get_interpreter_command_powershell_hide_window_false() -> None:
 	]
 
 
+def _patch_process_os_name(monkeypatch: pytest.MonkeyPatch, os_name: str) -> None:
+	"""
+	Patch ``os.name`` as seen by ``opsi.process._process`` without touching the global ``os`` module.
+
+	Patching the global ``os.name`` breaks ``pathlib`` (and thereby pytest's failure reporting)
+	because ``pathlib.Path`` would try to instantiate ``WindowsPath`` on a POSIX system.
+	"""
+
+	class OsProxy:
+		name = os_name
+
+		def __getattr__(self, attr: str) -> Any:
+			return getattr(os, attr)
+
+	monkeypatch.setattr("opsi.process._process.os", OsProxy())
+
+
 @pytest.mark.parametrize("hide_window", [True, False])
 def test_process_hide_window_sets_windows_startupinfo(hide_window: bool, monkeypatch: pytest.MonkeyPatch) -> None:
 	class FakeStartupInfo:
@@ -175,7 +193,7 @@ def test_process_hide_window_sets_windows_startupinfo(hide_window: bool, monkeyp
 	def fake_get_subprocess_environment(env: Mapping[str, str] | None = None) -> dict[str, str]:
 		return dict(env) if env else {}
 
-	monkeypatch.setattr(os, "name", "nt")
+	_patch_process_os_name(monkeypatch, "nt")
 	monkeypatch.setitem(sys.modules, "subprocess", fake_subprocess_module)
 	monkeypatch.setattr("opsi.process._process.subprocess", fake_subprocess_module)
 	monkeypatch.setattr("opsi.process._process.Popen", FakePopen)
@@ -237,7 +255,7 @@ def test_process_detach_sets_popen_flags(
 	def fake_get_subprocess_environment(env: Mapping[str, str] | None = None) -> dict[str, str]:
 		return dict(env) if env else {}
 
-	monkeypatch.setattr(os, "name", os_name)
+	_patch_process_os_name(monkeypatch, os_name)
 	monkeypatch.setattr("opsi.process._process.Popen", FakePopen)
 	monkeypatch.setattr("opsi.process._process.get_subprocess_environment", fake_get_subprocess_environment)
 	if os_name == "nt":
@@ -245,6 +263,12 @@ def test_process_detach_sets_popen_flags(
 		cast(Any, fake_subprocess_module).DETACHED_PROCESS = 1
 		cast(Any, fake_subprocess_module).CREATE_NEW_PROCESS_GROUP = 2
 		monkeypatch.setitem(sys.modules, "subprocess", fake_subprocess_module)
+		# opsi.process._windows cannot be imported on non-Windows platforms
+		fake_windows_module = ModuleType("opsi.process._windows")
+		cast(Any, fake_windows_module).ProcessCreationFlags = IntFlag(
+			"ProcessCreationFlags", {"DETACHED_PROCESS": 1, "CREATE_NEW_PROCESS_GROUP": 2}
+		)
+		monkeypatch.setitem(sys.modules, "opsi.process._windows", fake_windows_module)
 		monkeypatch.setattr("opsi.process._process.disable_file_system_redirection", nullcontext)
 
 	proc = run_command(["cmd", "/c", "exit", "0"], capture_output="none", hide_window=False, detach=detach)
@@ -1345,13 +1369,13 @@ def _fake_kernel32(monkeypatch: pytest.MonkeyPatch, *, disable_success: int) -> 
 	"""Patch os.name and ctypes.windll to simulate a Windows environment with a mocked kernel32."""
 	kernel32 = Mock()
 	kernel32.Wow64DisableWow64FsRedirection.return_value = disable_success
-	monkeypatch.setattr(os, "name", "nt")
+	_patch_process_os_name(monkeypatch, "nt")
 	monkeypatch.setattr(ctypes, "windll", SimpleNamespace(kernel32=kernel32), raising=False)
 	return kernel32
 
 
 def test_disable_file_system_redirection_is_noop_on_non_windows(monkeypatch: pytest.MonkeyPatch) -> None:
-	monkeypatch.setattr(os, "name", "posix")
+	_patch_process_os_name(monkeypatch, "posix")
 
 	# Must not touch ctypes.windll (which does not exist on non-Windows platforms)
 	with disable_file_system_redirection():
