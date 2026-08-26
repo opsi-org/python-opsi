@@ -168,7 +168,7 @@ class OpsiPackage:
 			if control_toml.exists():
 				self.parse_control_file(control_toml)
 				if control.exists() and self.compare_version_with_control_file(control, ">"):
-					raise RuntimeError("Control file is newer. Please update the control.toml file.")
+					raise RuntimeError("control file contains higher version than control.toml. Please update the control.toml file.")
 				return control_toml
 
 		# Sort custom first
