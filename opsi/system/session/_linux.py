@@ -49,11 +49,16 @@ class _Logind:
 			function.restype = ctypes.c_int
 		self._lib.sd_pid_get_session.argtypes = [ctypes.c_int, ctypes.POINTER(ctypes.c_char_p)]
 		self._lib.sd_pid_get_session.restype = ctypes.c_int
+		self._lib.sd_pid_get_owner_uid.argtypes = [ctypes.c_int, ctypes.POINTER(ctypes.c_uint)]
+		self._lib.sd_pid_get_owner_uid.restype = ctypes.c_int
+		self._lib.sd_uid_get_display.argtypes = [ctypes.c_uint, ctypes.POINTER(ctypes.c_char_p)]
+		self._lib.sd_uid_get_display.restype = ctypes.c_int
 		self._lib.sd_session_get_uid.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_uint)]
 		self._lib.sd_session_get_uid.restype = ctypes.c_int
 		self._lib.sd_session_is_active.argtypes = [ctypes.c_char_p]
 		self._lib.sd_session_is_active.restype = ctypes.c_int
 		self._sessions: dict[str, _LoginSession | None] = {}
+		self._user_display_sessions: dict[int, str] = {}
 
 	def _string(self, function: Callable[..., int], argument: bytes | int) -> str:
 		value = ctypes.c_char_p()
@@ -66,10 +71,21 @@ class _Logind:
 				self._free(value)
 
 	def session_for_pid(self, pid: int) -> _LoginSession | None:
-		"""Return logind metadata for the PID, never for an environment-supplied ID."""
+		"""Resolve a process's session, falling back to its systemd owner's primary display session."""
 		session_id = self._string(self._lib.sd_pid_get_session, pid)
+		owner_uid: int | None = None
 		if not session_id:
-			return None
+			# GNOME services run under user@UID.service, outside session-N.scope.
+			# Use logind ownership, never USER/XDG_SESSION_ID or the calling SSH session.
+			owner = ctypes.c_uint()
+			if self._lib.sd_pid_get_owner_uid(pid, ctypes.byref(owner)) < 0:
+				return None
+			owner_uid = owner.value
+			if owner_uid not in self._user_display_sessions:
+				self._user_display_sessions[owner_uid] = self._string(self._lib.sd_uid_get_display, owner_uid)
+			session_id = self._user_display_sessions[owner_uid]
+			if not session_id:
+				return None
 		if session_id not in self._sessions:
 			encoded_id = os.fsencode(session_id)
 			uid = ctypes.c_uint()
@@ -84,7 +100,10 @@ class _Logind:
 					is_console=self._string(self._lib.sd_session_get_seat, encoded_id) == "seat0"
 					and self._lib.sd_session_is_active(encoded_id) > 0,
 				)
-		return self._sessions[session_id]
+		session = self._sessions[session_id]
+		if session and owner_uid is not None and session.uid != owner_uid:
+			return None
+		return session
 
 
 def _x11_display(display: str) -> str:
@@ -160,11 +179,13 @@ def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool
 
 	Notes
 	-----
-	Console detection uses logind's active session on seat0; without that metadata
-		no session is guessed to be the console. Usability is advisory: socket liveness,
-		X11 authentication and remote display connectivity are not probed. Discovery
-		cannot see processes whose environments are inaccessible and is not a security
-		boundary for the contents of those environments. IDs may be reused after logout.
+	Console detection uses logind's active session on seat0. Processes outside a
+	login session scope (e.g. GNOME user services) use their systemd owner's primary
+	display session. Without that metadata no session is guessed to be the console.
+	Usability is advisory: socket liveness, X11 authentication and remote display
+	connectivity are not probed. Discovery cannot see processes whose environments
+	are inaccessible and is not a security boundary for the contents of those
+	environments. IDs may be reused after logout.
 	"""
 	try:
 		logind: _Logind | None = _Logind()

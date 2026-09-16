@@ -401,17 +401,31 @@ def test_linux_wayland_real_socket(linux_display_processes: Callable[..., Mock],
 
 
 @pytest.mark.linux
+@pytest.mark.parametrize("user_manager", [False, True])
+@pytest.mark.parametrize("session_type", ["x11", "wayland"])
 @pytest.mark.parametrize("seat, active, expected", [(b"seat0", 1, True), (b"seat0", 0, False), (b"seat1", 1, False), (b"", 1, False)])
-def test_linux_logind_reads_trusted_metadata_and_frees_strings(seat: bytes, active: int, expected: bool) -> None:
-	"""The optional native interface handles returned strings and caches session metadata."""
+def test_linux_logind_reads_trusted_metadata_and_frees_strings(
+	seat: bytes, active: int, expected: bool, user_manager: bool, session_type: str
+) -> None:
+	"""Native lookups recognize session-scope and GNOME user-manager processes alike."""
 	from opsi.system.session._linux import _Logind
 
+	process = Mock(pid=125)
+	process.environ.return_value = {
+		"DISPLAY": ":0",
+		"WAYLAND_DISPLAY": "/run/user/1000/wayland-0",
+		"XDG_SESSION_TYPE": session_type,
+		"XDG_SESSION_ID": "forged",
+		"XAUTHORITY": "/mock/authority",
+	}
+	process.uids.return_value = SimpleNamespace(effective=1000)
 	library = Mock()
 	libc = Mock()
 	# Keep the backing bytes alive while the fake native API exposes their pointers.
 	values = {
 		"sd_pid_get_session": b"c1",
-		"sd_session_get_type": b"x11",
+		"sd_uid_get_display": b"c1",
+		"sd_session_get_type": session_type.encode(),
 		"sd_session_get_class": b"user",
 		"sd_session_get_display": b":0",
 		"sd_session_get_seat": seat,
@@ -429,17 +443,37 @@ def test_linux_logind_reads_trusted_metadata_and_frees_strings(seat: bytes, acti
 
 	for name, value in values.items():
 		getattr(library, name).side_effect = partial(set_string, value)
+	if user_manager:
+		library.sd_pid_get_session.side_effect = None
+		library.sd_pid_get_session.return_value = -61
+	library.sd_pid_get_owner_uid.side_effect = set_uid
 	library.sd_session_get_uid.side_effect = set_uid
 	library.sd_session_is_active.return_value = active
 	with patch("opsi.system.session._linux.ctypes.CDLL", side_effect=[library, libc]):
 		logind = _Logind()
 		session = logind.session_for_pid(123)
 		assert session is not None
-		assert (session.uid, session.session_type, session.session_class, session.display) == (1000, "x11", "user", ":0")
+		assert (session.uid, session.session_type, session.session_class, session.display) == (1000, session_type, "user", ":0")
 		assert session.is_console is expected
 		assert logind.session_for_pid(124) is session
+		with (
+			patch("opsi.system.session._linux._Logind", return_value=logind),
+			patch("opsi.system.session._linux._is_usable", return_value=True),
+			patch("opsi.system.session._linux.psutil.process_iter", return_value=[process]),
+			patch("opsi.system.session._linux.pwd.getpwuid", return_value=SimpleNamespace(pw_name="user", pw_dir="/home/user")),
+		):
+			displays = get_display_sessions()
+		assert len(displays) == 1
+		assert displays[0].is_current_console_session is expected
 	library.sd_session_get_uid.assert_called_once()
-	assert libc.free.call_count == 6
+	if user_manager:
+		library.sd_uid_get_display.assert_called_once()
+		assert library.sd_uid_get_display.call_args.args[0] == 1000
+		assert libc.free.call_count == 5
+	else:
+		library.sd_pid_get_owner_uid.assert_not_called()
+		library.sd_uid_get_display.assert_not_called()
+		assert libc.free.call_count == 7
 
 
 @pytest.mark.linux
@@ -449,7 +483,64 @@ def test_linux_logind_missing_session_does_not_free_null() -> None:
 
 	library = Mock()
 	library.sd_pid_get_session.return_value = -61
+	library.sd_pid_get_owner_uid.return_value = -61
 	libc = Mock()
 	with patch("opsi.system.session._linux.ctypes.CDLL", side_effect=[library, libc]):
 		assert _Logind().session_for_pid(123) is None
 	libc.free.assert_not_called()
+	library.sd_uid_get_display.assert_not_called()
+
+
+@pytest.mark.linux
+@pytest.mark.parametrize("display_found, session_uid", [(False, 1000), (True, 1001)])
+def test_linux_logind_user_manager_rejects_missing_or_mismatched_session(display_found: bool, session_uid: int) -> None:
+	"""Fallbacks must not invent a session or associate another user's login session."""
+	from opsi.system.session._linux import _Logind, _LoginSession
+
+	library = Mock()
+	library.sd_pid_get_session.return_value = -61
+	library.sd_uid_get_display.return_value = -61
+	libc = Mock()
+
+	def set_owner(_pid: int, output: Any) -> int:
+		"""Provide trusted systemd user-manager ownership."""
+		ctypes.cast(output, ctypes.POINTER(ctypes.c_uint))[0] = 1000
+		return 0
+
+	def set_display(_uid: int, output: Any) -> int:
+		"""Return a primary session whose metadata will fail the owner check."""
+		ctypes.cast(output, ctypes.POINTER(ctypes.c_char_p))[0] = b"c1"
+		return 0
+
+	library.sd_pid_get_owner_uid.side_effect = set_owner
+	if display_found:
+		library.sd_uid_get_display.side_effect = set_display
+	with patch("opsi.system.session._linux.ctypes.CDLL", side_effect=[library, libc]):
+		logind = _Logind()
+		logind._sessions["c1"] = _LoginSession(session_uid, "wayland", "user", "", True)
+		assert logind.session_for_pid(123) is None
+		assert logind.session_for_pid(124) is None
+	library.sd_uid_get_display.assert_called_once()
+
+
+@pytest.mark.linux
+def test_linux_logind_preserves_direct_ssh_session() -> None:
+	"""A direct SSH session must not be replaced by the user's primary desktop session."""
+	from opsi.system.session._linux import _Logind, _LoginSession
+
+	library = Mock()
+	libc = Mock()
+
+	def set_session(_pid: int, output: Any) -> int:
+		"""Return the existing SSH session from the PID lookup."""
+		ctypes.cast(output, ctypes.POINTER(ctypes.c_char_p))[0] = b"ssh-session"
+		return 0
+
+	library.sd_pid_get_session.side_effect = set_session
+	with patch("opsi.system.session._linux.ctypes.CDLL", side_effect=[library, libc]):
+		logind = _Logind()
+		ssh_session = _LoginSession(1000, "tty", "user", "", False)
+		logind._sessions["ssh-session"] = ssh_session
+		assert logind.session_for_pid(123) is ssh_session
+	library.sd_pid_get_owner_uid.assert_not_called()
+	library.sd_uid_get_display.assert_not_called()
