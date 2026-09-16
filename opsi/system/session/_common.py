@@ -155,9 +155,13 @@ class DisplaySession:
 
 	Parameters:
 	id: The session ID. On Windows, this is the session ID returned by WTSEnumerateSessions.
-		On Linux, this is the value of the DISPLAY or WAYLAND_DISPLAY environment variable.
+		On Linux, this is an opaque endpoint ID: x11:<display> (without a screen suffix)
+		or wayland:<absolute socket path>. IDs are host-local and may be reused after logout.
+		Use environment, not id, to obtain DISPLAY and WAYLAND_DISPLAY for launching applications.
 	is_current_console_session: Whether this session is the current console session.
+		On Linux, this identifies logind's active session on seat0 when known.
 	is_usable: Whether the session is usable for running applications.
+		On Linux, this is a best-effort prerequisite check, not a connection/authentication guarantee.
 	user: The user associated with the session, or None if no user is associated.
 	domain: The domain of the user associated with the session, or None if no domain is associated or applicable.
 	environment: The environment variables associated with the session.

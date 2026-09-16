@@ -3,6 +3,8 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
+from __future__ import annotations
+
 import sys
 
 from opsi.exception import OperatingSystemUnsupportedError
@@ -18,8 +20,9 @@ from opsi.system.session import get_display_sessions
 def prepare_run_in_session(
 	*, session_id: str, command: list[str], env: dict[str, str], as_session_user: bool, full_user_env: bool = False
 ) -> tuple[list[str], dict[str, str], str]:
+	"""Prepare a command and environment for an exact, opaque Linux display endpoint ID."""
 	user = getuser()
-	sessions = [s for s in get_display_sessions() if s.id == session_id]
+	sessions = [s for s in get_display_sessions(one_session_per_user=False) if s.id == session_id]
 	if not sessions:
 		raise RuntimeError(f"Session {session_id!r} not found")
 
@@ -37,6 +40,8 @@ def prepare_run_in_session(
 	for key in ("DISPLAY", "XAUTHORITY", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR"):
 		if key in session.environment:
 			env[key] = session.environment[key]
+		else:
+			env.pop(key, None)
 
 	if as_session_user:
 		# sudo-rs does not support -E

@@ -1146,7 +1146,7 @@ def test_run_process_in_session_windows() -> None:
 			["command", "arg1"],
 			{"COMMON_VAR": "common_original", "HOME": "/root", "PATH": "/original/path", "USER": "root"},
 			DisplaySession(
-				id=":0",
+				id="x11::0",
 				user="test",
 				linux_session_type=LinuxDisplaySessionType.X11,
 				environment={
@@ -1189,7 +1189,7 @@ def test_run_process_in_session_windows() -> None:
 			["command", "arg1"],
 			{"COMMON_VAR": "common_original", "HOME": "/root", "PATH": "/original/path", "USER": "root"},
 			DisplaySession(
-				id="wayland-0",
+				id="wayland:/tmp/xdg_runtime_dir/wayland-0",
 				user="test",
 				linux_session_type=LinuxDisplaySessionType.WAYLAND,
 				environment={
@@ -1235,7 +1235,7 @@ def test_run_process_in_session_windows() -> None:
 			["command", "arg1"],
 			{"COMMON_VAR": "common_original", "HOME": "/root", "PATH": "/original/path", "USER": "root"},
 			DisplaySession(
-				id="wayland-0",
+				id="wayland:/tmp/xdg_runtime_dir/wayland-0",
 				user="test",
 				linux_session_type=LinuxDisplaySessionType.WAYLAND,
 				environment={
@@ -1275,22 +1275,37 @@ def test_prepare_run_in_session(
 ) -> None:
 	from opsi.process._linux import prepare_run_in_session
 
-	with patch("opsi.process._linux.get_display_sessions", lambda: [session]):
+	with patch("opsi.process._linux.get_display_sessions", return_value=[session]) as discover:
 		command, env, _user = prepare_run_in_session(
 			session_id=session.id, command=command, env=env, as_session_user=as_session_user, full_user_env=full_user_env
 		)
 		assert command == expected_command
 		assert env == expected_env
+		discover.assert_called_once_with(one_session_per_user=False)
 
 
 @pytest.mark.linux
 def test_prepare_run_in_session_error() -> None:
 	from opsi.process._linux import prepare_run_in_session
 
-	session = DisplaySession(id=":0", user="test")
-	with patch("opsi.process._linux.get_display_sessions", lambda: [session]):
-		with pytest.raises(RuntimeError, match="Session ':3' not found"):
-			prepare_run_in_session(session_id=":3", command=["echo", "test"], env={}, as_session_user=False, full_user_env=False)
+	session = DisplaySession(id="x11::0", user="test")
+	with patch("opsi.process._linux.get_display_sessions", return_value=[session]):
+		with pytest.raises(RuntimeError, match="Session 'x11::3' not found"):
+			prepare_run_in_session(session_id="x11::3", command=["echo", "test"], env={}, as_session_user=False, full_user_env=False)
+
+
+@pytest.mark.linux
+def test_prepare_run_in_session_removes_unrelated_display_environment() -> None:
+	"""Missing target display variables must not leak from the launching process."""
+	from opsi.process._linux import prepare_run_in_session
+
+	session = DisplaySession(
+		id="wayland:/run/user/1000/wayland-0", user="test", environment={"WAYLAND_DISPLAY": "/run/user/1000/wayland-0"}
+	)
+	env = {"DISPLAY": ":5", "XAUTHORITY": "/root/.Xauthority", "XDG_RUNTIME_DIR": "/run/user/0"}
+	with patch("opsi.process._linux.get_display_sessions", return_value=[session]):
+		_, result, _ = prepare_run_in_session(session_id=session.id, command=["true"], env=env, as_session_user=False)
+	assert result == session.environment
 
 
 @pytest.mark.linux
