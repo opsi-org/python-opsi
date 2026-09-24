@@ -21,11 +21,13 @@ from unittest.mock import Mock, patch
 import psutil
 import pytest
 
+from opsi.logging import LOG_DEBUG, LOG_NOTICE
 from opsi.process import (
 	DecodingErrors,
 	InterpreterType,
 	Process,
 	ProcessError,
+	_process,
 	disable_file_system_redirection,
 	run_command,
 	run_script,
@@ -1036,6 +1038,25 @@ def test_run_command() -> None:
 	finally:
 		if proc.is_running(wait=0):
 			proc.stop()
+
+
+@pytest.mark.parametrize("start_log_level", (None, LOG_DEBUG))
+@pytest.mark.parametrize("function", ("run_command", "run_script", "run_script_file"))
+def test_process_start_log_level(tmp_path: Path, function: str, start_log_level: int | None) -> None:
+	kwargs: dict[str, Any] = {} if start_log_level is None else {"start_log_level": start_log_level}
+	script_file = tmp_path / "script.py"
+	script_file.write_text("print('OPSI')")
+	with patch.object(_process.logger, "log", wraps=_process.logger.log) as log:
+		if function == "run_command":
+			proc = run_command([sys.executable, str(script_file)], **kwargs)
+		elif function == "run_script":
+			proc = run_script(script_file.read_text(), interpreter=[sys.executable], **kwargs)
+		else:
+			proc = run_script_file(script_file, interpreter=[sys.executable], **kwargs)
+	assert proc.get_stdout_text().strip() == "OPSI"
+
+	levels = [call.args[0] for call in log.call_args_list if call.args[1].startswith("Starting process with command")]
+	assert levels == [LOG_NOTICE if start_log_level is None else start_log_level]
 
 
 def test_run_script(tmp_path: Path) -> None:

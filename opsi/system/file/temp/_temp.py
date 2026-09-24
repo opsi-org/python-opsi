@@ -5,7 +5,8 @@
 
 from __future__ import annotations
 
-import random
+import os
+import secrets
 import shutil
 from pathlib import Path
 from tempfile import gettempdir
@@ -19,6 +20,16 @@ logger = get_logger("opsi")
 
 TEMP_DIR_PREFIX = "opsi_temp_"
 TEMP_FILE_PREFIX = "opsi_temp_"
+TEMP_NAME_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789"
+TEMP_NAME_LENGTH = 8
+
+
+def _get_random_name() -> str:
+	"""
+	Return a random name for a temporary file or directory.
+	A cryptographically secure generator is used, so that names cannot be predicted.
+	"""
+	return "".join(secrets.choice(TEMP_NAME_CHARS) for _ in range(TEMP_NAME_LENGTH))
 
 
 class TempDir:
@@ -38,8 +49,7 @@ class TempDir:
 		"""
 		base_dir = Path(base_dir) if base_dir else Path(gettempdir())
 		self._retry_config = retry_config or get_retry_config(RetryConfigType.FILE_IO)
-		name = "".join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=8))
-		self._path = base_dir / f"{TEMP_DIR_PREFIX}{name}"
+		self._path = base_dir / f"{TEMP_DIR_PREFIX}{_get_random_name()}"
 
 	@property
 	def path(self) -> Path:
@@ -122,10 +132,10 @@ class TempFile:
 			If None, uses the default retry configuration for file I/O operations.
 		"""
 		self._retry_config = retry_config or get_retry_config(RetryConfigType.FILE_IO)
-		name = "".join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=8))
-		self._path = Path(gettempdir()) / f"{TEMP_FILE_PREFIX}{name}.{extension}"
+		self._path = Path(gettempdir()) / f"{TEMP_FILE_PREFIX}{_get_random_name()}.{extension}"
 		self._content = content
 		self._encoding = encoding
+		self._created = False
 
 	@property
 	def path(self) -> Path:
@@ -143,16 +153,27 @@ class TempFile:
 		return str(self._path)
 
 	def _create_attempt(self) -> None:
-		self._path.touch(mode=0o600, exist_ok=True)
+		flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_BINARY", 0)
+		if not self._created:
+			# Fail if the file already exists, so that a file or symlink planted by someone else is never used.
+			# Once created, the file is reused (repeated create() calls or a retry after a failed write).
+			flags |= os.O_EXCL
+		fd = os.open(self._path, flags, 0o600)
+		self._created = True
 		content = self._content or ""
 		if isinstance(content, str):
-			self._path.write_text(content, encoding=self._encoding, newline="")
+			with open(fd, "w", encoding=self._encoding, newline="") as file:
+				file.write(content)
 		else:
-			self._path.write_bytes(content)
+			with open(fd, "wb") as file:
+				file.write(content)
 
 	def create(self, *, content: str | bytes | None = None, encoding: str | None = None) -> None:
 		"""
 		Create the temporary file.
+
+		The first creation is exclusive, a FileExistsError is raised if the file already exists.
+		Calling create() again overwrites the content of the file.
 		"""
 		if content:
 			self._content = content
@@ -165,6 +186,7 @@ class TempFile:
 	def _delete_attempt(self) -> None:
 		if self._path.exists():
 			self._path.unlink()
+		self._created = False
 
 	def delete(self) -> None:
 		"""

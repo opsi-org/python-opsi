@@ -26,7 +26,7 @@ from threading import Event, Lock, Thread
 from types import TracebackType
 from typing import Literal, Self
 
-from opsi.logging import LOG_TRACE, get_logger, is_log_level_enabled
+from opsi.logging import LOG_NOTICE, LOG_TRACE, get_logger, is_log_level_enabled
 from opsi.retry import Retry, RetryConfig, RetryConfigType, get_retry_config
 from opsi.system.file.temp import TempFile
 from opsi.system.info import is_linux, is_windows
@@ -361,6 +361,7 @@ class Process:
 		session_desktop: str | None = None,
 		session_elevated: bool = False,
 		retry_config: RetryConfig | None = None,
+		start_log_level: int = LOG_NOTICE,
 	) -> None:
 		"""
 		Initialize a new Process instance.
@@ -431,6 +432,9 @@ class Process:
 			If None, uses the default retry configuration for process execution.
 			The default configuration does not retry on TimeoutError.
 			Pass NoRetry to disable retries.
+		:param start_log_level:
+			Log level of the message which is logged when the process is started.
+			Use a lower level like LOG_DEBUG for frequently executed commands.
 		"""
 
 		self._command: list[str] = []
@@ -452,6 +456,7 @@ class Process:
 		self._close_stdin_after_start = bool(close_stdin)
 		self._success_exit_codes = None if success_exit_codes is None else set(success_exit_codes)
 		self._retry_config = retry_config or get_retry_config(RetryConfigType.RUN_PROCESS)
+		self._start_log_level = int(start_log_level)
 		self._proc: Popen | None = None
 		self._attempts = 0
 		self._should_stop = False
@@ -814,7 +819,8 @@ class Process:
 		)
 		stdin = PIPE if stdin_data is not None or not close_stdin else None
 
-		logger.notice(
+		logger.log(
+			self._start_log_level,
 			"Starting process with command: %r, working_dir: '%s', stdout: %r, stderr: %r, stdin: %r",
 			self._command,
 			self._working_dir,
@@ -1307,6 +1313,7 @@ def run_command(
 	session_elevated: bool = False,
 	wait: bool = True,
 	retry_config: RetryConfig | None = None,
+	start_log_level: int = LOG_NOTICE,
 ) -> Process:
 	"""
 	Run a command directly and return the Process instance.
@@ -1327,6 +1334,7 @@ def run_command(
 		session_desktop=session_desktop,
 		session_elevated=session_elevated,
 		retry_config=retry_config,
+		start_log_level=start_log_level,
 	)
 	if wait:
 		with proc:
@@ -1358,6 +1366,7 @@ def run_script(
 	session_elevated: bool = False,
 	wait: bool = True,
 	retry_config: RetryConfig | None = None,
+	start_log_level: int = LOG_NOTICE,
 ) -> Process:
 	"""
 	Run a script via an interpreter and return the Process instance.
@@ -1381,6 +1390,7 @@ def run_script(
 		session_desktop=session_desktop,
 		session_elevated=session_elevated,
 		retry_config=retry_config,
+		start_log_level=start_log_level,
 	)
 	if wait:
 		with proc:
@@ -1412,6 +1422,7 @@ def run_script_file(
 	session_elevated: bool = False,
 	wait: bool = True,
 	retry_config: RetryConfig | None = None,
+	start_log_level: int = LOG_NOTICE,
 ) -> Process:
 	"""
 	Run a script via an interpreter and return the Process instance.
@@ -1435,6 +1446,7 @@ def run_script_file(
 		session_elevated=session_elevated,
 		success_exit_codes=success_exit_codes,
 		retry_config=retry_config,
+		start_log_level=start_log_level,
 	)
 	if wait:
 		with proc:
