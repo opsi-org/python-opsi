@@ -42,8 +42,12 @@ def test_create_partition_device_ready(
 ) -> None:
 	monkeypatch.setattr(StorageDevice, "_get_info", lambda self: None)
 	table = table_class(StorageDevice("/dev/testdisk"))
-	requested = table.partition_type(partition_table=table, number=1, type="linux")
-	created = table.partition_type(partition_table=table, number=1, type="linux")
+	if isinstance(table, GPTPartitionTable):
+		requested = GPTPartition(partition_table=table, number=1, type="linux")
+		created = GPTPartition(partition_table=table, number=1, type="linux")
+	else:
+		requested = MBRPartition(partition_table=table, number=1, type="linux")
+		created = MBRPartition(partition_table=table, number=1, type="linux")
 	created.path = Mock(spec=Path)
 	created.path.exists.return_value = result != "missing"
 	created.path.is_block_device.return_value = result != "not_block"
@@ -57,7 +61,12 @@ def test_create_partition_device_ready(
 	def read() -> None:
 		if result == "read":
 			raise RuntimeError("read failed")
-		table._partitions = {1: created}
+		if isinstance(table, GPTPartitionTable):
+			assert isinstance(created, GPTPartition)
+			table._partitions = {1: created}
+		else:
+			assert isinstance(created, MBRPartition)
+			table._partitions = {1: created}
 
 	operations.attach_mock(Mock(side_effect=run_command), "command")
 	operations.attach_mock(Mock(side_effect=read), "read")
