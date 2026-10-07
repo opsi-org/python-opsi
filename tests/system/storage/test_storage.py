@@ -10,6 +10,7 @@ storage tests
 import errno
 import platform
 from pathlib import Path, PureWindowsPath
+from unittest.mock import Mock, call
 from uuid import UUID, uuid4
 
 import pytest
@@ -32,6 +33,56 @@ from opsi.system.storage import (
 	get_disks,
 )
 from opsi.system.storage._storage import PartitionTableType, _run_command
+
+
+@pytest.mark.parametrize("table_class", [GPTPartitionTable, MBRPartitionTable])
+@pytest.mark.parametrize("result", ["success", "sfdisk", "read", "partprobe", "udevadm", "missing", "not_block"])
+def test_create_partition_device_ready(
+	monkeypatch: pytest.MonkeyPatch, table_class: type[GPTPartitionTable] | type[MBRPartitionTable], result: str
+) -> None:
+	monkeypatch.setattr(StorageDevice, "_get_info", lambda self: None)
+	table = table_class(StorageDevice("/dev/testdisk"))
+	requested = table.partition_type(partition_table=table, number=1, type="linux")
+	created = table.partition_type(partition_table=table, number=1, type="linux")
+	created.path = Mock(spec=Path)
+	created.path.exists.return_value = result != "missing"
+	created.path.is_block_device.return_value = result != "not_block"
+	operations = Mock()
+
+	def run_command(command: list[str], input: str | None = None) -> str:
+		if command[0] == result:
+			raise RuntimeError(f"{result} failed")
+		return ""
+
+	def read() -> None:
+		if result == "read":
+			raise RuntimeError("read failed")
+		table._partitions = {1: created}
+
+	operations.attach_mock(Mock(side_effect=run_command), "command")
+	operations.attach_mock(Mock(side_effect=read), "read")
+	operations.attach_mock(created.path.exists, "exists")
+	operations.attach_mock(created.path.is_block_device, "is_block_device")
+	monkeypatch.setattr(storage_module, "_run_command", operations.command)
+	monkeypatch.setattr(table, "read", operations.read)
+
+	if result == "success":
+		assert table._create_partition(requested) is created
+	else:
+		message = "does not exist or is not a block device" if result in ("missing", "not_block") else f"{result} failed"
+		with pytest.raises(RuntimeError, match=message):
+			table._create_partition(requested)
+
+	expected_calls = [
+		call.command(["sfdisk", "-N", "1", "/dev/testdisk"], input=requested.sfdisk_command()),
+		call.read(),
+		call.command(["partprobe", "/dev/testdisk"]),
+		call.command(["udevadm", "settle", "--timeout=30"]),
+		call.exists(),
+		call.is_block_device(),
+	]
+	call_count = {"sfdisk": 1, "read": 2, "partprobe": 3, "udevadm": 4, "missing": 5}.get(result, 6)
+	assert operations.mock_calls == expected_calls[:call_count]
 
 
 @pytest.mark.storage_utils
@@ -763,7 +814,11 @@ def test_partition_table_sector_size_read_create_and_delete(monkeypatch: pytest.
 		return ""
 
 	def fake_read(self: GPTPartitionTable) -> None:
-		self._partitions = {3: GPTPartition(self, 3, type="linux", start=1, size=2)}
+		partition = GPTPartition(self, 3, type="linux", start=1, size=2, path="/dev/test7p3")
+		partition.path = Mock(spec=Path)
+		partition.path.exists.return_value = True
+		partition.path.is_block_device.return_value = True
+		self._partitions = {3: partition}
 
 	monkeypatch.setattr(storage_module, "_run_command", fake_run_command)
 	monkeypatch.setattr(GPTPartitionTable, "read", fake_read)
@@ -773,10 +828,11 @@ def test_partition_table_sector_size_read_create_and_delete(monkeypatch: pytest.
 	assert commands[0][1] is not None
 	assert commands[0][1].startswith("type=0fc63daf-8483-4772-8e79-3d69d8477de4,uuid=")
 	assert commands[0][1].endswith(",start=1,size=2\n")
+	assert commands[1:3] == [(["partprobe", "/dev/test7"], None), (["udevadm", "settle", "--timeout=30"], None)]
 
 	with pytest.raises(ValueError, match="Partition 9 does not exist"):
 		table.delete_partition(9)
 
 	table._partitions = {3: created}
 	table.delete_partition(3)
-	assert commands[1] == (["sfdisk", "--delete", "/dev/test7", "3"], None)
+	assert commands[3] == (["sfdisk", "--delete", "/dev/test7", "3"], None)

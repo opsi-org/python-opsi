@@ -488,7 +488,12 @@ class PartitionTable[TPartition: "Partition"]:
 		logger.info("Creating partition: %s", partition)
 		_run_command(["sfdisk", "-N", str(partition.number), self.device.dev], input=partition.sfdisk_command())
 		self.read()
-		return self._partitions[partition.number]
+		_run_command(["partprobe", self.device.dev])
+		_run_command(["udevadm", "settle", "--timeout=30"])
+		created_partition = self._partitions[partition.number]
+		if not created_partition.path.exists() or not created_partition.path.is_block_device():
+			raise RuntimeError(f"Partition path {created_partition.path} does not exist or is not a block device")
+		return created_partition
 
 	def get_partition(self, number: int) -> TPartition:
 		try:
