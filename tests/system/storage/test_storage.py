@@ -38,7 +38,7 @@ from opsi.system.storage._storage import PartitionTableType, _run_command
 @pytest.mark.parametrize("table_class", [GPTPartitionTable, MBRPartitionTable])
 @pytest.mark.parametrize("result", ["success", "sfdisk", "read", "partprobe", "udevadm", "missing", "not_block"])
 def test_create_partition_device_ready(
-	monkeypatch: pytest.MonkeyPatch, table_class: type[GPTPartitionTable] | type[MBRPartitionTable], result: str
+	monkeypatch: pytest.MonkeyPatch, table_class: type[GPTPartitionTable | MBRPartitionTable], result: str
 ) -> None:
 	monkeypatch.setattr(StorageDevice, "_get_info", lambda self: None)
 	table = table_class(StorageDevice("/dev/testdisk"))
