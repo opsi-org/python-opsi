@@ -73,6 +73,7 @@ class TextFile:
 		*,
 		encoding: str | None = None,
 		line_ending: Literal["\n", "\r\n"] | None = None,
+		mode: int | None = None,
 		retry_config: RetryConfig | None = None,
 	) -> None:
 		"""
@@ -93,6 +94,12 @@ class TextFile:
 			If not specified, the line ending will be detected when reading the file
 			or default to the system default line ending if the file does not exist or the line ending cannot be detected.
 
+		mode : int, optional
+			File permission bits, for example ``0o600``. Applied at creation and
+			before writing existing files. If omitted, normal creation defaults
+			and existing permissions are preserved. On Windows, only the
+			read-only attribute is supported; use ACLs to restrict access.
+
 		retry_config : RetryConfig, optional
 			Configuration for retrying file I/O operations in case of transient errors.
 			If not specified, a default retry configuration will be used.
@@ -105,6 +112,7 @@ class TextFile:
 		self._file_read = False
 		self._changed = False
 		self._retry_config = retry_config or get_retry_config(RetryConfigType.FILE_IO)
+		self._mode = mode
 
 		if encoding is not None:
 			self.set_encoding(encoding)
@@ -211,7 +219,20 @@ class TextFile:
 		assert self._encoding is not None
 		assert self._line_ending is not None
 
-		with open(self._path, "w", encoding=self._encoding, newline="") as file:
+		def opener(path: str, flags: int) -> int:
+			assert self._mode is not None
+			fd = os.open(path, flags, self._mode)
+			try:
+				if is_windows():
+					os.chmod(path, self._mode)
+				else:
+					os.fchmod(fd, self._mode)
+			except BaseException:
+				os.close(fd)
+				raise
+			return fd
+
+		with open(self._path, "w", encoding=self._encoding, newline="", opener=opener if self._mode is not None else None) as file:
 			for line in self._lines:
 				file.write(line)
 				file.write(self._line_ending)

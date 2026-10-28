@@ -172,7 +172,7 @@ class EFIBootEntry:
 	optional_data: bytes | None = None
 
 	@classmethod
-	def _read_description(cls: type["EFIBootEntry"], data: bytes, offset: int = 0) -> tuple[bytes, int]:
+	def _read_description(cls: type[EFIBootEntry], data: bytes, offset: int = 0) -> tuple[bytes, int]:
 		description_bytes = b""
 		view = memoryview(data)
 		while True:
@@ -184,7 +184,7 @@ class EFIBootEntry:
 		return description_bytes, offset
 
 	@classmethod
-	def _read_file_path(cls: type["EFIBootEntry"], data: bytes, offset: int = 0) -> tuple[EFIFilePath, int]:
+	def _read_file_path(cls: type[EFIBootEntry], data: bytes, offset: int = 0) -> tuple[EFIFilePath, int]:
 		file_path = EFIFilePath(type=unpack("<B", data[offset : offset + 1])[0], sub_type=unpack("<B", data[offset + 1 : offset + 2])[0])
 		length = unpack("<H", data[offset + 2 : offset + 4])[0]
 		offset += 4
@@ -201,7 +201,7 @@ class EFIBootEntry:
 		return file_path, offset
 
 	@classmethod
-	def from_file(cls: type["EFIBootEntry"], file: Path) -> "EFIBootEntry":
+	def from_file(cls: type[EFIBootEntry], file: Path) -> EFIBootEntry:
 		match = BOOT_VAR_RE.match(file.name)
 		if not match:
 			raise ValueError("Invalid filename: {file!r}")
