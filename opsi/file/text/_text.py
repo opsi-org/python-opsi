@@ -782,7 +782,7 @@ class TextFile:
 					if key not in line:
 						continue
 					logger.notice("Patching placeholder '%s' in file '%s'", key, self._path)
-					line = line.replace(f"{{{{{key}}}}}", value)
+					line = line.replace(key, value)
 
 			if line != self._lines[idx]:
 				self._changed = True

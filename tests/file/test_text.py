@@ -207,12 +207,12 @@ def test_patch_text_file(tmp_path: Path, path_type) -> None:
 
 def test_text_file_patch_without_placeholder_marker(tmp_path: Path) -> None:
 	file_path = tmp_path / "textfile"
-	file_path.write_text("before {{KEY}} and {{KEY}} after\n")
+	file_path.write_text("before KEY and {{KEY}} after\n")
 
 	with TextFile(file_path) as text_file:
 		text_file.patch(params={"KEY": "value"}, use_placeholder_marker=False)
 
-	assert file_path.read_text() == "before value and value after\n"
+	assert file_path.read_text() == "before value and {{value}} after\n"
 
 
 TEST_FILE = (
