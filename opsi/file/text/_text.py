@@ -710,7 +710,7 @@ class TextFile:
 		return len(self._lines)
 
 	def patch(
-		self, *, params: dict[str, str] | None = None, params_file: str | os.PathLike[str] | None = None, kernel_params: bool = False
+		self, *, params: dict[str, str] | None = None, params_file: str | os.PathLike[str] | None = None, kernel_params: bool = False, use_placeholder_marker: bool = True,
 	) -> None:
 		"""
 		Patch the text file by replacing placeholders with values from the provided parameters.
@@ -735,6 +735,10 @@ class TextFile:
 			available as key-value pairs where the key is the parameter name and the
 			value is the parameter value. Parameters without a value will have an
 			empty string as value.
+
+		use_placeholder_marker : bool, default: True
+			If True, only replace placeholders that are marked with the placeholder marker.
+			If False, replace all placeholders regardless of the marker.
 		"""
 		self._assert_read()
 		_params = {}
@@ -762,16 +766,23 @@ class TextFile:
 		logger.notice("Patching file '%s'", self._path)
 
 		for idx, line in enumerate(self._lines):
-			for regex in (PLACEHOLDER_REGEX_NEW, PLACEHOLDER_REGEX):
-				match = regex.search(line)
-				while match:
-					key = match.group(2)
-					if key not in _params:
-						logger.warning("Cannot patch placeholder '%s' in file '%s': param not defined", key, self._path)
-						break
-					logger.notice("Patching placeholder '%s' in file '%s'", key, self._path)
-					line = f"{match.group(1)}{_params[key]}{match.group(3)}"
+			if use_placeholder_marker:
+				for regex in (PLACEHOLDER_REGEX_NEW, PLACEHOLDER_REGEX):
 					match = regex.search(line)
+					while match:
+						key = match.group(2)
+						if key not in _params:
+							logger.warning("Cannot patch placeholder '%s' in file '%s': param not defined", key, self._path)
+							break
+						logger.notice("Patching placeholder '%s' in file '%s'", key, self._path)
+						line = f"{match.group(1)}{_params[key]}{match.group(3)}"
+						match = regex.search(line)
+			else:
+				for key, value in _params.items():
+					if key not in line:
+						continue
+					logger.notice("Patching placeholder '%s' in file '%s'", key, self._path)
+					line = line.replace(f"{{{{{key}}}}}", value)
 
 			if line != self._lines[idx]:
 				self._changed = True
@@ -784,6 +795,7 @@ def patch_text_file(
 	params: dict[str, str] | None = None,
 	params_file: str | os.PathLike[str] | None = None,
 	kernel_params: bool = False,
+	use_placeholder_marker: bool = True,
 ) -> None:
 	"""
 	Patch a text file by replacing placeholders with parameter values.
@@ -801,6 +813,9 @@ def patch_text_file(
 
 	kernel_params : bool, default: False
 		If True, also read parameters from the Linux kernel command line.
+
+	use_placeholder_marker : bool, default: True
+		If True, only replace placeholders that are marked with the placeholder marker.
 	"""
 	with TextFile(text_file) as file:
-		file.patch(params=params, params_file=params_file, kernel_params=kernel_params)
+		file.patch(params=params, params_file=params_file, kernel_params=kernel_params, use_placeholder_marker=use_placeholder_marker)
