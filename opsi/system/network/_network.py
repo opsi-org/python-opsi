@@ -125,7 +125,10 @@ def get_network_info(*, include_link_local: bool = True) -> NetworkInfo:
 	ifaces = netifaces.interfaces()
 	logger.debug("Network interfaces: %s", ifaces)
 	for iface_name in ifaces:
-		if_addresses = netifaces.ifaddresses(iface_name)
+		try:
+			if_addresses = netifaces.ifaddresses(iface_name)
+		except ValueError:
+			continue  # Skip interfaces that cannot be accessed (e.g., due to permissions or if they switched state)
 		for family in (socket.AF_INET, socket.AF_INET6):
 			for if_info in if_addresses.get(family, []):
 				try:
