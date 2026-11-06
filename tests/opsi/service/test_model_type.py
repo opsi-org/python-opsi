@@ -262,8 +262,8 @@ def test_to_oct_raising_errors_on_invalid_value(value: Any) -> None:
 		(0, "0000-00-00 00:00:00"),
 		("", "0000-00-00 00:00:00"),
 		("2020-01-01", "2020-01-01 00:00:00"),
-		(datetime.datetime(2013, 9, 11, 10, 54, 23), "2013-09-11 10:54:23"),  # noqa: DTZ001
-		(datetime.datetime(2013, 9, 11, 10, 54, 23, 123123), "2013-09-11 10:54:23"),  # noqa: DTZ001
+		(datetime.datetime(2013, 9, 11, 10, 54, 23), "2013-09-11 10:54:23"),
+		(datetime.datetime(2013, 9, 11, 10, 54, 23, 123123), "2013-09-11 10:54:23"),
 	),
 )
 def test_to_opsi_timestamp(value: Any, expected: Any) -> None:
