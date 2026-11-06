@@ -16,8 +16,8 @@ try:
 	from msgspec.msgpack import decode as _msgspec_msgpack_decode
 	from msgspec.msgpack import encode as _msgspec_msgpack_encode
 except ImportError:
-	from msgpack import packb as _msgpack_msgpack_encode  # ty: ignore[unresolved-import]
-	from msgpack import unpackb as _msgpack_msgpack_decode  # ty: ignore[unresolved-import]
+	from msgpack import packb as _msgpack_msgpack_encode  # ty: ignore[import-not-found]
+	from msgpack import unpackb as _msgpack_msgpack_decode  # ty: ignore[import-not-found]
 
 
 def _msgpack_encode_handler(obj: Any) -> Any:

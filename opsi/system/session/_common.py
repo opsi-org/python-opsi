@@ -52,7 +52,7 @@ class WindowsDisplaySessionState(StrEnum):
 					return member
 
 		if isinstance(value, int) and is_windows():
-			import win32ts  # ty: ignore[unresolved-import]
+			import win32ts  # ty: ignore[import-not-found]
 
 			int_to_state = {
 				win32ts.WTSActive: cls.ACTIVE,
@@ -86,7 +86,7 @@ class WindowsDisplaySessionProtocol(StrEnum):
 					return member
 
 		if isinstance(value, int) and is_windows():
-			import win32ts  # ty: ignore[unresolved-import]
+			import win32ts  # ty: ignore[import-not-found]
 
 			int_to_protocol = {
 				win32ts.WTS_PROTOCOL_TYPE_RDP: cls.RDP,

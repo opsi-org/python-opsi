@@ -728,7 +728,7 @@ def test_process_ld_library_path(ld_library_path_orig: str, ld_library_path: str
 			assert os.environ.get("LD_LIBRARY_PATH") == ld_library_path
 			with run_command(["sleep", "1"]) as proc:
 				ps_proc = psutil.Process(proc.pid)
-				assert ps_proc and ps_proc.environ
+				assert ps_proc
 				proc_env = ps_proc.environ()
 				assert proc_env.get("LD_LIBRARY_PATH_ORIG") == ld_library_path_orig
 				assert proc_env.get("LD_LIBRARY_PATH") == expected_ld_library_path

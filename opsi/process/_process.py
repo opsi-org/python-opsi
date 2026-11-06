@@ -15,7 +15,7 @@ import signal
 import subprocess
 import sys
 import time
-from collections.abc import Collection, Iterator, Mapping
+from collections.abc import Collection, Generator, Mapping
 from contextlib import contextmanager
 from functools import lru_cache
 from getpass import getuser
@@ -164,7 +164,7 @@ class ProcessError(Exception):
 
 
 @contextmanager
-def disable_file_system_redirection() -> Iterator[None]:
+def disable_file_system_redirection() -> Generator[None]:
 	"""
 	Temporarily disable WOW64 file system redirection.
 

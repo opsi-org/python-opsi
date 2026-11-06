@@ -71,7 +71,7 @@ async def test_execute_command(close_stdin: bool) -> None:
 
 	assert isinstance(messages[0], ProcessDataReadMessage)
 	assert messages[0].process_id == process_start_request.process_id
-	assert messages[0].stdout == b"hello\r\n" if is_windows() else b"hello\n"
+	assert messages[0].stdout == (b"hello\r\n" if is_windows() else b"hello\n")
 
 	assert isinstance(messages[1], ProcessStopEventMessage)
 	assert messages[1].process_id == process_start_request.process_id

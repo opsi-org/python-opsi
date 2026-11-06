@@ -48,7 +48,7 @@ class HTTPTestServerRequestHandler(SimpleHTTPRequestHandler):
 	_opcode_pong = 0xA
 
 	mutex = threading.Lock()
-	server: ThreadingHTTPServer
+	server: ThreadingHTTPServer  # ty: ignore[invalid-mutable-override]
 
 	def __init__(self, *args: Any, **kwargs: Any) -> None:
 		if args[2].serve_directory:

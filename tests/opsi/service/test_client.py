@@ -1082,7 +1082,7 @@ def get_local_ipv4_address() -> str | None:
 
 
 class HTTPProxyRequestHandler(StreamRequestHandler):
-	server: HTTPProxy
+	server: HTTPProxy  # ty: ignore[invalid-mutable-override]
 
 	def handle(self) -> None:
 		request_line = self.rfile.readline(65536).decode("ascii", "replace").strip()

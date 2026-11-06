@@ -5,7 +5,7 @@
 
 from datetime import datetime
 
-import win32api  # ty: ignore[unresolved-import]
+import win32api  # ty: ignore[import-not-found]
 
 
 def set_system_datetime(utc_datetime: datetime) -> None:

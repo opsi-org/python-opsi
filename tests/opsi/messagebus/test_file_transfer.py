@@ -9,7 +9,7 @@ messagebus.file_transfer tests
 
 import asyncio
 import os
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Generator
 from contextlib import AbstractContextManager, contextmanager
 from pathlib import Path
 from unittest.mock import patch
@@ -378,7 +378,7 @@ def _recording_disable_redirection(events: list[str]) -> Callable[[], AbstractCo
 	"""Create a fake disable_file_system_redirection context manager that records enter/exit events."""
 
 	@contextmanager
-	def fake_disable() -> Iterator[None]:
+	def fake_disable() -> Generator[None]:
 		events.append("disable")
 		yield
 		events.append("revert")

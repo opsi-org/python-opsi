@@ -1380,7 +1380,7 @@ class ServiceClient:
 
 		self._service_unavailable = None
 
-		allow_status_codes = (200, 201, 202, 203, 204, 206, 207, 208) if allow_status_codes is None else allow_status_codes
+		allow_status_codes = (200, 201, 202, 203, 204, 206, 207, 208) if allow_status_codes is None else tuple(allow_status_codes)
 		max_attempts = 3
 		for attempt in range(1, max_attempts + 1):
 			try:
@@ -2392,10 +2392,10 @@ class Messagebus(Thread):
 		self._app.run_forever(
 			sslopt=sslopt,
 			skip_utf8_validation=True,
-			proxy_type=proxy_type,  # ty: ignore[invalid-argument-type]
-			http_proxy_host=http_proxy_host,  # ty: ignore[invalid-argument-type]
-			http_proxy_port=http_proxy_port,  # ty: ignore[invalid-argument-type]
-			http_proxy_auth=http_proxy_auth,  # ty: ignore[invalid-argument-type]
+			proxy_type=proxy_type,
+			http_proxy_host=http_proxy_host,
+			http_proxy_port=http_proxy_port,
+			http_proxy_auth=http_proxy_auth,
 			http_no_proxy=http_no_proxy,  # ty: ignore[invalid-argument-type]
 			http_proxy_timeout=self._connect_timeout,
 			ping_interval=self.ping_interval,
@@ -2506,8 +2506,6 @@ def get_service_client(
 
 	if not verify:
 		verify = ServiceVerificationFlags.OPSI_CA
-
-	ca_cert_file = None
 
 	if opsi_config.get("host", "server-role") in ("configserver", "depotserver") and (
 		service_url == address or ServiceClient.is_local_address(address)

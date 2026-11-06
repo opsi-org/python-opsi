@@ -9,7 +9,7 @@ import builtins
 import os
 from pathlib import Path
 from types import TracebackType
-from typing import Self
+from typing import Literal, Self
 
 from configupdater import ConfigUpdater
 
@@ -42,7 +42,7 @@ class INIFile:
 		exception_type: type[BaseException] | None,
 		exception: BaseException | None,
 		traceback: TracebackType | None,
-	) -> bool:
+	) -> Literal[False]:
 		if exception_type is None:
 			self._update_file()
 		return False

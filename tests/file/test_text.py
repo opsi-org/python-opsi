@@ -60,10 +60,10 @@ def test_detect_encoding(tmp_path: Path, encoding: str) -> None:
 	file_path = tmp_path / "new_textfile"
 	with TextFile(file_path) as file:
 		assert file.get_lines() == []
-		assert file.get_encoding() == "utf-16" if is_windows() else "utf-8"
+		assert file.get_encoding() == ("utf-16" if is_windows() else "utf-8")
 
 	encoding = TextFile(tmp_path / "new_textfile2").get_encoding()
-	assert encoding == "utf-16" if is_windows() else "utf-8"
+	assert encoding == ("utf-16" if is_windows() else "utf-8")
 
 	file_path.write_bytes(b"\xff\xff\xff")
 	with TextFile(file_path) as file:

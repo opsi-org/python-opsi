@@ -806,7 +806,7 @@ def logging_config(
 		and not stderr_is_rich_console
 		and hasattr(stderr_file, "isatty")
 		and callable(stderr_file.isatty)
-		and not stderr_file.isatty()  # ty: ignore[call-top-callable]
+		and not stderr_file.isatty()
 	):
 		stderr_format = stderr_format.replace("%(log_color)s", "").replace("%(reset)s", "")
 

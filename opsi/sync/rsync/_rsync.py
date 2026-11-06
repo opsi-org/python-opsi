@@ -146,17 +146,17 @@ def _execute(job: Any, input_handle: BinaryIO, output_handle: BinaryIO | None = 
 		buff.avail_out = ctypes.c_size_t(RS_JOB_BLOCKSIZE)
 		res = _librsync.rs_job_iter(job, ctypes.byref(buff))
 		if output_handle:
-			output_handle.write(out.raw[: RS_JOB_BLOCKSIZE - buff.avail_out])  # type: ignore
+			output_handle.write(out.raw[: RS_JOB_BLOCKSIZE - buff.avail_out])
 		if res == RS_DONE:
 			break
 		if res != RS_BLOCKED:
 			raise LibrsyncError(res)
-		if buff.avail_in > 0:  # type: ignore
+		if buff.avail_in > 0:
 			# There is data left in the input buffer, librsync did not consume
 			# all of it. Rewind the file a bit so we include that data in our
 			# next read. It would be better to simply tack data to the end of
 			# this buffer, but that is very difficult in Python.
-			input_handle.seek(input_handle.tell() - buff.avail_in)  # type: ignore
+			input_handle.seek(input_handle.tell() - buff.avail_in)
 	if output_handle and callable(getattr(output_handle, "seek", None)):
 		# As a matter of convenience, rewind the output file.
 		output_handle.seek(0)

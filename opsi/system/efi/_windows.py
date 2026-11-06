@@ -8,7 +8,7 @@ def get_system_uuid() -> str:
 	# Import wmi only when needed
 	# Import on module level can lead to problems during system startup
 
-	import wmi  # ty: ignore[unresolved-import]
+	import wmi  # ty: ignore[import-not-found]
 
 	wmi_inst = wmi.WMI()
 	for csp in wmi_inst.Win32_ComputerSystemProduct():
