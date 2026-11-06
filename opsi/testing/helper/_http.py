@@ -24,7 +24,6 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 from io import BufferedReader, BytesIO, UnsupportedOperation
 from pathlib import Path
 from socketserver import BaseServer, ThreadingMixIn
-from tempfile import NamedTemporaryFile
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 from xml.etree.ElementTree import Element, SubElement, tostring
@@ -32,6 +31,7 @@ from xml.etree.ElementTree import Element, SubElement, tostring
 from opsi.compression import decompress
 from opsi.crypt.ssl import as_pem, create_ca, create_server_cert
 from opsi.serialization import json_decode, json_encode, msgpack_decode
+from opsi.system.file.temp import create_temp_file
 
 
 class WebSocketError(Exception):
@@ -790,13 +790,8 @@ class HTTPTestServer(threading.Thread, BaseServer):
 		# Use 2048 bits for speedup
 		ca_cert, ca_key = create_ca(subject={"CN": "http_test_server ca"}, valid_days=3, bits=2048)
 
-		with NamedTemporaryFile(delete=False) as tmp:
-			tmp.write(as_pem(ca_key).encode("utf-8"))
-		self.ca_key = Path(tmp.name)
-
-		with NamedTemporaryFile(delete=False) as tmp:
-			tmp.write(as_pem(ca_cert).encode("utf-8"))
-		self.ca_cert = Path(tmp.name)
+		self.ca_key = create_temp_file(content=as_pem(ca_key).encode("utf-8"))
+		self.ca_cert = create_temp_file(content=as_pem(ca_cert).encode("utf-8"))
 
 		kwargs: dict[str, Any] = {
 			"subject": {"CN": "http_test_server server cert"},
@@ -809,13 +804,8 @@ class HTTPTestServer(threading.Thread, BaseServer):
 		}
 		cert, key = create_server_cert(**kwargs)
 
-		with NamedTemporaryFile(delete=False) as tmp:
-			tmp.write(as_pem(key).encode("utf-8"))
-		self.server_key = Path(tmp.name)
-
-		with NamedTemporaryFile(delete=False) as tmp:
-			tmp.write(as_pem(cert).encode("utf-8"))
-		self.server_cert = Path(tmp.name)
+		self.server_key = create_temp_file(content=as_pem(key).encode("utf-8"))
+		self.server_cert = create_temp_file(content=as_pem(cert).encode("utf-8"))
 
 	def _cleanup_cert(self) -> None:
 		if self.generate_cert:

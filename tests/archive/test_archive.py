@@ -14,7 +14,6 @@ except ModuleNotFoundError:  # not present for windows
 	pass
 import platform
 import shutil
-import tempfile
 from pathlib import Path
 from random import randbytes
 from typing import Literal
@@ -42,6 +41,7 @@ from opsi.archive._archive import (
 )
 from opsi.process import run_command
 from opsi.sync.zsync import SOURCE_REMOTE, create_zsync_file, get_patch_instructions, read_zsync_file
+from opsi.system.file.temp import TempDir
 from opsi.testing.helper import memory_usage_monitor, opsi_config
 
 # File may not
@@ -382,10 +382,9 @@ def test_get_archive_files(tmp_path: Path, test_defect_link: bool, follow_symlin
 	sampled_from((ArchiveCompression.ZSTD, ArchiveCompression.BZIP2, ArchiveCompression.GZIP)),
 )
 def test_archive_hypothesis(filename: str, data: bytes, internal: bool, compression: ArchiveCompression) -> None:
-	with tempfile.TemporaryDirectory() as tempdir:
+	with TempDir() as tmp_path:
 		filename = filename.replace("\x00", "").replace("\n", "")
 		filename = filename.removeprefix("-")
-		tmp_path = Path(tempdir)
 		source = tmp_path / "source"
 		source.mkdir()
 		file_path = source / filename

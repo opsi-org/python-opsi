@@ -10,13 +10,13 @@ import subprocess
 from dataclasses import asdict, dataclass, field
 from enum import StrEnum
 from pathlib import Path
-from tempfile import NamedTemporaryFile
 from typing import Any, cast
 
 from opsi.file.inf import INFFile, INFTargetOSVersion
 from opsi.logging import get_logger
 from opsi.opsi.service.client import ServiceClient
 from opsi.opsi.service.model.type import Architecture
+from opsi.system.file.temp import TempFile
 
 logger = get_logger(__name__)
 
@@ -147,21 +147,17 @@ def add_drivers_to_driver_store(
 
 	if registry:
 		logger.info("Adding to registry: %s", registry)
-		temp_file = NamedTemporaryFile(mode="w", encoding="utf-16", suffix=".reg", delete=False)  # noqa: SIM115
-		try:
-			temp_file.write(rf"Windows Registry Editor Version 5.00\r\n\r\n{registry}")
-			temp_file.close()
+		registry_content = rf"Windows Registry Editor Version 5.00\r\n\r\n{registry}"
+		with TempFile(content=registry_content, encoding="utf-16", extension="reg") as temp_file:
 			reg_system = windows_base_path / "System32/config/SYSTEM"
 			proc = subprocess.run(
-				["reged", "-C", "-I", str(reg_system), r"HKEY_LOCAL_MACHINE\SYSTEM", temp_file.name],
+				["reged", "-C", "-I", str(reg_system), r"HKEY_LOCAL_MACHINE\SYSTEM", str(temp_file.path)],
 				text=True,
 				encoding="utf-8",
 				errors="replace",
 				capture_output=True,
 				check=False,
 			)
-		finally:
-			Path(temp_file.name).unlink(missing_ok=True)
 		out = (proc.stdout or "") + (proc.stderr or "")
 		logger.debug("Registry command exit code %d output: %s", proc.returncode, out)
 		if proc.returncode not in (0, 2):
