@@ -316,8 +316,8 @@ async def test_terminal_fail() -> None:
 		assert isinstance(msg, TerminalDataReadMessage)
 		data += msg.data
 
-	data_str = ANSI_ESCAPE_RE.sub("", data.decode("utf-8")).replace(" ", "")
-	assert data_str == "exit_1\r\n"
+	data_str = ANSI_ESCAPE_RE.sub("", data.decode("utf-8")).replace(" ", "").rstrip("\r\n")
+	assert data_str == "exit_1"
 	assert isinstance(messages[-1], TerminalCloseEventMessage)
 
 

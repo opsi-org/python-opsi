@@ -92,7 +92,7 @@ class LegacyControlFile:
 
 		sectionType = None
 		option = None
-		for lineNum, line in enumerate(control_file.read_text().splitlines(), start=1):
+		for lineNum, line in enumerate(control_file.read_text(encoding="utf-8").splitlines(), start=1):
 			if line and line.startswith((";", "#")):
 				# Comment
 				continue

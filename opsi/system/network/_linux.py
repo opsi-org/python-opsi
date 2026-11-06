@@ -31,7 +31,7 @@ def _get_mount(device: str | None = None, mount_point: Path | str | None = None)
 		mount_point = str(Path(mount_point).resolve())
 
 	dev_or_mountpoint = (device or str(mount_point)).lower()
-	for line in Path("/proc/mounts").read_text().splitlines():
+	for line in Path("/proc/mounts").read_text(encoding="utf-8").splitlines():
 		(dev, mountpoint) = line.strip().split(" ", 2)[:2]
 		if dev_or_mountpoint in (dev, mountpoint):
 			return dev, Path(mountpoint)

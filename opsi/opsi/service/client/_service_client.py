@@ -706,6 +706,18 @@ class ServiceClient:
 			raise ValueError("Service address undefined")
 		return self.normalize_service_address(self._addresses[self._address_index])[0]
 
+	@property
+	def base_hostname(self) -> str:
+		"""Return the hostname of the active base URL, without scheme or port.
+
+		IP addresses are returned as-is, without brackets for IPv6. No DNS
+		lookup is performed. Raises ValueError if no service address is set.
+		"""
+		hostname = urlparse(self.base_url).hostname
+		if hostname is None:
+			raise ValueError("Service hostname undefined")
+		return hostname
+
 	def service_is_opsiclientd(self) -> bool:
 		addr = urlparse(self._addresses[self._address_index])
 		return self.is_local_address(self._addresses[self._address_index]) and addr.port == 4441
@@ -1805,8 +1817,31 @@ class ServiceClient:
 			)
 
 	def download(
-		self, source: str, destination: Path, *, preserve_source_dir: bool = True, progress_callback: Callable | None = None
+		self,
+		source: str | Path,
+		destination: str | Path,
+		*,
+		preserve_source_dir: bool = True,
+		progress_callback: Callable | None = None,
+		mode: int | None = None,
 	) -> None:
+		"""Download a WebDAV file or directory to a local directory.
+
+		``source`` accepts a string or a Path; Path objects are converted to
+		POSIX-style WebDAV paths. ``destination`` accepts a string or a Path
+		pointing to an existing local directory.
+
+		Directory downloads retain the source directory name unless
+		``preserve_source_dir`` is False. ``progress_callback`` receives the
+		downloaded byte count and total size for each file.
+
+		``mode`` optionally sets the permission bits of each downloaded file
+		after writing (for example, ``0o755``). It does not affect directories.
+		If omitted, normal file-creation defaults and existing file permissions
+		are preserved. Permission support depends on the local operating system.
+		"""
+		source = source.as_posix() if isinstance(source, Path) else source
+		destination = Path(destination)
 		contents = self.webdav_content(source, include_base_path=True)
 		if not contents:
 			raise FileNotFoundError(f"File/Directory not found: {source}")
@@ -1817,7 +1852,7 @@ class ServiceClient:
 			(destination / current.name).mkdir(exist_ok=True)
 			logger.debug("Recursing to subpaths %s of %s", [content.name for content in contents], source)
 			for content in contents[1:]:
-				self.download(content.path, dest_dir, preserve_source_dir=True, progress_callback=progress_callback)
+				self.download(content.path, dest_dir, preserve_source_dir=True, progress_callback=progress_callback, mode=mode)
 		else:
 			logger.info("Downloading '%s' to '%s' (size: %d)", current.path, destination / current.name, current.size)
 			self.assert_connected()
@@ -1833,6 +1868,36 @@ class ServiceClient:
 					position += num_bytes
 					if progress_callback:
 						progress_callback(position, current.size)
+			if mode is not None:
+				(destination / current.name).chmod(mode)
+
+	def get_files_by_extension(self, path: str, extension: str, /) -> list[str]:
+		"""
+		List files with the given extension in a WebDAV directory.
+
+		Parameters
+		----------
+		path : str
+			WebDAV directory to list. Subdirectories are not searched.
+		extension : str
+			File extension, with or without a leading dot (for example, ".iso").
+			Matching is case-sensitive. Compound extensions such as ".tar.gz" are supported.
+
+		Returns
+		-------
+		list[str]
+			Matching file names without directory paths, in the order returned
+			by :meth:`webdav_content`. Directories are excluded.
+
+		Raises
+		------
+		ValueError
+			If the extension is empty or consists only of a dot.
+		"""
+		if extension in ("", "."):
+			raise ValueError("File extension must not be empty or a single dot")
+		suffix = extension if extension.startswith(".") else f".{extension}"
+		return [file.name for file in self.webdav_content(path) if file.type == DAVFileType.FILE and file.name.endswith(suffix)]
 
 	def webdav_content(self, path: str, include_base_path: bool = False) -> list[DAVFileInfo]:
 		path = "/" + path.strip("/")

@@ -214,7 +214,7 @@ class OpsiPackage:
 			self.parse_control_file_legacy(control_file)
 			return
 
-		doc = tomlkit.loads(control_file.read_text()).unwrap()
+		doc = tomlkit.loads(control_file.read_text(encoding="utf-8")).unwrap()
 		# changelog key in changelog section... better idea?
 		self.changelog = doc.get("changelog", {}).get("changelog")
 		if "Product" not in doc:

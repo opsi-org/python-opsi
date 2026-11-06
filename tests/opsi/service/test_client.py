@@ -14,6 +14,7 @@ import re
 import select
 import socket
 import ssl
+import stat
 import string
 import time
 import traceback
@@ -202,6 +203,35 @@ def test_get_ca_cert_file_path(service_address: str, expected_path: str) -> None
 	base_dir = Path(os.getenv("APPDATA", "")) if is_windows() else Path.home() / ".config"
 	ca_cert_file_path = ServiceClient.get_ca_cert_file_path(service_address)
 	assert ca_cert_file_path == base_dir / expected_path
+
+
+@pytest.mark.parametrize(
+	("address", "expected"),
+	[
+		("depot.example.org", "depot.example.org"),
+		("https://depot.example.org:4448/rpc", "depot.example.org"),
+		("localhost", "localhost"),
+		("https://192.0.2.1:4447", "192.0.2.1"),
+		("https://[::1]:4447", "0000:0000:0000:0000:0000:0000:0000:0001"),
+	],
+)
+def test_base_hostname(address: str, expected: str) -> None:
+	with ServiceClient(address) as client:
+		assert client.base_hostname == expected
+
+
+def test_base_hostname_follows_active_address() -> None:
+	with ServiceClient(["https://first.example.org:4447", "https://second.example.org:4448"]) as client:
+		assert client.base_hostname == "first.example.org"
+		client.address_index = 1
+		assert client.base_hostname == "second.example.org"
+		client.set_addresses("https://third.example.org:4449")
+		assert client.base_hostname == "third.example.org"
+
+
+def test_base_hostname_without_address() -> None:
+	with ServiceClient() as client, pytest.raises(ValueError, match="Service address undefined"):
+		_ = client.base_hostname
 
 
 def test_arguments() -> None:
@@ -1870,9 +1900,18 @@ def test_file_upload_and_delete(tmp_path: Path) -> None:
 			assert not (remote_dir / "subdir/remote.bin").exists()
 
 
-def test_download(tmp_path: Path) -> None:
+@pytest.mark.parametrize("source_type", [str, Path])
+@pytest.mark.parametrize("destination_type", [str, Path])
+@pytest.mark.parametrize("source_path", ["/some_dir", "/some_dir/some_file"])
+@pytest.mark.parametrize("mode", [None, 0o755, 0o600, 0])
+def test_download(
+	tmp_path: Path, source_type: type[str | Path], destination_type: type[str | Path], source_path: str, mode: int | None
+) -> None:
 	local_dir = tmp_path / "local"
 	local_dir.mkdir()
+	default_file = tmp_path / "default"
+	default_file.touch()
+	default_mode = stat.S_IMODE(default_file.stat().st_mode)
 	remote_dir = tmp_path / "remote"
 	(remote_dir / "some_dir" / "some_nested_dir").mkdir(parents=True)
 
@@ -1911,12 +1950,45 @@ def test_download(tmp_path: Path) -> None:
 	with http_test_server(generate_cert=True, serve_directory=remote_dir) as server:
 		with ServiceClient(f"https://127.0.0.1:{server.port}", verify="accept_all") as client:
 			with mock.patch("opsi.opsi.service.client._service_client.ServiceClient.webdav_content", mocked_webdav_content):
-				client.download("/some_dir", local_dir, progress_callback=progress_callback)
-			assert (remote_dir / "some_dir" / "some_file").read_bytes() == data1
-			assert (local_dir / "some_dir" / "some_nested_dir" / "some_deep_file").read_bytes() == data2
-			assert len(values) == (1_000_000 // 8192 + 1) * 2  # two files with 1_000_000 bytes each
+				client.download(source_type(source_path), destination_type(local_dir), progress_callback=progress_callback, mode=mode)
+			downloaded_files = [path for path in local_dir.rglob("*") if path.is_file()]
+			if not is_windows():
+				for path in local_dir.rglob("*"):
+					if path.is_dir():
+						assert stat.S_IMODE(path.stat().st_mode) == stat.S_IMODE(local_dir.stat().st_mode)
+				for path in downloaded_files:
+					assert stat.S_IMODE(path.stat().st_mode) == (default_mode if mode is None else mode)
+			for path in downloaded_files:
+				# Restore read access for content assertions and Windows cleanup.
+				path.chmod(default_mode)
+			if source_path == "/some_dir":
+				assert (local_dir / "some_dir" / "some_file").read_bytes() == data1
+				assert (local_dir / "some_dir" / "some_nested_dir" / "some_deep_file").read_bytes() == data2
+				file_count = 2
+			else:
+				assert (local_dir / "some_file").read_bytes() == data1
+				file_count = 1
+			assert len(values) == (1_000_000 // 8192 + 1) * file_count
 			assert values[0] == (8192, 1_000_000)
 			assert values[-1] == (1_000_000, 1_000_000)
+
+
+def test_download_preserves_existing_mode_by_default(tmp_path: Path) -> None:
+	file = tmp_path / "script.sh"
+	file.write_bytes(b"old")
+	file.chmod(0o700)
+	original_mode = stat.S_IMODE(file.stat().st_mode)
+	response = mock.Mock()
+	response.iter_content.return_value = [b"new"]
+	with ServiceClient("https://localhost:4447") as client:
+		with (
+			mock.patch.object(client, "webdav_content", return_value=[DAVFileInfo(path="/script.sh", type=DAVFileType.FILE)]),
+			mock.patch.object(client, "assert_connected"),
+			mock.patch.object(client, "_request", return_value=response),
+		):
+			client.download("/script.sh", tmp_path)
+	assert file.read_bytes() == b"new"
+	assert stat.S_IMODE(file.stat().st_mode) == original_mode
 
 
 DAV_PROPFIND_RESPONSE = """<?xml version="1.0" encoding="utf-8"?>
@@ -2030,6 +2102,55 @@ DAV_PROPFIND_RESPONSE = """<?xml version="1.0" encoding="utf-8"?>
 """
 
 
+@pytest.mark.parametrize(
+	("extension", "expected"),
+	[
+		(".iso", ["ubuntu.iso"]),
+		("iso", ["ubuntu.iso"]),
+		(".ISO", ["other.ISO"]),
+		(".tar.gz", ["archive.tar.gz"]),
+		(".txt", []),
+	],
+)
+def test_get_files_by_extension(extension: str, expected: list[str]) -> None:
+	files = [
+		DAVFileInfo(path="/depot/testdir/ubuntu.iso", type=DAVFileType.FILE, size=1024),
+		DAVFileInfo(path="/depot/testdir/folder.iso", type=DAVFileType.DIR),
+		DAVFileInfo(path="/depot/testdir/other.ISO", type=DAVFileType.FILE),
+		DAVFileInfo(path="/depot/testdir/not-an-iso", type=DAVFileType.FILE),
+		DAVFileInfo(path="/depot/testdir/archive.tar.gz", type=DAVFileType.FILE),
+	]
+	with ServiceClient("https://localhost:4447") as client:
+		with mock.patch.object(client, "webdav_content", return_value=files) as webdav_content:
+			result = client.get_files_by_extension("/depot/testdir", extension)
+
+		webdav_content.assert_called_once_with("/depot/testdir")
+		assert result == expected
+		assert all(isinstance(name, str) for name in result)
+
+
+@pytest.mark.parametrize("extension", ["", "."])
+def test_get_files_by_extension_rejects_empty_extension(extension: str) -> None:
+	with ServiceClient("https://localhost:4447") as client:
+		with mock.patch.object(client, "webdav_content") as webdav_content:
+			with pytest.raises(ValueError, match="File extension"):
+				client.get_files_by_extension("/depot/testdir", extension)
+		webdav_content.assert_not_called()
+
+
+def test_get_files_by_extension_empty_directory() -> None:
+	with ServiceClient("https://localhost:4447") as client:
+		with mock.patch.object(client, "webdav_content", return_value=[]):
+			assert client.get_files_by_extension("/depot/testdir", ".iso") == []
+
+
+def test_get_files_by_extension_propagates_service_errors() -> None:
+	with ServiceClient("https://localhost:4447") as client:
+		with mock.patch.object(client, "webdav_content", side_effect=OpsiServicePermissionError("Access denied")):
+			with pytest.raises(OpsiServicePermissionError, match="Access denied"):
+				client.get_files_by_extension("/depot/testdir", ".iso")
+
+
 def test_webdav_content() -> None:
 	def request_callback(handler: HTTPTestServerRequestHandler, request: dict) -> bool:
 		if request["path"] in ("/", "/rpc"):
@@ -2061,6 +2182,7 @@ def test_webdav_content() -> None:
 				assert file_infos[1].name == "subdir"
 				assert file_infos[1].relative_path(path) == "subdir"
 				assert file_infos[1].relative_path("/depot") == "testdir/subdir"
+				assert client.get_files_by_extension(path, ".txt") == ["testfile.txt"]
 
 
 def test_timeouts() -> None:
