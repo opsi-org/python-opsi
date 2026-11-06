@@ -32,7 +32,7 @@ from ipaddress import IPv6Address, ip_address
 from pathlib import Path
 from random import randint
 from threading import Event, Lock, Thread
-from types import MethodType, TracebackType
+from types import EllipsisType, MethodType, TracebackType
 from typing import TYPE_CHECKING, Any, BinaryIO, Literal, Self, cast, overload
 from urllib.parse import quote, unquote, urlparse
 from uuid import uuid4
@@ -1366,7 +1366,7 @@ class ServiceClient:
 		read_timeout: float | None = None,
 		data: bytes | UploadFile | None = None,
 		verify: str | bool | None = None,
-		allow_status_codes: Iterable[int] | None = None,
+		allow_status_codes: Iterable[int] | EllipsisType | None = None,
 	) -> RequestsResponse:
 		if self._service_unavailable and self._service_unavailable.until and self._service_unavailable.until >= time.monotonic():
 			raise self._service_unavailable
@@ -1380,7 +1380,14 @@ class ServiceClient:
 
 		self._service_unavailable = None
 
-		allow_status_codes = (200, 201, 202, 203, 204, 206, 207, 208) if allow_status_codes is None else tuple(allow_status_codes)
+		# An empty tuple disables the status code check (Ellipsis means "accept all")
+		allowed_status_codes: tuple[int, ...]
+		if allow_status_codes is None:
+			allowed_status_codes = (200, 201, 202, 203, 204, 206, 207, 208)
+		elif isinstance(allow_status_codes, EllipsisType):
+			allowed_status_codes = ()
+		else:
+			allowed_status_codes = tuple(allow_status_codes)
 		max_attempts = 3
 		for attempt in range(1, max_attempts + 1):
 			try:
@@ -1395,7 +1402,7 @@ class ServiceClient:
 					stream=True,
 					verify=verify,
 				)
-				if allow_status_codes and allow_status_codes != ... and response.status_code not in allow_status_codes:
+				if allowed_status_codes and response.status_code not in allowed_status_codes:
 					response.raise_for_status()
 				return response
 			except SSLError as err:
@@ -1454,7 +1461,7 @@ class ServiceClient:
 		connect_timeout: float | None = None,
 		read_timeout: float | None = None,
 		data: bytes | None = None,
-		allow_status_codes: Iterable[int] | None = None,
+		allow_status_codes: Iterable[int] | EllipsisType | None = None,
 		raw_response: Literal[False] = ...,
 		assert_connected: bool = True,
 	) -> Response: ...
@@ -1469,7 +1476,7 @@ class ServiceClient:
 		connect_timeout: float | None = None,
 		read_timeout: float | None = None,
 		data: bytes | None = None,
-		allow_status_codes: Iterable[int] | None = None,
+		allow_status_codes: Iterable[int] | EllipsisType | None = None,
 		raw_response: Literal[True],
 		assert_connected: bool = True,
 	) -> RequestsResponse: ...
@@ -1484,7 +1491,7 @@ class ServiceClient:
 		connect_timeout: float | None = None,
 		read_timeout: float | None = None,
 		data: bytes | None = None,
-		allow_status_codes: Iterable[int] | None = None,
+		allow_status_codes: Iterable[int] | EllipsisType | None = None,
 		raw_response: bool = ...,
 		assert_connected: bool = True,
 	) -> RequestsResponse | Response: ...
@@ -1498,7 +1505,7 @@ class ServiceClient:
 		connect_timeout: float | None = None,
 		read_timeout: float | None = None,
 		data: bytes | None = None,
-		allow_status_codes: Iterable[int] | None = None,
+		allow_status_codes: Iterable[int] | EllipsisType | None = None,
 		raw_response: bool = False,
 		assert_connected: bool = True,
 	) -> Response | RequestsResponse:
@@ -1527,7 +1534,7 @@ class ServiceClient:
 		headers: dict[str, str] | None = None,
 		connect_timeout: float | None = None,
 		read_timeout: float | None = None,
-		allow_status_codes: Iterable[int] | None = None,
+		allow_status_codes: Iterable[int] | EllipsisType | None = None,
 		raw_response: Literal[False] = ...,
 		assert_connected: bool = True,
 	) -> Response: ...
@@ -1540,7 +1547,7 @@ class ServiceClient:
 		headers: dict[str, str] | None = None,
 		connect_timeout: float | None = None,
 		read_timeout: float | None = None,
-		allow_status_codes: Iterable[int] | None = None,
+		allow_status_codes: Iterable[int] | EllipsisType | None = None,
 		raw_response: Literal[True],
 		assert_connected: bool = True,
 	) -> RequestsResponse: ...
@@ -1553,7 +1560,7 @@ class ServiceClient:
 		headers: dict[str, str] | None = None,
 		connect_timeout: float | None = None,
 		read_timeout: float | None = None,
-		allow_status_codes: Iterable[int] | None = None,
+		allow_status_codes: Iterable[int] | EllipsisType | None = None,
 		raw_response: bool = ...,
 		assert_connected: bool = True,
 	) -> RequestsResponse | Response: ...
@@ -1565,7 +1572,7 @@ class ServiceClient:
 		headers: dict[str, str] | None = None,
 		connect_timeout: float | None = None,
 		read_timeout: float | None = None,
-		allow_status_codes: Iterable[int] | None = None,
+		allow_status_codes: Iterable[int] | EllipsisType | None = None,
 		raw_response: bool = False,
 		assert_connected: bool = True,
 	) -> Response | RequestsResponse:
@@ -1589,7 +1596,7 @@ class ServiceClient:
 		headers: dict[str, str] | None = None,
 		connect_timeout: float | None = None,
 		read_timeout: float | None = None,
-		allow_status_codes: Iterable[int] | None = None,
+		allow_status_codes: Iterable[int] | EllipsisType | None = None,
 		raw_response: Literal[False] = ...,
 		assert_connected: bool = True,
 	) -> Response: ...
@@ -1603,7 +1610,7 @@ class ServiceClient:
 		headers: dict[str, str] | None = None,
 		connect_timeout: float | None = None,
 		read_timeout: float | None = None,
-		allow_status_codes: Iterable[int] | None = None,
+		allow_status_codes: Iterable[int] | EllipsisType | None = None,
 		raw_response: Literal[True],
 		assert_connected: bool = True,
 	) -> RequestsResponse: ...
@@ -1617,7 +1624,7 @@ class ServiceClient:
 		headers: dict[str, str] | None = None,
 		connect_timeout: float | None = None,
 		read_timeout: float | None = None,
-		allow_status_codes: Iterable[int] | None = None,
+		allow_status_codes: Iterable[int] | EllipsisType | None = None,
 		raw_response: bool = ...,
 		assert_connected: bool = True,
 	) -> RequestsResponse | Response: ...
@@ -1630,7 +1637,7 @@ class ServiceClient:
 		headers: dict[str, str] | None = None,
 		connect_timeout: float | None = None,
 		read_timeout: float | None = None,
-		allow_status_codes: Iterable[int] | None = None,
+		allow_status_codes: Iterable[int] | EllipsisType | None = None,
 		raw_response: bool = False,
 		assert_connected: bool = True,
 	) -> Response | RequestsResponse:
@@ -1724,7 +1731,7 @@ class ServiceClient:
 		start_time = time.monotonic()
 
 		allow_status_codes = (200, 500) if return_result_only else ...
-		response = self.post(  # ty: ignore[no-matching-overload]  # ellipsis -> object
+		response = self.post(
 			self._jsonrpc_path,
 			headers=headers,
 			data=data,
