@@ -27,6 +27,7 @@ import win32security
 import win32ts
 
 from opsi.logging import get_logger
+from opsi.process._process import merge_environment_case_insensitive
 
 logger = get_logger("opsi")
 
@@ -147,8 +148,10 @@ def CreateProcess(
 	if session_desktop:
 		startup_info.lpDesktop = session_desktop
 
-	env = win32profile.CreateEnvironmentBlock(user_token, False)
-	env.update(__env_mapping)
+	# Environment variable names are case-insensitive on Windows, but a dict is not.
+	# A plain dict.update would add "PATH" next to "Path" and the new process would get an invalid environment block.
+	env = merge_environment_case_insensitive(win32profile.CreateEnvironmentBlock(user_token, False), __env_mapping)
+
 
 	(process_handle, thread_handle, process_id, thread_id) = win32process.CreateProcessAsUser(
 		user_token,

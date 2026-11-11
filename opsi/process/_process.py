@@ -117,6 +117,26 @@ def get_subprocess_environment(env: Mapping[str, str] | None = None) -> dict[str
 	return env
 
 
+def merge_environment_case_insensitive(base: Mapping[str, str], overrides: Mapping[str, str]) -> dict[str, str]:
+	"""
+	Merge environment variables, treating variable names as case-insensitive (like Windows does).
+	Values from `overrides` take precedence, the spelling of the names in `base` is kept.
+	The result never contains two names that differ only in case.
+	"""
+	result: dict[str, str] = {}
+	names: dict[str, str] = {}
+	for name, value in base.items():
+		key = name.upper()
+		# On conflicts within base the last value wins, same as for the overrides
+		result.pop(names.get(key, name), None)
+		names[key] = name
+		result[name] = value
+	for name, value in overrides.items():
+		name = names.setdefault(name.upper(), name)
+		result[name] = value
+	return result
+
+
 class ProcessError(Exception):
 	"""Raised when a process execution fails."""
 

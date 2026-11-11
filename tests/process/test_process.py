@@ -33,7 +33,7 @@ from opsi.process import (
 	run_script,
 	run_script_file,
 )
-from opsi.process._process import _get_interpreter_command, get_process_io_encoding
+from opsi.process._process import _get_interpreter_command, get_process_io_encoding, merge_environment_case_insensitive
 from opsi.system.info import is_windows
 from opsi.system.session import DisplaySession, LinuxDisplaySessionType, WindowsDisplaySessionState, get_display_sessions
 from opsi.testing.helper import environment
@@ -786,6 +786,29 @@ def test_path_cleanup() -> None:
 			assert proc_env["PATH"].split(os.pathsep) == clean_path
 			proc.wait()
 		assert os.environ["PATH"].split(os.pathsep) == path
+
+
+def test_merge_environment_case_insensitive() -> None:
+	base = {"Path": r"C:\base", "ProgramFiles": r"C:\Program Files", "PSModulePath": r"%ProgramFiles%\Modules", "windir": r"C:\Windows"}
+	overrides = {"PATH": r"C:\override", "PROGRAMFILES": r"C:\Program Files", "PSMODULEPATH": r"C:\Modules", "NO_PROXY": "localhost"}
+	merged = merge_environment_case_insensitive(base, overrides)
+	# Spelling of the base is kept, override values win, no case-insensitive duplicates
+	assert merged == {
+		"Path": r"C:\override",
+		"ProgramFiles": r"C:\Program Files",
+		"PSModulePath": r"C:\Modules",
+		"windir": r"C:\Windows",
+		"NO_PROXY": "localhost",
+	}
+	assert len({k.upper() for k in merged}) == len(merged)
+	# Inputs are not modified
+	assert base["Path"] == r"C:\base"
+
+
+def test_merge_environment_case_insensitive_duplicates_in_input() -> None:
+	merged = merge_environment_case_insensitive({"A": "1", "a": "2"}, {"B": "3", "b": "4"})
+	assert merged == {"a": "2", "B": "4"}
+
 
 
 def test_process_argument_validation() -> None:
