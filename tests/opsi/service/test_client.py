@@ -2942,9 +2942,9 @@ def test_messagebus_listener() -> None:
 def test_server_date_update() -> None:
 	dt_set = None
 
-	def mock_set_system_datetime(utc_datetime: datetime) -> None:
+	def mock_set_system_datetime(new_datetime: datetime) -> None:
 		nonlocal dt_set
-		dt_set = utc_datetime
+		dt_set = new_datetime
 
 	with (
 		mock.patch("opsi.opsi.service.client._service_client.set_system_datetime", mock_set_system_datetime),
