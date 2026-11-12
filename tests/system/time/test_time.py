@@ -99,7 +99,7 @@ def test_set_system_datetime_macos_calls_date_with_utc_time(monkeypatch: pytest.
 
 	macos_time.set_system_datetime(datetime(2026, 4, 22, 11, 12, 33, tzinfo=local_tz))
 
-	assert called == [["date", "-u", "202604220912.33"]]
+	assert called == [["date", "-u", "042209122026.33"]]
 
 
 @pytest.mark.posix

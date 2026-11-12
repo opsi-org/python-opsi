@@ -37,7 +37,7 @@ def set_system_datetime(new_datetime: datetime, *, update_hardware_clock: bool =
 	new_datetime = new_datetime.astimezone(UTC)
 
 	try:
-		# BSD date format: [[[[[cc]yy]mm]dd]HH]MM[.SS]
-		run_command(["date", "-u", new_datetime.strftime("%Y%m%d%H%M.%S")], timeout=10.0)
+		# macOS date format: [[[mm]dd]HH]MM[[cc]yy][.ss]
+		run_command(["date", "-u", new_datetime.strftime("%m%d%H%M%Y.%S")], timeout=10.0)
 	except Exception as err:
 		raise RuntimeError(f"Failed to set system time as uid {os.geteuid()}: {err}") from err
