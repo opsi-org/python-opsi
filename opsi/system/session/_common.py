@@ -162,6 +162,11 @@ class DisplaySession:
 		On Linux, this identifies logind's active session on seat0 when known.
 	is_usable: Whether the session is usable for running applications.
 		On Linux, this is a best-effort prerequisite check, not a connection/authentication guarantee.
+	is_user_session: Whether this is an interactive session of a human user.
+		False for login screens (greeters), lock screens, background and manager sessions and,
+		on Linux without logind metadata, system accounts. `user` may be set even if this is False,
+		because it identifies the account the session's processes run as.
+		On Windows, this is True if a user is associated with the session.
 	user: The user associated with the session, or None if no user is associated.
 	domain: The domain of the user associated with the session, or None if no domain is associated or applicable.
 	environment: The environment variables associated with the session.
@@ -174,6 +179,7 @@ class DisplaySession:
 	id: str
 	is_current_console_session: bool = False
 	is_usable: bool = True
+	is_user_session: bool = True
 	user: str | None = None
 	domain: str | None = None
 	environment: dict[str, str] = field(default_factory=dict)
