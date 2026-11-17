@@ -612,6 +612,76 @@ def test_create_package_empty() -> None:
 			assert (temp_dir / "OPSI").relative_to(temp_dir) in result_contents
 
 
+NETBOOT_CONTROL = """
+[Package]
+version = "1"
+
+[Product]
+type = "NetbootProduct"
+id = "netboot_boot"
+name = "netboot boot"
+version = "1.0"
+pxeConfigTemplate = "install3264"
+"""
+
+
+@pytest.mark.parametrize("compression", ("zstd", "gz"))
+def test_create_package_boot(compression: Literal["zstd", "gz"]) -> None:
+	control = NETBOOT_CONTROL
+	with TempDir() as temp_dir:
+		for _dir in (temp_dir / "OPSI", temp_dir / "CLIENT_DATA", temp_dir / "BOOT"):
+			_dir.mkdir()
+		(temp_dir / "OPSI" / "control.toml").write_text(control, encoding="utf-8", newline="")
+		(temp_dir / "CLIENT_DATA" / "client_data").write_text("client_data", encoding="utf-8", newline="")
+		(temp_dir / "BOOT" / "kernel.x64").write_text("kernel", encoding="utf-8", newline="")
+		package = OpsiPackage()
+		package_archive = package.create_package_archive(temp_dir, compression=compression, destination=temp_dir)
+		assert isinstance(package.product, NetbootProduct)
+		with TempDir() as result_dir:
+			OpsiPackage().extract_package_archive(package_archive, result_dir)
+			assert (result_dir / "CLIENT_DATA" / "client_data").exists()
+			assert (result_dir / "BOOT" / "kernel.x64").read_text(encoding="utf-8") == "kernel"
+
+
+def test_create_package_boot_empty() -> None:
+	control = (TEST_DATA / "control.toml").read_text(encoding="utf-8")
+	with TempDir() as temp_dir:
+		for _dir in (temp_dir / "OPSI", temp_dir / "BOOT"):
+			_dir.mkdir()
+		(temp_dir / "OPSI" / "control.toml").write_text(control, encoding="utf-8", newline="")
+		package_archive = OpsiPackage().create_package_archive(temp_dir, destination=temp_dir)
+		with TempDir() as result_dir:
+			OpsiPackage().extract_package_archive(package_archive, result_dir)
+			assert not (result_dir / "BOOT").exists()
+
+
+def test_create_package_boot_localboot_not_allowed() -> None:
+	with TempDir() as temp_dir:
+		for _dir in (temp_dir / "OPSI", temp_dir / "BOOT"):
+			_dir.mkdir()
+		copy(TEST_DATA / "control.toml", temp_dir / "OPSI")
+		(temp_dir / "BOOT" / "kernel.x64").write_text("kernel", encoding="utf-8", newline="")
+		with pytest.raises(ValueError, match="only allowed for netboot products"):
+			OpsiPackage().create_package_archive(temp_dir, destination=temp_dir)
+
+
+def test_create_package_boot_custom_only() -> None:
+	control = NETBOOT_CONTROL
+	with TempDir() as temp_dir:
+		for _dir in (temp_dir / "OPSI", temp_dir / "BOOT", temp_dir / "CLIENT_DATA.custom"):
+			_dir.mkdir()
+		(temp_dir / "OPSI" / "control.toml").write_text(control, encoding="utf-8", newline="")
+		(temp_dir / "BOOT" / "kernel.x64").write_text("kernel", encoding="utf-8", newline="")
+		(temp_dir / "CLIENT_DATA.custom" / "file").write_text("custom", encoding="utf-8", newline="")
+		for custom_only in (False, True):
+			package_archive = OpsiPackage().create_package_archive(
+				temp_dir, destination=temp_dir, custom_name="custom", custom_only=custom_only
+			)
+			with TempDir() as result_dir:
+				OpsiPackage().extract_package_archive(package_archive, result_dir)
+				assert (result_dir / "BOOT" / "kernel.x64").exists() != custom_only
+
+
 @pytest.mark.linux
 @pytest.mark.parametrize(
 	"dereference",
