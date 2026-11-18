@@ -38,6 +38,7 @@ LD_LIBRARY_EXCLUDE_LIST = ["/usr/lib/opsiclientd", "/usr/lib/opsiconfd", "/usr/l
 # The command line of a Windows process is limited to 32767 characters.
 # Leave room for the executable path and the other PowerShell options.
 POWERSHELL_ENCODED_COMMAND_MAX_LENGTH = 30_000
+POWERSHELL_ENCODED_COMMAND_PREFIX = "$ProgressPreference = 'SilentlyContinue'"
 
 logger = get_logger("opsi")
 
@@ -339,7 +340,7 @@ def _get_interpreter_command(
 				args.extend(["-WindowStyle", "Hidden"])
 			args.extend(["-ExecutionPolicy", "Bypass"])
 			if encoded_command is not None:
-				# -OutputFormat Text prevents PowerShell from writing CLIXML to stderr when -EncodedCommand is used
+				# Always use text output, progress records are suppressed in _apply_encoded_command
 				args.extend(["-OutputFormat", "Text", "-EncodedCommand", encoded_command])
 			else:
 				args.extend(["-File", script_file])
@@ -807,7 +808,10 @@ class Process:
 		If the script is too long for the command line and the mode is "auto", fall back to stdin or a temporary file.
 		"""
 		assert self._script
-		encoded_command = base64.b64encode(self._script.encode("utf-16-le")).decode("ascii")
+		# Progress records (e.g. "Preparing modules for first use.") are written as CLIXML to stderr when -EncodedCommand is used.
+		# Disable the progress output to keep stderr clean.
+		command_script = POWERSHELL_ENCODED_COMMAND_PREFIX + os.linesep + self._script
+		encoded_command = base64.b64encode(command_script.encode("utf-16-le")).decode("ascii")
 		if len(encoded_command) <= POWERSHELL_ENCODED_COMMAND_MAX_LENGTH:
 			self._command[-1] = encoded_command
 			return

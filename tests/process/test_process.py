@@ -604,6 +604,20 @@ def test_process_powershell_mode_exit_code_and_encoding(powershell_mode: str) ->
 
 
 @pytest.mark.windows
+def test_process_powershell_encoded_no_clixml() -> None:
+	# Progress records and errors must not be written as CLIXML to the output
+	script = 'Write-Progress -Activity "activity" -Status "status"\nWrite-Output "stdout-text"\nWrite-Error "stderr-text"'
+	with Process(
+		script=script, interpreter="powershell", powershell_mode="encoded", capture_output="combined", success_exit_codes=None
+	) as proc:
+		pass
+	out = proc.get_output_text()
+	assert "stdout-text" in out
+	assert "stderr-text" in out
+	assert "CLIXML" not in out, out
+
+
+@pytest.mark.windows
 def test_process_powershell_mode_auto_resolution() -> None:
 	with Process(script="Write-Output 'ok'", interpreter="powershell") as proc:
 		assert proc._powershell_mode == PowerShellMode.ENCODED
@@ -961,7 +975,6 @@ def test_merge_environment_case_insensitive() -> None:
 def test_merge_environment_case_insensitive_duplicates_in_input() -> None:
 	merged = merge_environment_case_insensitive({"A": "1", "a": "2"}, {"B": "3", "b": "4"})
 	assert merged == {"a": "2", "B": "4"}
-
 
 
 def test_process_argument_validation() -> None:
