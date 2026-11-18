@@ -25,6 +25,7 @@ from opsi.logging import LOG_DEBUG, LOG_NOTICE
 from opsi.process import (
 	DecodingErrors,
 	InterpreterType,
+	PowerShellMode,
 	Process,
 	ProcessError,
 	_process,
@@ -521,6 +522,158 @@ def test_process_interpreter_windows(tmp_path: Path, interpreter: str | None, pi
 		assert out == f"Multi line script\r\n{user}\r\nend of script"
 		lines = proc.get_output_lines()
 		assert lines == ["Multi line script", user, "end of script"]
+
+
+POWERSHELL_MULTILINE_CONSTRUCTS_SCRIPT = """\
+$value = 1
+if ($value -eq 2) {
+    Write-Output ("if-branch-" + (10 + 1))
+}
+else {
+    Write-Output ("else-branch-" + (20 + 2))
+}
+function Get-Double {
+    param([int]$n)
+    return $n * 2
+}
+Write-Output ("function-" + (Get-Double 21))
+foreach ($i in 1..3) {
+    Write-Output ("loop-" + ($i * 10))
+}
+try {
+    throw "boom"
+}
+catch {
+    Write-Output ("catch-" + (3 + 4))
+}
+finally {
+    Write-Output ("finally-" + (5 + 6))
+}
+$text = @"
+here-string-line
+"@
+Write-Output ("here-" + $text.Trim().Length)
+"""
+
+
+@pytest.mark.windows
+@pytest.mark.parametrize("powershell_mode", ["encoded", "stdin", "file"])
+def test_process_powershell_multiline_constructs(powershell_mode: str) -> None:
+	# PowerShell parses piped stdin line by line.
+	# Constructs where a statement continues on the next line ("}" followed by "else", "catch", "finally")
+	# must still be parsed as one statement.
+	# Expected values are computed in the script so they do not match the echoed command text.
+	with Process(
+		script=POWERSHELL_MULTILINE_CONSTRUCTS_SCRIPT,
+		interpreter="powershell",
+		powershell_mode=powershell_mode,
+		capture_output="combined",
+		success_exit_codes=None,
+	) as proc:
+		assert proc._powershell_mode == PowerShellMode(powershell_mode)
+
+	out = proc.get_output_text()
+	for expected in (
+		"else-branch-22",
+		"function-42",
+		"loop-10",
+		"loop-20",
+		"loop-30",
+		"catch-7",
+		"finally-11",
+		"here-16",
+	):
+		assert expected in out, f"{expected!r} missing in output:\n{out}"
+	assert "if-branch-11" not in out
+	assert "is not recognized" not in out, out
+	assert "CLIXML" not in out, out
+	assert proc.exit_code == 0, out
+
+
+@pytest.mark.windows
+@pytest.mark.parametrize("powershell_mode", ["auto", "encoded", "stdin", "file"])
+def test_process_powershell_mode_exit_code_and_encoding(powershell_mode: str) -> None:
+	# Non-ASCII characters must survive every mode, the exit code of "exit N" must be passed on
+	script = 'Write-Output ("umlauts-" + "\u00e4\u00f6\u00fc\u00df".Length)\nexit 3'
+	with Process(
+		script=script, interpreter="powershell", powershell_mode=powershell_mode, capture_output="combined", success_exit_codes=None
+	) as proc:
+		pass
+	assert proc.exit_code == 3, proc.get_output_text()
+	assert "umlauts-4" in proc.get_output_text()
+
+
+@pytest.mark.windows
+def test_process_powershell_mode_auto_resolution() -> None:
+	with Process(script="Write-Output 'ok'", interpreter="powershell") as proc:
+		assert proc._powershell_mode == PowerShellMode.ENCODED
+		assert not proc._pipe_script
+		assert proc._temp_script_file is None
+
+	# Arguments cannot be passed with -EncodedCommand, use a temporary file
+	with Process(script="Write-Output $args[0]", interpreter="powershell", arguments=["arg1"], capture_output="combined") as proc:
+		assert proc._powershell_mode == PowerShellMode.FILE
+		assert proc._temp_script_file is not None
+	assert "arg1" in proc.get_output_text()
+
+
+@pytest.mark.windows
+@pytest.mark.parametrize("powershell_mode", ["encoded", "stdin"])
+def test_process_powershell_mode_arguments_error(powershell_mode: str) -> None:
+	with pytest.raises(ProcessError, match="Cannot use arguments with PowerShell mode"):
+		Process(script="Write-Output 'ok'", interpreter="powershell", arguments=["arg1"], powershell_mode=powershell_mode)
+
+
+@pytest.mark.windows
+def test_process_powershell_mode_script_too_long() -> None:
+	# Base64 of UTF-16LE needs about 2.7 characters per script character
+	script = f"# {'x' * 20_000}\nWrite-Output ('long-' + (40 + 2))"
+
+	# auto falls back to stdin
+	with Process(script=script, interpreter="powershell", capture_output="combined") as proc:
+		assert proc._powershell_mode == PowerShellMode.STDIN
+		assert proc._pipe_script
+	assert "long-42" in proc.get_output_text()
+
+	# auto falls back to a file if stdin is in use
+	with Process(script=script, interpreter="powershell", stdin="\n", capture_output="combined") as proc:
+		assert proc._powershell_mode == PowerShellMode.FILE
+	assert "long-42" in proc.get_output_text()
+
+	# an explicit mode must not fall back
+	with pytest.raises(ProcessError, match="too long"):
+		with Process(script=script, interpreter="powershell", powershell_mode="encoded"):
+			pass
+
+
+@pytest.mark.windows
+def test_get_interpreter_command_powershell_encoded() -> None:
+	command = _get_interpreter_command(interpreter=InterpreterType.POWERSHELL, hide_window=True, encoded_command="QUJD")
+	command[0] = os.path.basename(command[0])
+	assert command == [
+		"powershell.exe",
+		"-NoLogo",
+		"-NonInteractive",
+		"-NoProfile",
+		"-WindowStyle",
+		"Hidden",
+		"-ExecutionPolicy",
+		"Bypass",
+		"-OutputFormat",
+		"Text",
+		"-EncodedCommand",
+		"QUJD",
+	]
+	with pytest.raises(ValueError, match="Cannot use arguments with PowerShell encoded command"):
+		_get_interpreter_command(interpreter=InterpreterType.POWERSHELL, arguments=["arg1"], encoded_command="QUJD")
+
+
+def test_process_powershell_mode_invalid() -> None:
+	with pytest.raises(ProcessError, match="Invalid value 'bogus' for PowerShell mode"):
+		Process(script="echo test", interpreter="bash", powershell_mode="bogus")
+	# Only valid for the powershell interpreter
+	with pytest.raises(ProcessError, match="'powershell_mode' can only be used with 'powershell' interpreter"):
+		Process(script="echo test", interpreter="bash", powershell_mode="file")
 
 
 @pytest.mark.posix

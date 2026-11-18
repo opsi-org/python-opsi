@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import base64
 import ctypes
 import enum
 import locale
@@ -34,6 +35,10 @@ from opsi.util.pattern import MappedStrEnum
 
 LD_LIBRARY_EXCLUDE_LIST = ["/usr/lib/opsiclientd", "/usr/lib/opsiconfd", "/usr/lib/opsi-agent"]
 
+# The command line of a Windows process is limited to 32767 characters.
+# Leave room for the executable path and the other PowerShell options.
+POWERSHELL_ENCODED_COMMAND_MAX_LENGTH = 30_000
+
 logger = get_logger("opsi")
 
 
@@ -62,6 +67,24 @@ class InterpreterType(MappedStrEnum):
 	BASH = "bash"
 
 	_NAME = enum.nonmember("interpreter type")
+
+
+class PowerShellMode(MappedStrEnum):
+	"""
+	How a script is passed to PowerShell on Windows.
+
+	- ``auto``: Use ``encoded`` if possible, fall back to ``stdin`` (script too long) or ``file`` (arguments).
+	- ``encoded``: Pass the script via ``-EncodedCommand``. Not subject to the execution policy.
+	- ``stdin``: Pipe the script to PowerShell via stdin. Not subject to the execution policy.
+	- ``file``: Write the script to a temporary file and run it via ``-File``. Subject to the execution policy.
+	"""
+
+	AUTO = "auto"
+	ENCODED = "encoded"
+	STDIN = "stdin"
+	FILE = "file"
+
+	_NAME = enum.nonmember("PowerShell mode")
 
 
 class DecodingErrors(MappedStrEnum):
@@ -253,6 +276,7 @@ def _get_interpreter_command(
 	script_file: str | os.PathLike[str] | TempFile = "-",
 	arguments: list[str] | None = None,
 	hide_window: bool = False,
+	encoded_command: str | None = None,
 ) -> list[str]:
 	script_file = (
 		str(script_file.path) if isinstance(script_file, TempFile) else os.fspath(script_file)
@@ -302,6 +326,8 @@ def _get_interpreter_command(
 		elif interpreter == InterpreterType.POWERSHELL:
 			if script_file == "-" and arguments:
 				raise ValueError("Cannot use arguments with piped PowerShell script input")
+			if encoded_command is not None and arguments:
+				raise ValueError("Cannot use arguments with PowerShell encoded command")
 
 			args = [
 				"powershell.exe",
@@ -311,7 +337,12 @@ def _get_interpreter_command(
 			]
 			if hide_window:
 				args.extend(["-WindowStyle", "Hidden"])
-			args.extend(["-ExecutionPolicy", "Bypass", "-File", script_file])
+			args.extend(["-ExecutionPolicy", "Bypass"])
+			if encoded_command is not None:
+				# -OutputFormat Text prevents PowerShell from writing CLIXML to stderr when -EncodedCommand is used
+				args.extend(["-OutputFormat", "Text", "-EncodedCommand", encoded_command])
+			else:
+				args.extend(["-File", script_file])
 			if arguments:
 				args.extend(arguments)
 
@@ -374,6 +405,7 @@ class Process:
 		discard_output: DiscardOutputMode | str = DiscardOutputMode.NONE,
 		encoding: str | None = None,
 		exit_on_error: bool = False,
+		powershell_mode: PowerShellMode | str = PowerShellMode.AUTO,
 		success_exit_codes: Collection[int] | None = (0,),
 		hide_window: bool = False,
 		detach: bool = False,
@@ -437,6 +469,12 @@ class Process:
 			Only valid with script execution and interpreter bash or powershell.
 			If True the script will exit on the first error.
 			If False the script will continue execution even if some commands fail.
+		:param powershell_mode:
+			Only relevant on Windows with interpreter powershell.
+			How the script is passed to PowerShell: "auto", "encoded" (-EncodedCommand), "stdin" (piped) or "file" (-File).
+			Only "file" is subject to the PowerShell execution policy (which can be enforced by group policy).
+			"auto" uses "encoded", falls back to "stdin" if the script is too long for the command line
+			and to "file" if arguments are passed. "encoded" and "stdin" cannot be used with arguments.
 		:param hide_window:
 			If True, hide the process window on Windows.
 		:param detach:
@@ -463,6 +501,8 @@ class Process:
 		self._temp_script_file: TempFile | None = None
 		self._script_file: Path | None = None
 		self._exit_on_error = bool(exit_on_error)
+		self._powershell_mode: PowerShellMode | None = None
+		self._powershell_mode_auto = False
 		self._working_dir = Path(working_dir) if working_dir else None
 		self._timeout = float(timeout) if timeout is not None and timeout > 0 else None
 		self._hide_window = bool(hide_window)
@@ -571,6 +611,26 @@ class Process:
 				self._encoding = get_process_io_encoding(interpreter=interpreter if isinstance(interpreter, InterpreterType) else None)
 				logger.debug("Using auto-detected encoding for process I/O: %r", self._encoding)
 
+			try:
+				requested_mode = PowerShellMode(powershell_mode)
+			except ValueError as exc:
+				raise ProcessError(str(exc), process=self) from exc
+			if requested_mode != PowerShellMode.AUTO and interpreter != InterpreterType.POWERSHELL:
+				raise ProcessError("'powershell_mode' can only be used with 'powershell' interpreter", process=self)
+			if is_windows() and interpreter == InterpreterType.POWERSHELL:
+				mode = requested_mode
+				if self._pipe_script:
+					# Piping forced for all interpreters
+					mode = PowerShellMode.STDIN
+				elif mode == PowerShellMode.AUTO:
+					self._powershell_mode_auto = True
+					mode = PowerShellMode.FILE if arguments else PowerShellMode.ENCODED
+				elif mode in (PowerShellMode.ENCODED, PowerShellMode.STDIN) and arguments:
+					raise ProcessError(f"Cannot use arguments with PowerShell mode '{mode.value}'", process=self)
+				self._powershell_mode = mode
+				self._pipe_script = mode == PowerShellMode.STDIN
+				logger.debug("Using PowerShell mode '%s'", mode.value)
+
 			if isinstance(script, Path):
 				self._script_file = script
 			else:
@@ -586,7 +646,7 @@ class Process:
 			if self._pipe_script:
 				if stdin:
 					raise ProcessError("Cannot use stdin with piped script execution", process=self)
-			else:
+			elif self._powershell_mode != PowerShellMode.ENCODED:
 				extension = ""
 				if self._script_file:
 					extension = self._script_file.suffix.lstrip(".")
@@ -608,6 +668,8 @@ class Process:
 						script_file=str(self._temp_script_file.path) if self._temp_script_file else "-",
 						arguments=arguments or None,
 						hide_window=self._hide_window,
+						# Placeholder, the script is encoded in _prepare_script
+						encoded_command="" if self._powershell_mode == PowerShellMode.ENCODED else None,
 					)
 				except Exception as exc:
 					raise ProcessError(f"Failed to get interpreter command for interpreter '{interpreter}': {exc}", process=self) from exc
@@ -734,8 +796,45 @@ class Process:
 				script_lines.insert(0, '$ErrorActionPreference = "Stop"')
 
 		self._script = os.linesep.join(script_lines) + os.linesep
+		if self._powershell_mode == PowerShellMode.ENCODED:
+			self._apply_encoded_command()
 		if self._temp_script_file:
 			self._temp_script_file.create(content=self._script, encoding=self._encoding)
+
+	def _apply_encoded_command(self) -> None:
+		"""
+		Pass the script to PowerShell via -EncodedCommand.
+		If the script is too long for the command line and the mode is "auto", fall back to stdin or a temporary file.
+		"""
+		assert self._script
+		encoded_command = base64.b64encode(self._script.encode("utf-16-le")).decode("ascii")
+		if len(encoded_command) <= POWERSHELL_ENCODED_COMMAND_MAX_LENGTH:
+			self._command[-1] = encoded_command
+			return
+
+		if not self._powershell_mode_auto:
+			raise ProcessError(
+				f"Script is too long for PowerShell mode 'encoded' ({len(encoded_command)} > {POWERSHELL_ENCODED_COMMAND_MAX_LENGTH} characters)",
+				process=self,
+			)
+
+		if self._stdin_data is None:
+			self._powershell_mode = PowerShellMode.STDIN
+			self._pipe_script = True
+			script_file = "-"
+		else:
+			self._powershell_mode = PowerShellMode.FILE
+			self._temp_script_file = TempFile(encoding=self._encoding, extension="ps1")
+			script_file = str(self._temp_script_file.path)
+		logger.info("Script is too long for PowerShell mode 'encoded', using mode '%s'", self._powershell_mode.value)
+		try:
+			self._command = _get_interpreter_command(
+				interpreter=InterpreterType.POWERSHELL, script_file=script_file, hide_window=self._hide_window
+			)
+		except Exception as exc:
+			raise ProcessError(
+				f"Failed to get interpreter command for interpreter '{InterpreterType.POWERSHELL}': {exc}", process=self
+			) from exc
 
 	def _manager(self) -> None:
 		"""
@@ -1378,6 +1477,7 @@ def run_script(
 	discard_output: DiscardOutputMode | str = DiscardOutputMode.NONE,
 	encoding: str | None = None,
 	exit_on_error: bool = False,
+	powershell_mode: PowerShellMode | str = PowerShellMode.AUTO,
 	success_exit_codes: Collection[int] | None = (0,),
 	hide_window: bool = True,
 	detach: bool = False,
@@ -1403,6 +1503,7 @@ def run_script(
 		discard_output=discard_output,
 		encoding=encoding,
 		exit_on_error=exit_on_error,
+		powershell_mode=powershell_mode,
 		success_exit_codes=success_exit_codes,
 		hide_window=hide_window,
 		detach=detach,
@@ -1434,6 +1535,7 @@ def run_script_file(
 	discard_output: DiscardOutputMode | str = DiscardOutputMode.NONE,
 	encoding: str | None = None,
 	exit_on_error: bool = False,
+	powershell_mode: PowerShellMode | str = PowerShellMode.AUTO,
 	success_exit_codes: Collection[int] | None = (0,),
 	hide_window: bool = True,
 	detach: bool = False,
@@ -1459,6 +1561,7 @@ def run_script_file(
 		discard_output=discard_output,
 		encoding=encoding,
 		exit_on_error=exit_on_error,
+		powershell_mode=powershell_mode,
 		hide_window=hide_window,
 		detach=detach,
 		session_id=session_id,
