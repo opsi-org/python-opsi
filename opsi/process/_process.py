@@ -350,10 +350,10 @@ def _get_interpreter_command(
 			raise FileNotFoundError("cmd.exe not found")
 
 		elif interpreter == InterpreterType.POWERSHELL:
-			if script_file == "-" and arguments:
-				raise ValueError("Cannot use arguments with piped PowerShell script input")
 			if encoded_command is not None and arguments:
 				raise ValueError("Cannot use arguments with PowerShell encoded command")
+			if script_file == "-" and arguments:
+				raise ValueError("Cannot use arguments with piped PowerShell script input")
 
 			args = [
 				"powershell.exe",
