@@ -34,7 +34,7 @@ from opsi.process import (
 	run_script,
 	run_script_file,
 )
-from opsi.process._process import _get_interpreter_command, get_process_io_encoding, merge_environment_case_insensitive
+from opsi.process._process import _filter_clixml, _get_interpreter_command, get_process_io_encoding, merge_environment_case_insensitive
 from opsi.system.info import is_windows
 from opsi.system.session import DisplaySession, LinuxDisplaySessionType, WindowsDisplaySessionState, get_display_sessions
 from opsi.testing.helper import environment
@@ -601,6 +601,19 @@ def test_process_powershell_mode_exit_code_and_encoding(powershell_mode: str) ->
 		pass
 	assert proc.exit_code == 3, proc.get_output_text()
 	assert "umlauts-4" in proc.get_output_text()
+
+
+def test_filter_clixml() -> None:
+	clixml = (
+		'<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04">'
+		'<S S="Error">Write-Error "a &amp; b"_x000D__x000A_</S><S S="Error"> : a &amp; b_x000D__x000A_</S></Objs>\r\n'
+	)
+	assert _filter_clixml(b"#< CLIXML\r\n", "utf-8") == b""
+	assert _filter_clixml(clixml.encode("utf-8"), "utf-8") == b'Write-Error "a & b"\r\n : a & b\r\n'
+	progress = '<Objs Version="1.1.0.1"><Obj S="progress" RefId="0"><TN RefId="0"></TN></Obj></Objs>'
+	assert _filter_clixml(progress.encode("utf-8"), "utf-8") == b""
+	assert _filter_clixml(b"normal line\r\n", "utf-8") == b"normal line\r\n"
+	assert _filter_clixml(b"<Objs incomplete", "utf-8") == b"<Objs incomplete"
 
 
 @pytest.mark.windows

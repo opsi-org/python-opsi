@@ -8,6 +8,7 @@ from __future__ import annotations
 import base64
 import ctypes
 import enum
+import html
 import locale
 import os
 import re
@@ -40,7 +41,31 @@ LD_LIBRARY_EXCLUDE_LIST = ["/usr/lib/opsiclientd", "/usr/lib/opsiconfd", "/usr/l
 POWERSHELL_ENCODED_COMMAND_MAX_LENGTH = 30_000
 POWERSHELL_ENCODED_COMMAND_PREFIX = "$ProgressPreference = 'SilentlyContinue'"
 
+CLIXML_HEADER = b"#< CLIXML"
+CLIXML_ERROR_PATTERN = re.compile(r'<S S="Error">(.*?)</S>', re.DOTALL)
+CLIXML_ESCAPE_PATTERN = re.compile(r"_x([0-9A-Fa-f]{4})_")
+
 logger = get_logger("opsi")
+
+
+def _filter_clixml(data: bytes, encoding: str) -> bytes:
+	"""
+	PowerShell serializes the error stream as CLIXML if it is started with -EncodedCommand and the output is redirected.
+	The CLIXML header line is dropped and the error text is extracted from CLIXML lines.
+	Other data (and incomplete CLIXML lines) is returned unchanged.
+	"""
+	stripped = data.strip()
+	if stripped == CLIXML_HEADER:
+		return b""
+	if not stripped.startswith(b"<Objs ") or not stripped.endswith(b"</Objs>"):
+		return data
+
+	text = stripped.decode(encoding, errors="replace")
+	error_text = ""
+	for match in CLIXML_ERROR_PATTERN.findall(text):
+		value = html.unescape(match)
+		error_text += CLIXML_ESCAPE_PATTERN.sub(lambda m: chr(int(m.group(1), 16)), value)
+	return error_text.encode(encoding, errors="replace")
 
 
 class CaptureOutputMode(MappedStrEnum):
@@ -736,6 +761,11 @@ class Process:
 						# EOF
 						break
 					logger.trace("Read %d bytes from %s: %r", data_len, type, data)
+					if self._interpreter == InterpreterType.POWERSHELL:
+						data = _filter_clixml(data, self._encoding)
+						data_len = len(data)
+						if not data_len:
+							continue
 
 				with self._data_lock:
 					if type == "stdout":

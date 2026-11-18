@@ -152,7 +152,6 @@ def CreateProcess(
 	# A plain dict.update would add "PATH" next to "Path" and the new process would get an invalid environment block.
 	env = merge_environment_case_insensitive(win32profile.CreateEnvironmentBlock(user_token, False), __env_mapping)
 
-
 	(process_handle, thread_handle, process_id, thread_id) = win32process.CreateProcessAsUser(
 		user_token,
 		__application_name,
