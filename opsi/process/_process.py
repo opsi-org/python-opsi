@@ -922,7 +922,13 @@ class Process:
 			logger.debug("Using piped script input for shell execution")
 			close_stdin = True
 			assert self._script
-			stdin_data = self._script.encode(self._encoding)
+			script = self._script
+			if self._interpreter == InterpreterType.POWERSHELL:
+				# PowerShell reads piped input like an interactive console.
+				# After a multi-line statement (e.g. an if block) it waits for an empty line before it executes the input.
+				# Without it, input ending in or following such a statement would be discarded at EOF.
+				script += os.linesep
+			stdin_data = script.encode(self._encoding)
 
 		stdout = (
 			DEVNULL
