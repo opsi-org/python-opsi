@@ -99,9 +99,10 @@ class PowerShellMode(MappedStrEnum):
 	"""
 	How a script is passed to PowerShell on Windows.
 
-	- ``auto``: Use ``stdin`` if possible, fall back to ``encoded`` (stdin in use) or ``file`` (arguments, script too long).
+	- ``auto``: Use ``encoded``, fall back to ``file`` (arguments, script too long).
 	- ``encoded``: Pass the script via ``-EncodedCommand``. Not subject to the execution policy.
 	- ``stdin``: Pipe the script to PowerShell via stdin. Not subject to the execution policy.
+	  PowerShell echoes prompts and commands for piped input, so the output contains additional lines.
 	- ``file``: Write the script to a temporary file and run it via ``-File``. Subject to the execution policy.
 	"""
 
@@ -654,11 +655,9 @@ class Process:
 					if arguments:
 						# Arguments cannot be passed with stdin or -EncodedCommand
 						mode = PowerShellMode.FILE
-					elif stdin or not close_stdin:
-						# stdin is in use by the caller and cannot be used for the script
-						mode = PowerShellMode.ENCODED
 					else:
-						mode = PowerShellMode.STDIN
+						# PowerShell echoes prompts and commands for scripts piped to stdin, so stdin is not used by default
+						mode = PowerShellMode.ENCODED
 				elif mode in (PowerShellMode.ENCODED, PowerShellMode.STDIN) and arguments:
 					raise ProcessError(f"Cannot use arguments with PowerShell mode '{mode.value}'", process=self)
 				self._powershell_mode = mode
@@ -844,7 +843,6 @@ class Process:
 		"""
 		Pass the script to PowerShell via -EncodedCommand.
 		If the script is too long for the command line and the mode is "auto", fall back to a temporary file.
-		Stdin cannot be used as fallback, because "auto" only selects "encoded" if stdin is in use by the caller.
 		"""
 		assert self._script
 		# Progress records (e.g. "Preparing modules for first use.") are written as CLIXML to stderr when -EncodedCommand is used.

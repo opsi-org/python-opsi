@@ -508,7 +508,7 @@ def test_process_interpreter_windows(tmp_path: Path, interpreter: str | None, pi
 		script_arg: str | Path = script_path
 	else:
 		script_arg = script
-	# "auto" selects stdin for PowerShell, so the mode has to be set explicitly to control piping
+	# Set the PowerShell mode explicitly to control piping ("auto" would use "encoded")
 	powershell_mode = "stdin" if pipe_script else "file"
 	with (
 		patch.object(Process, "_pipe_script", pipe_script),
@@ -638,9 +638,10 @@ def test_process_powershell_encoded_no_clixml() -> None:
 
 
 @pytest.mark.windows
-@pytest.mark.parametrize("powershell_mode", ["auto", "encoded", "stdin", "file"])
+@pytest.mark.parametrize("powershell_mode", ["auto", "encoded", "file"])
 def test_process_powershell_mode_output_is_clean(powershell_mode: str) -> None:
 	# No prompts or echoed commands, only the output of the script
+	# (mode "stdin" is excluded, PowerShell echoes prompts and commands for piped input)
 	script = 'Write-Output "marker-1"\nif ($true) {\n\tWrite-Output "marker-2"\n}'
 	with Process(script=script, interpreter="powershell", powershell_mode=powershell_mode, capture_output="combined") as proc:
 		pass
@@ -651,11 +652,11 @@ def test_process_powershell_mode_output_is_clean(powershell_mode: str) -> None:
 @pytest.mark.windows
 def test_process_powershell_mode_auto_resolution() -> None:
 	with Process(script="Write-Output 'ok'", interpreter="powershell") as proc:
-		assert proc._powershell_mode == PowerShellMode.STDIN
-		assert proc._pipe_script
+		assert proc._powershell_mode == PowerShellMode.ENCODED
+		assert not proc._pipe_script
 		assert proc._temp_script_file is None
 
-	# stdin is in use, the script cannot be piped
+	# stdin stays available for the caller
 	with Process(script="Write-Output 'ok'", interpreter="powershell", stdin="\n") as proc:
 		assert proc._powershell_mode == PowerShellMode.ENCODED
 		assert not proc._pipe_script
@@ -680,13 +681,13 @@ def test_process_powershell_mode_script_too_long() -> None:
 	# Base64 of UTF-16LE needs about 2.7 characters per script character
 	script = f"# {'x' * 20_000}\nWrite-Output ('long-' + (40 + 2))"
 
-	# auto falls back to a file if the encoded script is too long (stdin is in use)
-	with Process(script=script, interpreter="powershell", stdin="\n", capture_output="combined") as proc:
+	# auto falls back to a file if the encoded script is too long
+	with Process(script=script, interpreter="powershell", capture_output="combined") as proc:
 		assert proc._powershell_mode == PowerShellMode.FILE
 	assert "long-42" in proc.get_output_text()
 
 	# stdin has no length limit
-	with Process(script=script, interpreter="powershell", capture_output="combined") as proc:
+	with Process(script=script, interpreter="powershell", powershell_mode="stdin", capture_output="combined") as proc:
 		assert proc._powershell_mode == PowerShellMode.STDIN
 	assert "long-42" in proc.get_output_text()
 
