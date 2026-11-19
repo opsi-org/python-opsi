@@ -14,22 +14,86 @@ if sys.platform != "win32":
 
 import _winapi
 import os
+import subprocess
 from enum import IntEnum, IntFlag
+from pathlib import Path
 from typing import Any
 
 import ntsecuritycon
 import psutil
+import pythoncom
 import win32api
 import win32con
+import win32event
 import win32process
 import win32profile
 import win32security
 import win32ts
+from win32com.shell import shell, shellcon
 
 from opsi.logging import get_logger
 from opsi.process._process import merge_environment_case_insensitive
 
 logger = get_logger("opsi")
+
+
+class ElevatedProcess:
+	"""
+	A process started elevated (UAC prompt) via ShellExecuteEx with the verb "runas".
+	Implements the subset of the subprocess.Popen interface which is used by Process.
+	The standard streams of such a process cannot be redirected.
+	"""
+
+	stdin = None
+	stdout = None
+	stderr = None
+
+	def __init__(self, command: list[str], *, working_dir: Path | None = None, hide_window: bool = False) -> None:
+		program, *arguments = command
+		self.returncode: int | None = None
+		# ShellExecuteEx requires COM to be initialized in the calling thread
+		pythoncom.CoInitialize()
+		try:
+			# NOASYNC: Wait for the execution to finish before returning (no message pump in this thread)
+			# FLAG_NO_UI: Do not show error dialogs, the UAC prompt is still shown
+			result = shell.ShellExecuteEx(
+				fMask=shellcon.SEE_MASK_NOCLOSEPROCESS | shellcon.SEE_MASK_NOASYNC | shellcon.SEE_MASK_FLAG_NO_UI,
+				lpVerb="runas",
+				lpFile=program,
+				lpParameters=subprocess.list2cmdline(arguments),
+				lpDirectory=str(working_dir) if working_dir else None,
+				nShow=win32con.SW_HIDE if hide_window else win32con.SW_SHOWNORMAL,
+			)
+		finally:
+			pythoncom.CoUninitialize()
+		self._handle = result.get("hProcess")
+		if not self._handle:
+			raise OSError(f"No process handle returned for {program!r}")
+		self.pid: int = win32process.GetProcessId(self._handle)
+
+	def poll(self) -> int | None:
+		if self.returncode is None and win32event.WaitForSingleObject(self._handle, 0) == win32event.WAIT_OBJECT_0:
+			self.returncode = win32process.GetExitCodeProcess(self._handle)
+			self._handle.Close()
+		return self.returncode
+
+	def wait(self, timeout: float | None = None) -> int | None:
+		if self.returncode is None:
+			milliseconds = win32event.INFINITE if timeout is None else int(timeout * 1000)
+			if win32event.WaitForSingleObject(self._handle, milliseconds) == win32event.WAIT_TIMEOUT:
+				raise subprocess.TimeoutExpired("elevated process", float(timeout or 0))
+		return self.poll()
+
+	def send_signal(self, _signal: int) -> None:
+		"""
+		Terminate the process. A non-elevated process is usually not allowed to terminate an elevated process.
+		"""
+		if self.returncode is not None:
+			return
+		try:
+			win32process.TerminateProcess(self._handle, 1)
+		except Exception as exc:
+			logger.warning("Failed to terminate elevated process with PID %d: %s", self.pid, exc)
 
 
 def _get_process(process_name: str, session_id: int | str) -> psutil.Process | None:

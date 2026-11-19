@@ -34,7 +34,12 @@ from opsi.process import (
 	run_script,
 	run_script_file,
 )
-from opsi.process._process import _filter_clixml, _get_interpreter_command, get_process_io_encoding, merge_environment_case_insensitive
+from opsi.process._process import (
+	_filter_clixml,
+	_get_interpreter_command,
+	get_process_io_encoding,
+	merge_environment_case_insensitive,
+)
 from opsi.system.info import is_windows
 from opsi.system.session import DisplaySession, LinuxDisplaySessionType, WindowsDisplaySessionState, get_display_sessions
 from opsi.testing.helper import environment
@@ -725,6 +730,83 @@ def test_process_powershell_mode_invalid() -> None:
 	# Only valid for the powershell interpreter
 	with pytest.raises(ProcessError, match="'powershell_mode' can only be used with 'powershell' interpreter"):
 		Process(script="echo test", interpreter="bash", powershell_mode="file")
+
+
+def _patch_elevated_process(monkeypatch: pytest.MonkeyPatch, elevated_process: type) -> None:
+	# opsi.process._windows cannot be imported on non-Windows platforms
+	fake_windows_module = ModuleType("opsi.process._windows")
+	cast(Any, fake_windows_module).ElevatedProcess = elevated_process
+	monkeypatch.setitem(sys.modules, "opsi.process._windows", fake_windows_module)
+	monkeypatch.setattr("opsi.process._process.is_windows", lambda: True)
+	monkeypatch.setattr("opsi.process._process.Popen", Mock(side_effect=AssertionError("Popen must not be used")))
+
+
+def test_process_elevate_uses_elevated_process(monkeypatch: pytest.MonkeyPatch) -> None:
+	started: list[tuple[list[str], Path | None, bool]] = []
+
+	class FakeElevatedProcess:
+		stdin = None
+		stdout = None
+		stderr = None
+		pid = 4711
+
+		def __init__(self, command: list[str], *, working_dir: Path | None, hide_window: bool) -> None:
+			started.append((command, working_dir, hide_window))
+
+		def poll(self) -> int:
+			return 5
+
+	_patch_elevated_process(monkeypatch, FakeElevatedProcess)
+
+	with Process(command=["setup.exe", "/S"], elevate=True, working_dir="workdir", hide_window=True, success_exit_codes=None) as proc:
+		pass
+
+	assert started == [(["setup.exe", "/S"], Path("workdir"), True)]
+	assert proc.pid == 4711
+	assert proc.exit_code == 5
+	assert proc.get_output_bytes() == b""
+
+	with pytest.raises(ProcessError, match="exited with code 5"):
+		with Process(command=["setup.exe", "/S"], elevate=True):
+			pass
+
+
+def test_process_elevate_start_failure_is_not_retried(monkeypatch: pytest.MonkeyPatch) -> None:
+	attempts: list[int] = []
+
+	class FailingElevatedProcess:
+		def __init__(self, command: list[str], *, working_dir: Path | None, hide_window: bool) -> None:
+			attempts.append(1)
+			raise OSError("The operation was canceled by the user")
+
+	_patch_elevated_process(monkeypatch, FailingElevatedProcess)
+
+	with pytest.raises(ProcessError, match="Failed to start elevated process: The operation was canceled by the user"):
+		with Process(command=["setup.exe"], elevate=True):
+			pass
+	assert len(attempts) == 1
+
+
+@pytest.mark.parametrize(
+	"kwargs, message",
+	[
+		({"command": ["app"], "stdin": "x"}, "Cannot use stdin with 'elevate'"),
+		({"command": ["app"], "close_stdin": False}, "Cannot use stdin with 'elevate'"),
+		({"command": ["app"], "environment": {"A": "B"}}, "Cannot use 'environment' with 'elevate'"),
+		({"command": ["app"], "session_id": "1"}, "cannot be combined with 'session_id'"),
+		({"script": "echo test"}, "can only be used with 'command'"),
+	],
+)
+def test_process_elevate_errors(monkeypatch: pytest.MonkeyPatch, kwargs: dict[str, Any], message: str) -> None:
+	monkeypatch.setattr("opsi.process._process.is_windows", lambda: True)
+	with pytest.raises(ProcessError, match=message):
+		Process(elevate=True, **kwargs)
+
+
+@pytest.mark.skipif(is_windows(), reason="Only relevant on non-Windows platforms")
+def test_process_elevate_not_supported_on_non_windows() -> None:
+	with pytest.raises(ProcessError, match="only supported on Windows"):
+		Process(command=["app"], elevate=True)
 
 
 @pytest.mark.posix

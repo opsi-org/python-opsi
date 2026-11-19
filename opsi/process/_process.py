@@ -26,7 +26,7 @@ from shutil import which
 from subprocess import DEVNULL, PIPE, STDOUT, Popen, list2cmdline
 from threading import Event, Lock, Thread
 from types import TracebackType
-from typing import Literal, Self
+from typing import Any, Literal, Self
 
 from opsi.logging import LOG_NOTICE, LOG_TRACE, get_logger, is_log_level_enabled
 from opsi.retry import Retry, RetryConfig, RetryConfigType, get_retry_config
@@ -46,6 +46,16 @@ CLIXML_ERROR_PATTERN = re.compile(r'<S S="Error">(.*?)</S>', re.DOTALL)
 CLIXML_ESCAPE_PATTERN = re.compile(r"_x([0-9A-Fa-f]{4})_")
 
 logger = get_logger("opsi")
+
+
+def _encode_powershell_command(script: str) -> str:
+	"""
+	Encode a script for the PowerShell parameter -EncodedCommand.
+	Progress records (e.g. "Preparing modules for first use.") are written as CLIXML to stderr when -EncodedCommand is used.
+	The progress output is disabled to keep stderr clean.
+	"""
+	command_script = POWERSHELL_ENCODED_COMMAND_PREFIX + os.linesep + script
+	return base64.b64encode(command_script.encode("utf-16-le")).decode("ascii")
 
 
 def _filter_clixml(data: bytes, encoding: str) -> bytes:
@@ -436,6 +446,7 @@ class Process:
 		success_exit_codes: Collection[int] | None = (0,),
 		hide_window: bool = False,
 		detach: bool = False,
+		elevate: bool = False,
 		session_id: str | None = None,
 		session_desktop: str | None = None,
 		session_elevated: bool = False,
@@ -507,6 +518,12 @@ class Process:
 			If True, hide the process window on Windows.
 		:param detach:
 			If True, start the process detached from the current process session.
+		:param elevate:
+			Only supported on Windows and only with ``command``.
+			If True, the command is started elevated (UAC prompt) via the Windows API (ShellExecuteEx with verb ``runas``).
+			The process waits for the elevated command and takes over its exit code.
+			The output of an elevated process cannot be captured and the environment and stdin are not passed to it.
+			An elevated process may not be stoppable (timeout), because the process is not allowed to terminate it.
 		:param session_id:
 			If specified the process will be started in the given session.
 		:param session_desktop:
@@ -540,12 +557,14 @@ class Process:
 		self._session_desktop: str | None = None
 		self._session_elevated: bool = False
 		self._encoding = encoding or "utf-8"
+		self._elevate = False
 		self._stdin_data: bytes | None = None
 		self._close_stdin_after_start = bool(close_stdin)
 		self._success_exit_codes = None if success_exit_codes is None else set(success_exit_codes)
 		self._retry_config = retry_config or get_retry_config(RetryConfigType.RUN_PROCESS)
 		self._start_log_level = int(start_log_level)
-		self._proc: Popen | None = None
+		# Popen or opsi.process._windows.ElevatedProcess (Windows only)
+		self._proc: Popen | Any | None = None
 		self._attempts = 0
 		self._should_stop = False
 		self._wait_after_stop: float | int | None = 5
@@ -564,6 +583,17 @@ class Process:
 			raise ProcessError("Either 'command' or 'script' must be provided", process=self)
 		if command is not None and interpreter is not None:
 			raise ProcessError("'interpreter' can only be used with 'script', not with 'command'", process=self)
+		if elevate:
+			if not is_windows():
+				raise ProcessError("Parameter 'elevate' is only supported on Windows", process=self)
+			if command is None:
+				raise ProcessError("Parameter 'elevate' can only be used with 'command'", process=self)
+			if session_id is not None:
+				raise ProcessError("Parameter 'elevate' cannot be combined with 'session_id'", process=self)
+			if stdin is not None or not close_stdin:
+				raise ProcessError("Cannot use stdin with 'elevate'", process=self)
+			if environment:
+				raise ProcessError("Cannot use 'environment' with 'elevate'", process=self)
 
 		try:
 			self._capture_output = CaptureOutputMode(capture_output)
@@ -604,6 +634,8 @@ class Process:
 			self._command = shlex.split(command) if isinstance(command, str) else list(command)
 			if arguments:
 				self._command.extend(arguments)
+			if elevate:
+				self._elevate = True
 		else:
 			# Script execution
 			if not interpreter:
@@ -845,10 +877,7 @@ class Process:
 		If the script is too long for the command line and the mode is "auto", fall back to a temporary file.
 		"""
 		assert self._script
-		# Progress records (e.g. "Preparing modules for first use.") are written as CLIXML to stderr when -EncodedCommand is used.
-		# Disable the progress output to keep stderr clean.
-		command_script = POWERSHELL_ENCODED_COMMAND_PREFIX + os.linesep + self._script
-		encoded_command = base64.b64encode(command_script.encode("utf-16-le")).decode("ascii")
+		encoded_command = _encode_powershell_command(self._script)
 		if len(encoded_command) <= POWERSHELL_ENCODED_COMMAND_MAX_LENGTH:
 			self._command[-1] = encoded_command
 			return
@@ -978,28 +1007,40 @@ class Process:
 			else None
 		)
 		stdin = PIPE if stdin_data is not None or not close_stdin else None
+		if self._elevate:
+			# Output and stdin of an elevated process cannot be redirected
+			stdout = stderr = stdin = None
 
 		logger.log(
 			self._start_log_level,
-			"Starting process with command: %r, working_dir: '%s', stdout: %r, stderr: %r, stdin: %r",
+			"Starting process with command: %r, working_dir: '%s', stdout: %r, stderr: %r, stdin: %r, elevate: %r",
 			self._command,
 			self._working_dir,
 			stdout,
 			stderr,
 			stdin,
+			self._elevate,
 		)
-		with disable_file_system_redirection():
-			self._proc = Popen(
-				self._command,
-				stdout=stdout,
-				stderr=stderr,
-				stdin=stdin,
-				cwd=self._working_dir,
-				env=env,
-				startupinfo=startupinfo,
-				creationflags=creationflags,
-				start_new_session=start_new_session,
-			)
+		if self._elevate:
+			from opsi.process._windows import ElevatedProcess
+
+			try:
+				self._proc = ElevatedProcess(self._command, working_dir=self._working_dir, hide_window=self._hide_window)
+			except Exception as exc:
+				raise ProcessError(f"Failed to start elevated process: {exc}", process=self) from exc
+		else:
+			with disable_file_system_redirection():
+				self._proc = Popen(
+					self._command,
+					stdout=stdout,
+					stderr=stderr,
+					stdin=stdin,
+					cwd=self._working_dir,
+					env=env,
+					startupinfo=startupinfo,
+					creationflags=creationflags,
+					start_new_session=start_new_session,
+				)
 		self._pid = self._proc.pid
 		logger.info("Started process %r with PID %d on attempt %d", self.get_command(), self._pid, self._attempts)
 		assert self._proc
@@ -1468,6 +1509,7 @@ def run_command(
 	success_exit_codes: Collection[int] | None = (0,),
 	hide_window: bool = False,
 	detach: bool = False,
+	elevate: bool = False,
 	session_id: str | None = None,
 	session_desktop: str | None = None,
 	session_elevated: bool = False,
@@ -1490,6 +1532,7 @@ def run_command(
 		success_exit_codes=success_exit_codes,
 		hide_window=hide_window,
 		detach=detach,
+		elevate=elevate,
 		session_id=session_id,
 		session_desktop=session_desktop,
 		session_elevated=session_elevated,
