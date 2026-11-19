@@ -508,7 +508,14 @@ def test_process_interpreter_windows(tmp_path: Path, interpreter: str | None, pi
 		script_arg: str | Path = script_path
 	else:
 		script_arg = script
-	with patch.object(Process, "_pipe_script", pipe_script), Process(script=script_arg, interpreter=interpreter) as proc:
+	# "auto" selects stdin for PowerShell, so the mode has to be set explicitly to control piping
+	powershell_mode = "stdin" if pipe_script else "file"
+	with (
+		patch.object(Process, "_pipe_script", pipe_script),
+		Process(
+			script=script_arg, interpreter=interpreter, powershell_mode=powershell_mode if interpreter == "powershell" else "auto"
+		) as proc,
+	):
 		assert proc._pipe_script == pipe_script
 
 	out = proc.get_output_text().strip()
