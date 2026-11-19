@@ -36,6 +36,9 @@ from opsi.process._process import merge_environment_case_insensitive
 
 logger = get_logger("opsi")
 
+# Not defined in pywin32's shellcon, which only has the old name SEE_MASK_FLAG_DDEWAIT (same value)
+SEE_MASK_NOASYNC = 0x00000100
+
 
 class ElevatedProcess:
 	"""
@@ -57,7 +60,7 @@ class ElevatedProcess:
 			# NOASYNC: Wait for the execution to finish before returning (no message pump in this thread)
 			# FLAG_NO_UI: Do not show error dialogs, the UAC prompt is still shown
 			result = shell.ShellExecuteEx(
-				fMask=shellcon.SEE_MASK_NOCLOSEPROCESS | shellcon.SEE_MASK_NOASYNC | shellcon.SEE_MASK_FLAG_NO_UI,
+				fMask=shellcon.SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC | shellcon.SEE_MASK_FLAG_NO_UI,
 				lpVerb="runas",
 				lpFile=program,
 				lpParameters=subprocess.list2cmdline(arguments),
