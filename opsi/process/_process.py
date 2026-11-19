@@ -99,7 +99,7 @@ class PowerShellMode(MappedStrEnum):
 	"""
 	How a script is passed to PowerShell on Windows.
 
-	- ``auto``: Use ``encoded`` if possible, fall back to ``stdin`` (script too long) or ``file`` (arguments).
+	- ``auto``: Use ``stdin`` if possible, fall back to ``encoded`` (stdin in use) or ``file`` (arguments, script too long).
 	- ``encoded``: Pass the script via ``-EncodedCommand``. Not subject to the execution policy.
 	- ``stdin``: Pipe the script to PowerShell via stdin. Not subject to the execution policy.
 	- ``file``: Write the script to a temporary file and run it via ``-File``. Subject to the execution policy.
@@ -499,8 +499,9 @@ class Process:
 			Only relevant on Windows with interpreter powershell.
 			How the script is passed to PowerShell: "auto", "encoded" (-EncodedCommand), "stdin" (piped) or "file" (-File).
 			Only "file" is subject to the PowerShell execution policy (which can be enforced by group policy).
-			"auto" uses "encoded", falls back to "stdin" if the script is too long for the command line
-			and to "file" if arguments are passed. "encoded" and "stdin" cannot be used with arguments.
+			"auto" uses "stdin", falls back to "encoded" if stdin is needed for other input
+			and to "file" if arguments are passed or the encoded script is too long for the command line.
+			"encoded" and "stdin" cannot be used with arguments.
 		:param hide_window:
 			If True, hide the process window on Windows.
 		:param detach:
@@ -650,7 +651,14 @@ class Process:
 					mode = PowerShellMode.STDIN
 				elif mode == PowerShellMode.AUTO:
 					self._powershell_mode_auto = True
-					mode = PowerShellMode.FILE if arguments else PowerShellMode.ENCODED
+					if arguments:
+						# Arguments cannot be passed with stdin or -EncodedCommand
+						mode = PowerShellMode.FILE
+					elif stdin or not close_stdin:
+						# stdin is in use by the caller and cannot be used for the script
+						mode = PowerShellMode.ENCODED
+					else:
+						mode = PowerShellMode.STDIN
 				elif mode in (PowerShellMode.ENCODED, PowerShellMode.STDIN) and arguments:
 					raise ProcessError(f"Cannot use arguments with PowerShell mode '{mode.value}'", process=self)
 				self._powershell_mode = mode
@@ -835,7 +843,8 @@ class Process:
 	def _apply_encoded_command(self) -> None:
 		"""
 		Pass the script to PowerShell via -EncodedCommand.
-		If the script is too long for the command line and the mode is "auto", fall back to stdin or a temporary file.
+		If the script is too long for the command line and the mode is "auto", fall back to a temporary file.
+		Stdin cannot be used as fallback, because "auto" only selects "encoded" if stdin is in use by the caller.
 		"""
 		assert self._script
 		# Progress records (e.g. "Preparing modules for first use.") are written as CLIXML to stderr when -EncodedCommand is used.
@@ -852,18 +861,12 @@ class Process:
 				process=self,
 			)
 
-		if self._stdin_data is None:
-			self._powershell_mode = PowerShellMode.STDIN
-			self._pipe_script = True
-			script_file = "-"
-		else:
-			self._powershell_mode = PowerShellMode.FILE
-			self._temp_script_file = TempFile(encoding=self._encoding, extension="ps1")
-			script_file = str(self._temp_script_file.path)
+		self._powershell_mode = PowerShellMode.FILE
+		self._temp_script_file = TempFile(encoding=self._encoding, extension="ps1")
 		logger.info("Script is too long for PowerShell mode 'encoded', using mode '%s'", self._powershell_mode.value)
 		try:
 			self._command = _get_interpreter_command(
-				interpreter=InterpreterType.POWERSHELL, script_file=script_file, hide_window=self._hide_window
+				interpreter=InterpreterType.POWERSHELL, script_file=self._temp_script_file, hide_window=self._hide_window
 			)
 		except Exception as exc:
 			raise ProcessError(

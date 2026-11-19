@@ -631,8 +631,25 @@ def test_process_powershell_encoded_no_clixml() -> None:
 
 
 @pytest.mark.windows
+@pytest.mark.parametrize("powershell_mode", ["auto", "encoded", "stdin", "file"])
+def test_process_powershell_mode_output_is_clean(powershell_mode: str) -> None:
+	# No prompts or echoed commands, only the output of the script
+	script = 'Write-Output "marker-1"\nif ($true) {\n\tWrite-Output "marker-2"\n}'
+	with Process(script=script, interpreter="powershell", powershell_mode=powershell_mode, capture_output="combined") as proc:
+		pass
+	lines = [line.strip() for line in proc.get_output_lines() if line.strip()]
+	assert lines == ["marker-1", "marker-2"], proc.get_output_text()
+
+
+@pytest.mark.windows
 def test_process_powershell_mode_auto_resolution() -> None:
 	with Process(script="Write-Output 'ok'", interpreter="powershell") as proc:
+		assert proc._powershell_mode == PowerShellMode.STDIN
+		assert proc._pipe_script
+		assert proc._temp_script_file is None
+
+	# stdin is in use, the script cannot be piped
+	with Process(script="Write-Output 'ok'", interpreter="powershell", stdin="\n") as proc:
 		assert proc._powershell_mode == PowerShellMode.ENCODED
 		assert not proc._pipe_script
 		assert proc._temp_script_file is None
@@ -656,15 +673,14 @@ def test_process_powershell_mode_script_too_long() -> None:
 	# Base64 of UTF-16LE needs about 2.7 characters per script character
 	script = f"# {'x' * 20_000}\nWrite-Output ('long-' + (40 + 2))"
 
-	# auto falls back to stdin
-	with Process(script=script, interpreter="powershell", capture_output="combined") as proc:
-		assert proc._powershell_mode == PowerShellMode.STDIN
-		assert proc._pipe_script
-	assert "long-42" in proc.get_output_text()
-
-	# auto falls back to a file if stdin is in use
+	# auto falls back to a file if the encoded script is too long (stdin is in use)
 	with Process(script=script, interpreter="powershell", stdin="\n", capture_output="combined") as proc:
 		assert proc._powershell_mode == PowerShellMode.FILE
+	assert "long-42" in proc.get_output_text()
+
+	# stdin has no length limit
+	with Process(script=script, interpreter="powershell", capture_output="combined") as proc:
+		assert proc._powershell_mode == PowerShellMode.STDIN
 	assert "long-42" in proc.get_output_text()
 
 	# an explicit mode must not fall back
