@@ -732,6 +732,37 @@ def test_process_powershell_mode_invalid() -> None:
 		Process(script="echo test", interpreter="bash", powershell_mode="file")
 
 
+@pytest.mark.windows
+@pytest.mark.parametrize("working_dir", [None, Path("working directory")])
+def test_elevated_process_shell_execute_arguments(monkeypatch: pytest.MonkeyPatch, working_dir: Path | None) -> None:
+	from opsi.process import _windows
+
+	handle = object()
+	shell_execute = Mock(return_value={"hProcess": handle})
+	co_initialize = Mock()
+	co_uninitialize = Mock()
+	monkeypatch.setattr(_windows.shell, "ShellExecuteEx", shell_execute)
+	monkeypatch.setattr(_windows.pythoncom, "CoInitialize", co_initialize)
+	monkeypatch.setattr(_windows.pythoncom, "CoUninitialize", co_uninitialize)
+	monkeypatch.setattr(_windows.win32process, "GetProcessId", Mock(return_value=4711))
+
+	process = _windows.ElevatedProcess(["setup.exe", "argument with spaces"], working_dir=working_dir)
+
+	assert process.pid == 4711
+	co_initialize.assert_called_once_with()
+	co_uninitialize.assert_called_once_with()
+	expected = {
+		"fMask": _windows.shellcon.SEE_MASK_NOCLOSEPROCESS | _windows.SEE_MASK_NOASYNC | _windows.shellcon.SEE_MASK_FLAG_NO_UI,
+		"lpVerb": "runas",
+		"lpFile": "setup.exe",
+		"lpParameters": '"argument with spaces"',
+		"nShow": _windows.win32con.SW_SHOWNORMAL,
+	}
+	if working_dir is not None:
+		expected["lpDirectory"] = str(working_dir)
+	shell_execute.assert_called_once_with(**expected)
+
+
 def _patch_elevated_process(monkeypatch: pytest.MonkeyPatch, elevated_process: type) -> None:
 	# opsi.process._windows cannot be imported on non-Windows platforms
 	fake_windows_module = ModuleType("opsi.process._windows")

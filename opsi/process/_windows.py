@@ -64,8 +64,8 @@ class ElevatedProcess:
 				lpVerb="runas",
 				lpFile=program,
 				lpParameters=subprocess.list2cmdline(arguments),
-				lpDirectory=str(working_dir) if working_dir else None,
 				nShow=win32con.SW_HIDE if hide_window else win32con.SW_SHOWNORMAL,
+				**({"lpDirectory": str(working_dir)} if working_dir is not None else {}),
 			)
 		finally:
 			pythoncom.CoUninitialize()
