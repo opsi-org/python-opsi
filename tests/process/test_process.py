@@ -37,6 +37,8 @@ from opsi.process import (
 from opsi.process._process import (
 	_filter_clixml,
 	_get_interpreter_command,
+	_powershell_file_command,
+	_quote_powershell_argument,
 	get_process_io_encoding,
 	merge_environment_case_insensitive,
 )
@@ -64,10 +66,8 @@ from tests.file.conftest import PATH_TYPES
 				"-NoProfile",
 				"-ExecutionPolicy",
 				"Bypass",
-				"-File",
-				"script_file.ps1",
-				"arg1",
-				"arg2",
+				"-Command",
+				_powershell_file_command("script_file.ps1", ["arg1", "arg2"]),
 			],
 		),
 		(
@@ -142,9 +142,26 @@ def test_get_interpreter_command_powershell_hide_window_false() -> None:
 		"-NoProfile",
 		"-ExecutionPolicy",
 		"Bypass",
-		"-File",
-		"script_file.ps1",
+		"-Command",
+		_powershell_file_command("script_file.ps1", None),
 	]
+
+
+def test_quote_powershell_argument() -> None:
+	assert _quote_powershell_argument("arg") == "'arg'"
+	assert _quote_powershell_argument("") == "''"
+	# Embedded single quotes are escaped by doubling, everything else stays literal (no interpolation)
+	assert _quote_powershell_argument("it's $a `b") == "'it''s $a `b'"
+
+
+def test_powershell_file_command() -> None:
+	command = _powershell_file_command("C:\\temp\\script.ps1", None)
+	assert command.startswith("function Disable-ExecutionPolicy {")
+	assert "_authorizationManager" in command
+	assert command.endswith("& 'C:\\temp\\script.ps1'; exit $LASTEXITCODE")
+
+	command = _powershell_file_command("script.ps1", ["arg1", "it's arg2"])
+	assert command.endswith("& 'script.ps1' 'arg1' 'it''s arg2'; exit $LASTEXITCODE")
 
 
 def _patch_process_os_name(monkeypatch: pytest.MonkeyPatch, os_name: str) -> None:
@@ -513,7 +530,8 @@ def test_process_interpreter_windows(tmp_path: Path, interpreter: str | None, pi
 		script_arg: str | Path = script_path
 	else:
 		script_arg = script
-	# Set the PowerShell mode explicitly to control piping ("auto" would use "encoded")
+	# Set the PowerShell mode explicitly to control piping (redundant with "auto" since "file" now matches,
+	# but keeps the intent explicit)
 	powershell_mode = "stdin" if pipe_script else "file"
 	with (
 		patch.object(Process, "_pipe_script", pipe_script),
@@ -657,17 +675,17 @@ def test_process_powershell_mode_output_is_clean(powershell_mode: str) -> None:
 @pytest.mark.windows
 def test_process_powershell_mode_auto_resolution() -> None:
 	with Process(script="Write-Output 'ok'", interpreter="powershell") as proc:
-		assert proc._powershell_mode == PowerShellMode.ENCODED
+		assert proc._powershell_mode == PowerShellMode.FILE
 		assert not proc._pipe_script
-		assert proc._temp_script_file is None
+		assert proc._temp_script_file is not None
 
 	# stdin stays available for the caller
 	with Process(script="Write-Output 'ok'", interpreter="powershell", stdin="\n") as proc:
-		assert proc._powershell_mode == PowerShellMode.ENCODED
+		assert proc._powershell_mode == PowerShellMode.FILE
 		assert not proc._pipe_script
-		assert proc._temp_script_file is None
+		assert proc._temp_script_file is not None
 
-	# Arguments cannot be passed with -EncodedCommand, use a temporary file
+	# Arguments work with "file" mode
 	with Process(script="Write-Output $args[0]", interpreter="powershell", arguments=["arg1"], capture_output="combined") as proc:
 		assert proc._powershell_mode == PowerShellMode.FILE
 		assert proc._temp_script_file is not None
@@ -686,7 +704,7 @@ def test_process_powershell_mode_script_too_long() -> None:
 	# Base64 of UTF-16LE needs about 2.7 characters per script character
 	script = f"# {'x' * 20_000}\nWrite-Output ('long-' + (40 + 2))"
 
-	# auto falls back to a file if the encoded script is too long
+	# auto uses file mode, which has no command line length limit
 	with Process(script=script, interpreter="powershell", capture_output="combined") as proc:
 		assert proc._powershell_mode == PowerShellMode.FILE
 	assert "long-42" in proc.get_output_text()

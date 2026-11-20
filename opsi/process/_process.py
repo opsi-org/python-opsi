@@ -41,6 +41,17 @@ LD_LIBRARY_EXCLUDE_LIST = ["/usr/lib/opsiclientd", "/usr/lib/opsiconfd", "/usr/l
 POWERSHELL_ENCODED_COMMAND_MAX_LENGTH = 30_000
 POWERSHELL_ENCODED_COMMAND_PREFIX = "$ProgressPreference = 'SilentlyContinue'"
 
+# "-File <path>" is subject to the execution policy, even with "-ExecutionPolicy Bypass", if the policy is
+# enforced by group policy (e.g. "AllSigned" or "Restricted"). Swapping out PowerShell's AuthorizationManager
+# via reflection disables the execution policy check for the current session.
+POWERSHELL_DISABLE_EXECUTION_POLICY_COMMAND = (
+	"function Disable-ExecutionPolicy {"
+	"($ctx = $executioncontext.gettype().getfield('_context','nonpublic,instance').getvalue($executioncontext))."
+	"gettype().getfield('_authorizationManager','nonpublic,instance')."
+	"setvalue($ctx, (New-Object System.Management.Automation.AuthorizationManager 'Microsoft.PowerShell'))"
+	"}; Disable-ExecutionPolicy; "
+)
+
 CLIXML_HEADER = b"#< CLIXML"
 CLIXML_ERROR_PATTERN = re.compile(r'<S S="Error">(.*?)</S>', re.DOTALL)
 CLIXML_ESCAPE_PATTERN = re.compile(r"_x([0-9A-Fa-f]{4})_")
@@ -56,6 +67,29 @@ def _encode_powershell_command(script: str) -> str:
 	"""
 	command_script = POWERSHELL_ENCODED_COMMAND_PREFIX + os.linesep + script
 	return base64.b64encode(command_script.encode("utf-16-le")).decode("ascii")
+
+
+def _quote_powershell_argument(value: str) -> str:
+	"""
+	Quote a value as a single-quoted PowerShell string literal (no interpolation or escape sequences,
+	only embedded single quotes need to be escaped by doubling them).
+	"""
+	return "'" + value.replace("'", "''") + "'"
+
+
+def _powershell_file_command(script_file: str, arguments: list[str] | None) -> str:
+	"""
+	Build a "-Command" string that runs a script file independent of the execution policy.
+
+	The script is invoked with the call operator "&" after disabling the execution policy check for
+	the current session (see POWERSHELL_DISABLE_EXECUTION_POLICY_COMMAND). "exit $LASTEXITCODE" passes
+	the exit code of the script (set by an explicit "exit" statement) on to the powershell.exe process,
+	defaulting to 0 if the script does not call "exit" itself, the same as with "-File".
+	"""
+	parts = [_quote_powershell_argument(script_file)]
+	if arguments:
+		parts.extend(_quote_powershell_argument(argument) for argument in arguments)
+	return POWERSHELL_DISABLE_EXECUTION_POLICY_COMMAND + "& " + " ".join(parts) + "; exit $LASTEXITCODE"
 
 
 def _filter_clixml(data: bytes, encoding: str) -> bytes:
@@ -109,11 +143,13 @@ class PowerShellMode(MappedStrEnum):
 	"""
 	How a script is passed to PowerShell on Windows.
 
-	- ``auto``: Use ``encoded``, fall back to ``file`` (arguments, script too long).
+	- ``auto``: Use ``file``.
 	- ``encoded``: Pass the script via ``-EncodedCommand``. Not subject to the execution policy.
+	  Limited to a maximum script length (see POWERSHELL_ENCODED_COMMAND_MAX_LENGTH).
 	- ``stdin``: Pipe the script to PowerShell via stdin. Not subject to the execution policy.
 	  PowerShell echoes prompts and commands for piped input, so the output contains additional lines.
-	- ``file``: Write the script to a temporary file and run it via ``-File``. Subject to the execution policy.
+	- ``file``: Write the script to a temporary file and run it via the call operator ``&``, after disabling
+	  the execution policy check for the PowerShell session, see POWERSHELL_DISABLE_EXECUTION_POLICY_COMMAND.
 	"""
 
 	AUTO = "auto"
@@ -378,10 +414,12 @@ def _get_interpreter_command(
 			if encoded_command is not None:
 				# Always use text output, progress records are suppressed in _apply_encoded_command
 				args.extend(["-OutputFormat", "Text", "-EncodedCommand", encoded_command])
+			elif script_file == "-":
+				# Reading the script from stdin via "-File -" is not subject to the execution policy
+				args.extend(["-File", "-"])
 			else:
-				args.extend(["-File", script_file])
-			if arguments:
-				args.extend(arguments)
+				# See POWERSHELL_DISABLE_EXECUTION_POLICY_COMMAND / _powershell_file_command
+				args.extend(["-Command", _powershell_file_command(script_file, arguments)])
 
 			for name in "powershell.exe", "pwsh.exe":
 				if path := which(name):
@@ -509,11 +547,10 @@ class Process:
 			If False the script will continue execution even if some commands fail.
 		:param powershell_mode:
 			Only relevant on Windows with interpreter powershell.
-			How the script is passed to PowerShell: "auto", "encoded" (-EncodedCommand), "stdin" (piped) or "file" (-File).
-			Only "file" is subject to the PowerShell execution policy (which can be enforced by group policy).
-			"auto" uses "stdin", falls back to "encoded" if stdin is needed for other input
-			and to "file" if arguments are passed or the encoded script is too long for the command line.
-			"encoded" and "stdin" cannot be used with arguments.
+			How the script is passed to PowerShell: "auto", "encoded" (-EncodedCommand), "stdin" (piped) or "file" (call operator).
+			None of the modes are subject to the PowerShell execution policy (which can be enforced by group policy).
+			"auto" uses "file". "encoded" and "stdin" cannot be used with arguments and "encoded" is limited to a maximum
+			script length.
 		:param hide_window:
 			If True, hide the process window on Windows.
 		:param detach:
@@ -547,7 +584,6 @@ class Process:
 		self._script_file: Path | None = None
 		self._exit_on_error = bool(exit_on_error)
 		self._powershell_mode: PowerShellMode | None = None
-		self._powershell_mode_auto = False
 		self._working_dir = Path(working_dir) if working_dir else None
 		self._timeout = float(timeout) if timeout is not None and timeout > 0 else None
 		self._hide_window = bool(hide_window)
@@ -683,13 +719,8 @@ class Process:
 					# Piping forced for all interpreters
 					mode = PowerShellMode.STDIN
 				elif mode == PowerShellMode.AUTO:
-					self._powershell_mode_auto = True
-					if arguments:
-						# Arguments cannot be passed with stdin or -EncodedCommand
-						mode = PowerShellMode.FILE
-					else:
-						# PowerShell echoes prompts and commands for scripts piped to stdin, so stdin is not used by default
-						mode = PowerShellMode.ENCODED
+					# "file" is no longer subject to the execution policy and has no command line length limit
+					mode = PowerShellMode.FILE
 				elif mode in (PowerShellMode.ENCODED, PowerShellMode.STDIN) and arguments:
 					raise ProcessError(f"Cannot use arguments with PowerShell mode '{mode.value}'", process=self)
 				self._powershell_mode = mode
@@ -874,31 +905,15 @@ class Process:
 	def _apply_encoded_command(self) -> None:
 		"""
 		Pass the script to PowerShell via -EncodedCommand.
-		If the script is too long for the command line and the mode is "auto", fall back to a temporary file.
 		"""
 		assert self._script
 		encoded_command = _encode_powershell_command(self._script)
-		if len(encoded_command) <= POWERSHELL_ENCODED_COMMAND_MAX_LENGTH:
-			self._command[-1] = encoded_command
-			return
-
-		if not self._powershell_mode_auto:
+		if len(encoded_command) > POWERSHELL_ENCODED_COMMAND_MAX_LENGTH:
 			raise ProcessError(
 				f"Script is too long for PowerShell mode 'encoded' ({len(encoded_command)} > {POWERSHELL_ENCODED_COMMAND_MAX_LENGTH} characters)",
 				process=self,
 			)
-
-		self._powershell_mode = PowerShellMode.FILE
-		self._temp_script_file = TempFile(encoding=self._encoding, extension="ps1")
-		logger.info("Script is too long for PowerShell mode 'encoded', using mode '%s'", self._powershell_mode.value)
-		try:
-			self._command = _get_interpreter_command(
-				interpreter=InterpreterType.POWERSHELL, script_file=self._temp_script_file, hide_window=self._hide_window
-			)
-		except Exception as exc:
-			raise ProcessError(
-				f"Failed to get interpreter command for interpreter '{InterpreterType.POWERSHELL}': {exc}", process=self
-			) from exc
+		self._command[-1] = encoded_command
 
 	def _manager(self) -> None:
 		"""
