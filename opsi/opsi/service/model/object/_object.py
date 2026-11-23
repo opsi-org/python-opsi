@@ -512,6 +512,7 @@ class User(Entity):
 		encryptedPassword: str | None = None,
 		tokenHash: str | None = None,
 		groups: list[str] | None = None,
+		description: str | None = None,
 	) -> None:
 		self.created: str | None = None
 		self.lastLogin: str | None = None
@@ -521,6 +522,7 @@ class User(Entity):
 		self.encryptedPassword: str | None = None
 		self.tokenHash: str | None = None
 		self.groups: list[str] | None = None
+		self.description: str | None = None
 
 		self.setId(id)
 		if created is not None:
@@ -539,6 +541,8 @@ class User(Entity):
 			self.setTokenHash(tokenHash)
 		if groups is not None:
 			self.setGroups(groups)
+		if description is not None:
+			self.setDescription(description)
 
 	def setDefaults(self) -> None:
 		Entity.setDefaults(self)
@@ -602,6 +606,13 @@ class User(Entity):
 
 	def setGroups(self, groups: list[str]) -> None:
 		self.groups = list(set(to_string_list(groups)))
+
+	def getDescription(self) -> str | None:
+		return self.description
+
+	def setDescription(self, description: str | None) -> None:
+		# An empty description is stored as no description
+		self.description = (to_string(description) or None) if description is not None else None
 
 
 Entity.sub_classes["User"] = User
