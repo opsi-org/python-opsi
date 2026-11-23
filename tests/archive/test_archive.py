@@ -19,7 +19,7 @@ from random import randbytes
 from typing import Literal
 
 import pytest
-from hypothesis import given, settings
+from hypothesis import assume, example, given, settings
 from hypothesis.strategies import binary, from_regex, sampled_from
 
 from opsi.archive._archive import (
@@ -375,6 +375,8 @@ def test_get_archive_files(tmp_path: Path, test_defect_link: bool, follow_symlin
 # Cannot use function scoped fixtures with hypothesis
 @pytest.mark.linux
 @settings(deadline=10_000)
+@example(filename="\n\n\n\n", data=b"", internal=True, compression=ArchiveCompression.ZSTD)
+@example(filename="..\n\n", data=b"", internal=True, compression=ArchiveCompression.ZSTD)
 @given(
 	from_regex(FILENAME_REGEX),
 	binary(max_size=4096),
@@ -385,6 +387,8 @@ def test_archive_hypothesis(filename: str, data: bytes, internal: bool, compress
 	with TempDir() as tmp_path:
 		filename = filename.replace("\x00", "").replace("\n", "")
 		filename = filename.removeprefix("-")
+		# After normalization the name must not resolve to the source directory or its parent
+		assume(filename not in ("", ".", ".."))
 		source = tmp_path / "source"
 		source.mkdir()
 		file_path = source / filename
