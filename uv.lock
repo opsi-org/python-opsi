@@ -547,12 +547,6 @@ wheels = [
 ]
 
 [[package]]
-name = "crypt-r"
-version = "3.13.1"
-source = { registry = "https://pypi.uib.gmbh/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/18/ec/23c7745f9e8fae4ee0309aa2220258902e35a01bcace636223150e00bee8/crypt_r-3.13.1.tar.gz", hash = "sha256:5bd46ad51f5b7fe5f0ecf49d8ba2cafd6fbd43aa3bb5efbcaa6b44df6340c1a6", size = 20908, upload-time = "2024-04-29T12:54:31.687Z" }
-
-[[package]]
 name = "cryptography"
 version = "50.0.2"
 source = { registry = "https://pypi.uib.gmbh/simple" }
@@ -921,6 +915,15 @@ wheels = [
 ]
 
 [[package]]
+name = "passlib"
+version = "1.9.5"
+source = { registry = "https://pypi.uib.gmbh/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/4a/05/0c74404b2e028a949ab89eac270203dc151d3033656b60b2f71db9fea6dd/passlib-1.9.5.tar.gz", hash = "sha256:15d39a9b2044a86f341a2e443170e4e9a6d71fe0266fe28b91032a8ca723f8aa", size = 652472, upload-time = "2026-11-23T02:02:49.037Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bb/2a/6e5e198b3e33c25746e60bd83cc2703bd24ff77a9afb7224dfb09cce54e2/passlib-1.9.5-py3-none-any.whl", hash = "sha256:c9dac9b4c56322a2b386f8d7d5d2f5056a20ed21c491a7ff24f0b2747f57c28e", size = 307281, upload-time = "2026-11-23T02:02:47.45Z" },
+]
+
+[[package]]
 name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.uib.gmbh/simple" }
@@ -1213,7 +1216,6 @@ dependencies = [
     { name = "blake3" },
     { name = "colorlog" },
     { name = "configupdater" },
-    { name = "crypt-r", marker = "sys_platform == 'linux'" },
     { name = "cryptography" },
     { name = "distro" },
     { name = "dnspython" },
@@ -1224,6 +1226,7 @@ dependencies = [
     { name = "msgspec", marker = "sys_platform != 'win32'" },
     { name = "netifaces-plus" },
     { name = "packaging" },
+    { name = "passlib" },
     { name = "pexpect", marker = "sys_platform != 'win32'" },
     { name = "psutil" },
     { name = "ptyprocess" },
@@ -1264,7 +1267,6 @@ requires-dist = [
     { name = "blake3", specifier = ">=1.0.8" },
     { name = "colorlog", specifier = ">=6.10.1" },
     { name = "configupdater", specifier = ">=3.2" },
-    { name = "crypt-r", marker = "sys_platform == 'linux'", specifier = ">=3.13.1" },
     { name = "cryptography", specifier = ">=46.0.5" },
     { name = "distro", specifier = ">=1.9.0" },
     { name = "dnspython", specifier = ">=2.7.0" },
@@ -1275,6 +1277,7 @@ requires-dist = [
     { name = "msgspec", marker = "sys_platform != 'win32'", specifier = ">=0.19" },
     { name = "netifaces-plus", specifier = ">=0.12.5" },
     { name = "packaging", specifier = ">=26.2" },
+    { name = "passlib", specifier = ">=1.9.5" },
     { name = "pexpect", marker = "sys_platform != 'win32'", specifier = ">=4.9.0" },
     { name = "psutil", specifier = ">=7.2.2" },
     { name = "ptyprocess", specifier = ">=0.7" },

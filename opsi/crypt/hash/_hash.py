@@ -24,12 +24,10 @@ from argon2 import PasswordHasher
 from argon2.low_level import Type as Argon2Type
 from argon2.low_level import hash_secret as argon2_hash_secret
 from blake3 import blake3
+from passlib.handlers.md5_crypt import md5_crypt
+from passlib.handlers.sha2_crypt import sha512_crypt
 
-from opsi.system.info import is_linux
 from opsi.util.pattern import MappedStrEnum
-
-if is_linux():
-	import crypt_r
 
 
 class FileHashAlgorithm(MappedStrEnum):
@@ -142,6 +140,9 @@ def hash_password(
 ) -> str:
 	"""
 	Encode a password using the specified algorithm and return a hash string.
+
+	SHA512 and MD5 use Unix crypt formats on all platforms. With generate_salt=False,
+	the legacy fixed salts and explicit SHA512 rounds field are preserved.
 	"""
 	encoded_password = password.encode("utf-8")
 	if len(encoded_password) > 64:
@@ -168,20 +169,18 @@ def hash_password(
 		).decode("ascii")
 
 	if algorithm == PasswordHashAlgorithm.SHA512:
-		if not is_linux():
-			raise ValueError("SHA512 hashing only supported on Linux")
 		if format != PasswordHashFormat.SHADOW:
 			raise ValueError("SHA512 only supported with SHADOW format")
 		rounds = rounds or 5000
-		salt = (
-			crypt_r.mksalt(
-				method=crypt_r.METHOD_SHA512,  # ty: ignore[unresolved-attribute]
-				rounds=rounds,
-			)
-			if generate_salt
-			else f"$6$rounds={rounds}$................$"
-		)
-		return crypt_r.crypt(password, salt=salt)
+		password_hash = sha512_crypt.using(
+			rounds=rounds,
+			salt_size=16,
+			salt=None if generate_salt else "................",
+		).hash(encoded_password)
+		# Passlib omits the rounds field for 5000, but our existing hashes include it.
+		if not password_hash.startswith("$6$rounds="):
+			password_hash = password_hash.replace("$6$", f"$6$rounds={rounds}$", 1)
+		return password_hash
 
 	if algorithm == PasswordHashAlgorithm.BCRYPT:
 		if format != PasswordHashFormat.SHADOW:
@@ -202,14 +201,7 @@ def hash_password(
 	if algorithm == PasswordHashAlgorithm.MD5:
 		if format != PasswordHashFormat.SHADOW:
 			raise ValueError("MD5 only supported with SHADOW format")
-		salt = (
-			crypt_r.mksalt(
-				method=crypt_r.METHOD_MD5,  # ty: ignore[unresolved-attribute]
-			)
-			if generate_salt
-			else "$1$................$"
-		)
-		return crypt_r.crypt(password, salt=salt)
+		return md5_crypt.using(salt_size=8, salt=None if generate_salt else "........").hash(encoded_password)
 
 	raise ValueError(f"Only 'SHA512', 'BCRYPT', 'PBKDF2_SHA512' and 'MD5' methods are supported, not {algorithm!r}")
 
@@ -231,9 +223,10 @@ def verify_password(password: str, password_hash: str, algorithm: PasswordHashAl
 			return False
 
 	if algorithm == PasswordHashAlgorithm.SHA512:
-		if not is_linux():
-			raise ValueError("SHA512 hashing only supported on Linux")
-		return crypt_r.crypt(password, password_hash) == password_hash
+		try:
+			return sha512_crypt.verify(password, password_hash)
+		except ValueError:
+			return False
 
 	if algorithm == PasswordHashAlgorithm.BCRYPT:
 		return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
@@ -253,8 +246,9 @@ def verify_password(password: str, password_hash: str, algorithm: PasswordHashAl
 		return hmac.compare_digest(computed_hash, expected_hash_bytes)
 
 	if algorithm == PasswordHashAlgorithm.MD5:
-		if not is_linux():
-			raise ValueError("MD5 hashing only supported on Linux")
-		return crypt_r.crypt(password, password_hash) == password_hash
+		try:
+			return md5_crypt.verify(password, password_hash)
+		except ValueError:
+			return False
 
 	raise ValueError("Only 'ARGON2ID', 'SHA512', 'BCRYPT', 'PBKDF2_SHA512' and 'MD5' methods are supported")

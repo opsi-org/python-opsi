@@ -18,6 +18,10 @@ Use the package from Python via the `opsi` namespace, for example:
 from opsi.process import run_command
 ```
 
+Password hashing and verification via `opsi.crypt.hash` support SHA512-crypt and
+MD5-crypt on both Linux and Windows. Their Unix shadow hash formats, SHA512 rounds,
+and fixed salts when using `generate_salt=False` are unchanged.
+
 ## Development
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for setup, checks, tests, and platform notes.
