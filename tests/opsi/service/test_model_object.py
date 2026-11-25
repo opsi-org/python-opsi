@@ -562,6 +562,31 @@ def test_from_hash() -> None:
 		ConfigState.fromHash({"configId": "c1"})
 
 
+@pytest.mark.parametrize(
+	"description, expected",
+	[(None, None), ("", None), ("Build server agent", "Build server agent")],
+)
+def test_user_description(description: str | None, expected: str | None) -> None:
+	user = User(id="a.b", description=description)
+	assert user.getDescription() == expected
+	assert user.description == expected
+
+	user2 = User.fromHash(user.to_hash())
+	assert user2.description == expected
+	assert not objects_differ(user, user2)
+
+
+def test_user_description_default_and_setter() -> None:
+	user = User(id="a.b")
+	assert user.description is None
+	assert user.to_hash()["description"] is None
+
+	user.setDescription("text")
+	assert user.description == "text"
+	user.setDescription("")
+	assert user.description is None
+
+
 def test_clone() -> None:
 	product1 = LocalbootProduct(**PRODUCT2)
 	product2 = product1.clone(identOnly=False)

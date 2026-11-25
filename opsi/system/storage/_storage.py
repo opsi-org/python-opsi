@@ -228,7 +228,7 @@ class Partition(StorageDevice):
 	) -> None:
 		if path:
 			super().__init__(path)
-		self.partition_table: PartitionTable = partition_table
+		self.partition_table: PartitionTable = partition_table  # ty: ignore[invalid-mutable-override]
 		self.number = number
 		self.type = type.lower()
 		self.input_start, self.start = self._process_offset(start)

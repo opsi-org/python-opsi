@@ -9,8 +9,8 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any, cast
 
-import pywintypes  # ty: ignore[unresolved-import]
-import win32crypt  # ty: ignore[unresolved-import]
+import pywintypes  # ty: ignore[import-not-found]
+import win32crypt  # ty: ignore[import-not-found]
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.utils import CryptographyDeprecationWarning

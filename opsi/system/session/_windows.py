@@ -34,7 +34,9 @@ def _one_session_per_user(sessions: list[DisplaySession]) -> list[DisplaySession
 	return relevant_sessions
 
 
-def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool = True) -> list[DisplaySession]:
+def get_display_sessions(
+	*, one_session_per_user: bool = True, only_usable: bool = True, only_user_sessions: bool = False
+) -> list[DisplaySession]:
 	server = win32ts.WTS_CURRENT_SERVER_HANDLE
 	sessions: list[DisplaySession] = []
 	for session in win32ts.WTSEnumerateSessions(server):
@@ -65,12 +67,15 @@ def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool
 			continue
 
 		session_user = win32ts.WTSQuerySessionInformation(server, session_id, win32ts.WTSUserName) or None
+		if only_user_sessions and not session_user:
+			continue
 		session_domain = win32ts.WTSQuerySessionInformation(server, session_id, win32ts.WTSDomainName) or None
 		# TODO: Get environment if needed
 		sessions.append(
 			DisplaySession(
 				id=str(session_id),
 				is_usable=is_usable,
+				is_user_session=session_user is not None,
 				user=session_user,
 				domain=session_domain,
 				windows_state=windows_state,

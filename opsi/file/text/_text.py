@@ -710,7 +710,12 @@ class TextFile:
 		return len(self._lines)
 
 	def patch(
-		self, *, params: dict[str, str] | None = None, params_file: str | os.PathLike[str] | None = None, kernel_params: bool = False, use_placeholder_marker: bool = True,
+		self,
+		*,
+		params: dict[str, str] | None = None,
+		params_file: str | os.PathLike[str] | None = None,
+		kernel_params: bool = False,
+		use_placeholder_marker: bool = True,
 	) -> None:
 		"""
 		Patch the text file by replacing placeholders with values from the provided parameters.

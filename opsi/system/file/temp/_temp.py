@@ -35,6 +35,12 @@ def _get_random_name() -> str:
 class TempDir:
 	"""
 	Create a temporary directory that is automatically deleted when the context is exited.
+
+	Unless a base directory is given explicitly, the directory is created in the system temporary directory.
+	The location of the system temporary directory can be changed for all OPSI components
+	by setting one of the environment variables TMPDIR, TEMP or TMP (checked in this order).
+	If none of them is set, a platform specific default is used (e.g. /tmp on Linux).
+	The environment is evaluated each time a TempDir is created.
 	"""
 
 	def __init__(self, *, base_dir: Path | str | None = None, retry_config: RetryConfig | None = None) -> None:
@@ -42,7 +48,7 @@ class TempDir:
 		Initialize a new TempDir instance.
 		:param base_dir:
 			The base directory where the temporary directory will be created.
-			If None, uses the system default temporary directory.
+			If None, uses the system temporary directory (see the class description for the environment variables).
 		:param retry_config:
 			Configuration for automatic retry behavior on failure.
 			If None, uses the default retry configuration for file I/O operations.
@@ -112,6 +118,10 @@ def create_temp_dir(*, retry_config: RetryConfig | None = None) -> Path:
 class TempFile:
 	"""
 	Create a temporary file that is automatically deleted when the context is exited.
+
+	The file is created in the system temporary directory.
+	The location can be changed for all OPSI components by setting one of the environment variables
+	TMPDIR, TEMP or TMP (checked in this order), see TempDir.
 	"""
 
 	def __init__(

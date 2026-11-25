@@ -869,16 +869,18 @@ def test_http_test_server_certificate_and_socket_helpers(tmp_path: Path) -> None
 	):
 		server._generate_cert()
 
+		server_key = cast(Path | None, server.server_key)
+		server_cert = cast(Path | None, server.server_cert)
 		assert server.ca_key and server.ca_key.exists()
 		assert server.ca_cert and server.ca_cert.exists()
-		assert server.server_key and server.server_key.exists()
-		assert server.server_cert and server.server_cert.exists()
+		assert server_key and server_key.exists()
+		assert server_cert and server_cert.exists()
 
 	server._cleanup_cert()
 	assert server.ca_key and not server.ca_key.exists()
 	assert server.ca_cert and not server.ca_cert.exists()
-	assert server.server_key and not server.server_key.exists()
-	assert server.server_cert and not server.server_cert.exists()
+	assert server_key and not server_key.exists()
+	assert server_cert and not server_cert.exists()
 
 	key_file = tmp_path / "tls.key"
 	cert_file = tmp_path / "tls.crt"
@@ -899,7 +901,7 @@ def test_http_test_server_certificate_and_socket_helpers(tmp_path: Path) -> None
 		context.load_cert_chain.assert_called_once_with(keyfile=str(key_file), certfile=str(cert_file))
 		context.load_verify_locations.assert_called_once_with(cafile=str(ca_file))
 		context.wrap_socket.assert_called_once_with(sock="socket", server_side=True)
-		assert server.server.socket == "wrapped"
+		assert cast(Any, server.server).socket == "wrapped"
 
 
 def test_http_test_server_stop_restart_and_context_manager_failure() -> None:

@@ -25,6 +25,7 @@ from opsi.logging import LOG_DEBUG, LOG_NOTICE
 from opsi.process import (
 	DecodingErrors,
 	InterpreterType,
+	PowerShellMode,
 	Process,
 	ProcessError,
 	_process,
@@ -33,7 +34,14 @@ from opsi.process import (
 	run_script,
 	run_script_file,
 )
-from opsi.process._process import _get_interpreter_command, get_process_io_encoding
+from opsi.process._process import (
+	_filter_clixml,
+	_get_interpreter_command,
+	_powershell_file_command,
+	_quote_powershell_argument,
+	get_process_io_encoding,
+	merge_environment_case_insensitive,
+)
 from opsi.system.info import is_windows
 from opsi.system.session import DisplaySession, LinuxDisplaySessionType, WindowsDisplaySessionState, get_display_sessions
 from opsi.testing.helper import environment
@@ -58,10 +66,8 @@ from tests.file.conftest import PATH_TYPES
 				"-NoProfile",
 				"-ExecutionPolicy",
 				"Bypass",
-				"-File",
-				"script_file.ps1",
-				"arg1",
-				"arg2",
+				"-Command",
+				_powershell_file_command("script_file.ps1", ["arg1", "arg2"]),
 			],
 		),
 		(
@@ -136,9 +142,26 @@ def test_get_interpreter_command_powershell_hide_window_false() -> None:
 		"-NoProfile",
 		"-ExecutionPolicy",
 		"Bypass",
-		"-File",
-		"script_file.ps1",
+		"-Command",
+		_powershell_file_command("script_file.ps1", None),
 	]
+
+
+def test_quote_powershell_argument() -> None:
+	assert _quote_powershell_argument("arg") == "'arg'"
+	assert _quote_powershell_argument("") == "''"
+	# Embedded single quotes are escaped by doubling, everything else stays literal (no interpolation)
+	assert _quote_powershell_argument("it's $a `b") == "'it''s $a `b'"
+
+
+def test_powershell_file_command() -> None:
+	command = _powershell_file_command("C:\\temp\\script.ps1", None)
+	assert command.startswith("function Disable-ExecutionPolicy {")
+	assert "_authorizationManager" in command
+	assert command.endswith("& 'C:\\temp\\script.ps1'; exit $LASTEXITCODE")
+
+	command = _powershell_file_command("script.ps1", ["arg1", "it's arg2"])
+	assert command.endswith("& 'script.ps1' 'arg1' 'it''s arg2'; exit $LASTEXITCODE")
 
 
 def _patch_process_os_name(monkeypatch: pytest.MonkeyPatch, os_name: str) -> None:
@@ -507,7 +530,15 @@ def test_process_interpreter_windows(tmp_path: Path, interpreter: str | None, pi
 		script_arg: str | Path = script_path
 	else:
 		script_arg = script
-	with patch.object(Process, "_pipe_script", pipe_script), Process(script=script_arg, interpreter=interpreter) as proc:
+	# Set the PowerShell mode explicitly to control piping (redundant with "auto" since "file" now matches,
+	# but keeps the intent explicit)
+	powershell_mode = "stdin" if pipe_script else "file"
+	with (
+		patch.object(Process, "_pipe_script", pipe_script),
+		Process(
+			script=script_arg, interpreter=interpreter, powershell_mode=powershell_mode if interpreter == "powershell" else "auto"
+		) as proc,
+	):
 		assert proc._pipe_script == pipe_script
 
 	out = proc.get_output_text().strip()
@@ -521,6 +552,310 @@ def test_process_interpreter_windows(tmp_path: Path, interpreter: str | None, pi
 		assert out == f"Multi line script\r\n{user}\r\nend of script"
 		lines = proc.get_output_lines()
 		assert lines == ["Multi line script", user, "end of script"]
+
+
+POWERSHELL_MULTILINE_CONSTRUCTS_SCRIPT = """\
+$value = 1
+if ($value -eq 2) {
+    Write-Output ("if-branch-" + (10 + 1))
+}
+else {
+    Write-Output ("else-branch-" + (20 + 2))
+}
+function Get-Double {
+    param([int]$n)
+    return $n * 2
+}
+Write-Output ("function-" + (Get-Double 21))
+foreach ($i in 1..3) {
+    Write-Output ("loop-" + ($i * 10))
+}
+try {
+    throw "boom"
+}
+catch {
+    Write-Output ("catch-" + (3 + 4))
+}
+finally {
+    Write-Output ("finally-" + (5 + 6))
+}
+$text = @"
+here-string-line
+"@
+Write-Output ("here-" + $text.Trim().Length)
+"""
+
+
+@pytest.mark.windows
+@pytest.mark.parametrize("powershell_mode", ["encoded", "stdin", "file"])
+def test_process_powershell_multiline_constructs(powershell_mode: str) -> None:
+	# PowerShell parses piped stdin line by line.
+	# Constructs where a statement continues on the next line ("}" followed by "else", "catch", "finally")
+	# must still be parsed as one statement.
+	# Expected values are computed in the script so they do not match the echoed command text.
+	with Process(
+		script=POWERSHELL_MULTILINE_CONSTRUCTS_SCRIPT,
+		interpreter="powershell",
+		powershell_mode=powershell_mode,
+		capture_output="combined",
+		success_exit_codes=None,
+	) as proc:
+		assert proc._powershell_mode == PowerShellMode(powershell_mode)
+
+	out = proc.get_output_text()
+	for expected in (
+		"else-branch-22",
+		"function-42",
+		"loop-10",
+		"loop-20",
+		"loop-30",
+		"catch-7",
+		"finally-11",
+		"here-16",
+	):
+		assert expected in out, f"{expected!r} missing in output:\n{out}"
+	assert "if-branch-11" not in out
+	assert "is not recognized" not in out, out
+	assert "CLIXML" not in out, out
+	assert proc.exit_code == 0, out
+
+
+@pytest.mark.windows
+@pytest.mark.parametrize("powershell_mode", ["auto", "encoded", "stdin", "file"])
+def test_process_powershell_mode_exit_code_and_encoding(powershell_mode: str) -> None:
+	# Non-ASCII characters must survive every mode, the exit code of "exit N" must be passed on
+	script = 'Write-Output ("umlauts-" + "\u00e4\u00f6\u00fc\u00df".Length)\nexit 3'
+	with Process(
+		script=script, interpreter="powershell", powershell_mode=powershell_mode, capture_output="combined", success_exit_codes=None
+	) as proc:
+		pass
+	assert proc.exit_code == 3, proc.get_output_text()
+	assert "umlauts-4" in proc.get_output_text()
+
+
+def test_filter_clixml() -> None:
+	clixml = (
+		'<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04">'
+		'<S S="Error">Write-Error "a &amp; b"_x000D__x000A_</S><S S="Error"> : a &amp; b_x000D__x000A_</S></Objs>\r\n'
+	)
+	assert _filter_clixml(b"#< CLIXML\r\n", "utf-8") == b""
+	assert _filter_clixml(clixml.encode("utf-8"), "utf-8") == b'Write-Error "a & b"\r\n : a & b\r\n'
+	progress = '<Objs Version="1.1.0.1"><Obj S="progress" RefId="0"><TN RefId="0"></TN></Obj></Objs>'
+	assert _filter_clixml(progress.encode("utf-8"), "utf-8") == b""
+	assert _filter_clixml(b"normal line\r\n", "utf-8") == b"normal line\r\n"
+	assert _filter_clixml(b"<Objs incomplete", "utf-8") == b"<Objs incomplete"
+
+
+@pytest.mark.windows
+def test_process_powershell_encoded_no_clixml() -> None:
+	# Progress records and errors must not be written as CLIXML to the output
+	script = 'Write-Progress -Activity "activity" -Status "status"\nWrite-Output "stdout-text"\nWrite-Error "stderr-text"'
+	with Process(
+		script=script, interpreter="powershell", powershell_mode="encoded", capture_output="combined", success_exit_codes=None
+	) as proc:
+		pass
+	out = proc.get_output_text()
+	assert "stdout-text" in out
+	assert "stderr-text" in out
+	assert "CLIXML" not in out, out
+
+
+@pytest.mark.windows
+@pytest.mark.parametrize("powershell_mode", ["auto", "encoded", "file"])
+def test_process_powershell_mode_output_is_clean(powershell_mode: str) -> None:
+	# No prompts or echoed commands, only the output of the script
+	# (mode "stdin" is excluded, PowerShell echoes prompts and commands for piped input)
+	script = 'Write-Output "marker-1"\nif ($true) {\n\tWrite-Output "marker-2"\n}'
+	with Process(script=script, interpreter="powershell", powershell_mode=powershell_mode, capture_output="combined") as proc:
+		pass
+	lines = [line.strip() for line in proc.get_output_lines() if line.strip()]
+	assert lines == ["marker-1", "marker-2"], proc.get_output_text()
+
+
+@pytest.mark.windows
+def test_process_powershell_mode_auto_resolution() -> None:
+	with Process(script="Write-Output 'ok'", interpreter="powershell") as proc:
+		assert proc._powershell_mode == PowerShellMode.FILE
+		assert not proc._pipe_script
+		assert proc._temp_script_file is not None
+
+	# stdin stays available for the caller
+	with Process(script="Write-Output 'ok'", interpreter="powershell", stdin="\n") as proc:
+		assert proc._powershell_mode == PowerShellMode.FILE
+		assert not proc._pipe_script
+		assert proc._temp_script_file is not None
+
+	# Arguments work with "file" mode
+	with Process(script="Write-Output $args[0]", interpreter="powershell", arguments=["arg1"], capture_output="combined") as proc:
+		assert proc._powershell_mode == PowerShellMode.FILE
+		assert proc._temp_script_file is not None
+	assert "arg1" in proc.get_output_text()
+
+
+@pytest.mark.windows
+@pytest.mark.parametrize("powershell_mode", ["encoded", "stdin"])
+def test_process_powershell_mode_arguments_error(powershell_mode: str) -> None:
+	with pytest.raises(ProcessError, match="Cannot use arguments with PowerShell mode"):
+		Process(script="Write-Output 'ok'", interpreter="powershell", arguments=["arg1"], powershell_mode=powershell_mode)
+
+
+@pytest.mark.windows
+def test_process_powershell_mode_script_too_long() -> None:
+	# Base64 of UTF-16LE needs about 2.7 characters per script character
+	script = f"# {'x' * 20_000}\nWrite-Output ('long-' + (40 + 2))"
+
+	# auto uses file mode, which has no command line length limit
+	with Process(script=script, interpreter="powershell", capture_output="combined") as proc:
+		assert proc._powershell_mode == PowerShellMode.FILE
+	assert "long-42" in proc.get_output_text()
+
+	# stdin has no length limit
+	with Process(script=script, interpreter="powershell", powershell_mode="stdin", capture_output="combined") as proc:
+		assert proc._powershell_mode == PowerShellMode.STDIN
+	assert "long-42" in proc.get_output_text()
+
+	# an explicit mode must not fall back
+	with pytest.raises(ProcessError, match="too long"):
+		with Process(script=script, interpreter="powershell", powershell_mode="encoded"):
+			pass
+
+
+@pytest.mark.windows
+def test_get_interpreter_command_powershell_encoded() -> None:
+	command = _get_interpreter_command(interpreter=InterpreterType.POWERSHELL, hide_window=True, encoded_command="QUJD")
+	command[0] = os.path.basename(command[0])
+	assert command == [
+		"powershell.exe",
+		"-NoLogo",
+		"-NonInteractive",
+		"-NoProfile",
+		"-WindowStyle",
+		"Hidden",
+		"-ExecutionPolicy",
+		"Bypass",
+		"-OutputFormat",
+		"Text",
+		"-EncodedCommand",
+		"QUJD",
+	]
+	with pytest.raises(ValueError, match="Cannot use arguments with PowerShell encoded command"):
+		_get_interpreter_command(interpreter=InterpreterType.POWERSHELL, arguments=["arg1"], encoded_command="QUJD")
+
+
+def test_process_powershell_mode_invalid() -> None:
+	with pytest.raises(ProcessError, match="Invalid value 'bogus' for PowerShell mode"):
+		Process(script="echo test", interpreter="bash", powershell_mode="bogus")
+	# Only valid for the powershell interpreter
+	with pytest.raises(ProcessError, match="'powershell_mode' can only be used with 'powershell' interpreter"):
+		Process(script="echo test", interpreter="bash", powershell_mode="file")
+
+
+@pytest.mark.windows
+@pytest.mark.parametrize("working_dir", [None, Path("working directory")])
+def test_elevated_process_shell_execute_arguments(monkeypatch: pytest.MonkeyPatch, working_dir: Path | None) -> None:
+	from opsi.process import _windows
+
+	handle = object()
+	shell_execute = Mock(return_value={"hProcess": handle})
+	co_initialize = Mock()
+	co_uninitialize = Mock()
+	monkeypatch.setattr(_windows.shell, "ShellExecuteEx", shell_execute)
+	monkeypatch.setattr(_windows.pythoncom, "CoInitialize", co_initialize)
+	monkeypatch.setattr(_windows.pythoncom, "CoUninitialize", co_uninitialize)
+	monkeypatch.setattr(_windows.win32process, "GetProcessId", Mock(return_value=4711))
+
+	process = _windows.ElevatedProcess(["setup.exe", "argument with spaces"], working_dir=working_dir)
+
+	assert process.pid == 4711
+	co_initialize.assert_called_once_with()
+	co_uninitialize.assert_called_once_with()
+	expected = {
+		"fMask": _windows.shellcon.SEE_MASK_NOCLOSEPROCESS | _windows.SEE_MASK_NOASYNC | _windows.shellcon.SEE_MASK_FLAG_NO_UI,
+		"lpVerb": "runas",
+		"lpFile": "setup.exe",
+		"lpParameters": '"argument with spaces"',
+		"nShow": _windows.win32con.SW_SHOWNORMAL,
+	}
+	if working_dir is not None:
+		expected["lpDirectory"] = str(working_dir)
+	shell_execute.assert_called_once_with(**expected)
+
+
+def _patch_elevated_process(monkeypatch: pytest.MonkeyPatch, elevated_process: type) -> None:
+	# opsi.process._windows cannot be imported on non-Windows platforms
+	fake_windows_module = ModuleType("opsi.process._windows")
+	cast(Any, fake_windows_module).ElevatedProcess = elevated_process
+	monkeypatch.setitem(sys.modules, "opsi.process._windows", fake_windows_module)
+	monkeypatch.setattr("opsi.process._process.is_windows", lambda: True)
+	monkeypatch.setattr("opsi.process._process.Popen", Mock(side_effect=AssertionError("Popen must not be used")))
+
+
+def test_process_elevate_uses_elevated_process(monkeypatch: pytest.MonkeyPatch) -> None:
+	started: list[tuple[list[str], Path | None, bool]] = []
+
+	class FakeElevatedProcess:
+		stdin = None
+		stdout = None
+		stderr = None
+		pid = 4711
+
+		def __init__(self, command: list[str], *, working_dir: Path | None, hide_window: bool) -> None:
+			started.append((command, working_dir, hide_window))
+
+		def poll(self) -> int:
+			return 5
+
+	_patch_elevated_process(monkeypatch, FakeElevatedProcess)
+
+	with Process(command=["setup.exe", "/S"], elevate=True, working_dir="workdir", hide_window=True, success_exit_codes=None) as proc:
+		pass
+
+	assert started == [(["setup.exe", "/S"], Path("workdir"), True)]
+	assert proc.pid == 4711
+	assert proc.exit_code == 5
+	assert proc.get_output_bytes() == b""
+
+	with pytest.raises(ProcessError, match="exited with code 5"):
+		with Process(command=["setup.exe", "/S"], elevate=True):
+			pass
+
+
+def test_process_elevate_start_failure_is_not_retried(monkeypatch: pytest.MonkeyPatch) -> None:
+	attempts: list[int] = []
+
+	class FailingElevatedProcess:
+		def __init__(self, command: list[str], *, working_dir: Path | None, hide_window: bool) -> None:
+			attempts.append(1)
+			raise OSError("The operation was canceled by the user")
+
+	_patch_elevated_process(monkeypatch, FailingElevatedProcess)
+
+	with pytest.raises(ProcessError, match="Failed to start elevated process: The operation was canceled by the user"):
+		with Process(command=["setup.exe"], elevate=True):
+			pass
+	assert len(attempts) == 1
+
+
+@pytest.mark.parametrize(
+	"kwargs, message",
+	[
+		({"command": ["app"], "stdin": "x"}, "Cannot use stdin with 'elevate'"),
+		({"command": ["app"], "close_stdin": False}, "Cannot use stdin with 'elevate'"),
+		({"command": ["app"], "environment": {"A": "B"}}, "Cannot use 'environment' with 'elevate'"),
+		({"command": ["app"], "session_id": "1"}, "cannot be combined with 'session_id'"),
+		({"script": "echo test"}, "can only be used with 'command'"),
+	],
+)
+def test_process_elevate_errors(monkeypatch: pytest.MonkeyPatch, kwargs: dict[str, Any], message: str) -> None:
+	monkeypatch.setattr("opsi.process._process.is_windows", lambda: True)
+	with pytest.raises(ProcessError, match=message):
+		Process(elevate=True, **kwargs)
+
+
+@pytest.mark.skipif(is_windows(), reason="Only relevant on non-Windows platforms")
+def test_process_elevate_not_supported_on_non_windows() -> None:
+	with pytest.raises(ProcessError, match="only supported on Windows"):
+		Process(command=["app"], elevate=True)
 
 
 @pytest.mark.posix
@@ -728,7 +1063,7 @@ def test_process_ld_library_path(ld_library_path_orig: str, ld_library_path: str
 			assert os.environ.get("LD_LIBRARY_PATH") == ld_library_path
 			with run_command(["sleep", "1"]) as proc:
 				ps_proc = psutil.Process(proc.pid)
-				assert ps_proc and ps_proc.environ
+				assert ps_proc
 				proc_env = ps_proc.environ()
 				assert proc_env.get("LD_LIBRARY_PATH_ORIG") == ld_library_path_orig
 				assert proc_env.get("LD_LIBRARY_PATH") == expected_ld_library_path
@@ -786,6 +1121,28 @@ def test_path_cleanup() -> None:
 			assert proc_env["PATH"].split(os.pathsep) == clean_path
 			proc.wait()
 		assert os.environ["PATH"].split(os.pathsep) == path
+
+
+def test_merge_environment_case_insensitive() -> None:
+	base = {"Path": r"C:\base", "ProgramFiles": r"C:\Program Files", "PSModulePath": r"%ProgramFiles%\Modules", "windir": r"C:\Windows"}
+	overrides = {"PATH": r"C:\override", "PROGRAMFILES": r"C:\Program Files", "PSMODULEPATH": r"C:\Modules", "NO_PROXY": "localhost"}
+	merged = merge_environment_case_insensitive(base, overrides)
+	# Spelling of the base is kept, override values win, no case-insensitive duplicates
+	assert merged == {
+		"Path": r"C:\override",
+		"ProgramFiles": r"C:\Program Files",
+		"PSModulePath": r"C:\Modules",
+		"windir": r"C:\Windows",
+		"NO_PROXY": "localhost",
+	}
+	assert len({k.upper() for k in merged}) == len(merged)
+	# Inputs are not modified
+	assert base["Path"] == r"C:\base"
+
+
+def test_merge_environment_case_insensitive_duplicates_in_input() -> None:
+	merged = merge_environment_case_insensitive({"A": "1", "a": "2"}, {"B": "3", "b": "4"})
+	assert merged == {"a": "2", "B": "4"}
 
 
 def test_process_argument_validation() -> None:

@@ -804,10 +804,10 @@ def test_sqlite_handler_base(tmp_path: Path) -> None:
 	time.sleep(1)
 	now_unix = unix_timestamp()
 	now_utc = datetime.now(UTC)
-	now_loc: datetime = datetime.now()  # noqa: DTZ005
+	now_loc: datetime = datetime.now()
 	if is_windows():
 		# On Windows, datetime with ZoneInfo("US/Pacific") does not exist
-		now_pst = datetime.now()  # noqa: DTZ005
+		now_pst = datetime.now()
 	else:
 		now_pst = datetime.now(ZoneInfo("US/Pacific"))
 

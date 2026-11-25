@@ -17,6 +17,7 @@ from typing import Any, BinaryIO, Literal, cast, overload
 from opsi.exception import OperatingSystemUnsupportedError
 from opsi.logging import get_logger
 from opsi.opsi.service.model.type import to_string
+from opsi.system.file.temp import TempFile
 from opsi.system.info import is_posix, is_windows
 
 logger = get_logger("opsi")
@@ -145,17 +146,17 @@ def _execute(job: Any, input_handle: BinaryIO, output_handle: BinaryIO | None = 
 		buff.avail_out = ctypes.c_size_t(RS_JOB_BLOCKSIZE)
 		res = _librsync.rs_job_iter(job, ctypes.byref(buff))
 		if output_handle:
-			output_handle.write(out.raw[: RS_JOB_BLOCKSIZE - buff.avail_out])  # type: ignore
+			output_handle.write(out.raw[: RS_JOB_BLOCKSIZE - buff.avail_out])
 		if res == RS_DONE:
 			break
 		if res != RS_BLOCKED:
 			raise LibrsyncError(res)
-		if buff.avail_in > 0:  # type: ignore
+		if buff.avail_in > 0:
 			# There is data left in the input buffer, librsync did not consume
 			# all of it. Rewind the file a bit so we include that data in our
 			# next read. It would be better to simply tack data to the end of
 			# this buffer, but that is very difficult in Python.
-			input_handle.seek(input_handle.tell() - buff.avail_in)  # type: ignore
+			input_handle.seek(input_handle.tell() - buff.avail_in)
 	if output_handle and callable(getattr(output_handle, "seek", None)):
 		# As a matter of convenience, rewind the output file.
 		output_handle.seek(0)
@@ -222,31 +223,27 @@ def rsync_delta_file(file: Path | str, signature: bytes, delta_file: Path | str)
 		raise ValueError("filename and deltafile are the same file")
 
 	try:
-		sigfile_handle = tempfile.NamedTemporaryFile("wb+")  # noqa: SIM115
-		sigfile_handle.write(signature)
-		sigfile_handle.seek(0)
-
-		sig = ctypes.c_void_p()
-		try:
-			job = _librsync.rs_loadsig_begin(ctypes.byref(sig))
+		with TempFile(content=signature) as sigfile, open(sigfile.path, "rb") as sigfile_handle:
+			sig = ctypes.c_void_p()
 			try:
-				_execute(job, cast(BinaryIO, sigfile_handle))
-			finally:
-				_librsync.rs_job_free(job)
-			res = _librsync.rs_build_hash_table(sig)
-			if res != RS_DONE:
-				raise LibrsyncError(res)
-
-			with open(file, "rb") as filehandle, open(delta_file, "wb") as deltafile_handle:
-				job = _librsync.rs_delta_begin(sig)
+				job = _librsync.rs_loadsig_begin(ctypes.byref(sig))
 				try:
-					_execute(job, filehandle, deltafile_handle)
-
+					_execute(job, cast(BinaryIO, sigfile_handle))
 				finally:
 					_librsync.rs_job_free(job)
-		finally:
-			sigfile_handle.close()
-			_librsync.rs_free_sumset(sig)
+				res = _librsync.rs_build_hash_table(sig)
+				if res != RS_DONE:
+					raise LibrsyncError(res)
+
+				with open(file, "rb") as filehandle, open(delta_file, "wb") as deltafile_handle:
+					job = _librsync.rs_delta_begin(sig)
+					try:
+						_execute(job, filehandle, deltafile_handle)
+
+					finally:
+						_librsync.rs_job_free(job)
+			finally:
+				_librsync.rs_free_sumset(sig)
 
 	except Exception as sig_err:
 		raise RuntimeError(f"Failed to write delta file {delta_file}: {to_string(sig_err)}") from sig_err

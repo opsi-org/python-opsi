@@ -3,9 +3,7 @@
 # This code is owned by the uib GmbH, Mainz, Germany (uib.de). All rights reserved.
 # License: AGPL-3.0-only
 
-import os
 import re
-import tempfile
 from collections.abc import Generator
 from contextlib import contextmanager
 
@@ -14,6 +12,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 
 from opsi.logging import get_logger
 from opsi.process import ProcessError, run_command
+from opsi.system.file.temp import TempFile
 
 logger = get_logger("opsi")
 
@@ -30,17 +29,12 @@ def security_authorization() -> Generator[None]:
 def install_ca(ca_cert: x509.Certificate) -> None:
 	logger.info("Installing CA '%s' into system store", ca_cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value)
 
-	with tempfile.NamedTemporaryFile(mode="wb", delete=False) as pem_file:
-		pem_file.write(ca_cert.public_bytes(encoding=serialization.Encoding.PEM))
-
-	try:
-		with security_authorization():
-			run_command(
-				["security", "add-trusted-cert", "-d", "-r", "trustRoot", "-k", "/Library/Keychains/System.keychain", pem_file.name],
-				timeout=10,
-			)
-	finally:
-		os.remove(pem_file.name)
+	pem = ca_cert.public_bytes(encoding=serialization.Encoding.PEM)
+	with TempFile(content=pem, extension="pem") as pem_file, security_authorization():
+		run_command(
+			["security", "add-trusted-cert", "-d", "-r", "trustRoot", "-k", "/Library/Keychains/System.keychain", str(pem_file.path)],
+			timeout=10,
+		)
 
 
 def load_cas(subject_name: str) -> Generator[x509.Certificate]:

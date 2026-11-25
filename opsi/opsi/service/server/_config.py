@@ -272,7 +272,7 @@ class OpsiConfig:
 		config = loads(new_data)
 		if not config.get("host"):
 			config["host"] = {}
-		host_config = cast(Any, config["host"])
+		host_config = config["host"]
 		if not host_config.get("server-role"):
 			host_config["server-role"] = get_role()
 		if not host_config.get("id"):
@@ -282,7 +282,7 @@ class OpsiConfig:
 
 		if not config.get("service"):
 			config["service"] = {}
-		service_config = cast(Any, config["service"])
+		service_config = config["service"]
 		if not service_config.get("url"):
 			service_config["url"] = get_service_url(str(host_config["server-role"]))
 

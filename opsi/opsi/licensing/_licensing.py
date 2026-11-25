@@ -116,6 +116,7 @@ OPSI_MODULE_BUNDLES = {
 	"enterprise": (
 		"2fa",
 		"audit_log",
+		"background_install",
 		"custom_ca",
 		"directory-connector",
 		"letsencrypt",

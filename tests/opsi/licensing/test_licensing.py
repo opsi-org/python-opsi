@@ -336,7 +336,7 @@ def test_opsi_license_pool_modified(tmp_path: Path) -> None:
 	shutil.copytree("tests/data/licensing", str(license_file_path))
 	olp = OpsiLicensePool(license_file_path=str(license_file_path), modules_file_path=str(modules_file_path))
 	olp.load()
-	assert olp.get_licenses()
+	assert list(olp.get_licenses())
 	assert not olp.modified()
 
 	modules_file_path.touch()

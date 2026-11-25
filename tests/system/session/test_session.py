@@ -544,3 +544,127 @@ def test_linux_logind_preserves_direct_ssh_session() -> None:
 		assert logind.session_for_pid(123) is ssh_session
 	library.sd_pid_get_owner_uid.assert_not_called()
 	library.sd_uid_get_display.assert_not_called()
+
+
+@pytest.mark.linux
+@pytest.mark.parametrize(
+	"session_class, uid, has_login_session, expected",
+	[
+		(LinuxDisplaySessionClass.USER, 1000, True, True),
+		(LinuxDisplaySessionClass.USER, 106, True, True),  # logind is authoritative
+		(LinuxDisplaySessionClass.USER_EARLY, 1000, True, True),
+		(LinuxDisplaySessionClass.USER_LIGHT, 1000, True, True),
+		(LinuxDisplaySessionClass.GREETER, 1000, True, False),
+		(LinuxDisplaySessionClass.LOCK_SCREEN, 1000, True, False),
+		(LinuxDisplaySessionClass.BACKGROUND, 1000, True, False),
+		(LinuxDisplaySessionClass.MANAGER, 1000, True, False),
+		(LinuxDisplaySessionClass.USER, 1000, False, True),
+		(LinuxDisplaySessionClass.USER, 106, False, False),  # system account without logind metadata
+		(LinuxDisplaySessionClass.GREETER, 1000, False, False),
+	],
+)
+def test_linux_is_user_session(session_class: LinuxDisplaySessionClass, uid: int, has_login_session: bool, expected: bool) -> None:
+	"""Greeters, lock screens and services are no user sessions; system accounts only count without logind."""
+	from opsi.system.session._linux import _is_user_session
+
+	with patch("opsi.system.session._linux._uid_min", return_value=1000):
+		assert _is_user_session(session_class, uid, has_login_session=has_login_session) is expected
+
+
+@pytest.mark.linux
+@pytest.mark.parametrize(
+	"content, expected",
+	[
+		("UID_MIN 500\n", 500),
+		("# UID_MIN 500\nUID_MIN\t\t2000\n", 2000),
+		("UID_MAX 60000\n", 1000),
+		("", 1000),
+		(OSError("missing"), 1000),
+	],
+)
+def test_linux_uid_min(content: str | OSError, expected: int) -> None:
+	"""UID_MIN is read from login.defs and defaults to 1000."""
+	from opsi.system.session._linux import _uid_min
+
+	_uid_min.cache_clear()
+	try:
+		if isinstance(content, OSError):
+			with patch("opsi.system.session._linux.Path.read_text", side_effect=content):
+				assert _uid_min() == expected
+		else:
+			with patch("opsi.system.session._linux.Path.read_text", return_value=content):
+				assert _uid_min() == expected
+	finally:
+		_uid_min.cache_clear()
+
+
+@pytest.mark.linux
+@pytest.mark.parametrize("only_user_sessions", [False, True])
+def test_linux_greeter_session_is_not_a_user_session(linux_display_processes: Callable[..., Mock], only_user_sessions: bool) -> None:
+	"""A display manager greeter stays the console session but is no user session."""
+	from opsi.system.session._linux import _LoginSession
+
+	linux_display_processes({"DISPLAY": ":0"}, uid=106)
+	linux_display_processes({"DISPLAY": ":1"}, uid=1000)
+	metadata = [
+		_LoginSession(106, "x11", "greeter", ":0", True),
+		_LoginSession(1000, "x11", "user", ":1", False),
+	]
+	with (
+		patch("opsi.system.session._linux._Logind") as logind,
+		patch("opsi.system.session._linux._is_usable", return_value=True),
+	):
+		logind.return_value.session_for_pid.side_effect = lambda pid: metadata[pid - 1]
+		sessions = get_display_sessions(only_user_sessions=only_user_sessions)
+
+	if only_user_sessions:
+		assert [(s.id, s.user, s.is_user_session) for s in sessions] == [("x11::1", "user1000", True)]
+		assert not any(s.is_current_console_session for s in sessions)
+	else:
+		assert [(s.id, s.user, s.is_user_session) for s in sessions] == [("x11::0", "user106", False), ("x11::1", "user1000", True)]
+		assert [s.is_current_console_session for s in sessions] == [True, False]
+
+
+@pytest.mark.linux
+def test_linux_user_session_replaces_greeter_on_shared_display(linux_display_processes: Callable[..., Mock]) -> None:
+	"""The user's session wins over a greeter process on the same X server, even if the greeter is the active console."""
+	from opsi.system.session._linux import _LoginSession
+
+	linux_display_processes({"DISPLAY": ":0"}, uid=106)
+	linux_display_processes({"DISPLAY": ":0"}, uid=1000)
+	metadata = [
+		_LoginSession(106, "x11", "greeter", ":0", True),
+		_LoginSession(1000, "x11", "user", ":0", False),
+	]
+	with (
+		patch("opsi.system.session._linux._Logind") as logind,
+		patch("opsi.system.session._linux._is_usable", return_value=True),
+	):
+		logind.return_value.session_for_pid.side_effect = lambda pid: metadata[pid - 1]
+		sessions = get_display_sessions(only_user_sessions=True)
+
+	assert [(s.id, s.user, s.is_user_session) for s in sessions] == [("x11::0", "user1000", True)]
+
+
+@pytest.mark.linux
+@pytest.mark.parametrize(
+	"uid, env, expected",
+	[
+		(1000, {}, True),
+		(106, {}, False),
+		(1000, {"XDG_SESSION_CLASS": "greeter"}, False),
+		(106, {"XDG_SESSION_CLASS": "greeter"}, False),
+		(1000, {"XDG_SESSION_CLASS": "user"}, True),
+	],
+)
+def test_linux_user_session_without_logind(
+	linux_display_processes: Callable[..., Mock], uid: int, env: dict[str, str], expected: bool
+) -> None:
+	"""Without logind, the environment's session class and the account type decide."""
+	linux_display_processes({"DISPLAY": ":0", **env}, uid=uid)
+	with (
+		patch("opsi.system.session._linux._uid_min", return_value=1000),
+		patch("opsi.system.session._linux._is_usable", return_value=True),
+	):
+		assert [s.is_user_session for s in get_display_sessions()] == [expected]
+		assert len(get_display_sessions(only_user_sessions=True)) == int(expected)

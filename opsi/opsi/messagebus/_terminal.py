@@ -58,7 +58,7 @@ if is_windows():
 		try:
 			# Import of winpty may sometimes fail because of problems with the needed dll.
 			# Therefore we do not import at toplevel
-			from winpty import Backend, PtyProcess  # ty: ignore[unresolved-import]
+			from winpty import Backend, PtyProcess  # ty: ignore[import-not-found]
 
 			sp_env = get_subprocess_environment()
 			sp_env.update(env or {})

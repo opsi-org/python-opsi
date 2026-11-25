@@ -11,6 +11,7 @@ import pwd
 import re
 import stat
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -24,6 +25,41 @@ from opsi.logging import get_logger
 from ._common import DisplaySession, LinuxDisplaySessionClass, LinuxDisplaySessionType
 
 logger = get_logger("opsi")
+
+# Logind session classes which are not interactive sessions of a human user.
+_NON_USER_SESSION_CLASSES = frozenset(
+	{
+		LinuxDisplaySessionClass.GREETER,
+		LinuxDisplaySessionClass.LOCK_SCREEN,
+		LinuxDisplaySessionClass.BACKGROUND,
+		LinuxDisplaySessionClass.BACKGROUND_LIGHT,
+		LinuxDisplaySessionClass.MANAGER,
+		LinuxDisplaySessionClass.MANAGER_EARLY,
+		LinuxDisplaySessionClass.NONE,
+	}
+)
+
+
+@cache
+def _uid_min() -> int:
+	"""Return the smallest UID of regular login accounts from /etc/login.defs, defaulting to 1000."""
+	try:
+		match = re.search(r"^\s*UID_MIN\s+(\d+)", Path("/etc/login.defs").read_text(encoding="utf-8"), re.MULTILINE)
+	except (OSError, ValueError):
+		return 1000
+	return int(match[1]) if match else 1000
+
+
+def _is_user_session(session_class: LinuxDisplaySessionClass, uid: int, *, has_login_session: bool) -> bool:
+	"""
+	Check if a session belongs to a human user, as opposed to a greeter, lock screen or service.
+
+	The session class is authoritative. If logind did not provide the session,
+	the class comes from the process environment, so system accounts are excluded as well.
+	"""
+	if session_class in _NON_USER_SESSION_CLASSES:
+		return False
+	return has_login_session or uid >= _uid_min()
 
 
 @dataclass(frozen=True)
@@ -158,7 +194,9 @@ def _is_usable(session: DisplaySession, uid: int) -> bool:
 		return False
 
 
-def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool = True) -> list[DisplaySession]:
+def get_display_sessions(
+	*, one_session_per_user: bool = True, only_usable: bool = True, only_user_sessions: bool = False
+) -> list[DisplaySession]:
 	"""
 	Discover Linux display endpoints from accessible process environments.
 
@@ -168,6 +206,10 @@ def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool
 		Keep the best session per user, preferring usable and current console sessions.
 	only_usable : bool, default: True
 		Exclude endpoints with missing local sockets or invalid explicit authority files.
+	only_user_sessions : bool, default: False
+		Exclude sessions which do not belong to a human user, such as display manager greeters
+		(e.g. LightDM, GDM), lock screens and background sessions.
+		See ``DisplaySession.is_user_session``.
 
 	Returns
 	-------
@@ -182,6 +224,11 @@ def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool
 	Console detection uses logind's active session on seat0. Processes outside a
 	login session scope (e.g. GNOME user services) use their systemd owner's primary
 	display session. Without that metadata no session is guessed to be the console.
+	A greeter is the console session while nobody is logged in; it has ``user`` set
+	to the display manager's account but ``is_user_session`` is False.
+	If several processes share an endpoint, user sessions are preferred over other ones.
+	Without logind, the session class is read from ``XDG_SESSION_CLASS`` and processes
+	running as accounts below ``UID_MIN`` are not considered user sessions.
 	Usability is advisory: socket liveness, X11 authentication and remote display
 	connectivity are not probed. Discovery cannot see processes whose environments
 	are inaccessible and is not a security boundary for the contents of those
@@ -194,7 +241,7 @@ def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool
 		logind = None
 
 	sessions_by_id: dict[str, DisplaySession] = {}
-	candidate_priorities: dict[str, tuple[bool, bool, bool, int]] = {}
+	candidate_priorities: dict[str, tuple[bool, bool, bool, bool, int]] = {}
 	users: dict[int, pwd.struct_passwd] = {}
 	for proc in psutil.process_iter():
 		try:
@@ -250,6 +297,7 @@ def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool
 			display_session = DisplaySession(
 				id=session_id,
 				user=user.pw_name,
+				is_user_session=_is_user_session(session_class, uid, has_login_session=login_session is not None),
 				environment=env,
 				linux_session_type=linux_session_type,
 				linux_session_class=session_class,
@@ -264,9 +312,11 @@ def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool
 					or (login_session.display and _x11_display(login_session.display) == _x11_display(display or ""))
 				)
 			)
-			# A usable, session-associated environment beats stale/background candidates.
+			# A usable, session-associated environment of a user beats stale/background candidates.
+			# User sessions beat e.g. a greeter which shares the display server with the user's session.
 			priority = (
 				not display_session.is_usable,
+				not display_session.is_user_session,
 				not display_session.is_current_console_session,
 				login_session is None,
 				proc.pid,
@@ -277,7 +327,10 @@ def get_display_sessions(*, one_session_per_user: bool = True, only_usable: bool
 		except (psutil.AccessDenied, psutil.NoSuchProcess, OSError, KeyError, ValueError) as err:
 			logger.debug(err)
 
-	sessions = sorted((s for s in sessions_by_id.values() if s.is_usable or not only_usable), key=lambda session: session.id)
+	sessions = sorted(
+		(s for s in sessions_by_id.values() if (s.is_usable or not only_usable) and (s.is_user_session or not only_user_sessions)),
+		key=lambda session: session.id,
+	)
 	console_sessions = sorted((s for s in sessions if s.is_current_console_session), key=_session_priority)
 	for session in console_sessions[1:]:
 		session.is_current_console_session = False

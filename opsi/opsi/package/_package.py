@@ -5,6 +5,7 @@
 
 import json
 from dataclasses import asdict, dataclass
+from enum import StrEnum
 from pathlib import Path
 from typing import Any, Literal, cast
 
@@ -30,11 +31,30 @@ from opsi.opsi.package._control_file_handling import (
 	dictify_product_properties,
 )
 from opsi.opsi.package._legacy_control_file import LegacyControlFile
-from opsi.opsi.service.model.object import Product, ProductDependency, ProductProperty
+from opsi.opsi.service.model.object import NetbootProduct, Product, ProductDependency, ProductProperty
 from opsi.system.file.temp import TempDir
 from opsi.util.version import compare_versions
 
-PACKAGE_DIR_TYPES = Literal["OPSI", "CLIENT_DATA", "SERVER_DATA"]
+
+class PackageDirType(StrEnum):
+	"""
+	Types of top-level directories in a package source directory.
+
+	Each directory is stored as a separate top-level archive in the package.
+	"""
+
+	OPSI = "OPSI"
+	CLIENT_DATA = "CLIENT_DATA"
+	SERVER_DATA = "SERVER_DATA"
+	BOOT = "BOOT"
+
+
+# Directory types containing payload data. Empty directories of these types are not packaged.
+DATA_DIR_TYPES = (PackageDirType.CLIENT_DATA, PackageDirType.SERVER_DATA, PackageDirType.BOOT)
+# Directory types for which no custom variants (<type>.<custom>) exist.
+NON_CUSTOMIZABLE_DIR_TYPES = (PackageDirType.BOOT,)
+# Directory types which are only allowed for specific product types.
+NETBOOT_ONLY_DIR_TYPES = (PackageDirType.BOOT,)
 
 
 logger = get_logger("opsi")
@@ -103,6 +123,7 @@ class OpsiPackage:
 			logger.debug("Extracting archive %s", package_archive)
 			extract_archive(package_archive, temp_dir)
 			# Extract <OPSI|CLIENT_DATA|SERVER_DATA>.<custom> after <OPSI|CLIENT_DATA|SERVER_DATA>
+			# BOOT has no custom variants and is extracted to its own directory.
 			# If data is extracted into the same folder custom archive has precedence.
 			for archive in sorted(temp_dir.iterdir(), key=lambda a: len(a.name.split("."))):
 				folder_name = archive.name
@@ -276,27 +297,30 @@ class OpsiPackage:
 		with open(control_file, "w", encoding="utf-8", newline="") as f:
 			f.write(tomlkit.dumps(doc))
 
-	def get_dirs(self, base_dir: Path, custom_name: str | None, custom_only: bool) -> dict[PACKAGE_DIR_TYPES, list[Path]]:
+	def get_dirs(self, base_dir: Path, custom_name: str | None, custom_only: bool) -> dict[PackageDirType, list[Path]]:
 		"""
 		Returning a dictionary containing directory types as keys and a list of directory paths as values.
 		The order of the paths matters, because custom dirs have precedence.
+		The BOOT directory has no custom variants and is skipped if `custom_only` is `True`.
 		"""
 		if custom_only and not custom_name:
 			raise ValueError("custom_only requires custom_name to be set.")
 
-		dirs: dict[PACKAGE_DIR_TYPES, list[Path]] = {}
+		dirs: dict[PackageDirType, list[Path]] = {}
 		custom_dirs = 0
 		possible_control_dirs = []
 		dir_names_found = []
 		for extension in (f".{custom_name}", ""):
 			possible_control_dirs.append(f"OPSI{extension}")
-			for dir_type in ("OPSI", "CLIENT_DATA", "SERVER_DATA"):
+			for dir_type in PackageDirType:
+				if extension and dir_type in NON_CUSTOMIZABLE_DIR_TYPES:
+					continue
 				dir_path = base_dir / f"{dir_type}{extension}"
 				if dir_path.is_dir():
 					dir_names_found.append(dir_path.name)
 					cur_dir_paths = dirs.get(dir_type, [])
-					if not extension and custom_only and (cur_dir_paths or dir_type != "OPSI"):
-						# With custom only the default CLIENT_DATA and SERVER_DATA directories are skipped
+					if not extension and custom_only and (cur_dir_paths or dir_type != PackageDirType.OPSI):
+						# With custom only the default data directories (CLIENT_DATA, SERVER_DATA, BOOT) are skipped
 						# The default OPSI directory must only be used if no custom directory is found
 						continue
 					dirs[dir_type] = cur_dir_paths + [dir_path]
@@ -308,7 +332,7 @@ class OpsiPackage:
 				f"No directories matching custom name '{custom_name}' found in '{base_dir}', available directories: {dir_names_found}"
 			)
 
-		if not dirs.get("OPSI"):
+		if not dirs.get(PackageDirType.OPSI):
 			custom_dir_text = " and ".join(possible_control_dirs)
 			raise RuntimeError(f"{custom_dir_text} directory not found in '{base_dir}', available directories: {dir_names_found}")
 
@@ -333,7 +357,7 @@ class OpsiPackage:
 			raise ValueError(f"Unsupported package archive compression '{compression}'")
 
 		dirs = self.get_dirs(base_dir, custom_name, custom_only)
-		opsi_dir = dirs["OPSI"][0]
+		opsi_dir = dirs[PackageDirType.OPSI][0]
 		primary_control_file = self.find_and_parse_control_file(opsi_dir)
 
 		destination = (destination or Path()).absolute()
@@ -380,9 +404,15 @@ class OpsiPackage:
 		for dir_type, dir_paths in dirs.items():
 			for dir_path in dir_paths:
 				archive_files = list(get_archive_files(dir_path, follow_symlinks=not dereference))
-				if not archive_files and dir_type in ("CLIENT_DATA", "SERVER_DATA"):
+				# An empty directory is reported as a single entry for the directory itself
+				is_empty = all(f.archive_path.as_posix() == "/" for f in archive_files)
+				if is_empty and dir_type in DATA_DIR_TYPES:
 					logger.debug("Skipping empty dir '%s'", dir_path)
 					continue
+				if not is_empty and dir_type in NETBOOT_ONLY_DIR_TYPES and not isinstance(self.product, NetbootProduct):
+					raise ValueError(
+						f"Directory '{dir_path.name}' is only allowed for netboot products, but product type is '{self.product.getType()}'."
+					)
 				files_by_archive_name[dir_path.name] = archive_files
 
 		progress_adapter: ProgressAdapter | None = None

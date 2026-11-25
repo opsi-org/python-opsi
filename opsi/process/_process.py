@@ -5,8 +5,10 @@
 
 from __future__ import annotations
 
+import base64
 import ctypes
 import enum
+import html
 import locale
 import os
 import re
@@ -15,7 +17,7 @@ import signal
 import subprocess
 import sys
 import time
-from collections.abc import Collection, Iterator, Mapping
+from collections.abc import Collection, Generator, Mapping
 from contextlib import contextmanager
 from functools import lru_cache
 from getpass import getuser
@@ -24,7 +26,7 @@ from shutil import which
 from subprocess import DEVNULL, PIPE, STDOUT, Popen, list2cmdline
 from threading import Event, Lock, Thread
 from types import TracebackType
-from typing import Literal, Self
+from typing import Any, Literal, Self
 
 from opsi.logging import LOG_NOTICE, LOG_TRACE, get_logger, is_log_level_enabled
 from opsi.retry import Retry, RetryConfig, RetryConfigType, get_retry_config
@@ -34,7 +36,80 @@ from opsi.util.pattern import MappedStrEnum
 
 LD_LIBRARY_EXCLUDE_LIST = ["/usr/lib/opsiclientd", "/usr/lib/opsiconfd", "/usr/lib/opsi-agent"]
 
+# The command line of a Windows process is limited to 32767 characters.
+# Leave room for the executable path and the other PowerShell options.
+POWERSHELL_ENCODED_COMMAND_MAX_LENGTH = 30_000
+POWERSHELL_ENCODED_COMMAND_PREFIX = "$ProgressPreference = 'SilentlyContinue'"
+
+# "-File <path>" is subject to the execution policy, even with "-ExecutionPolicy Bypass", if the policy is
+# enforced by group policy (e.g. "AllSigned" or "Restricted"). Swapping out PowerShell's AuthorizationManager
+# via reflection disables the execution policy check for the current session.
+POWERSHELL_DISABLE_EXECUTION_POLICY_COMMAND = (
+	"function Disable-ExecutionPolicy {"
+	"($ctx = $executioncontext.gettype().getfield('_context','nonpublic,instance').getvalue($executioncontext))."
+	"gettype().getfield('_authorizationManager','nonpublic,instance')."
+	"setvalue($ctx, (New-Object System.Management.Automation.AuthorizationManager 'Microsoft.PowerShell'))"
+	"}; Disable-ExecutionPolicy; "
+)
+
+CLIXML_HEADER = b"#< CLIXML"
+CLIXML_ERROR_PATTERN = re.compile(r'<S S="Error">(.*?)</S>', re.DOTALL)
+CLIXML_ESCAPE_PATTERN = re.compile(r"_x([0-9A-Fa-f]{4})_")
+
 logger = get_logger("opsi")
+
+
+def _encode_powershell_command(script: str) -> str:
+	"""
+	Encode a script for the PowerShell parameter -EncodedCommand.
+	Progress records (e.g. "Preparing modules for first use.") are written as CLIXML to stderr when -EncodedCommand is used.
+	The progress output is disabled to keep stderr clean.
+	"""
+	command_script = POWERSHELL_ENCODED_COMMAND_PREFIX + os.linesep + script
+	return base64.b64encode(command_script.encode("utf-16-le")).decode("ascii")
+
+
+def _quote_powershell_argument(value: str) -> str:
+	"""
+	Quote a value as a single-quoted PowerShell string literal (no interpolation or escape sequences,
+	only embedded single quotes need to be escaped by doubling them).
+	"""
+	return "'" + value.replace("'", "''") + "'"
+
+
+def _powershell_file_command(script_file: str, arguments: list[str] | None) -> str:
+	"""
+	Build a "-Command" string that runs a script file independent of the execution policy.
+
+	The script is invoked with the call operator "&" after disabling the execution policy check for
+	the current session (see POWERSHELL_DISABLE_EXECUTION_POLICY_COMMAND). "exit $LASTEXITCODE" passes
+	the exit code of the script (set by an explicit "exit" statement) on to the powershell.exe process,
+	defaulting to 0 if the script does not call "exit" itself, the same as with "-File".
+	"""
+	parts = [_quote_powershell_argument(script_file)]
+	if arguments:
+		parts.extend(_quote_powershell_argument(argument) for argument in arguments)
+	return POWERSHELL_DISABLE_EXECUTION_POLICY_COMMAND + "& " + " ".join(parts) + "; exit $LASTEXITCODE"
+
+
+def _filter_clixml(data: bytes, encoding: str) -> bytes:
+	"""
+	PowerShell serializes the error stream as CLIXML if it is started with -EncodedCommand and the output is redirected.
+	The CLIXML header line is dropped and the error text is extracted from CLIXML lines.
+	Other data (and incomplete CLIXML lines) is returned unchanged.
+	"""
+	stripped = data.strip()
+	if stripped == CLIXML_HEADER:
+		return b""
+	if not stripped.startswith(b"<Objs ") or not stripped.endswith(b"</Objs>"):
+		return data
+
+	text = stripped.decode(encoding, errors="replace")
+	error_text = ""
+	for match in CLIXML_ERROR_PATTERN.findall(text):
+		value = html.unescape(match)
+		error_text += CLIXML_ESCAPE_PATTERN.sub(lambda m: chr(int(m.group(1), 16)), value)
+	return error_text.encode(encoding, errors="replace")
 
 
 class CaptureOutputMode(MappedStrEnum):
@@ -62,6 +137,27 @@ class InterpreterType(MappedStrEnum):
 	BASH = "bash"
 
 	_NAME = enum.nonmember("interpreter type")
+
+
+class PowerShellMode(MappedStrEnum):
+	"""
+	How a script is passed to PowerShell on Windows.
+
+	- ``auto``: Use ``file``.
+	- ``encoded``: Pass the script via ``-EncodedCommand``. Not subject to the execution policy.
+	  Limited to a maximum script length (see POWERSHELL_ENCODED_COMMAND_MAX_LENGTH).
+	- ``stdin``: Pipe the script to PowerShell via stdin. Not subject to the execution policy.
+	  PowerShell echoes prompts and commands for piped input, so the output contains additional lines.
+	- ``file``: Write the script to a temporary file and run it via the call operator ``&``, after disabling
+	  the execution policy check for the PowerShell session, see POWERSHELL_DISABLE_EXECUTION_POLICY_COMMAND.
+	"""
+
+	AUTO = "auto"
+	ENCODED = "encoded"
+	STDIN = "stdin"
+	FILE = "file"
+
+	_NAME = enum.nonmember("PowerShell mode")
 
 
 class DecodingErrors(MappedStrEnum):
@@ -117,6 +213,26 @@ def get_subprocess_environment(env: Mapping[str, str] | None = None) -> dict[str
 	return env
 
 
+def merge_environment_case_insensitive(base: Mapping[str, str], overrides: Mapping[str, str]) -> dict[str, str]:
+	"""
+	Merge environment variables, treating variable names as case-insensitive (like Windows does).
+	Values from `overrides` take precedence, the spelling of the names in `base` is kept.
+	The result never contains two names that differ only in case.
+	"""
+	result: dict[str, str] = {}
+	names: dict[str, str] = {}
+	for name, value in base.items():
+		key = name.upper()
+		# On conflicts within base the last value wins, same as for the overrides
+		result.pop(names.get(key, name), None)
+		names[key] = name
+		result[name] = value
+	for name, value in overrides.items():
+		name = names.setdefault(name.upper(), name)
+		result[name] = value
+	return result
+
+
 class ProcessError(Exception):
 	"""Raised when a process execution fails."""
 
@@ -164,7 +280,7 @@ class ProcessError(Exception):
 
 
 @contextmanager
-def disable_file_system_redirection() -> Iterator[None]:
+def disable_file_system_redirection() -> Generator[None]:
 	"""
 	Temporarily disable WOW64 file system redirection.
 
@@ -233,6 +349,7 @@ def _get_interpreter_command(
 	script_file: str | os.PathLike[str] | TempFile = "-",
 	arguments: list[str] | None = None,
 	hide_window: bool = False,
+	encoded_command: str | None = None,
 ) -> list[str]:
 	script_file = (
 		str(script_file.path) if isinstance(script_file, TempFile) else os.fspath(script_file)
@@ -280,6 +397,8 @@ def _get_interpreter_command(
 			raise FileNotFoundError("cmd.exe not found")
 
 		elif interpreter == InterpreterType.POWERSHELL:
+			if encoded_command is not None and arguments:
+				raise ValueError("Cannot use arguments with PowerShell encoded command")
 			if script_file == "-" and arguments:
 				raise ValueError("Cannot use arguments with piped PowerShell script input")
 
@@ -291,9 +410,16 @@ def _get_interpreter_command(
 			]
 			if hide_window:
 				args.extend(["-WindowStyle", "Hidden"])
-			args.extend(["-ExecutionPolicy", "Bypass", "-File", script_file])
-			if arguments:
-				args.extend(arguments)
+			args.extend(["-ExecutionPolicy", "Bypass"])
+			if encoded_command is not None:
+				# Always use text output, progress records are suppressed in _apply_encoded_command
+				args.extend(["-OutputFormat", "Text", "-EncodedCommand", encoded_command])
+			elif script_file == "-":
+				# Reading the script from stdin via "-File -" is not subject to the execution policy
+				args.extend(["-File", "-"])
+			else:
+				# See POWERSHELL_DISABLE_EXECUTION_POLICY_COMMAND / _powershell_file_command
+				args.extend(["-Command", _powershell_file_command(script_file, arguments)])
 
 			for name in "powershell.exe", "pwsh.exe":
 				if path := which(name):
@@ -354,9 +480,11 @@ class Process:
 		discard_output: DiscardOutputMode | str = DiscardOutputMode.NONE,
 		encoding: str | None = None,
 		exit_on_error: bool = False,
+		powershell_mode: PowerShellMode | str = PowerShellMode.AUTO,
 		success_exit_codes: Collection[int] | None = (0,),
 		hide_window: bool = False,
 		detach: bool = False,
+		elevate: bool = False,
 		session_id: str | None = None,
 		session_desktop: str | None = None,
 		session_elevated: bool = False,
@@ -417,10 +545,22 @@ class Process:
 			Only valid with script execution and interpreter bash or powershell.
 			If True the script will exit on the first error.
 			If False the script will continue execution even if some commands fail.
+		:param powershell_mode:
+			Only relevant on Windows with interpreter powershell.
+			How the script is passed to PowerShell: "auto", "encoded" (-EncodedCommand), "stdin" (piped) or "file" (call operator).
+			None of the modes are subject to the PowerShell execution policy (which can be enforced by group policy).
+			"auto" uses "file". "encoded" and "stdin" cannot be used with arguments and "encoded" is limited to a maximum
+			script length.
 		:param hide_window:
 			If True, hide the process window on Windows.
 		:param detach:
 			If True, start the process detached from the current process session.
+		:param elevate:
+			Only supported on Windows and only with ``command``.
+			If True, the command is started elevated (UAC prompt) via the Windows API (ShellExecuteEx with verb ``runas``).
+			The process waits for the elevated command and takes over its exit code.
+			The output of an elevated process cannot be captured and the environment and stdin are not passed to it.
+			An elevated process may not be stoppable (timeout), because the process is not allowed to terminate it.
 		:param session_id:
 			If specified the process will be started in the given session.
 		:param session_desktop:
@@ -443,6 +583,7 @@ class Process:
 		self._temp_script_file: TempFile | None = None
 		self._script_file: Path | None = None
 		self._exit_on_error = bool(exit_on_error)
+		self._powershell_mode: PowerShellMode | None = None
 		self._working_dir = Path(working_dir) if working_dir else None
 		self._timeout = float(timeout) if timeout is not None and timeout > 0 else None
 		self._hide_window = bool(hide_window)
@@ -452,12 +593,14 @@ class Process:
 		self._session_desktop: str | None = None
 		self._session_elevated: bool = False
 		self._encoding = encoding or "utf-8"
+		self._elevate = False
 		self._stdin_data: bytes | None = None
 		self._close_stdin_after_start = bool(close_stdin)
 		self._success_exit_codes = None if success_exit_codes is None else set(success_exit_codes)
 		self._retry_config = retry_config or get_retry_config(RetryConfigType.RUN_PROCESS)
 		self._start_log_level = int(start_log_level)
-		self._proc: Popen | None = None
+		# Popen or opsi.process._windows.ElevatedProcess (Windows only)
+		self._proc: Popen | Any | None = None
 		self._attempts = 0
 		self._should_stop = False
 		self._wait_after_stop: float | int | None = 5
@@ -476,6 +619,17 @@ class Process:
 			raise ProcessError("Either 'command' or 'script' must be provided", process=self)
 		if command is not None and interpreter is not None:
 			raise ProcessError("'interpreter' can only be used with 'script', not with 'command'", process=self)
+		if elevate:
+			if not is_windows():
+				raise ProcessError("Parameter 'elevate' is only supported on Windows", process=self)
+			if command is None:
+				raise ProcessError("Parameter 'elevate' can only be used with 'command'", process=self)
+			if session_id is not None:
+				raise ProcessError("Parameter 'elevate' cannot be combined with 'session_id'", process=self)
+			if stdin is not None or not close_stdin:
+				raise ProcessError("Cannot use stdin with 'elevate'", process=self)
+			if environment:
+				raise ProcessError("Cannot use 'environment' with 'elevate'", process=self)
 
 		try:
 			self._capture_output = CaptureOutputMode(capture_output)
@@ -516,6 +670,8 @@ class Process:
 			self._command = shlex.split(command) if isinstance(command, str) else list(command)
 			if arguments:
 				self._command.extend(arguments)
+			if elevate:
+				self._elevate = True
 		else:
 			# Script execution
 			if not interpreter:
@@ -551,6 +707,26 @@ class Process:
 				self._encoding = get_process_io_encoding(interpreter=interpreter if isinstance(interpreter, InterpreterType) else None)
 				logger.debug("Using auto-detected encoding for process I/O: %r", self._encoding)
 
+			try:
+				requested_mode = PowerShellMode(powershell_mode)
+			except ValueError as exc:
+				raise ProcessError(str(exc), process=self) from exc
+			if requested_mode != PowerShellMode.AUTO and interpreter != InterpreterType.POWERSHELL:
+				raise ProcessError("'powershell_mode' can only be used with 'powershell' interpreter", process=self)
+			if is_windows() and interpreter == InterpreterType.POWERSHELL:
+				mode = requested_mode
+				if self._pipe_script:
+					# Piping forced for all interpreters
+					mode = PowerShellMode.STDIN
+				elif mode == PowerShellMode.AUTO:
+					# "file" is no longer subject to the execution policy and has no command line length limit
+					mode = PowerShellMode.FILE
+				elif mode in (PowerShellMode.ENCODED, PowerShellMode.STDIN) and arguments:
+					raise ProcessError(f"Cannot use arguments with PowerShell mode '{mode.value}'", process=self)
+				self._powershell_mode = mode
+				self._pipe_script = mode == PowerShellMode.STDIN
+				logger.debug("Using PowerShell mode '%s'", mode.value)
+
 			if isinstance(script, Path):
 				self._script_file = script
 			else:
@@ -566,7 +742,7 @@ class Process:
 			if self._pipe_script:
 				if stdin:
 					raise ProcessError("Cannot use stdin with piped script execution", process=self)
-			else:
+			elif self._powershell_mode != PowerShellMode.ENCODED:
 				extension = ""
 				if self._script_file:
 					extension = self._script_file.suffix.lstrip(".")
@@ -588,6 +764,8 @@ class Process:
 						script_file=str(self._temp_script_file.path) if self._temp_script_file else "-",
 						arguments=arguments or None,
 						hide_window=self._hide_window,
+						# Placeholder, the script is encoded in _prepare_script
+						encoded_command="" if self._powershell_mode == PowerShellMode.ENCODED else None,
 					)
 				except Exception as exc:
 					raise ProcessError(f"Failed to get interpreter command for interpreter '{interpreter}': {exc}", process=self) from exc
@@ -653,6 +831,11 @@ class Process:
 						# EOF
 						break
 					logger.trace("Read %d bytes from %s: %r", data_len, type, data)
+					if self._interpreter == InterpreterType.POWERSHELL:
+						data = _filter_clixml(data, self._encoding)
+						data_len = len(data)
+						if not data_len:
+							continue
 
 				with self._data_lock:
 					if type == "stdout":
@@ -714,8 +897,23 @@ class Process:
 				script_lines.insert(0, '$ErrorActionPreference = "Stop"')
 
 		self._script = os.linesep.join(script_lines) + os.linesep
+		if self._powershell_mode == PowerShellMode.ENCODED:
+			self._apply_encoded_command()
 		if self._temp_script_file:
 			self._temp_script_file.create(content=self._script, encoding=self._encoding)
+
+	def _apply_encoded_command(self) -> None:
+		"""
+		Pass the script to PowerShell via -EncodedCommand.
+		"""
+		assert self._script
+		encoded_command = _encode_powershell_command(self._script)
+		if len(encoded_command) > POWERSHELL_ENCODED_COMMAND_MAX_LENGTH:
+			raise ProcessError(
+				f"Script is too long for PowerShell mode 'encoded' ({len(encoded_command)} > {POWERSHELL_ENCODED_COMMAND_MAX_LENGTH} characters)",
+				process=self,
+			)
+		self._command[-1] = encoded_command
 
 	def _manager(self) -> None:
 		"""
@@ -799,7 +997,13 @@ class Process:
 			logger.debug("Using piped script input for shell execution")
 			close_stdin = True
 			assert self._script
-			stdin_data = self._script.encode(self._encoding)
+			script = self._script
+			if self._interpreter == InterpreterType.POWERSHELL:
+				# PowerShell reads piped input like an interactive console.
+				# After a multi-line statement (e.g. an if block) it waits for an empty line before it executes the input.
+				# Without it, input ending in or following such a statement would be discarded at EOF.
+				script += os.linesep
+			stdin_data = script.encode(self._encoding)
 
 		stdout = (
 			DEVNULL
@@ -818,28 +1022,40 @@ class Process:
 			else None
 		)
 		stdin = PIPE if stdin_data is not None or not close_stdin else None
+		if self._elevate:
+			# Output and stdin of an elevated process cannot be redirected
+			stdout = stderr = stdin = None
 
 		logger.log(
 			self._start_log_level,
-			"Starting process with command: %r, working_dir: '%s', stdout: %r, stderr: %r, stdin: %r",
+			"Starting process with command: %r, working_dir: '%s', stdout: %r, stderr: %r, stdin: %r, elevate: %r",
 			self._command,
 			self._working_dir,
 			stdout,
 			stderr,
 			stdin,
+			self._elevate,
 		)
-		with disable_file_system_redirection():
-			self._proc = Popen(
-				self._command,
-				stdout=stdout,
-				stderr=stderr,
-				stdin=stdin,
-				cwd=self._working_dir,
-				env=env,
-				startupinfo=startupinfo,
-				creationflags=creationflags,
-				start_new_session=start_new_session,
-			)
+		if self._elevate:
+			from opsi.process._windows import ElevatedProcess
+
+			try:
+				self._proc = ElevatedProcess(self._command, working_dir=self._working_dir, hide_window=self._hide_window)
+			except Exception as exc:
+				raise ProcessError(f"Failed to start elevated process: {exc}", process=self) from exc
+		else:
+			with disable_file_system_redirection():
+				self._proc = Popen(
+					self._command,
+					stdout=stdout,
+					stderr=stderr,
+					stdin=stdin,
+					cwd=self._working_dir,
+					env=env,
+					startupinfo=startupinfo,
+					creationflags=creationflags,
+					start_new_session=start_new_session,
+				)
 		self._pid = self._proc.pid
 		logger.info("Started process %r with PID %d on attempt %d", self.get_command(), self._pid, self._attempts)
 		assert self._proc
@@ -1308,6 +1524,7 @@ def run_command(
 	success_exit_codes: Collection[int] | None = (0,),
 	hide_window: bool = False,
 	detach: bool = False,
+	elevate: bool = False,
 	session_id: str | None = None,
 	session_desktop: str | None = None,
 	session_elevated: bool = False,
@@ -1330,6 +1547,7 @@ def run_command(
 		success_exit_codes=success_exit_codes,
 		hide_window=hide_window,
 		detach=detach,
+		elevate=elevate,
 		session_id=session_id,
 		session_desktop=session_desktop,
 		session_elevated=session_elevated,
@@ -1358,6 +1576,7 @@ def run_script(
 	discard_output: DiscardOutputMode | str = DiscardOutputMode.NONE,
 	encoding: str | None = None,
 	exit_on_error: bool = False,
+	powershell_mode: PowerShellMode | str = PowerShellMode.AUTO,
 	success_exit_codes: Collection[int] | None = (0,),
 	hide_window: bool = True,
 	detach: bool = False,
@@ -1383,6 +1602,7 @@ def run_script(
 		discard_output=discard_output,
 		encoding=encoding,
 		exit_on_error=exit_on_error,
+		powershell_mode=powershell_mode,
 		success_exit_codes=success_exit_codes,
 		hide_window=hide_window,
 		detach=detach,
@@ -1414,6 +1634,7 @@ def run_script_file(
 	discard_output: DiscardOutputMode | str = DiscardOutputMode.NONE,
 	encoding: str | None = None,
 	exit_on_error: bool = False,
+	powershell_mode: PowerShellMode | str = PowerShellMode.AUTO,
 	success_exit_codes: Collection[int] | None = (0,),
 	hide_window: bool = True,
 	detach: bool = False,
@@ -1439,6 +1660,7 @@ def run_script_file(
 		discard_output=discard_output,
 		encoding=encoding,
 		exit_on_error=exit_on_error,
+		powershell_mode=powershell_mode,
 		hide_window=hide_window,
 		detach=detach,
 		session_id=session_id,
